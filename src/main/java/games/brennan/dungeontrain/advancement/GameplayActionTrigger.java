@@ -41,6 +41,8 @@ import java.util.Optional;
  *   <li>{@code maxed_backpack_slots} — unlocked every backpack slot the config allows</li>
  *   <li>{@code no_container_100_carts} / {@code no_container_1000_carts} — carriages
  *       travelled since the last chest/barrel open (decorated pots don't count)</li>
+ *   <li>{@code no_break_100_carts} / {@code no_break_1000_carts} — carriages
+ *       travelled since the last block broken (decorated pots DO count)</li>
  *   <li>{@code contained_loop} — died 1000+ carriages into a life that never opened an
  *       ender chest (fired from the death hook, not a live scan)</li>
  *   <li>{@code changed_engine_volume} — changed the train engine volume setting; the only

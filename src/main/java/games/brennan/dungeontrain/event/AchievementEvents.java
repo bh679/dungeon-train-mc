@@ -53,6 +53,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
@@ -120,6 +121,10 @@ public final class AchievementEvents {
     private static final int NO_CONTAINER_CARTS_TIER_1 = 100;
     /** Carriages travelled since the last chest/barrel open for "Still Not My Chest". */
     private static final int NO_CONTAINER_CARTS_TIER_2 = 1000;
+    /** Carriages travelled since the last block broken for "Look, Don't Touch". */
+    private static final int NO_BREAK_CARTS_TIER_1 = 100;
+    /** Carriages travelled since the last block broken for "Museum Rules". */
+    private static final int NO_BREAK_CARTS_TIER_2 = 1000;
     /** Carriages that must be exceeded in one life for "Contained Loop". */
     private static final int CONTAINED_LOOP_CARTS = 1000;
 
@@ -196,6 +201,27 @@ public final class AchievementEvents {
         ModAdvancementTriggers.UNIQUE_CHESTS_OPENED.get().trigger(player, run.chestStreak());
     }
 
+    // ---------------- Block breaks ----------------
+
+    /**
+     * Any block a player breaks ends the "no block broken" streak: the next milestone is
+     * measured from this carriage reading onward. Deliberately unfiltered — decorated pots
+     * count here, unlike the chest/barrel streak above where vases are fair game.
+     *
+     * <p>Fires on the same {@link BlockEvent.BreakEvent} that {@code RunStatsEvents.onPotBreak}
+     * uses, so a pot mined with a tool lands here too. A pot shattered from range by a
+     * projectile never raises this event and so cannot break the streak — the same blind spot
+     * the existing pot accounting has.</p>
+     */
+    @SubscribeEvent
+    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (event.isCanceled()) return;
+        if (event.getLevel().isClientSide()) return;
+        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        player.setData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get(), effectiveTravelled(run));
+    }
+
     // ---------------- Carriages-in-run ----------------
 
     /**
@@ -255,6 +281,18 @@ public final class AchievementEvents {
         }
         if (sinceContainer >= NO_CONTAINER_CARTS_TIER_2) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_container_1000_carts");
+        }
+        // "Look, Don't Touch" / "Museum Rules" — carriages travelled since the last
+        // block broken this life. Same shape as the container streak above (the admin
+        // difficulty offset is in both terms and cancels), but every block counts,
+        // decorated pots included.
+        int sinceBreak = effectiveTravelled
+            - player.getData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get());
+        if (sinceBreak >= NO_BREAK_CARTS_TIER_1) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_break_100_carts");
+        }
+        if (sinceBreak >= NO_BREAK_CARTS_TIER_2) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_break_1000_carts");
         }
     }
 

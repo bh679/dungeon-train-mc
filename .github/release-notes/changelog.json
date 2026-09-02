@@ -10919,9 +10919,9 @@
       ],
       "pr": 1271,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.782.0",
+      "released_at": "2026-09-02T11:35:30Z"
     },
     {
       "id": "freeze-parked-groups-keep-their-place",
@@ -10935,9 +10935,9 @@
         "Saving while groups are parked no longer bakes the wrong position into the save."
       ],
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.782.0",
+      "released_at": "2026-09-02T11:35:30Z",
       "pr": 1272
     },
     {
@@ -10952,9 +10952,9 @@
         "Run stats count portal crossings that worked and ones that didn't"
       ],
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.782.0",
+      "released_at": "2026-09-02T11:35:30Z"
     },
     {
       "id": "vr-melee-works-without-the-addon",
@@ -10968,9 +10968,9 @@
         "No effect at all if you do not play in VR"
       ],
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.782.0",
+      "released_at": "2026-09-02T11:35:30Z"
     },
     {
       "id": "carriages-anywhere-on-line",
@@ -10986,6 +10986,36 @@
         "Walking more than 128 blocks away from the track still lets the train unload, as before."
       ],
       "pr": 1276,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "own-book-known-in-the-wild",
+      "version": "0.785.0",
+      "type": "feat",
+      "title": "Your own book knows it's yours wherever you find it",
+      "summary": "Find a book you wrote out in the world \u2014 in a chest, rather than on the shelves of your own library room \u2014 and it now knows it is yours. The train tells you how it has been received and offers the padlock that takes it out of circulation, instead of asking you to rate your own writing.",
+      "highlights": [
+        "A book you wrote carries your own controls wherever you find it, not only inside your own library room",
+        "The thumbs-up/thumbs-down tally your readers gave it, and the padlock to withdraw it or put it back, now appear on a copy found in a chest",
+        "You can no longer vote on a book you wrote by mistake \u2014 the thumbs and the Y/N shortcut are off on anything of yours"
+      ],
+      "pr": 1269,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "no-blocks-broken-chain",
+      "version": "0.786.0",
+      "type": "feat",
+      "title": "A couple of new advancements",
+      "summary": "Two more hidden advancements have been added. No hints here.",
+      "highlights": [],
+      "pr": 1277,
       "date": "2026-09-02",
       "released": false,
       "released_in": null,
