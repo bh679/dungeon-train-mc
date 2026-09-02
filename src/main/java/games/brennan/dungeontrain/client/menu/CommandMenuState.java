@@ -342,72 +342,40 @@ public final class CommandMenuState {
         dispatchEntry(entry, subIdx);
     }
 
-    /** Dispatch a single entry's action. Split rows recurse into the selected half. */
+    /** Dispatch a single entry's action through the shared {@link MenuEntryDispatcher}. */
     private static void dispatchEntry(CommandMenuEntry entry, int subIdx) {
-        if (entry instanceof CommandMenuEntry.Run run) {
-            CommandRunner.run(run.command());
-            close();
-        } else if (entry instanceof CommandMenuEntry.Stay stay) {
-            CommandRunner.run(stay.command());
-            armSaveStatusRefresh();
-            // Stay open so the player can click again. The next tick's
-            // rebuild picks up any label change driven by server state.
-        } else if (entry instanceof CommandMenuEntry.SaveAction save) {
-            // Already-saved rows are no-ops — the cell is rendered greyed
-            // and the raycast filters them out, but defensive double-check.
-            if (save.saved()) return;
-            save.onClick().run();
-            // Stay open so the user can save other rows or click Continue.
-            // The screen's onClick closure mutates its own local saved set
-            // so the next tick's rebuild greys out the row.
-        } else if (entry instanceof CommandMenuEntry.Label) {
-            // Non-clickable. Reaching here means the raycast let a click
-            // through somehow — silently ignore.
-        } else if (entry instanceof CommandMenuEntry.ClientAction ca) {
-            ca.action().run();
-            // Same UX as Stay — keep the menu open so the player sees the
-            // value tick up, but skip the slash-command round-trip for
-            // pure client-side state.
-        } else if (entry instanceof CommandMenuEntry.DrillIn drill) {
-            drillIn(drill.target());
-        } else if (entry instanceof CommandMenuEntry.Back) {
-            goBack();
-        } else if (entry instanceof CommandMenuEntry.TypeArg type) {
-            beginTyping(type.argName(), type.commandPrefix(), type.commandSuffix(), type.initialBuffer());
-        } else if (entry instanceof CommandMenuEntry.Toggle toggle) {
-            String cmd;
-            if (toggle.cmdToToggleOthers() != null && net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
-                // Shift-click a dimension toggle = "toggle all but that one" — the shared others
-                // action, identical to the world-space dimension menus.
-                cmd = toggle.cmdToToggleOthers();
-            } else {
-                cmd = toggle.state() ? toggle.cmdToTurnOff() : toggle.cmdToTurnOn();
-            }
-            CommandRunner.run(cmd);
-            armSaveStatusRefresh();
-            // Stay open so the user can see the state flip. The next tick's
-            // rebuild will pick up the server-acked devmode value.
-        } else if (entry instanceof CommandMenuEntry.Split split) {
-            CommandMenuEntry target = subIdx == 1 ? split.rightEntry() : split.leftEntry();
-            dispatchEntry(target, 0);
-        } else if (entry instanceof CommandMenuEntry.Triple triple) {
-            CommandMenuEntry target = switch (subIdx) {
-                case 1 -> triple.middleEntry();
-                case 2 -> triple.rightEntry();
-                default -> triple.leftEntry();
-            };
-            dispatchEntry(target, 0);
-        } else if (entry instanceof CommandMenuEntry.Quad quad) {
-            CommandMenuEntry target = switch (subIdx) {
-                case 1 -> quad.e2();
-                case 2 -> quad.e3();
-                case 3 -> quad.e4();
-                default -> quad.e1();
-            };
-            dispatchEntry(target, 0);
-        }
-        // Loading — no-op.
+        MenuEntryDispatcher.dispatch(entry, subIdx, HOST,
+            net.minecraft.client.gui.screens.Screen.hasShiftDown());
     }
+
+    /**
+     * What this menu does when a row acts. Run closes; Stay and Toggle keep the panel open so the
+     * player can click again — the next tick's rebuild picks up any label change driven by server
+     * state — and arm the dirty-list refresh, since they are the commands that can change a plot.
+     */
+    private static final MenuEntryDispatcher.Host HOST = new MenuEntryDispatcher.Host() {
+        @Override public void runAndClose(String command) {
+            CommandRunner.run(command);
+            close();
+        }
+
+        @Override public void runAndStay(String command) {
+            CommandRunner.run(command);
+            armSaveStatusRefresh();
+        }
+
+        @Override public void drillIn(MenuScreen target) {
+            CommandMenuState.drillIn(target);
+        }
+
+        @Override public void goBack() {
+            CommandMenuState.goBack();
+        }
+
+        @Override public void beginTyping(String argName, String prefix, String suffix, String initialBuffer) {
+            CommandMenuState.beginTyping(argName, prefix, suffix, initialBuffer);
+        }
+    };
 
     /** Typing-mode activator that also captures a command suffix (e.g. the
      *  {@code [source]} after the typed name in {@code editor new <name> <source>}).
