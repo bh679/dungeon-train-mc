@@ -11020,6 +11020,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-carriage-bookshelf-removal",
+      "version": "0.787.0",
+      "type": "content",
+      "title": "Portal carriages no longer carry bookshelves",
+      "summary": "The portal and tunnel carriages have been cleared of chiselled bookshelves and the books baked into them. Reading material belongs to the library portal rooms, which stock their shelves from a community author's catalogue when you step through \u2014 a portal carriage passing you on the line is no longer a shortcut to it. Several portal and tunnel carriages also had their block variants reweighted, so their timber and stonework vary more naturally as the train rolls past.",
+      "highlights": [
+        "Chiselled bookshelves and their books removed from the portal and tunnel carriages",
+        "Books now come only from library portal rooms",
+        "Reweighted block variants across the portal and tunnel carriages"
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
