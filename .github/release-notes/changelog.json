@@ -10857,6 +10857,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-screen-drop-goal-tick",
+      "version": "0.777.0",
+      "type": "fix",
+      "title": "One fewer redundant line on the support page",
+      "summary": "The support page no longer repeats a completed goal's name in a tick line once it has already stopped asking for it.",
+      "highlights": [],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
