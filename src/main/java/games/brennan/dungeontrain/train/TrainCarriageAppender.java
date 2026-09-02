@@ -3118,7 +3118,7 @@ public final class TrainCarriageAppender {
         List<Trains.Carriage> train, ServerPlayer player, int deficit, int groupSize, Vector3dc velocity
     ) {
         if (player == null) return BackwardGenTrace.RideContext.NONE;
-        CatchUpBurstMode mode = DungeonTrainConfig.getCatchUpBurstMode();
+        CatchUpBurstMode mode = DungeonTrainCommonConfig.getCatchUpBurstMode();
         return new BackwardGenTrace.RideContext(
             CarriageDeck.isOnCarriageDeck(train, player),
             player.gameMode.getGameModeForPlayer().getName(),
