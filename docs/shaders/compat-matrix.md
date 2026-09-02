@@ -1,30 +1,63 @@
 # Shader compatibility matrix
 
-How Dungeon Train's five atmosphere systems behave under each supported Iris shader pack.
+How Dungeon Train's five atmosphere systems behave under each supported Iris shader pack — and
+the mechanism that makes them behave, which is the part the first version of this document got
+wrong.
 
-**Status: not yet measured.** The instrument (F3+5, see below) and the test stack are in place;
-the cells are empty until the sweep is run. Do not cite an empty cell as "works".
-
----
-
-## Why a matrix and not a fix
-
-All five systems reach the screen through hooks a shader pack is free to honour or discard:
-
-| System | Hook | What a pack can do with it |
-|---|---|---|
-| Skyboxes in bands | `LevelRenderer#renderSky` TAIL → `SkyDomeDraw` (`position_color` / `position_tex_color`) | Routed into `gbuffers_skybasic`/`skytextured`; a pack that rebuilds sky in composite from depth can overwrite it entirely |
-| Skybox Blocks | colour-masked depth write + stencil at `AFTER_SKY` | Reaches Iris' composite with cleared albedo/normal → shades black. **Already disabled** (`ShaderCompat.allows`) |
-| Dimensional carriage fog | `ViewportEvent.RenderFog` near/far planes | Surfaces as `fogStart`/`fogEnd`; packs that compute their own atmospheric fog ignore both |
-| Carriage skybox & lighting | `LightTexture#updateLightTexture` lift + `ViewportEvent.ComputeFogColor` | The lightmap is bound as a sampler, but packs deriving light from raw `lmcoord` never read it |
-| Carriage transition | `LightTexture` hold (`LightTexturePortalCrossingMixin`) | Same as above |
-
-Which of those each pack actually does is a property of the pack. It cannot be read off this
-codebase, so it is measured here, and the fixes in later phases are aimed at what the measurement
-finds rather than at what the source suggests.
+**Status: mechanism verified on Complementary Unbound (2026-09-02); per-pack table below.**
 
 ---
 
+## What a pack can and cannot be made to do
+
+The first pass at this matrix measured that every pack overwrites Dungeon Train's sky dome and
+concluded the only fix was to draw the atmosphere *after* the pack's composite. That would have
+pasted an unlit flat dome over shader-lit terrain and left lighting and fog wrong. Three facts about
+Iris (read off `iris-neoforge-1.8.14-beta.1` with `javap`) point somewhere better:
+
+1. **Iris chooses a pack's world per frame from `Iris.getCurrentDimension()`.** Every pack ships
+   `world0` / `world-1` / `world1` program sets, and `PipelineManager` caches one pipeline per id.
+   Dungeon Train's Nether and End are bands of the overworld, so left alone a pack renders them
+   with its overworld sky, fog and lighting. A mod-gated mixin (`IrisMixinPlugin`,
+   `dungeontrain.iris.mixins.json`, `client/shader/ShaderWorld`) answers "the Nether" or "the End"
+   while the camera is in that band or in a Nether/End-skied dimensional carriage, and **the pack
+   itself renders its Nether or End** — sky, fog, lighting, everything. This is the only way a band
+   can be indistinguishable from the real dimension under shaders, and it is what `Shader world:` on
+   the panel reports. The pipelines are compiled at login (`Pre-warmed … in N ms` in the log) and
+   two warm-up frames run behind the loading screen so their first-frame chunk rebuild is free.
+2. **A pipeline swap is binary, so the fade renders twice.** Between the fade window's ends
+   (`ShaderWorld.FADE_WINDOW_START..END`, 0.3–0.7 of the band ramp; the room ease for carriages)
+   `GameRendererCrossfadeMixin` renders the frame with the world being left, keeps the image,
+   renders again with the world being entered, and blends the first over the second. Frame cost
+   roughly doubles only inside the window. `shaders.crossfade=false` in the client config gives a
+   hard cut at the midpoint instead.
+3. **Iris latches depth and colour writes off for any `ShaderInstance` it does not own** while the
+   world is rendering (`MixinShaderInstance` + `DepthColorStorage`). A mod's own core shader can only
+   draw after Iris' final pass. Two consequences:
+   - Skybox blocks cannot be reopened with a custom shader. They are reopened with **stencil**
+     instead: Iris attaches the main render target's depth texture — the `DEPTH32F_STENCIL8` one
+     Dungeon Train already asks for — to its gbuffer framebuffers, and never touches stencil state.
+     `SkyboxHoleReopen` marks the hole pixels still visible after everything opaque has drawn and
+     pushes them to depth 1.0 (the cubes again under `glDepthRange(1,1)`), so the pack's deferred
+     and composite passes paint its own sky there. It runs at `AFTER_BLOCK_ENTITIES`, the last
+     stage before Iris' deferred pass, and under an identity model-view (vanilla has the frustum on
+     the stack by then — the first version drew the cubes rotated twice and marked nothing).
+   - Dimensional-carriage fog is drawn by `PostFogPass` at `AFTER_LEVEL`, after the composite, from
+     a depth copy taken at `AFTER_WEATHER`, toward the frame's own fog colour. Packs that honour
+     `fogStart`/`fogEnd` still get vanilla's planes as well.
+
+What each system does under a pack, then:
+
+| System | Mechanism under a pack |
+|---|---|
+| Skyboxes in bands | Pack renders its own Nether / End (world spoof + cross-fade). Upside-down: the pack's overworld sky; DT's dome is not drawn |
+| Skybox Blocks | Depth punch + stencil reopen → the pack's sky for the world currently rendering (an End block in an End carriage shows the pack's End; an End block in the plain overworld shows the pack's overworld) |
+| Dimensional carriage fog | Post-composite depth fog at the room's planes, in the frame's fog colour |
+| Carriage sky & lighting | NETHER / END rooms: the pack's Nether / End pipeline. DAY / CYCLE rooms: the lightmap lift only (packs that read the lightmap show it; most do not) |
+| Carriage transition | The cross-fade for NETHER / END rooms rides the corridor ramp; the lightmap hold as before; optional screen-space lift (`portal.shaderCrossingLift`, off) |
+| Clouds | Hidden over Nether / End bands as before. Sinking in the upside-down band now happens on `getCloudHeight()` itself, so Iris' `cloudHeight` uniform sees it; packs with `clouds=off` draw no vanilla clouds at all (their own volumetrics cannot be moved) |
+
+---
 ## The instrument: F3 + 5
 
 `ShaderDiagnosticsHud` draws a panel **top-right** stating what DT asked the frame for. The rest of
@@ -38,12 +71,15 @@ build; gated on a debug grant otherwise.
 | Panel line | Reads |
 |---|---|
 | `Pack:` | family id + the exact zip Iris loaded |
-| `Stencil: / Gfx: / DH:` | stencil attachment present, vanilla graphics tier, Distant Horizons |
+| `Stencil: main … level fbo …` | stencil on the main target, and on the framebuffer the level actually rendered into (under Iris: the pack's gbuffer FBO — `texture` means the reopen pass can work) |
 | `Band t:` | void / nether / upside-down intensity **at the camera** — the ask |
 | `Band sky drawn:` | the alpha each band overlay actually submitted — 0 means it did not draw |
 | `Fog colour:` | which band tinted the fog, and the colour in → out |
 | `Fog dist:` | vanilla far → DT far, near, and whether the event was cancelled (uncancelled = ignored by design) |
-| `Skybox blocks:` | cubes indexed near the camera, variants, stencil, whether the pass drew — or the off-reason |
+| `Skybox blocks:` | cubes indexed near the camera, variants, stencil, whether the pass drew |
+| `Reopen:` | (packs only) centre-pixel depth before → after the skybox reopen pass, and the stencil bit the mark pass left. `→ 1.00000 … 0x80` is the hole handed to the pack as sky |
+| `Shader world:` | which of the pack's worlds Dungeon Train is telling Iris to render: `overworld (pack default)`, `nether (world-1)`, `end (world1)`, or mid-fade `overworld -> nether w=0.42 (2 renders)` |
+| `Post pass:` | (packs only) what the post-composite pass drew: the fog planes and the lift |
 | `Room sky:` | dimensional carriage sky kind, intensity, and the lightmap lift applied |
 | `Transition:` | corridor ramp and the lift applied |
 
@@ -165,7 +201,14 @@ over a forceloaded chunk.
 **The carriage transition.** `ClientPortalCrossing` is driven by the live corridor swap, and the
 `portal test` twin has no train and nothing that swaps, so `crossing` reads `0.000` at every
 carriage site. This is a property of the test stamp, not of any shader pack. Measuring the
-transition needs a real portal crossing in play, and it is not in this matrix.
+transition — and the band cross-fade — needs a real ride, and is done by hand (see Gate 2 notes).
+
+**Why the carriage sites used to read `roomBox=none`.** Not the pack, and not the plot: the
+trainless carriage tick (`PortalCarriageEvents.tickRoomTiling`) cleared every player's room fog
+and sky each tick because it had no structure of its own, while `PortalTestTicker` re-sent them
+each tick. The client saw a room for one tick in two and never engaged. Fixed on this branch by
+leaving portal-test players to the ticker; `room fog ->` / `room sky ->` server log lines now
+show every send.
 
 ### Doing it by hand
 
@@ -177,150 +220,49 @@ File the results as `test-results/gate2-shader-compat-2026-09/<pack-id>-<site>.p
 
 ---
 
+---
+
 ## Results
 
-**Measured 2026-09-02**, one sweep, one build, one world (`SweepWorld`), Sodium 0.8.12 + Iris
-1.8.14-beta.1 — the pair `modpack.config.json` pins. Ten packs captured, two rejected as
-non-loading. Every pack returned 8/8 distinct frames and no stale-capture warnings, and DT's own ask
-was identical in all ten (`Band sky drawn` at ~1.0, `room DAY t=1.000 lift=0.250`), so every
-difference below is the pack's doing rather than DT's.
+### Mechanism check — Complementary Unbound r5.8.1 (2026-09-02, SweepWorld, Sodium 0.8.12 + Iris 1.8.14-beta.1)
 
-### Two packs do not load at all
-
-| Pack | Outcome on Iris 1.8.14-beta.1 |
-|---|---|
-| FOOTAGE 1.0 | `Unable to parse scale directive for composite1: 0.67 0.67` → `ArrayIndexOutOfBoundsException` → `Failed to create shader rendering pipeline, disabling shaders!` |
-| Solas 3.7b | `Failed to create shader rendering pipeline, disabling shaders!` |
-
-Both reproduced twice, on two different worlds. These are pack-authoring bugs against this Iris, not
-Dungeon Train problems — but they are worth knowing before either is listed as supported, and worth
-re-testing if the pinned Iris moves.
-
-### Skyboxes in bands — every pack replaces DT's sky
-
-The upside-down band is the decisive site because DT paints it a flat, known colour:
-`SKY_RGB = 0x84B4E8` = `(132, 180, 232)`. With shaders off the frame comes back at
-**exactly (132.0, 180.0, 232.0)** — so the site is looking at nothing but DT's dome, and any
-departure is the pack overwriting it.
-
-| Pack | mean sky RGB | distance from DT's colour | what the frame shows |
-|---|---|---|---|
-| none (control) | (132.0, 180.0, 232.0) | 0.0 | DT's flat dome |
-| complementary_unbound | (111.2, 134.5, 178.8) | 73.0 | its own daylit sky, with a sun |
-| spooklementary | (77.4, 74.1, 74.5) | 197.5 | grey overcast |
-| hysteria | (27.4, 49.7, 71.0) | 232.1 | dark |
-| bsl | (18.7, 34.6, 44.4) | 263.0 | **night sky with stars** |
-| bliss | (10.8, 25.0, 46.0) | 270.8 | dark |
-| makeup_ultra_fast | (17.8, 22.8, 29.2) | 280.8 | dark |
-| insanity | (24.2, 20.0, 17.2) | 288.7 | dark |
-| complementary_reimagined | (10.3, 16.2, 25.1) | 290.6 | dark |
-| sildurs | (4.1, 5.6, 7.2) | 312.0 | near-black |
-
-**All nine loading packs discard the band sky dome.** Complementary Unbound is the closest numerically
-only because its own sky is also blue — the image shows its atmosphere and a sun, not DT's flat fill.
-BSL renders a *night sky with stars* where the control shows day, which is the clearest possible
-demonstration: DT submitted the dome (`Band sky drawn: flip 1.000` in every panel) and the pack's
-composite painted over it.
-
-The same pattern holds on the two dark bands, in the other direction — packs brighten the void and
-Nether 1.9-6.4x over vanilla, again because what is on screen is the pack's atmosphere rather than
-DT's:
-
-| Pack | void | nether | upside-down |
-|---|---|---|---|
-| none (control) | 16.7 | 23.1 | 165.5 |
-| complementary_unbound | 5.90x | 6.17x | 0.91x |
-| hysteria | 6.44x | 3.86x | 0.47x |
-| insanity | 5.25x | 4.79x | 0.14x |
-| complementary_reimagined | 1.89x | 1.91x | 0.23x |
-| bsl | 1.92x | 1.51x | 0.21x |
-| bliss | 1.86x | 1.08x | 0.17x |
-
-> Caveat: world time is not pinned. Each run reaches each site at roughly the same elapsed time, so
-> drift between packs is small, and DT's dome is a fixed-colour fill that does not vary with time —
-> but a pack's own sky does. Pinning `/time set day` per site would remove the variable entirely.
-
-### Dimensional carriage sky & lighting — asked for everywhere, not yet proven visible
-
-Every pack applied the lift: `room(DAY t=1.000 lift=0.250)` with the camera verified inside the
-server-named box (`roomBox=DAY[85..96, 230..236, 565..576]`). What the sweep cannot yet say is
-whether the lift *survives* a pack, because a lightmap lift is a subtle change to an already-lit
-scene and there is no A/B in the run. Answering it needs the same site captured twice per pack, once
-with the lift forced off — a small addition, and the obvious next step.
-
-### Dimensional carriage fog — not measurable from the plot
-
-`fogBox=none` at every site in every run. The fog is only sent for a structure the server considers
-occupied, and the editor plot is not one. Two packs produced live fog in an earlier sweep from the
-`portal test` twin on a reused world; on a clean world the twin sends no fog box at all. Unresolved.
-
-### Clouds — hiding works, sinking is dead (and not because of shaders)
-
-DT does two separate things with clouds, and they fail differently.
-
-| Band | Intended | Measured (control, **shaders off**) |
+| Site | Panel | Frame |
 |---|---|---|
-| plain overworld | clouds shown | shown — positive control, camera proven good |
-| void / End | hidden | **hidden** ✓ |
-| Nether | hidden | **hidden** ✓ |
-| upside-down | plane sinks 192 → `upsideDownCloudY` (0) | **plane unchanged, clouds still overhead** ✗ |
+| `00-plain` | `Stencil: main yes level fbo texture` | control |
+| `01-band-void` | `Shader world: end (world1)`, fog colour `#B5D1FF -> #1B1F26` | **the pack's End**: its purple starfield, where the first sweep measured its daylit overworld |
+| `02-band-nether` | `Shader world: nether (world-1)`, fog colour `-> #330808` | **the pack's Nether**: its red fog and lighting |
+| `03-band-upsidedown` | `Shader world: overworld (pack default)`, `clouds plane 192 -> 8.3` | the pack's day sky; the cloud plane sunk at the source |
+| `04-skybox-blocks` | `Reopen: centre depth 0.98578 -> 1.00000  stencil after mark 0x80` | the hole is indistinguishable from the sky around it |
+| `06/07-carriage-room` | `Fog dist: far 192 -> 60 near 15 cancelled yes`, `Post pass: fog 15.0..60.0`, `Room sky: DAY t=1.000` | room engaged; fog pass drawn |
 
-The hiding is an `@Inject` at the `HEAD` of `LevelRenderer#renderClouds` and it fires. The sinking is
-a `@ModifyExpressionValue` on `DimensionSpecialEffects#getCloudHeight()` **inside** that method's
-body, and it never fires — not once, in any run. The instrumentation records every call to it
-including the ones that change nothing, and the count is zero while `hook=true` proves the enclosing
-method ran.
+Login pre-warm: `Pre-warmed the shader pack's Nether and End pipelines in 5130 ms` (CU, M2 Max).
 
-The body is being skipped. NeoForge's `renderClouds` opens with an extension point:
+### Per-pack table
 
-```java
-if (level.effects().renderClouds(...))   // handled elsewhere
-    return;                              // <-- everything below is skipped
-float f = this.level.effects().getCloudHeight();   // <-- DT's modifier target
-```
+_Filled from the full sweep (`scripts/shaders/sweep-all.sh SweepWorld vanilla <packs…>`); one row
+per pack, cells quote the panel. See `test-results/gate2-shader-compat-2026-09/` (local, not
+committed) for the frames._
 
-and **Iris** ships `net.irisshaders.iris.mixin.MixinLevelRenderer` (which references `renderClouds`)
-plus `mixin.sky.MixinDimensionSpecialEffects`. Sodium was ruled out — it contains no cloud code at
-all — as was Sable.
+| Pack | Loads | Band End | Band Nether | Skybox reopen | Carriage fog | Notes |
+|---|---|---|---|---|---|---|
+| FOOTAGE 1.0 | no (`Unable to parse scale directive`) | – | – | – | – | pack bug on this Iris |
+| Solas 3.7b | no (`Failed to create shader rendering pipeline`) | – | – | – | – | pack bug on this Iris |
 
-**Why this matters more than a shader bug:** Iris is loaded whenever it is installed, shaders on or
-off. This was measured with `enableShaders=false`. So the upside-down band's clouds have never sunk
-for any player running Iris, which is every player who has shader support installed at all.
+### Known limits
 
-This is the same shape as the documented Sodium chunk-meshing trap: a mixin written against the
-vanilla path, correct in a plain dev client, dead for the modpack. The fix will be the same shape
-too — hoist the decision into a plain client helper and hook whatever actually renders the clouds,
-rather than the vanilla method that no longer runs.
-
-### Skybox Blocks — DT's own gate, not a measurement
-
-`ShaderCompat.allows` returns false under every pack, so every shader row would read "off" by our own
-decision. Only the control's cell could inform, and that site remained the most fragile of the eight.
-
-### The transition — structurally unreachable
-
-`portal test` stamps a twin with no train and nothing that swaps, so `ClientPortalCrossing` reads
-`0.000` everywhere. Measuring it needs a real portal crossing in play.
-
-## What this means for the five systems
-
-| System | Verdict |
-|---|---|
-| Clouds — hidden over void/Nether | **Works** under the control; per-pack behaviour still to sweep. |
-| Clouds — sunk in upside-down | **Broken, and not by shaders.** Iris intercepts `renderClouds`, so DT's height modifier never runs — with shaders off too. |
-| Skyboxes in bands | **Broken under every pack.** The dome is drawn and then overwritten by the pack's own atmosphere. Needs the post-composite approach — nothing cheaper will do it. |
-| Skybox blocks | Off by DT's gate; unchanged. |
-| Carriage fog | Unknown — not reachable from the editor plot. |
-| Carriage sky & lighting | Applied under every pack; visibility unproven pending a lift-on/lift-off A/B. |
-| Carriage transition | Not measurable without a live crossing. |
-
-The band result is the one that settles a design question: since every pack replaces the sky rather
-than tinting it, per-pack overrides in `ShaderCompat.allows` cannot rescue the band skyboxes. Drawing
-DT's atmosphere after the pack's composite is the only approach that survives, which is exactly the
-expensive option this matrix existed to justify or rule out.
+- **Translucents behind a skybox block show through it** under a pack: the reopen has to run before
+  the pack's deferred pass (or its sky and volumetric clouds skip the hole), which is also before
+  translucents. Skybox blocks face open sky or void in practice.
+- **Per-variant skies are vanilla-only.** Under a pack every variant shows the pack's sky for the
+  world currently rendering.
+- **DAY / CYCLE rooms are not pinned under packs** that ignore the lightmap; a pack's time of day
+  is what shows through a DAY room's skybox blocks.
+- **A pack's own volumetric clouds cannot be sunk** in the upside-down band; only vanilla-style
+  clouds (and packs reading `cloudHeight`) follow the plane.
+- **Double render during a fade**: mods with non-idempotent `RenderLevelStageEvent` handlers would
+  run twice per frame while fading. None known in the modpack.
+- **Distant Horizons + pipeline swap** is untested.
 
 ## Evidence
 
-`test-results/gate2-shader-compat-2026-09/` — per-site contact sheets (all packs, control first) and
-`upside-down-band-comparison.png`, which shows the control's flat dome against Complementary
-Unbound's sun, BSL's starfield and Sildur's black.
+`test-results/gate2-shader-compat-2026-09/` — per-run screenshots (gitignored; kept locally).
