@@ -5,7 +5,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.fml.loading.FMLLoader;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -61,20 +60,22 @@ public final class BackwardGenTrace {
         FILL_RUN(false),
         /** No player within {@code NEAR_RADIUS} of any group — the train is unattended. */
         NOT_NEAR(true),
-        /** The players' needed window no longer extends past the registry's min anchor. */
+        /** Every anchor the players' window needs below them is visible — no frontier. */
         NO_NEED(true),
-        /** The next backward anchor is already in the spawn registry. */
+        /** Legacy (pre-frontier): the next backward anchor was already registered. Not emitted any more. */
         ANCHOR_KNOWN(true),
-        /** Registry edge is neither visible, held, nor resident — deferred until it surfaces. */
+        /** The frontier anchor is registered and resident but not in findAll (surfacing) — wait. */
         EDGE_DEFER(true),
-        /** Registry edge was culled to Sable holding; a reload was issued and the tick deferred. */
+        /** The frontier anchor was culled to Sable holding; a reload was issued and the tick deferred. */
         EDGE_RELOAD(true),
         /** The previous backward spawn has not reached {@code placedSuccessfully} yet. */
         GATE_PENDING(true),
         /** The cull-clear latch is holding the backward lane shut. */
         GATE_CULL_LATCH(true),
         /** Spawn deferred while the footprint's world chunks generate asynchronously. */
-        CHUNKGEN_DEFER(true);
+        CHUNKGEN_DEFER(true),
+        /** The frontier anchor held a REMOVED ghost; it was reaped this tick and spawns fresh next tick. */
+        FRONTIER_REAP(true);
 
         private final boolean blocking;
 
@@ -134,18 +135,19 @@ public final class BackwardGenTrace {
      * @param gameTick       server tick the sample was taken on
      * @param reason         which gate the lane reached
      * @param blockedFor     consecutive ticks the lane has been blocked (0 when it spawned)
-     * @param playerPIdx     nearest player's pIdx in the LEAD group's frame (drives the window)
-     * @param occupiedPIdx   the pIdx of the group the player is physically standing in, or
-     *                       {@code null} — divergence from {@code playerPIdx} is the frame-skew
-     *                       signal
+     * @param playerPIdx     the tail-most near player's carriage index, read in the frame of the
+     *                       group they are in (drives the window)
+     * @param occupiedPIdx   the same index recomputed independently by {@code occupiedPIdx}, or
+     *                       {@code null}; any divergence from {@code playerPIdx} (skew) is a
+     *                       regression of the lead-frame drift bug and should read 0
      * @param playerX        the player's world X (falls as they ride/walk toward the tail)
      * @param minNeeded      {@code globalMinNeededPIdx} — the lowest pIdx any player needs
      * @param registryMin    {@code trainMinAnchor} from the spawn registry (drives the need test)
      * @param visibleTail    lowest pIdx actually present in Sable's visible train
      * @param registryCount  number of registered anchors
      * @param visibleCount   number of visible groups
-     * @param anchor         the backward anchor the lane would spawn at
-     * @param deficit        {@code trainMinAnchor − globalMinNeededPIdx}, the lane's shortfall
+     * @param anchor         the backward frontier anchor the lane is resolving (spawn / reload / reap)
+     * @param deficit        {@code frontier + groupSize − globalMinNeededPIdx}, the lane's shortfall
      * @param ticksPending   ticks since the pending backward spawn was issued, or −1 if none
      * @param latchAge       ticks since the cull-clear latch was stamped, or −1 if unlatched
      * @param edgeSub        registry-edge sub-level id, or {@code null}
@@ -248,11 +250,12 @@ public final class BackwardGenTrace {
     static final long STOPPED_AFTER_TICKS = 100L;
 
     /**
-     * Master switch. Defaults to ON in a dev environment and OFF in
-     * production, matching {@code GenProfiler}'s precedent: a dev test ride
-     * captures the trace with no setup, while shipped builds stay silent.
+     * Master switch. OFF everywhere until armed with
+     * {@code /dungeontrain debug traingen on} — the trace emits at INFO once a
+     * second per train plus chat announcements, which is investigation output,
+     * not something a dev ride should carry by default.
      */
-    private static volatile boolean enabled = !FMLLoader.isProduction();
+    private static volatile boolean enabled = false;
 
     /**
      * Window over which the race between the player and the lane is measured. 600 ticks = 30 s —

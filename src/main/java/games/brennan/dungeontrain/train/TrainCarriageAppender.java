@@ -78,13 +78,6 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
 
     /**
-     * Last carriage index sent to each player for the F3+4 debug panel. Separate from
-     * {@link #LAST_SENT_PIDX} because the two are computed in different frames and cross their
-     * boundaries at different moments — sharing one record would swallow debug updates.
-     */
-    private static final Map<UUID, Integer> LAST_SENT_DEBUG_PIDX = new ConcurrentHashMap<>();
-
-    /**
      * The carriage index last pushed to {@code playerId}'s HUD — the same value the
      * "Carriage:" read-out shows — or {@code null} when the player isn't currently
      * tracked near a train. Lets server-thread callers (e.g. the Discord advancement
@@ -2159,11 +2152,9 @@ public final class TrainCarriageAppender {
         Trains.Carriage lead = Trains.lead(train);
         Trains.Carriage tail = Trains.tail(train);
         TrainTransformProvider leadProvider = lead.provider();
-        ManagedShip leadShip = lead.ship();
         UUID trainId = leadProvider.getTrainId();
         CarriageDims dims = leadProvider.dims();
         Vector3dc velocity = leadProvider.getTargetVelocity();
-        BlockPos leadShipyardOrigin = leadProvider.getShipyardOrigin();
         int leadAnchorPIdx = leadProvider.getPIdx();
         int groupSize = leadProvider.getGroupSize();
         int length = dims.length();
@@ -2193,60 +2184,37 @@ public final class TrainCarriageAppender {
         ServerPlayer tracePlayer = null;
         int tracePlayerPIdx = 0;
         int traceTargetCount = 0;
+        // Anchor of the group that player is standing in — where the backward
+        // frontier walk starts (see backwardFrontier). Only meaningful once
+        // tracePlayer is set.
+        int frontierStartAnchor = 0;
         for (ServerPlayer player : players) {
-            // Player is "near" the train if within NEAR_RADIUS of any group's
-            // world AABB.
-            boolean near = false;
-            for (Trains.Carriage c : train) {
-                AABBdc aabb = c.ship().worldAABB();
-                double px = player.getX();
-                double py = player.getY();
-                double pz = player.getZ();
-                double cdx = Math.max(0, Math.max(aabb.minX() - px, px - aabb.maxX()));
-                double cdy = Math.max(0, Math.max(aabb.minY() - py, py - aabb.maxY()));
-                double cdz = Math.max(0, Math.max(aabb.minZ() - pz, pz - aabb.maxZ()));
-                if (cdx * cdx + cdy * cdy + cdz * cdz <= NEAR_RADIUS_SQ) {
-                    near = true;
-                    break;
-                }
-            }
-            if (!near) continue;
-
-            // Player's absolute carriage pIdx via the lead group's frame.
-            // The lead group's shipyardOrigin sits at the BACK PAD's
-            // lowest-X corner (groupSize > 1) or at the anchor carriage's
-            // lowest-X corner (groupSize == 1). The anchor enclosed
-            // carriage starts at shipyardOrigin + enclosedStartOffset,
-            // where enclosedStartOffset = halfPadLen for groupSize > 1
-            // and 0 for groupSize == 1. Subtract this offset before
-            // dividing by length so pIdx 0's enclosed carriage maps to
-            // (local.x − shipyardOrigin − enclosedStartOffset) ∈ [0, length).
-            int halfPadLen = CarriagePlacer.halfPadLen(dims);
-            int enclosedStartOffset = (groupSize > 1) ? halfPadLen : 0;
-            Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
-            leadShip.worldToShip(local);
-            int pIdx = (int) Math.floor(
-                (local.x - leadShipyardOrigin.getX() - enclosedStartOffset) / (double) length
-            ) + leadAnchorPIdx;
+            // The group nearest the player by world-AABB distance. It is both the
+            // near test (within NEAR_RADIUS of ANY group ⇔ of the nearest one) and
+            // the frame the player's carriage index is read in. It must be the
+            // group they are actually in, NOT the lead group's frame extrapolated
+            // down the train: every group's world footprint is longer than its
+            // carriages (front + back pads, plus the seam gap), so an index taken
+            // as lead-frame X ÷ carriage length runs ~1.4× too fast and, after
+            // enough backward travel, places the player outside the hold window
+            // of the very group they stand in — Sable then culls the train from
+            // under them (the "walked to the end of the train" report).
+            NearestGroup nearest = nearestGroup(train, player.getX(), player.getY(), player.getZ());
+            if (nearest == null || nearest.distSq() > NEAR_RADIUS_SQ) continue;
+            int pIdx = pIdxWithinGroup(nearest.carriage(), player, dims, groupSize);
 
             UUID uuid = player.getUUID();
             seenThisTick.add(uuid);
             Integer lastSent = LAST_SENT_PIDX.get(uuid);
             if (lastSent == null || lastSent != pIdx) {
                 DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));
-                LAST_SENT_PIDX.put(uuid, pIdx);
-            }
-
-            // The debug panel resolves the carriage independently, in the frame of the group the
-            // player is actually standing in rather than the lead group's — see occupiedPIdx. It
-            // therefore changes on its own schedule and needs its own "did it change" record.
-            if (DebugAccessEvents.isPermitted(player)) {
-                Integer occupied = occupiedPIdx(train, player, dims, groupSize);
-                Integer lastDebug = LAST_SENT_DEBUG_PIDX.get(uuid);
-                if (occupied != null && !occupied.equals(lastDebug)) {
-                    DungeonTrainNet.sendTo(player, debugCarriageAt(occupied));
-                    LAST_SENT_DEBUG_PIDX.put(uuid, occupied);
+                // The F3+4 panel reads the same index (it always resolved in the
+                // occupied group's frame; the HUD now does too), so one change
+                // record serves both.
+                if (DebugAccessEvents.isPermitted(player)) {
+                    DungeonTrainNet.sendTo(player, debugCarriageAt(pIdx));
                 }
+                LAST_SENT_PIDX.put(uuid, pIdx);
             }
 
             int pTargetCount = (configCount > 0)
@@ -2262,6 +2230,7 @@ public final class TrainCarriageAppender {
                 tracePlayer = player;
                 tracePlayerPIdx = pIdx;
                 traceTargetCount = pTargetCount;
+                frontierStartAnchor = nearest.carriage().provider().getPIdx();
             }
 
             nearPlayerPIdxs.add(pIdx);
@@ -2355,13 +2324,17 @@ public final class TrainCarriageAppender {
         // between the actual visible end and the next spawn. After
         // cleanup, the registry edge matches the visible edge so the next
         // spawn fills the slot adjacent to what the player can see.
+        //
+        // FORWARD only. The backward lane no longer extends from the registry
+        // edge at all — it walks the needed anchors outward from the player's own
+        // group and resolves each missing one in turn (reload a held ghost, reap a
+        // removed one, spawn a fresh one; see backwardFrontier /
+        // resolveBackwardFrontier), so a ghost anywhere below the player can
+        // neither hide the need nor be skipped past.
         boolean refreshedAnchors = false;
         for (int playerPIdx : nearPlayerPIdxs) {
             if (playerPIdx > trainMaxAnchor && CULL_CLEARED_FORWARD.remove(trainId) != null) {
                 refreshedAnchors |= cleanupGhostAnchors(level, trainId, train, true);
-            }
-            if (playerPIdx < trainMinAnchor && CULL_CLEARED_BACKWARD.remove(trainId) != null) {
-                refreshedAnchors |= cleanupGhostAnchors(level, trainId, train, false);
             }
         }
         if (refreshedAnchors) {
@@ -2429,42 +2402,47 @@ public final class TrainCarriageAppender {
         boolean needsForward = MANUAL_MODE
             || (globalMaxNeededPIdx != Integer.MIN_VALUE
                 && globalMaxNeededPIdx > trainMaxAnchor);
-        boolean needsBackward = !MANUAL_MODE
-            && globalMinNeededPIdx != Integer.MAX_VALUE
-            && globalMinNeededPIdx < trainMinAnchor;
+
+        // Backward is decided against what the player can SEE, not the registry:
+        // the first needed anchor below the player's own group that has no
+        // visible carriage. The registry minimum is useless here — a culled ghost
+        // keeps its registry anchor, so "the registry already reaches far enough"
+        // was true for a train that was 84% missing (the NO_NEED deadlock).
+        Set<Integer> visibleAnchors = new HashSet<>(train.size());
+        for (Trains.Carriage c : train) visibleAnchors.add(c.provider().getPIdx());
+        Integer frontier = MANUAL_MODE ? null
+            : backwardFrontier(frontierStartAnchor, globalMinNeededPIdx, visibleAnchors, groupSize);
+        boolean needsBackward = frontier != null;
 
         int forwardAnchor = trainMaxAnchor + groupSize;
-        int backwardAnchor = trainMinAnchor - groupSize;
+        int backwardAnchor = (frontier != null) ? frontier : trainMinAnchor - groupSize;
 
         // How far each lane is BEHIND the players' needed window, in carriage
         // indices — the input to {@link #catchUpBurstGroups}. Sentinel-guarded:
         // with no near player the needed pIdx is Integer.MIN/MAX_VALUE and the
         // subtraction would overflow. Manual mode reports no deficit at all, so
         // a J press keeps its "spawn one group in front" contract instead of
-        // occasionally spawning two.
+        // occasionally spawning two. Backward: the lowest visible anchor above
+        // the frontier is frontier + groupSize, so the deficit is measured from
+        // there — the same quantity the registry-edge form measured.
         int forwardDeficitPIdx = (MANUAL_MODE || globalMaxNeededPIdx == Integer.MIN_VALUE)
             ? 0 : (globalMaxNeededPIdx - trainMaxAnchor);
-        int backwardDeficitPIdx = (MANUAL_MODE || globalMinNeededPIdx == Integer.MAX_VALUE)
-            ? 0 : (trainMinAnchor - globalMinNeededPIdx);
+        int backwardDeficitPIdx = (frontier == null)
+            ? 0 : (frontier + groupSize - globalMinNeededPIdx);
 
-        // Pre-dedup backward intent, kept for the [bwdgen] trace so it can tell
-        // "the window doesn't need a group" (G1) apart from "the anchor is already
-        // registered" (G2) — the dedup below collapses both into needsBackward=false.
+        // Pre-resolution backward intent, kept for the [bwdgen] trace so it can
+        // tell "no needed anchor is missing" (G1) apart from "the frontier anchor
+        // could not be resolved this tick" (G3).
         boolean bwdNeedWindow = needsBackward;
 
-        // Belt-and-braces: even though trainMin/Max came from the
-        // registry, drop any anchor that's already known. Protects against
-        // races and future logic changes. Done per-direction so the other
-        // direction can still proceed.
+        // Belt-and-braces: even though trainMax came from the registry, drop a
+        // forward anchor that's already known. Protects against races and future
+        // logic changes. (Backward needs no such guard: a registered frontier
+        // anchor is exactly what resolveBackwardFrontier exists to handle.)
         if (needsForward && knownAnchors.contains(forwardAnchor)) {
             LOGGER.debug("[DungeonTrain] Appender skipping already-spawned forward anchor={} for trainId={} (in registry)",
                 forwardAnchor, trainId);
             needsForward = false;
-        }
-        if (needsBackward && knownAnchors.contains(backwardAnchor)) {
-            LOGGER.debug("[DungeonTrain] Appender skipping already-spawned backward anchor={} for trainId={} (in registry)",
-                backwardAnchor, trainId);
-            needsBackward = false;
         }
 
         // ---- Option 2: registry-edge reference resolution -------------------
@@ -2484,15 +2462,17 @@ public final class TrainCarriageAppender {
             if (er.reference() == null) needsForward = false;
             else forwardRef = er.reference();
         }
+        // Backward: resolve the FRONTIER anchor itself (unregistered → spawn it
+        // against the visible group one stride above, so subLevelDelta is −1 by
+        // construction; held → reload; removed → reap; otherwise wait).
         EdgeAction bwdEdgeAction = null;
         UUID bwdEdgeSub = null;
         if (needsBackward) {
-            EdgeReference er = resolveEdgeReference(level, trainId, train, trainMinAnchor, false, tail);
-            bwdEdgeAction = er.action();
-            ManagedShip bwdEdgeShip = Trains.knownGroups(trainId).get(trainMinAnchor);
-            bwdEdgeSub = (bwdEdgeShip == null) ? null : bwdEdgeShip.subLevelId();
-            if (er.reference() == null) needsBackward = false;
-            else backwardRef = er.reference();
+            FrontierResolution fr = resolveBackwardFrontier(level, trainId, train, frontier, groupSize);
+            bwdEdgeAction = fr.action();
+            bwdEdgeSub = fr.subLevelId();
+            if (fr.reference() == null) needsBackward = false;
+            else backwardRef = fr.reference();
         }
         // ---------------------------------------------------------------------
 
@@ -2837,7 +2817,11 @@ public final class TrainCarriageAppender {
     }
 
     /** What to do with one extension edge this tick (output of {@link #decideEdgeAction}). */
-    enum EdgeAction { SPAWN, RELOAD_DEFER, DEFER }
+    enum EdgeAction {
+        SPAWN, RELOAD_DEFER, DEFER,
+        /** Backward frontier only: the registered sub-level is gone for good; reaped, spawn next tick. */
+        REAP_DEFER
+    }
 
     /**
      * Resolved reference for an extension edge. {@code reference == null} means
@@ -2935,26 +2919,11 @@ public final class TrainCarriageAppender {
                 return new EdgeReference(EdgeAction.SPAWN, visibleFallback);
             }
             case RELOAD_DEFER -> {
-                // Actively bring the culled edge back from Sable holding (a
-                // force-load ticket CANNOT — Sable snatch-loads only at world
-                // load). It surfaces in findAll within a few ticks; the sticky
-                // trailing force-load window (engaged via backwardExtensionWanted)
-                // then keeps it resident so it can't be re-culled before the
-                // next group places one stride behind its live pose.
-                //
-                // Issue the reload only ONCE per held-edge episode: the edge stays
-                // in RELOAD_DEFER for the whole surfacing window, but the call does
-                // not itself load anything here (see RELOAD_ISSUED_* / claimReloadIssue)
-                // — re-calling it every tick just re-triggers Sable's benign
-                // "wasn't present in the holding chunk" ERROR. Recovery is the
-                // force-load window + findAll, which run regardless.
-                if (claimReloadIssue(trainId, forward, uuid)) {
-                    boolean reloaded = shipyard.reloadFromHolding(uuid);
-                    if (reloaded) {
-                        LOGGER.debug("[DungeonTrain] Reloaded held registry-edge group anchor={} (subLevelId={}) for trainId={} — {} lane resumes once it surfaces",
-                            edgeAnchor, uuid, trainId, forward ? "forward" : "backward");
-                    }
-                }
+                // Actively bring the culled edge back from Sable holding; it
+                // surfaces in findAll within a few ticks and the sticky trailing
+                // force-load window then keeps it resident so it can't be re-culled
+                // before the next group places one stride behind its live pose.
+                issueHeldReload(shipyard, trainId, forward, edgeAnchor, uuid);
                 warnEdgeUnresolvedIfStuck(trainId, forward, edgeAnchor, uuid, level.getGameTime(), "held→reload");
                 return new EdgeReference(action, null);
             }
@@ -3031,6 +3000,7 @@ public final class TrainCarriageAppender {
         return switch (edgeAction) {
             case RELOAD_DEFER -> BackwardGenTrace.Reason.EDGE_RELOAD;
             case DEFER -> BackwardGenTrace.Reason.EDGE_DEFER;
+            case REAP_DEFER -> BackwardGenTrace.Reason.FRONTIER_REAP;
             // SPAWN never reaches here (the lane would have gone on to attempt a
             // spawn); report the window gate rather than inventing a reason.
             case SPAWN -> BackwardGenTrace.Reason.NO_NEED;
@@ -3611,6 +3581,56 @@ public final class TrainCarriageAppender {
      * released through the registry handle BEFORE delete so the DT mirror and
      * the live Sable ticket tear down together (no leak).</p>
      */
+    /** What {@link #reapGhostAnchor} did: whether a ship was unregistered + deleted, and its shared-carriage accounting. */
+    private record ReapOutcome(boolean deleted, int sharedCaptured, int sharedDeferred) {}
+
+    /**
+     * Unregister one ghost anchor and tear its sub-level down for good: hand any shared
+     * carriages back to the relay (final flush + lease return, capped at
+     * {@code captureBudget} full captures this pass), drop the despawn snapshot, release any
+     * force-load ticket (DT mirror + live Sable ticket together, no leak), then
+     * {@link Shipyard#delete}. The single teardown used by both the bulk edge cleanup
+     * ({@link #cleanupGhostAnchors}) and the backward frontier ({@link #resolveBackwardFrontier}).
+     * Callers decide reapability (never a held sub-level — see {@link #cleanupGhostAnchors}).
+     */
+    private static ReapOutcome reapGhostAnchor(ServerLevel level, UUID trainId, int anchor, int captureBudget) {
+        ManagedShip ship = Trains.unregisterGroup(trainId, anchor);
+        if (ship == null) return new ReapOutcome(false, 0, 0);
+        Shipyard shipyard = Shipyards.of(level);
+        UUID shipId = ship.subLevelId();
+        int sharedCaptured = 0;
+        int sharedDeferred = 0;
+        // Hand any shared carriages in this sub-level back to the relay (final flush + lease
+        // return) and drop them from the registry BEFORE the plot is destroyed. The capture is
+        // synchronous on the server thread (reading the still-live plot); only the return POST is
+        // async. This plugs the SharedCarriageRegistry leak (removeSubLevel finally has a caller)
+        // and frees the lease promptly instead of at the ~1h TTL.
+        if (SharedCarriageRegistry.hasSubLevel(shipId)) {
+            for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
+                boolean allowCapture = sharedCaptured < captureBudget;
+                if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
+                    sharedCaptured++;
+                } else if (!allowCapture && inst.hasPending()) {
+                    sharedDeferred++;
+                }
+            }
+            SharedCarriageRegistry.removeSubLevel(shipId);
+        }
+        // Drop any despawn snapshot this group was holding. The group is about to stop
+        // existing, so its swept mobs have nowhere to come back to — leaving the file would
+        // strand it on disk until the next train wipe.
+        ContentsSnapshotStore.delete(level, shipId);
+        // Tear down any force-load ticket on this anchor (mirror + Sable
+        // ticket together) before deleting it.
+        Set<UUID> forceLoaded = FORCELOADED_BY_TRAIN.get(trainId);
+        if (forceLoaded != null && forceLoaded.remove(shipId)) {
+            shipyard.releaseForceLoad(ship);
+            if (forceLoaded.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
+        }
+        shipyard.delete(ship);
+        return new ReapOutcome(true, sharedCaptured, sharedDeferred);
+    }
+
     private static boolean cleanupGhostAnchors(
         ServerLevel level,
         UUID trainId,
@@ -3652,35 +3672,10 @@ public final class TrainCarriageAppender {
                 skippedHeld++;
                 continue;
             }
-            ManagedShip ship = Trains.unregisterGroup(trainId, a);
-            if (ship != null) {
-                UUID shipId = ship.subLevelId();
-                // Hand any shared carriages in this sub-level back to the relay (final flush + lease
-                // return) and drop them from the registry BEFORE the plot is destroyed. The capture is
-                // synchronous on the server thread (reading the still-live plot); only the return POST is
-                // async. This plugs the SharedCarriageRegistry leak (removeSubLevel finally has a caller)
-                // and frees the lease promptly instead of at the ~1h TTL.
-                if (SharedCarriageRegistry.hasSubLevel(shipId)) {
-                    for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(shipId)) {
-                        boolean allowCapture = sharedCaptured < MAX_SHARED_CAPTURES_PER_CULL;
-                        if (games.brennan.dungeontrain.event.SharedCarriageEvents.finalFlushAndReturn(inst, allowCapture)) {
-                            sharedCaptured++;
-                        } else if (!allowCapture && inst.hasPending()) {
-                            sharedDeferred++;
-                        }
-                    }
-                    SharedCarriageRegistry.removeSubLevel(shipId);
-                }
-                // Drop any despawn snapshot this group was holding. The group is about to stop
-                // existing, so its swept mobs have nowhere to come back to — leaving the file would
-                // strand it on disk until the next train wipe.
-                ContentsSnapshotStore.delete(level, shipId);
-                // Tear down any force-load ticket on this anchor (mirror + Sable
-                // ticket together) before deleting it.
-                if (forceLoaded != null && forceLoaded.remove(shipId)) {
-                    shipyard.releaseForceLoad(ship);
-                }
-                shipyard.delete(ship);
+            ReapOutcome outcome = reapGhostAnchor(level, trainId, a, MAX_SHARED_CAPTURES_PER_CULL - sharedCaptured);
+            sharedCaptured += outcome.sharedCaptured();
+            sharedDeferred += outcome.sharedDeferred();
+            if (outcome.deleted()) {
                 deletedSableShips++;
                 removedAnchors.add(a);
             }
@@ -3689,7 +3684,6 @@ public final class TrainCarriageAppender {
             LOGGER.info("[DungeonTrain] cull: {} shared carriage(s) bare-returned past the per-pass capture cap "
                 + "(last un-flushed edits left to streamed deltas + TTL); trainId={}", sharedDeferred, trainId);
         }
-        if (forceLoaded != null && forceLoaded.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
         if (removedAnchors.isEmpty()) {
             if (skippedHeld > 0) {
                 LOGGER.debug("[DungeonTrain] cleanupGhostAnchors: {} candidate anchor(s) past visible {}={} all held/recoverable — none deleted (trainId={})",
@@ -5414,10 +5408,20 @@ public final class TrainCarriageAppender {
      */
     private static Integer occupiedPIdx(List<Trains.Carriage> train, ServerPlayer player,
                                         CarriageDims dims, int groupSize) {
-        double px = player.getX();
-        double py = player.getY();
-        double pz = player.getZ();
+        NearestGroup nearest = nearestGroup(train, player.getX(), player.getY(), player.getZ());
+        if (nearest == null) return null;
+        return pIdxWithinGroup(nearest.carriage(), player, dims, groupSize);
+    }
 
+    /** A group and the squared world-AABB distance from a point to it ({@code 0} = inside). */
+    private record NearestGroup(Trains.Carriage carriage, double distSq) {}
+
+    /**
+     * The group whose world AABB is nearest {@code (px, py, pz)}, or {@code null} for an empty
+     * train. One scan serves both the near test ({@code distSq <= NEAR_RADIUS_SQ} ⇔ within
+     * NEAR_RADIUS of some group) and the frame the player's carriage index is read in.
+     */
+    private static NearestGroup nearestGroup(List<Trains.Carriage> train, double px, double py, double pz) {
         Trains.Carriage best = null;
         double bestDistSq = Double.MAX_VALUE;
         for (Trains.Carriage c : train) {
@@ -5432,16 +5436,152 @@ public final class TrainCarriageAppender {
                 if (distSq == 0.0) break; // inside this group — no closer answer exists
             }
         }
-        if (best == null) return null;
+        return (best == null) ? null : new NearestGroup(best, bestDistSq);
+    }
 
-        int length = dims.length();
+    /**
+     * The player's absolute carriage index read in {@code group}'s own frame. The group's
+     * shipyardOrigin sits at the BACK PAD's lowest-X corner (groupSize > 1) or at the anchor
+     * carriage's lowest-X corner (groupSize == 1); the anchor's enclosed carriage starts
+     * {@code enclosedStartOffset} (= halfPadLen, or 0) past it, so subtracting that before
+     * dividing by carriage length maps the anchor carriage to slot 0. Only valid for the group
+     * the player is in or nearest to — see {@link #occupiedPIdx} for why extrapolating another
+     * group's frame across the train drifts.
+     */
+    private static int pIdxWithinGroup(Trains.Carriage group, ServerPlayer player,
+                                       CarriageDims dims, int groupSize) {
         int enclosedStartOffset = (groupSize > 1) ? CarriagePlacer.halfPadLen(dims) : 0;
-        Vector3d local = new Vector3d(px, py, pz);
-        best.ship().worldToShip(local);
+        Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
+        group.ship().worldToShip(local);
         int slot = (int) Math.floor(
-            (local.x - best.provider().getShipyardOrigin().getX() - enclosedStartOffset)
-                / (double) length);
-        return best.provider().getPIdx() + slot;
+            (local.x - group.provider().getShipyardOrigin().getX() - enclosedStartOffset)
+                / (double) dims.length());
+        return group.provider().getPIdx() + slot;
+    }
+
+    // ---- Backward frontier: fill the needed range outward from the player ----
+    //
+    // The registry (Trains.knownAnchors) is a plain set with no contiguity
+    // guarantee, and a culled group keeps its anchor in it. Deciding the backward
+    // lane against the registry MIN therefore deadlocks the moment ghosts sit
+    // below the visible tail: the registry "already reaches" past the needed
+    // window, so nothing spawns, nothing reloads, and the train ends where the
+    // last visible group happens to be. The frontier walk decides against what
+    // is VISIBLE instead: starting from the group the player is in, step down
+    // through the anchors their window needs and stop at the first one with no
+    // visible carriage. Whatever is (or isn't) registered there is resolved on
+    // the spot — spawn, reload, or reap — so the train always rebuilds
+    // contiguously outward from the player, holes included.
+
+    /**
+     * The first anchor below {@code startAnchor} that the needed window still covers and that
+     * has no visible carriage, or {@code null} when every needed anchor is visible. An anchor
+     * {@code a} covers carriages {@code [a, a + groupSize − 1]}, so it is needed while
+     * {@code a + groupSize − 1 >= minNeededPIdx}. Pure; package-private for unit tests.
+     *
+     * @param startAnchor    anchor of the (visible) group the player is standing in
+     * @param minNeededPIdx  lowest carriage index any near player needs
+     *                       ({@code Integer.MAX_VALUE} = no near player → {@code null})
+     * @param visibleAnchors anchors of the groups currently in the visible train
+     */
+    static Integer backwardFrontier(int startAnchor, int minNeededPIdx, Set<Integer> visibleAnchors, int groupSize) {
+        if (groupSize <= 0) throw new IllegalArgumentException("groupSize must be > 0, got " + groupSize);
+        if (minNeededPIdx == Integer.MAX_VALUE) return null;
+        for (int a = startAnchor - groupSize; a + groupSize - 1 >= minNeededPIdx; a -= groupSize) {
+            if (!visibleAnchors.contains(a)) return a;
+        }
+        return null;
+    }
+
+    /**
+     * Pure decision for a frontier anchor that IS registered but not visible. ORDER MATTERS:
+     * a held sub-level's stale wrapper still answers {@code isResident()} from its last-known
+     * state, so {@code held} is checked first.
+     *
+     * <ul>
+     *   <li>{@code held} — culled to Sable holding; reload it and wait. → RELOAD_DEFER</li>
+     *   <li>{@code resident} — a live sub-level not (yet / transiently) in findAll: a fresh
+     *       spawn still surfacing, or a findAll dropout. Wait. → DEFER</li>
+     *   <li>otherwise — REMOVED for good. Reap the registry entry so the anchor can be
+     *       respawned. → REAP_DEFER</li>
+     * </ul>
+     */
+    static EdgeAction decideFrontierAction(boolean held, boolean resident) {
+        if (held) return EdgeAction.RELOAD_DEFER;
+        if (resident) return EdgeAction.DEFER;
+        return EdgeAction.REAP_DEFER;
+    }
+
+    /**
+     * Resolved backward frontier. {@code reference == null} means "don't spawn this tick";
+     * {@code subLevelId} is the registered sub-level at the frontier (null when unregistered),
+     * for the trace.
+     */
+    private record FrontierResolution(EdgeAction action, Trains.Carriage reference, UUID subLevelId) {}
+
+    /**
+     * Resolve the backward frontier anchor for this tick. Unregistered → SPAWN against the
+     * visible group one stride above (visible by construction of the walk, so
+     * {@code subLevelDelta == −1}). Registered → {@link #decideFrontierAction}: reload a held
+     * ghost (once per episode, via the same throttle as the registry-edge path), reap a removed
+     * one, or wait for one that is still surfacing. Server thread only.
+     */
+    private static FrontierResolution resolveBackwardFrontier(
+        ServerLevel level, UUID trainId, List<Trains.Carriage> train, int frontier, int groupSize
+    ) {
+        Trains.Carriage reference = null;
+        int referenceAnchor = frontier + groupSize;
+        for (Trains.Carriage c : train) {
+            if (c.provider().getPIdx() == referenceAnchor) { reference = c; break; }
+        }
+        if (reference == null) {
+            // Cannot happen by construction (the walk stops at the first NON-visible
+            // anchor below a visible one); never spawn without a live neighbour.
+            LOGGER.warn("[DungeonTrain] Backward frontier anchor={} has no visible reference at anchor={} (trainId={}) — deferring",
+                frontier, referenceAnchor, trainId);
+            return new FrontierResolution(EdgeAction.DEFER, null, null);
+        }
+
+        ManagedShip registryShip = Trains.knownGroups(trainId).get(frontier);
+        if (registryShip == null) {
+            clearEdgeUnresolved(trainId, false);
+            return new FrontierResolution(EdgeAction.SPAWN, reference, null);
+        }
+        UUID uuid = registryShip.subLevelId();
+        Shipyard shipyard = Shipyards.of(level);
+        EdgeAction action = decideFrontierAction(shipyard.isHeld(uuid), registryShip.isResident());
+        long now = level.getGameTime();
+        switch (action) {
+            case RELOAD_DEFER -> {
+                issueHeldReload(shipyard, trainId, false, frontier, uuid);
+                warnEdgeUnresolvedIfStuck(trainId, false, frontier, uuid, now, "held→reload");
+            }
+            case REAP_DEFER -> {
+                ReapOutcome outcome = reapGhostAnchor(level, trainId, frontier, MAX_SHARED_CAPTURES_PER_CULL);
+                clearEdgeUnresolved(trainId, false);
+                LOGGER.info("[DungeonTrain] Backward frontier anchor={} was a removed ghost (subLevelId={}) — reaped={} for trainId={}; spawning fresh next tick",
+                    frontier, uuid, outcome.deleted(), trainId);
+            }
+            default -> warnEdgeUnresolvedIfStuck(trainId, false, frontier, uuid, now, "absent(not-yet-surfaced)");
+        }
+        return new FrontierResolution(action, null, uuid);
+    }
+
+    /**
+     * Bring a held sub-level back from Sable holding, once per held-edge episode
+     * (see {@link #claimReloadIssue}). A force-load ticket cannot do this — Sable
+     * snatch-loads only at world load — so the reload is explicit; the sticky
+     * trailing force-load window then keeps the surfaced group resident.
+     * Re-calling every tick would only re-trigger Sable's benign
+     * "wasn't present in the holding chunk" ERROR; recovery is the force-load
+     * window + findAll, which run regardless.
+     */
+    private static void issueHeldReload(Shipyard shipyard, UUID trainId, boolean forward, int anchor, UUID uuid) {
+        if (!claimReloadIssue(trainId, forward, uuid)) return;
+        if (shipyard.reloadFromHolding(uuid)) {
+            LOGGER.debug("[DungeonTrain] Reloaded held group anchor={} (subLevelId={}) for trainId={} — {} lane resumes once it surfaces",
+                anchor, uuid, trainId, forward ? "forward" : "backward");
+        }
     }
 
     /**
@@ -5479,7 +5619,6 @@ public final class TrainCarriageAppender {
                 DungeonTrainNet.sendTo(player, TrainDebugCarriagePacket.absent());
             }
             it.remove();
-            LAST_SENT_DEBUG_PIDX.remove(uuid);
         }
     }
 }

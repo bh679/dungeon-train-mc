@@ -36,23 +36,22 @@ PRODUCING = {"SPAWNED", "FILL_RUN"}
 # What each blocking reason implicates, keyed to the hypotheses in the Gate 1 plan.
 VERDICTS = {
     "EDGE_DEFER": (
-        "H1 — registry-edge deadlock. The backward edge sub-level is neither visible, "
-        "held, nor resident, so resolveEdgeReference defers forever. Ghost cleanup "
-        "cannot rescue it: that only runs when a cull latch exists."),
+        "H1 — the frontier anchor is registered and resident but never surfaces in findAll. "
+        "A fresh spawn that never assembled, or a live sub-level Sable stopped listing. "
+        "Check the [bwdgen] edgeSub field: a constant id means the same sub-level is stuck."),
     "EDGE_RELOAD": (
-        "H1b — the backward edge is stuck in Sable holding and never surfaces after "
-        "reloadFromHolding. Check the [bwdgen] edgeSub field: a constant id means the "
-        "same sub-level is failing to come back."),
+        "H1b — the frontier anchor is in Sable holding and never comes back after "
+        "reloadFromHolding (a null serialization pointer, or a chunk that never loads). "
+        "Check edgeSub: a constant id means the same sub-level is failing to reload."),
     "NO_NEED": (
-        "H2 or H5 — the needed window stopped extending past the registry's min anchor. "
-        "Read span: LARGE/growing means ghost anchors (H2, registry min far below the "
-        "visible tail). span≈0 with growing skew, or a flat minNeeded while playerX "
-        "keeps falling, means frame divergence (H5, the window is computed in the lead "
-        "group's frame). Cross-check tailGapX: if it stays large the train IS behind the player "
-        "and the complaint is not a generation stall at all."),
+        "Every anchor the window needs below the player is visible, so the lane has nothing to "
+        "do. If the player still reached the end of the train, read tailGapX and target: the "
+        "window itself is too small for the ride, not the lane."),
     "ANCHOR_KNOWN": (
-        "H2 variant — the next backward anchor is already registered but not visible: "
-        "a ghost sits exactly where the lane wants to spawn."),
+        "Legacy reason from the registry-edge lane — should not appear on a frontier build."),
+    "FRONTIER_REAP": (
+        "The frontier anchor held a REMOVED ghost; it was reaped and spawns fresh next tick. "
+        "Healthy as a one-tick event; sustained means something keeps removing fresh spawns."),
     "GATE_CULL_LATCH": (
         "H3 — the cull-clear latch is holding the lane shut. Expect latchAge to saw-tooth "
         "0→600 as the 30 s expiry lets one attempt through, each promptly culled."),
