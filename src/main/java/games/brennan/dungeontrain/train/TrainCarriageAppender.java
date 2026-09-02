@@ -844,15 +844,14 @@ public final class TrainCarriageAppender {
                 long firstSeenTick = PLACEMENT_TRACKER_FIRST_SEEN.computeIfAbsent(subLevelId, k -> now);
 
                 // Frozen body ⇒ the settle clock stops. A DT-frozen carriage (#646 soft-freeze) stops
-                // receiving its per-tick teleport, so its worldAABB is stuck: every collision/gap
-                // reading below would be a stale re-read of the same frame, no shift could ever land,
-                // and the tracker would nudge spawnWorldPos blind until the safety valve fired —
-                // banking tens of blocks of offset that snap into a wide seam on unfreeze.
-                // {@link PhysicsFreezeController} now exempts unplaced carriages outright, so this is
-                // defence in depth for any other reason a body stops moving (non-resident ship, Sable
-                // never firing the first physics tick). Roll firstSeen forward so the frozen ticks
-                // don't count toward MAX_PLACEMENT_SETTLE_TICKS, and drop the shift throttle so the
-                // first tick after unfreeze may act immediately.
+                // receiving its per-tick teleport. Its worldAABB now keeps following spawnWorldPos
+                // (the pose is written from the driver while parked), but the native body it would
+                // collide with is still parked, so a seam judged here describes a body that is not
+                // where the reading says. {@link PhysicsFreezeController} exempts unplaced carriages
+                // outright, so this is defence in depth for any other reason a body stops moving
+                // (non-resident ship, Sable never firing the first physics tick). Roll firstSeen
+                // forward so the frozen ticks don't count toward MAX_PLACEMENT_SETTLE_TICKS, and drop
+                // the shift throttle so the first tick after unfreeze may act immediately.
                 if (isBodyFrozen(carriage)) {
                     PLACEMENT_TRACKER_FIRST_SEEN.put(subLevelId, firstSeenTick + 1L);
                     PLACEMENT_TRACKER_LAST_SHIFT.remove(subLevelId);
@@ -1110,10 +1109,12 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * True while this carriage's body is DT-frozen by the #646 soft-freeze — i.e. it is no longer
-     * being teleported each tick, so its {@code worldAABB()} is frozen too and nothing the placement
-     * tracker does to {@code spawnWorldPos} can be observed. Non-Sable ships (tests, other backends)
-     * are never frozen.
+     * True while this carriage's body is DT-frozen by the #646 soft-freeze — its native body is no
+     * longer being teleported each tick. Its {@code worldAABB()} still follows {@code spawnWorldPos}
+     * (the pose is written from the driver every tick, see {@code PhysicsFreeze.followParked}), but
+     * the seam the tracker is settling is between real bodies, so a shift is not something to judge
+     * until the body is back in play. Unsettled groups are never frozen anyway; this is defence in
+     * depth. Non-Sable ships (tests, other backends) are never frozen.
      */
     private static boolean isBodyFrozen(Trains.Carriage carriage) {
         return carriage.ship() instanceof SableManagedShip sable

@@ -230,9 +230,18 @@ public final class SableManagedShip implements ManagedShip {
         // A DT-frozen carriage (#646 soft-freeze) has been parked: its body stays in the physics
         // scene, but DT stops teleporting it here so it sits at rest while Sable does no per-body work
         // for it. Skipping this per-tick teleport + velocity write IS the park (and part of the
-        // soft-freeze saving); PhysicsFreeze.freeze already zeroed its velocity so it won't drift. It
-        // resumes teleporting the tick after PhysicsFreeze.unfreeze clears the flag.
+        // soft-freeze saving); PhysicsFreeze.freeze already zeroed its velocity so it won't drift.
+        //
+        // The POSE, though, keeps following the driver: a plain Java write into logicalPose() plus a
+        // bounding-box refresh, no native call. Sable's tracking system decides from that pose whether
+        // a player is close enough to track the carriage, so leaving it at the parked spot meant a
+        // group whose true slot was in front of the player was never re-tracked, never unfrozen, and
+        // simply missing from the train (see PhysicsFreeze). It resumes teleporting the tick after
+        // PhysicsFreeze.unfreeze clears the flag — onto this already-correct pose, so nothing jumps.
+        // The networked velocity fields below stay untouched here: they are gated on tracking
+        // players, and a frozen carriage has none by definition.
         if (PhysicsFreeze.isFrozen(subLevel)) {
+            PhysicsFreeze.followParked(subLevel, output.position(), output.rotation());
             return;
         }
 
