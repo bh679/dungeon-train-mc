@@ -24,6 +24,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
 import games.brennan.dungeontrain.portal.PortalOccupants;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
+import games.brennan.dungeontrain.portal.PortalWalkThrough;
 import games.brennan.dungeontrain.portal.PortalPairResidency;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
@@ -343,6 +344,16 @@ public final class PortalCarriageEvents {
     private static final Map<UUID, Double> CROSSING_THIS_TICK = new HashMap<>();
 
     /**
+     * Carriage indices whose swap was wanted and refused this tick for a reason that does not clear
+     * on its own — what {@link PortalWalkThrough} is fed. Rebuilt from empty every tick, like
+     * {@link #CROSSING_THIS_TICK}: it describes this tick's refusals and nothing older.
+     */
+    private static final Set<Integer> REFUSED_THIS_TICK = new HashSet<>();
+
+    /** Action-bar line for a corridor whose plate has been opened for walking through. */
+    private static final String WALK_THROUGH_MESSAGE = "chat.dungeontrain.portal.walk_through";
+
+    /**
      * Player → the engine-audio region they were last told about, on the same "only when it changes"
      * rule as {@link #LAST_FOG}.
      */
@@ -558,6 +569,8 @@ public final class PortalCarriageEvents {
         COOLDOWNS.clear();
         LAST_SWAP.clear();
         SKIP_WARNED_AT.clear();
+        REFUSED_THIS_TICK.clear();
+        PortalWalkThrough.clear();
         PortalSwapDiagnostics.clear();
         // Where each player left a room goes with the rooms themselves — a pair key means a different
         // place in the next world opened, so a surviving binding would name a corridor that is not
@@ -617,6 +630,7 @@ public final class PortalCarriageEvents {
         // Rebuilt from empty every tick: it describes where players are now, and a leftover entry
         // would hold a lift on somebody who has walked out of the corridor it came from.
         CROSSING_THIS_TICK.clear();
+        REFUSED_THIS_TICK.clear();
 
         for (UUID trainId : Trains.byTrainId(level).keySet()) {
             for (Map.Entry<Integer, ManagedShip> group : Trains.knownGroups(trainId).entrySet()) {
@@ -648,14 +662,23 @@ public final class PortalCarriageEvents {
                 // exactly the "dropped into the under-bedrock void" report. Every other reader of
                 // this registry already gates the same way; see TrainFluidBarrier and
                 // TrainCarriageAppender.
-                if (!ship.isResident()) {
-                    warnSkippedGroup(level, anchorPIdx,
-                        PortalSwapDiagnostics.Reason.GROUP_NOT_RESIDENT);
-                    continue;
-                }
                 // Covers null and the [0,0,0,0,0,0] box Sable hands back for a sub-level that has
                 // not ticked yet: arithmetic on that lands the frame near the world origin.
                 AABBdc bb = ship.worldAABB();
+                if (!ship.isResident()) {
+                    // Said only when somebody is near enough to be affected. A culled group far
+                    // behind the train is the ordinary case for most of a session, and warning
+                    // about every one of them buried the refusals this log exists to show (nine
+                    // hundred lines of this to three of anything else, in a census of dev logs).
+                    // The stale pose is exactly right for the question: it is where the corridor
+                    // WAS, which is where a player standing in it still is.
+                    if (!ShipAabbs.isDegenerate(bb)
+                        && anyPlayerWithin(players, bb.minX(), bb.minY(), bb.minZ(), CONFIRM_RANGE)) {
+                        warnSkippedGroup(level, anchorPIdx,
+                            PortalSwapDiagnostics.Reason.GROUP_NOT_RESIDENT);
+                    }
+                    continue;
+                }
                 if (ShipAabbs.isDegenerate(bb)) {
                     warnSkippedGroup(level, anchorPIdx, PortalSwapDiagnostics.Reason.DEGENERATE_AABB);
                     continue;
@@ -741,9 +764,15 @@ public final class PortalCarriageEvents {
             PortalCorridorKind kind = kindFor(level, pairKey);
             PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, kind);
 
+            // The pair's structure is anchored on the ENTRY corridor's origin whichever corridor is
+            // asking — the same number from both slots, which is what lets either of them place or
+            // relocate it without the two disagreeing about where it goes.
+            double anchorX = corridorOriginX(minX, padLen, PortalCarriageSelection.SLOT_ENTRY, dims,
+                PortalCarriageRole.ENTRY, kind);
+
             handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
                 ship, corridorOriginX(minX, padLen, slot, dims, role, kind), minY, minZ,
-                groupSize, puppets);
+                anchorX, groupSize, puppets);
         }
     }
 
@@ -761,8 +790,7 @@ public final class PortalCarriageEvents {
      */
     private static double corridorOriginX(double groupMinX, int padLen, int slot, CarriageDims dims,
                                           PortalCarriageRole role, PortalCorridorKind kind) {
-        return groupMinX + padLen + (double) slot * dims.length()
-            + PortalCorridorSize.originOffsetX(role, dims, kind);
+        return PortalCorridorSize.corridorOriginX(groupMinX, padLen, slot, dims, role, kind);
     }
 
     /**
@@ -1302,6 +1330,7 @@ public final class PortalCarriageEvents {
                                              int carriageIndex, PortalCarriageRole role, int pairKey,
                                              ManagedShip ship,
                                              double originX, double originY, double originZ,
+                                             double structureAnchorX,
                                              int groupSize, PortalPuppets.Session puppets) {
         // Which group this pair rides on, remembered before anything can return early — this is the
         // only place both facts are in hand, and it is what lets the group be found again once it has
@@ -1332,55 +1361,46 @@ public final class PortalCarriageEvents {
         boolean occupied = pinned
             || anyPlayerInCorridor(players, layout, originX, originY, originZ);
 
-        if (!occupied && !anyPlayerWithin(players, originX, originY, originZ, APPROACH_RANGE)) {
+        // Approach is measured from the corridor's TRAIN-SIDE door, not its origin: an ENTRY's
+        // origin is that door, but an EXIT's origin is its room-side end, a corridor's length away
+        // from the door a player walking the train backwards actually comes in through. Measuring
+        // from the origin had that player a corridor length further off than a forward walker,
+        // and the structure was placed only once they were already inside.
+        double approachX = role == PortalCarriageRole.ENTRY ? originX : originX + layout.length();
+        if (!occupied && !anyPlayerWithin(players, approachX, originY, originZ, APPROACH_RANGE)) {
             // Nobody near this pair. Drop its puppets rather than leaving the last set standing in a
             // corridor the train has since rolled away from — and log the removals on the way out.
             // Deliberately does not mark the pair active: an unvisited structure sheds its room
             // copies, which is what lets it be re-stamped when the train has rolled on.
             PortalPuppets.forget(carriageIndex);
+            // And its walk-through episode, if it had one: the next player to be refused here
+            // starts a fresh one and gets the line in the log.
+            PortalWalkThrough.forget(carriageIndex);
             return;
         }
         ACTIVE_PAIRS.add(pairKey);
 
-        // Only the ENTRY carriage places the structure: it fixes where the room sits, and the EXIT
-        // twin's position follows from it. An EXIT carriage approached first simply waits.
+        // EITHER corridor places the structure, and both anchor it on the ENTRY corridor's origin.
         //
-        // This is a rule about the ROLE, not about whether a structure happens to exist yet, and it
-        // used to be written as the latter. The difference is the whole of this class's worst bug:
-        // an EXIT carriage that fell through to ensureStructure measured the drift from ITS OWN
-        // origin, which sits two carriage lengths ahead of the entry's (SLOT_ENTRY 0, SLOT_EXIT 2 —
-        // 18 blocks at the default CarriageDims length, more on a longer one). That offset is
-        // permanent, so most of TWIN_MAX_DRIFT was spent before the train had moved at all: the exit
-        // relocated the whole structure onto its own coordinates a few blocks later, the entry
-        // relocated it back, and the pair re-laid its room over and over at two overlapping spots.
-        // Every re-lay carried the room's mobs to the new site and then spawned a fresh set on top of
-        // them, and re-ran the stamp's shape cascade over blocks that were already standing — which
-        // popped the room's pressure plates and left the drops floating. Anchored on the entry alone,
-        // the drift check measures the one distance it was written for.
-        if (structure == null && role != PortalCarriageRole.ENTRY) {
-            // Only worth saying when somebody is actually in the corridor: being merely near an exit
-            // whose entry has not been approached yet is the ordinary case every time a train rolls
-            // past, and is not a failure of anything. Asked BEFORE the throttle, unlike the tests in
-            // swapPlayers: this one decides whether there is anything to report at all, and asking
-            // the throttle first would spend a window on a tick that was never going to log, leaving
-            // a real occurrence a second later with nothing to say. The scan is affordable here
-            // because handlePortalCarriage has already returned for any pair nobody is near.
-            if (anyPlayerInCorridor(players, layout, originX, originY, originZ)
-                && PortalSwapDiagnostics.due(level,
-                    PortalSwapDiagnostics.Reason.EXIT_WITHOUT_STRUCTURE, carriageIndex)) {
-                PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.EXIT_WITHOUT_STRUCTURE,
-                    "carriage " + carriageIndex,
-                    "pair=" + pairKey + " — this pair's entry corridor is carriage " + pairKey
-                        + ", and nobody has been within " + (int) APPROACH_RANGE
-                        + " blocks of it yet, so its room has never been placed");
-            }
-            PortalPuppets.forget(carriageIndex);
-            return;
-        }
-
-        PortalStructure built = structure != null && (pinned || role != PortalCarriageRole.ENTRY)
+        // It used to be the ENTRY's job alone: an EXIT reached first simply waited, on the reasoning
+        // that only one corridor may fix where the room sits. True — but the rule was written as
+        // "only the entry", which made a train walked backwards a dead end: the exit corridor did
+        // nothing until somebody had been within APPROACH_RANGE of an entry origin two carriage
+        // lengths behind it, and from inside the corridor that is a door onto a wall.
+        //
+        // The bug the old rule was guarding against was real, and this is why the anchor is passed
+        // in rather than derived: an EXIT that measured drift from ITS OWN origin, which sits two
+        // carriage lengths ahead of the entry's, had most of TWIN_MAX_DRIFT spent before the train
+        // had moved at all, and the pair re-laid its room over and over at two overlapping spots —
+        // carrying and re-spawning its mobs each time. With both roles handing ensureStructure the
+        // same anchor, both ask for the same `wanted`, and the second caller in a tick hits the
+        // "already standing exactly there" early-out instead of moving anything.
+        //
+        // PINNED still wins: relocating the ground out from under somebody in the room is never
+        // right, whichever corridor noticed the drift.
+        PortalStructure built = structure != null && pinned
             ? structure
-            : ensureStructure(level, dims, pairKey, originX, originY, originZ, groupSize);
+            : ensureStructure(level, dims, pairKey, structureAnchorX, originY, originZ, groupSize);
         if (built == null) {
             // No twin — a world too shallow to hold one. With only half a pair there is no opposite
             // corridor for a puppet to stand in.
@@ -1406,6 +1426,11 @@ public final class PortalCarriageEvents {
                         + " — the pair's room does not fit between that floor and that ceiling");
             }
             PortalPuppets.forget(carriageIndex);
+            // A corridor that is a portal and does nothing is exactly what the walk-through is for.
+            // Counted only with somebody in it — the plate is opened for a player, not for a pair.
+            decideWalkThrough(level, players, ship, layout, dims, role, carriageIndex, pairKey,
+                originX, originY, originZ,
+                anyPlayerInCorridor(players, layout, originX, originY, originZ));
             return;
         }
 
@@ -1477,6 +1502,50 @@ public final class PortalCarriageEvents {
             PortalEntityTransit.run(level, copy.frames(),
                 inCopyOnly(copy.frames(), PortalCorridorEntities.inCorridors(level, copy.frames())),
                 carriageIndex);
+        }
+
+        // Last: everything above has had its say about whether this tick's swap was refused.
+        decideWalkThrough(level, players, ship, layout, dims, role, carriageIndex, pairKey,
+            originX, originY, originZ, REFUSED_THIS_TICK.contains(carriageIndex));
+    }
+
+    /**
+     * Feed this tick's verdict to {@link PortalWalkThrough} and open the corridor's centre-wall
+     * plate when it says to.
+     *
+     * <p>The open is a write into the carriage's plot, the same one {@code PortalSever} makes for a
+     * severed pair — but nothing is recorded: the next re-stamp of the group closes the plate and
+     * the portal gets another chance. What a player sees is the door at the corridor's far end
+     * opening onto the other corridor instead of onto a wall, two seconds after they first reached
+     * it, with a line on the action bar saying why.</p>
+     */
+    private static void decideWalkThrough(ServerLevel level, List<ServerPlayer> players,
+                                          ManagedShip ship, PortalCarriageLayout layout,
+                                          CarriageDims dims, PortalCarriageRole role,
+                                          int carriageIndex, int pairKey,
+                                          double originX, double originY, double originZ,
+                                          boolean refused) {
+        PortalWalkThrough.Decision decision =
+            PortalWalkThrough.noteTick(carriageIndex, level.getGameTime(), refused);
+        if (decision == PortalWalkThrough.Decision.NONE) return;
+
+        // The standing structure's kind when one stands, the planned one otherwise — the same
+        // answer handleGroup built this corridor's layout from.
+        PortalCorridorKind kind = kindFor(level, pairKey);
+        PortalSever.openCentreWall(level, ship, new Vec3(originX, originY, originZ),
+            dims, kind, role);
+
+        if (decision != PortalWalkThrough.Decision.OPEN_AND_LOG) return;
+        LOGGER.warn("[DungeonTrain] Portal carriage {} ({}) has refused every swap for {} ticks — "
+                + "opening the plate between the pair's doors so the group can be walked through. "
+                + "Not recorded: the next re-stamp closes it. See the 'Portal swap refused' lines "
+                + "above for why.",
+            carriageIndex, role, PortalWalkThrough.OPEN_AFTER_TICKS);
+        for (ServerPlayer player : players) {
+            if (layout.insideCorridor(player.getX() - originX, player.getY() - originY,
+                    player.getZ() - originZ)) {
+                player.displayClientMessage(Component.translatable(WALK_THROUGH_MESSAGE), true);
+            }
         }
     }
 
@@ -1584,6 +1653,7 @@ public final class PortalCarriageEvents {
                             + " carriage now at (" + fmt(frames.carriage().x()) + ", "
                             + fmt(frames.carriage().y()) + ", " + fmt(frames.carriage().z()) + ")");
                 }
+                if (!copyOnly) REFUSED_THIS_TICK.add(carriageIndex);
                 continue;
             }
 
@@ -1615,6 +1685,7 @@ public final class PortalCarriageEvents {
                             + "for " + LANDING_SUPPORT_DEPTH
                             + " blocks down. Leaving them where they are.");
                 }
+                if (!copyOnly) REFUSED_THIS_TICK.add(carriageIndex);
                 continue;
             }
 
@@ -2180,8 +2251,8 @@ public final class PortalCarriageEvents {
 
         if (structure == null) {
             out.add("  structure: NONE placed yet — walk within " + (int) APPROACH_RANGE
-                + " blocks of the ENTRY corridor (slot " + PortalCarriageSelection.SLOT_ENTRY
-                + " of the group) to place it.");
+                + " blocks of either corridor's train-side door to place it (anchored on the ENTRY "
+                + "corridor, slot " + PortalCarriageSelection.SLOT_ENTRY + " of the group).");
         } else {
             out.add("  structure: room '" + structure.roomName() + "' at " + structure.origin()
                 + ", mode=" + structure.mode());
@@ -2253,11 +2324,22 @@ public final class PortalCarriageEvents {
                 PortalFrames.Origin twin = new PortalFrames.Origin(
                     twinOrigin.getX(), twinOrigin.getY(), twinOrigin.getZ());
                 boolean loaded = PortalExitBindings.corridorLoaded(level, twin, dims, kind);
+                // Drift the way ensureStructure measures it: the structure's origin against the
+                // pair's anchor, which is the ENTRY corridor's origin whichever corridor this is.
+                double anchorX = corridorOriginX(bb.minX(), padLen,
+                    PortalCarriageSelection.SLOT_ENTRY, dims, PortalCarriageRole.ENTRY, kind);
                 out.add("    twin: " + twinOrigin + ", chunks " + (loaded ? "LOADED" : "NOT LOADED — "
                         + PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED.explanation())
-                    + ", drift from this carriage "
-                    + fmt(horizontalDistance(twinOrigin, originX, originZ))
+                    + ", drift from the pair's anchor "
+                    + fmt(horizontalDistance(structure.origin(), anchorX, originZ))
                     + " (restamps past " + fmt(TWIN_MAX_DRIFT) + ")");
+            }
+            Long episode = PortalWalkThrough.episodeStart(carriageIndex);
+            if (episode != null) {
+                out.add("    walk-through: " + (PortalWalkThrough.isOpen(carriageIndex)
+                        ? "plate OPEN" : "refusals counting")
+                    + " since tick " + episode + " (opens after "
+                    + PortalWalkThrough.OPEN_AFTER_TICKS + " ticks of refusals; a re-stamp closes it)");
             }
         }
 

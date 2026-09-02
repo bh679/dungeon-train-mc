@@ -92,16 +92,30 @@ public final class PortalPairIndex {
 
         /** The shipyard position of a local cell, via the ship's transform rather than an assumed axis. */
         public BlockPos plotPosOf(int[] local) {
-            Vector3d ship3 = ship.worldToShip(new Vector3d(
-                carriageWorld.x + local[0] + 0.5,
-                carriageWorld.y + local[1] + 0.5,
-                carriageWorld.z + local[2] + 0.5));
-            return BlockPos.containing(ship3.x, ship3.y, ship3.z);
+            return PortalPairIndex.plotPosOf(ship, carriageWorld, local);
         }
 
         public BlockPos twinPosOf(int[] local) {
             return twinOrigin.offset(local[0], local[1], local[2]);
         }
+    }
+
+    /**
+     * The shipyard position of a corridor-local cell, for a corridor whose origin in world space is
+     * {@code carriageWorld} and whose blocks live in {@code ship}'s plot.
+     *
+     * <p>The static form of {@link Entry#plotPosOf}, for a caller that has no published entry to
+     * hand — a corridor whose swap was refused before a pairing ever existed still has a plate to
+     * open ({@code PortalSever.openCentreWall}). Not bounds-checked, deliberately: the centre-wall
+     * cells it is asked about sit outside the corridor's own box (see
+     * {@link PortalCentreWall#doorwayCellsFromCorridor}).</p>
+     */
+    public static BlockPos plotPosOf(ManagedShip ship, Vec3 carriageWorld, int[] local) {
+        Vector3d ship3 = ship.worldToShip(new Vector3d(
+            carriageWorld.x + local[0] + 0.5,
+            carriageWorld.y + local[1] + 0.5,
+            carriageWorld.z + local[2] + 0.5));
+        return BlockPos.containing(ship3.x, ship3.y, ship3.z);
     }
 
     /** Carriage index → its live pairing. Written on the server thread, read from the Sable hook. */
