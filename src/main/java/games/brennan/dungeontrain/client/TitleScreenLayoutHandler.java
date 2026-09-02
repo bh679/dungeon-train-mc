@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.ApprovedModListFetcher;
 import games.brennan.dungeontrain.cheat.CheatModListFetcher;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.builder.TrainBuilderMenuButton;
@@ -93,6 +94,8 @@ public final class TitleScreenLayoutHandler {
         // list stays current on shipped jars, baked ∪ disk-cache when offline. (Also refreshed at
         // server boot for dedicated servers, which have no title screen.)
         CheatModListFetcher.ensureFetched();
+        // And the approved-mod whitelist, which carries the enforcement switch as well as the list.
+        ApprovedModListFetcher.ensureFetched();
         LauncherDetector.source();
         event.addListener(new VersionStatusButton(4, 4));
 

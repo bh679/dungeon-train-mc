@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -135,7 +134,6 @@ public final class CheatModList {
     /** Cache file under the loader config dir; written on each successful relay fetch. */
     static final String FILE_NAME = "dungeontrain-cheat-mods.json";
 
-    private static final int MAX_ID_LEN = 64;
     private static final int MAX_IDS = 500;
 
     /** Sanitized relay overlay — only ever swapped whole, never mutated. */
@@ -174,31 +172,17 @@ public final class CheatModList {
 
     /** New lowercase set holding only the entries that pass {@link #isValidModId}. */
     static Set<String> sanitize(Collection<String> raw) {
-        if (raw == null || raw.isEmpty()) return Set.of();
-        Set<String> out = new HashSet<>();
-        for (String id : raw) {
-            if (isValidModId(id)) out.add(id.trim().toLowerCase(Locale.ROOT));
-            if (out.size() >= MAX_IDS) break;
-        }
-        return Set.copyOf(out);
+        return ModIds.sanitize(raw, MAX_IDS);
     }
 
     /**
-     * A plausible mod ID: non-empty after trim, sane length, only {@code [a-z0-9_.-]} (after
-     * lowercasing). Anything else is dropped — the relay is trusted, but a malformed server value
-     * must never enter the match set (worst case it would false-positive some innocent mod).
+     * A plausible mod ID — see {@link ModIds#isValid}. Anything else is dropped: the relay is
+     * trusted, but a malformed server value must never enter the match set (worst case it would
+     * false-positive some innocent mod). Shared with {@link ApprovedModList} so the blacklist and
+     * the whitelist can never disagree about what an ID is.
      */
     static boolean isValidModId(String v) {
-        if (v == null) return false;
-        String s = v.trim().toLowerCase(Locale.ROOT);
-        if (s.isEmpty() || s.length() > MAX_ID_LEN) return false;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            boolean ok = (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
-                || c == '_' || c == '-' || c == '.';
-            if (!ok) return false;
-        }
-        return true;
+        return ModIds.isValid(v);
     }
 
     /** Read the disk cache once per JVM, seeding {@code relay}. Best-effort — never throws. */
