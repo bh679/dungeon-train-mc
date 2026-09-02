@@ -183,6 +183,29 @@ public final class Trains {
         return map.remove(anchorPIdx);
     }
 
+    /**
+     * Every train id with at least one registered group, visible or not. The appender's
+     * remote-player wake pass walks this to find trains that have been culled entirely — the
+     * one state in which {@link #byTrainId} (built from loaded sub-levels) cannot name them.
+     * Defensive copy.
+     */
+    public static Set<UUID> registeredTrainIds() {
+        return new HashSet<>(SPAWNED_GROUPS.keySet());
+    }
+
+    /**
+     * Replace the registered handle for an anchor after its sub-level was reloaded from Sable
+     * holding. A reload allocates a NEW sub-level instance; the registry's old handle still
+     * names the same stable id but no longer refers to the live object, so anything keyed by
+     * instance (force-load tickets, {@code delete}) would act on the wrong one. No-op for an
+     * unknown train or anchor: registration is the spawn path's job.
+     */
+    public static void refreshHandle(UUID trainId, int anchorPIdx, ManagedShip ship) {
+        Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
+        if (map == null || !map.containsKey(anchorPIdx)) return;
+        map.put(anchorPIdx, ship);
+    }
+
     /** Clear every train registration. Wired to server stop and to {@code TrainAssembler.deleteAllTrains}. */
     public static void clearRegistry() {
         SPAWNED_GROUPS.clear();

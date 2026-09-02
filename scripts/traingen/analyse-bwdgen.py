@@ -63,9 +63,17 @@ VERDICTS = {
         "H6 — footprint chunk generation never completes for the trailing spawn site. "
         "Watch chunkWait climbing past the 100-tick backstop."),
     "NOT_NEAR": (
-        "H0 — no player within NEAR_RADIUS (128) of any group AABB. If the player was "
-        "aboard the whole time, this IS the bug: the near test measures group world "
-        "AABBs, and a culled group reports a zero AABB."),
+        "H0 — no player within NEAR_RADIUS (128) of any group AABB, and none on the line "
+        "(corridor-near). If the player was aboard the whole time, this IS the bug: the near "
+        "test measures group world AABBs, and a culled group reports a zero AABB."),
+    "EDGE_FROZEN": (
+        "The lane's reference group was DT-frozen (idle, untracked — a remote player is far "
+        "away); it was thawed and the spawn waits one tick for a live pose. Healthy as a "
+        "one-tick event; sustained means the freeze controller re-freezes it every tick."),
+    "TOO_FAR": (
+        "A player is on the line but further from the train than the remote catch-up cap "
+        "(REMOTE_CATCH_UP_MAX_GROUPS) allows. The train stays culled, as before the feature. "
+        "Check playerX against the visible tail."),
 }
 
 FLOAT_FIELDS = {"playerX", "tailGapX", "trainVelX", "laneRate", "playerRate", "outrun"}
@@ -207,7 +215,8 @@ def report(train: str, samples: list[dict]) -> None:
     if ondeck:
         print(f"\nride: onDeck={dict(ondeck)} "
               f"modes={dict(Counter(s.get('mode') for s in samples if 'mode' in s))} "
-              f"burst={dict(Counter(s.get('burst') for s in samples if 'burst' in s))}")
+              f"burst={dict(Counter(s.get('burst') for s in samples if 'burst' in s))} "
+              f"remote={dict(Counter(s.get('remote') for s in samples if 'remote' in s))}")
 
     print("\nstate series after the stall (deduped, last 24 changes):")
     for key in ("playerPIdx", "occupiedPIdx", "skew", "playerX", "minNeeded",
