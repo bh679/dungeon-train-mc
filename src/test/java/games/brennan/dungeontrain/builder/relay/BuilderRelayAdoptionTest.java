@@ -19,8 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 final class BuilderRelayAdoptionTest {
 
     private static SharedCarriageClient.BuildFetch build(String secret) {
+        // The trailing "" is the sidecar document. Adoption turns on the secret alone, so an empty
+        // one is the honest fixture here — and a build fetched from a relay predating the field
+        // carries exactly that.
         return new SharedCarriageClient.BuildFetch(7, "portal_room", "", "library", "", "profile",
-                "BLOCKS", 16, 8, 16, 0, List.of(), secret);
+                "BLOCKS", 16, 8, 16, 0, List.of(), secret, "");
     }
 
     @Test
