@@ -98,7 +98,7 @@ public final class NetherFogEvents {
      * <p>Used by both the fog blend above and {@link NetherSkyRenderer} so the sky dome the player
      * sees and the fog they look through are painted the same colour.</p>
      */
-    static int netherTargetColor(Level level, net.minecraft.core.BlockPos pos) {
+    public static int netherTargetColor(Level level, net.minecraft.core.BlockPos pos) {
         try {
             Holder<Biome> biome = level.getBiome(pos);
             if (isNetherBiome(biome)) {
