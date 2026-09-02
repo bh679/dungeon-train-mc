@@ -10993,7 +10993,7 @@
     },
     {
       "id": "own-book-known-in-the-wild",
-      "version": "0.780.0",
+      "version": "0.785.0",
       "type": "feat",
       "title": "Your own book knows it's yours wherever you find it",
       "summary": "Find a book you wrote out in the world \u2014 in a chest, rather than on the shelves of your own library room \u2014 and it now knows it is yours. The train tells you how it has been received and offers the padlock that takes it out of circulation, instead of asking you to rate your own writing.",
