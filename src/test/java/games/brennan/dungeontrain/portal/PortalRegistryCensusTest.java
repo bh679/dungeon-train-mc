@@ -96,6 +96,18 @@ final class PortalRegistryCensusTest {
     }
 
     @Test
+    @DisplayName("the zero-train reading has a line of its own — silence must never be the answer")
+    void zeroTrainsSaysSo() {
+        // A verification run spent six minutes with no train resolvable and the census said nothing
+        // at all, because the report lived only inside the per-train loop while the window went on
+        // being consumed. "No line" then reads identically to a healthy quiet registry, which is
+        // the exact ambiguity this class exists to remove.
+        assertFalse(PortalRegistryCensus.NO_TRAINS.isBlank());
+        assertTrue(PortalRegistryCensus.NO_TRAINS.startsWith("Registry census"),
+            "must be greppable with the counted lines: " + PortalRegistryCensus.NO_TRAINS);
+    }
+
+    @Test
     @DisplayName("gone is reported separately from held — the whole point of the census")
     void heldAndGoneAreDistinct() {
         // The follow-up sweep can only remove `gone`; deleting a `held` group is the historic

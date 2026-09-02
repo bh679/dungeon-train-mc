@@ -679,7 +679,19 @@ public final class PortalCarriageEvents {
         boolean census = PortalRegistryCensus.due(level);
         Shipyard censusShipyard = census ? Shipyards.of(level) : null;
 
-        for (UUID trainId : Trains.byTrainId(level).keySet()) {
+        // Hoisted out of the loop header so the census can see whether there were any trains AT
+        // ALL. A verification run had this map resolve empty for six minutes — the player had been
+        // left behind by their own train — and because the report lived only inside the per-train
+        // loop, the census said nothing at all while the window went on being consumed every 30s.
+        // Silence read identically to "nothing to report", which is the exact ambiguity this
+        // diagnostic exists to remove: no line is indistinguishable from a healthy quiet registry.
+        // Zero trains is itself the most interesting reading there is, so it gets said out loud.
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        if (census && trains.isEmpty()) {
+            PortalRegistryCensus.reportNoTrains();
+        }
+
+        for (UUID trainId : trains.keySet()) {
             int cGroups = 0;
             int cResident = 0;
             int cHeld = 0;

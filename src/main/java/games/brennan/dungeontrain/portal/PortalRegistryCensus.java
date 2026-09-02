@@ -95,6 +95,25 @@ public final class PortalRegistryCensus {
         LOGGER.info("[DungeonTrain] {}", format(trainId, groups, resident, held, gone, minAnchor, maxAnchor));
     }
 
+    /**
+     * Write down that a census was due and there were no trains to count.
+     *
+     * <p>The reading that used to be invisible. A verification run spent six minutes with no train
+     * resolvable — the player had been left behind by theirs — and with the report living only
+     * inside the per-train loop, the census emitted nothing while its window went on being consumed
+     * every 30s. "No line" and "nothing worth saying" looked the same, which is the ambiguity this
+     * class exists to remove rather than reproduce. Zero trains is a louder finding than any count,
+     * so it says so.</p>
+     */
+    public static void reportNoTrains() {
+        LOGGER.info("[DungeonTrain] {}", NO_TRAINS);
+    }
+
+    /** The zero-train line, named so the test and the logger cannot drift apart. */
+    static final String NO_TRAINS =
+        "Registry census: no train resolved in this level — nothing registered, or every "
+            + "carriage sub-level is culled and the walk has nothing to iterate";
+
     /** The census line's text, split out so its shape is unit-testable without a logger. */
     static String format(UUID trainId, int groups, int resident, int held, int gone,
                          int minAnchor, int maxAnchor) {
