@@ -1,0 +1,17 @@
+{
+  "dimensions": {
+    "minecraft:overworld": {
+      "type": "dungeontrain:editor",
+      "generator": {
+        "type": "minecraft:flat",
+        "settings": {
+          "biome": "minecraft:plains",
+          "lakes": false,
+          "features": true,
+          "structure_overrides": [],
+          "layers": []
+        }
+      }
+    }
+  }
+}

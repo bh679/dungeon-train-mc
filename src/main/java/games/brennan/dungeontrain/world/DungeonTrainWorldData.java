@@ -77,10 +77,20 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
+    private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
 
     private int trainY;
     private boolean startsWithTrain;
     private CarriageDims dims;
+
+    /**
+     * Whether the sky editor has ever stamped a plot in this world. {@code EditorCategory.clearAllPlots}
+     * erases every plot of every category — several hundred chunk columns at the plot height — and
+     * on a world where nothing was ever stamped that is several hundred chunks generated for nothing.
+     * Defaults to {@code true} (and loads as {@code true} when the tag is absent) so every save made
+     * before the flag existed keeps the full clear; only {@link #createDefault()} starts it false.
+     */
+    private boolean editorPlotsStamped = true;
     private long generationSeed;
     private StartingDimension startingDimension;
     /** Per-world override of the PlayerMob 1-in-N spawn rate; null = use the global COMMON default. */
@@ -366,13 +376,16 @@ public final class DungeonTrainWorldData extends SavedData {
     }
 
     static DungeonTrainWorldData createDefault() {
-        return new DungeonTrainWorldData(
+        DungeonTrainWorldData data = new DungeonTrainWorldData(
                 DungeonTrainConfig.getTrainY(),
                 true,
                 CarriageDims.DEFAULT,
                 0L,
                 StartingDimension.OVERWORLD
         );
+        // A brand-new world has no plots to clear — the only case the flag may honestly be false.
+        data.editorPlotsStamped = false;
+        return data;
     }
 
     static DungeonTrainWorldData load(CompoundTag tag) {
@@ -406,6 +419,10 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (tag.contains(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE)) {
             data.breakBlocksOnContactOverride = tag.getBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE);
+        }
+        // Absent on worlds saved before the flag existed → true → plots are cleared as they always were.
+        if (tag.contains(TAG_EDITOR_PLOTS_STAMPED)) {
+            data.editorPlotsStamped = tag.getBoolean(TAG_EDITOR_PLOTS_STAMPED);
         }
         // Absent on legacy worlds → false → the join-info report fires once on the next join.
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
@@ -515,6 +532,7 @@ public final class DungeonTrainWorldData extends SavedData {
             tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
+        tag.putBoolean(TAG_EDITOR_PLOTS_STAMPED, editorPlotsStamped);
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
@@ -716,6 +734,18 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public boolean startsWithTrain() {
         return startsWithTrain;
+    }
+
+    /** Whether any editor plot has ever been stamped here — false only on a world made since the flag existed and never edited. */
+    public boolean editorPlotsStamped() {
+        return editorPlotsStamped;
+    }
+
+    /** Record that plots may now hold blocks; from here on every clear has to actually erase them. */
+    public void markEditorPlotsStamped() {
+        if (editorPlotsStamped) return;
+        editorPlotsStamped = true;
+        setDirty();
     }
 
     public CarriageDims dims() {

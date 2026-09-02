@@ -126,6 +126,16 @@ public final class DevQuickWorldHandler {
             Registries.WORLD_PRESET,
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train_builder"));
 
+    /**
+     * Train Editor world: the builder recipe (overworld only, void, flat generator) at Dungeon
+     * Train's full height — plots at y=230 need the 320 ceiling, and {@code /dt portal test} needs
+     * the 80-block basement under the floor. See {@code EditorWorldLayout}. Untagged for the same
+     * reason as the builder preset: the Train Editor tiles are its only entry point.
+     */
+    private static final ResourceKey<WorldPreset> DT_EDITOR_PRESET = ResourceKey.create(
+            Registries.WORLD_PRESET,
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train_editor"));
+
     private static WeakReference<Button> singleplayerRef = new WeakReference<>(null);
     private static WeakReference<Button> creativeNewWorldRef = new WeakReference<>(null);
     private static WeakReference<Button> perfNewWorldRef = new WeakReference<>(null);
@@ -309,6 +319,12 @@ public final class DevQuickWorldHandler {
      * EditorQuietRuleEvents} re-applies it on every start, so this is the default rather than the
      * only enforcement.</p>
      *
+     * <p><b>Void, overworld only</b> — {@link #DT_EDITOR_PRESET}. The plots are the only thing
+     * the editor ever looks at, so the terrain that used to be generated under them (and the nether
+     * and end alongside) was load time spent on nothing. {@code TrainBootstrapEvents} anchors the
+     * spawn over the first plot and {@code BuilderSpawn.startFlying} keeps the player hovering there
+     * until the editor command lifts them onto one.</p>
+     *
      * <p><b>No train.</b> The editor lives on plots in the sky at {@code EditorLayout.PLOT_Y} and
      * reads nothing off a train, so this arms {@link PendingWorldChoices} with
      * {@code startsWithTrain = false} exactly as {@link #launchBuilderWorld} does. That one flag
@@ -324,7 +340,7 @@ public final class DevQuickWorldHandler {
      */
     public static void launchEditorWorld(Screen lastScreen) {
         String name = nextWorldName(EDITOR_WORLD_PREFIX);
-        LOGGER.info("Editor world: creating '{}' (creative, no train — plots only)", name);
+        LOGGER.info("Editor world: creating '{}' (void, creative, no train — plots only)", name);
 
         // isPresent() requires all five fields, so pass the createDefault() values for the four we
         // don't care about — a partial set would be ignored and the world would spawn a train.
@@ -345,7 +361,7 @@ public final class DevQuickWorldHandler {
                 true,
                 rules,
                 WorldDataConfiguration.DEFAULT);
-        openLevel(name, settings, lastScreen, PerfTestMode.ENABLED);
+        openLevel(name, settings, lastScreen, DT_EDITOR_PRESET, false);
     }
 
     /**
