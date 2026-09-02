@@ -167,7 +167,14 @@ public final class BookVoteClientEvents {
     public static void onScreenOpening(ScreenEvent.Opening event) {
         reset();
         Screen opening = event.getScreen();
-        // Held-book reads only — a LecternScreen's book isn't in hand (same guard as telemetry).
+        // Held-book reads only — a LecternScreen's book isn't in hand (same guard as telemetry), and
+        // that is a boundary rather than a gap. Every control on this page commits through a packet
+        // the server re-validates against the HELD stack (see BookPrivatePacket#matching), which is
+        // what makes a spoofed or stale identity harmless; a lectern book would need a positional
+        // packet and a reach check to say the same thing. Nor is there much on the other side of it:
+        // a library room's lecterns carry the room's tribute note, not community books
+        // (PortalRoomLibrary#dressLecterns), so a player-written book only ever reaches one if
+        // somebody stands it there by hand.
         if (!(opening instanceof BookViewScreen book) || opening instanceof LecternScreen) return;
 
         LocalPlayer player = Minecraft.getInstance().player;
@@ -214,6 +221,7 @@ public final class BookVoteClientEvents {
             reportArmed = false; // turning off the page abandons a half-made report
             return;
         }
+        adoptOwnStateIfItArrived();
         GuiGraphics gfx = event.getGuiGraphics();
         Font font = Minecraft.getInstance().font;
         int left = bookLeft();
@@ -400,6 +408,49 @@ public final class BookVoteClientEvents {
         }
     }
 
+    /**
+     * Pick up the author's own state when it lands <b>while the book is open</b>.
+     *
+     * <p>On a loot copy the state is not on the stack when the screen opens: the server asks the
+     * relay who wrote the book on the hold that precedes it ({@code FamiliarBookGreeter}), and stamps
+     * the answer a round trip later. Everything here is otherwise read once, in
+     * {@link #onScreenOpening} — so a writer who picked their own book up and read it straight away
+     * got a stranger's page until they closed and reopened it.</p>
+     *
+     * <p><b>Upgrade only, and once.</b> It runs only while the book still looks like somebody else's,
+     * and stops for good the moment it finds a state, so it can never walk an author's page back to a
+     * stranger's, and can never fight the optimistic {@code isPrivate} that {@link #applyPrivate}
+     * sets before the server has answered. The identity check is what makes it safe to read the held
+     * stack at all: a book swapped mid-read is a different book, and its state is not this page's.</p>
+     */
+    private static void adoptOwnStateIfItArrived() {
+        if (moderation != BookModerationState.PUBLIC) return;
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null) return;
+        ItemStack stack = sameBook(player.getMainHandItem());
+        if (stack == null) stack = sameBook(player.getOffhandItem());
+        if (stack == null) return;
+
+        BookModerationState arrived = BookModerationTag.read(stack);
+        if (!arrived.isOwn()) return;
+        moderation = arrived;
+        isPrivate = BookPrivateTag.isPrivate(stack);
+        protested = BookProtestTag.isProtested(stack);
+        boolean hasVotes = BookVoteCountsTag.has(stack);
+        votesUp = hasVotes ? BookVoteCountsTag.up(stack) : -1;
+        votesDown = hasVotes ? BookVoteCountsTag.down(stack) : -1;
+        // A report half-armed against a stranger's book has no meaning on one that turns out to be
+        // the reader's own — the control under the pointer is no longer the one they armed.
+        reportArmed = false;
+    }
+
+    /** {@code held} when it is still the book this page is about, else null. */
+    private static ItemStack sameBook(ItemStack held) {
+        Optional<BookIdentity> id = BookIdentity.resolve(held);
+        if (id.isEmpty()) return null;
+        return id.get().bookType().equals(bookType) && id.get().bookId().equals(bookId) ? held : null;
+    }
+
     /** Thumb clicks on the vote page — instant commit (the screen closes, so consume the click). */
     @SubscribeEvent
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
@@ -444,7 +495,11 @@ public final class BookVoteClientEvents {
     public static void onKeyPressed(ScreenEvent.KeyPressed.Post event) {
         if (!active || event.getScreen() != screen) return;
         // ...but not on your own book, where there is no vote to cast. Without this the shortcut
-        // would be a way round the missing thumbs, which is exactly the hole they close.
+        // would be a way round the missing thumbs, which is exactly the hole they close. Checked
+        // against a FRESH read of the stack, because Y/N works from any page: a reader who never
+        // turns to the last one would otherwise never run the adoption below and could vote on their
+        // own book for as long as the read lasted.
+        adoptOwnStateIfItArrived();
         if (moderation.isOwn()) return;
         int key = event.getKeyCode();
         if (key != GLFW.GLFW_KEY_Y && key != GLFW.GLFW_KEY_N) return;
