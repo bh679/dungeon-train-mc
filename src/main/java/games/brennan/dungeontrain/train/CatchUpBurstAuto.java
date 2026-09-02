@@ -16,9 +16,12 @@ import org.slf4j.Logger;
  *
  * <p><strong>The thresholds below are reasoned, not measured.</strong> The per-group cost and the
  * MSPT baseline are measured; the relationship between core count and whether a sustained fill
- * actually hurts is not. They are deliberately conservative — a machine has to look comfortably
- * capable before it is given FILL — and {@link #effectiveMode()} logs what it picked and from what,
- * so the bands can be judged against real reports instead of staying invisible.</p>
+ * actually hurts is not. {@link #effectiveMode()} logs what it picked and from what, so the bands
+ * can be judged against real reports instead of staying invisible.</p>
+ *
+ * <p>They are deliberately <em>not</em> conservative about FILL. Stepping a machine down costs the
+ * player the thing the feature was built for — a train that stops running away — so a step down
+ * needs a reason, not merely the absence of a reason to stay.</p>
  *
  * <p>Reads happen on the server tick thread, per spawn decision, so the resolution is computed once
  * and cached. {@link #invalidate()} clears it when the config reloads.</p>
@@ -34,10 +37,20 @@ public final class CatchUpBurstAuto {
     /** Cores at or above which it can afford the occasional two-group tick. */
     static final int CORES_FOR_BURST = 4;
 
-    /** Max heap ({@code -Xmx}) at or above which a fill run is affordable. */
-    static final long HEAP_FOR_FILL = 6 * GIB;
-    /** Max heap at or above which a two-group tick is affordable. */
-    static final long HEAP_FOR_BURST = 3 * GIB;
+    /**
+     * Heap is a <em>floor</em>, not a gate on FILL, because the modes differ in the RATE they add
+     * carriages, not in how many end up resident — the steady-state heap cost is the same whichever
+     * pacing got there. What separates them is whether a ~30 ms spawn fits inside the tick, and that
+     * is CPU.
+     *
+     * <p>Getting this wrong matters: CurseForge and Modrinth commonly launch with {@code -Xmx4G}, so
+     * gating FILL on a large heap would put most real players on BURST_TWO — the pacing measured to
+     * hold a deficit steady without ever closing it, which is the complaint this feature exists to
+     * answer. Only a genuinely starved allocation steps the pacing down.</p>
+     */
+    static final long HEAP_FLOOR_BURST = 3 * GIB;
+    /** Below this the machine is starved enough that even a two-group tick is a bad idea. */
+    static final long HEAP_FLOOR_OFF = 2 * GIB;
 
     /**
      * Physical RAM below which the result is capped at {@link CatchUpBurstMode#BURST_TWO} however
@@ -112,22 +125,27 @@ public final class CatchUpBurstAuto {
             return CatchUpBurstMode.FILL;
         }
 
-        CatchUpBurstMode byCores = cores >= CORES_FOR_FILL ? CatchUpBurstMode.FILL
+        // Cores choose the pacing: they decide whether a spawn fits inside the tick.
+        CatchUpBurstMode picked = cores >= CORES_FOR_FILL ? CatchUpBurstMode.FILL
                 : cores >= CORES_FOR_BURST ? CatchUpBurstMode.BURST_TWO
                 : CatchUpBurstMode.OFF;
-        CatchUpBurstMode byHeap = maxHeapBytes >= HEAP_FOR_FILL ? CatchUpBurstMode.FILL
-                : maxHeapBytes >= HEAP_FOR_BURST ? CatchUpBurstMode.BURST_TWO
-                : CatchUpBurstMode.OFF;
 
-        // The weaker of the two decides: eight cores do not help a 2 GB heap, and a 16 GB heap does
-        // not help two cores.
-        CatchUpBurstMode picked = strength(byCores) <= strength(byHeap) ? byCores : byHeap;
-
-        if (physicalRamBytes > 0 && physicalRamBytes < RAM_FOR_UNCAPPED
-                && picked == CatchUpBurstMode.FILL) {
-            picked = CatchUpBurstMode.BURST_TWO;
+        // Heap and RAM only ever lower that, and only when they are genuinely short.
+        if (maxHeapBytes < HEAP_FLOOR_OFF) {
+            return CatchUpBurstMode.OFF;
+        }
+        if (maxHeapBytes < HEAP_FLOOR_BURST) {
+            picked = weaker(picked, CatchUpBurstMode.BURST_TWO);
+        }
+        if (physicalRamBytes > 0 && physicalRamBytes < RAM_FOR_UNCAPPED) {
+            picked = weaker(picked, CatchUpBurstMode.BURST_TWO);
         }
         return picked;
+    }
+
+    /** Whichever of the two asks less of the machine. */
+    private static CatchUpBurstMode weaker(CatchUpBurstMode a, CatchUpBurstMode b) {
+        return strength(a) <= strength(b) ? a : b;
     }
 
     /** Ordering of the three real modes by how much machine they ask for. Not the enum ordinal. */

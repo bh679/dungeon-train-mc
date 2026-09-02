@@ -53,29 +53,43 @@ class CatchUpBurstAutoTest {
                 CatchUpBurstAuto.resolve(CatchUpBurstAuto.CORES_FOR_BURST - 1, AMPLE_HEAP, AMPLE_RAM));
     }
 
+    /**
+     * The case that drove the band design. CurseForge and Modrinth commonly launch Minecraft with
+     * {@code -Xmx4G}; gating FILL on a bigger heap than that would put the ordinary modpack player
+     * on BURST_TWO, which is the pacing measured NOT to close a deficit. A 4 GB heap must not cost
+     * a capable CPU its FILL.
+     */
     @Test
-    @DisplayName("the heap bands land exactly on their boundaries")
-    void heapBands_atTheBoundary() {
+    @DisplayName("the ordinary modpack player — 8 cores, -Xmx4G — still gets FILL")
+    void typicalModpackAllocation_keepsFill() {
         assertEquals(CatchUpBurstMode.FILL,
-                CatchUpBurstAuto.resolve(AMPLE_CORES, CatchUpBurstAuto.HEAP_FOR_FILL, AMPLE_RAM));
-        assertEquals(CatchUpBurstMode.BURST_TWO,
-                CatchUpBurstAuto.resolve(AMPLE_CORES, CatchUpBurstAuto.HEAP_FOR_FILL - 1, AMPLE_RAM));
-        assertEquals(CatchUpBurstMode.BURST_TWO,
-                CatchUpBurstAuto.resolve(AMPLE_CORES, CatchUpBurstAuto.HEAP_FOR_BURST, AMPLE_RAM));
-        assertEquals(CatchUpBurstMode.OFF,
-                CatchUpBurstAuto.resolve(AMPLE_CORES, CatchUpBurstAuto.HEAP_FOR_BURST - 1, AMPLE_RAM));
+                CatchUpBurstAuto.resolve(8, 4 * GIB, 16 * GIB));
     }
 
-    /** Sixteen cores do not rescue a 2 GB heap, and a 16 GB heap does not rescue two cores. */
     @Test
-    @DisplayName("the weaker of cores and heap decides")
-    void theWeakerAxisDecides() {
+    @DisplayName("the heap floors land exactly on their boundaries")
+    void heapFloors_atTheBoundary() {
+        assertEquals(CatchUpBurstMode.FILL,
+                CatchUpBurstAuto.resolve(AMPLE_CORES, CatchUpBurstAuto.HEAP_FLOOR_BURST, AMPLE_RAM));
+        assertEquals(CatchUpBurstMode.BURST_TWO,
+                CatchUpBurstAuto.resolve(AMPLE_CORES, CatchUpBurstAuto.HEAP_FLOOR_BURST - 1, AMPLE_RAM),
+                "a heap under the burst floor steps a capable CPU down one");
+        assertEquals(CatchUpBurstMode.BURST_TWO,
+                CatchUpBurstAuto.resolve(AMPLE_CORES, CatchUpBurstAuto.HEAP_FLOOR_OFF, AMPLE_RAM));
         assertEquals(CatchUpBurstMode.OFF,
-                CatchUpBurstAuto.resolve(AMPLE_CORES, 2 * GIB, AMPLE_RAM),
-                "plenty of cores must not buy FILL for a heap that cannot hold the carriages");
+                CatchUpBurstAuto.resolve(AMPLE_CORES, CatchUpBurstAuto.HEAP_FLOOR_OFF - 1, AMPLE_RAM),
+                "a starved heap goes to OFF however many cores there are");
+    }
+
+    /** Heap and RAM may lower the pacing cores chose; they may never raise it. */
+    @Test
+    @DisplayName("a weak CPU is not rescued by a large heap")
+    void largeHeap_doesNotRescueAWeakCpu() {
         assertEquals(CatchUpBurstMode.OFF,
                 CatchUpBurstAuto.resolve(2, AMPLE_HEAP, AMPLE_RAM),
                 "a large heap must not buy FILL for a CPU that cannot spawn inside the tick");
+        assertEquals(CatchUpBurstMode.BURST_TWO,
+                CatchUpBurstAuto.resolve(4, AMPLE_HEAP, AMPLE_RAM));
     }
 
     /**
@@ -95,8 +109,8 @@ class CatchUpBurstAutoTest {
     @DisplayName("the RAM cap never promotes a weak machine")
     void ramCap_onlyEverLowers() {
         assertEquals(CatchUpBurstMode.OFF,
-                CatchUpBurstAuto.resolve(2, 2 * GIB, AMPLE_RAM),
-                "ample RAM must not lift a machine the other two axes put at OFF");
+                CatchUpBurstAuto.resolve(2, 4 * GIB, AMPLE_RAM),
+                "ample RAM must not lift a machine the CPU band put at OFF");
     }
 
     /**
@@ -124,7 +138,7 @@ class CatchUpBurstAutoTest {
     @DisplayName("resolve never returns AUTO, for any input")
     void neverReturnsAuto() {
         int[] cores = { -1, 0, 1, 2, 4, 8, 64 };
-        long[] heaps = { -1L, 0L, GIB, 3 * GIB, 6 * GIB, 64 * GIB };
+        long[] heaps = { -1L, 0L, GIB, 2 * GIB, 3 * GIB, 4 * GIB, 64 * GIB };
         long[] rams = { -1L, 0L, 4 * GIB, 8 * GIB, 128 * GIB };
         for (int c : cores) {
             for (long h : heaps) {
