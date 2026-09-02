@@ -10971,6 +10971,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "no-blocks-broken-chain",
+      "version": "0.783.0",
+      "type": "feat",
+      "title": "\"Look, Don't Touch\" \u2014 ride without breaking a block",
+      "summary": "Two new hidden achievements for riding the train without laying a hand on it. Travel 100 carriages without breaking a single block for \"Look, Don't Touch\", and 1,000 for \"Museum Rules\". Every block counts \u2014 smashing a vase ends the run just as surely as mining a wall does. Break something and the count restarts from where you broke it; die and you get a clean slate.",
+      "highlights": [
+        "New achievement: Look, Don't Touch \u2014 100 carriages, no blocks broken",
+        "New achievement: Museum Rules \u2014 the same at 1,000 carriages",
+        "Decorated pots count: smashing a vase resets the streak"
+      ],
+      "pr": 1277,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
