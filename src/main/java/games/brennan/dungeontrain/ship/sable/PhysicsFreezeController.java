@@ -161,8 +161,10 @@ public final class PhysicsFreezeController {
     }
 
     /**
-     * Anchors that must keep ticking: every unsettled group in {@code train}, plus each one's
-     * immediate neighbours on both sides.
+     * Anchors that must keep ticking: every group of a train that has any unsettled group (see
+     * {@link #anchorsToKeepTicking}). The original rule was "the unsettled group plus its
+     * immediate neighbours", which the paragraph below explains; the remote-player catch-up
+     * showed a parked group two or more strides away can sit inside the spawn zone too.
      *
      * <p><b>Why the neighbours.</b> The placement tracker settles a group by measuring the seam
      * against its train-facing neighbour and nudging. That model assumes the two share a motion
@@ -178,18 +180,33 @@ public final class PhysicsFreezeController {
      */
     private static Set<Integer> settlingAnchors(List<Trains.Carriage> train) {
         Set<Integer> unsettled = new HashSet<>();
-        for (Trains.Carriage c : train) {
-            if (!c.provider().isPlacedSuccessfully()) unsettled.add(c.provider().getPIdx());
-        }
-        if (unsettled.isEmpty()) return Set.of();
-        Set<Integer> out = new HashSet<>(unsettled);
+        Set<Integer> all = new HashSet<>();
         for (Trains.Carriage c : train) {
             int anchor = c.provider().getPIdx();
-            int groupSize = Math.max(1, c.provider().getGroupSize());
-            if (unsettled.contains(anchor + groupSize) || unsettled.contains(anchor - groupSize)) {
-                out.add(anchor);
-            }
+            all.add(anchor);
+            if (!c.provider().isPlacedSuccessfully()) unsettled.add(anchor);
         }
+        return anchorsToKeepTicking(unsettled, all);
+    }
+
+    /**
+     * Pure core of {@link #settlingAnchors}: while any group of a train is unsettled, EVERY group
+     * of that train keeps ticking; once none is, nothing is exempt on this account.
+     *
+     * <p><b>Why the whole train, not just the neighbours.</b> A parked body physically stays where
+     * it was while its canonical position keeps advancing, so after a minute it sits ~100 blocks
+     * behind the train's frame. A remote player's catch-up run spawns groups into exactly that
+     * zone (the lane places against a live reference, but the collision check sees the parked
+     * body's real box): the burst leader read "colliding" against a group two strides above,
+     * nudged −0.5, and the train's own +0.5 of travel undid it — for the whole settle budget, on
+     * sixteen groups in a row. Waking the whole train while a lane is spawning is bounded by the
+     * force-load window (only resident groups can be parked) and lasts 40 ticks past the last
+     * spawn, after which parking resumes.</p>
+     */
+    static Set<Integer> anchorsToKeepTicking(Set<Integer> unsettled, Set<Integer> all) {
+        if (unsettled.isEmpty()) return Set.of();
+        Set<Integer> out = new HashSet<>(all);
+        out.addAll(unsettled);
         return out;
     }
 

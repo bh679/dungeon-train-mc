@@ -804,7 +804,7 @@ public final class TrainCarriageAppender {
             List<Trains.Carriage> train = entry.getValue();
             for (Trains.Carriage carriage : train) {
                 if (carriage.provider().isPlacedSuccessfully()) continue;
-                SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
+                SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now, Shipyards.of(level));
                 if (check != null) out.add(check);
             }
         }
@@ -900,7 +900,7 @@ public final class TrainCarriageAppender {
                     logPlacementStallState(trainId, carriage, train, provider, now, ticksSinceFirstSeen, "APPROACHING-VALVE");
                 }
 
-                SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
+                SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now, Shipyards.of(level));
                 if (check == null) continue;
 
                 // A catch-up burst's follower is positionally OWNED by its leader while the
@@ -1486,6 +1486,21 @@ public final class TrainCarriageAppender {
         List<Trains.Carriage> train,
         long currentGameTick
     ) {
+        return checkOneCarriage(trainId, carriage, train, currentGameTick, null);
+    }
+
+    /**
+     * @param shipyard when non-null, registry-only siblings that Sable still holds (culled) are
+     *                 skipped: a held wrapper can answer {@code isResident()} from its last-known
+     *                 state, and its cull-time box would be a phantom collider
+     */
+    private static SpawnCollisionCheck checkOneCarriage(
+        UUID trainId,
+        Trains.Carriage carriage,
+        List<Trains.Carriage> train,
+        long currentGameTick,
+        Shipyard shipyard
+    ) {
         TrainTransformProvider provider = carriage.provider();
         BlockPos shipyardOrigin = provider.getShipyardOrigin();
         int anchorPIdx = provider.getPIdx();
@@ -1551,6 +1566,9 @@ public final class TrainCarriageAppender {
                 // settling carriage off it grows a permanent void (the −63/−60
                 // 21-block seam). Skip it — visible siblings are authoritative.
                 if (!ship.isResident()) continue;
+                // A held (culled) wrapper can still answer resident from its last-known state;
+                // ask Sable when a shipyard is available.
+                if (shipyard != null && shipyard.isHeld(ship.subLevelId())) continue;
                 AABBdc aabb = ship.worldAABB();
                 if (isZeroAabb(aabb)) continue;
                 if (maxX > aabb.minX() && minX < aabb.maxX()
@@ -2290,7 +2308,7 @@ public final class TrainCarriageAppender {
             // reloads and chunk generation for longer than the stall threshold.
             if (!remote) nearPlayers.add(player);
         }
-        if (remoteCount > 0 && LOGGER.isDebugEnabled()) {
+        if (remoteCount > 0 && LOGGER.isDebugEnabled() && tickNow % REMOTE_DEBUG_PERIOD_TICKS == 0) {
             LOGGER.debug("[DungeonTrain][remote] trainId={} has {} corridor-near player(s) with no visible group in reach (est={})",
                 trainId, remoteCount, minDriverEst);
         }
@@ -5587,6 +5605,9 @@ public final class TrainCarriageAppender {
     /** Wake attempts per episode before giving up on a train that never surfaces. */
     static final int REMOTE_MAX_WAKES = 4;
 
+    /** Cadence of the per-train "N corridor-near players" DEBUG line. */
+    private static final int REMOTE_DEBUG_PERIOD_TICKS = 100;
+
     /**
      * One group's position at one tick — enough to place the whole line later.
      *
@@ -5729,11 +5750,13 @@ public final class TrainCarriageAppender {
         return now - budget.lastTick() >= REMOTE_WAKE_INTERVAL_TICKS;
     }
 
-    /** Ticks before an in-window reload that has not surfaced is asked for again. */
-    private static final int RANGE_RELOAD_RETRY_TICKS = 200;
-
-    /** Per-train: sub-levels asked back for the players' window, and when. */
-    private static final Map<UUID, Map<UUID, Long>> RANGE_RELOAD_ISSUED = new ConcurrentHashMap<>();
+    /**
+     * Per-train: sub-levels already asked back for the players' window this episode. One ask per
+     * sub-level — a group Sable is still mid-culling answers the snatch with its benign
+     * "wasn't present in the holding chunk" ERROR, and re-asking every few seconds only repeats
+     * it. The entry clears once the group is visible again or has left the window.
+     */
+    private static final Map<UUID, Set<UUID>> RANGE_RELOAD_ISSUED = new ConcurrentHashMap<>();
 
     /**
      * The corridor's geometry for {@code level}: the track's Y and Z never change along the
@@ -5772,7 +5795,7 @@ public final class TrainCarriageAppender {
     /**
      * Ask back one held group whose anchor lies inside the players' window
      * {@code [minNeeded, maxNeeded]}, nearest {@code centrePIdx} first, at most one per tick
-     * and each at most once per {@link #RANGE_RELOAD_RETRY_TICKS}. The reloaded instance is
+     * and each at most once per window episode. The reloaded instance is
      * adopted (registry handle + force-load) in the same tick, and the window hold then keeps
      * it. Removed ghosts are left to the lanes (the frontier reaps those below the player).
      */
@@ -5781,30 +5804,32 @@ public final class TrainCarriageAppender {
         if (minNeeded > maxNeeded) return; // sentinel window: no near player
         Set<UUID> visible = new HashSet<>(train.size());
         for (Trains.Carriage c : train) visible.add(c.ship().subLevelId());
-        Map<UUID, Long> issued = RANGE_RELOAD_ISSUED.computeIfAbsent(trainId, k -> new ConcurrentHashMap<>());
-        issued.keySet().removeIf(visible::contains);
+        Set<UUID> issued = RANGE_RELOAD_ISSUED.computeIfAbsent(trainId, k -> ConcurrentHashMap.newKeySet());
+        issued.removeIf(visible::contains);
 
         List<Map.Entry<Integer, ManagedShip>> candidates = new ArrayList<>();
+        Set<UUID> inWindow = new HashSet<>();
         for (Map.Entry<Integer, ManagedShip> e : Trains.knownGroups(trainId).entrySet()) {
             int a = e.getKey();
             if (a + groupSize - 1 < minNeeded || a > maxNeeded) continue;
             ManagedShip ship = e.getValue();
-            if (ship == null || visible.contains(ship.subLevelId())) continue;
+            if (ship == null) continue;
+            inWindow.add(ship.subLevelId());
+            if (visible.contains(ship.subLevelId())) continue;
             candidates.add(e);
         }
+        issued.retainAll(inWindow); // left the window: a later return is a new episode
         if (candidates.isEmpty()) return;
         candidates.sort(Comparator.comparingInt(e -> Math.abs(e.getKey() - centrePIdx)));
 
-        long now = level.getGameTime();
         Shipyard shipyard = Shipyards.of(level);
         for (Map.Entry<Integer, ManagedShip> e : candidates) {
             UUID uuid = e.getValue().subLevelId();
-            Long last = issued.get(uuid);
-            if (last != null && now - last < RANGE_RELOAD_RETRY_TICKS) continue;
+            if (issued.contains(uuid)) continue;
             // Held is the only state this can act on: a resident-not-surfaced group is on its
             // way already, and a removed one is the frontier's to reap.
             if (!shipyard.isHeld(uuid)) continue;
-            issued.put(uuid, now);
+            issued.add(uuid);
             if (shipyard.reloadFromHolding(uuid)) {
                 ManagedShip live = adoptReloadedGroup(level, shipyard, trainId, e.getKey(), uuid);
                 LOGGER.info("[DungeonTrain][remote] Reloaded held group anchor={} inside the players' window [{}, {}] for trainId={} (adopted={})",
