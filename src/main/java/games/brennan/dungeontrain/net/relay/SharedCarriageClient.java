@@ -175,7 +175,7 @@ public final class SharedCarriageClient {
                                                                        String blocksBase64, int l, int h, int w,
                                                                        String text, String stage, String mode,
                                                                        String kind, String subKind, String buildName,
-                                                                       String visibility) {
+                                                                       String visibility, String sidecars) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         if (ownerName != null && !ownerName.isEmpty()) body.addProperty("name", ownerName);
@@ -185,6 +185,10 @@ public final class SharedCarriageClient {
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (stage != null && !stage.isEmpty()) body.addProperty("stage", stage);
         if (mode != null && !mode.isEmpty()) body.addProperty("mode", mode);
+        // Everything about the template that is not its blocks — variant lists, part assignments,
+        // contents allow-lists, weights (a portal room's door position among them). Opaque to the
+        // relay, which stores and returns it verbatim.
+        if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         body.addProperty("kind", kind == null ? "" : kind);
         if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
         if (buildName != null && !buildName.isEmpty()) body.addProperty("buildName", buildName);
@@ -515,7 +519,7 @@ public final class SharedCarriageClient {
      */
     public record BuildFetch(int id, String kind, String subKind, String buildName, String stage,
                              String visibility, String blocks, int l, int h, int w, int baseSeq,
-                             List<DeltaRec> deltas, String secret) {
+                             List<DeltaRec> deltas, String secret, String sidecars) {
 
         /** Whether the relay has this build out on the train rather than sitting in the profile. */
         public boolean published() {
@@ -570,7 +574,10 @@ public final class SharedCarriageClient {
                     o.get("id").getAsInt(), str(o, "kind"), str(o, "subKind"), str(o, "buildName"),
                     str(o, "stage"), str(o, "visibility"), o.get("blocks").getAsString(),
                     intOf(d, "l"), intOf(d, "h"), intOf(d, "w"), intOf(o, "baseSeq"),
-                    parseDeltas(o), str(o, "secret")));
+                    // Empty from a relay that predates the field, which reads as "said nothing" all
+                    // the way down to TemplateSidecars.apply — an install that leaves local sidecars
+                    // exactly as they were rather than clearing them.
+                    parseDeltas(o), str(o, "secret"), str(o, "sidecars")));
         });
     }
 
@@ -791,14 +798,34 @@ public final class SharedCarriageClient {
 
     // ---- save / heartbeat / return ----
 
-    /** Full save (also a compaction on the relay: clears the delta log, advances {@code baseSeq}). */
+    /**
+     * Full save (also a compaction on the relay: clears the delta log, advances {@code baseSeq}),
+     * saying nothing about the build's sidecars.
+     *
+     * <p>This is the in-play path — a rider's edits to a leased carriage. Saying nothing is the point:
+     * the relay leaves the field it is not told about alone, so a save made by somebody riding a build
+     * cannot blank the sidecars its author uploaded. Only the authoring tool, through
+     * {@link #save(int, String, String, String, int, String)}, ever speaks for them.</p>
+     */
     public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text, int baseSeq) {
+        return save(id, token, blocksBase64, text, baseSeq, null);
+    }
+
+    /**
+     * As above, replacing the build's sidecar document too — the builder/editor re-save path.
+     *
+     * @param sidecars the document from {@code TemplateSidecars.collect}; null or empty leaves whatever
+     *                 the relay already holds, which is what the in-play overload above relies on
+     */
+    public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
+                                                     int baseSeq, String sidecars) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("token", token);
         body.addProperty("blocks", blocksBase64);
         body.addProperty("baseSeq", baseSeq);
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
+        if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         return statusPost("/carriages/save", body);
     }
 
@@ -820,6 +847,18 @@ public final class SharedCarriageClient {
      */
     public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
                                                           String text, int baseSeq) {
+        return ownerSave(id, secret, blocksBase64, text, baseSeq, null);
+    }
+
+    /**
+     * As above, replacing the build's sidecar document too — the author's re-save path, and the
+     * counterpart of {@link #save(int, String, String, String, int, String)} on the lease path.
+     *
+     * @param sidecars the document from {@code TemplateSidecars.collect}; null or empty leaves
+     *                 whatever the relay already holds
+     */
+    public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq, String sidecars) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
@@ -827,6 +866,7 @@ public final class SharedCarriageClient {
         body.addProperty("baseSeq", baseSeq);
         body.addProperty("world", WORLD);
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
+        if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         return statusPost("/carriages/owner-save", body);
     }
 

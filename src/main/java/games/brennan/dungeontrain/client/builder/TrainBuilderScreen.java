@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.client.DevQuickWorldHandler;
 import games.brennan.dungeontrain.client.EditorAutoOpenHandler;
+import games.brennan.dungeontrain.editor.BuilderModeCategory;
+import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.net.BuilderSwitchPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -21,9 +23,12 @@ import org.slf4j.Logger;
  * The Train Builder picker: four image tiles, two per row, each opening a fresh flat world for
  * one kind of building work.
  *
- * <p>This is the friendly front door that replaced the title screen's Train Editor button. The
- * editor itself is unchanged and still reachable — on a dev build, holding Shift on the title
- * screen swaps the button back to it (see {@code TrainBuilderMenuButton}).</p>
+ * <p>This is the friendly front door for both title-screen tools. The slot says <b>Train
+ * Editor</b> normally and <b>Train Builder</b> while Shift is held (see
+ * {@code TrainBuilderMenuButton}); either way you pick what you are building here first, and only
+ * then does a world get made. The tiles mean the same four things on both paths — the Editor route
+ * resolves them through {@link BuilderModeCategory} and lands in that editor category, the Builder
+ * route stamps that mode's world.</p>
  *
  * <p>The four builder editors are a follow-up task. Today each tile creates the superflat
  * creative world the editor will live in and posts a "coming soon" line for that mode once the
@@ -42,17 +47,28 @@ public final class TrainBuilderScreen extends Screen {
     private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
 
     private final Screen lastScreen;
-    /** True when opened from inside a builder world: tiles re-shape this world instead of making one. */
-    private final boolean switching;
+    private final Launch launch;
 
-    public TrainBuilderScreen(Screen lastScreen) {
-        this(lastScreen, false);
+    /** What a tile click does. One branch each, so a flavour can't half-apply. */
+    private enum Launch {
+        /** Make a fresh Train Builder world and stamp the picked mode into it. */
+        NEW_BUILDER_WORLD,
+        /** Re-shape the builder world you're already standing in. */
+        SWITCH_THIS_WORLD,
+        /** Make a fresh Train Editor world and open the picked mode's editor category. */
+        EDITOR_WORLD
     }
 
-    private TrainBuilderScreen(Screen lastScreen, boolean switching) {
-        super(Component.translatable("gui.dungeontrain.builder.title"));
+    public TrainBuilderScreen(Screen lastScreen) {
+        this(lastScreen, Launch.NEW_BUILDER_WORLD);
+    }
+
+    private TrainBuilderScreen(Screen lastScreen, Launch launch) {
+        super(launch == Launch.EDITOR_WORLD
+                ? Component.translatable("gui.dungeontrain.editor_button")
+                : Component.translatable("gui.dungeontrain.builder.title"));
         this.lastScreen = lastScreen;
-        this.switching = switching;
+        this.launch = launch;
     }
 
     /**
@@ -63,7 +79,18 @@ public final class TrainBuilderScreen extends Screen {
      * the unsaved-changes decision and may answer with a confirmation prompt instead.</p>
      */
     public static TrainBuilderScreen forSwitch(Screen lastScreen) {
-        return new TrainBuilderScreen(lastScreen, true);
+        return new TrainBuilderScreen(lastScreen, Launch.SWITCH_THIS_WORLD);
+    }
+
+    /**
+     * The same picker, reached from the title screen's <b>Train Editor</b> button.
+     *
+     * <p>Identical grid, art and labels — only the title and the tile action differ: instead of
+     * building a Train Builder world, it creates the editor's creative world and opens the
+     * technical editor on the category that tile stands for.</p>
+     */
+    public static TrainBuilderScreen forEditor(Screen lastScreen) {
+        return new TrainBuilderScreen(lastScreen, Launch.EDITOR_WORLD);
     }
 
     @Override
@@ -98,17 +125,30 @@ public final class TrainBuilderScreen extends Screen {
     }
 
     private void launch(BuilderMode mode) {
-        if (switching) {
-            LOGGER.info("TrainBuilder: '{}' selected — asking the server to re-stamp this world", mode.id());
-            Minecraft.getInstance().setScreen(null);
-            DungeonTrainNet.sendToServer(new BuilderSwitchPacket(mode.id(), false));
-            return;
+        switch (launch) {
+            case SWITCH_THIS_WORLD -> {
+                LOGGER.info("TrainBuilder: '{}' selected — asking the server to re-stamp this world", mode.id());
+                Minecraft.getInstance().setScreen(null);
+                DungeonTrainNet.sendToServer(new BuilderSwitchPacket(mode.id(), false));
+            }
+            case EDITOR_WORLD -> {
+                EditorCategory category = BuilderModeCategory.of(mode);
+                LOGGER.info("TrainBuilder: '{}' selected — launching editor world on category '{}'",
+                        mode.id(), category.id());
+                // Same one-shot the builder path uses: force source-tree write-through on for this
+                // session so anything saved lands in the working tree on a dev checkout.
+                EditorDevMode.queueOnForNextStart();
+                EditorAutoOpenHandler.queueAutoOpen(category);
+                DevQuickWorldHandler.launchEditorWorld(this.lastScreen);
+            }
+            case NEW_BUILDER_WORLD -> {
+                LOGGER.info("TrainBuilder: '{}' selected — launching flat builder world", mode.id());
+                // Same one-shot as the editor button: force source-tree write-through on for this
+                // session so anything the builder saves lands in the working tree on a dev checkout.
+                EditorDevMode.queueOnForNextStart();
+                EditorAutoOpenHandler.queueBuilderSetup(mode);
+                DevQuickWorldHandler.launchBuilderWorld(this.lastScreen, mode);
+            }
         }
-        LOGGER.info("TrainBuilder: '{}' selected — launching flat builder world", mode.id());
-        // Same one-shot as the editor button: force source-tree write-through on for this
-        // session so anything the builder saves lands in the working tree on a dev checkout.
-        EditorDevMode.queueOnForNextStart();
-        EditorAutoOpenHandler.queueBuilderSetup(mode);
-        DevQuickWorldHandler.launchBuilderWorld(this.lastScreen, mode);
     }
 }

@@ -1574,7 +1574,7 @@ public final class PortalCarriageBuilder {
         // but a leak. The mark is what {@link PortalRoomMobs#reapTile} scopes a retiring copy's reap
         // by, and what {@code clearIntruders} spares on the next stamp; it is the same invariant a
         // room's authored mobs live under, and for the same reason.
-        PortalRoomMobs.markDecor(level, roomOrigin, size, pairKey, tile);
+        PortalRoomMobs.markDecor(level, roomOrigin, size, pairKey, tile, liveMobCount);
         // Contents first, the room's own authored cells second. Where the two overlap the author's
         // explicit entry is the one that should stand — and applyRoomVariants evicts a live block
         // entity before it writes, so a chest this pass just filled cannot spill when it does.

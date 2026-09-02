@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.DebugAccessEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
@@ -4397,7 +4398,7 @@ public final class TrainCarriageAppender {
         long now,
         boolean forward
     ) {
-        CatchUpBurstMode mode = DungeonTrainConfig.getCatchUpBurstMode();
+        CatchUpBurstMode mode = DungeonTrainCommonConfig.getCatchUpBurstMode();
         int allowed = catchUpBurstGroups(deficitPIdx, groupSize, mode);
         if (allowed <= 1) return 0;
         Plan prevPlan = firstPlan;
@@ -4452,7 +4453,7 @@ public final class TrainCarriageAppender {
      */
     private static void openFillRun(UUID trainId, Map<UUID, FillRun> lane, Plan plan, int anchor,
                                     ManagedShip ship, long now, int deficitPIdx, int groupSize) {
-        if (DungeonTrainConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) return;
+        if (DungeonTrainCommonConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) return;
         if (deficitGroups(deficitPIdx, groupSize) <= 1) return;
         lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), ship.id(), 1, now, now));
     }
@@ -4490,7 +4491,7 @@ public final class TrainCarriageAppender {
     ) {
         FillRun run = lane.get(trainId);
         if (run == null) return false;
-        if (DungeonTrainConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) {
+        if (DungeonTrainCommonConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) {
             lane.remove(trainId);
             return false;
         }

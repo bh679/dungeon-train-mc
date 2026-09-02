@@ -42,14 +42,13 @@ import java.util.List;
  * say here.</p>
  *
  * <p>The first slot holds a {@link TrainBuilderMenuButton}: normally <b>Train Editor</b>, and
- * <b>Train Builder</b> while Shift is held, opening {@link TrainBuilderScreen}. The Editor leads
- * because it is the finished tool; the Builder sits behind Shift while it is still being built.
- * The editor path launches a fresh creative world via
- * {@link DevQuickWorldHandler#launchEditorWorld(Screen)} — which names the
- * world "train editor N" using the lowest unused index — and arms
- * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on
- * after the server finishes starting, regardless of the
- * {@code CarriageTemplateStore.sourceTreeAvailable()} gate.</p>
+ * <b>Train Builder</b> while Shift is held. The Editor leads because it is the finished tool; the
+ * Builder sits behind Shift while it is still being built. Both open {@link TrainBuilderScreen},
+ * the four-tile picker — you say what you are building before a world is made either way, and the
+ * tile decides which editor category you land in (Editor) or which mode gets stamped (Builder).
+ * The world itself, and the one-shot {@link EditorDevMode#queueOnForNextStart()} that forces
+ * editor mode on regardless of the {@code CarriageTemplateStore.sourceTreeAvailable()} gate, are
+ * the picker's business now — nothing happens here beyond opening it.</p>
  *
  * <p>If any of Mods/Options/Quit can't be located on the title screen (e.g.
  * a third-party mod has already rewritten the menu), this handler logs a
@@ -189,9 +188,7 @@ public final class TitleScreenLayoutHandler {
     }
 
     private static void openEditor(Screen parent) {
-        LOGGER.info("TitleScreenLayout: Train Editor button clicked — queueing devmode + auto-open and launching fresh world");
-        EditorDevMode.queueOnForNextStart();
-        EditorAutoOpenHandler.queueAutoOpen();
-        DevQuickWorldHandler.launchEditorWorld(parent);
+        LOGGER.info("TitleScreenLayout: Train Editor button clicked — opening the picker");
+        Minecraft.getInstance().setScreen(TrainBuilderScreen.forEditor(parent));
     }
 }

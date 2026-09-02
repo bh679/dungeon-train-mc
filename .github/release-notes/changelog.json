@@ -10776,6 +10776,117 @@
       "released": true,
       "released_in": "v0.772.0",
       "released_at": "2026-09-01T17:04:33Z"
+    },
+    {
+      "id": "template-sidecars-and-mobs",
+      "version": "0.773.0",
+      "type": "feat",
+      "title": "Your builds keep their settings, and the mobs you place in them",
+      "summary": "A build you save to My Builds now travels whole. Until now only its blocks went up, so loading one back on another machine \u2014 or after a reinstall \u2014 gave you the shape of the build and nothing else: a dimensional carriage's doorways snapped back to the centre of the wall, block variants were gone, and the loot links and allow-lists you had set were back at their defaults. All of that now goes with the build and comes back with it. Mobs come too. A creature you place in a room in the Train Editor is part of that build now, saved with it and there again when you load it, where before it vanished the moment you saved. To keep that honest, the Train Editor world no longer spawns wildlife of its own, so the only creatures in a plot are the ones you put there. A room that repeats itself still keeps a lid on how many it will place at once.",
+      "highlights": [
+        "Doorway positions, block variants, part assignments, loot links and allow-lists all travel with a build to My Builds and back",
+        "Mobs you place in a build are saved with it, and are there when you load it",
+        "No natural mob spawns in the Train Editor world, so nothing wanders into a plot and gets saved",
+        "Saving a build whose name is one Dungeon Train ships now tells you it was not sent to My Builds, instead of saying nothing"
+      ],
+      "pr": 1260,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "vivecraft-compat-moved-to-addon",
+      "version": "0.773.0",
+      "type": "refactor",
+      "title": "VR support for trains moved to a separate mod",
+      "summary": "If you play in VR with Vivecraft, the fixes that make VR work on a moving train now live in a separate mod, Vivecraft Sable Compat, which you install alongside Dungeon Train. Installing it also fixes VR teleport, which previously threw you into the void when you tried to teleport while on a train. Nothing changes if you don't play in VR.",
+      "highlights": [
+        "VR teleport on a moving train now lands where you aimed, instead of dropping you into the void \u2014 this fix is in the new Vivecraft Sable Compat mod.",
+        "VR melee on a train still works, but the fix moved: install Vivecraft Sable Compat to keep it. Dungeon Train on its own no longer carries it.",
+        "Neither problem was really Dungeon Train's \u2014 they affect any Sable ship \u2014 so they now live in one mod that any Sable pack can use."
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "any-template-submittable",
+      "version": "0.772.0",
+      "type": "feat",
+      "title": "Submit any build you make, not just carriages",
+      "summary": "The Train Builder's My Builds screen now offers Submit for Review on everything you make \u2014 carriage rooms, parts, tracks, portal rooms and whole carriage groups \u2014 not carriages alone. Submitted builds show whether they are waiting, accepted or not accepted, and withdrawing puts one back in your profile. Carriages still work exactly as before.",
+      "highlights": [
+        "Submit for Review now works for every kind of build",
+        "Waiting / Accepted / Not accepted badges on every build, not only carriages"
+      ],
+      "pr": 1259,
+      "date": "2026-09-01",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "submit-restored-builds",
+      "version": "0.772.0",
+      "type": "fix",
+      "title": "Submit builds that came back to your profile",
+      "summary": "A build restored to your profile \u2014 one the relay had lost and put back, or one you uploaded from a different world \u2014 could not be submitted for review: the game asked the world you were standing in for a permission only the world that first uploaded it had. It now asks the relay instead, so any build of yours can be submitted from anywhere.",
+      "highlights": [
+        "Restored builds can be submitted for review without loading them into the editor first"
+      ],
+      "pr": 1259,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-editor-selection-screen",
+      "version": "0.776.0",
+      "type": "feat",
+      "title": "Pick what you're building before the Train Editor opens",
+      "summary": "The Train Editor now asks what you want to work on before it makes a world, using the same four-tile picker as the Train Builder. Whichever tile you pick is where you land \u2014 Train Outside opens the carriage shells, Inside Carriage the contents, Tracks & Tunnels the track pieces, Train Dimensions the portal rooms. Before this, every editor launch dropped you in carriages and you had to walk or type your way to anything else.",
+      "highlights": [
+        "Train Editor opens the four-tile picker instead of creating a world straight away",
+        "The tile you pick decides which editor category you land in"
+      ],
+      "pr": 1265,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "death-screen-drop-goal-tick",
+      "version": "0.777.0",
+      "type": "fix",
+      "title": "One fewer redundant line on the support page",
+      "summary": "The support page no longer repeats a completed goal's name in a tick line once it has already stopped asking for it.",
+      "highlights": [],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "catch-up-spawning-global-option",
+      "version": "0.778.0",
+      "type": "fix",
+      "title": "Catch-up spawning is now a single setting you can reach from the title screen",
+      "summary": "Catch-up spawning decides how quickly the train re-extends after an end of it falls behind you. The option was there, but it only appeared while you were inside a singleplayer world \u2014 open Options from the title screen and the row was simply missing, with no hint that it existed. It is now one setting that shows up in both places, and changing it anywhere changes it for every world.",
+      "highlights": [
+        "The Catch-up spawning row now appears in Options -> Dungeon Train -> Train at the title screen, not just in a world.",
+        "It is a single global setting: set it once and every world uses it, new or existing.",
+        "Changing it still takes effect immediately on the train you are riding \u2014 no reload.",
+        "If you had set catch-up spawning inside a particular world, that choice is not carried over and returns to Fill all. Set it once more and it will stick for good."
+      ],
+      "pr": 1267,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

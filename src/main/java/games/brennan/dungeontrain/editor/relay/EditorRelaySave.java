@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.editor.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderSave;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -48,9 +50,11 @@ public final class EditorRelaySave {
      * default} — so the rule is that existing predicate rather than a second idea of what a new
      * template is.</p>
      *
-     * <p>Everything here is best-effort and silent on the way out: a save that cannot be located in
-     * a plot, or a player with no server, simply does not upload. The local write already
-     * succeeded.</p>
+     * <p>Everything here is best-effort: a save that cannot be located in a plot, or a player with
+     * no server, simply does not upload, and the local write already succeeded either way. Silent,
+     * with one exception — a template refused for having a built-in name says so. That case is the
+     * author editing something and expecting to find it in My Builds, and the quiet version of it
+     * is indistinguishable from the relay having lost their work.</p>
      */
     public static void afterSave(ServerPlayer player, Template model) {
         // Nothing here may fail the save. This runs inside each editor's save(), after the template
@@ -65,10 +69,23 @@ public final class EditorRelaySave {
     }
 
     private static void upload(ServerPlayer player, Template model) {
-        if (player == null || model == null || model.isBuiltin()) {
+        if (player == null || model == null) {
             return;
         }
         if (!BuilderRelayUpload.canUpload(player)) {
+            // Profiles off, or no network consent. A deliberate configuration rather than a surprise,
+            // so this one stays silent.
+            return;
+        }
+        if (model.isBuiltin()) {
+            // Said out loud, unlike the other early returns. A built-in NAME is the whole test — a
+            // dimensional carriage called 'default' is one — so an author who poses a camel in the
+            // default room, saves, and then loads that room back from the relay gets the copy from
+            // before the camel and no hint as to why. Silence there reads exactly like data loss.
+            player.sendSystemMessage(Component.literal(
+                    "Editor: '" + model.displayName() + "' has a built-in name, so it was NOT sent to "
+                            + "My Builds. Save it under a name of your own to keep a copy on the relay.")
+                .withStyle(ChatFormatting.YELLOW));
             return;
         }
         MinecraftServer server = player.getServer();

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.builder.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.editor.TemplateSidecars;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
@@ -335,7 +336,11 @@ public final class BuilderRelayReconcile {
             Optional<SharedCarriageClient.BuildUpload> result = SharedCarriageClient.submitBuild(
                     uuid, name, upload.blocks(), upload.l(), upload.h(), upload.w(), upload.text(),
                     stageFor(missing), BuilderRelayUpload.poolFor(),
-                    BuilderRelayKinds.idOf(missing.kind()), missing.subKind(), missing.id(), "profile")
+                    BuilderRelayKinds.idOf(missing.kind()), missing.subKind(), missing.id(), "profile",
+                    // A reconcile re-uploads a build the relay has lost. It has to carry the sidecars
+                    // for the same reason the ordinary save does — a row restored without them is a
+                    // build stripped of everything but its blocks.
+                    TemplateSidecars.collect(missing.kind(), missing.subKind(), missing.id()))
                     .join();
             if (result.isEmpty()) return false;
 
