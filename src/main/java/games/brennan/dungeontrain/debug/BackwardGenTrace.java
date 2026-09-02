@@ -75,7 +75,11 @@ public final class BackwardGenTrace {
         /** Spawn deferred while the footprint's world chunks generate asynchronously. */
         CHUNKGEN_DEFER(true),
         /** The frontier anchor held a REMOVED ghost; it was reaped this tick and spawns fresh next tick. */
-        FRONTIER_REAP(true);
+        FRONTIER_REAP(true),
+        /** The lane's reference group was DT-frozen (stale pose); unfrozen this tick, spawn waits one tick. */
+        EDGE_FROZEN(true),
+        /** A corridor-near player is further from the train than the remote catch-up cap allows. */
+        TOO_FAR(true);
 
         private final boolean blocking;
 
@@ -109,6 +113,8 @@ public final class BackwardGenTrace {
      * @param burstMode  the configured {@link games.brennan.dungeontrain.train.CatchUpBurstMode}
      * @param burstGroups groups the catch-up spawner would allow THIS tick — 1 means catch-up is
      *                   not engaging, which is what the first ride showed (FILL_RUN covered 0.2%)
+     * @param remote     the window-driving player is corridor-near only (no visible group within
+     *                   NEAR_RADIUS): their index is an estimate from the line fix, not a reading
      */
     public record RideContext(
         boolean onDeck,
@@ -116,14 +122,18 @@ public final class BackwardGenTrace {
         boolean sprinting,
         double trainVelX,
         String burstMode,
-        int burstGroups
+        int burstGroups,
+        boolean remote
     ) {
         /** Placeholder for samples taken with no near player. */
-        public static final RideContext NONE = new RideContext(false, "?", false, 0.0, "?", 0);
+        public static final RideContext NONE = new RideContext(false, "?", false, 0.0, "?", 0, false);
+
+        /** Placeholder for samples whose window is driven by a remote (estimated) player. */
+        public static final RideContext REMOTE = new RideContext(false, "?", false, 0.0, "?", 0, true);
 
         String format() {
-            return String.format("onDeck=%s mode=%s sprint=%s trainVelX=%.2f burst=%s/%d",
-                onDeck, gameMode, sprinting, trainVelX, burstMode, burstGroups);
+            return String.format("onDeck=%s mode=%s sprint=%s trainVelX=%.2f burst=%s/%d remote=%s",
+                onDeck, gameMode, sprinting, trainVelX, burstMode, burstGroups, remote);
         }
     }
 

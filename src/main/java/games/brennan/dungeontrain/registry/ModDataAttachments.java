@@ -199,6 +199,25 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * Travelled-carriage reading (the same {@code effectiveTravelled} value the carts tiers use) at
+     * the moment this player last broke a block this life. The "no block broken" streak is
+     * {@code effectiveTravelled - this}, driving the {@code no_break_100} / {@code no_break_1000}
+     * advancements ("Look, Don't Touch" / "Museum Rules"). Every block counts — decorated pots
+     * included, unlike {@link #CARTS_AT_LAST_CONTAINER_OPEN}, which vases deliberately never touch.
+     *
+     * <p>Its own attachment rather than a {@link games.brennan.dungeontrain.player.PlayerRunState} field
+     * because that codec is at its 16-field cap (see {@link #RUN_SPAWN_X}). Serialized so the streak
+     * survives a mid-run logout, and <b>no</b> {@code copyOnDeath}: the respawn clone starts at 0, which
+     * is exactly the per-life reset wanted — the travelled counter resets with it.</p>
+     */
+    public static final Supplier<AttachmentType<Integer>> CARTS_AT_LAST_BLOCK_BREAK =
+        TYPES.register("carts_at_last_block_break",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
     private ModDataAttachments() {}
 
     public static void register(IEventBus modBus) {
