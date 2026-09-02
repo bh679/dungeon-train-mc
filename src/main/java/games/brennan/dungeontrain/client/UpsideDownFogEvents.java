@@ -39,9 +39,13 @@ public final class UpsideDownFogEvents {
         double t = ClientUpsideDownBand.upsideDownIntensityAt(event.getCamera().getPosition().x);
         if (t <= 0.0) return;
         float blend = (float) (MAX_BLEND * Math.min(1.0, t));
+        int before = ShaderDiagnostics.recording() ? ShaderDiagnostics.packFog(event) : 0;
         event.setRed(event.getRed() + (SKY_R - event.getRed()) * blend);
         event.setGreen(event.getGreen() + (SKY_G - event.getGreen()) * blend);
         event.setBlue(event.getBlue() + (SKY_B - event.getBlue()) * blend);
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordFogColor("upsideDown", before, ShaderDiagnostics.packFog(event));
+        }
     }
 
     @SubscribeEvent

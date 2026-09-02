@@ -109,8 +109,15 @@ public abstract class LevelRendererVoidSkyMixin {
                                                double camX, double camY, double camZ, CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
-        if (ClientVoidBand.endSkyIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD
-                || ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
+        boolean hide = ClientVoidBand.endSkyIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD
+                || ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD;
+        // Recorded whether or not it hides: that this hook ran AT ALL is the thing worth knowing.
+        // Both of DT's cloud behaviours go through vanilla's cloud pass, so a pack that draws its
+        // own clouds in composite never calls it and silently keeps both of them off.
+        if (games.brennan.dungeontrain.client.ShaderDiagnostics.recording()) {
+            games.brennan.dungeontrain.client.ShaderDiagnostics.recordCloudsHook(hide);
+        }
+        if (hide) {
             ci.cancel();
         }
     }
@@ -133,8 +140,17 @@ public abstract class LevelRendererVoidSkyMixin {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return original;
         double t = ClientUpsideDownBand.upsideDownIntensityAt(camX);
-        if (t <= 0.0) return original;
-        return Mth.lerp((float) t, original, DungeonTrainCommonConfig.getUpsideDownCloudY());
+        float applied = t <= 0.0
+            ? original
+            : Mth.lerp((float) t, original, DungeonTrainCommonConfig.getUpsideDownCloudY());
+        // Recorded on EVERY call, including the ones that change nothing. Recording only the
+        // lowering made "this hook never ran" and "it ran where the band is zero" the same reading,
+        // and those are entirely different faults: one is a dead mixin, the other is a camera in
+        // the wrong place.
+        if (games.brennan.dungeontrain.client.ShaderDiagnostics.recording()) {
+            games.brennan.dungeontrain.client.ShaderDiagnostics.recordCloudHeight(original, applied);
+        }
+        return applied;
     }
 
     /**

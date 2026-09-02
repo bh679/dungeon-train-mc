@@ -14,7 +14,8 @@ import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.SkyboxSky;
-import games.brennan.dungeontrain.client.GraphicsCapabilities;
+import games.brennan.dungeontrain.client.ShaderCompat;
+import games.brennan.dungeontrain.client.ShaderDiagnostics;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -79,7 +80,9 @@ import java.util.UUID;
  * <p>Iris shades a deferred gbuffer. A colour-masked depth write leaves the albedo and normal
  * attachments untouched, so the composite pass would shade those pixels from cleared gbuffer
  * data — black, not sky. Rather than ship a known-wrong image we disable everything under a
- * shader pack, leaving the blocks simply invisible.</p>
+ * shader pack, leaving the blocks simply invisible. The gate itself lives in
+ * {@link ShaderCompat#allows} alongside the other four atmosphere systems' verdicts, so a future
+ * measurement changes one table rather than this class.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class SkyboxPunchRenderer {
@@ -109,9 +112,17 @@ public final class SkyboxPunchRenderer {
         SkyboxBlockIndex.reportCamera(cam);
 
         if (!ClientDisplayConfig.isSkyboxPunchEnabled()) return;
-        if (GraphicsCapabilities.shaderPackActive()) return;
 
+        // Read before the shader gate — it is a volatile field read, and taking it here is what
+        // lets the diagnostics panel tell "no skybox blocks near the camera" apart from "blocks
+        // are right here and the pack has the effect switched off".
         SkyboxBlockIndex.Snapshot snapshot = SkyboxBlockIndex.snapshot();
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordSkybox(countCubes(snapshot), describeVariants(snapshot),
+                SkyboxStencil.isAvailable(), false);
+        }
+
+        if (!ShaderCompat.allows(ShaderCompat.Feature.SKYBOX_BLOCKS)) return;
         if (snapshot.isEmpty()) return;
 
         Matrix4f frustumMatrix = event.getModelViewMatrix();
@@ -144,6 +155,10 @@ public final class SkyboxPunchRenderer {
             endMaskState();
 
             reportPainted(painted, stencil);
+            if (ShaderDiagnostics.recording()) {
+                ShaderDiagnostics.recordSkybox(countCubes(snapshot), describeVariants(snapshot),
+                    stencil, !painted.isEmpty());
+            }
 
             if (stencil) {
                 SkyboxStencil.beginSkyPass();
@@ -166,6 +181,35 @@ public final class SkyboxPunchRenderer {
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
+    }
+
+    /** Total indexed skybox cubes, main world and carriages — the panel's "is anything here?". */
+    private static int countCubes(SkyboxBlockIndex.Snapshot snapshot) {
+        int n = 0;
+        for (SkyboxBlockIndex.CubeSet cubes : snapshot.main().values()) {
+            n += cubes.positions().length;
+        }
+        for (SkyboxBlockIndex.SubLevelCubes entry : snapshot.subLevels()) {
+            for (SkyboxBlockIndex.CubeSet cubes : entry.byVariant().values()) {
+                n += cubes.positions().length;
+            }
+        }
+        return n;
+    }
+
+    /** The indexed variants, comma-joined, for one line of the diagnostics panel. */
+    private static String describeVariants(SkyboxBlockIndex.Snapshot snapshot) {
+        EnumSet<SkyboxSky> seen = EnumSet.noneOf(SkyboxSky.class);
+        seen.addAll(snapshot.main().keySet());
+        for (SkyboxBlockIndex.SubLevelCubes entry : snapshot.subLevels()) {
+            seen.addAll(entry.byVariant().keySet());
+        }
+        StringBuilder sb = new StringBuilder();
+        for (SkyboxSky sky : seen) {
+            if (sb.length() > 0) sb.append(',');
+            sb.append(sky.name());
+        }
+        return sb.toString();
     }
 
     /**
