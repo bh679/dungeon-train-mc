@@ -10869,6 +10869,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "catch-up-spawning-global-option",
+      "version": "0.778.0",
+      "type": "fix",
+      "title": "Catch-up spawning is now a single setting you can reach from the title screen",
+      "summary": "Catch-up spawning decides how quickly the train re-extends after an end of it falls behind you. The option was there, but it only appeared while you were inside a singleplayer world \u2014 open Options from the title screen and the row was simply missing, with no hint that it existed. It is now one setting that shows up in both places, and changing it anywhere changes it for every world.",
+      "highlights": [
+        "The Catch-up spawning row now appears in Options -> Dungeon Train -> Train at the title screen, not just in a world.",
+        "It is a single global setting: set it once and every world uses it, new or existing.",
+        "Changing it still takes effect immediately on the train you are riding \u2014 no reload.",
+        "If you had set catch-up spawning inside a particular world, that choice is not carried over and returns to Fill all. Set it once more and it will stick for good."
+      ],
+      "pr": 1267,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
