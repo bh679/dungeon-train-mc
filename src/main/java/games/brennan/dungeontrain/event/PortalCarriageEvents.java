@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalClear;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
+import games.brennan.dungeontrain.portal.PortalConnectionStats;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.portal.PortalCrossingLight;
 import games.brennan.dungeontrain.portal.PortalRoomCell;
@@ -348,7 +349,7 @@ public final class PortalCarriageEvents {
      * on its own — what {@link PortalWalkThrough} is fed. Rebuilt from empty every tick, like
      * {@link #CROSSING_THIS_TICK}: it describes this tick's refusals and nothing older.
      */
-    private static final Set<Integer> REFUSED_THIS_TICK = new HashSet<>();
+    private static final Map<Integer, PortalSwapDiagnostics.Reason> REFUSED_THIS_TICK = new HashMap<>();
 
     /** Action-bar line for a corridor whose plate has been opened for walking through. */
     private static final String WALK_THROUGH_MESSAGE = "chat.dungeontrain.portal.walk_through";
@@ -571,6 +572,7 @@ public final class PortalCarriageEvents {
         SKIP_WARNED_AT.clear();
         REFUSED_THIS_TICK.clear();
         PortalWalkThrough.clear();
+        PortalConnectionStats.clear();
         PortalSwapDiagnostics.clear();
         // Where each player left a room goes with the rooms themselves — a pair key means a different
         // place in the next world opened, so a surviving binding would name a corridor that is not
@@ -1430,7 +1432,8 @@ public final class PortalCarriageEvents {
             // Counted only with somebody in it — the plate is opened for a player, not for a pair.
             decideWalkThrough(level, players, ship, layout, dims, role, carriageIndex, pairKey,
                 originX, originY, originZ,
-                anyPlayerInCorridor(players, layout, originX, originY, originZ));
+                anyPlayerInCorridor(players, layout, originX, originY, originZ)
+                    ? PortalSwapDiagnostics.Reason.NO_TWIN_STRUCTURE : null);
             return;
         }
 
@@ -1506,7 +1509,7 @@ public final class PortalCarriageEvents {
 
         // Last: everything above has had its say about whether this tick's swap was refused.
         decideWalkThrough(level, players, ship, layout, dims, role, carriageIndex, pairKey,
-            originX, originY, originZ, REFUSED_THIS_TICK.contains(carriageIndex));
+            originX, originY, originZ, REFUSED_THIS_TICK.get(carriageIndex));
     }
 
     /**
@@ -1524,9 +1527,9 @@ public final class PortalCarriageEvents {
                                           CarriageDims dims, PortalCarriageRole role,
                                           int carriageIndex, int pairKey,
                                           double originX, double originY, double originZ,
-                                          boolean refused) {
+                                          PortalSwapDiagnostics.Reason refused) {
         PortalWalkThrough.Decision decision =
-            PortalWalkThrough.noteTick(carriageIndex, level.getGameTime(), refused);
+            PortalWalkThrough.noteTick(carriageIndex, level.getGameTime(), refused != null);
         if (decision == PortalWalkThrough.Decision.NONE) return;
 
         // The standing structure's kind when one stands, the planned one otherwise — the same
@@ -1536,14 +1539,16 @@ public final class PortalCarriageEvents {
             dims, kind, role);
 
         if (decision != PortalWalkThrough.Decision.OPEN_AND_LOG) return;
-        LOGGER.warn("[DungeonTrain] Portal carriage {} ({}) has refused every swap for {} ticks — "
-                + "opening the plate between the pair's doors so the group can be walked through. "
-                + "Not recorded: the next re-stamp closes it. See the 'Portal swap refused' lines "
-                + "above for why.",
-            carriageIndex, role, PortalWalkThrough.OPEN_AFTER_TICKS);
+        String reason = refused == null ? "UNKNOWN" : refused.name();
+        LOGGER.warn("[DungeonTrain] Portal carriage {} ({}) has refused every swap for {} ticks "
+                + "[{}] — opening the plate between the pair's doors so the group can be walked "
+                + "through. Not recorded: the next re-stamp closes it.",
+            carriageIndex, role, PortalWalkThrough.OPEN_AFTER_TICKS, reason);
         for (ServerPlayer player : players) {
             if (layout.insideCorridor(player.getX() - originX, player.getY() - originY,
                     player.getZ() - originZ)) {
+                // The breakage this life's tally reports at death, once per door per player.
+                PortalConnectionStats.noteBroken(player.getUUID(), carriageIndex, reason);
                 player.displayClientMessage(Component.translatable(WALK_THROUGH_MESSAGE), true);
             }
         }
@@ -1624,6 +1629,11 @@ public final class PortalCarriageEvents {
             // in the room can be shut out of the train. See PortalSever.
             if (PortalSever.blocksMove(move.toFrame(),
                 PortalSever.isSevered(level, carriageIndex))) {
+                // A breakage the player sees, whatever the design says about it — once per door.
+                if (!copyOnly) {
+                    PortalConnectionStats.noteBroken(id, carriageIndex,
+                        PortalSwapDiagnostics.Reason.SEVERED.name());
+                }
                 if (PortalSwapDiagnostics.due(level, PortalSwapDiagnostics.Reason.SEVERED, id)) {
                     PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.SEVERED,
                         player.getName().getString(),
@@ -1653,7 +1663,9 @@ public final class PortalCarriageEvents {
                             + " carriage now at (" + fmt(frames.carriage().x()) + ", "
                             + fmt(frames.carriage().y()) + ", " + fmt(frames.carriage().z()) + ")");
                 }
-                if (!copyOnly) REFUSED_THIS_TICK.add(carriageIndex);
+                if (!copyOnly) {
+                    REFUSED_THIS_TICK.put(carriageIndex, PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED);
+                }
                 continue;
             }
 
@@ -1685,7 +1697,9 @@ public final class PortalCarriageEvents {
                             + "for " + LANDING_SUPPORT_DEPTH
                             + " blocks down. Leaving them where they are.");
                 }
-                if (!copyOnly) REFUSED_THIS_TICK.add(carriageIndex);
+                if (!copyOnly) {
+                    REFUSED_THIS_TICK.put(carriageIndex, PortalSwapDiagnostics.Reason.NO_LANDING);
+                }
                 continue;
             }
 
@@ -1709,6 +1723,11 @@ public final class PortalCarriageEvents {
                 PortalExitBindings.noteInbound(pairKey, role, player.getUUID(), level.getGameTime());
             }
 
+            // Walking IN is the connection that counts: the portal did what it is for. Walking out
+            // and the copies' exits are ways back, not crossings.
+            if (move.toFrame() == PortalFrames.FRAME_TWIN && !copyOnly) {
+                PortalConnectionStats.noteConnected(player.getUUID());
+            }
             player.connection.teleport(move.x(), targetY, move.z(),
                 player.getYRot(), player.getXRot(), RELATIVE_ALL);
             // Straight after the position, so the client's renderer knows this frame is the one to
