@@ -945,6 +945,7 @@
   "gui.dungeontrain.settings.label.compatible_terrain": "Terreno compat.:",
   "gui.dungeontrain.options.catch_up_burst": "Generación de alcance",
   "gui.dungeontrain.options.catch_up_burst.tip": "La rapidez con la que un extremo del tren vuelve a extenderse tras quedarse atrás, ya sea porque lo adelantas o porque pasa de largo mientras estás quieto. «Desactivada» añade un grupo de vagones cada vez: mantiene uniformes los huecos entre grupos, pero deja que un tren rápido se te escape. «2 de golpe» añade dos mientras un extremo va por detrás. «Rellenar todo» añade de una vez todos los grupos que faltan, así que alcanza al instante, a costa de un breve tirón mientras aparecen. Se aplica al tren en el que ya viajas.",
+  "gui.dungeontrain.options.catch_up_burst.auto": "Automático (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Desactivada",
   "gui.dungeontrain.options.catch_up_burst.burst_two": "2 de golpe",
   "gui.dungeontrain.options.catch_up_burst.fill": "Rellenar todo",

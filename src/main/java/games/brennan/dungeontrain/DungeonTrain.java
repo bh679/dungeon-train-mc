@@ -285,6 +285,12 @@ public class DungeonTrain {
             if (event.getConfig().getSpec() == DungeonTrainCommonConfig.SPEC) {
                 games.brennan.dungeontrain.worldgen.WorldGenCycle.invalidateCache();
                 games.brennan.dungeontrain.worldgen.ChuncksBand.invalidateCache();
+                // The catch-up pacing may now be a different stored value, or AUTO where it wasn't.
+                games.brennan.dungeontrain.train.CatchUpBurstAuto.invalidate();
+                // Same reasoning as the server-config step below — the common file needs its own
+                // migration pass, and AUTO is the first shipped default that has to reach existing
+                // installs rather than only fresh ones.
+                DungeonTrainCommonConfig.runPendingMigrations();
             }
             // Deliver shipped default changes to installs that already have a server config on disk.
             // NeoForge writes a default only for a MISSING key, so without this a changed DEFAULT_*

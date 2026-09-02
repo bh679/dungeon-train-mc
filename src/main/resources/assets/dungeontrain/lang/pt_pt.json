@@ -945,6 +945,7 @@
   "gui.dungeontrain.settings.label.compatible_terrain": "Terreno compat.:",
   "gui.dungeontrain.options.catch_up_burst": "Geração de recuperação",
   "gui.dungeontrain.options.catch_up_burst.tip": "A rapidez com que uma ponta do comboio volta a estender-se depois de ficar para trás — quando lhe passas à frente, ou quando ele passa por ti enquanto estás parado. «Desativada» acrescenta um grupo de carruagens de cada vez: mantém uniformes os intervalos entre grupos, mas deixa um comboio rápido escapar-te. «2 de uma vez» acrescenta dois enquanto uma ponta estiver atrasada. «Preencher tudo» acrescenta de uma só vez todos os grupos em falta, recuperando de imediato, ao custo de um breve solavanco enquanto aparecem. Aplica-se ao comboio em que já segues.",
+  "gui.dungeontrain.options.catch_up_burst.auto": "Automático (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Desativada",
   "gui.dungeontrain.options.catch_up_burst.burst_two": "2 de uma vez",
   "gui.dungeontrain.options.catch_up_burst.fill": "Preencher tudo",
