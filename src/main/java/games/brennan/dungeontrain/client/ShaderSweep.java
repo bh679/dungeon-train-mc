@@ -598,7 +598,8 @@ public final class ShaderSweep {
         LOGGER.info("[DungeonTrain] sweep[{}] pack={} bandSky(void={} nether={} flip={}) "
                 + "fogColour={} fogDist(asked={} far={}->{} cancelled={}) "
                 + "skybox(cubes={} drew={} stencil={}) "
-                + "clouds(hook={} hidden={} plane={}->{}) room({} t={} lift={}) crossing={}",
+                + "clouds(hook={} hidden={} plane={}->{}) room({} t={} lift={}) crossing={} "
+                + "shaderWorld={} postPass={} levelFboStencil={}",
             site.id(), ShaderCompat.describe(),
             ShaderDiagnostics.fmt(f.skyVoid()),
             ShaderDiagnostics.fmt(f.skyNether()),
@@ -617,8 +618,15 @@ public final class ShaderSweep {
             ShaderDiagnostics.roomSkyKind().isEmpty() ? "none" : ShaderDiagnostics.roomSkyKind(),
             ShaderDiagnostics.fmt(ShaderDiagnostics.roomSkyT()),
             ShaderDiagnostics.fmt(ShaderDiagnostics.roomSkyLift()),
-            ShaderDiagnostics.fmt(ShaderDiagnostics.crossingT()));
+            ShaderDiagnostics.fmt(ShaderDiagnostics.crossingT()),
+            orNone(games.brennan.dungeontrain.client.shader.ShaderWorld.describe()),
+            orNone(games.brennan.dungeontrain.client.shader.PostFogPass.lastDrawn()),
+            orNone(ShaderDiagnostics.levelFboStencil()));
         logRoomGeometry(site);
+    }
+
+    private static String orNone(String s) {
+        return s == null || s.isEmpty() ? "none" : s;
     }
 
     /**
