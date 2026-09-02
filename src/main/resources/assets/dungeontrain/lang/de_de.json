@@ -419,6 +419,7 @@
   "chat.dungeontrain.portal.reviving": "Dieser Gang hat den Anschluss an seinen Zug verloren. Halt dich fest…",
   "chat.dungeontrain.portal.no_train": "Dieser Raum hat seinen Zug verloren. Seine Gänge führen nirgendwohin.",
   "chat.dungeontrain.portal.returned": "Dieser Raum hat seinen Zug verloren — du wurdest zurück an Bord gesetzt.",
+  "chat.dungeontrain.portal.walk_through": "Dieser dimensionale Waggon stellt keine Verbindung her. Der Weg hindurch wurde geöffnet.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Die Shulkerkiste spürt, dass dies nicht der Ort dafür ist — vielleicht ein Fehler im Code des Schöpfers?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Es ist das Risiko nicht wert. Such dir einen anderen Waggon.",
   "chat.dungeontrain.portal_library.1": "Jedes Buch hier drin trägt denselben Namen: %1$s.",

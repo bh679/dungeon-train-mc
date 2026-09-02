@@ -404,6 +404,7 @@
   "chat.dungeontrain.portal.reviving": "ทางเดินนี้ตามหาขบวนรถไฟของมันไม่เจอ รอสักครู่…",
   "chat.dungeontrain.portal.no_train": "ห้องนี้สูญเสียขบวนรถไฟของมันไป ทางเดินของมันไม่นำไปสู่ที่ใด",
   "chat.dungeontrain.portal.returned": "ห้องนี้สูญเสียขบวนรถไฟของมันไป — คุณถูกส่งกลับขึ้นขบวนแล้ว",
+  "chat.dungeontrain.portal.walk_through": "ตู้ข้ามมิตินี้ไม่เชื่อมต่อ ทางผ่านถูกเปิดแล้ว",
   "chat.dungeontrain.portal.no_shulker_box.1": "กล่องชัลเกอร์รับรู้ได้ว่าที่นี่ไม่ใช่ที่สำหรับสิ่งนั้น หรือนี่จะเป็นบั๊กในโค้ดของผู้สร้าง?",
   "chat.dungeontrain.portal.no_shulker_box.2": "ไม่คุ้มที่จะเสี่ยง หาตู้อื่นเถอะ",
   "chat.dungeontrain.portal_library.1": "หนังสือทุกเล่มที่นี่มีชื่อเดียวกัน: %1$s",

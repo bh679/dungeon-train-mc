@@ -404,6 +404,7 @@
   "chat.dungeontrain.portal.reviving": "Nawala sa pasilyong ito ang tren nito. Sandali lang…",
   "chat.dungeontrain.portal.no_train": "Nawala sa silid na ito ang tren nito. Walang patutunguhan ang mga pasilyo nito.",
   "chat.dungeontrain.portal.returned": "Nawalan ng tren ang silid na ito — ibinalik ka na roon.",
+  "chat.dungeontrain.portal.walk_through": "Hindi kumokonekta ang bagon na pandimensyon na ito. Nabuksan na ang daan patawid.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Nararamdaman ng shulker box na hindi ito ang lugar para diyan, baka bug sa code ng gumawa?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Hindi sulit ang panganib. Maghanap ng ibang bagon.",
   "chat.dungeontrain.portal_library.1": "Iisang pangalan ang dala ng bawat aklat dito: %1$s.",

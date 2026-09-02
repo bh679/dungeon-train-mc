@@ -439,6 +439,7 @@
   "chat.dungeontrain.portal.reviving": "Этот коридор потерял свой поезд. Секунду…",
   "chat.dungeontrain.portal.no_train": "Комната полностью потеряла свой поезд. Её коридоры ведут в никуда.",
   "chat.dungeontrain.portal.returned": "Комната потеряла свой поезд, вас вернули обратно на него.",
+  "chat.dungeontrain.portal.walk_through": "Этот вагон-портал не соединяется. Проход открыт.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Явно не место для шалкер-ящика. Должно быть, веление Создателя.",
   "chat.dungeontrain.portal.no_shulker_box.2": "Оно того не стоит. Найди другой вагон.",
   "chat.dungeontrain.portal_library.1": "У каждой книги здесь один и тот же автор: %1$s.",

@@ -404,6 +404,7 @@
   "chat.dungeontrain.portal.reviving": "이 복도가 제 기차를 놓쳤다. 잠시만…",
   "chat.dungeontrain.portal.no_train": "이 방은 제 기차를 잃었다. 복도는 어디로도 이어지지 않는다.",
   "chat.dungeontrain.portal.returned": "이 방이 제 기차를 잃었다 — 너는 기차 위로 되돌려졌다.",
+  "chat.dungeontrain.portal.walk_through": "이 차원 객차가 연결되지 않습니다. 지나갈 길이 열렸습니다.",
   "chat.dungeontrain.portal.no_shulker_box.1": "셜커 상자가 여기는 그럴 곳이 아니라고 느낍니다. 제작자의 코드에 있는 버그일까요?",
   "chat.dungeontrain.portal.no_shulker_box.2": "위험을 무릅쓸 만한 일이 아닙니다. 다른 객차를 찾으세요.",
   "chat.dungeontrain.portal_library.1": "여기 있는 모든 책이 같은 이름을 달고 있다: %1$s.",

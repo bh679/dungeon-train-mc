@@ -434,6 +434,7 @@
   "chat.dungeontrain.portal.reviving": "Ten korytarz zgubił swój pociąg. Trzymaj się…",
   "chat.dungeontrain.portal.no_train": "Ten pokój stracił swój pociąg. Jego korytarze nie prowadzą donikąd.",
   "chat.dungeontrain.portal.returned": "Ten pokój stracił swój pociąg — odstawiono cię z powrotem na niego.",
+  "chat.dungeontrain.portal.walk_through": "Ten wagon wymiarowy nie łączy się. Przejście zostało otwarte.",
   "chat.dungeontrain.portal.no_shulker_box.1": "Pudło shulkera wyczuwa, że to nie miejsce na to — może błąd w kodzie twórcy?",
   "chat.dungeontrain.portal.no_shulker_box.2": "Nie warto ryzykować. Znajdź inny wagon.",
   "chat.dungeontrain.portal_library.1": "Każda książka tutaj nosi to samo imię: %1$s.",

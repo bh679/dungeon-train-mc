@@ -404,6 +404,7 @@
   "chat.dungeontrain.portal.reviving": "這條走廊跟丟了它的列車。撐著點……",
   "chat.dungeontrain.portal.no_train": "這個房間失去了它的列車。它的走廊哪裡也去不了。",
   "chat.dungeontrain.portal.returned": "這個房間失去了它的列車——你已經被送回車上。",
+  "chat.dungeontrain.portal.walk_through": "這節維度車廂沒有接通。已為你打開穿過去的路。",
   "chat.dungeontrain.portal.no_shulker_box.1": "潛影盒察覺到這裡不是放它的地方，也許是創作者的程式碼出了問題？",
   "chat.dungeontrain.portal.no_shulker_box.2": "不值得冒這個險。換一節車廂吧。",
   "chat.dungeontrain.portal_library.1": "這裡的每一本書都署著同一個名字：%1$s。",

@@ -404,6 +404,7 @@
   "chat.dungeontrain.portal.reviving": "この通路は自分の列車を見失っている。少し待て……",
   "chat.dungeontrain.portal.no_train": "この部屋は列車を失った。通路はどこにも通じていない。",
   "chat.dungeontrain.portal.returned": "この部屋は列車を失った——君は列車へ戻された。",
+  "chat.dungeontrain.portal.walk_through": "この次元車両は接続していません。通り抜けられる道が開かれました。",
   "chat.dungeontrain.portal.no_shulker_box.1": "シュルカーボックスは、ここがその場所ではないと感じ取っている。作者のコードの不具合だろうか？",
   "chat.dungeontrain.portal.no_shulker_box.2": "危険を冒す価値はない。別の車両を探せ。",
   "chat.dungeontrain.portal_library.1": "ここにある本は、どれも同じ名を負っている——%1$s。",
