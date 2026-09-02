@@ -16,9 +16,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Pins the tab split {@link ClientOptionsTab} hands to {@link DungeonTrainClientOptionsScreen}.
  *
- * <p>Two of the twenty-one rows are conditional — Political Filter on Chinese clients, Help Translate…
- * when a translation target resolves — and the screen packs rows two-across, so either one appearing
- * re-pairs the rows after it in its tab. These tests cover all four combinations, because the failure
+ * <p>Three of the twenty-four rows are conditional — Political Filter on Chinese clients, Help Translate…
+ * when a translation target resolves, Catch-up spawning everywhere but a multiplayer client — and the
+ * screen packs rows two-across, so any one appearing
+ * re-pairs the rows after it in its tab. These tests cover every combination, because the failure
  * mode is silent: a row quietly dropped from the model renders as a perfectly normal-looking tab that
  * is simply missing a setting.</p>
  */
@@ -217,14 +218,15 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("Catch-up spawning is absent when the train settings aren't writable from here")
+    @DisplayName("Catch-up spawning is absent on a multiplayer client, where the value is the server's")
     void catchUpBurst_absentWhenNotWritable() {
         for (boolean chinese : BOOLS) {
             for (boolean translate : BOOLS) {
                 List<ClientOptionsTab.Row> train =
                         ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, chinese, translate, false);
                 assertFalse(train.contains(ClientOptionsTab.Row.CATCH_UP_BURST),
-                        "a control that cannot write must not be shown at all");
+                        "a control that cannot write the value the player would see must not be "
+                                + "shown at all");
                 assertFalse(train.isEmpty(), "the tab must still open onto something");
             }
         }

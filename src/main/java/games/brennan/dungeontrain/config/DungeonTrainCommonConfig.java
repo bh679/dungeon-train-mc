@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.train.CatchUpBurstMode;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -265,6 +266,21 @@ public final class DungeonTrainCommonConfig {
     public static final double MIN_BACKER_NAME_WEIGHT = 0.0;
     public static final double MAX_BACKER_NAME_WEIGHT = 1000.0;
 
+    /**
+     * Catch-up spawning defaults to filling the whole shortfall in one tick.
+     * Measured in play, two groups per settle window HELD a ~8-group deficit
+     * steady at speed without ever closing it — the train stayed gone, which is
+     * the complaint the feature exists to answer. The pacing that keeps seams
+     * even is untouched in the steady state (at a one-group deficit every mode
+     * adds exactly one); the cost is one bigger server-tick spike on the tick
+     * that catches up, which {@code BURST_TWO} and {@code OFF} are there to
+     * trade away. See {@link CatchUpBurstMode}.
+     *
+     * <p>Global to every world rather than per-save, so it can be set from the
+     * title screen — see {@code train.catchUpBurstMode}.</p>
+     */
+    public static final CatchUpBurstMode DEFAULT_CATCH_UP_BURST_MODE = CatchUpBurstMode.FILL;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
@@ -308,6 +324,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.DoubleValue CHUNCKS_SLICE_RATIO;
     public static final ModConfigSpec.BooleanValue BREAK_BLOCKS_ON_CONTACT;
     public static final ModConfigSpec.DoubleValue BACKER_NAME_WEIGHT;
+    public static final ModConfigSpec.EnumValue<CatchUpBurstMode> CATCH_UP_BURST_MODE;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -355,6 +372,7 @@ public final class DungeonTrainCommonConfig {
         CHUNCKS_SLICE_RATIO = pair.getLeft().chuncksSliceRatio;
         BREAK_BLOCKS_ON_CONTACT = pair.getLeft().breakBlocksOnContact;
         BACKER_NAME_WEIGHT = pair.getLeft().backerNameWeight;
+        CATCH_UP_BURST_MODE = pair.getLeft().catchUpBurstMode;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -394,6 +412,9 @@ public final class DungeonTrainCommonConfig {
                         "case naming is byte-identical to a build without the feature.")
                 .defineInRange("backerNameWeight", DEFAULT_BACKER_NAME_WEIGHT,
                         MIN_BACKER_NAME_WEIGHT, MAX_BACKER_NAME_WEIGHT);
+        ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode = b
+                .comment("How fast the train may extend when a spawn lane has fallen BEHIND the carriages a player needs around them (fast speed, a reload, a chunk-gen wait). Normally each end adds one group per settle window, which is what keeps the seams between groups even — and also what lets a fast train run away from a standing player. FILL (default) = add however many groups that end is short, all in one tick, so it catches up instantly; costs one bigger server-tick spike as they appear. BURST_TWO = add two in one tick while an end is two or more groups short — a gentler catch-up that may not keep up at high speed. OFF = never add more than one group at a time. No mode changes the steady state, where an end is at most one group short. One global setting: it lives here rather than per-save, so it can be set from the title screen and applies to every world.")
+                .defineEnum("catchUpBurstMode", DEFAULT_CATCH_UP_BURST_MODE);
         b.pop();
 
         b.push("worldgen");
@@ -651,7 +672,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
-                breakBlocksOnContact, backerNameWeight);
+                breakBlocksOnContact, backerNameWeight, catchUpBurstMode);
     }
 
     /**
@@ -702,6 +723,21 @@ public final class DungeonTrainCommonConfig {
         if (!isLoaded()) return;
         BREAK_BLOCKS_ON_CONTACT.set(value);
         BREAK_BLOCKS_ON_CONTACT.save();
+    }
+
+    /**
+     * How fast an end of the train may re-extend after falling behind; falls back to the hardcoded
+     * default pre-load. Read per spawn decision by {@code TrainCarriageAppender}, so a change
+     * applies to the train already running.
+     */
+    public static CatchUpBurstMode getCatchUpBurstMode() {
+        return isLoaded() ? CATCH_UP_BURST_MODE.get() : DEFAULT_CATCH_UP_BURST_MODE;
+    }
+
+    public static void setCatchUpBurstMode(CatchUpBurstMode value) {
+        if (!isLoaded() || value == null) return;
+        CATCH_UP_BURST_MODE.set(value);
+        CATCH_UP_BURST_MODE.save();
     }
 
     /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */
@@ -973,5 +1009,6 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.DoubleValue chuncksKeepDensity,
                           ModConfigSpec.DoubleValue chuncksSliceRatio,
                           ModConfigSpec.BooleanValue breakBlocksOnContact,
-                          ModConfigSpec.DoubleValue backerNameWeight) {}
+                          ModConfigSpec.DoubleValue backerNameWeight,
+                          ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode) {}
 }
