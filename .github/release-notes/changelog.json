@@ -10973,8 +10973,27 @@
       "released_at": null
     },
     {
-      "id": "no-blocks-broken-chain",
+      "id": "carriages-anywhere-on-line",
       "version": "0.783.0",
+      "type": "feat",
+      "title": "The train is there when you come back to the track",
+      "summary": "Leaving the train, wandering off, and returning to the track somewhere else used to find nothing: once you were more than 128 blocks from any loaded carriage the train was unloaded and never came back. Now anyone within 128 blocks of the track line, anywhere along it, counts as near the train. If the train has moved on, carriages are generated toward you until the usual window around you is full; if you return to a stretch the train was unloaded from, those carriages are brought back rather than rebuilt. Standing beside the track now keeps the train rolling past you indefinitely.",
+      "highlights": [
+        "Carriages generate toward a player who returns to the track behind the tail or ahead of the head, up to about 2,400 blocks (64 groups) from the nearest existing carriage; further than that the train stays gone, as before.",
+        "Carriages the game had unloaded are reloaded where you return to them, and a fully unloaded train is woken when you reach its line.",
+        "Fixed an unloading bug where a carriage group could not be reloaded until the next world save, which is why a returning player sometimes found no train even on the old behaviour.",
+        "Catch-up carriages spawned far from you now settle cleanly instead of jittering for ten seconds; the whole train keeps moving while any carriage is still settling.",
+        "Walking more than 128 blocks away from the track still lets the train unload, as before."
+      ],
+      "pr": 1276,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "no-blocks-broken-chain",
+      "version": "0.784.0",
       "type": "feat",
       "title": "\"Look, Don't Touch\" \u2014 ride without breaking a block",
       "summary": "Two new hidden achievements for riding the train without laying a hand on it. Travel 100 carriages without breaking a single block for \"Look, Don't Touch\", and 1,000 for \"Museum Rules\". Every block counts \u2014 smashing a vase ends the run just as surely as mining a wall does. Break something and the count restarts from where you broke it; die and you get a clean slate.",
