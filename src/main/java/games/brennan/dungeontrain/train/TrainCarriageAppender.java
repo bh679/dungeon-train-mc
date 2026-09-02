@@ -5602,8 +5602,11 @@ public final class TrainCarriageAppender {
     /** Ticks between wake attempts for a fully-culled train (see {@link #mayWakeRemote}). */
     static final int REMOTE_WAKE_INTERVAL_TICKS = 40;
 
-    /** Wake attempts per episode before giving up on a train that never surfaces. */
-    static final int REMOTE_MAX_WAKES = 4;
+    /** Wake attempts per episode before pausing on a train that never surfaces. */
+    static final int REMOTE_MAX_WAKES = 6;
+
+    /** Ticks after a spent episode before a fresh one may start (a held group can become snatchable later). */
+    static final int REMOTE_WAKE_COOLDOWN_TICKS = 600;
 
     /** Cadence of the per-train "N corridor-near players" DEBUG line. */
     private static final int REMOTE_DEBUG_PERIOD_TICKS = 100;
@@ -5619,8 +5622,16 @@ public final class TrainCarriageAppender {
      */
     record LineFix(int anchor, double backPadMinX, long gameTick, long frozenTicksAtFix, double velX) {}
 
-    /** Wake budget for one fully-culled train: last attempt tick and attempts this episode. */
-    record RemoteWake(long lastTick, int wakes) {}
+    /**
+     * Wake budget for one fully-culled train: last attempt tick, attempts this episode, and the
+     * sub-levels already asked for this episode (a snatch Sable answers with "wasn't present in
+     * the holding chunk" must not be repeated — the next-nearest group is asked instead).
+     */
+    record RemoteWake(long lastTick, int wakes, Set<UUID> tried) {
+        RemoteWake(long lastTick, int wakes) {
+            this(lastTick, wakes, ConcurrentHashMap.newKeySet());
+        }
+    }
 
     /**
      * Last known line fix per train. Refreshed every tick the train has a visible, placed,
@@ -5743,11 +5754,21 @@ public final class TrainCarriageAppender {
         return !held && !resident;
     }
 
-    /** Whether a fully-culled train may be asked for a group this tick. */
+    /**
+     * Whether a fully-culled train may be asked for a group this tick: attempts are spaced
+     * {@link #REMOTE_WAKE_INTERVAL_TICKS} apart, and a spent episode pauses for
+     * {@link #REMOTE_WAKE_COOLDOWN_TICKS} before {@link #isNewWakeEpisode} lets a fresh one start.
+     */
     static boolean mayWakeRemote(RemoteWake budget, long now) {
         if (budget == null) return true;
-        if (budget.wakes() >= REMOTE_MAX_WAKES) return false;
+        if (budget.wakes() >= REMOTE_MAX_WAKES) return isNewWakeEpisode(budget, now);
         return now - budget.lastTick() >= REMOTE_WAKE_INTERVAL_TICKS;
+    }
+
+    /** A spent budget whose cooldown has elapsed starts over with an empty tried-set. */
+    static boolean isNewWakeEpisode(RemoteWake budget, long now) {
+        return budget != null && budget.wakes() >= REMOTE_MAX_WAKES
+            && now - budget.lastTick() >= REMOTE_WAKE_COOLDOWN_TICKS;
     }
 
     /**
@@ -5895,13 +5916,22 @@ public final class TrainCarriageAppender {
             }
             if (bestEst == null) continue;
             RemoteWake budget = REMOTE_WAKES.get(trainId);
-            REMOTE_WAKES.put(trainId, new RemoteWake(now, (budget == null) ? 1 : budget.wakes() + 1));
-            wakeOneGroup(level, trainId, groups, bestEst);
+            RemoteWake next = (budget == null || isNewWakeEpisode(budget, now))
+                ? new RemoteWake(now, 1)
+                : new RemoteWake(now, budget.wakes() + 1, budget.tried());
+            REMOTE_WAKES.put(trainId, next);
+            wakeOneGroup(level, trainId, groups, bestEst, next.tried());
         }
     }
 
-    /** Reload the held group nearest {@code est} and adopt it; skips groups Sable cannot revive. */
-    private static void wakeOneGroup(ServerLevel level, UUID trainId, Map<Integer, ManagedShip> groups, int est) {
+    /**
+     * Reload the held group nearest {@code est} that has not been asked for this episode, and
+     * adopt it. A snatch can "succeed" at the API and still load nothing (Sable: "wasn't present
+     * in the holding chunk"), so every asked sub-level goes into {@code tried} and the next
+     * attempt moves along the train rather than asking the same one again.
+     */
+    private static void wakeOneGroup(ServerLevel level, UUID trainId, Map<Integer, ManagedShip> groups,
+                                     int est, Set<UUID> tried) {
         Shipyard shipyard = Shipyards.of(level);
         List<Map.Entry<Integer, ManagedShip>> byDistance = new ArrayList<>(groups.entrySet());
         byDistance.sort(Comparator.comparingInt(e -> Math.abs(e.getKey() - est)));
@@ -5909,8 +5939,10 @@ public final class TrainCarriageAppender {
             ManagedShip ship = e.getValue();
             if (ship == null) continue;
             UUID uuid = ship.subLevelId();
+            if (tried.contains(uuid)) continue;
             // Held first: a stale handle still answers isResident() from its last-known state.
             if (!shipyard.isHeld(uuid)) continue;
+            tried.add(uuid);
             if (shipyard.reloadFromHolding(uuid)) {
                 ManagedShip live = adoptReloadedGroup(level, shipyard, trainId, e.getKey(), uuid);
                 LOGGER.info("[DungeonTrain][remote] Nothing of trainId={} is loaded and a player is on the line near carriage {} — reloaded group anchor={} (subLevelId={}, adopted={})",

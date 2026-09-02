@@ -1083,7 +1083,13 @@ final class TrainCarriageAppenderTest {
         assertFalse(TrainCarriageAppender.mayWakeRemote(one, 100L + TrainCarriageAppender.REMOTE_WAKE_INTERVAL_TICKS - 1));
         assertTrue(TrainCarriageAppender.mayWakeRemote(one, 100L + TrainCarriageAppender.REMOTE_WAKE_INTERVAL_TICKS));
         TrainCarriageAppender.RemoteWake spent = new TrainCarriageAppender.RemoteWake(100L, TrainCarriageAppender.REMOTE_MAX_WAKES);
-        assertFalse(TrainCarriageAppender.mayWakeRemote(spent, 100_000L));
+        assertFalse(TrainCarriageAppender.mayWakeRemote(spent, 100L + TrainCarriageAppender.REMOTE_WAKE_COOLDOWN_TICKS - 1));
+        assertFalse(TrainCarriageAppender.isNewWakeEpisode(spent, 100L + TrainCarriageAppender.REMOTE_WAKE_COOLDOWN_TICKS - 1));
+        // After the cooldown a spent episode starts over (a held group can become snatchable later).
+        assertTrue(TrainCarriageAppender.mayWakeRemote(spent, 100L + TrainCarriageAppender.REMOTE_WAKE_COOLDOWN_TICKS));
+        assertTrue(TrainCarriageAppender.isNewWakeEpisode(spent, 100L + TrainCarriageAppender.REMOTE_WAKE_COOLDOWN_TICKS));
+        assertFalse(TrainCarriageAppender.isNewWakeEpisode(one, 100_000L));
+        assertFalse(TrainCarriageAppender.isNewWakeEpisode(null, 100_000L));
     }
 
     @Test
