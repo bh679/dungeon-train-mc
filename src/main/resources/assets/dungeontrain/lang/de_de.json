@@ -945,6 +945,7 @@
   "gui.dungeontrain.settings.label.compatible_terrain": "Kompat. Gelände:",
   "gui.dungeontrain.options.catch_up_burst": "Aufhol-Spawn",
   "gui.dungeontrain.options.catch_up_burst.tip": "Wie schnell ein Zugende wieder verlängert wird, nachdem es zurückgefallen ist — wenn du ihm davonläufst oder er an dir vorbeifährt, während du stehen bleibst. „Aus“ hängt jeweils eine Wagengruppe an; das hält die Abstände zwischen den Gruppen gleichmäßig, lässt einen schnellen Zug aber davonfahren. „2 auf einmal“ hängt zwei an, solange ein Ende zurückliegt. „Alle auffüllen“ hängt alle fehlenden Gruppen auf einmal an, holt also sofort auf — um den Preis eines kurzen Stotterns, während sie erscheinen. Gilt auch für den Zug, auf dem du gerade fährst.",
+  "gui.dungeontrain.options.catch_up_burst.auto": "Automatisch (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Aus",
   "gui.dungeontrain.options.catch_up_burst.burst_two": "2 auf einmal",
   "gui.dungeontrain.options.catch_up_burst.fill": "Alle auffüllen",
