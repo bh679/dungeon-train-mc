@@ -10794,6 +10794,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vivecraft-compat-moved-to-addon",
+      "version": "0.773.0",
+      "type": "refactor",
+      "title": "VR support for trains moved to a separate mod",
+      "summary": "If you play in VR with Vivecraft, the fixes that make VR work on a moving train now live in a separate mod, Vivecraft Sable Compat, which you install alongside Dungeon Train. Installing it also fixes VR teleport, which previously threw you into the void when you tried to teleport while on a train. Nothing changes if you don't play in VR.",
+      "highlights": [
+        "VR teleport on a moving train now lands where you aimed, instead of dropping you into the void \u2014 this fix is in the new Vivecraft Sable Compat mod.",
+        "VR melee on a train still works, but the fix moved: install Vivecraft Sable Compat to keep it. Dungeon Train on its own no longer carries it.",
+        "Neither problem was really Dungeon Train's \u2014 they affect any Sable ship \u2014 so they now live in one mod that any Sable pack can use."
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
