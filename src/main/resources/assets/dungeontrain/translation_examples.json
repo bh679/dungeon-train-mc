@@ -2637,43 +2637,33 @@
       ]
     }
   },
-  "gui.dungeontrain.death.narr.updates_value.one": {
+  "gui.dungeontrain.death.narr.lbl_updates_months": {
     "1": {
-      "label": "a count of one",
+      "label": "the span those updates landed in, as a whole clause - only used while the project is younger than a year",
       "examples": [
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.death.narr.updates_value.other": {
-    "1": {
-      "label": "how many updates shipped in the span named on the line below",
-      "examples": [
-        "117",
-        "765"
-      ]
-    }
-  },
-  "gui.dungeontrain.death.narr.lbl_updates_in": {
-    "1": {
-      "label": "the span those updates landed in, as a whole clause - a week by default, the project's whole life on hover",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.time.week.one",
-          "args": [
-            "1"
-          ]
-        },
         {
           "key": "chat.dungeontrain.time.month.other",
           "args": [
             "5"
           ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.tip_last_active": {
+    "1": {
+      "label": "how long ago the creator last committed work, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "3"
+          ]
         },
         {
-          "key": "chat.dungeontrain.time.year.one",
+          "key": "chat.dungeontrain.time.day.other",
           "args": [
-            "1"
+            "2"
           ]
         }
       ]
