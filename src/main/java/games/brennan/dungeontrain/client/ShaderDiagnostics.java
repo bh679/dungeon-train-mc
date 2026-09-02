@@ -65,6 +65,9 @@ public final class ShaderDiagnostics {
 
     // --- Sticky: what the level framebuffer's stencil attachment was, last time the punch looked --
     private static volatile String levelFboStencil = "";
+    // --- Sticky: centre-pixel depth before and after the skybox reopen pass (shader packs only) ---
+    private static volatile float reopenBefore = -1.0f;
+    private static volatile float reopenAfter = -1.0f;
 
     // --- Lightmap-paced: dimensional carriage sky/lighting and the transition --------------------
     private static volatile String roomSkyKind = "";
@@ -192,6 +195,15 @@ public final class ShaderDiagnostics {
     public static void recordLevelFboStencil(String type) {
         levelFboStencil = type == null ? "" : type;
     }
+
+    /** Centre-pixel depth either side of {@code SkyboxHoleReopen}; {@code -1} = never ran. */
+    public static void recordReopen(float before, float after) {
+        reopenBefore = before;
+        reopenAfter = after;
+    }
+
+    public static float reopenBefore() { return reopenBefore; }
+    public static float reopenAfter() { return reopenAfter; }
 
     /** The skybox punch pass' outcome for this frame. */
     public static void recordSkybox(int cubes, String variants, boolean stencil, boolean drew) {

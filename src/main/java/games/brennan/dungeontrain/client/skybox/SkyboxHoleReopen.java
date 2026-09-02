@@ -79,6 +79,8 @@ public final class SkyboxHoleReopen {
      */
     public static void run(Runnable drawCubes) {
         boolean depthMaskWas = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+        boolean probe = games.brennan.dungeontrain.client.ShaderDiagnostics.recording();
+        float before = probe ? readCentreDepth() : 0.0F;
         try {
             // Mark: stencil the pixels where a cube face is still the frontmost surface.
             SkyboxStencil.beginMaskPass();
@@ -103,6 +105,9 @@ public final class SkyboxHoleReopen {
             RenderSystem.depthFunc(GL11.GL_ALWAYS);
             RenderSystem.depthMask(true);
             drawFarPlaneQuad();
+            if (probe) {
+                games.brennan.dungeontrain.client.ShaderDiagnostics.recordReopen(before, readCentreDepth());
+            }
         } finally {
             SkyboxStencil.endStencil();
             RenderSystem.polygonOffset(0.0F, 0.0F);
@@ -113,6 +118,21 @@ public final class SkyboxHoleReopen {
             RenderSystem.depthMask(depthMaskWas);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
+    }
+
+    /**
+     * The depth at the centre of the bound framebuffer. Diagnostics only: a readback stalls the
+     * pipeline, so it runs solely while the F3+5 panel is open, where "did the reopen take?" is
+     * exactly the question being asked.
+     */
+    private static float readCentreDepth() {
+        int[] viewport = new int[4];
+        GL11.glGetIntegerv(GL11.GL_VIEWPORT, viewport);
+        java.nio.FloatBuffer out = java.nio.ByteBuffer.allocateDirect(4)
+            .order(java.nio.ByteOrder.nativeOrder()).asFloatBuffer();
+        GL11.glReadPixels(viewport[0] + viewport[2] / 2, viewport[1] + viewport[3] / 2, 1, 1,
+            GL11.GL_DEPTH_COMPONENT, GL11.GL_FLOAT, out);
+        return out.get(0);
     }
 
     /**

@@ -175,6 +175,12 @@ public final class ShaderDiagnosticsHud {
                 : "none on screen"), cubes > 0 ? COLOR_ACTIVE : COLOR_IDLE));
         }
 
+        float reopenBefore = ShaderDiagnostics.reopenBefore();
+        if (reopenBefore >= 0.0f) {
+            lines.add(new Line(String.format(Locale.ROOT, "Reopen: centre depth %.5f -> %.5f",
+                reopenBefore, ShaderDiagnostics.reopenAfter()), COLOR_ACTIVE));
+        }
+
         String world = games.brennan.dungeontrain.client.shader.ShaderWorld.describe();
         lines.add(new Line("Shader world: " + (world.isEmpty() ? "overworld (pack default)" : world),
             world.isEmpty() ? COLOR_IDLE : COLOR_ACTIVE));
