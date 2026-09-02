@@ -11007,6 +11007,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "no-blocks-broken-chain",
+      "version": "0.786.0",
+      "type": "feat",
+      "title": "A couple of new advancements",
+      "summary": "Two more hidden advancements have been added. No hints here.",
+      "highlights": [],
+      "pr": 1277,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
