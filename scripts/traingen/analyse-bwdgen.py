@@ -74,7 +74,7 @@ INT_FIELDS = {
     "tick", "blockedFor", "playerPIdx", "skew", "minNeeded", "registryMin",
     "visibleTail", "span", "registryCount", "visibleCount", "anchor", "deficit",
     "ticksPending", "latchAge", "forceLoaded", "chunkWait", "target", "burstGroups",
-    "maxNeeded",
+    "maxNeeded", "occupiedPIdx",
 }
 
 
