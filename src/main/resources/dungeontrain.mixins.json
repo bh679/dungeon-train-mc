@@ -86,6 +86,7 @@
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",
     "client.LevelRendererVoidSkyMixin",
+    "client.GameRendererCrossfadeMixin",
     "client.LightTextureEndBandMixin",
     "client.LightTextureNetherBandMixin",
     "client.LightTextureUpsideDownBandMixin",

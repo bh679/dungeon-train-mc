@@ -1,0 +1,16 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.mixin",
+  "plugin": "games.brennan.dungeontrain.mixin.IrisMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "dungeontrain.refmap.json",
+  "mixins": [],
+  "client": [
+    "client.iris.IrisCurrentDimensionMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

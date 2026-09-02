@@ -48,11 +48,42 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * and vanilla's black void plane must be skipped, since showing the sky as it looks from above
  * ground is the entire point of that variant.</p>
  */
-@Mixin(LevelRenderer.class)
+// Priority 1500: Iris injects at renderSky HEAD too (its render-phase bookkeeping), at the default
+// 1000. Ours runs after it, so a spoofed frame's sky is drawn — or cancelled — in exactly the phase
+// vanilla's own End/Nether branches would run in.
+@Mixin(value = LevelRenderer.class, priority = 1500)
 public abstract class LevelRendererVoidSkyMixin {
 
     /** Above this End-sky intensity, clouds are hidden. */
     private static final double DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD = 0.5;
+
+    /**
+     * Under a shader pack that is being told this frame is the Nether or the End, replace the
+     * overworld sky pass with what vanilla draws in that dimension: the End's sky box, or nothing
+     * for the Nether. The pack's composite then paints its own atmosphere where the depth is still
+     * the far plane, exactly as it does in the real dimension. The TAIL overlays below never run on
+     * these frames; they belong to the vanilla path and to the pack's overworld frames of a fade.
+     */
+    @Inject(
+            method = "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void dungeontrain$spoofedWorldSky(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick,
+                                              Camera camera, boolean isFoggy, Runnable skyFogSetup, CallbackInfo ci) {
+        games.brennan.dungeontrain.client.shader.ShaderWorld.World world =
+            games.brennan.dungeontrain.client.shader.ShaderWorld.reporting();
+        if (world == null || SkyboxStencil.isDrawingSurfaceSky()) return;
+        if (world == games.brennan.dungeontrain.client.shader.ShaderWorld.World.END) {
+            // Vanilla's renderEndSky: the end_sky box through position_tex_color, no depth.
+            VoidSkyRenderer.renderAsSkySource(frustumMatrix);
+            ci.cancel();
+        } else if (world == games.brennan.dungeontrain.client.shader.ShaderWorld.World.NETHER) {
+            // Vanilla draws no sky in the Nether; the fog colour (already tinted by NetherFogEvents)
+            // is what the pack's Nether programs start from.
+            ci.cancel();
+        }
+    }
 
     @Inject(
             method = "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",

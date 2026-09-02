@@ -1,0 +1,241 @@
+package games.brennan.dungeontrain.client.shader;
+
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.ClientNetherBand;
+import games.brennan.dungeontrain.client.ClientPortalRoomSky;
+import games.brennan.dungeontrain.client.ClientVoidBand;
+import games.brennan.dungeontrain.client.ShaderCompat;
+import games.brennan.dungeontrain.portal.PortalRoomSky;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.Level;
+import org.slf4j.Logger;
+
+import java.lang.reflect.Method;
+import java.util.Locale;
+
+/**
+ * Which of a shader pack's worlds Dungeon Train wants rendered right now, and how far along the
+ * change is.
+ *
+ * <h2>The decision</h2>
+ * <p>Three things can pull the frame away from the pack's overworld: the Nether band, the End
+ * band (the void's sky ramp is the End's), and a dimensional carriage whose sky is Nether or End.
+ * Each is a 0..1 ramp. A band's ramp is remapped through {@link #FADE_WINDOW_START}..{@link
+ * #FADE_WINDOW_END} so the expensive double-render window is the middle of the band's own fade
+ * rather than the whole of it; a room's ease is used as it stands, because it is already a short
+ * walk or a one-second ease.</p>
+ *
+ * <p>The result is a {@link Blend}: {@code from}, {@code to} and a weight {@code w}. {@code w} at 0
+ * or 1 is a settled world and one render; anything between is a cross-fade and two.</p>
+ *
+ * <h2>What Iris is told</h2>
+ * <p>{@link #irisOverride()} answers {@code IrisCurrentDimensionMixin} from {@link #reporting},
+ * which {@link ShaderWorldCrossfade} sets explicitly around each {@code renderLevel} call. It is
+ * never derived per call: Iris asks several times a frame, from the pipeline lookup and from
+ * uniform lambdas, and every answer within one render must agree.</p>
+ *
+ * <p>Everything Iris-typed is reached reflectively, once. Without Iris every method here is a
+ * cheap no-op and the class never touches an Iris symbol.</p>
+ */
+public final class ShaderWorld {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** A shader pack's world folders, as Iris names them. */
+    public enum World {
+        OVERWORLD("world0"), NETHER("world-1"), END("world1");
+
+        private final String folder;
+
+        World(String folder) {
+            this.folder = folder;
+        }
+
+        public String folder() {
+            return folder;
+        }
+    }
+
+    /** {@code from} → {@code to} at {@code w}. {@code w} outside (0,1) is a settled {@code to}. */
+    public record Blend(World from, World to, float w) {
+        public boolean fading() {
+            return w > 0.0f && w < 1.0f;
+        }
+
+        /** The world a single render should report: {@code to} once past the midpoint, else {@code from}. */
+        public World settled() {
+            return w >= 0.5f ? to : from;
+        }
+    }
+
+    /** Band ramp below this: pure {@code from}. Above {@link #FADE_WINDOW_END}: pure {@code to}. */
+    public static final float FADE_WINDOW_START = 0.3f;
+    public static final float FADE_WINDOW_END = 0.7f;
+
+    private static final Blend NONE = new Blend(World.OVERWORLD, World.OVERWORLD, 0.0f);
+
+    /** The world Iris should currently be told about, or {@code null} for the real one. Render thread. */
+    private static volatile World reporting = null;
+
+    /** The frame's decision, kept for the diagnostics panel. */
+    private static volatile Blend lastBlend = NONE;
+    private static volatile int lastRenders = 1;
+
+    private static volatile boolean irisResolved = false;
+    private static Object idNether;
+    private static Object idEnd;
+    private static Method getPipelineManager;
+    private static Method preparePipeline;
+    private static Method getCurrentDimension;
+
+    private ShaderWorld() {}
+
+    // --- Decision -----------------------------------------------------------------------------------
+
+    /**
+     * Decide this frame's blend from the camera position. Pure read of the band ramps and the
+     * room-sky ease; does not advance anything.
+     */
+    public static Blend decide(double camX) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return NONE;
+
+        // The band underneath: at most one of the two is above zero at any X.
+        World bandWorld = World.OVERWORLD;
+        float bandRamp = 0.0f;
+        double nether = ClientNetherBand.netherIntensityAt(camX);
+        double end = ClientVoidBand.endSkyIntensityAt(camX);
+        if (nether > 0.0) {
+            bandWorld = World.NETHER;
+            bandRamp = (float) nether;
+        } else if (end > 0.0) {
+            bandWorld = World.END;
+            bandRamp = (float) end;
+        }
+        float bandW = window(bandRamp);
+        Blend band = new Blend(World.OVERWORLD, bandWorld, bandWorld == World.OVERWORLD ? 0.0f : bandW);
+
+        // A dimensional carriage on top: its ease runs from whatever the band had settled on.
+        World roomWorld = roomWorld(ClientPortalRoomSky.sky());
+        float roomW = roomWorld == null ? 0.0f : clamp(ClientPortalRoomSky.applied());
+        if (roomWorld == null || roomW <= 0.0f) return band;
+        World base = band.settled();
+        if (roomWorld == base) return new Blend(base, base, 1.0f);
+        return new Blend(base, roomWorld, roomW);
+    }
+
+    private static World roomWorld(PortalRoomSky sky) {
+        if (sky == null) return null;
+        return switch (sky) {
+            case NETHER -> World.NETHER;
+            case END -> World.END;
+            default -> null;
+        };
+    }
+
+    /** Remap a band ramp so the cross-fade occupies only the window's share of it. */
+    static float window(float ramp) {
+        if (ramp <= FADE_WINDOW_START) return 0.0f;
+        if (ramp >= FADE_WINDOW_END) return 1.0f;
+        return (ramp - FADE_WINDOW_START) / (FADE_WINDOW_END - FADE_WINDOW_START);
+    }
+
+    private static float clamp(float v) {
+        return Math.max(0.0f, Math.min(1.0f, v));
+    }
+
+    // --- What Iris is told ------------------------------------------------------------------------
+
+    /** Set the world every Iris query should answer with until changed. {@code null} = the real one. */
+    public static void setReporting(World world) {
+        reporting = world == World.OVERWORLD ? null : world;
+    }
+
+    /** The world currently being reported to Iris, or {@code null} when Iris sees the real one. */
+    public static World reporting() {
+        return reporting;
+    }
+
+    /**
+     * The Iris {@code NamespacedId} to return from {@code Iris.getCurrentDimension()}, or
+     * {@code null} to leave Iris' own answer alone. Called from the mixin on every Iris query.
+     */
+    public static Object irisOverride() {
+        World w = reporting;
+        if (w == null) return null;
+        resolveIris();
+        return w == World.NETHER ? idNether : w == World.END ? idEnd : null;
+    }
+
+    /** Record what the frame actually did, for the panel. */
+    static void recordFrame(Blend blend, int renders) {
+        lastBlend = blend;
+        lastRenders = renders;
+    }
+
+    /** One line for the F3+5 panel. */
+    public static String describe() {
+        Blend b = lastBlend;
+        if (!ShaderCompat.active()) return "";
+        if (!b.fading()) {
+            World w = b.settled();
+            return w == World.OVERWORLD ? "" : w.name().toLowerCase(Locale.ROOT) + " (" + w.folder() + ")";
+        }
+        return String.format(Locale.ROOT, "%s -> %s w=%.2f (%d renders)",
+            b.from().name().toLowerCase(Locale.ROOT), b.to().name().toLowerCase(Locale.ROOT), b.w(), lastRenders);
+    }
+
+    // --- Pre-warm -----------------------------------------------------------------------------------
+
+    /**
+     * Ask Iris to build the Nether and End pipelines now, so the first band entry does not pay the
+     * shader compile mid-fade. Render thread only; a no-op without Iris or without a pack. Iris
+     * caches one pipeline per id and returns the cached one thereafter, and the per-frame lookup
+     * restores the real dimension's pipeline on the next render.
+     */
+    public static void prewarm() {
+        if (!ShaderCompat.active()) return;
+        resolveIris();
+        if (getPipelineManager == null || preparePipeline == null || getCurrentDimension == null) return;
+        World was = reporting;
+        try {
+            reporting = null;
+            Object real = getCurrentDimension.invoke(null);
+            Object manager = getPipelineManager.invoke(null);
+            long t0 = System.nanoTime();
+            preparePipeline.invoke(manager, idNether);
+            preparePipeline.invoke(manager, idEnd);
+            if (real != null) preparePipeline.invoke(manager, real);
+            LOGGER.info("[DungeonTrain] Pre-warmed the shader pack's Nether and End pipelines in {} ms",
+                (System.nanoTime() - t0) / 1_000_000L);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Shader pipeline pre-warm failed: {}", t.toString());
+        } finally {
+            reporting = was;
+        }
+    }
+
+    private static void resolveIris() {
+        if (irisResolved) return;
+        synchronized (ShaderWorld.class) {
+            if (irisResolved) return;
+            try {
+                Class<?> dimensionId = Class.forName("net.irisshaders.iris.shaderpack.DimensionId");
+                idNether = dimensionId.getField("NETHER").get(null);
+                idEnd = dimensionId.getField("END").get(null);
+                Class<?> iris = Class.forName("net.irisshaders.iris.Iris");
+                getPipelineManager = iris.getMethod("getPipelineManager");
+                getCurrentDimension = iris.getMethod("getCurrentDimension");
+                Class<?> namespacedId = Class.forName("net.irisshaders.iris.shaderpack.materialmap.NamespacedId");
+                Class<?> pipelineManager = Class.forName("net.irisshaders.iris.pipeline.PipelineManager");
+                preparePipeline = pipelineManager.getMethod("preparePipeline", namespacedId);
+            } catch (ClassNotFoundException absent) {
+                // No Iris: the mixin never applied either, so nothing will ask.
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] Iris dimension ids unavailable; shader worlds stay vanilla: {}", t.toString());
+            } finally {
+                irisResolved = true;
+            }
+        }
+    }
+}

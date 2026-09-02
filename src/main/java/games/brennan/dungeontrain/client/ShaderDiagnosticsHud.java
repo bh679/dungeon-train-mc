@@ -175,6 +175,10 @@ public final class ShaderDiagnosticsHud {
                 : "none on screen"), cubes > 0 ? COLOR_ACTIVE : COLOR_IDLE));
         }
 
+        String world = games.brennan.dungeontrain.client.shader.ShaderWorld.describe();
+        lines.add(new Line("Shader world: " + (world.isEmpty() ? "overworld (pack default)" : world),
+            world.isEmpty() ? COLOR_IDLE : COLOR_ACTIVE));
+
         String postPass = games.brennan.dungeontrain.client.shader.PostFogPass.lastDrawn();
         lines.add(new Line("Post pass: " + (postPass.isEmpty() ? NONE : postPass),
             postPass.isEmpty() ? COLOR_IDLE : COLOR_ACTIVE));

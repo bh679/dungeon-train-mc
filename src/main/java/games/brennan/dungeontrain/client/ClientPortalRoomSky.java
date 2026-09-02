@@ -134,6 +134,15 @@ public final class ClientPortalRoomSky {
     }
 
     /**
+     * How much of the lift is applied right now, {@code 0}..{@code 1}, <em>without</em> advancing
+     * the ease. For readers that need the room's state several times a frame — the shader-world
+     * decision — while {@link #advance} stays the single owner of the ease.
+     */
+    public static float applied() {
+        return applied;
+    }
+
+    /**
      * True when the camera is inside the copies of the room that have actually been stamped.
      *
      * <p>Unlike the fog's test this one has a real vertical term and no horizontal padding: the
