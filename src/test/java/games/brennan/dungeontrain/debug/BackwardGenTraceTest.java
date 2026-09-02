@@ -94,6 +94,8 @@ class BackwardGenTraceTest {
         assertTrue(Reason.EDGE_DEFER.isBlocking());
         assertTrue(Reason.GATE_CULL_LATCH.isBlocking());
         assertTrue(Reason.CHUNKGEN_DEFER.isBlocking());
+        assertTrue(Reason.EDGE_FROZEN.isBlocking());
+        assertTrue(Reason.TOO_FAR.isBlocking());
     }
 
     /**
@@ -182,6 +184,6 @@ class BackwardGenTraceTest {
             /*ticksPending*/ -1L, /*latchAge*/ -1L, /*edgeSub*/ null,
             /*forceLoaded*/ 4, /*chunkWait*/ -1L, /*targetCount*/ 30, /*tailGapX*/ 84.5,
             /*maxNeeded*/ -20, /*heldOccupied*/ Boolean.FALSE,
-            new BackwardGenTrace.RideContext(false, "survival", true, 2.0, "FILL", 1));
+            new BackwardGenTrace.RideContext(false, "survival", true, 2.0, "FILL", 1, false));
     }
 }
