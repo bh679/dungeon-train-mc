@@ -8,6 +8,12 @@
       ]
     }
   },
+  "gui.dungeontrain.options.catch_up_burst.auto": {
+    "1": {
+      "label": "the catch-up mode AUTO chose for this machine — one of the Off / Burst 2 / Fill all values of this same setting, already translated",
+      "examples": ["Fill all", "Burst 2"]
+    }
+  },
   "chat.dungeontrain.book_burns_author": {
     "1": {
       "label": "the name of the author credited on the burning book",

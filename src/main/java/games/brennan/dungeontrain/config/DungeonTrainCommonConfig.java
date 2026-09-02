@@ -1,7 +1,10 @@
 package games.brennan.dungeontrain.config;
 
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.train.CatchUpBurstAuto;
 import games.brennan.dungeontrain.train.CatchUpBurstMode;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import org.slf4j.Logger;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -279,9 +282,24 @@ public final class DungeonTrainCommonConfig {
      * <p>Global to every world rather than per-save, so it can be set from the
      * title screen — see {@code train.catchUpBurstMode}.</p>
      */
-    public static final CatchUpBurstMode DEFAULT_CATCH_UP_BURST_MODE = CatchUpBurstMode.FILL;
+    public static final CatchUpBurstMode DEFAULT_CATCH_UP_BURST_MODE = CatchUpBurstMode.AUTO;
+
+    /**
+     * The value catch-up spawning shipped with before AUTO existed. The v0 -> v1 migration reads it
+     * to tell a file nobody ever answered apart from one where FILL was chosen on purpose — see
+     * {@link #runPendingMigrations()}.
+     */
+    public static final CatchUpBurstMode LEGACY_CATCH_UP_BURST_MODE = CatchUpBurstMode.FILL;
+
+    public static final int CURRENT_CONFIG_VERSION = 1;
+    public static final int DEFAULT_CONFIG_VERSION = 0;
+    public static final int MIN_CONFIG_VERSION = 0;
+    public static final int MAX_CONFIG_VERSION = 1_000_000;
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final ModConfigSpec SPEC;
+    public static final ModConfigSpec.IntValue CONFIG_VERSION;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
     public static final ModConfigSpec.BooleanValue COMPATIBLE_TERRAIN;
@@ -330,6 +348,7 @@ public final class DungeonTrainCommonConfig {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
                 .configure(DungeonTrainCommonConfig::build);
         SPEC = pair.getRight();
+        CONFIG_VERSION = pair.getLeft().configVersion;
         DEFAULT_PLAYER_MOB_SPAWN = pair.getLeft().defaultPlayerMobSpawnOneIn;
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN = pair.getLeft().defaultPlayerMobBehindSpawnPercent;
         COMPATIBLE_TERRAIN = pair.getLeft().compatibleTerrain;
@@ -377,7 +396,13 @@ public final class DungeonTrainCommonConfig {
 
     private DungeonTrainCommonConfig() {}
 
+
     private static Holder build(ModConfigSpec.Builder b) {
+        ModConfigSpec.IntValue configVersion = b
+                .comment("Internal bookkeeping — do not edit. Records which one-time config migrations have already",
+                        "been applied to this file, so a changed default can reach an install that already has a",
+                        "config written. Lowering it re-runs those migrations and may overwrite your settings.")
+                .defineInRange("configVersion", DEFAULT_CONFIG_VERSION, MIN_CONFIG_VERSION, MAX_CONFIG_VERSION);
         b.push("spawning");
         ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn = b
                 .comment("Global DEFAULT 1-in-N chance that each settled carriage group spawns a PlayerMob (Interactive Player Mobs). "
@@ -658,7 +683,7 @@ public final class DungeonTrainCommonConfig {
                         MIN_CHUNCKS_SLICE_RATIO, MAX_CHUNCKS_SLICE_RATIO);
         b.pop();
 
-        return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
+        return new Holder(configVersion, defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationEndCities,
                 disintegrationOverworldHoldBlocks,
@@ -738,6 +763,40 @@ public final class DungeonTrainCommonConfig {
         if (!isLoaded() || value == null) return;
         CATCH_UP_BURST_MODE.set(value);
         CATCH_UP_BURST_MODE.save();
+        CatchUpBurstAuto.invalidate();
+    }
+
+    /**
+     * Carry changed shipped defaults into a {@code dungeontrain-common.toml} that already exists.
+     *
+     * <p>A default flip on its own only ever reaches an install with no config file yet — everyone
+     * already playing keeps the old value forever, because it is written in their file. This is the
+     * same mechanism {@code DungeonTrainConfig.runPendingMigrations()} provides for the server
+     * config; the common file had none until AUTO needed one.</p>
+     *
+     * <p>Each step runs at most once per install, so a player who changes the value back afterwards
+     * keeps that choice permanently.</p>
+     */
+    public static void runPendingMigrations() {
+        if (!isLoaded()) return;
+        int from = CONFIG_VERSION.get();
+        if (from >= CURRENT_CONFIG_VERSION) return;
+
+        // v0 -> v1: adopt AUTO, which picks a catch-up pacing from the machine's specs. FILL is the
+        // value this setting shipped with, and until v0.778.0 the row was reachable only from inside
+        // a world — so a file still holding FILL is overwhelmingly a file whose owner never answered
+        // the question, and AUTO answers it for them. OFF and BURST_TWO are deliberate choices and
+        // are left alone. On a capable machine AUTO resolves to FILL, so the visible effect is
+        // confined to the machines the change exists for.
+        if (from < 1 && CATCH_UP_BURST_MODE.get() == LEGACY_CATCH_UP_BURST_MODE) {
+            CATCH_UP_BURST_MODE.set(CatchUpBurstMode.AUTO);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: catch-up spawning {} -> AUTO.",
+                    from, CURRENT_CONFIG_VERSION, LEGACY_CATCH_UP_BURST_MODE);
+        }
+
+        CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);
+        CONFIG_VERSION.save();
+        CatchUpBurstAuto.invalidate();
     }
 
     /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */
@@ -968,7 +1027,8 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? CHUNCKS_SLICE_RATIO.get() : DEFAULT_CHUNCKS_SLICE_RATIO;
     }
 
-    private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
+    private record Holder(ModConfigSpec.IntValue configVersion,
+                          ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
                           ModConfigSpec.BooleanValue disintegrationEnabled,

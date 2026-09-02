@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.DebugAccessEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
@@ -1797,6 +1796,12 @@ public final class TrainCarriageAppender {
     static int catchUpBurstGroups(int deficitPIdx, int groupSize, CatchUpBurstMode mode) {
         if (groupSize <= 0) {
             throw new IllegalArgumentException("groupSize must be > 0, got " + groupSize);
+        }
+        if (mode == CatchUpBurstMode.AUTO) {
+            // AUTO is resolved by CatchUpBurstAuto.effectiveMode() above every call site. Reaching
+            // here means a caller passed the stored value straight through; without this it would
+            // fall past the FILL branch and quietly pace as BURST_TWO, which no log would show.
+            throw new IllegalArgumentException("AUTO must be resolved before pacing; see CatchUpBurstAuto");
         }
         if (mode == CatchUpBurstMode.OFF) return 1;
         if (deficitPIdx <= 0) return 1;
@@ -4398,7 +4403,7 @@ public final class TrainCarriageAppender {
         long now,
         boolean forward
     ) {
-        CatchUpBurstMode mode = DungeonTrainCommonConfig.getCatchUpBurstMode();
+        CatchUpBurstMode mode = CatchUpBurstAuto.effectiveMode();
         int allowed = catchUpBurstGroups(deficitPIdx, groupSize, mode);
         if (allowed <= 1) return 0;
         Plan prevPlan = firstPlan;
@@ -4453,7 +4458,7 @@ public final class TrainCarriageAppender {
      */
     private static void openFillRun(UUID trainId, Map<UUID, FillRun> lane, Plan plan, int anchor,
                                     ManagedShip ship, long now, int deficitPIdx, int groupSize) {
-        if (DungeonTrainCommonConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) return;
+        if (CatchUpBurstAuto.effectiveMode() != CatchUpBurstMode.FILL) return;
         if (deficitGroups(deficitPIdx, groupSize) <= 1) return;
         lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), ship.id(), 1, now, now));
     }
@@ -4491,7 +4496,7 @@ public final class TrainCarriageAppender {
     ) {
         FillRun run = lane.get(trainId);
         if (run == null) return false;
-        if (DungeonTrainCommonConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) {
+        if (CatchUpBurstAuto.effectiveMode() != CatchUpBurstMode.FILL) {
             lane.remove(trainId);
             return false;
         }
