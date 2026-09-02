@@ -87,6 +87,7 @@
     "client.GameRendererSnapshotMixin",
     "client.LevelRendererVoidSkyMixin",
     "client.GameRendererCrossfadeMixin",
+    "client.DimensionSpecialEffectsCloudHeightMixin",
     "client.LightTextureEndBandMixin",
     "client.LightTextureNetherBandMixin",
     "client.LightTextureUpsideDownBandMixin",

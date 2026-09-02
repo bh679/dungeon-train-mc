@@ -1,19 +1,15 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.client.ClientNetherBand;
-import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
 import games.brennan.dungeontrain.client.NetherSkyRenderer;
 import games.brennan.dungeontrain.client.UpsideDownSkyRenderer;
 import games.brennan.dungeontrain.client.VoidSkyRenderer;
 import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,9 +27,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *   <li>{@code renderClouds} HEAD → cancel cloud rendering once the End or Nether sky has
  *       mostly faded in, so clouds disappear over the void/End rather than floating
  *       incongruously above it.</li>
- *   <li>{@code renderClouds} getCloudHeight → in the <b>upside-down</b> band the sky sits below the
- *       train, so rather than hide the clouds, lerp the cloud plane down toward the configured
- *       {@code upsideDownCloudY} by the band intensity — the clouds sink beneath you as the flip fades in.</li>
+ *   <li>{@code renderClouds} getCloudHeight → records the cloud plane vanilla's pass read. The
+ *       upside-down band's sinking of that plane lives on {@code getCloudHeight()} itself, in
+ *       {@code DimensionSpecialEffectsCloudHeightMixin}, so it also reaches Iris' uniform.</li>
+ *   <li>{@code renderSky} HEAD → under a shader pack being told this frame is the Nether or the End,
+ *       draw what vanilla draws there (the End box, or nothing) and cancel the overworld sky.</li>
  *   <li>{@code renderSnowAndRain} HEAD → cancel falling rain/snow over the Nether core and the
  *       End band, so storms don't rain on the hellscape or into the void (neither the Nether nor
  *       the End has weather).</li>
@@ -154,11 +152,12 @@ public abstract class LevelRendererVoidSkyMixin {
     }
 
     /**
-     * Lower the cloud plane in the upside-down band. The flipped world's sky sits <em>below</em> the
-     * train, so instead of hiding clouds (as the void/Nether do above), redirect the
-     * {@code getCloudHeight()} that {@code renderClouds} reads toward the configured
-     * {@code upsideDownCloudY}, lerped by the band intensity so the clouds sink beneath you as the flip
-     * fades in and rise back out on exit. Outside the band the original height (192) is kept unchanged.
+     * The cloud plane vanilla's cloud pass is about to draw at. The lowering itself now happens in
+     * {@code DimensionSpecialEffectsCloudHeightMixin} — on {@code getCloudHeight()} itself, so it
+     * also reaches Iris' {@code cloudHeight} uniform — and this only records that vanilla's pass
+     * read it. Recorded on EVERY call, including the ones that change nothing: recording only the
+     * lowering made "this hook never ran" and "it ran where the band is zero" the same reading, and
+     * those are entirely different faults.
      */
     @ModifyExpressionValue(
             method = "renderClouds(Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FDDD)V",
@@ -167,19 +166,10 @@ public abstract class LevelRendererVoidSkyMixin {
                     target = "Lnet/minecraft/client/renderer/DimensionSpecialEffects;getCloudHeight()F"
             )
     )
-    private float dungeontrain$lowerCloudsInUpsideDown(float original, @Local(argsOnly = true, ordinal = 0) double camX) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return original;
-        double t = ClientUpsideDownBand.upsideDownIntensityAt(camX);
-        float applied = t <= 0.0
-            ? original
-            : Mth.lerp((float) t, original, DungeonTrainCommonConfig.getUpsideDownCloudY());
-        // Recorded on EVERY call, including the ones that change nothing. Recording only the
-        // lowering made "this hook never ran" and "it ran where the band is zero" the same reading,
-        // and those are entirely different faults: one is a dead mixin, the other is a camera in
-        // the wrong place.
+    private float dungeontrain$recordCloudPlane(float applied) {
         if (games.brennan.dungeontrain.client.ShaderDiagnostics.recording()) {
-            games.brennan.dungeontrain.client.ShaderDiagnostics.recordCloudHeight(original, applied);
+            games.brennan.dungeontrain.client.ShaderDiagnostics.recordCloudHeight(
+                games.brennan.dungeontrain.client.ShaderDiagnostics.cloudHeightVanilla(), applied);
         }
         return applied;
     }
