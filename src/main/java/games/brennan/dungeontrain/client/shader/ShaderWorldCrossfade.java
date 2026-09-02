@@ -47,6 +47,14 @@ import java.nio.ByteBuffer;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ShaderWorldCrossfade {
 
+    /**
+     * Frames still to render behind the loading screen with the pre-warmed Nether and End pipelines.
+     * Compiling a pipeline is only half its first-use cost: Iris' {@code beginLevelRendering} also
+     * calls {@code LevelRenderer.allChanged()} — a full chunk rebuild — the first frame each pipeline
+     * renders. Paying that while the view area is still empty is free; paying it mid-fade is a hitch.
+     */
+    private static int warmupFramesLeft = 0;
+
     private static int colorTexture = 0;
     private static int colorWidth = 0;
     private static int colorHeight = 0;
@@ -64,6 +72,15 @@ public final class ShaderWorldCrossfade {
             ShaderWorld.setReporting(null);
             ShaderWorld.recordFrame(new ShaderWorld.Blend(ShaderWorld.World.OVERWORLD, ShaderWorld.World.OVERWORLD, 0.0f), 1);
             original.call(levelRenderer, deltaTracker, renderBlockOutline, camera, gameRenderer, lightTexture, frustumMatrix, projectionMatrix);
+            return;
+        }
+
+        if (warmupFramesLeft > 0) {
+            ShaderWorld.World warm = warmupFramesLeft == 2 ? ShaderWorld.World.NETHER : ShaderWorld.World.END;
+            warmupFramesLeft--;
+            ShaderWorld.setReporting(warm);
+            original.call(levelRenderer, deltaTracker, renderBlockOutline, camera, gameRenderer, lightTexture, frustumMatrix, projectionMatrix);
+            ShaderWorld.setReporting(null);
             return;
         }
 
@@ -97,11 +114,13 @@ public final class ShaderWorldCrossfade {
         // Compile the pack's Nether and End pipelines while the loading screen is still up, so the
         // first band entry does not stall mid-fade.
         ShaderWorld.prewarm();
+        warmupFramesLeft = ShaderCompat.active() ? 2 : 0;
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ShaderWorld.setReporting(null);
+        warmupFramesLeft = 0;
     }
 
     private static void copyMainColor(int width, int height) {

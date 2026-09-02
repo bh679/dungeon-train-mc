@@ -68,6 +68,7 @@ public final class ShaderDiagnostics {
     // --- Sticky: centre-pixel depth before and after the skybox reopen pass (shader packs only) ---
     private static volatile float reopenBefore = -1.0f;
     private static volatile float reopenAfter = -1.0f;
+    private static volatile int reopenStencil = -1;
 
     // --- Lightmap-paced: dimensional carriage sky/lighting and the transition --------------------
     private static volatile String roomSkyKind = "";
@@ -197,10 +198,13 @@ public final class ShaderDiagnostics {
     }
 
     /** Centre-pixel depth either side of {@code SkyboxHoleReopen}; {@code -1} = never ran. */
-    public static void recordReopen(float before, float after) {
+    public static void recordReopen(float before, float after, int stencil) {
         reopenBefore = before;
         reopenAfter = after;
+        reopenStencil = stencil;
     }
+
+    public static int reopenStencil() { return reopenStencil; }
 
     public static float reopenBefore() { return reopenBefore; }
     public static float reopenAfter() { return reopenAfter; }

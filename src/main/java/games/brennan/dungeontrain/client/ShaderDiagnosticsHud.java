@@ -177,8 +177,8 @@ public final class ShaderDiagnosticsHud {
 
         float reopenBefore = ShaderDiagnostics.reopenBefore();
         if (reopenBefore >= 0.0f) {
-            lines.add(new Line(String.format(Locale.ROOT, "Reopen: centre depth %.5f -> %.5f",
-                reopenBefore, ShaderDiagnostics.reopenAfter()), COLOR_ACTIVE));
+            lines.add(new Line(String.format(Locale.ROOT, "Reopen: centre depth %.5f -> %.5f  stencil after mark 0x%02X",
+                reopenBefore, ShaderDiagnostics.reopenAfter(), ShaderDiagnostics.reopenStencil()), COLOR_ACTIVE));
         }
 
         String world = games.brennan.dungeontrain.client.shader.ShaderWorld.describe();

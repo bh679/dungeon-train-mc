@@ -394,7 +394,10 @@ public final class ShaderSweep {
 
         int plainX = scanForPlain(here);
 
-        out.add(new Site("00-plain", List.of("gamemode creative"), SITE_TICKS));
+        // Time pinned to noon and held: a pack's own sky varies with the hour, so without this two
+        // packs photographed forty minutes apart are not comparable, and a night shot of a skybox
+        // hole cannot show whether the pack's clouds reach into it.
+        out.add(new Site("00-plain", List.of("gamemode creative", "gamerule doDaylightCycle false", "time set 6000"), SITE_TICKS));
 
         addBandSite(out, "01-band-void", here, ClientVoidBand::endSkyIntensityAt);
         addBandSite(out, "02-band-nether", here, ClientNetherBand::netherIntensityAt);
