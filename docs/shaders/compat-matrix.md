@@ -243,10 +243,28 @@ _Filled from the full sweep (`scripts/shaders/sweep-all.sh SweepWorld vanilla <p
 per pack, cells quote the panel. See `test-results/gate2-shader-compat-2026-09/` (local, not
 committed) for the frames._
 
-| Pack | Loads | Band End | Band Nether | Skybox reopen | Carriage fog | Notes |
+Sweep of 2026-09-03 (one build, `SweepWorld`, time pinned to noon; `Shader world` and `Post pass`
+quoted from the per-site log line, `pre-warm` from the login log).
+
+| Pack | Loads | Band void/End | Band Nether | Skybox site | Carriage room fog | Pre-warm |
 |---|---|---|---|---|---|---|
+| vanilla (control) | – | DT dome, `void 1.000` | DT fill, `nether 1.000` | 588 cubes, stencil skies | far 264 → 60, no post pass | – |
+| BSL v10.1.3 | yes | `end (world1)` | `nether (world-1)` | 588 cubes drew | far 264 → 60, post fog 15..60 | 1.4 s |
+| Bliss v2.1.2 | yes | `end (world1)` | `nether (world-1)` | 588 cubes drew | far 192 → 60, post fog 15..60 | 1.3 s |
+| Complementary Reimagined r5.8.1 | yes | `end (world1)` | `nether (world-1)` | 588 cubes drew | far 192 → 60, post fog 15..60 | 4.5 s |
+| Complementary Unbound r5.8.1 | yes | `end (world1)` | `nether (world-1)` | 588 cubes drew, reopen 0.98578 → 1.0 | far 192 → 60, post fog 15..60 | 4.8 s |
+| Hysteria v1.2.1 | yes | `end (world1)` | `nether (world-1)` | 588 cubes drew | far 192 → 60, post fog 15..60 | 2.3 s |
+| Insanity v1.650 | yes | `end (world1)` | `nether (world-1)` | 588 cubes drew | far 264 → 60, post fog 15..60 | 1.1 s |
+| MakeUp Ultra Fast 9.5d | yes | `end (world1)` | `nether (world-1)` | 49 cubes drew | far 192 → 60, post fog 15..60 | 1.1 s |
+| Sildur's Enhanced Default v1.19 | yes | `end (world1)` | `nether (world-1)` | 588 cubes drew | far 264 → 60, post fog 15..60 | not logged |
+| Spooklementary v2.0.4 | yes | `end (world1)` | `nether (world-1)` | 588 cubes drew | far 264 → 60, post fog 15..60 | 4.9 s |
 | FOOTAGE 1.0 | no (`Unable to parse scale directive`) | – | – | – | – | pack bug on this Iris |
 | Solas 3.7b | no (`Failed to create shader rendering pipeline`) | – | – | – | – | pack bug on this Iris |
+
+Every loading pack took the Nether and End pipelines in the bands (its own atmosphere, verified on
+the frames for Complementary Unbound and BSL), ran the skybox punch under the pack, and engaged the
+carriage room with the post-composite fog pass. The `far` column differs between 192 and 264 with
+whatever render distance the pack's own settings leave; the room radius (60) is what matters.
 
 ### Known limits
 
