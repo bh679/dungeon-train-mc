@@ -43,9 +43,11 @@ import java.util.Map;
  * {@link CarriageVariantBlocks#parseVariantElement} so both code paths stay
  * in lockstep.</p>
  *
- * <p>Local coordinates are clamped to the kind's footprint
- * {@link TrackKind#dims} — entries outside that box are dropped on load with
- * a warning so a kind-renamed template doesn't poison neighbouring blocks.</p>
+ * <p>Local coordinates are clamped to the footprint the caller asks for —
+ * entries outside that box are dropped with a warning so a kind-renamed
+ * template doesn't poison neighbouring blocks. The clamp produces a
+ * throwaway {@link #croppedTo view}; the cache always holds the whole
+ * sidecar, and a view refuses to be saved. See {@link #loadFor}.</p>
  */
 public final class TrackVariantBlocks {
 
@@ -84,8 +86,26 @@ public final class TrackVariantBlocks {
     /** Owning kind — selects this template's default mirror axes. Null only for the bare {@link #empty}. */
     private final TrackKind kind;
 
+    /**
+     * True when this instance is a bounded <em>view</em> of a larger sidecar — {@link #croppedTo}
+     * dropped at least one out-of-bounds cell to build it.
+     *
+     * <p>A cropped view is safe to read from and unsafe to write back: persisting it would delete
+     * every cell the crop removed. {@link #save} and {@link #saveToSource} therefore refuse. The
+     * cache only ever holds uncropped instances, so the refusal never fires on the object a
+     * correctly-sized caller holds.</p>
+     */
+    private final boolean cropped;
+
     private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
+        this(entries, lockIds, kind, mirrorX, mirrorY, mirrorZ, mirrorVariants, false);
+    }
+
+    private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
+                               TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
+                               boolean mirrorVariants, boolean cropped) {
+        this.cropped = cropped;
         this.entries = entries;
         this.lockIds = lockIds;
         this.groupRefs = new games.brennan.dungeontrain.editor.VariantGroupResolver(entries, lockIds);
@@ -128,7 +148,8 @@ public final class TrackVariantBlocks {
     public static synchronized TrackVariantBlocks copyOf(TrackVariantBlocks source) {
         return new TrackVariantBlocks(
             new LinkedHashMap<>(source.entries), new LinkedHashMap<>(source.lockIds),
-            source.kind, source.mirrorX, source.mirrorY, source.mirrorZ, source.mirrorVariants);
+            source.kind, source.mirrorX, source.mirrorY, source.mirrorZ, source.mirrorVariants,
+            source.cropped);
     }
 
     /** Mirror X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
@@ -177,22 +198,60 @@ public final class TrackVariantBlocks {
      * Load the sidecar for {@code (kind, name)} — config first, then bundled.
      * Returns {@link #empty} if neither exists. Entries outside
      * {@code expectedSize} are dropped with a warning.
+     *
+     * <p><b>The crop is a view, not the cached object.</b> {@code expectedSize} is not part of the
+     * cache key, and for a portal room it is resolved from {@link
+     * games.brennan.dungeontrain.portal.PortalRoomSizes}, which answers with the built-in room's
+     * footprint until that room's template has been loaded. Caching the cropped parse therefore let
+     * one early wrong-size read — a dirty-check scan before the templates load — prune the sidecar
+     * for the rest of the session, and the next editor save wrote that pruned form over the source
+     * tree. So the cache holds the whole sidecar and each caller gets {@link #croppedTo its own
+     * bounded view}; a view cannot be saved. See {@link #cropped}.</p>
      */
     public static synchronized TrackVariantBlocks loadFor(TrackKind kind, String name, Vec3i expectedSize) {
         String key = cacheKey(kind, name);
         TrackVariantBlocks cached = CACHE.get(key);
-        if (cached != null) return cached;
-        TrackVariantBlocks loaded = loadFromDisk(kind, name, expectedSize);
-        CACHE.put(key, loaded);
-        return loaded;
+        if (cached == null) {
+            cached = loadFromDisk(kind, name);
+            CACHE.put(key, cached);
+        }
+        return cached.croppedTo(name, expectedSize);
     }
 
-    private static TrackVariantBlocks loadFromDisk(TrackKind kind, String name, Vec3i size) {
+    /**
+     * This sidecar bounded to {@code size} — {@code this} when every cell already fits (the common
+     * path, and the only one that yields a saveable instance), otherwise a detached copy without
+     * the out-of-bounds cells, flagged {@link #cropped}.
+     */
+    private synchronized TrackVariantBlocks croppedTo(String name, Vec3i size) {
+        if (size == null) return this;
+        List<BlockPos> outside = null;
+        for (BlockPos pos : entries.keySet()) {
+            if (inBounds(pos, size)) continue;
+            if (outside == null) outside = new ArrayList<>();
+            outside.add(pos);
+        }
+        if (outside == null) return this;
+
+        Map<BlockPos, List<VariantState>> kept = new LinkedHashMap<>(entries);
+        Map<BlockPos, Integer> keptLocks = new LinkedHashMap<>(lockIds);
+        String contextId = (kind == null ? "?" : kind.id()) + ":" + name;
+        for (BlockPos pos : outside) {
+            kept.remove(pos);
+            keptLocks.remove(pos);
+            LOGGER.warn("[DungeonTrain] Track variant sidecar {}: pos {} outside footprint {}x{}x{}, skipping.",
+                contextId, pos, size.getX(), size.getY(), size.getZ());
+        }
+        return new TrackVariantBlocks(kept, keptLocks, kind, mirrorX, mirrorY, mirrorZ,
+            mirrorVariants, true);
+    }
+
+    private static TrackVariantBlocks loadFromDisk(TrackKind kind, String name) {
         Path cfg = games.brennan.dungeontrain.editor.UserContentPaths.findFile(
             kind.subdir(), name + TrackKind.VARIANTS_EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
-                return parse(r, kind, name, "config " + cfg, size);
+                return parse(r, kind, name, "config " + cfg);
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Failed to read track variant sidecar {}: {}", cfg, e.toString());
             }
@@ -201,7 +260,7 @@ public final class TrackVariantBlocks {
         try (InputStream in = TrackVariantBlocks.class.getResourceAsStream(resource)) {
             if (in == null) return emptyFor(kind);
             try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                return parse(r, kind, name, "bundled " + resource, size);
+                return parse(r, kind, name, "bundled " + resource);
             }
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled track variant sidecar {}: {}",
@@ -210,8 +269,13 @@ public final class TrackVariantBlocks {
         }
     }
 
+    /**
+     * Parse the whole sidecar. Deliberately keeps every cell, however far outside any footprint:
+     * bounding is {@link #croppedTo}'s job, applied per caller, so no one caller's footprint can
+     * prune what the rest of the session sees.
+     */
     private static TrackVariantBlocks parse(Reader reader, TrackKind kind, String name,
-                                             String origin, Vec3i size) {
+                                             String origin) {
         JsonElement root = JsonParser.parseReader(reader);
         if (!root.isJsonObject()) {
             LOGGER.warn("[DungeonTrain] Track variant sidecar {}:{} ({}) is not a JSON object — ignoring.",
@@ -255,11 +319,6 @@ public final class TrackVariantBlocks {
             if (pos == null) {
                 LOGGER.warn("[DungeonTrain] Track variant sidecar {}: bad pos '{}', skipping.",
                     contextId, field.getKey());
-                continue;
-            }
-            if (!inBounds(pos, size)) {
-                LOGGER.warn("[DungeonTrain] Track variant sidecar {}: pos {} outside footprint {}x{}x{}, skipping.",
-                    contextId, pos, size.getX(), size.getY(), size.getZ());
                 continue;
             }
             CarriageVariantBlocks.ParsedCell cell = CarriageVariantBlocks.parseCellValue(
@@ -376,6 +435,7 @@ public final class TrackVariantBlocks {
     }
 
     public synchronized void save(TrackKind kind, String name) throws IOException {
+        if (refuseCroppedWrite(kind, name, "config")) return;
         Path file = configPathFor(kind, name);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
@@ -394,6 +454,7 @@ public final class TrackVariantBlocks {
      * leave a stale bundled resource.
      */
     public synchronized void saveToSource(TrackKind kind, String name) throws IOException {
+        if (refuseCroppedWrite(kind, name, "source tree")) return;
         Path file = sourcePathFor(kind, name);
         if (file == null) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
@@ -414,6 +475,26 @@ public final class TrackVariantBlocks {
         LOGGER.info("[DungeonTrain] Wrote bundled track variant sidecar for {}:{} to {}",
             kind.id(), name, file);
     }
+
+    /**
+     * Guard for both write paths: a {@link #cropped} instance is a bounded view of a bigger
+     * sidecar, so writing it would delete every cell the crop removed — the failure that emptied
+     * four portal rooms' sidecars in one editor session. Logs and refuses rather than throwing:
+     * the callers are editor save paths, and losing the author's template save because the
+     * sidecar's footprint was wrong would trade one silent loss for another.
+     */
+    private boolean refuseCroppedWrite(TrackKind kind, String name, String target) {
+        if (!cropped) return false;
+        LOGGER.error("[DungeonTrain] Refusing to write a cropped track variant sidecar {}:{} to the {} — "
+                + "it is a bounded view of a larger sidecar and saving it would drop the cells outside "
+                + "that footprint. This means a caller loaded it with the wrong footprint; the file on "
+                + "disk is unchanged.",
+            kind == null ? "?" : kind.id(), name, target);
+        return true;
+    }
+
+    /** True when this instance is a bounded view — see {@link #cropped}. Never true for a cached load. */
+    public boolean isCropped() { return cropped; }
 
     /** True when the axes match this kind's defaults — the absent-{@code mirror}-field state. */
     public boolean isDefaultMirror() {
@@ -442,7 +523,10 @@ public final class TrackVariantBlocks {
     public static TrackVariantBlocks fromJsonText(String json, TrackKind kind, String name,
                                                   Vec3i size) {
         if (json == null || json.isBlank()) return emptyFor(kind);
-        return parse(new java.io.StringReader(json), kind, name, "memory", size);
+        // Cropped here on purpose, unlike the cached load path: the portal-room resize memory files
+        // a slab at one size and restores it after the other two axes may have shrunk, and relies on
+        // this bound to drop the cells that no longer fit (PortalRoomResizeSlabs#restore).
+        return parse(new java.io.StringReader(json), kind, name, "memory").croppedTo(name, size);
     }
 
     /** Serialised form of this sidecar as {@link #save} would write it. Used by the editor undo history. */

@@ -276,6 +276,12 @@ public final class EditorDirtyCheck {
             String key = PortalRoomEditor.snapshotKey(name);
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
+            // Load the template BEFORE reading the plot size. A room's size lives in its template
+            // and nowhere else, and PortalRoomSizes answers with the built-in room's footprint until
+            // that load has happened — so reading plotSize first sized every not-yet-loaded room at
+            // 11x7x13, which both cropped its variant sidecar and reported a clean room as resized.
+            Vec3i saved = PortalRoomTemplateStore.sizeOf(level, name, dims);
+
             Vec3i fp = PortalRoomEditor.plotSize(name, dims);
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
@@ -286,7 +292,7 @@ public final class EditorDirtyCheck {
             // re-takes the snapshot, so the live blocks match their baseline exactly while the plot
             // stands at a size no saved template has. Only /dt save makes a size permanent, and
             // without this the panel would report a resized room as clean.
-            boolean resized = !fp.equals(PortalRoomTemplateStore.sizeOf(level, name, dims));
+            boolean resized = !fp.equals(saved);
 
             if (unsaved || resized) {
                 out.add(new DirtyEntry("portals", "portal_room." + name,
@@ -412,6 +418,8 @@ public final class EditorDirtyCheck {
         if ("portals".equals(categoryId) && modelId.contains(".")) {
             String name = modelId.substring(modelId.indexOf('.') + 1);
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
+            // Primes PortalRoomSizes before plotSize is read — see scanPortalRooms.
+            PortalRoomTemplateStore.sizeOf(overworld, name, dims);
             Vec3i fp = PortalRoomEditor.plotSize(name, dims);
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());

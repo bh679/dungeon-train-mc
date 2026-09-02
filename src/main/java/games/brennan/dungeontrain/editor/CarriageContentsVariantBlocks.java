@@ -88,12 +88,27 @@ public final class CarriageContentsVariantBlocks {
     /** Opt-in flag (the "V" toggle): mirror the variant pools, not just structural blocks. */
     private boolean mirrorVariants;
 
+    /**
+     * True when this instance is a bounded <em>view</em> built by {@link #croppedTo} — safe to read,
+     * refused by both write paths, and never the object held in {@link #CACHE}. See
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks#cropped} for the failure
+     * this prevents.
+     */
+    private final boolean cropped;
+
     private CarriageContentsVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this(entries, lockIds, false, false, false, false);
     }
 
     private CarriageContentsVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                           boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
+        this(entries, lockIds, mirrorX, mirrorY, mirrorZ, mirrorVariants, false);
+    }
+
+    private CarriageContentsVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
+                                          boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants,
+                                          boolean cropped) {
+        this.cropped = cropped;
         this.entries = entries;
         this.lockIds = lockIds;
         this.groupRefs = new VariantGroupResolver(entries, lockIds);
@@ -157,17 +172,61 @@ public final class CarriageContentsVariantBlocks {
     public static synchronized CarriageContentsVariantBlocks loadFor(CarriageContents contents, Vec3i interiorSize) {
         String key = contents.id();
         CarriageContentsVariantBlocks cached = CACHE.get(key);
-        if (cached != null) return cached;
-        CarriageContentsVariantBlocks loaded = loadFromDisk(contents, interiorSize);
-        CACHE.put(key, loaded);
-        return loaded;
+        if (cached == null) {
+            cached = loadFromDisk(contents);
+            CACHE.put(key, cached);
+        }
+        return cached.croppedTo(contents, interiorSize);
     }
 
-    private static CarriageContentsVariantBlocks loadFromDisk(CarriageContents contents, Vec3i interiorSize) {
+    /**
+     * This sidecar bounded to {@code size} — {@code this} when every cell already fits, otherwise a
+     * detached, unsaveable copy without the out-of-bounds cells. The bound is applied per caller so
+     * one caller's interior size cannot prune what the rest of the session sees.
+     */
+    private synchronized CarriageContentsVariantBlocks croppedTo(CarriageContents contents, Vec3i size) {
+        if (size == null) return this;
+        List<BlockPos> outside = null;
+        for (BlockPos pos : entries.keySet()) {
+            if (inBounds(pos, size)) continue;
+            if (outside == null) outside = new ArrayList<>();
+            outside.add(pos);
+        }
+        if (outside == null) return this;
+
+        Map<BlockPos, List<VariantState>> kept = new LinkedHashMap<>(entries);
+        Map<BlockPos, Integer> keptLocks = new LinkedHashMap<>(lockIds);
+        for (BlockPos pos : outside) {
+            kept.remove(pos);
+            keptLocks.remove(pos);
+            LOGGER.warn("[DungeonTrain] Contents variant sidecar {}: pos {} outside interior {}x{}x{}, skipping.",
+                contents.id(), pos, size.getX(), size.getY(), size.getZ());
+        }
+        return new CarriageContentsVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ,
+            mirrorVariants, true);
+    }
+
+    /** True when this instance is a bounded view — see {@link #cropped}. */
+    public boolean isCropped() { return cropped; }
+
+    /**
+     * Guard for both write paths: writing a {@link #cropped} view would delete every cell the crop
+     * removed. Logs and refuses rather than throwing.
+     */
+    private boolean refuseCroppedWrite(CarriageContents contents, String target) {
+        if (!cropped) return false;
+        LOGGER.error("[DungeonTrain] Refusing to write a cropped contents variant sidecar {} to the {} — "
+                + "it is a bounded view of a larger sidecar and saving it would drop the cells outside "
+                + "that interior. The file on disk is unchanged.",
+            contents.id(), target);
+        return true;
+    }
+
+    private static CarriageContentsVariantBlocks loadFromDisk(CarriageContents contents) {
         Path cfg = UserContentPaths.findFile(SUBDIR, contents.id() + EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
-                return parse(r, contents, "config " + cfg, interiorSize);
+                return parse(r, contents, "config " + cfg);
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Failed to read contents variant sidecar {}: {}", cfg, e.toString());
             }
@@ -176,7 +235,7 @@ public final class CarriageContentsVariantBlocks {
         try (InputStream in = CarriageContentsVariantBlocks.class.getResourceAsStream(resource)) {
             if (in == null) return empty();
             try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                return parse(r, contents, "bundled " + resource, interiorSize);
+                return parse(r, contents, "bundled " + resource);
             }
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled contents variant sidecar {}: {}", resource, e.toString());
@@ -184,8 +243,12 @@ public final class CarriageContentsVariantBlocks {
         }
     }
 
+    /**
+     * Parse the whole sidecar, keeping every cell however far outside any interior — bounding is
+     * {@link #croppedTo}'s job.
+     */
     private static CarriageContentsVariantBlocks parse(Reader reader, CarriageContents contents,
-                                                        String origin, Vec3i interiorSize) {
+                                                        String origin) {
         JsonElement root = JsonParser.parseReader(reader);
         if (!root.isJsonObject()) {
             LOGGER.warn("[DungeonTrain] Contents variant sidecar {} ({}) is not a JSON object — ignoring.",
@@ -226,11 +289,6 @@ public final class CarriageContentsVariantBlocks {
             if (pos == null) {
                 LOGGER.warn("[DungeonTrain] Contents variant sidecar {}: bad pos '{}', skipping.",
                     contextId, field.getKey());
-                continue;
-            }
-            if (!inBounds(pos, interiorSize)) {
-                LOGGER.warn("[DungeonTrain] Contents variant sidecar {}: pos {} outside interior {}x{}x{}, skipping.",
-                    contextId, pos, interiorSize.getX(), interiorSize.getY(), interiorSize.getZ());
                 continue;
             }
             CarriageVariantBlocks.ParsedCell cell = CarriageVariantBlocks.parseCellValue(
@@ -418,6 +476,7 @@ public final class CarriageContentsVariantBlocks {
     }
 
     public synchronized void save(CarriageContents contents) throws IOException {
+        if (refuseCroppedWrite(contents, "config")) return;
         Path file = configPathFor(contents);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
@@ -434,6 +493,7 @@ public final class CarriageContentsVariantBlocks {
      * {@code saveToSource} behaviour on {@link CarriageContentsStore}.
      */
     public synchronized void saveToSource(CarriageContents contents) throws IOException {
+        if (refuseCroppedWrite(contents, "source tree")) return;
         Path file = sourcePathFor(contents);
         if (file == null) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");

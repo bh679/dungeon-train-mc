@@ -1220,7 +1220,15 @@ public final class EditorCommand {
             return 0;
         }
         CarriageDims dims = DungeonTrainWorldData.get(source.getLevel()).dims();
-        Vec3i footprint = kind.dims(dims);
+        // Name-aware, not kind.dims(dims): a portal room's footprint is per-room and lives in its
+        // template, and TrackKind.dims answers with the built-in room's size for every one of them.
+        // This command saves straight after loading, so the wrong footprint here truncated the file
+        // on disk. Same reasoning as the sub-variant copy path below. The template load primes
+        // PortalRoomSizes, which is where the per-room footprint comes from.
+        if (kind == games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM) {
+            games.brennan.dungeontrain.editor.PortalRoomTemplateStore.sizeOf(source.getLevel(), name, dims);
+        }
+        Vec3i footprint = games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, name, dims);
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg =
             games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, name, footprint);
         applyMirrorAxis(cfg, axis, on);

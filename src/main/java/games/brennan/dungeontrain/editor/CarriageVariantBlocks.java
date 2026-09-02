@@ -210,12 +210,27 @@ public final class CarriageVariantBlocks {
     /** Opt-in flag (the "V" toggle): mirror the variant pools, not just structural blocks. */
     private boolean mirrorVariants;
 
+    /**
+     * True when this instance is a bounded <em>view</em> built by {@link #croppedTo} — safe to read,
+     * refused by both write paths, and never the object held in {@link #CACHE}. See
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks#cropped} for the failure
+     * this prevents.
+     */
+    private final boolean cropped;
+
     private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this(entries, lockIds, false, false, false, false);
     }
 
     private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                   boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
+        this(entries, lockIds, mirrorX, mirrorY, mirrorZ, mirrorVariants, false);
+    }
+
+    private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
+                                  boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants,
+                                  boolean cropped) {
+        this.cropped = cropped;
         this.entries = entries;
         this.lockIds = lockIds;
         this.groupRefs = new VariantGroupResolver(entries, lockIds);
@@ -293,17 +308,59 @@ public final class CarriageVariantBlocks {
     public static synchronized CarriageVariantBlocks loadFor(CarriageVariant variant, CarriageDims dims) {
         String id = variant.id();
         CarriageVariantBlocks cached = CACHE.get(id);
-        if (cached != null) return cached;
-        CarriageVariantBlocks loaded = loadFromDisk(variant, dims);
-        CACHE.put(id, loaded);
-        return loaded;
+        if (cached == null) {
+            cached = loadFromDisk(variant);
+            CACHE.put(id, cached);
+        }
+        return cached.croppedTo(id, dims);
     }
 
-    private static CarriageVariantBlocks loadFromDisk(CarriageVariant variant, CarriageDims dims) {
+    /**
+     * This sidecar bounded to {@code dims} — {@code this} when every cell already fits, otherwise a
+     * detached, unsaveable copy without the out-of-bounds cells. The bound is applied per caller so
+     * one caller's dims cannot prune what the rest of the session sees.
+     */
+    private synchronized CarriageVariantBlocks croppedTo(String id, CarriageDims dims) {
+        if (dims == null) return this;
+        List<BlockPos> outside = null;
+        for (BlockPos pos : entries.keySet()) {
+            if (inBounds(pos, dims)) continue;
+            if (outside == null) outside = new ArrayList<>();
+            outside.add(pos);
+        }
+        if (outside == null) return this;
+
+        Map<BlockPos, List<VariantState>> kept = new LinkedHashMap<>(entries);
+        Map<BlockPos, Integer> keptLocks = new LinkedHashMap<>(lockIds);
+        for (BlockPos pos : outside) {
+            kept.remove(pos);
+            keptLocks.remove(pos);
+            LOGGER.warn("[DungeonTrain] Variant sidecar {}: position {} outside dims {}x{}x{}, skipping.",
+                id, pos, dims.length(), dims.height(), dims.width());
+        }
+        return new CarriageVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants, true);
+    }
+
+    /** True when this instance is a bounded view — see {@link #cropped}. */
+    public boolean isCropped() { return cropped; }
+
+    /**
+     * Guard for both write paths: writing a {@link #cropped} view would delete every cell the crop
+     * removed — including, when the view is empty, deleting the file outright. Logs and refuses.
+     */
+    private boolean refuseCroppedWrite(String id, String target) {
+        if (!cropped) return false;
+        LOGGER.error("[DungeonTrain] Refusing to write a cropped variant sidecar {} to the {} — it is a "
+                + "bounded view of a larger sidecar and saving it would drop the cells outside those "
+                + "dims. The file on disk is unchanged.", id, target);
+        return true;
+    }
+
+    private static CarriageVariantBlocks loadFromDisk(CarriageVariant variant) {
         Path cfg = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
-                return parse(r, variant.id(), "config " + cfg, dims);
+                return parse(r, variant.id(), "config " + cfg);
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Failed to read variant sidecar {}: {}", cfg, e.toString());
             }
@@ -312,7 +369,7 @@ public final class CarriageVariantBlocks {
         try (InputStream in = CarriageVariantBlocks.class.getResourceAsStream(resource)) {
             if (in == null) return empty();
             try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                return parse(r, variant.id(), "bundled " + resource, dims);
+                return parse(r, variant.id(), "bundled " + resource);
             }
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled variant sidecar {}: {}", resource, e.toString());
@@ -320,7 +377,11 @@ public final class CarriageVariantBlocks {
         }
     }
 
-    private static CarriageVariantBlocks parse(Reader reader, String id, String origin, CarriageDims dims) {
+    /**
+     * Parse the whole sidecar, keeping every cell however far outside any dims — bounding is
+     * {@link #croppedTo}'s job.
+     */
+    private static CarriageVariantBlocks parse(Reader reader, String id, String origin) {
         JsonElement root = JsonParser.parseReader(reader);
         if (!root.isJsonObject()) {
             LOGGER.warn("[DungeonTrain] Variant sidecar {} ({}) is not a JSON object — ignoring.", id, origin);
@@ -360,11 +421,6 @@ public final class CarriageVariantBlocks {
             BlockPos pos = parsePos(field.getKey());
             if (pos == null) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {}: bad position key '{}', skipping.", id, field.getKey());
-                continue;
-            }
-            if (!inBounds(pos, dims)) {
-                LOGGER.warn("[DungeonTrain] Variant sidecar {}: position {} outside dims {}x{}x{}, skipping.",
-                    id, pos, dims.length(), dims.height(), dims.width());
                 continue;
             }
             JsonArray arr;
@@ -823,6 +879,7 @@ public final class CarriageVariantBlocks {
      * leave stale sidecars on disk.
      */
     public synchronized void save(CarriageVariant variant) throws IOException {
+        if (refuseCroppedWrite(variant.id(), "config")) return;
         Path file = configPathFor(variant);
         if (entries.isEmpty() && isDefaultMirror()) {
             Files.deleteIfExists(file);
@@ -853,6 +910,7 @@ public final class CarriageVariantBlocks {
      * Mirrors {@link CarriageTemplateStore#saveToSource(CarriageVariant, net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate)}.
      */
     public synchronized void saveToSource(CarriageVariant variant) throws IOException {
+        if (refuseCroppedWrite(variant.id(), "source tree")) return;
         Path file = sourcePathForVariant(variant);
         if (entries.isEmpty() && isDefaultMirror()) {
             Files.deleteIfExists(file);
