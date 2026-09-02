@@ -62,6 +62,15 @@
       ]
     }
   },
+  "chat.dungeontrain.free_play.unapproved_mods": {
+    "1": {
+      "label": "the installed mods that are not on the approved list, comma-separated",
+      "examples": [
+        "somemod v1.2.3",
+        "somemod v1.2.3, anothermod v4.5"
+      ]
+    }
+  },
   "container.dungeontrain.enderchest.profile": {
     "1": {
       "label": "the chest's ordinary title",
