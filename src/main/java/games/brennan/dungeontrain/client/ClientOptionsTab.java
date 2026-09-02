@@ -81,6 +81,8 @@ public enum ClientOptionsTab {
         BACKUPS_PER_VERSION,
         /** Deletes every archive, in the instance and outside it. Shows the size on disk. */
         CLEAR_BACKUPS,
+        /** Whether to be asked before builds the build server has lost are sent back up. */
+        CONFIRM_BUILD_RESTORE,
         /** Opens the AI Policy page. Unconditional — every client can reach it. */
         AI_POLICY,
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
@@ -169,6 +171,9 @@ public enum ClientOptionsTab {
                 // Adjacent so the width packer pairs the two short backup rows on one line.
                 rows.add(Row.BACKUPS_PER_VERSION);
                 rows.add(Row.CLEAR_BACKUPS);
+                // Beside the backups because that is where its second tier comes from: the card this
+                // turns on is the only place a backup-only build can be kept out of a restore.
+                rows.add(Row.CONFIRM_BUILD_RESTORE);
             }
             case TRAIN -> {
                 // The two short-captioned rows lead so they pair on one line; the two whose captions

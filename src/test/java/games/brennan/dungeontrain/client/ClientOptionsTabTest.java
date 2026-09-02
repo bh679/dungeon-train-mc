@@ -71,11 +71,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: twenty rows, none of the conditional rows present")
+    @DisplayName("Plain client: twenty-one rows, none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(20, rows.size());
+        assertEquals(21, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -98,7 +98,8 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.BACKUPS_HEADING,
                         ClientOptionsTab.Row.BACKUPS,
                         ClientOptionsTab.Row.BACKUPS_PER_VERSION,
-                        ClientOptionsTab.Row.CLEAR_BACKUPS),
+                        ClientOptionsTab.Row.CLEAR_BACKUPS,
+                        ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
     }
@@ -149,7 +150,7 @@ final class ClientOptionsTabTest {
     void allConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true, true);
 
-        assertEquals(23, rows.size());
+        assertEquals(24, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -165,6 +166,7 @@ final class ClientOptionsTabTest {
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS));
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS_PER_VERSION));
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.CLEAR_BACKUPS));
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE));
         // AI Policy leads the page-opening pair above the backup block. It, not Translate, is
         // the leader: Translate is conditional, so leading with it would break the pair apart on
         // every client where it is absent.
@@ -173,7 +175,7 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("The three backup rows stay adjacent, in order")
+    @DisplayName("The backup rows stay adjacent, in order")
     void backupRowsAreAdjacent() {
         List<ClientOptionsTab.Row> general =
                 ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true);
@@ -182,7 +184,9 @@ final class ClientOptionsTabTest {
         assertEquals(ClientOptionsTab.Row.BACKUPS, general.get(first + 1));
         assertEquals(ClientOptionsTab.Row.BACKUPS_PER_VERSION, general.get(first + 2));
         assertEquals(ClientOptionsTab.Row.CLEAR_BACKUPS, general.get(first + 3));
-        assertEquals(general.size() - 1, first + 3, "the backup block ends the tab");
+        // Restores read builds out of these same archives, so the question about them belongs here.
+        assertEquals(ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE, general.get(first + 4));
+        assertEquals(general.size() - 1, first + 4, "the backup block ends the tab");
     }
 
     // ---- Fixed tabs are unaffected by the conditional flags ----

@@ -176,14 +176,13 @@ public final class StartingBookFactory {
      * zero-weight (in which case we degrade to first-in-list).</p>
      */
     private static Tuple pickTupleWeighted(List<Tuple> tuples, long seed) {
-        long total = 0L;
+        double total = 0;
         for (Tuple t : tuples) total += Math.max(0, t.book().weight());
         if (total <= 0) {
             // All tuples are zero-weight — degrade to first.
             return tuples.get(0);
         }
-        long unsigned = seed & 0x7FFFFFFFFFFFFFFFL;
-        long target = unsigned % total;
+        double target = WeightedPick.target(seed, total);
         for (Tuple t : tuples) {
             target -= Math.max(0, t.book().weight());
             if (target < 0) return t;

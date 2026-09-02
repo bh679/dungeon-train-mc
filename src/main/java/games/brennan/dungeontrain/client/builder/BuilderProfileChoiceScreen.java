@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderLabels;
+import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -12,6 +13,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
@@ -38,6 +40,8 @@ abstract class BuilderProfileChoiceScreen extends Screen {
 
     protected final Screen lastScreen;
     protected final String buildName;
+    /** Names this install will not write over, as the answer that opened this screen reported them. */
+    protected Set<String> takenNames = Set.of();
 
     /** Given a resolution and the name the player chose (empty when none was needed), do the download. */
     protected final BiConsumer<BuilderRelayInstall.Resolution, String> onChosen;
@@ -110,14 +114,22 @@ abstract class BuilderProfileChoiceScreen extends Screen {
         return Component.literal(BuilderLabels.pretty(buildName));
     }
 
+    /** What the answer that opened this screen said is already in use, for the name prompt below. */
+    void setTakenNames(Set<String> names) {
+        this.takenNames = names == null ? Set.of() : names;
+    }
+
     /**
      * Ask for a name, then resolve with it. Both naming answers go through the same prompt; only the
      * question differs, and it matters which build the player thinks they are naming.
+     *
+     * <p>The box opens on the first free number rather than always on {@code _2} — offering a name
+     * that is already taken is offering the player a wasted press.</p>
      */
     protected void promptFor(BuilderRelayInstall.Resolution resolution, String promptKey) {
         this.minecraft.setScreen(new BuilderProfileNameScreen(lastScreen, this,
                 Component.translatable(promptKey, prettyName()),
-                buildName.isEmpty() ? "" : buildName + "_2",
+                BuilderNewOptions.firstFreeName(buildName, takenNames), takenNames, false,
                 chosen -> onChosen.accept(resolution, chosen)));
     }
 

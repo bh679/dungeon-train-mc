@@ -56,7 +56,7 @@ public final class CarriageBlockSnapshot {
      * {@code DELTA_FORMAT_VERSION} must be raised in lockstep — it SKIPS deltas claiming a version above
      * its own, so a mod-only bump would freeze every build's history at its base snapshot.
      */
-    private static final int FORMAT_VERSION = 2;
+    static final int FORMAT_VERSION = 2;
     /** setBlock flag for placement: notify clients, skip neighbour-shape updates + drops. */
     private static final int PLACE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
