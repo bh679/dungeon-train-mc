@@ -4,12 +4,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pure-logic unit tests for the per-lap ghast ramp in {@link NetherMobSpawner} —
  * {@link NetherMobSpawner#ghastDenomFor} (odds, one step denser per lap) and
- * {@link NetherMobSpawner#ghastCapFor} (how many may be alive near a player). No NeoForge
+ * {@link NetherMobSpawner#ghastCapFor} (how many may be alive near a player), plus
+ * {@link NetherMobSpawner#ghastsAllowedAtDepth} (how far into the real-Nether core they need). No NeoForge
  * bootstrap: both methods take the biome class and pass index as parameters rather than reading
  * a {@code Holder<Biome>} or live config, mirroring the {@code DifficultyProgressionTest} pattern
  * of exercising the pure helper instead of the config-reading wrapper.
@@ -17,30 +19,46 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class NetherGhastRampTest {
 
     /** Densest the odds ever get (mirrors {@code NetherMobSpawner.GHAST_DENOM_FLOOR}). */
-    private static final int FLOOR = 2;
+    private static final int FLOOR = 4;
     /** Last entry of the nearby-cap table, held for every lap beyond it (mirrors {@code GHAST_NEARBY_CAPS}). */
     private static final int CAP_MAX = 15;
     /** The spawner's overall band-mob ceiling, which gates the ghast cap (mirrors {@code NEARBY_CAP}). */
     private static final int NEARBY_CAP = 10;
+    /** Blocks into the real-Nether core before ghasts may spawn (mirrors {@code GHAST_MIN_CORE_DEPTH}). */
+    private static final int MIN_CORE_DEPTH = 100;
 
     @Test
-    @DisplayName("dense biomes: 1-in-4 on the first pass, one step denser per lap")
+    @DisplayName("dense biomes: 1-in-8 on the first pass, one step denser per lap")
     void denomFor_denseBiomes_stepsDownPerLap() {
-        assertEquals(4, NetherMobSpawner.ghastDenomFor(true, 0));
-        assertEquals(3, NetherMobSpawner.ghastDenomFor(true, 1));
-        assertEquals(2, NetherMobSpawner.ghastDenomFor(true, 2));
+        assertEquals(8, NetherMobSpawner.ghastDenomFor(true, 0));
+        assertEquals(6, NetherMobSpawner.ghastDenomFor(true, 1));
+        assertEquals(4, NetherMobSpawner.ghastDenomFor(true, 2));
     }
 
     @Test
-    @DisplayName("other biomes: 1-in-8 on the first pass, one step denser per lap")
+    @DisplayName("other biomes: 1-in-16 on the first pass, one step denser per lap")
     void denomFor_otherBiomes_stepsDownPerLap() {
-        assertEquals(8, NetherMobSpawner.ghastDenomFor(false, 0));
-        assertEquals(7, NetherMobSpawner.ghastDenomFor(false, 1));
-        assertEquals(6, NetherMobSpawner.ghastDenomFor(false, 2));
-        assertEquals(5, NetherMobSpawner.ghastDenomFor(false, 3));
-        assertEquals(4, NetherMobSpawner.ghastDenomFor(false, 4));
-        assertEquals(3, NetherMobSpawner.ghastDenomFor(false, 5));
-        assertEquals(2, NetherMobSpawner.ghastDenomFor(false, 6));
+        assertEquals(16, NetherMobSpawner.ghastDenomFor(false, 0));
+        assertEquals(14, NetherMobSpawner.ghastDenomFor(false, 1));
+        assertEquals(12, NetherMobSpawner.ghastDenomFor(false, 2));
+        assertEquals(10, NetherMobSpawner.ghastDenomFor(false, 3));
+        assertEquals(8, NetherMobSpawner.ghastDenomFor(false, 4));
+        assertEquals(6, NetherMobSpawner.ghastDenomFor(false, 5));
+        assertEquals(4, NetherMobSpawner.ghastDenomFor(false, 6));
+    }
+
+    @Test
+    @DisplayName("every lap is exactly half as ghast-heavy as the pre-halving tuning")
+    void denomFor_isHalfTheOldRate() {
+        // Old tuning: dense base 4, other base 8, step 1, floor 2. Doubling all four halves the rate
+        // at every lap without changing the ramp's shape — pinned so a future tweak to one of the
+        // four constants alone surfaces here.
+        for (long pass = 0; pass <= 10; pass++) {
+            int oldDense = (int) Math.max(2, 4 - Math.min(Math.max(0L, pass), 4));
+            int oldOther = (int) Math.max(2, 8 - Math.min(Math.max(0L, pass), 8));
+            assertEquals(2 * oldDense, NetherMobSpawner.ghastDenomFor(true, pass), "dense at pass " + pass);
+            assertEquals(2 * oldOther, NetherMobSpawner.ghastDenomFor(false, pass), "other at pass " + pass);
+        }
     }
 
     @Test
@@ -70,6 +88,33 @@ final class NetherGhastRampTest {
             assertTrue(NetherMobSpawner.ghastDenomFor(true, pass) <= NetherMobSpawner.ghastDenomFor(false, pass),
                     "dense should be at least as dense as other at pass " + pass);
         }
+    }
+
+    @Test
+    @DisplayName("ghasts are barred until GHAST_MIN_CORE_DEPTH blocks into the real-Nether core")
+    void allowedAtDepth_barsCrossfadeAndTheFirstBlocksOfTheCore() {
+        // -1 is NetherBand.netherCoreDepthAt's "not in the core" sentinel — both crossfades, the
+        // mountain stretch, outside the band, band disabled. All must read as "no ghasts".
+        assertFalse(NetherMobSpawner.ghastsAllowedAtDepth(-1));
+        assertFalse(NetherMobSpawner.ghastsAllowedAtDepth(Long.MIN_VALUE));
+
+        assertFalse(NetherMobSpawner.ghastsAllowedAtDepth(0));    // first full-Nether column
+        assertFalse(NetherMobSpawner.ghastsAllowedAtDepth(MIN_CORE_DEPTH - 1));
+        assertTrue(NetherMobSpawner.ghastsAllowedAtDepth(MIN_CORE_DEPTH));
+        assertTrue(NetherMobSpawner.ghastsAllowedAtDepth(MIN_CORE_DEPTH + 1));
+        assertTrue(NetherMobSpawner.ghastsAllowedAtDepth(Long.MAX_VALUE));
+    }
+
+    @Test
+    @DisplayName("the depth gate is monotonic — deeper is never less permissive")
+    void allowedAtDepth_monotonic() {
+        boolean seenAllowed = false;
+        for (long d = -1; d <= MIN_CORE_DEPTH + 5; d++) {
+            boolean allowed = NetherMobSpawner.ghastsAllowedAtDepth(d);
+            if (seenAllowed) assertTrue(allowed, "gate re-closed at depth " + d);
+            seenAllowed |= allowed;
+        }
+        assertTrue(seenAllowed, "gate never opened");
     }
 
     @Test

@@ -11066,6 +11066,18 @@
       "released": true,
       "released_in": "v0.788.0",
       "released_at": "2026-09-02T12:47:47Z"
+    },
+    {
+      "id": "nether-arrival-tuning",
+      "version": "0.789.0",
+      "type": "feat",
+      "title": "Nether tweaks",
+      "summary": "Some adjustments to the Nether, including how ghasts show up.",
+      "pr": 1284,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
