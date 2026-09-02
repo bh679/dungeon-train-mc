@@ -175,6 +175,10 @@ public final class ShaderDiagnosticsHud {
                 : "none on screen"), cubes > 0 ? COLOR_ACTIVE : COLOR_IDLE));
         }
 
+        String postPass = games.brennan.dungeontrain.client.shader.PostFogPass.lastDrawn();
+        lines.add(new Line("Post pass: " + (postPass.isEmpty() ? NONE : postPass),
+            postPass.isEmpty() ? COLOR_IDLE : COLOR_ACTIVE));
+
         float roomT = ShaderDiagnostics.roomSkyT();
         lines.add(new Line("Room sky: " + (roomT > 0.0f
             ? ShaderDiagnostics.roomSkyKind()

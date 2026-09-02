@@ -89,6 +89,9 @@ public final class PortalRoomFogEvents {
         event.setFarPlaneDistance(far);
         event.setNearPlaneDistance(near);
         event.setCanceled(true);
+        // A shader pack is free to ignore these planes; the post-composite pass is not, and it
+        // draws exactly the planes applied here rather than re-running the ease.
+        games.brennan.dungeontrain.client.shader.PostFogPass.requestFog(near, far);
         if (ShaderDiagnostics.recording()) {
             ShaderDiagnostics.recordFogDistance(vanillaFar, far, near, true);
         }

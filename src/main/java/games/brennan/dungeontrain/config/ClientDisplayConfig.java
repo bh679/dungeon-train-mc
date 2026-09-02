@@ -156,6 +156,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue EDITOR_PLOT_LIGHTING;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
+    /** Whether the corridor lift is also drawn as a screen-space pass under shader packs. See {@link #isShaderCrossingLiftEnabled()}. */
+    public static final ModConfigSpec.BooleanValue SHADER_CROSSING_LIFT;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
     public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
     public static final ModConfigSpec.BooleanValue CREATIVE_SHIFT_CLICK_TO_HOTBAR;
@@ -307,6 +309,7 @@ public final class ClientDisplayConfig {
         EDITOR_PLOT_LIGHTING = pair.getLeft().editorPlotLighting;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
+        SHADER_CROSSING_LIFT = pair.getLeft().shaderCrossingLift;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
@@ -441,6 +444,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalCrossingFade = b
                 .comment("Fade a portal carriage's lighting into a flat hold as you walk toward the middle of its corridor, instead of leaving each copy lit by its own doorway. A portal carriage and the twin you are swapped into are built from the same blocks, but only one of them has a real door onto the train, so light leaks into one and not the other and the brightness can jump as you cross - most visibly near the train door, where turning round is enough to swap you. The hold is the same constant in both copies, so there is nothing left for the crossing to change; it ramps in from each doorway and is at full strength between the baffles. Set false for the old hard cut.")
                 .define("crossingFade", true);
+        ModConfigSpec.BooleanValue shaderCrossingLift = b
+                .comment("Under a shader pack, also draw the corridor lift as a screen-space brightening after the pack has finished the frame. Most packs light the world from their own model and never read the lightmap the crossing fade lifts, so without this the transition is invisible under shaders; with it the walk brightens slightly toward the middle of the corridor. Packs that DO read the lightmap already show the lift, and this would double it - hence off by default. No effect without a shader pack.")
+                .define("shaderCrossingLift", false);
         b.pop();
 
         b.push("scribble");
@@ -647,7 +653,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, shaderCrossingLift, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
@@ -1240,6 +1246,15 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Under a shader pack, draw the corridor lift as a screen-space pass too? Defaults to
+     * {@code false}: packs that read the lightmap already show the lift, and doubling it is worse
+     * than missing it. Read once per frame by {@code PostFogPass}.
+     */
+    public static boolean isShaderCrossingLiftEnabled() {
+        return isLoaded() && SHADER_CROSSING_LIFT.get();
+    }
+
+    /**
      * Show Scribble's colour-swatch grid on the book-writing screen? Defaults to {@code false}.
      *
      * <p>Note this reads {@code isLoaded() &&}, not the {@code !isLoaded() ||} form used by the
@@ -1604,6 +1619,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue portalCrossingFade,
+            ModConfigSpec.BooleanValue shaderCrossingLift,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue creativeShiftClickToHotbar,
