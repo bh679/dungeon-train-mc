@@ -571,16 +571,22 @@ public final class EditorMenuScreen implements MenuScreen {
     /**
      * The Save icon at the right of the breadcrumb band — one tap from any tab, where the
      * File-tab row is two. Same command as that row, so what the icon saves is what Save saves.
+     *
+     * <p>Its colour is its status: steady blue while the plot matches disk, breathing green while
+     * there is something to save — see {@link EditorSaveStatus}.</p>
      */
     @Override
     public MenuHeaderAction headerAction() {
-        return saveHeaderAction(Ctx.read().category());
+        return saveHeaderAction(Ctx.read().category(),
+            EditorSaveStatus.currentPlotDirty(), System.currentTimeMillis());
     }
 
     /** The header Save for a category: parts route through the part-aware subcommand. */
-    static MenuHeaderAction saveHeaderAction(PlotCategory category) {
-        return new MenuHeaderAction(SAVE_ICON, "Save",
-            category == PlotCategory.PARTS ? PART_SAVE_COMMAND : SAVE_COMMAND);
+    static MenuHeaderAction saveHeaderAction(PlotCategory category, boolean dirty, long nowMillis) {
+        return new MenuHeaderAction(SAVE_ICON,
+            dirty ? "Save — unsaved changes" : "Save",
+            category == PlotCategory.PARTS ? PART_SAVE_COMMAND : SAVE_COMMAND,
+            EditorSaveStatus.tint(dirty, nowMillis));
     }
 
     /**

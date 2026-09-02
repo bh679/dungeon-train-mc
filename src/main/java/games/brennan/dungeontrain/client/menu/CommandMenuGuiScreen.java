@@ -308,7 +308,12 @@ public final class CommandMenuGuiScreen extends Screen {
         gg.fill(headerBtnX, headerBtnY, headerBtnX + HEADER_BTN, headerBtnY + HEADER_BTN,
             headerHovered ? CELL_HOVER : CELL_IDLE);
         int pad = (HEADER_BTN - HEADER_ICON) / 2;
+        // The sprite is authored white so the tint is the whole colour.
+        int tint = action.tint();
+        gg.setColor(((tint >> 16) & 0xFF) / 255f, ((tint >> 8) & 0xFF) / 255f,
+            (tint & 0xFF) / 255f, ((tint >>> 24) & 0xFF) / 255f);
         gg.blitSprite(action.icon(), headerBtnX + pad, headerBtnY + pad, HEADER_ICON, HEADER_ICON);
+        gg.setColor(1f, 1f, 1f, 1f);
     }
 
     /** A thin track inside the right edge, so a truncated list doesn't look like the whole list. */
