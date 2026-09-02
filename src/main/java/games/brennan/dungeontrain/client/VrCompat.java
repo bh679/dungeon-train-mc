@@ -7,10 +7,9 @@ import net.neoforged.fml.ModList;
  * VR installs.
  *
  * <p><b>Why presence and not "is VR mode active".</b> Vivecraft is an optional, player-added mod —
- * not a compile dependency and not in the Dungeon Train modpack (same situation
- * {@link games.brennan.dungeontrain.mixin.VivecraftMixinPlugin} documents). Without compiling
- * against it there is no supported way to ask whether the headset is currently active, so this
- * deliberately errs wide: if Vivecraft is installed at all, the throttle stays off.</p>
+ * not a compile dependency and not in the Dungeon Train modpack. Without compiling against it
+ * there is no supported way to ask whether the headset is currently active, so this deliberately
+ * errs wide: if Vivecraft is installed at all, the throttle stays off.</p>
  *
  * <p>That over-suppresses for a player who installed Vivecraft but is running it in its non-VR
  * mode — they simply keep vanilla's (unthrottled) behaviour, which is exactly what shipped before
@@ -18,9 +17,9 @@ import net.neoforged.fml.ModList;
  * intentional: the cost of over-suppressing is a missed optimisation, the cost of
  * under-suppressing is a player feeling ill.</p>
  *
- * <p>Distinct from {@code VivecraftMixinPlugin}, which answers the same question during early
- * class transformation via {@code LoadingModList}. This one runs long after load, so it uses the
- * ordinary runtime {@link ModList}.</p>
+ * <p>This runs long after load, so it uses the ordinary runtime {@link ModList}. A mixin plugin
+ * answering the same question during early class transformation would instead need
+ * {@code LoadingModList} — see {@code EffortlessBuildingMixinPlugin}.</p>
  */
 public final class VrCompat {
 
