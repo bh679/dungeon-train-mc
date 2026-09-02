@@ -1,7 +1,7 @@
 {
   "abandonedroom": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
   },
   "backrooms": {
     "weight": 1,
@@ -81,7 +81,7 @@
   },
   "end": {
     "weight": 1,
-    "mode": "bedrockless"
+    "mode": "bedrockless/exact/off/off/off/end"
   },
   "house": {
     "weight": 1,
@@ -95,6 +95,10 @@
     "weight": 3,
     "minLevel": 5,
     "mode": "endless_repetition/dynamic/off/on/off/none/repeated"
+  },
+  "medievalhouse": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
   },
   "midlibrary": {
     "weight": 1,
@@ -151,7 +155,7 @@
   },
   "upsidedown": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/day/sealed/-1"
   },
   "window": {
     "weight": 2,
