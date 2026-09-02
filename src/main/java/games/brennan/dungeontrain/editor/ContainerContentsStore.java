@@ -85,7 +85,7 @@ public final class ContainerContentsStore {
     public static final int CURRENT_SCHEMA_VERSION = 3;
 
     static final String SUBDIR = "containers";
-    private static final String EXT = ".contents.json";
+    static final String EXT = ".contents.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/containers/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/containers";
 
@@ -635,6 +635,15 @@ public final class ContainerContentsStore {
             LOGGER.error("[DungeonTrain] Failed to parse container contents store {}: {}", origin, e.toString());
             return new ContainerContentsStore(plotKey, new LinkedHashMap<>(), new LinkedHashMap<>());
         }
+    }
+
+    /**
+     * The filename this store keeps {@code plotKey} under, extension included — what
+     * {@link TemplateSidecars} carries between installs. Stated here rather than rebuilt there so
+     * the sanitising rule below stays this class's business.
+     */
+    static String basenameFor(String plotKey) {
+        return safeFilename(plotKey) + EXT;
     }
 
     private static String safeFilename(String plotKey) {

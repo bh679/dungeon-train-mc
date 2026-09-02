@@ -10778,6 +10778,24 @@
       "released_at": "2026-09-01T17:04:33Z"
     },
     {
+      "id": "template-sidecars-and-mobs",
+      "version": "0.773.0",
+      "type": "feat",
+      "title": "Your builds keep their settings, and the mobs you place in them",
+      "summary": "A build you save to My Builds now travels whole. Until now only its blocks went up, so loading one back on another machine \u2014 or after a reinstall \u2014 gave you the shape of the build and nothing else: a dimensional carriage's doorways snapped back to the centre of the wall, block variants were gone, and the loot links and allow-lists you had set were back at their defaults. All of that now goes with the build and comes back with it. Mobs come too. A creature you place in a room in the Train Editor is part of that build now, saved with it and there again when you load it, where before it vanished the moment you saved. To keep that honest, the Train Editor world no longer spawns wildlife of its own, so the only creatures in a plot are the ones you put there. A room that repeats itself still keeps a lid on how many it will place at once.",
+      "highlights": [
+        "Doorway positions, block variants, part assignments, loot links and allow-lists all travel with a build to My Builds and back",
+        "Mobs you place in a build are saved with it, and are there when you load it",
+        "No natural mob spawns in the Train Editor world, so nothing wanders into a plot and gets saved",
+        "Saving a build whose name is one Dungeon Train ships now tells you it was not sent to My Builds, instead of saying nothing"
+      ],
+      "pr": 1260,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "vivecraft-compat-moved-to-addon",
       "version": "0.773.0",
       "type": "refactor",
