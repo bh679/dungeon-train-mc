@@ -143,6 +143,24 @@ public final class ShaderDiagnosticsHud {
                 ShaderDiagnostics.fogNear(), yesNo(ShaderDiagnostics.fogCancelled()))
             : NONE), askedFog && ShaderDiagnostics.fogCancelled() ? COLOR_ACTIVE : COLOR_IDLE));
 
+        // Clouds: DT hides them over the End/Nether bands and sinks them in the upside-down band,
+        // both through vanilla's cloud pass. "hook no" means that pass never ran — the pack draws
+        // its own clouds and neither behaviour is in effect.
+        boolean cloudHook = ShaderDiagnostics.cloudsHookRan();
+        String clouds;
+        if (!cloudHook) {
+            clouds = "vanilla pass never ran (pack draws its own)";
+        } else if (ShaderDiagnostics.cloudsCancelled()) {
+            clouds = "hidden by DT";
+        } else {
+            float vanillaY = ShaderDiagnostics.cloudHeightVanilla();
+            float appliedY = ShaderDiagnostics.cloudHeightApplied();
+            clouds = vanillaY > 0.0f
+                ? String.format(Locale.ROOT, "shown, plane %.0f -> %.0f", vanillaY, appliedY)
+                : "shown, plane unchanged";
+        }
+        lines.add(new Line("Clouds: " + clouds, cloudHook ? COLOR_ACTIVE : COLOR_OFF));
+
         boolean skyboxAllowed = ShaderCompat.allows(ShaderCompat.Feature.SKYBOX_BLOCKS);
         if (!skyboxAllowed) {
             lines.add(new Line("Skybox blocks: " + ShaderCompat.reason(ShaderCompat.Feature.SKYBOX_BLOCKS),

@@ -51,6 +51,12 @@ public final class ShaderDiagnostics {
     private static volatile float fogNear;
     private static volatile boolean fogCancelled;
 
+    // --- Per-frame: clouds ------------------------------------------------------------------------
+    private static volatile boolean cloudsHookRan;
+    private static volatile boolean cloudsCancelled;
+    private static volatile float cloudHeightVanilla;
+    private static volatile float cloudHeightApplied;
+
     // --- Per-frame: skybox blocks ----------------------------------------------------------------
     private static volatile int skyboxCubes;
     private static volatile String skyboxVariants = "";
@@ -106,7 +112,8 @@ public final class ShaderDiagnostics {
         lastDrawn = new Frame(skyVoid, skyNether, skyUpsideDown,
             fogColorSource, fogColorIn, fogColorOut,
             fogDistanceAsked, fogVanillaFar, fogFar, fogNear, fogCancelled,
-            skyboxCubes, skyboxVariants, skyboxStencil, skyboxDrew);
+            skyboxCubes, skyboxVariants, skyboxStencil, skyboxDrew,
+            cloudsHookRan, cloudsCancelled, cloudHeightVanilla, cloudHeightApplied);
         clearFrame();
     }
 
@@ -126,6 +133,10 @@ public final class ShaderDiagnostics {
         skyboxVariants = "";
         skyboxStencil = false;
         skyboxDrew = false;
+        cloudsHookRan = false;
+        cloudsCancelled = false;
+        cloudHeightVanilla = 0.0f;
+        cloudHeightApplied = 0.0f;
     }
 
     /** Drop everything on disconnect, so one world's readings never colour the next. */
@@ -178,6 +189,26 @@ public final class ShaderDiagnostics {
         skyboxDrew = drew;
     }
 
+    /**
+     * Vanilla's {@code renderClouds} reached DT's hook this frame, and whether DT cancelled it.
+     *
+     * <p><b>Whether the hook ran at all is the measurement.</b> DT hides the clouds over the End and
+     * Nether bands, and sinks them to the floor in the upside-down band, entirely through vanilla's
+     * cloud pass. A pack that draws its own clouds in composite never calls that pass — so
+     * {@code cloudsHookRan == false} means both behaviours are dead for that pack, whatever the
+     * frame happens to look like.</p>
+     */
+    public static void recordCloudsHook(boolean cancelled) {
+        cloudsHookRan = true;
+        cloudsCancelled = cancelled;
+    }
+
+    /** The cloud plane height vanilla asked for, and what DT redirected it to. */
+    public static void recordCloudHeight(float vanilla, float applied) {
+        cloudHeightVanilla = vanilla;
+        cloudHeightApplied = applied;
+    }
+
     /** The dimensional-carriage sky lift applied on this lightmap rebuild. */
     public static void recordRoomSky(String kind, float t, float lift) {
         roomSkyKind = kind == null ? "" : kind;
@@ -205,6 +236,11 @@ public final class ShaderDiagnostics {
     public static float fogFar() { return fogFar; }
     public static float fogNear() { return fogNear; }
     public static boolean fogCancelled() { return fogCancelled; }
+
+    public static boolean cloudsHookRan() { return cloudsHookRan; }
+    public static boolean cloudsCancelled() { return cloudsCancelled; }
+    public static float cloudHeightVanilla() { return cloudHeightVanilla; }
+    public static float cloudHeightApplied() { return cloudHeightApplied; }
 
     public static int skyboxCubes() { return skyboxCubes; }
     public static String skyboxVariants() { return skyboxVariants; }
@@ -246,10 +282,13 @@ public final class ShaderDiagnostics {
                         String fogColorSource, int fogColorIn, int fogColorOut,
                         boolean fogDistanceAsked, float fogVanillaFar, float fogFar, float fogNear,
                         boolean fogCancelled,
-                        int skyboxCubes, String skyboxVariants, boolean skyboxStencil, boolean skyboxDrew) {
+                        int skyboxCubes, String skyboxVariants, boolean skyboxStencil, boolean skyboxDrew,
+                        boolean cloudsHookRan, boolean cloudsCancelled,
+                        float cloudHeightVanilla, float cloudHeightApplied) {
 
         public static final Frame EMPTY =
-            new Frame(0, 0, 0, "", 0, 0, false, 0, 0, 0, false, 0, "", false, false);
+            new Frame(0, 0, 0, "", 0, 0, false, 0, 0, 0, false, 0, "", false, false,
+                false, false, 0, 0);
     }
 
     /** Which band sky overlay a recording came from. */

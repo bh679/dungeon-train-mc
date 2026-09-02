@@ -119,6 +119,19 @@ public final class ShaderSweep {
     /** Pitched up far enough to fill the frame with sky, shallow enough to keep a horizon for scale. */
     private static final int BAND_VIEW_PITCH = -55;
 
+    /**
+     * Cloud sites sit BELOW the cloud plane, unlike the sky sites which sit above everything.
+     *
+     * <p>Vanilla's clouds are at y=192 and the upside-down band sinks them to {@code upsideDownCloudY}
+     * (0 by default), so a camera at the sky sites' y=250 has both of them behind it — which is why
+     * the first sweep measured the skies and said nothing whatever about the clouds. 140 is under the
+     * vanilla plane and well over the sunken one, so looking up sees the first and looking down sees
+     * the second.</p>
+     */
+    private static final int CLOUD_VIEW_Y = 140;
+    private static final int CLOUD_UP_PITCH = -35;
+    private static final int CLOUD_DOWN_PITCH = 40;
+
     /** A command of the form {@code wait:<ticks>} pauses the setup instead of being sent. */
     private static final String WAIT_PREFIX = "wait:";
 
@@ -300,6 +313,15 @@ public final class ShaderSweep {
      */
     private static void tickSiteSetup(Minecraft mc) {
         Site site = sites.get(siteIndex);
+        // Skip a filtered-out site entirely, commands included — the point of the filter is that a
+        // targeted re-run costs minutes. Every site is self-contained (it rides in and positions
+        // itself) EXCEPT the carriage pair 06/07, which continue from 05's plot: ask for those
+        // together or not at all.
+        if (!wanted(site)) {
+            LOGGER.info("[DungeonTrain] sweep[{}]: skipped by the site filter", site.id());
+            advanceSite();
+            return;
+        }
         if (commandIndex == 0 && setupWait == 0) framesAtSiteStart = framesRendered;
         if (setupWait > 0) {
             setupWait--;
@@ -339,12 +361,6 @@ public final class ShaderSweep {
 
     private static void tickCapture(Minecraft mc) {
         Site site = sites.get(siteIndex);
-        if (!wanted(site)) {
-            LOGGER.info("[DungeonTrain] sweep[{}]: not in the site filter — visited, not captured", site.id());
-            phase = Phase.CAPTURE_WAIT;
-            timer = 1;
-            return;
-        }
         pendingCapture = String.format(Locale.ROOT, "sweep-%s-%s.png", ShaderCompat.token(), site.id());
         logPanel(site);
         phase = Phase.CAPTURE_WAIT;
@@ -353,6 +369,10 @@ public final class ShaderSweep {
 
     private static void tickCaptureWait() {
         if (--timer > 0) return;
+        advanceSite();
+    }
+
+    private static void advanceSite() {
         siteIndex++;
         commandIndex = 0;
         setupWait = 0;
@@ -457,6 +477,25 @@ public final class ShaderSweep {
         out.add(new Site("07-carriage-deep", List.of(
             "tp @s ^ ^ ^8"), SITE_TICKS));
 
+        // Clouds. DT hides them over the End and Nether bands and sinks them to the floor in the
+        // upside-down band — two behaviours the first sweep never looked at, because its camera was
+        // above both cloud planes the whole time.
+        //
+        // 08 is the positive control and is not optional: without a shot proving this camera DOES
+        // see clouds where clouds belong, every "no clouds" reading below could equally mean the
+        // camera was pointed at nothing.
+        if (plainX != Integer.MIN_VALUE) {
+            addCloudSite(out, "08-clouds-plain", plainX, CLOUD_UP_PITCH);
+        }
+        addCloudSiteAtBand(out, "09-clouds-void", here, ClientVoidBand::endSkyIntensityAt, CLOUD_UP_PITCH);
+        addCloudSiteAtBand(out, "10-clouds-nether", here, ClientNetherBand::netherIntensityAt, CLOUD_UP_PITCH);
+        // The flip band twice: nothing should remain overhead, and the sunken plane should be under
+        // the camera. One without the other cannot tell "sank" from "vanished".
+        addCloudSiteAtBand(out, "11-clouds-flip-up", here,
+            ClientUpsideDownBand::upsideDownIntensityAt, CLOUD_UP_PITCH);
+        addCloudSiteAtBand(out, "12-clouds-flip-down", here,
+            ClientUpsideDownBand::upsideDownIntensityAt, CLOUD_DOWN_PITCH);
+
         return out;
     }
 
@@ -476,6 +515,29 @@ public final class ShaderSweep {
      * puts the dome in frame. Band intensity is a function of world-X alone, so moving up and
      * sideways costs nothing.</p>
      */
+    /** A cloud stop at a band's peak, or nothing if that band is not in range. */
+    private static void addCloudSiteAtBand(List<Site> out, String id, double fromX,
+                                           DoubleUnaryOperator ramp, int pitch) {
+        int x = scanForBand(fromX, ramp);
+        if (x == Integer.MIN_VALUE) {
+            LOGGER.warn("[DungeonTrain] sweep: no band for '{}' — cloud site skipped", id);
+            return;
+        }
+        addCloudSite(out, id, x, pitch);
+    }
+
+    /** Self-contained cloud stop: ride in, step off the train, look at the cloud plane. */
+    private static void addCloudSite(List<Site> out, String id, int x, int pitch) {
+        out.add(new Site(id, List.of(
+            "gamemode creative",
+            "dtp " + x,
+            WAIT_PREFIX + "300",
+            "gamemode spectator",
+            "forceload add " + (x - 16) + " " + (BAND_VIEW_Z - 16) + " " + (x + 16) + " " + (BAND_VIEW_Z + 16),
+            "tp @s " + x + " " + CLOUD_VIEW_Y + " " + BAND_VIEW_Z + " 0 " + pitch,
+            WAIT_PREFIX + "200"), SITE_TICKS));
+    }
+
     private static void addBandSite(List<Site> out, String id, double fromX, DoubleUnaryOperator ramp) {
         int x = scanForBand(fromX, ramp);
         if (x == Integer.MIN_VALUE) {
@@ -535,7 +597,8 @@ public final class ShaderSweep {
         ShaderDiagnostics.Frame f = ShaderDiagnostics.lastDrawn();
         LOGGER.info("[DungeonTrain] sweep[{}] pack={} bandSky(void={} nether={} flip={}) "
                 + "fogColour={} fogDist(asked={} far={}->{} cancelled={}) "
-                + "skybox(cubes={} drew={} stencil={}) room({} t={} lift={}) crossing={}",
+                + "skybox(cubes={} drew={} stencil={}) "
+                + "clouds(hook={} hidden={} plane={}->{}) room({} t={} lift={}) crossing={}",
             site.id(), ShaderCompat.describe(),
             ShaderDiagnostics.fmt(f.skyVoid()),
             ShaderDiagnostics.fmt(f.skyNether()),
@@ -548,6 +611,8 @@ public final class ShaderSweep {
             ShaderDiagnostics.fmt(f.fogFar()),
             f.fogCancelled(),
             f.skyboxCubes(), f.skyboxDrew(), f.skyboxStencil(),
+            f.cloudsHookRan(), f.cloudsCancelled(),
+            ShaderDiagnostics.fmt(f.cloudHeightVanilla()), ShaderDiagnostics.fmt(f.cloudHeightApplied()),
             // The lightmap-paced values are not per-frame and are never cleared, so they are read live.
             ShaderDiagnostics.roomSkyKind().isEmpty() ? "none" : ShaderDiagnostics.roomSkyKind(),
             ShaderDiagnostics.fmt(ShaderDiagnostics.roomSkyT()),

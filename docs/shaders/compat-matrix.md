@@ -254,6 +254,44 @@ with the lift forced off — a small addition, and the obvious next step.
 occupied, and the editor plot is not one. Two packs produced live fog in an earlier sweep from the
 `portal test` twin on a reused world; on a clean world the twin sends no fog box at all. Unresolved.
 
+### Clouds — hiding works, sinking is dead (and not because of shaders)
+
+DT does two separate things with clouds, and they fail differently.
+
+| Band | Intended | Measured (control, **shaders off**) |
+|---|---|---|
+| plain overworld | clouds shown | shown — positive control, camera proven good |
+| void / End | hidden | **hidden** ✓ |
+| Nether | hidden | **hidden** ✓ |
+| upside-down | plane sinks 192 → `upsideDownCloudY` (0) | **plane unchanged, clouds still overhead** ✗ |
+
+The hiding is an `@Inject` at the `HEAD` of `LevelRenderer#renderClouds` and it fires. The sinking is
+a `@ModifyExpressionValue` on `DimensionSpecialEffects#getCloudHeight()` **inside** that method's
+body, and it never fires — not once, in any run. The instrumentation records every call to it
+including the ones that change nothing, and the count is zero while `hook=true` proves the enclosing
+method ran.
+
+The body is being skipped. NeoForge's `renderClouds` opens with an extension point:
+
+```java
+if (level.effects().renderClouds(...))   // handled elsewhere
+    return;                              // <-- everything below is skipped
+float f = this.level.effects().getCloudHeight();   // <-- DT's modifier target
+```
+
+and **Iris** ships `net.irisshaders.iris.mixin.MixinLevelRenderer` (which references `renderClouds`)
+plus `mixin.sky.MixinDimensionSpecialEffects`. Sodium was ruled out — it contains no cloud code at
+all — as was Sable.
+
+**Why this matters more than a shader bug:** Iris is loaded whenever it is installed, shaders on or
+off. This was measured with `enableShaders=false`. So the upside-down band's clouds have never sunk
+for any player running Iris, which is every player who has shader support installed at all.
+
+This is the same shape as the documented Sodium chunk-meshing trap: a mixin written against the
+vanilla path, correct in a plain dev client, dead for the modpack. The fix will be the same shape
+too — hoist the decision into a plain client helper and hook whatever actually renders the clouds,
+rather than the vanilla method that no longer runs.
+
 ### Skybox Blocks — DT's own gate, not a measurement
 
 `ShaderCompat.allows` returns false under every pack, so every shader row would read "off" by our own
@@ -268,6 +306,8 @@ decision. Only the control's cell could inform, and that site remained the most 
 
 | System | Verdict |
 |---|---|
+| Clouds — hidden over void/Nether | **Works** under the control; per-pack behaviour still to sweep. |
+| Clouds — sunk in upside-down | **Broken, and not by shaders.** Iris intercepts `renderClouds`, so DT's height modifier never runs — with shaders off too. |
 | Skyboxes in bands | **Broken under every pack.** The dome is drawn and then overwritten by the pack's own atmosphere. Needs the post-composite approach — nothing cheaper will do it. |
 | Skybox blocks | Off by DT's gate; unchanged. |
 | Carriage fog | Unknown — not reachable from the editor plot. |
