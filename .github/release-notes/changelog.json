@@ -11037,6 +11037,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-carriage-bookshelf-removal",
+      "version": "0.788.0",
+      "type": "fix",
+      "title": "Minor fixes",
+      "summary": "Small fixes and adjustments.",
+      "highlights": [],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
