@@ -11022,8 +11022,25 @@
       "released_at": null
     },
     {
+      "id": "editor-menu-width-save-icon",
+      "version": "0.787.0",
+      "type": "feat",
+      "title": "Editor menu: one width on every tab, and a Save icon that shows when you need it",
+      "summary": "The Train Editor's X menu no longer widens when you open the Current tab \u2014 every tab is the same size now. A Save icon sits in the menu's header on every tab: it glows green while the plot you're standing in has unsaved changes and settles to blue once it's saved, so you can tell at a glance whether your work is on disk.",
+      "highlights": [
+        "Current tab keeps the same panel width as File, Settings and Nav",
+        "Save icon in the editor menu header, reachable from any tab",
+        "Icon pulses green with unsaved changes, blue when the plot is saved"
+      ],
+      "pr": 1282,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "editor-world-loads-in-seconds",
-      "version": "0.786.0",
+      "version": "0.787.0",
       "type": "perf",
       "title": "The Train Editor opens in seconds",
       "summary": "Opening the Train Editor from the title screen no longer builds a whole Dungeon Train world first. The editor world is now its own void space \u2014 no train, no track, no terrain, no nether or end \u2014 and the first time you open it, it skips the sweep that used to clear every plot in the sky before anything was placed. Tile click to standing on your plot went from around 40 seconds to about 4. Existing editor worlds are unchanged.",
