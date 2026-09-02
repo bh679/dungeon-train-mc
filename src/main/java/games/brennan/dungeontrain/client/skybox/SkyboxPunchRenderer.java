@@ -80,9 +80,9 @@ import java.util.UUID;
  * <p>Iris shades a deferred gbuffer. A colour-masked depth write leaves the albedo and normal
  * attachments untouched, so the composite pass would shade those pixels from cleared gbuffer
  * data — black, not sky. Under a pack the punch therefore runs stencil-free (no per-variant
- * sky pass; the pack owns the sky) and a second pass at {@code AFTER_WEATHER},
+ * sky pass; the pack owns the sky) and a second pass at {@code AFTER_BLOCK_ENTITIES},
  * {@link SkyboxHoleReopen}, pushes every hole pixel that is still visible back to the far plane
- * so the composite paints the pack's own sky there. The on/off verdict lives in
+ * so the pack's deferred and composite passes paint its own sky there. The on/off verdict lives in
  * {@link ShaderCompat#allows} alongside the other atmosphere systems'.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -102,8 +102,8 @@ public final class SkyboxPunchRenderer {
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         RenderLevelStageEvent.Stage stage = event.getStage();
         boolean afterSky = stage == RenderLevelStageEvent.Stage.AFTER_SKY;
-        boolean afterWeather = stage == RenderLevelStageEvent.Stage.AFTER_WEATHER;
-        if (!afterSky && !afterWeather) return;
+        boolean reopenStage = stage == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES;
+        if (!afterSky && !reopenStage) return;
 
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
@@ -145,10 +145,11 @@ public final class SkyboxPunchRenderer {
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         Map<UUID, ClientSubLevel> subLevels = indexSubLevels(level, snapshot);
 
-        if (afterWeather) {
-            // Under a pack: mark the hole pixels nothing has covered since the punch, and push
-            // them back to the far plane so the composite treats them as sky. Same meshes, same
-            // matrices as the punch — see SkyboxHoleReopen for why this is a stencil pass.
+        if (reopenStage) {
+            // Under a pack: mark the hole pixels nothing opaque has covered since the punch, and
+            // push them back to the far plane so the pack's deferred and composite passes treat
+            // them as sky. Same meshes, same matrices as the punch — see SkyboxHoleReopen for why
+            // this is a stencil pass and why it runs before the translucents.
             SkyboxHoleReopen.run(() -> {
                 for (SkyboxSky sky : SkyboxSky.values()) {
                     MeshData mesh = buildMesh(sky, snapshot, subLevels, frustumMatrix, frustum, cam, partialTick);

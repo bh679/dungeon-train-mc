@@ -1195,6 +1195,9 @@ public final class PortalCarriageEvents {
             fogged.add(player.getUUID());
             if (region.equals(LAST_FOG.get(player.getUUID()))) continue;
             LAST_FOG.put(player.getUUID(), region);
+            LOGGER.info("[DungeonTrain] room fog -> {}: x[{}..{}] y[{}..{}] z[{}..{}] r={} min={} pad={}",
+                player.getName().getString(), region.minX(), region.maxX(), region.minY(), region.maxY(),
+                region.minZ(), region.maxZ(), region.radius(), region.minRadius(), region.falloff());
             PacketDistributor.sendToPlayer(player, region);
         }
     }
@@ -1237,6 +1240,9 @@ public final class PortalCarriageEvents {
             skied.add(player.getUUID());
             if (region.equals(LAST_SKY.get(player.getUUID()))) continue;
             LAST_SKY.put(player.getUUID(), region);
+            LOGGER.info("[DungeonTrain] room sky -> {}: {} x[{}..{}] y[{}..{}] z[{}..{}]",
+                player.getName().getString(), sky, region.minX(), region.maxX(), region.minY(), region.maxY(),
+                region.minZ(), region.maxZ());
             PacketDistributor.sendToPlayer(player, region);
         }
     }

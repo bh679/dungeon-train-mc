@@ -40,9 +40,14 @@ import org.lwjgl.opengl.GL11;
  *       and the pack paints its sky there.</li>
  * </ol>
  *
- * <p>Runs at {@code AFTER_WEATHER}, the last stage NeoForge dispatches inside
- * {@code LevelRenderer#renderLevel} before Iris composites. Vanilla has {@code depthMask(false)}
- * around that stage, so the mask is read at entry and restored on exit rather than assumed.</p>
+ * <p>Runs at {@code AFTER_BLOCK_ENTITIES}: after every opaque thing — terrain, Sable's carriages,
+ * entities, block entities — and immediately before Iris' <em>deferred</em> pass and its
+ * no-translucents depth copy. Packs draw their sky and volumetric clouds in deferred from the
+ * depth as it stands then, so a hole reopened any later shows sky without the clouds around it
+ * (measured on Complementary Unbound at {@code AFTER_WEATHER}). The price of going early is that
+ * a translucent surface <em>behind</em> a skybox block draws through it, because the hole is at
+ * the far plane by the time translucents render. Skybox blocks face open sky or void in practice,
+ * so the clouds win. The depth mask is read at entry and restored on exit rather than assumed.</p>
  *
  * <p>Under a pack every variant shows the <em>pack's</em> sky for the pipeline currently
  * rendering — an End block inside an End-skied carriage shows the pack's End, an End block in the
