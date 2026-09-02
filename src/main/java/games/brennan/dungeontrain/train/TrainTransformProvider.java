@@ -1031,6 +1031,14 @@ public final class TrainTransformProvider implements KinematicDriver {
         // for TRUE anomalies: a large delta with NO tick gap is still a real
         // regression and still fires.
         if (shouldReanchor(lastNextTransformGameTick, currentGameTick)) {
+            // Rare (only after a cull→reload), so this is unconditional and INFO: it is the proof
+            // that a reloaded carriage rejoined its siblings by extrapolation and not from wherever
+            // Sable put the body back. deltaBlocks is how far the body moved in that one frame.
+            JITTER_LOGGER.info(
+                "[reanchor] pIdx={} trainId={} gapTicks={} from={} to={} deltaBlocks={}",
+                pIdx, trainId, currentGameTick - lastNextTransformGameTick,
+                fmt(spawnWorldPos), fmt(canonicalPos),
+                String.format("%.3f", input.currentPosition().distance(canonicalPos)));
             spawnWorldPos.set(canonicalPos);
             spawnGameTick = currentGameTick;
             // With the elapsed count now measured from here, the frozen ticks before here are
