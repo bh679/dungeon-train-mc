@@ -27,6 +27,7 @@ import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalPairResidency;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
+import games.brennan.dungeontrain.portal.PortalRegistryCensus;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomMobs;
 import games.brennan.dungeontrain.portal.PortalRoomRescue;
@@ -49,6 +50,8 @@ import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.ShipAabbs;
+import games.brennan.dungeontrain.ship.Shipyard;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.template.GateContext;
 import net.minecraft.ChatFormatting;
@@ -214,17 +217,47 @@ public final class PortalCarriageEvents {
     private static final Map<UUID, Long> LAST_SWAP = new HashMap<>();
 
     /**
-     * Ticks between repeat warnings about one skipped group.
+     * Ticks between repeat warnings about one skipped group, for the reasons that repeat
+     * meaningfully.
      *
      * <p>A group stays non-resident for a whole cull episode, so an ungated log would fire every
      * tick for every portal pair — the per-tick chatter {@code TrainCarriageAppender} collapses for
      * the same reason. 200 ≈ 10s: often enough to show an episode's shape in a test log, quiet
      * enough to read.</p>
+     *
+     * <p>Applies to {@link PortalSwapDiagnostics.Reason#NOT_STAMPED} only. That one is a
+     * disagreement rather than a state — its own documentation says repeating means a genuine one —
+     * so the repeats carry information and are kept. The pose reasons repeat without saying anything
+     * new; see {@link #POSE_STATE_REASONS}.</p>
      */
     private static final int SKIP_WARN_PERIOD_TICKS = 200;
 
-    /** Group anchor pIdx → game time of the last skip warning logged for it. */
+    /** Group anchor pIdx → game time of the last periodic skip warning logged for it. */
     private static final Map<Integer, Long> SKIP_WARNED_AT = new HashMap<>();
+
+    /**
+     * The refusals that describe a standing state of the group's sub-level rather than an event.
+     *
+     * <p>These two last for a whole cull episode and say exactly the same thing on every tick of it.
+     * Re-stating them on a timer produced 1,210 identical lines in eight minutes of one field log —
+     * ~30 groups repeating for the entire session — which buried the transient refusals at the
+     * train's leading edge that are the reason the line exists. Reported on the <i>transition</i>
+     * into the state instead, with {@link PortalRegistryCensus}
+     * carrying the standing picture, which is strictly more than the repeats said.</p>
+     */
+    private static final EnumSet<PortalSwapDiagnostics.Reason> POSE_STATE_REASONS =
+        EnumSet.of(PortalSwapDiagnostics.Reason.GROUP_NOT_RESIDENT,
+                   PortalSwapDiagnostics.Reason.DEGENERATE_AABB);
+
+    /**
+     * Group anchor pIdx → the pose-state reason currently reported for it, for anchors in one.
+     *
+     * <p>Holding the reason rather than a timestamp is what makes a flap still report: a group that
+     * goes from culled to degenerate has genuinely changed state and says so, and one that comes back
+     * and is culled again reports the second episode because {@link #clearSkipState} dropped the
+     * entry in between.</p>
+     */
+    private static final Map<Integer, PortalSwapDiagnostics.Reason> SKIP_STATE = new HashMap<>();
 
     /**
      * How far below a landing a supporting block may be and still count, in blocks.
@@ -491,7 +524,9 @@ public final class PortalCarriageEvents {
      * <p>Logged rather than swallowed because the skip is invisible from the outside: the pair
      * simply stops working for as long as the episode lasts, and without a line saying so a report
      * of "the portal did nothing" has no way to be told apart from one about a portal that was
-     * never there. Throttled per anchor — see {@link #SKIP_WARN_PERIOD_TICKS}.</p>
+     * never there. Throttled per anchor, two ways: a pose state is reported once on the transition
+     * into it (see {@link #POSE_STATE_REASONS}), everything else on a period (see
+     * {@link #SKIP_WARN_PERIOD_TICKS}).</p>
      *
      * <p>Kept as its own throttle rather than folded into {@link PortalSwapDiagnostics} because the
      * subject is a group rather than a player, and a non-residency episode lasts far longer than a
@@ -500,13 +535,31 @@ public final class PortalCarriageEvents {
      */
     private static void warnSkippedGroup(ServerLevel level, int anchorPIdx,
                                          PortalSwapDiagnostics.Reason reason) {
-        long now = level.getGameTime();
-        Long last = SKIP_WARNED_AT.get(anchorPIdx);
-        if (last != null && now - last < SKIP_WARN_PERIOD_TICKS) return;
-        SKIP_WARNED_AT.put(anchorPIdx, now);
+        if (POSE_STATE_REASONS.contains(reason)) {
+            // Same state as last time means nothing has happened worth a second line. A DIFFERENT
+            // pose reason has, so it replaces the entry and reports.
+            if (SKIP_STATE.put(anchorPIdx, reason) == reason) return;
+        } else {
+            long now = level.getGameTime();
+            Long last = SKIP_WARNED_AT.get(anchorPIdx);
+            if (last != null && now - last < SKIP_WARN_PERIOD_TICKS) return;
+            SKIP_WARNED_AT.put(anchorPIdx, now);
+        }
         LOGGER.warn("[DungeonTrain] Portal swap refused [{}] for group anchorPIdx={}: {}. "
             + "There is no swap plane for it this tick — running one off a stale pose would freeze "
             + "the plane in world space.", reason.name(), anchorPIdx, reason.explanation());
+    }
+
+    /**
+     * Forget any pose state recorded for an anchor, because it has a usable pose again.
+     *
+     * <p>What makes the transition rule report a genuine flap rather than only the first episode of
+     * a session: without this, a group that was culled, came back, and was culled again would be
+     * silent the second time — and that repetition is the one thing about a non-residency episode
+     * actually worth reading.</p>
+     */
+    private static void clearSkipState(int anchorPIdx) {
+        SKIP_STATE.remove(anchorPIdx);
     }
 
     /**
@@ -558,6 +611,8 @@ public final class PortalCarriageEvents {
         COOLDOWNS.clear();
         LAST_SWAP.clear();
         SKIP_WARNED_AT.clear();
+        SKIP_STATE.clear();
+        PortalRegistryCensus.clear();
         PortalSwapDiagnostics.clear();
         // Where each player left a room goes with the rooms themselves — a pair key means a different
         // place in the next world opened, so a surviving binding would name a corridor that is not
@@ -618,10 +673,42 @@ public final class PortalCarriageEvents {
         // would hold a lift on somebody who has walked out of the corridor it came from.
         CROSSING_THIS_TICK.clear();
 
+        // Asked exactly once per tick and carried into the walk as a flag — see
+        // PortalRegistryCensus#due. On the ticks it says no, the census costs this one comparison
+        // and nothing inside the loop below runs on its behalf.
+        boolean census = PortalRegistryCensus.due(level);
+        Shipyard censusShipyard = census ? Shipyards.of(level) : null;
+
         for (UUID trainId : Trains.byTrainId(level).keySet()) {
+            int cGroups = 0;
+            int cResident = 0;
+            int cHeld = 0;
+            int cGone = 0;
+            int cMinAnchor = Integer.MAX_VALUE;
+            int cMaxAnchor = Integer.MIN_VALUE;
+
             for (Map.Entry<Integer, ManagedShip> group : Trains.knownGroups(trainId).entrySet()) {
                 int anchorPIdx = group.getKey();
                 ManagedShip ship = group.getValue();
+
+                // Before every early-out below, because the census is about the whole registry —
+                // including the ordinary carriages the portal walk skips immediately. Counting only
+                // what the walk goes on to handle would answer a different question than the one
+                // registry growth poses.
+                if (census) {
+                    cGroups++;
+                    if (anchorPIdx < cMinAnchor) cMinAnchor = anchorPIdx;
+                    if (anchorPIdx > cMaxAnchor) cMaxAnchor = anchorPIdx;
+                    if (ship.isResident()) {
+                        cResident++;
+                    } else if (censusShipyard != null && censusShipyard.isHeld(ship.subLevelId())) {
+                        // Culled to holding: recoverable, and the entry a sweep must NOT delete —
+                        // that is the duplicate-on-respawn race cleanupGhostAnchors guards against.
+                        cHeld++;
+                    } else {
+                        cGone++;
+                    }
+                }
 
                 // Portal groups only, asked before the pose guards rather than per slot below —
                 // not to save the work, which is a lookup, but because those guards WARN. "This
@@ -660,6 +747,9 @@ public final class PortalCarriageEvents {
                     warnSkippedGroup(level, anchorPIdx, PortalSwapDiagnostics.Reason.DEGENERATE_AABB);
                     continue;
                 }
+                // Past both pose guards, so whatever episode this anchor was in has ended and the
+                // next one deserves its own line.
+                clearSkipState(anchorPIdx);
 
                 // A world saved before the stamp record existed carries none, so its standing
                 // corridors have to prove themselves from their own blocks once — and a group the
@@ -687,6 +777,11 @@ public final class PortalCarriageEvents {
 
                 handleGroup(level, players, dims, anchorPIdx, ship,
                     bb.minX(), bb.minY(), bb.minZ(), groupSize, padLen, puppets);
+            }
+
+            if (census) {
+                PortalRegistryCensus.report(trainId, cGroups, cResident, cHeld, cGone,
+                    cMinAnchor, cMaxAnchor);
             }
         }
 
