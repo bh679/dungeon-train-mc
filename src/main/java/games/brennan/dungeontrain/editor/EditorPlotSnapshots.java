@@ -92,7 +92,11 @@ public final class EditorPlotSnapshots {
     }
 
     /**
-     * A value summarising which decoration hangs where in a plot.
+     * A value summarising which carried entities stand where in a plot.
+     *
+     * <p>{@link TemplateDecor#carried}, not the wall-hung three: a template carries the mobs an
+     * author places as well, so placing one has to count as a change or the plot reads clean and
+     * the editor never offers to save it.</p>
      *
      * <p>Order-independent (the entity query's order is not stable) and position-rounded to a third
      * of a block — finer than any deliberate reposition, coarser than float drift. Facing is folded
@@ -104,7 +108,7 @@ public final class EditorPlotSnapshots {
             origin.getX(), origin.getY(), origin.getZ(),
             origin.getX() + length, origin.getY() + height, origin.getZ() + width);
         long sum = 0L;
-        for (Entity e : level.getEntities((Entity) null, box, TemplateDecor::isDecor)) {
+        for (Entity e : level.getEntities((Entity) null, box, TemplateDecor::carried)) {
             long h = e.getType().hashCode();
             h = h * 31 + Math.round((e.getX() - origin.getX()) * 3.0);
             h = h * 31 + Math.round((e.getY() - origin.getY()) * 3.0);

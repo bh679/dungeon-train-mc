@@ -9,6 +9,7 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
@@ -118,29 +119,58 @@ public final class PortalRoomMobs {
     }
 
     /**
-     * Claim the item frames and paintings a copy's stamp just hung.
+     * Claim what a copy's stamp just placed — its pictures, and the mobs the room was authored with.
      *
-     * <p>{@link TemplateDecor} spawns a room's decoration as part of the block stamp and hands back
-     * no handle on what it made, so the mark is applied by looking for it — the same shape as
-     * {@link #isUnmarkedRoomMob}, and narrow in the same way: only decoration, only inside this
-     * copy's box, and only what carries no mark already, so a neighbouring copy's frame that this
-     * box happens to touch is never re-claimed.</p>
+     * <p>{@link TemplateDecor} spawns a room's carried entities as part of the block stamp and hands
+     * back no handle on what it made, so the mark is applied by looking for it — the same shape as
+     * {@link #isUnmarkedRoomMob}, and narrow in the same way: only what a template carries, only
+     * inside this copy's box, and only what carries no mark already, so a neighbouring copy's frame
+     * that this box happens to touch is never re-claimed.</p>
      *
      * <p>Without this a room's pictures would be spawned once per copy and taken away never — the
      * reap is scoped by the mark, and an unmarked entity is invisible to it.</p>
      *
+     * <h2>Mobs are capped here; pictures are not</h2>
+     * <p>A room <b>repeats</b>: 121 copies in the window, so a room authored with five mobs is six
+     * hundred persistent mobs, which is the leak this class exists to prevent. Authored mobs are held
+     * to {@link #MAX_LIVE_PER_STRUCTURE} whether a variant cell rolled them ({@link #spawn}) or the
+     * template carried them, so the two paths cannot add up to more than one of them alone would.
+     * Anything over the line is discarded rather than left unmarked — an unmarked mob is one no reap
+     * can ever see again.</p>
+     *
+     * <p>Pictures are exempt on purpose: they are inert, they do not path, and a room's decoration
+     * disappearing at the far edge of the window is a visible hole in somebody's build.</p>
+     *
+     * @param liveCount authored mobs this pair already holds — {@link #liveCount}'s answer
      * @return how many were marked
      */
     public static int markDecor(ServerLevel level, BlockPos origin, Vec3i size, int pairKey,
-                                PortalRoomTiling.Tile tile) {
+                                PortalRoomTiling.Tile tile, int liveCount) {
         AABB box = new AABB(
             origin.getX(), origin.getY(), origin.getZ(),
             origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ());
         int marked = 0;
-        for (Entity entity : level.getEntities((Entity) null, box, TemplateDecor::isDecor)) {
+        int live = liveCount;
+        int refused = 0;
+        for (Entity entity : level.getEntities((Entity) null, box, TemplateDecor::carried)) {
             if (entity.getPersistentData().contains(NBT_PAIR)) continue;
+            if (entity instanceof LivingEntity) {
+                if (!withinCap(live)) {
+                    entity.discard();
+                    refused++;
+                    continue;
+                }
+                live++;
+            }
             mark(entity.getPersistentData(), pairKey, tile);
             marked++;
+        }
+        if (refused > 0) {
+            // Logged for the reason a refused variant-mob spawn is: a room quietly holding fewer mobs
+            // than it was authored with looks exactly like a spawn that has stopped working.
+            LOGGER.info("[DungeonTrain] Portal pair {} copy {},{} already holds {} authored mobs — "
+                    + "{} of the room's own were not kept. Author fewer mobs into the room if it "
+                    + "should be this busy.", pairKey, tile.x(), tile.z(), liveCount, refused);
         }
         return marked;
     }

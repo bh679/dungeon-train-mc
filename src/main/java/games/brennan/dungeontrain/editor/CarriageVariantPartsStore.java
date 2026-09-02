@@ -52,7 +52,7 @@ public final class CarriageVariantPartsStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     static final String SUBDIR = "templates";
-    private static final String EXT = ".parts.json";
+    static final String EXT = ".parts.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
 
