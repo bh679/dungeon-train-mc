@@ -10889,16 +10889,17 @@
       "released_at": null
     },
     {
-      "id": "own-book-known-in-the-wild",
+      "id": "backward-generation-resident-tail",
       "version": "0.779.0",
-      "type": "feat",
-      "title": "Your own book knows it's yours wherever you find it",
-      "summary": "Find a book you wrote out in the world \u2014 in a chest, rather than on the shelves of your own library room \u2014 and it now knows it is yours. The train tells you how it has been received and offers the padlock that takes it out of circulation, instead of asking you to rate your own writing.",
+      "type": "fix",
+      "title": "The train no longer ends when you travel backward along it",
+      "summary": "Walking backward along the train, or standing beside the track and letting it pass, could bring you to a visible end of the train after a few minutes. Two bugs caused it: the carriage number shown for you drifted further behind the truth the further back you were, which eventually let the game unload the carriages you were standing on; and once that happened the train stopped generating backward because it believed it had already generated far enough. Your carriage number is now read from the carriage you are actually in, and the train fills in every carriage you need from where you stand outward, reloading or replacing any that went missing.",
       "highlights": [
-        "A book you wrote carries your own controls wherever you find it, not only inside your own library room",
-        "The thumbs-up/thumbs-down tally your readers gave it, and the padlock to withdraw it or put it back, now appear on a copy found in a chest",
-        "You can no longer vote on a book you wrote by mistake \u2014 the thumbs and the Y/N shortcut are off on anything of yours"
+        "Backward travel keeps finding carriages for as long as you walk",
+        "The HUD carriage number no longer drifts the further back you are",
+        "Missing carriages behind you are reloaded or replaced instead of leaving a dead end"
       ],
+      "pr": 1268,
       "date": "2026-09-02",
       "released": false,
       "released_in": null,
