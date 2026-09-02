@@ -277,7 +277,7 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /** The portal-room block, in the order the settings read: box, then walls, then contents. */
-    private static List<CommandMenuEntry> portalRows() {
+    public static List<CommandMenuEntry> portalRows() {
         String mode = EditorStatusHudOverlay.roomMode();
         List<CommandMenuEntry> out = new ArrayList<>();
 

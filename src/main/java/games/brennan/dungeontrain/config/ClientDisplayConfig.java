@@ -218,6 +218,11 @@ public final class ClientDisplayConfig {
     /** Where the Z (block variant) menu draws. See {@link #COMMAND_MENU_SPACE}. */
     public static final ModConfigSpec.EnumValue<EditorMenuSpace> BLOCK_VARIANT_MENU_SPACE;
 
+    /** Shipped look of the inventory-style editor X menu. Light is what it was designed in. */
+    public static final EditorScreenTheme DEFAULT_EDITOR_SCREEN_THEME = EditorScreenTheme.LIGHT;
+    /** How the inventory-style editor X menu is painted. See {@link #DEFAULT_EDITOR_SCREEN_THEME}. */
+    public static final ModConfigSpec.EnumValue<EditorScreenTheme> EDITOR_SCREEN_THEME;
+
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
      * {@link CustomContentPreference}. {@code ASK} means keep prompting.
@@ -328,6 +333,7 @@ public final class ClientDisplayConfig {
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
         BLOCK_VARIANT_MENU_SPACE = pair.getLeft().blockVariantMenuSpace;
+        EDITOR_SCREEN_THEME = pair.getLeft().editorScreenTheme;
     }
 
     private ClientDisplayConfig() {}
@@ -507,6 +513,11 @@ public final class ClientDisplayConfig {
                 .comment("Where the Z (block variant) menu draws. See commandMenuSpace. Defaults to",
                          "WORLDSPACE for the same reason as containerContentsMenuSpace.")
                 .defineEnum("blockVariantMenuSpace", DEFAULT_BLOCK_VARIANT_MENU_SPACE);
+        ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme = b
+                .comment("How the X editor menu is painted. LIGHT is the creative-inventory grey; DARK is the",
+                         "translucent black the other Dungeon Train menus use. Set in-game from the X menu's",
+                         "Settings tab.")
+                .defineEnum("editorScreenTheme", DEFAULT_EDITOR_SCREEN_THEME);
         b.pop();
 
         b.push("sharedBooks");
@@ -658,6 +669,7 @@ public final class ClientDisplayConfig {
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
+                editorScreenTheme,
                 backupMode,
                 backupsPerVersion,
                 confirmBuildRestore);
@@ -1549,6 +1561,19 @@ public final class ClientDisplayConfig {
         return isLoaded() ? BLOCK_VARIANT_MENU_SPACE.get() : DEFAULT_BLOCK_VARIANT_MENU_SPACE;
     }
 
+    /** How the inventory-style editor X menu is painted. Pre-load, its shipped default. */
+    public static EditorScreenTheme getEditorScreenTheme() {
+        return isLoaded() ? EDITOR_SCREEN_THEME.get() : DEFAULT_EDITOR_SCREEN_THEME;
+    }
+
+    /** Persist the editor screen's theme. Idempotent: skips the TOML write when unchanged. */
+    public static void setEditorScreenTheme(EditorScreenTheme value) {
+        if (!isLoaded() || value == null) return;
+        if (EDITOR_SCREEN_THEME.get() == value) return;
+        EDITOR_SCREEN_THEME.set(value);
+        EDITOR_SCREEN_THEME.save();
+    }
+
     /** Persist the Z menu's space. Idempotent: skips the TOML write when unchanged. */
     public static void setBlockVariantMenuSpace(EditorMenuSpace value) {
         setMenuSpace(BLOCK_VARIANT_MENU_SPACE, value);
@@ -1626,6 +1651,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
+            ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme,
             ModConfigSpec.EnumValue<BackupMode> backupMode,
             ModConfigSpec.IntValue backupsPerVersion,
             ModConfigSpec.BooleanValue confirmBuildRestore
