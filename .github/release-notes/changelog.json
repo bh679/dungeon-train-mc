@@ -11022,8 +11022,25 @@
       "released_at": null
     },
     {
-      "id": "portal-carriage-bookshelf-removal",
+      "id": "editor-menu-width-save-icon",
       "version": "0.787.0",
+      "type": "feat",
+      "title": "Editor menu: one width on every tab, and a Save icon that shows when you need it",
+      "summary": "The Train Editor's X menu no longer widens when you open the Current tab \u2014 every tab is the same size now. A Save icon sits in the menu's header on every tab: it glows green while the plot you're standing in has unsaved changes and settles to blue once it's saved, so you can tell at a glance whether your work is on disk.",
+      "highlights": [
+        "Current tab keeps the same panel width as File, Settings and Nav",
+        "Save icon in the editor menu header, reachable from any tab",
+        "Icon pulses green with unsaved changes, blue when the plot is saved"
+      ],
+      "pr": 1282,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-carriage-bookshelf-removal",
+      "version": "0.788.0",
       "type": "fix",
       "title": "Minor fixes",
       "summary": "Small fixes and adjustments.",
