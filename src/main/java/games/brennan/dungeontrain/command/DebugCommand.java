@@ -207,10 +207,7 @@ public final class DebugCommand {
      * probe was left off is a wasted test.
      */
     private static int setTrainGenTrace(CommandSourceStack source, boolean on) {
-        BackwardGenTrace.setEnabled(on);
-        TrainCarriageAppender.setStallDetectionEnabled(on);
-        TrainCarriageAppender.setSeamGapTraceEnabled(on);
-        DebugFlags.setChatStallTrain(source.getServer(), on);
+        setTrainGenTraceProbes(source.getServer(), on);
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Backward-generation trace " + (on ? "ON" : "OFF")
                 + (on ? " — [bwdgen] + stall detector + [seamgap]/[anchor-div] armed; "
@@ -218,6 +215,18 @@ public final class DebugCommand {
                       : "")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
+    }
+
+    /**
+     * The four train-generation probes behind {@code /dungeontrain debug traingen}, as one switch.
+     * Also armed by default on dev builds ({@link games.brennan.dungeontrain.debug.DevTraceDefaults})
+     * so a test ride never has to be repeated because the trace was off.
+     */
+    public static void setTrainGenTraceProbes(net.minecraft.server.MinecraftServer server, boolean on) {
+        BackwardGenTrace.setEnabled(on);
+        TrainCarriageAppender.setStallDetectionEnabled(on);
+        TrainCarriageAppender.setSeamGapTraceEnabled(on);
+        DebugFlags.setChatStallTrain(server, on);
     }
 
     /**
