@@ -10901,9 +10901,9 @@
       ],
       "pr": 1268,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.779.0",
+      "released_at": "2026-09-02T06:44:20Z"
     },
     {
       "id": "catch-up-spawning-auto-from-specs",
