@@ -44,6 +44,18 @@ public final class NetherBand {
     }
 
     /**
+     * Blocks past the leading edge of the real-Nether core at a world-X, or {@code -1} outside the
+     * core — in either netherrack crossfade, elsewhere in the band, or when the nether phase is
+     * disabled / this world has no train. Distinguishes "just crossfading in" from "properly inside
+     * the Nether", which {@link #netherRampAt} cannot: the ramp holds {@code 1.0} across the whole
+     * core. See {@link WorldGenCycle#netherCoreDepth}.
+     */
+    public static long netherCoreDepthAt(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return -1L;
+        return WorldGenCycle.fromConfig().netherCoreDepth(worldX);
+    }
+
+    /**
      * Which repeat of the world-gen cycle (0-based) the Nether band at {@code worldX} belongs to, or
      * {@code -1} before the cycle / when the nether phase is disabled or this world has no train. The
      * Nether band is the first special band of every period, so pass index 0 is the FIRST Nether band,
