@@ -10776,6 +10776,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "submit-restored-builds",
+      "version": "0.772.0",
+      "type": "fix",
+      "title": "Submit builds that came back to your profile",
+      "summary": "A build restored to your profile \u2014 one the relay had lost and put back, or one you uploaded from a different world \u2014 could not be submitted for review: the game asked the world you were standing in for a permission only the world that first uploaded it had. It now asks the relay instead, so any build of yours can be submitted from anywhere.",
+      "highlights": [
+        "Restored builds can be submitted for review without loading them into the editor first"
+      ],
+      "pr": 1259,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
