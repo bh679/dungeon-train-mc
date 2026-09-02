@@ -308,8 +308,12 @@ public final class DevQuickWorldHandler {
      * bake is what makes "a mob in a plot is one the author placed" true. {@code
      * EditorQuietRuleEvents} re-applies it on every start, so this is the default rather than the
      * only enforcement.</p>
+     *
+     * <p>Which editor category to open on arrival is not written into the world — the client-side
+     * {@link EditorAutoOpenHandler} carries the picker's choice across the load, the same way it
+     * carries a {@link BuilderMode} for the builder path.</p>
      */
-    static void launchEditorWorld(Screen lastScreen) {
+    public static void launchEditorWorld(Screen lastScreen) {
         String name = nextWorldName(EDITOR_WORLD_PREFIX);
         GameRules rules = new GameRules();
         EditorQuietRules.apply(rules, null);   // no server yet — world is still being created

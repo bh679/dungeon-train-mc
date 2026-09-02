@@ -10841,6 +10841,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-editor-selection-screen",
+      "version": "0.776.0",
+      "type": "feat",
+      "title": "Pick what you're building before the Train Editor opens",
+      "summary": "The Train Editor now asks what you want to work on before it makes a world, using the same four-tile picker as the Train Builder. Whichever tile you pick is where you land \u2014 Train Outside opens the carriage shells, Inside Carriage the contents, Tracks & Tunnels the track pieces, Train Dimensions the portal rooms. Before this, every editor launch dropped you in carriages and you had to walk or type your way to anything else.",
+      "highlights": [
+        "Train Editor opens the four-tile picker instead of creating a world straight away",
+        "The tile you pick decides which editor category you land in"
+      ],
+      "pr": 1265,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
