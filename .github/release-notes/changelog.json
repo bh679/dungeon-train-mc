@@ -10922,6 +10922,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "freeze-parked-groups-keep-their-place",
+      "version": "0.781.0",
+      "type": "fix",
+      "title": "Parked carriage groups no longer vanish from the train or pile up behind it",
+      "summary": "Carriage groups that no one is near are parked to keep physics cheap on long trains. A parked group used to stay at the spot where it was parked while the rest of the train rolled on, so after a long ride backward you could walk into a hole the size of a whole group \u2014 the group was still there, hundreds of blocks back, stacked on top of other parked groups, and it never woke up because the game was looking for it in the wrong place. Parked groups now keep their place in the train the whole time they are parked, so every group is where it should be when you reach it, seams stay tight, and a save made mid-ride puts the train back together correctly.",
+      "highlights": [
+        "No more group-sized holes in the train after riding a long way backward or forward.",
+        "Parked groups no longer pile up on each other or get driven into by their neighbours.",
+        "Saving while groups are parked no longer bakes the wrong position into the save."
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
