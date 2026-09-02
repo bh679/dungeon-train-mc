@@ -2,7 +2,7 @@
   "structures": [
     {
       "structure": "minecraft:fortress",
-      "weight": 2
+      "weight": 4
     },
     {
       "structure": "minecraft:bastion_remnant",
@@ -13,6 +13,7 @@
     "type": "minecraft:random_spread",
     "spacing": 71,
     "separation": 11,
+    "frequency": 0.7,
     "salt": 30084232
   }
 }
