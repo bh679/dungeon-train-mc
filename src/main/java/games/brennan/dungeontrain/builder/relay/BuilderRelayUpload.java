@@ -279,10 +279,14 @@ public final class BuilderRelayUpload {
      * it, so the entry's token is cleared; the next save of that template claims it back. Resolves to
      * the message the screen shows.</p>
      *
-     * <p>Every kind may be submitted. The pool refusal below is the one thing that is still a carriage
-     * question: a carriage is what a train slot holds, so submitting one to a world whose pool is off
-     * would be asking for something that world has switched away — while a portal room or a shell part
-     * is asking to be looked at, which the pool has no say over.</p>
+     * <p>Every kind may be submitted. The pool refusal in {@link #publishWith} is the one thing that is
+     * still a carriage question: a carriage is what a train slot holds, so submitting one to a world
+     * whose pool is off would be asking for something that world has switched away — while a portal
+     * room or a shell part is asking to be looked at, which the pool has no say over.</p>
+     *
+     * <p>A build this world has no secret for is not refused: {@link #adopt} recovers one from the
+     * relay first, so what can be submitted is what the player owns rather than what this particular
+     * world happened to upload.</p>
      */
     public static CompletableFuture<Component> submitToTrain(ServerPlayer player, ServerLevel level,
                                                              int relayId, boolean publish) {
@@ -290,19 +294,95 @@ public final class BuilderRelayUpload {
         String key = data.builderRelayBuilds().keyForRelayId(relayId);
         BuilderRelayBuilds.Entry entry = key == null ? null : data.builderRelayBuilds().get(key);
         if (entry == null || entry.secret().isEmpty()) {
-            // Not ours to publish: this world never uploaded it, or uploaded it before secrets existed.
-            return CompletableFuture.completedFuture(
-                    msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW));
+            // This world has no secret for the build. Recover one rather than refuse — see adopt().
+            return adopt(player, level, relayId, publish);
         }
-        boolean carriage = BuilderRelayKinds.canJoinTheTrain(BuilderRelayBuilds.kindOfKey(key));
-        if (publish && carriage && !DungeonTrainConfig.isSharedCarriagesEnabled()) {
+        return publishWith(level, key, entry, BuilderRelayBuilds.kindOfKey(key), publish);
+    }
+
+    /**
+     * Submit a build this world holds no secret for, by asking the relay for one.
+     *
+     * <p>A build's secret is issued once, to whoever uploaded it, and is kept in the uploading world's
+     * saved data — so "your build" and "a build this world uploaded" are not the same set. They come
+     * apart routinely: the title-screen reconcile ({@code BuilderReconcileRunner}) restores builds to
+     * the relay before any world is loaded and has nowhere to write the secrets it gets back, and a
+     * build uploaded from one world is listed by My Builds in every world. Refusing those with "this
+     * world didn't upload that build" made a build the player owns, and is looking at, unsubmittable
+     * for reasons they cannot see or fix.</p>
+     *
+     * <p>{@code /carriages/fetch} is authorised on the owner's uuid and returns the secret for exactly
+     * that reason — it is the same call and the same reasoning behind
+     * {@link BuilderRelayDownload}'s remember step, which links a downloaded build to the world that
+     * pulled it. The relay refuses a build that is not this player's, so ownership is still checked
+     * where it is actually known.</p>
+     *
+     * <p>It costs a fetch of the whole blocks blob to read one field, which is why this is the fallback
+     * and not the path: a world that uploaded the build answers from its own saved data.</p>
+     */
+    private static CompletableFuture<Component> adopt(ServerPlayer player, ServerLevel level,
+                                                      int relayId, boolean publish) {
+        String owner = player == null ? "" : player.getUUID().toString();
+        return SharedCarriageClient.fetchBuild(relayId, owner).thenCompose(result -> {
+            SharedCarriageClient.BuildFetch build = result.build();
+            Adoption verdict = adoptionOf(result.status(), build);
+            if (verdict == Adoption.GONE) {
+                return CompletableFuture.completedFuture(
+                        msg("gui.dungeontrain.builder.profile.gone_short", ChatFormatting.YELLOW));
+            }
+            if (verdict == Adoption.NOT_YOURS) {
+                return CompletableFuture.completedFuture(
+                        msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW));
+            }
+            String key = BuilderRelayBuilds.keyOf(build.kind(), build.subKind(), build.buildName());
+            // No lease token: this adoption took none, so the next save of the template claims one —
+            // the path afterSave already takes for a build it knows but is not holding.
+            BuilderRelayBuilds.Entry adopted =
+                    new BuilderRelayBuilds.Entry(build.id(), build.secret(), "", build.published());
+            return publishWith(level, key, adopted, build.kind(), publish);
+        });
+    }
+
+    /** What a fetch made in {@link #adopt} means for the submission that asked for it. */
+    enum Adoption {
+        /** The build is this player's and came back with its secret: file it and carry on. */
+        ADOPT,
+        /**
+         * No claim on that row. FORBIDDEN (somebody else's build), a garbled answer and a build
+         * stored before secrets existed all land here — from the player's side they are one thing:
+         * this is not a build they can submit, and no retry changes that.
+         */
+        NOT_YOURS,
+        /** The relay has no such id — evicted, or deleted by an operator. */
+        GONE
+    }
+
+    /**
+     * The decision above, as a pure function of what the relay said — the part worth pinning in a test.
+     *
+     * <p>Split out for the same reason {@code BuilderRelayReconcile.classify} is: the call around it
+     * needs a live relay and a loaded world, while the reading of its answer is three cases that must
+     * not drift.</p>
+     */
+    static Adoption adoptionOf(SharedCarriageClient.CallStatus status, SharedCarriageClient.BuildFetch build) {
+        if (status == SharedCarriageClient.CallStatus.UNKNOWN) return Adoption.GONE;
+        if (status != SharedCarriageClient.CallStatus.OK || build == null) return Adoption.NOT_YOURS;
+        return build.secret().isEmpty() ? Adoption.NOT_YOURS : Adoption.ADOPT;
+    }
+
+    /** The publish call itself, once a secret is in hand — the tail both paths above share. */
+    private static CompletableFuture<Component> publishWith(ServerLevel level, String key,
+                                                            BuilderRelayBuilds.Entry entry,
+                                                            String kindId, boolean publish) {
+        if (publish && BuilderRelayKinds.canJoinTheTrain(kindId)
+                && !DungeonTrainConfig.isSharedCarriagesEnabled()) {
             // Nothing leases from the pool while the feature is off, so publishing a carriage would put
             // it somewhere nothing can reach. Say so rather than appearing to succeed. Every other kind
             // is submitted to be read by a person, not spawned, so the switch does not speak for it.
             return CompletableFuture.completedFuture(
                     msg("gui.dungeontrain.builder.profile.pool_off", ChatFormatting.YELLOW));
         }
-        return SharedCarriageClient.publish(relayId, entry.secret(), publish).thenApply(result -> {
+        return SharedCarriageClient.publish(entry.relayId(), entry.secret(), publish).thenApply(result -> {
             if (result.ok()) {
                 onServer(level, () -> {
                     DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
