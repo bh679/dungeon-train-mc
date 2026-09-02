@@ -10987,9 +10987,9 @@
       ],
       "pr": 1276,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.783.0",
+      "released_at": "2026-09-02T12:08:07Z"
     },
     {
       "id": "own-book-known-in-the-wild",
