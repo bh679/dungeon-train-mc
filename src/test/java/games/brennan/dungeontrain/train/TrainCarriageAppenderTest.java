@@ -699,6 +699,18 @@ final class TrainCarriageAppenderTest {
         assertEquals(TrainCarriageAppender.CATCH_UP_BURST_GROUPS, burstGroups(2, 1));
     }
 
+    /**
+     * AUTO is resolved by CatchUpBurstAuto above every call site. If it ever reaches the pacing
+     * function it falls past the FILL branch and silently paces as BURST_TWO — a wrong answer that
+     * produces no error and no log line, so it is asserted rather than trusted.
+     */
+    @Test
+    @DisplayName("catchUpBurstGroups: AUTO is rejected, never silently paced")
+    void burst_autoIsRejected() {
+        assertThrows(IllegalArgumentException.class,
+            () -> TrainCarriageAppender.catchUpBurstGroups(9, GROUP_SIZE, CatchUpBurstMode.AUTO));
+    }
+
     @Test
     @DisplayName("catchUpBurstGroups: a non-positive groupSize throws in every mode")
     void burst_groupSizeZero_throws() {

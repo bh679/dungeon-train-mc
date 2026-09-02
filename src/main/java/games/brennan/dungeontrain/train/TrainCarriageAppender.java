@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.BackwardGenTrace;
 import games.brennan.dungeontrain.debug.DebugAccessEvents;
@@ -855,15 +854,14 @@ public final class TrainCarriageAppender {
                 long firstSeenTick = PLACEMENT_TRACKER_FIRST_SEEN.computeIfAbsent(subLevelId, k -> now);
 
                 // Frozen body ⇒ the settle clock stops. A DT-frozen carriage (#646 soft-freeze) stops
-                // receiving its per-tick teleport, so its worldAABB is stuck: every collision/gap
-                // reading below would be a stale re-read of the same frame, no shift could ever land,
-                // and the tracker would nudge spawnWorldPos blind until the safety valve fired —
-                // banking tens of blocks of offset that snap into a wide seam on unfreeze.
-                // {@link PhysicsFreezeController} now exempts unplaced carriages outright, so this is
-                // defence in depth for any other reason a body stops moving (non-resident ship, Sable
-                // never firing the first physics tick). Roll firstSeen forward so the frozen ticks
-                // don't count toward MAX_PLACEMENT_SETTLE_TICKS, and drop the shift throttle so the
-                // first tick after unfreeze may act immediately.
+                // receiving its per-tick teleport. Its worldAABB now keeps following spawnWorldPos
+                // (the pose is written from the driver while parked), but the native body it would
+                // collide with is still parked, so a seam judged here describes a body that is not
+                // where the reading says. {@link PhysicsFreezeController} exempts unplaced carriages
+                // outright, so this is defence in depth for any other reason a body stops moving
+                // (non-resident ship, Sable never firing the first physics tick). Roll firstSeen
+                // forward so the frozen ticks don't count toward MAX_PLACEMENT_SETTLE_TICKS, and drop
+                // the shift throttle so the first tick after unfreeze may act immediately.
                 if (isBodyFrozen(carriage)) {
                     PLACEMENT_TRACKER_FIRST_SEEN.put(subLevelId, firstSeenTick + 1L);
                     PLACEMENT_TRACKER_LAST_SHIFT.remove(subLevelId);
@@ -1121,10 +1119,12 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * True while this carriage's body is DT-frozen by the #646 soft-freeze — i.e. it is no longer
-     * being teleported each tick, so its {@code worldAABB()} is frozen too and nothing the placement
-     * tracker does to {@code spawnWorldPos} can be observed. Non-Sable ships (tests, other backends)
-     * are never frozen.
+     * True while this carriage's body is DT-frozen by the #646 soft-freeze — its native body is no
+     * longer being teleported each tick. Its {@code worldAABB()} still follows {@code spawnWorldPos}
+     * (the pose is written from the driver every tick, see {@code PhysicsFreeze.followParked}), but
+     * the seam the tracker is settling is between real bodies, so a shift is not something to judge
+     * until the body is back in play. Unsettled groups are never frozen anyway; this is defence in
+     * depth. Non-Sable ships (tests, other backends) are never frozen.
      */
     private static boolean isBodyFrozen(Trains.Carriage carriage) {
         return carriage.ship() instanceof SableManagedShip sable
@@ -1832,6 +1832,12 @@ public final class TrainCarriageAppender {
     static int catchUpBurstGroups(int deficitPIdx, int groupSize, CatchUpBurstMode mode) {
         if (groupSize <= 0) {
             throw new IllegalArgumentException("groupSize must be > 0, got " + groupSize);
+        }
+        if (mode == CatchUpBurstMode.AUTO) {
+            // AUTO is resolved by CatchUpBurstAuto.effectiveMode() above every call site. Reaching
+            // here means a caller passed the stored value straight through; without this it would
+            // fall past the FILL branch and quietly pace as BURST_TWO, which no log would show.
+            throw new IllegalArgumentException("AUTO must be resolved before pacing; see CatchUpBurstAuto");
         }
         if (mode == CatchUpBurstMode.OFF) return 1;
         if (deficitPIdx <= 0) return 1;
@@ -3227,7 +3233,9 @@ public final class TrainCarriageAppender {
         boolean remote
     ) {
         if (player == null) return remote ? BackwardGenTrace.RideContext.REMOTE : BackwardGenTrace.RideContext.NONE;
-        CatchUpBurstMode mode = DungeonTrainCommonConfig.getCatchUpBurstMode();
+        // Resolved, not stored: the trace must report the pacing the spawner actually used, and
+        // catchUpBurstGroups below rejects AUTO outright.
+        CatchUpBurstMode mode = CatchUpBurstAuto.effectiveMode();
         return new BackwardGenTrace.RideContext(
             CarriageDeck.isOnCarriageDeck(train, player),
             player.gameMode.getGameModeForPlayer().getName(),
@@ -4748,7 +4756,7 @@ public final class TrainCarriageAppender {
         long now,
         boolean forward
     ) {
-        CatchUpBurstMode mode = DungeonTrainCommonConfig.getCatchUpBurstMode();
+        CatchUpBurstMode mode = CatchUpBurstAuto.effectiveMode();
         int allowed = catchUpBurstGroups(deficitPIdx, groupSize, mode);
         if (allowed <= 1) return 0;
         Plan prevPlan = firstPlan;
@@ -4803,7 +4811,7 @@ public final class TrainCarriageAppender {
      */
     private static void openFillRun(UUID trainId, Map<UUID, FillRun> lane, Plan plan, int anchor,
                                     ManagedShip ship, long now, int deficitPIdx, int groupSize) {
-        if (DungeonTrainCommonConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) return;
+        if (CatchUpBurstAuto.effectiveMode() != CatchUpBurstMode.FILL) return;
         if (deficitGroups(deficitPIdx, groupSize) <= 1) return;
         lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), ship.id(), 1, now, now));
     }
@@ -4841,7 +4849,7 @@ public final class TrainCarriageAppender {
     ) {
         FillRun run = lane.get(trainId);
         if (run == null) return false;
-        if (DungeonTrainCommonConfig.getCatchUpBurstMode() != CatchUpBurstMode.FILL) {
+        if (CatchUpBurstAuto.effectiveMode() != CatchUpBurstMode.FILL) {
             lane.remove(trainId);
             return false;
         }

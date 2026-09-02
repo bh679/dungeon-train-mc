@@ -123,14 +123,19 @@ logoFile="logo.png"
 
 # vivecraft (VR). Optional, player-installed — NOT bundled, NOT a compile dep. Metadata only.
 #
-# DT no longer carries any Vivecraft mixin. Vivecraft breaks in two ways on a Sable sub-level —
-# VR melee hits nothing, and VR teleport drops the player into the void — and neither is DT
-# specific, so both fixes moved out to the standalone "Vivecraft Sable Compat" mod
-# (vivecraft-sable-compat), which VR players install alongside DT. Do NOT re-add a Vivecraft
-# mixin here: two copies would wrap the same call.
+# Vivecraft breaks in two ways on a Sable sub-level — VR melee hits nothing, and VR teleport drops
+# the player into the void. Neither is DT specific, so both fixes live in the standalone
+# "Vivecraft Sable Compat" mod (vivecraft-sable-compat), which VR players install alongside DT.
 #
-# This entry stays because DT still reacts to Vivecraft's presence at runtime (VrCompat suppresses
-# FramerateThrottle on VR installs). Client-only, so side="CLIENT".
+# DT keeps a TEMPORARY copy of the melee half only (dungeontrain.vivecraft.mixins.json, gated by
+# VivecraftMixinPlugin). It applies only when Vivecraft is installed AND the compat mod is NOT, so
+# the two never both own the call — see that plugin for the full matrix and for when to delete it.
+# Removing DT's copy outright (#1261) left VR players who update DT without the addon with broken
+# melee; this closes that window until the addon is live and bundled in the modpack.
+#
+# This entry would stay regardless: DT also reacts to Vivecraft at runtime (VrCompat suppresses
+# FramerateThrottle on VR installs). Client-only, so side=CLIENT.
+
 [[dependencies.${mod_id}]]
     modId="vivecraft"
     type="optional"
@@ -167,6 +172,11 @@ logoFile="logo.png"
 
 [[mixins]]
     config="${mod_id}.mixins.json"
+
+# TEMPORARY — remove together with VivecraftMixinPlugin once Vivecraft Sable Compat is live and
+# bundled in the modpack. Self-gating: no-ops unless Vivecraft is present and the addon is not.
+[[mixins]]
+    config="${mod_id}.vivecraft.mixins.json"
 
 [[mixins]]
     config="${mod_id}.effortlessbuilding.mixins.json"

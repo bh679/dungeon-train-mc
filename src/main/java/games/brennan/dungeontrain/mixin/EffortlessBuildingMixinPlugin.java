@@ -17,9 +17,9 @@ import java.util.Set;
  * {@link #shouldApplyMixin} short-circuits to a clean no-op.
  *
  * <p>Uses {@link LoadingModList} rather than {@code ModList.get()} because the check runs during
- * early class transformation, before the latter is populated. (DT previously carried an identical
- * {@code VivecraftMixinPlugin}; it was removed when the Vivecraft compat mixins moved out to the
- * standalone vivecraft-sable-compat mod, leaving this as the only such gate.)</p>
+ * early class transformation, before the latter is populated. ({@code VivecraftMixinPlugin} is the
+ * other such gate; it asks the same question about Vivecraft, plus whether the standalone
+ * vivecraft-sable-compat addon is already handling the fix.)</p>
  */
 public final class EffortlessBuildingMixinPlugin implements IMixinConfigPlugin {
 

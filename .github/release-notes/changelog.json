@@ -10901,6 +10901,73 @@
       ],
       "pr": 1268,
       "date": "2026-09-02",
+      "released": true,
+      "released_in": "v0.779.0",
+      "released_at": "2026-09-02T06:44:20Z"
+    },
+    {
+      "id": "catch-up-spawning-auto-from-specs",
+      "version": "0.780.0",
+      "type": "feat",
+      "title": "Catch-up spawning now suits your computer instead of guessing",
+      "summary": "Catch-up spawning decides how quickly the train re-extends after an end of it falls behind you. It was set to Fill all for everyone, which closes the gap fastest but asks the most of your machine \u2014 great on a desktop, a stutter on a thin laptop. It now has an Automatic setting, which is the new default: it looks at your processor and the memory the launcher gave Minecraft, picks the pacing that suits, and tells you which one it chose. You can still pick a mode yourself at any time and it will be left alone from then on.",
+      "highlights": [
+        "New Automatic option, and it is now the default. The setting shows what it picked, e.g. \"Automatic (Fill all)\".",
+        "A capable machine still gets Fill all \u2014 a typical 8-core setup with 4GB allocated is unchanged.",
+        "A machine short on cores or memory steps down to Burst 2 or Off, so catching up no longer costs you a stutter that lasts longer than the problem.",
+        "If you never changed this setting, you move to Automatic. If you deliberately chose Off or Burst 2, your choice is kept."
+      ],
+      "pr": 1271,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "freeze-parked-groups-keep-their-place",
+      "version": "0.781.0",
+      "type": "fix",
+      "title": "Parked carriage groups no longer vanish from the train or pile up behind it",
+      "summary": "Carriage groups that no one is near are parked to keep physics cheap on long trains. A parked group used to stay at the spot where it was parked while the rest of the train rolled on, so after a long ride backward you could walk into a hole the size of a whole group \u2014 the group was still there, hundreds of blocks back, stacked on top of other parked groups, and it never woke up because the game was looking for it in the wrong place. Parked groups now keep their place in the train the whole time they are parked, so every group is where it should be when you reach it, seams stay tight, and a save made mid-ride puts the train back together correctly.",
+      "highlights": [
+        "No more group-sized holes in the train after riding a long way backward or forward.",
+        "Parked groups no longer pile up on each other or get driven into by their neighbours.",
+        "Saving while groups are parked no longer bakes the wrong position into the save."
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1272
+    },
+    {
+      "id": "dimensional-carriage-connections",
+      "version": "0.781.0",
+      "type": "fix",
+      "title": "Dimensional carriages always lead somewhere",
+      "summary": "A dimensional carriage whose portal isn't connecting no longer ends in a wall. Walking the train backwards into one now works, and if a crossing still can't happen, the plate between its doors opens after a couple of seconds so you can walk on through. Each life's dimensional-carriage crossings and any that failed are counted in the run stats to help find why.",
+      "highlights": [
+        "Approaching a dimensional carriage from behind now connects it",
+        "A portal that can't connect opens itself instead of dead-ending",
+        "Run stats count portal crossings that worked and ones that didn't"
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "vr-melee-works-without-the-addon",
+      "version": "0.781.1",
+      "type": "fix",
+      "title": "VR melee works on the train again, addon or not",
+      "summary": "If you play in VR, swinging at a mob standing next to you on the train stopped working in a recent update, because the fix for it moved out into a separate mod. Dungeon Train now carries that fix again for anyone who has not installed the separate mod yet, so melee works either way. Installing Vivecraft Sable Compat is still worth it \u2014 it also stops VR teleport dropping you into the void, which Dungeon Train cannot fix on its own \u2014 and when it is installed Dungeon Train steps aside and lets it do the work.",
+      "highlights": [
+        "VR melee hits mobs on the train without any extra download",
+        "Install Vivecraft Sable Compat as well to fix VR teleport",
+        "No effect at all if you do not play in VR"
+      ],
+      "date": "2026-09-02",
       "released": false,
       "released_in": null,
       "released_at": null
