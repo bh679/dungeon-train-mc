@@ -527,4 +527,39 @@ final class EditorMenuScreenTest {
         // ...and the remembered choice is untouched, so stepping back restores it.
         assertEquals(EditorMenuTab.CURRENT, EditorMenuTab.active());
     }
+
+    // ---- Header Save icon + panel width ----
+
+    @Test
+    @DisplayName("Header Save mirrors the File-tab Save command for ordinary categories")
+    void headerSave_ordinaryCategoryUsesSave() {
+        MenuHeaderAction a = EditorMenuScreen.saveHeaderAction(PlotCategory.CARRIAGES, false, 0L);
+        assertEquals("Save", a.label());
+        assertEquals(EditorSaveStatus.CLEAN_TINT, a.tint());
+        assertEquals(EditorMenuScreen.SAVE_COMMAND, a.command());
+        assertEquals("dungeontrain save", a.command());
+        assertEquals("dungeontrain", a.icon().getNamespace());
+        assertEquals("icon/save", a.icon().getPath());
+    }
+
+    @Test
+    @DisplayName("Header Save routes parts through the part-aware subcommand")
+    void headerSave_partsUsesPartSave() {
+        MenuHeaderAction a = EditorMenuScreen.saveHeaderAction(PlotCategory.PARTS, false, 0L);
+        assertEquals("dungeontrain editor part save", a.command());
+    }
+
+    @Test
+    @DisplayName("Header Save names the unsaved state in its tooltip and goes green")
+    void headerSave_dirtyIsGreenAndSaysSo() {
+        MenuHeaderAction a = EditorMenuScreen.saveHeaderAction(PlotCategory.CARRIAGES, true, 250L);
+        assertTrue(a.label().contains("unsaved"));
+        assertEquals(EditorSaveStatus.DIRTY_TINT, a.tint(), "at the pulse peak the tint is the full green");
+    }
+
+    @Test
+    @DisplayName("Editor panel keeps the shared default width on every tab (no Current-tab widening)")
+    void panelWidth_isSharedDefault() {
+        assertEquals(CommandMenuLayout.PANEL_WIDTH, new EditorMenuScreen().panelWidth(), 0.0);
+    }
 }

@@ -82,6 +82,14 @@ public final class CommandMenuState {
     private static int typingOriginRowIdx = -1;
     private static int typingOriginSubIdx = 0;
 
+    /**
+     * Ticks until the dirty list is asked for again, or 0 when nothing is pending. Armed by the
+     * commands that can change a plot while the menu stays open — the delay gives the server a
+     * moment to run them before it is asked what changed.
+     */
+    private static int saveStatusRefreshTicks = 0;
+    private static final int SAVE_STATUS_REFRESH_DELAY = 10;
+
     public static boolean isOpen() { return open; }
 
     /** Where the currently-open menu draws. See {@link #space}. */
@@ -239,6 +247,13 @@ public final class CommandMenuState {
             );
         }
 
+        // The editor's header Save icon colours itself by the server's dirty scan; ask once per
+        // open so it is right on the first frame that matters.
+        if (initialStack.stream().anyMatch(s -> s instanceof EditorMenuScreen)) {
+            EditorSaveStatus.request();
+        }
+        saveStatusRefreshTicks = 0;
+
         // Entries first: in screen-space the screen renders from them on its very first frame.
         rebuildEntries();
         if (space.isScreenspace()) {
@@ -293,6 +308,26 @@ public final class CommandMenuState {
         rebuildEntries();
     }
 
+    /**
+     * Run a {@link MenuHeaderAction} — the icon at the right of the breadcrumb band.
+     *
+     * <p>Unlike a {@code Run} row this leaves the menu open: it is a toolbar button, and an author
+     * who saves from it is mid-edit and expects the panel to still be there. The next rebuild
+     * picks up whatever the server reports back.</p>
+     */
+    static void activateHeader(MenuHeaderAction action) {
+        if (action == null) return;
+        LOGGER.info("Menu header action command={}", action.command());
+        playClickSound();
+        CommandRunner.run(action.command());
+        armSaveStatusRefresh();
+    }
+
+    /** Re-ask for the dirty list shortly, once the command just sent has had a chance to run. */
+    private static void armSaveStatusRefresh() {
+        saveStatusRefreshTicks = SAVE_STATUS_REFRESH_DELAY;
+    }
+
     public static void activate(int idx, int subIdx) {
         if (idx < 0 || idx >= entries.size()) return;
         CommandMenuEntry entry = entries.get(idx);
@@ -314,6 +349,7 @@ public final class CommandMenuState {
             close();
         } else if (entry instanceof CommandMenuEntry.Stay stay) {
             CommandRunner.run(stay.command());
+            armSaveStatusRefresh();
             // Stay open so the player can click again. The next tick's
             // rebuild picks up any label change driven by server state.
         } else if (entry instanceof CommandMenuEntry.SaveAction save) {
@@ -348,6 +384,7 @@ public final class CommandMenuState {
                 cmd = toggle.state() ? toggle.cmdToTurnOff() : toggle.cmdToTurnOn();
             }
             CommandRunner.run(cmd);
+            armSaveStatusRefresh();
             // Stay open so the user can see the state flip. The next tick's
             // rebuild will pick up the server-acked devmode value.
         } else if (entry instanceof CommandMenuEntry.Split split) {
@@ -476,6 +513,9 @@ public final class CommandMenuState {
             LOGGER.info("Command menu auto-closed (player wandered out of range)");
             close();
             return;
+        }
+        if (saveStatusRefreshTicks > 0 && --saveStatusRefreshTicks == 0) {
+            EditorSaveStatus.request();
         }
         rebuildEntries();
     }
