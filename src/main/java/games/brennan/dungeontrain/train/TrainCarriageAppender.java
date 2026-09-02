@@ -4,10 +4,12 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.debug.BackwardGenTrace;
 import games.brennan.dungeontrain.debug.DebugAccessEvents;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.TrainDebugCarriagePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -288,6 +290,21 @@ public final class TrainCarriageAppender {
      * broadcast).
      */
     private static volatile boolean STALL_DETECTION_ENABLED = false;
+
+    /** @see #STALL_DETECTION_ENABLED */
+    public static boolean isStallDetectionEnabled() {
+        return STALL_DETECTION_ENABLED;
+    }
+
+    /**
+     * Toggle the spawn-stall detector at runtime. Server thread only. Mirrors
+     * {@link #setSeamGapTraceEnabled} so a debugging session can arm the
+     * detector without a rebuild — it was previously a compile-time constant,
+     * which meant investigating a live stall cost a full build cycle.
+     */
+    public static void setStallDetectionEnabled(boolean enabled) {
+        STALL_DETECTION_ENABLED = enabled;
+    }
 
     /**
      * Opt-in master switch for the backward-seam-gap diagnostic probes
@@ -1595,6 +1612,9 @@ public final class TrainCarriageAppender {
         EDGE_UNRESOLVED_WARNED_BACKWARD.clear();
         RELOAD_ISSUED_FORWARD.clear();
         RELOAD_ISSUED_BACKWARD.clear();
+        // The [bwdgen] trace's per-train state, so a new session doesn't inherit a
+        // previous train's blocked-since tick and report a bogus multi-hour stall.
+        BackwardGenTrace.clear();
         // Force-load window tracking. The live Sable tickets themselves are
         // swept separately via Shipyard.releaseAllForceLoads() on the
         // train-wipe path (TrainAssembler.deleteExistingTrains), which has a
@@ -2167,6 +2187,12 @@ public final class TrainCarriageAppender {
 
         List<Integer> nearPlayerPIdxs = new ArrayList<>();
         List<ServerPlayer> nearPlayers = new ArrayList<>();
+        // The player driving globalMinNeededPIdx — i.e. the one nearest the tail,
+        // whose window decides whether the backward lane has anything to do. Kept
+        // for the [bwdgen] trace only; null until the first near player is seen.
+        ServerPlayer tracePlayer = null;
+        int tracePlayerPIdx = 0;
+        int traceTargetCount = 0;
         for (ServerPlayer player : players) {
             // Player is "near" the train if within NEAR_RADIUS of any group's
             // world AABB.
@@ -2231,7 +2257,12 @@ public final class TrainCarriageAppender {
             int pMaxNeeded = pIdx + pHalfFront;
             int pMinNeeded = pIdx - pHalfBack;
             if (pMaxNeeded > globalMaxNeededPIdx) globalMaxNeededPIdx = pMaxNeeded;
-            if (pMinNeeded < globalMinNeededPIdx) globalMinNeededPIdx = pMinNeeded;
+            if (pMinNeeded < globalMinNeededPIdx) {
+                globalMinNeededPIdx = pMinNeeded;
+                tracePlayer = player;
+                tracePlayerPIdx = pIdx;
+                traceTargetCount = pTargetCount;
+            }
 
             nearPlayerPIdxs.add(pIdx);
             nearPlayers.add(player);
@@ -2257,6 +2288,13 @@ public final class TrainCarriageAppender {
             // genuine walk-away (no pause) never sets a grace deadline, so it releases as
             // before.
             long nowTick = level.getGameTime();
+            // [bwdgen] G0: no player within NEAR_RADIUS of any group. During a ride
+            // test the player is aboard throughout, so this reason appearing at all
+            // IS the finding (the near-check measures against group world AABBs,
+            // which a culled group reports as zero).
+            traceBackwardLane(level, trainId, train, BackwardGenTrace.Reason.NOT_NEAR, nowTick,
+                null, 0, 0, 0, 0, Trains.knownAnchors(trainId).size(), 0, 0, null, dims, groupSize,
+                velocity, 0);
             if (withinResumeGrace(RESUME_GRACE_UNTIL_TICK.get(trainId), nowTick)) {
                 if (shouldRenewResumeGrace(RESUME_STARTED_TICK.get(trainId), nowTick, RESUME_HOLD_CAP_TICKS)) {
                     RESUME_GRACE_UNTIL_TICK.put(trainId, nowTick + RESUME_GRACE_RENEW_TICKS);
@@ -2409,6 +2447,11 @@ public final class TrainCarriageAppender {
         int backwardDeficitPIdx = (MANUAL_MODE || globalMinNeededPIdx == Integer.MAX_VALUE)
             ? 0 : (trainMinAnchor - globalMinNeededPIdx);
 
+        // Pre-dedup backward intent, kept for the [bwdgen] trace so it can tell
+        // "the window doesn't need a group" (G1) apart from "the anchor is already
+        // registered" (G2) — the dedup below collapses both into needsBackward=false.
+        boolean bwdNeedWindow = needsBackward;
+
         // Belt-and-braces: even though trainMin/Max came from the
         // registry, drop any anchor that's already known. Protects against
         // races and future logic changes. Done per-direction so the other
@@ -2441,8 +2484,13 @@ public final class TrainCarriageAppender {
             if (er.reference() == null) needsForward = false;
             else forwardRef = er.reference();
         }
+        EdgeAction bwdEdgeAction = null;
+        UUID bwdEdgeSub = null;
         if (needsBackward) {
             EdgeReference er = resolveEdgeReference(level, trainId, train, trainMinAnchor, false, tail);
+            bwdEdgeAction = er.action();
+            ManagedShip bwdEdgeShip = Trains.knownGroups(trainId).get(trainMinAnchor);
+            bwdEdgeSub = (bwdEdgeShip == null) ? null : bwdEdgeShip.subLevelId();
             if (er.reference() == null) needsBackward = false;
             else backwardRef = er.reference();
         }
@@ -2464,6 +2512,18 @@ public final class TrainCarriageAppender {
         maintainTrailingForceLoadWindow(
             level, trainId, train, backwardExtensionWanted,
             !nearPlayerPIdxs.isEmpty(), globalMinNeededPIdx, globalMaxNeededPIdx);
+
+        // [bwdgen] The backward lane's decision is now fully resolved for every
+        // pre-spawn gate (G1 window / G2 duplicate anchor / G3 edge reference), so
+        // emit here — this return is reached on every tick the lane is idle, which
+        // is exactly the case a stalled train sits in.
+        if (!needsBackward) {
+            traceBackwardLane(level, trainId, train, backwardBlockReason(bwdNeedWindow, bwdEdgeAction),
+                level.getGameTime(), tracePlayer, tracePlayerPIdx, traceTargetCount,
+                globalMinNeededPIdx, trainMinAnchor, knownAnchors.size(),
+                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize, velocity,
+                globalMaxNeededPIdx);
+        }
 
         if (!needsForward && !needsBackward) return false;
 
@@ -2581,12 +2641,18 @@ public final class TrainCarriageAppender {
             didBackwardSpawn = advanceFillRun(level, trainId, train, FILL_RUN_BACKWARD,
                 backwardDeficitPIdx, groupSize, dims, velocity, now, false);
         }
+        // Which path produced the backward group (if any) — the [bwdgen] trace
+        // distinguishes a gated spawn from an in-flight catch-up FILL run, and a
+        // chunk-gen deferral from a closed lane gate.
+        boolean bwdViaFill = didBackwardSpawn;
+        boolean bwdChunkDeferred = false;
         if (!didBackwardSpawn && needsBackward
             && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, LAST_SPAWNED_TICK_BACKWARD, CULL_CLEARED_BACKWARD, trainId, train, now, false)) {
             Plan backwardPlan = planSpawnPlacement(backwardRef, backwardAnchor, groupSize, dims, train);
             ManagedShip newShip = spawnPlannedGroup(
                 level, backwardPlan, backwardRef, backwardAnchor, groupSize, dims, velocity, trainId, train);
             // null ⇒ spawn deferred this tick for async footprint generation (see forward lane).
+            bwdChunkDeferred = (newShip == null);
             if (newShip != null) {
                 recordSpawnedGroup(level, trainId, newShip, backwardAnchor, train, now, false);
                 // Catch-up burst — mirror of the forward lane (see there). This is the
@@ -2598,6 +2664,25 @@ public final class TrainCarriageAppender {
                     backwardDeficitPIdx, groupSize);
                 didBackwardSpawn = true;
             }
+        }
+
+        // [bwdgen] Post-attempt outcome for a lane that WANTED to spawn: it either
+        // spawned (gated path or FILL run), deferred on chunk-gen (G5), or was held
+        // shut by the placement / cull-latch gate (G4).
+        if (needsBackward) {
+            BackwardGenTrace.Reason outcome;
+            if (didBackwardSpawn) {
+                outcome = bwdViaFill ? BackwardGenTrace.Reason.FILL_RUN : BackwardGenTrace.Reason.SPAWNED;
+            } else if (bwdChunkDeferred) {
+                outcome = BackwardGenTrace.Reason.CHUNKGEN_DEFER;
+            } else {
+                outcome = backwardGateReason(trainId, now);
+            }
+            traceBackwardLane(level, trainId, train, outcome, now,
+                tracePlayer, tracePlayerPIdx, traceTargetCount,
+                globalMinNeededPIdx, trainMinAnchor, knownAnchors.size(),
+                backwardAnchor, backwardDeficitPIdx, bwdEdgeSub, dims, groupSize, velocity,
+                globalMaxNeededPIdx);
         }
 
         if (STALL_DETECTION_ENABLED) {
@@ -2919,6 +3004,157 @@ public final class TrainCarriageAppender {
             LOGGER.warn("[DungeonTrain] Registry {} edge unresolved for {} ticks ({}) anchor={} subLevelId={} trainId={} — extension paused until it surfaces (no void, no delete)",
                 forward ? "forward" : "backward", elapsed, why, edgeAnchor, uuid, trainId);
         }
+    }
+
+    // ---- [bwdgen] backward-lane decision trace ---------------------------------
+    //
+    // A backward group only spawns when it clears six independent gates, and every
+    // one of them fails silently with the same symptom: the train stops extending
+    // toward the tail. These helpers name the gate that stopped it, so a single
+    // ride distinguishes the causes instead of one build per hypothesis. All are
+    // no-ops unless BackwardGenTrace is enabled.
+
+    /**
+     * Pure map from the pre-spawn backward gates to a trace reason. Ordered by the
+     * order {@link #updateTrain} evaluates them, so the FIRST gate that failed is
+     * the one reported.
+     *
+     * @param needWindow    whether the players' needed window extended past the
+     *                      registry min anchor (G1)
+     * @param edgeAction    the resolved registry-edge action, or {@code null} when
+     *                      edge resolution was never reached (the anchor was already
+     *                      registered, G2)
+     */
+    static BackwardGenTrace.Reason backwardBlockReason(boolean needWindow, EdgeAction edgeAction) {
+        if (!needWindow) return BackwardGenTrace.Reason.NO_NEED;
+        if (edgeAction == null) return BackwardGenTrace.Reason.ANCHOR_KNOWN;
+        return switch (edgeAction) {
+            case RELOAD_DEFER -> BackwardGenTrace.Reason.EDGE_RELOAD;
+            case DEFER -> BackwardGenTrace.Reason.EDGE_DEFER;
+            // SPAWN never reaches here (the lane would have gone on to attempt a
+            // spawn); report the window gate rather than inventing a reason.
+            case SPAWN -> BackwardGenTrace.Reason.NO_NEED;
+        };
+    }
+
+    /**
+     * Why {@link #isLanePlacementGateClear} held the backward lane shut (G4):
+     * a previous spawn still settling, or the cull-clear latch. Reads the same
+     * maps the gate itself consults, so the answer can't disagree with it.
+     */
+    private static BackwardGenTrace.Reason backwardGateReason(UUID trainId, long now) {
+        if (LAST_SPAWNED_SHIP_BACKWARD.get(trainId) != null) {
+            return BackwardGenTrace.Reason.GATE_PENDING;
+        }
+        if (CULL_CLEARED_BACKWARD.get(trainId) != null) {
+            return BackwardGenTrace.Reason.GATE_CULL_LATCH;
+        }
+        // Gate was clear but no spawn and no chunk deferral — shouldn't happen;
+        // report the settle gate rather than dropping the sample.
+        return BackwardGenTrace.Reason.GATE_PENDING;
+    }
+
+    /**
+     * Build and record one backward-lane sample. Gathers the live gate state
+     * (pending spawn age, cull-latch age, force-load count, chunk-gen wait) from
+     * the appender's own maps so the trace and the gates can never disagree.
+     *
+     * <p>{@code tracePlayer} is the near player whose window drives
+     * {@code globalMinNeededPIdx} — the one standing nearest the tail. It is
+     * {@code null} only for the no-near-players sample, where the per-player
+     * fields are meaningless anyway.</p>
+     */
+    private static void traceBackwardLane(
+        ServerLevel level, UUID trainId, List<Trains.Carriage> train,
+        BackwardGenTrace.Reason reason, long now,
+        ServerPlayer tracePlayer, int tracePlayerPIdx, int traceTargetCount,
+        int minNeeded, int registryMin, int registryCount,
+        int anchor, int deficit, UUID edgeSub,
+        CarriageDims dims, int groupSize, Vector3dc velocity, int maxNeeded
+    ) {
+        if (!BackwardGenTrace.enabled()) return;
+
+        int visibleTail = Integer.MAX_VALUE;
+        Trains.Carriage tailCarriage = null;
+        for (Trains.Carriage c : train) {
+            int p = c.provider().getPIdx();
+            if (p < visibleTail) {
+                visibleTail = p;
+                tailCarriage = c;
+            }
+        }
+        if (visibleTail == Integer.MAX_VALUE) visibleTail = registryMin;
+
+        // How much train is physically behind the player: their world X minus the tail group's
+        // lowest-X face. pIdx accounting alone cannot tell "20 carriages behind me" from "a void
+        // behind me" — a culled group still holds its registry pIdx — so measure the world gap the
+        // player actually walks into.
+        double tailGapX = Double.NaN;
+        if (tracePlayer != null && tailCarriage != null) {
+            AABBdc tailBox = tailCarriage.ship().worldAABB();
+            if (!isZeroAabb(tailBox)) {
+                tailGapX = tracePlayer.getX() - tailBox.minX();
+            }
+        }
+
+        Long pendingTick = LAST_SPAWNED_TICK_BACKWARD.get(trainId);
+        long ticksPending = (LAST_SPAWNED_SHIP_BACKWARD.get(trainId) == null || pendingTick == null)
+            ? -1L : now - pendingTick;
+        Long latchedAt = CULL_CLEARED_BACKWARD.get(trainId);
+        long latchAge = (latchedAt == null) ? -1L : now - latchedAt;
+        Long waitSince = SPAWN_GEN_WAIT_BACKWARD.get(trainId);
+        long chunkWait = (waitSince == null) ? -1L : now - waitSince;
+        Set<UUID> forceLoaded = FORCELOADED_BY_TRAIN.get(trainId);
+
+        // The group the player is physically standing in, as opposed to the pIdx
+        // the LEAD group's frame computes for them. Divergence between the two is
+        // the frame-skew signal, and it is why the needed window can stop tracking
+        // a player who is still walking toward the tail.
+        Integer occupied = (tracePlayer == null) ? null : occupiedPIdx(train, tracePlayer, dims, groupSize);
+        double playerX = (tracePlayer == null) ? Double.NaN : tracePlayer.getX();
+
+        // Is the group the player is PHYSICALLY standing in force-loaded? The hold set is derived
+        // from the same window as the spawn target, so if that window is anchored away from the
+        // player, their own surroundings stop being protected from Sable's cull — the train can
+        // then end underneath them while the lane, looking at the window, reports nothing wrong.
+        Boolean heldOccupied = null;
+        if (occupied != null) {
+            for (Trains.Carriage c : train) {
+                TrainTransformProvider p = c.provider();
+                if (occupied >= p.getPIdx() && occupied <= p.getGroupHighestPIdx()) {
+                    heldOccupied = forceLoaded != null && forceLoaded.contains(c.ship().subLevelId());
+                    break;
+                }
+            }
+        }
+
+        BackwardGenTrace.record(level, trainId, new BackwardGenTrace.Sample(
+            now, reason, 0L, tracePlayerPIdx, occupied, playerX,
+            minNeeded, registryMin, visibleTail, registryCount, train.size(),
+            anchor, deficit, ticksPending, latchAge, edgeSub,
+            (forceLoaded == null) ? 0 : forceLoaded.size(), chunkWait, traceTargetCount, tailGapX,
+            maxNeeded, heldOccupied,
+            rideContext(train, tracePlayer, deficit, groupSize, velocity)));
+    }
+
+    /**
+     * Describe HOW the player is riding, alongside the lane state. The reported failure happened
+     * while walking backwards on the roof in survival; a player the deck test doesn't consider
+     * carried closes on the tail at walk speed PLUS train speed, so these fields are what separate
+     * that ride from one taken inside a carriage.
+     */
+    private static BackwardGenTrace.RideContext rideContext(
+        List<Trains.Carriage> train, ServerPlayer player, int deficit, int groupSize, Vector3dc velocity
+    ) {
+        if (player == null) return BackwardGenTrace.RideContext.NONE;
+        CatchUpBurstMode mode = DungeonTrainConfig.getCatchUpBurstMode();
+        return new BackwardGenTrace.RideContext(
+            CarriageDeck.isOnCarriageDeck(train, player),
+            player.gameMode.getGameModeForPlayer().getName(),
+            player.isSprinting(),
+            (velocity == null) ? 0.0 : velocity.x(),
+            mode.name(),
+            catchUpBurstGroups(Math.max(deficit, 0), Math.max(groupSize, 1), mode));
     }
 
     // ---- Trailing-segment force-load window (backward-generation-stall fix) ----
