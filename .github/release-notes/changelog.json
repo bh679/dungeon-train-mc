@@ -10791,9 +10791,9 @@
       ],
       "pr": 1260,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "vivecraft-compat-moved-to-addon",
@@ -10807,9 +10807,9 @@
         "Neither problem was really Dungeon Train's \u2014 they affect any Sable ship \u2014 so they now live in one mod that any Sable pack can use."
       ],
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "any-template-submittable",
@@ -10823,9 +10823,9 @@
       ],
       "pr": 1259,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "submit-restored-builds",
@@ -10838,9 +10838,9 @@
       ],
       "pr": 1259,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "train-editor-selection-screen",
@@ -10854,9 +10854,9 @@
       ],
       "pr": 1265,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "death-screen-drop-goal-tick",
@@ -10865,6 +10865,108 @@
       "title": "One fewer redundant line on the support page",
       "summary": "The support page no longer repeats a completed goal's name in a tick line once it has already stopped asking for it.",
       "highlights": [],
+      "date": "2026-09-02",
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
+    },
+    {
+      "id": "catch-up-spawning-global-option",
+      "version": "0.778.0",
+      "type": "fix",
+      "title": "Catch-up spawning is now a single setting you can reach from the title screen",
+      "summary": "Catch-up spawning decides how quickly the train re-extends after an end of it falls behind you. The option was there, but it only appeared while you were inside a singleplayer world \u2014 open Options from the title screen and the row was simply missing, with no hint that it existed. It is now one setting that shows up in both places, and changing it anywhere changes it for every world.",
+      "highlights": [
+        "The Catch-up spawning row now appears in Options -> Dungeon Train -> Train at the title screen, not just in a world.",
+        "It is a single global setting: set it once and every world uses it, new or existing.",
+        "Changing it still takes effect immediately on the train you are riding \u2014 no reload.",
+        "If you had set catch-up spawning inside a particular world, that choice is not carried over and returns to Fill all. Set it once more and it will stick for good."
+      ],
+      "pr": 1267,
+      "date": "2026-09-02",
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
+    },
+    {
+      "id": "backward-generation-resident-tail",
+      "version": "0.779.0",
+      "type": "fix",
+      "title": "The train no longer ends when you travel backward along it",
+      "summary": "Walking backward along the train, or standing beside the track and letting it pass, could bring you to a visible end of the train after a few minutes. Two bugs caused it: the carriage number shown for you drifted further behind the truth the further back you were, which eventually let the game unload the carriages you were standing on; and once that happened the train stopped generating backward because it believed it had already generated far enough. Your carriage number is now read from the carriage you are actually in, and the train fills in every carriage you need from where you stand outward, reloading or replacing any that went missing.",
+      "highlights": [
+        "Backward travel keeps finding carriages for as long as you walk",
+        "The HUD carriage number no longer drifts the further back you are",
+        "Missing carriages behind you are reloaded or replaced instead of leaving a dead end"
+      ],
+      "pr": 1268,
+      "date": "2026-09-02",
+      "released": true,
+      "released_in": "v0.779.0",
+      "released_at": "2026-09-02T06:44:20Z"
+    },
+    {
+      "id": "catch-up-spawning-auto-from-specs",
+      "version": "0.780.0",
+      "type": "feat",
+      "title": "Catch-up spawning now suits your computer instead of guessing",
+      "summary": "Catch-up spawning decides how quickly the train re-extends after an end of it falls behind you. It was set to Fill all for everyone, which closes the gap fastest but asks the most of your machine \u2014 great on a desktop, a stutter on a thin laptop. It now has an Automatic setting, which is the new default: it looks at your processor and the memory the launcher gave Minecraft, picks the pacing that suits, and tells you which one it chose. You can still pick a mode yourself at any time and it will be left alone from then on.",
+      "highlights": [
+        "New Automatic option, and it is now the default. The setting shows what it picked, e.g. \"Automatic (Fill all)\".",
+        "A capable machine still gets Fill all \u2014 a typical 8-core setup with 4GB allocated is unchanged.",
+        "A machine short on cores or memory steps down to Burst 2 or Off, so catching up no longer costs you a stutter that lasts longer than the problem.",
+        "If you never changed this setting, you move to Automatic. If you deliberately chose Off or Burst 2, your choice is kept."
+      ],
+      "pr": 1271,
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "freeze-parked-groups-keep-their-place",
+      "version": "0.781.0",
+      "type": "fix",
+      "title": "Parked carriage groups no longer vanish from the train or pile up behind it",
+      "summary": "Carriage groups that no one is near are parked to keep physics cheap on long trains. A parked group used to stay at the spot where it was parked while the rest of the train rolled on, so after a long ride backward you could walk into a hole the size of a whole group \u2014 the group was still there, hundreds of blocks back, stacked on top of other parked groups, and it never woke up because the game was looking for it in the wrong place. Parked groups now keep their place in the train the whole time they are parked, so every group is where it should be when you reach it, seams stay tight, and a save made mid-ride puts the train back together correctly.",
+      "highlights": [
+        "No more group-sized holes in the train after riding a long way backward or forward.",
+        "Parked groups no longer pile up on each other or get driven into by their neighbours.",
+        "Saving while groups are parked no longer bakes the wrong position into the save."
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1272
+    },
+    {
+      "id": "dimensional-carriage-connections",
+      "version": "0.781.0",
+      "type": "fix",
+      "title": "Dimensional carriages always lead somewhere",
+      "summary": "A dimensional carriage whose portal isn't connecting no longer ends in a wall. Walking the train backwards into one now works, and if a crossing still can't happen, the plate between its doors opens after a couple of seconds so you can walk on through. Each life's dimensional-carriage crossings and any that failed are counted in the run stats to help find why.",
+      "highlights": [
+        "Approaching a dimensional carriage from behind now connects it",
+        "A portal that can't connect opens itself instead of dead-ending",
+        "Run stats count portal crossings that worked and ones that didn't"
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "vr-melee-works-without-the-addon",
+      "version": "0.781.1",
+      "type": "fix",
+      "title": "VR melee works on the train again, addon or not",
+      "summary": "If you play in VR, swinging at a mob standing next to you on the train stopped working in a recent update, because the fix for it moved out into a separate mod. Dungeon Train now carries that fix again for anyone who has not installed the separate mod yet, so melee works either way. Installing Vivecraft Sable Compat is still worth it \u2014 it also stops VR teleport dropping you into the void, which Dungeon Train cannot fix on its own \u2014 and when it is installed Dungeon Train steps aside and lets it do the work.",
+      "highlights": [
+        "VR melee hits mobs on the train without any extra download",
+        "Install Vivecraft Sable Compat as well to fix VR teleport",
+        "No effect at all if you do not play in VR"
+      ],
       "date": "2026-09-02",
       "released": false,
       "released_in": null,

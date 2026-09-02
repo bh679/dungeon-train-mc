@@ -22,7 +22,7 @@ import java.util.List;
  *
  * <p>Kept free of Minecraft types on purpose. Three rows are conditional — {@link Row#POLITICAL_FILTER}
  * on Chinese clients, {@link Row#TRANSLATE} when a translation target resolves, and
- * {@link Row#CATCH_UP_BURST} when the train settings are writable from here — and the screen packs
+ * {@link Row#CATCH_UP_BURST} except on a multiplayer client — and the screen packs
  * rows two-across, so any one appearing re-pairs everything after it in its tab. That pairing is
  * the part most likely to break silently and the part a headless test can actually reach, which it
  * cannot do through live widgets.</p>
@@ -94,11 +94,11 @@ public enum ClientOptionsTab {
         SNAPSHOT_MAX_RES,
         SNAPSHOT_CHAT_LOG,
         /**
-         * How fast an end of the train may extend once it has fallen behind. Present only
-         * when the train settings are actually writable from here — i.e. a singleplayer
-         * world is open. On a multiplayer client the value belongs to the server, and at
-         * the title screen the server config is not loaded and the write silently no-ops,
-         * so the row is absent rather than a control that lies about what it did.
+         * How fast an end of the train may extend once it has fallen behind. One global value
+         * in the COMMON config, so it is present at the title screen as well as in a world, and
+         * setting it in either place sets it for every world. Absent only on a multiplayer
+         * client, where the value belongs to the server and our write would change nothing the
+         * player can see — the row is absent rather than a control that lies about what it did.
          */
         CATCH_UP_BURST,
 
@@ -183,9 +183,9 @@ public enum ClientOptionsTab {
                 rows.add(Row.SNAPSHOT_CHAT_LOG);
                 rows.add(Row.CUSTOM_CONTENT);
                 rows.add(Row.SNAPSHOT_MAX_RES);
-                // Conditional, so it goes LAST: a row that appears and disappears re-pairs
-                // everything after it in the tab (see the class javadoc), and nothing follows
-                // it here.
+                // Conditional (absent on a multiplayer client), so it goes LAST: a row that
+                // appears and disappears re-pairs everything after it in the tab (see the class
+                // javadoc), and nothing follows it here.
                 if (trainSettingsWritable) {
                     rows.add(Row.CATCH_UP_BURST);
                 }

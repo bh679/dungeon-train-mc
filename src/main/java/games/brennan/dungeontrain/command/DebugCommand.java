@@ -7,6 +7,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
+import games.brennan.dungeontrain.debug.BackwardGenTrace;
 import games.brennan.dungeontrain.debug.CarriageDebug;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.ChiseledBookshelfSync;
@@ -22,6 +23,7 @@ import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.ContentsDespawnController;
 import games.brennan.dungeontrain.train.TrainAssembler;
+import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
@@ -168,6 +170,18 @@ public final class DebugCommand {
             .then(Commands.literal("loot-rolls")
                 .then(Commands.literal("on").executes(ctx -> setLogLootRolls(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setLogLootRolls(ctx.getSource(), false))))
+            // /dungeontrain debug traingen on|off|status — the backward-generation
+            // investigation switch. `on` arms EVERY probe the backward lane has in one
+            // go (the [bwdgen] decision trace, the spawn-stall detector, the
+            // [seamgap]/[anchor-div]/[bwd-place] probes, and their chat announcements)
+            // so a test ride needs a single command. `status` prints the newest
+            // backward-lane state per train IN CHAT — the point being that when the
+            // train visibly stops extending, one command names the gate that stopped it
+            // without leaving the game or reading a log.
+            .then(Commands.literal("traingen")
+                .then(Commands.literal("on").executes(ctx -> setTrainGenTrace(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setTrainGenTrace(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> trainGenStatus(ctx.getSource()))))
             // /dungeontrain debug seamgap-trace on|off — opt-in backward-seam-gap
             // diagnostic probes ([seamgap]/[bwd-place]/[anchor-div]/[capture-lag]).
             // Off by default; turn on for a backward-ride session to capture the
@@ -184,6 +198,48 @@ public final class DebugCommand {
             .then(Commands.literal("reroll")
                 .then(Commands.argument("prefabId", StringArgumentType.string())
                     .executes(ctx -> runReroll(ctx.getSource(), StringArgumentType.getString(ctx, "prefabId")))));
+    }
+
+    /**
+     * Arm (or disarm) every backward-generation probe at once. Deliberately a
+     * master switch rather than four separate toggles: the failure being
+     * investigated is intermittent, so a ride that has to be repeated because one
+     * probe was left off is a wasted test.
+     */
+    private static int setTrainGenTrace(CommandSourceStack source, boolean on) {
+        BackwardGenTrace.setEnabled(on);
+        TrainCarriageAppender.setStallDetectionEnabled(on);
+        TrainCarriageAppender.setSeamGapTraceEnabled(on);
+        DebugFlags.setChatStallTrain(source.getServer(), on);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Backward-generation trace " + (on ? "ON" : "OFF")
+                + (on ? " — [bwdgen] + stall detector + [seamgap]/[anchor-div] armed; "
+                        + "run '/dungeontrain debug traingen status' when the train stops extending"
+                      : "")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    /**
+     * Print the newest backward-lane sample for every loaded train. Answers "why
+     * did the train stop growing behind me?" at the moment it happens.
+     */
+    private static int trainGenStatus(CommandSourceStack source) {
+        java.util.List<String> lines = BackwardGenTrace.statusLines();
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Backward-gen trace " + (BackwardGenTrace.enabled() ? "ON" : "OFF")
+                + " — " + lines.size() + " train(s) sampled"
+        ).withStyle(BackwardGenTrace.enabled() ? ChatFormatting.GREEN : ChatFormatting.GRAY), false);
+        if (lines.isEmpty()) {
+            source.sendSuccess(() -> Component.literal(
+                "  no samples yet — is the trace on, and is a train loaded?"
+            ).withStyle(ChatFormatting.GRAY), false);
+            return 1;
+        }
+        for (String line : lines) {
+            source.sendSuccess(() -> Component.literal("  " + line).withStyle(ChatFormatting.YELLOW), false);
+        }
+        return lines.size();
     }
 
     private static int setPhysicsFreeze(CommandSourceStack source, boolean on) {

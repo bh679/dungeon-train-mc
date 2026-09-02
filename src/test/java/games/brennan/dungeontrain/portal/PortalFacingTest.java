@@ -273,4 +273,32 @@ final class PortalFacingTest {
         assertEquals(1, PortalFacing.axisTowardRoom(PortalCarriageRole.ENTRY));
         assertEquals(-1, PortalFacing.axisTowardRoom(PortalCarriageRole.EXIT));
     }
+
+    // ---- walking in through an opened centre-wall plate -----------------------
+
+    /**
+     * When the walk-through fallback opens the plate, a player enters the EXIT corridor from its
+     * room-side end (local X near 0) and the ENTRY corridor from its far end (local X near
+     * length−1). Both are door planes, so the verdict is COPY whichever way they are looking: if the
+     * twin is standing they are carried into the room, and if it is not the swap is refused and
+     * they walk on through — never a ping-pong at the door.
+     */
+    @Test
+    @DisplayName("Entering through the opened plate is a door-plane COPY verdict at any yaw")
+    void openedPlateEntryIsCopyAtAnyYaw() {
+        float[] yaws = {FACE_PLUS_X, FACE_MINUS_X, FACE_ACROSS, 180f};
+        for (int length : new int[] {LENGTH, LONG_LENGTH}) {
+            for (float yaw : yaws) {
+                assertEquals(Verdict.COPY,
+                    PortalFacing.verdict(0.5, length, PortalCarriageRole.EXIT, yaw),
+                    "EXIT room-side door at length " + length + " yaw " + yaw);
+                assertEquals(Verdict.COPY,
+                    PortalFacing.verdict(length - 0.5, length, PortalCarriageRole.ENTRY, yaw),
+                    "ENTRY far door at length " + length + " yaw " + yaw);
+                assertEquals(Verdict.ORIGINAL,
+                    PortalFacing.verdict(0.5, length, PortalCarriageRole.ENTRY, yaw),
+                    "ENTRY train-side door at length " + length + " yaw " + yaw);
+            }
+        }
+    }
 }

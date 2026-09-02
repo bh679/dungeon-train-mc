@@ -12,6 +12,8 @@ import games.brennan.dungeontrain.discord.DeathDetailReporter;
 import games.brennan.dungeontrain.discord.DeathEquipmentReporter;
 import games.brennan.dungeontrain.discord.DeathInventoryReporter;
 import games.brennan.dungeontrain.discord.DeathReporter;
+import games.brennan.dungeontrain.discord.PortalStatsReporter;
+import games.brennan.dungeontrain.portal.PortalConnectionStats;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.RunSummaryReporter;
 import games.brennan.dungeontrain.discord.DeathManifestFormat;
@@ -252,6 +254,10 @@ public final class RunStatsEvents {
             // Play / short-abandon / report-disabled deaths still count).
             DeathReporter.report(player, packet, pos);
 
+            // How this life's dimensional carriages went — connected vs broke, and why. Sends
+            // nothing for a life that met no portal; the tally is taken either way.
+            PortalStatsReporter.report(player, packet);
+
             // The full paginated narrative + death-screen stats, and the full hotbar/main-inventory +
             // offhand, so the per-death detail view can show everything the death screen did.
             DeathDetailReporter.report(player, packet, new DeathDetailReporter.Feats(
@@ -419,6 +425,9 @@ public final class RunStatsEvents {
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // A life that ends by logging out reports no portal tally; drop it rather than letting it
+        // leak into the next life. Before every gate below — this is bookkeeping, not a report.
+        PortalConnectionStats.forget(player.getUUID());
         if (player.isDeadOrDying()) return;
         // Free Play runs still post the "left the game" summary — only cross-world stat accrual
         // (elsewhere) is frozen in Free Play, not the Discord report.
