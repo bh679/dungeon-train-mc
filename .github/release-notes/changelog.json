@@ -10939,6 +10939,22 @@
       "released_in": null,
       "released_at": null,
       "pr": 1272
+    },
+    {
+      "id": "dimensional-carriage-connections",
+      "version": "0.781.0",
+      "type": "fix",
+      "title": "Dimensional carriages always lead somewhere",
+      "summary": "A dimensional carriage whose portal isn't connecting no longer ends in a wall. Walking the train backwards into one now works, and if a crossing still can't happen, the plate between its doors opens after a couple of seconds so you can walk on through. Each life's dimensional-carriage crossings and any that failed are counted in the run stats to help find why.",
+      "highlights": [
+        "Approaching a dimensional carriage from behind now connects it",
+        "A portal that can't connect opens itself instead of dead-ending",
+        "Run stats count portal crossings that worked and ones that didn't"
+      ],
+      "date": "2026-09-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
