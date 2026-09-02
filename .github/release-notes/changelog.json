@@ -10791,9 +10791,9 @@
       ],
       "pr": 1260,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "vivecraft-compat-moved-to-addon",
@@ -10807,9 +10807,9 @@
         "Neither problem was really Dungeon Train's \u2014 they affect any Sable ship \u2014 so they now live in one mod that any Sable pack can use."
       ],
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "any-template-submittable",
@@ -10823,9 +10823,9 @@
       ],
       "pr": 1259,
       "date": "2026-09-01",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "submit-restored-builds",
@@ -10838,9 +10838,9 @@
       ],
       "pr": 1259,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "train-editor-selection-screen",
@@ -10854,9 +10854,9 @@
       ],
       "pr": 1265,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "death-screen-drop-goal-tick",
@@ -10866,9 +10866,9 @@
       "summary": "The support page no longer repeats a completed goal's name in a tick line once it has already stopped asking for it.",
       "highlights": [],
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "catch-up-spawning-global-option",
@@ -10884,9 +10884,9 @@
       ],
       "pr": 1267,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.778.0",
+      "released_at": "2026-09-02T06:08:19Z"
     },
     {
       "id": "backward-generation-resident-tail",
