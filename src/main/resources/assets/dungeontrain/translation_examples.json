@@ -3924,5 +3924,86 @@
         "%2$s, %3$s"
       ]
     }
+  },
+  "gui.dungeontrain.editor_screen.sub_variants_of": {
+    "1": {
+      "label": "the name of the group template whose sub-variants are listed",
+      "examples": [
+        "armor",
+        "house"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.tile.self": {
+    "1": {
+      "label": "the name of the group template — this tile is the group's own build, as opposed to one of its members",
+      "examples": [
+        "armor",
+        "books"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.standing_in": {
+    "1": {
+      "label": "the name of the editor plot the player is currently standing in",
+      "examples": [
+        "armor5",
+        "windowed"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.entities": {
+    "1": {
+      "label": "how many entities (mobs, item frames…) the template contains",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.containers": {
+    "1": {
+      "label": "how many containers (chests, barrels…) the template contains",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.share": {
+    "1": {
+      "label": "how many sub-variants share this group's chance to spawn",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.weight": {
+    "1": {
+      "label": "the template's spawn weight, 0-100",
+      "examples": [
+        "6",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.weight_read_only": {
+    "1": {
+      "label": "the template's spawn weight, 0-100",
+      "examples": [
+        "6",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stage_linked": {
+    "1": {
+      "label": "the id of the Stage this template is linked to",
+      "examples": [
+        "desert",
+        "nether"
+      ]
+    }
   }
 }

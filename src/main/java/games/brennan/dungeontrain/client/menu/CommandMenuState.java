@@ -175,6 +175,13 @@ public final class CommandMenuState {
      * screen based on whether the player is in an editor plot.
      */
     public static void open() {
+        // Inside a plot with the X menu in screen space, the inventory-style editor screen takes
+        // the whole surface; it is a Screen of its own and never touches this stack. World-space,
+        // and screen-space outside a plot, keep the row-list panel.
+        if (EditorStatusHudOverlay.isActive() && ClientDisplayConfig.getCommandMenuSpace().isScreenspace()) {
+            games.brennan.dungeontrain.client.menu.editorscreen.EditorGuiScreen.open();
+            return;
+        }
         if (EditorStatusHudOverlay.isActive()) {
             openInternal(List.of(new MainMenuScreen(), new EditorMenuScreen()));
         } else {

@@ -1,0 +1,537 @@
+package games.brennan.dungeontrain.client.menu.editorscreen;
+
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
+import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
+import games.brennan.dungeontrain.client.builder.TemplateSummary;
+import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
+import games.brennan.dungeontrain.client.menu.CommandMenuKeyBindings;
+import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
+import games.brennan.dungeontrain.client.menu.HotbarPassthrough;
+import games.brennan.dungeontrain.client.menu.MenuRowPainter;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.EditorScreenTheme;
+import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import games.brennan.dungeontrain.editor.PlotCategory;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import org.lwjgl.glfw.GLFW;
+
+import java.util.List;
+
+/**
+ * The inventory-style editor X menu.
+ *
+ * <p>Opened by {@link games.brennan.dungeontrain.client.menu.CommandMenuState#open()} in place of
+ * the row-list panel whenever the player is standing in an editor plot with the X menu set to
+ * screen space. The world keeps running underneath and the hotbar keeps working — the same
+ * contract as the panel it replaces.</p>
+ */
+public final class EditorGuiScreen extends Screen {
+
+    static final int SCREEN_DIM = 0x80101010;
+    static final int BAKES_PER_FRAME = 2;
+    static final long DOUBLE_CLICK_MS = 300;
+    static final float MAX_FRAME_SECONDS = 0.1F;
+    static final int REFRESH_DELAY_TICKS = 10;
+
+    private final EditorBrowserPane browser = new EditorBrowserPane();
+    private final EditorDetailPane detail = new EditorDetailPane();
+    private final OrbitState orbit = new OrbitState();
+    private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
+
+    private EditBox filterBox;
+    private InventoryEditorLayout layout;
+    private List<EditorTabBar.Tab> tabs = List.of();
+    private EditorTabBar.Tab hoveredTab;
+    private long lastFrameNanos;
+    private VariantKey lastClickKey;
+    private long lastClickMillis;
+    private VariantKey previewKey;
+    private int refreshTicks;
+    private int settingsScroll;
+
+    public EditorGuiScreen() {
+        super(Component.literal("Dungeon Train Editor"));
+    }
+
+    /** Ask for what the screen needs and show it. */
+    public static void open() {
+        EditorRosterClient.request();
+        EditorSaveStatus.request();
+        Minecraft.getInstance().setScreen(new EditorGuiScreen());
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
+    @Override
+    protected void init() {
+        layout = InventoryEditorLayout.of(this.width, this.height);
+        InventoryEditorLayout.Rect f = layout.filter();
+        int boxW = browser.filterBoxWidth(f, this.font);
+        filterBox = new EditBox(this.font, f.x(), f.y(), boxW, f.h(), Component.literal("filter"));
+        filterBox.setBordered(true);
+        filterBox.setMaxLength(32);
+        filterBox.setHint(Component.translatable(EditorScreenLang.FILTER_HINT));
+        filterBox.setValue(EditorScreenState.text());
+        filterBox.setResponder(text -> {
+            EditorScreenState.setText(text);
+            browser.resetScroll();
+        });
+        addRenderableWidget(filterBox);
+        filterBox.visible = EditorScreenState.page().isBrowser();
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        BuilderTilePreviews.clear();
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (refreshTicks > 0 && --refreshTicks == 0) {
+            EditorSaveStatus.request();
+        }
+    }
+
+    /** A command went out: give the server a moment, then ask what changed. */
+    private void afterCommand() {
+        EditorRosterClient.scheduleRefresh(REFRESH_DELAY_TICKS);
+        refreshTicks = REFRESH_DELAY_TICKS;
+    }
+
+    // ------------------------------------------------------------------
+    // Render
+    // ------------------------------------------------------------------
+
+    /** A flat dim only — the author needs to see the plot behind the panel. */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        g.fill(0, 0, this.width, this.height, SCREEN_DIM);
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        EditorScreenTheme theme = ClientDisplayConfig.getEditorScreenTheme();
+        EditorRosterIndex index = EditorRosterClient.index();
+        EditorScreenState.reconcile(index);
+        layout = InventoryEditorLayout.of(this.width, this.height);
+        float seconds = frameSeconds();
+        BuilderTilePreviews.beginFrame(BAKES_PER_FRAME);
+
+        EditorScreenActions.Ctx ctx = context(index);
+        if (previewKey == null ? ctx.selection() != null : !previewKey.equals(ctx.selection())) {
+            previewKey = ctx.selection();
+            orbit.reset();
+        }
+        orbit.advance(seconds);
+
+        boolean browsing = EditorScreenState.page().isBrowser();
+        filterBox.visible = browsing;
+        filterBox.setEditable(browsing);
+
+        super.render(g, mouseX, mouseY, partialTick);   // background + the filter box
+
+        drawPanel(g, theme);
+        tabs = EditorTabBar.layout(layout.tabs(), this.font::width, tabLabels());
+        hoveredTab = modal.isOpen() ? null : EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
+        EditorTabBar.draw(g, this.font, layout.tabs(), tabs, EditorScreenState.page(),
+            EditorScreenPage.forCategory(ctx.standing() == null ? null : ctx.standing().category()),
+            ctx.dirty(), hoveredTab, theme);
+
+        int mx = modal.isOpen() ? -1 : mouseX;
+        int my = modal.isOpen() ? -1 : mouseY;
+        if (browsing) {
+            browser.layout(layout, this.font, index);
+            browser.render(g, this.font, theme, seconds, mx, my);
+        } else {
+            drawSettingsPage(g, theme, mx, my);
+        }
+
+        EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
+        TemplateArt art = TemplateArt.of(ctx.selection());
+        TemplateSummary summary = art == null ? null : art.summary();
+        detail.layout(layout, ctx, System.currentTimeMillis());
+        detail.render(g, this.font, theme, art, summary, tile,
+            EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
+
+        if (index.isEmpty()) {
+            String loading = EditorScreenLang.text(EditorScreenLang.NO_ROSTER);
+            g.drawString(this.font, loading, layout.grid().x() + 4, layout.grid().y() + 4, 0xFFFFFFFF, true);
+        }
+
+        modal.render(g, this.font, this.width, this.height, mouseX, mouseY);
+        drawTooltips(g, mouseX, mouseY);
+    }
+
+    private void drawPanel(GuiGraphics g, EditorScreenTheme theme) {
+        InventoryEditorLayout.Rect p = layout.panel();
+        g.fill(p.x() - 1, p.y() - 1, p.right() + 1, p.bottom() + 1, theme.outline());
+        g.fill(p.x(), p.y(), p.right(), p.bottom(), theme.panel());
+        g.fill(p.x(), p.y(), p.right(), p.y() + 2, theme.bevelLight());
+        g.fill(p.x(), p.y(), p.x() + 2, p.bottom(), theme.bevelLight());
+        g.fill(p.x(), p.bottom() - 2, p.right(), p.bottom(), theme.bevelDark());
+        g.fill(p.right() - 2, p.y(), p.right(), p.bottom(), theme.bevelDark());
+        // Dark sub-panels behind the grid and the right pane, so rows read as they do everywhere.
+        InventoryEditorLayout.Rect grid = layout.grid();
+        g.fill(grid.x() - 1, grid.y() - 1, grid.right() + 1, grid.bottom() + 1, theme.subPanel());
+        InventoryEditorLayout.Rect h = layout.header();
+        InventoryEditorLayout.Rect t = layout.test();
+        g.fill(h.x() - 1, h.y() - 1, h.right() + 1, t.bottom() + 1, theme.subPanel());
+    }
+
+    private List<String> tabLabels() {
+        return List.of(
+            EditorScreenLang.text(EditorScreenLang.TAB_CURRENT),
+            EditorScreenLang.text(EditorScreenLang.TAB_CARRIAGES),
+            EditorScreenLang.text(EditorScreenLang.TAB_CONTENTS),
+            EditorScreenLang.text(EditorScreenLang.TAB_TRACKS),
+            EditorScreenLang.text(EditorScreenLang.TAB_DIMENSIONS),
+            EditorScreenLang.text(EditorScreenLang.TAB_MY_BUILDS),
+            EditorScreenLang.text(EditorScreenLang.TAB_SETTINGS));
+    }
+
+    private void drawSettingsPage(GuiGraphics g, EditorScreenTheme theme, int mouseX, int mouseY) {
+        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(
+            layout.filter().x(), layout.filter().y(), layout.filter().w(),
+            layout.grid().bottom() - layout.filter().y());
+        g.fill(r.x() - 1, r.y() - 1, r.right() + 1, r.bottom() + 1, theme.subPanel());
+        List<CommandMenuEntry> rows = settingsRows();
+        int rowH = EditorDetailPane.ROW_H;
+        int visible = Math.max(1, r.h() / rowH);
+        settingsScroll = Math.max(0, Math.min(settingsScroll, Math.max(0, rows.size() - visible)));
+        int hoveredRow = settingsRowAt(mouseX, mouseY, r, rows, visible);
+        int hoveredSub = hoveredRow < 0 ? 0
+            : MenuRowPainter.hitCell(rows.get(hoveredRow), mouseX, r.x(), r.right());
+        for (int k = 0; k < visible && settingsScroll + k < rows.size(); k++) {
+            int idx = settingsScroll + k;
+            MenuRowPainter.drawRow(g, this.font, rows.get(idx), r.x(), r.y() + k * rowH, r.right(), rowH - 1,
+                idx, idx == hoveredRow, hoveredSub, null);
+        }
+    }
+
+    private List<CommandMenuEntry> settingsRows() {
+        VariantKey standing = EditorScreenState.standingIn();
+        PlotCategory cat = standing == null ? null : standing.category();
+        String name = standing == null ? "" : standing.displayName();
+        return EditorSettingsPage.rows(cat, name, ClientDisplayConfig.getEditorScreenTheme(),
+            ClientDisplayConfig::setEditorScreenTheme);
+    }
+
+    private int settingsRowAt(double mx, double my, InventoryEditorLayout.Rect r,
+                              List<CommandMenuEntry> rows, int visible) {
+        if (!r.contains(mx, my)) return -1;
+        int k = (int) ((my - r.y()) / EditorDetailPane.ROW_H);
+        int idx = settingsScroll + k;
+        return k < visible && idx < rows.size() ? idx : -1;
+    }
+
+    private void drawTooltips(GuiGraphics g, int mouseX, int mouseY) {
+        if (modal.isOpen()) return;
+        String tip = null;
+        if (hoveredTab != null && hoveredTab.kind() == EditorTabBar.Kind.EXIT) {
+            tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
+        } else if (EditorScreenState.page().isBrowser()) {
+            tip = browser.tooltipAt(browser.hovered());
+        }
+        if (tip == null) tip = detail.tooltipAt(detail.hovered());
+        if (tip != null) g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
+    }
+
+    private EditorScreenActions.Ctx context(EditorRosterIndex index) {
+        VariantKey standing = EditorScreenState.standingIn();
+        VariantKey selection = EditorScreenState.selection();
+        EditorRosterIndex.Tile tile = selection == null ? null : index.find(selection);
+        boolean dirty = false;
+        if (tile != null) {
+            PlotCategory cat = tile.key().category();
+            dirty = EditorSaveStatus.isDirty(EditorStatusHudOverlay.unsavedList(), cat.id(),
+                EditorSaveStatus.dirtyKey(cat, tile.key().modelId(), tile.key().modelName()));
+        }
+        return new EditorScreenActions.Ctx(
+            tile == null ? null : tile.key(),
+            tile == null ? null : tile.variant(),
+            tile == null ? -1 : tile.selfWeight(),
+            standing, index.stampedCategory(), dirty);
+    }
+
+    private float frameSeconds() {
+        long now = System.nanoTime();
+        long previous = lastFrameNanos;
+        lastFrameNanos = now;
+        if (previous == 0L) return 0.0F;
+        return Math.min((now - previous) / 1.0E9F, MAX_FRAME_SECONDS);
+    }
+
+    // ------------------------------------------------------------------
+    // Input
+    // ------------------------------------------------------------------
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (modal.isOpen()) {
+            return modal.mouseClicked(mouseX, mouseY);
+        }
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
+        if (layout == null) return super.mouseClicked(mouseX, mouseY, button);
+
+        EditorTabBar.Tab tab = EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
+        if (tab != null) {
+            click();
+            onTab(tab);
+            return true;
+        }
+        if (EditorScreenState.page().isBrowser()) {
+            if (filterBox.mouseClicked(mouseX, mouseY, button)) {
+                setFocused(filterBox);
+                return true;
+            }
+            EditorBrowserPane.Hit hit = browser.hitTest(mouseX, mouseY);
+            if (hit.kind() != EditorBrowserPane.HitKind.NONE) {
+                click();
+                onBrowserHit(hit);
+                return true;
+            }
+        } else if (onSettingsClick(mouseX, mouseY)) {
+            click();
+            return true;
+        }
+        EditorDetailPane.Hit hit = detail.hitTest(mouseX, mouseY);
+        if (hit.kind() == EditorDetailPane.HitKind.PREVIEW) {
+            orbit.beginDrag();
+            return true;
+        }
+        if (hit.kind() != EditorDetailPane.HitKind.NONE) {
+            if (onDetailHit(hit)) click();
+            return true;
+        }
+        setFocused(null);
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void onTab(EditorTabBar.Tab tab) {
+        EditorRosterIndex index = EditorRosterClient.index();
+        switch (tab.kind()) {
+            case CURRENT -> {
+                EditorScreenState.showStandingIn(index);
+                filterBox.setValue("");
+                browser.resetScroll();
+            }
+            case EXIT -> modal.runAndClose("dungeontrain editor exit");
+            case PAGE -> {
+                if (tab.page() == EditorScreenPage.MY_BUILDS) {
+                    this.minecraft.setScreen(new BuilderProfileScreen(null));
+                    return;
+                }
+                EditorScreenState.setPage(tab.page());
+                browser.resetScroll();
+            }
+        }
+    }
+
+    private void onBrowserHit(EditorBrowserPane.Hit hit) {
+        VariantKey standing = EditorScreenState.standingIn();
+        EditorRosterIndex index = EditorRosterClient.index();
+        switch (hit.kind()) {
+            case CHIP -> {
+                EditorScreenState.setFilter(browser.chipAt(hit.index()));
+                browser.resetScroll();
+            }
+            case STRIP -> {
+                EditorRosterIndex.TypeStrip strip = browser.stripAt(hit.index());
+                if (strip != null) EditorScreenState.setTypeName(strip.typeName());
+                browser.resetScroll();
+            }
+            case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
+            case SUB_TILE -> {
+                if (hit.index() == -1) selectOrEnter(browser.subParent().key());
+                else selectOrEnter(browser.subTiles().get(hit.index()).key());
+            }
+            case NEW -> {
+                PlotCategory page = EditorScreenState.page().category();
+                EditorRosterIndex.TypeStrip strip = stripByName(index, page, EditorScreenState.effectiveTypeName(index));
+                if (strip == null) return;
+                List<EditorRosterIndex.Tile> all = index.tiles(page, strip.typeName());
+                String first = all.isEmpty() ? "" : all.get(0).key().displayName();
+                dispatch(EditorScreenActions.newEntry(strip.category(), strip.modelId(), first, standing));
+            }
+            case NEW_SUB -> dispatch(EditorScreenActions.newSubVariantEntry(
+                browser.subParent() == null ? null : browser.subParent().key(), standing));
+            default -> { }
+        }
+    }
+
+    private static EditorRosterIndex.TypeStrip stripByName(EditorRosterIndex index, PlotCategory page, String name) {
+        if (page == null) return null;
+        for (EditorRosterIndex.TypeStrip s : index.typeStrips(page)) {
+            if (s.typeName().equals(name)) return s;
+        }
+        return null;
+    }
+
+    /** Single click selects; a second click on the same tile within the window enters it. */
+    private void selectOrEnter(VariantKey key) {
+        long now = System.currentTimeMillis();
+        boolean doubleClick = key.equals(lastClickKey) && now - lastClickMillis < DOUBLE_CLICK_MS;
+        lastClickKey = key;
+        lastClickMillis = now;
+        EditorScreenState.select(key);
+        if (doubleClick) {
+            dispatch(EditorScreenActions.enterEntry(context(EditorRosterClient.index())));
+        }
+    }
+
+    private boolean onDetailHit(EditorDetailPane.Hit hit) {
+        switch (hit.kind()) {
+            case SAVE_ALL -> {
+                CommandRunner.run(detail.saveAll().command());
+                afterCommand();
+                return true;
+            }
+            case ICON -> {
+                EditorScreenActions.Icon icon = detail.icons().get(hit.index());
+                if (!icon.enabled()) return false;
+                dispatch(icon.entry());
+                return true;
+            }
+            case ROW -> {
+                dispatchAt(detail.rows().get(hit.index()), hit.sub());
+                return true;
+            }
+            case TEST -> {
+                if (detail.testEntry() == null) return false;
+                dispatch(detail.testEntry());
+                return true;
+            }
+            default -> { return false; }
+        }
+    }
+
+    private boolean onSettingsClick(double mouseX, double mouseY) {
+        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(
+            layout.filter().x(), layout.filter().y(), layout.filter().w(),
+            layout.grid().bottom() - layout.filter().y());
+        List<CommandMenuEntry> rows = settingsRows();
+        int visible = Math.max(1, r.h() / EditorDetailPane.ROW_H);
+        int idx = settingsRowAt(mouseX, mouseY, r, rows, visible);
+        if (idx < 0) return false;
+        int sub = MenuRowPainter.hitCell(rows.get(idx), (int) mouseX, r.x(), r.right());
+        if (sub < 0) return false;
+        dispatchAt(rows.get(idx), sub);
+        return true;
+    }
+
+    private void dispatch(CommandMenuEntry entry) {
+        dispatchAt(entry, 0);
+    }
+
+    private void dispatchAt(CommandMenuEntry entry, int sub) {
+        if (entry == null) return;
+        modal.dispatch(entry, sub);
+    }
+
+    private void click() {
+        if (this.minecraft != null && this.minecraft.getSoundManager() != null) {
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+        }
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (orbit.isDragging()) {
+            orbit.drag((float) dragX);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (orbit.isDragging()) {
+            orbit.endDrag();
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    /** The wheel scrolls whichever list is under it; anywhere else it reaches the hotbar. */
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (scrollY == 0) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        if (modal.isOpen()) return modal.mouseScrolled(mouseX, mouseY, scrollY);
+        int dir = scrollY > 0 ? -1 : 1;
+        if (EditorScreenState.page().isBrowser() && browser.overGrid(mouseX, mouseY)) {
+            if (browser.scrollBy(dir)) return true;
+        }
+        if (!EditorScreenState.page().isBrowser() && layout != null && layout.grid().contains(mouseX, mouseY)) {
+            settingsScroll = Math.max(0, settingsScroll + dir);
+            return true;
+        }
+        if (detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) return true;
+        if (HotbarPassthrough.scroll(this.minecraft, scrollY)) return true;
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (modal.isTyping()) {
+            switch (keyCode) {
+                case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> { modal.submitTyped(); return true; }
+                case GLFW.GLFW_KEY_ESCAPE -> { modal.cancelTyping(); return true; }
+                case GLFW.GLFW_KEY_BACKSPACE -> { modal.backspace(); return true; }
+                default -> { return true; }
+            }
+        }
+        if (filterBox != null && filterBox.isFocused() && filterBox.visible) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                setFocused(null);
+                return true;
+            }
+            return filterBox.keyPressed(keyCode, scanCode, modifiers) || true;
+        }
+        if (CommandMenuKeyBindings.TOGGLE.matches(keyCode, scanCode)) {
+            this.onClose();
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (!modal.pop()) this.onClose();
+            return true;
+        }
+        if (HotbarPassthrough.key(this.minecraft, keyCode, scanCode)) return true;
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (modal.isTyping()) return modal.charTyped(codePoint);
+        return super.charTyped(codePoint, modifiers);
+    }
+
+    @Override
+    public void onClose() {
+        modal.closeAll();
+        super.onClose();
+    }
+
+    /** Whether any plot anywhere has unsaved edits — the header icon's colour. */
+    static boolean anyDirty(List<EditorDirtyCheck.DirtyEntry> rows) {
+        if (rows == null) return false;
+        for (EditorDirtyCheck.DirtyEntry row : rows) {
+            if (row.isUnsaved()) return true;
+        }
+        return false;
+    }
+}
