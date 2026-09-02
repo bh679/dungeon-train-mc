@@ -11024,9 +11024,9 @@
     {
       "id": "portal-carriage-bookshelf-removal",
       "version": "0.787.0",
-      "type": "content",
-      "title": "Portal carriages no longer carry bookshelves",
-      "summary": "Chiselled bookshelves and their books are gone from the portal and tunnel carriages. Books come from the library portal rooms.",
+      "type": "fix",
+      "title": "Minor fixes",
+      "summary": "Small fixes and adjustments.",
       "highlights": [],
       "date": "2026-09-02",
       "released": false,
