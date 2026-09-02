@@ -63,6 +63,9 @@ public final class ShaderDiagnostics {
     private static volatile boolean skyboxStencil;
     private static volatile boolean skyboxDrew;
 
+    // --- Sticky: what the level framebuffer's stencil attachment was, last time the punch looked --
+    private static volatile String levelFboStencil = "";
+
     // --- Lightmap-paced: dimensional carriage sky/lighting and the transition --------------------
     private static volatile String roomSkyKind = "";
     private static volatile float roomSkyT;
@@ -181,6 +184,15 @@ public final class ShaderDiagnostics {
         fogCancelled = cancelled;
     }
 
+    /**
+     * The stencil attachment type of the framebuffer the level was rendering into, as read at
+     * {@code AFTER_SKY}. Sticky rather than per-frame: it is a property of the pipeline, not of
+     * the frame, and the panel is more useful showing the last reading than a blank.
+     */
+    public static void recordLevelFboStencil(String type) {
+        levelFboStencil = type == null ? "" : type;
+    }
+
     /** The skybox punch pass' outcome for this frame. */
     public static void recordSkybox(int cubes, String variants, boolean stencil, boolean drew) {
         skyboxCubes = cubes;
@@ -241,6 +253,8 @@ public final class ShaderDiagnostics {
     public static boolean cloudsCancelled() { return cloudsCancelled; }
     public static float cloudHeightVanilla() { return cloudHeightVanilla; }
     public static float cloudHeightApplied() { return cloudHeightApplied; }
+
+    public static String levelFboStencil() { return levelFboStencil; }
 
     public static int skyboxCubes() { return skyboxCubes; }
     public static String skyboxVariants() { return skyboxVariants; }

@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL30;
 import org.slf4j.Logger;
 
 /**
@@ -117,6 +118,24 @@ public final class SkyboxStencil {
      */
     public static boolean isDrawingSurfaceSky() {
         return drawingSurfaceSky;
+    }
+
+    /**
+     * What the <em>currently bound</em> framebuffer has at its stencil attachment:
+     * {@code "texture"}, {@code "renderbuffer"} or {@code "none"}.
+     *
+     * <p>Distinct from {@link #isAvailable()}, which only asks the main render target. Under Iris
+     * the level renders into Iris' own framebuffers, and whether stencil works there depends on
+     * Iris having attached the main target's combined depth-stencil texture — a fact to be read
+     * off the GL object, not assumed. Must be called on the render thread with the level's
+     * framebuffer bound, i.e. from inside a {@code RenderLevelStageEvent}.</p>
+     */
+    public static String boundFramebufferStencil() {
+        int type = GL30.glGetFramebufferAttachmentParameteri(GL30.GL_FRAMEBUFFER,
+            GL30.GL_STENCIL_ATTACHMENT, GL30.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE);
+        if (type == GL11.GL_TEXTURE) return "texture";
+        if (type == GL30.GL_RENDERBUFFER) return "renderbuffer";
+        return "none";
     }
 
     /** Clear stencil and configure it for the mask pass. Pair with {@link #endStencil()}. */

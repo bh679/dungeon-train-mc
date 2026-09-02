@@ -106,7 +106,9 @@ public final class ShaderDiagnosticsHud {
             ShaderCompat.active() ? COLOR_ACTIVE : COLOR_IDLE));
 
         GraphicsCapabilities.GraphicsMode mode = GraphicsCapabilities.graphicsMode();
-        lines.add(new Line("Stencil: " + yesNo(SkyboxStencil.isAvailable())
+        String fboStencil = ShaderDiagnostics.levelFboStencil();
+        lines.add(new Line("Stencil: main " + yesNo(SkyboxStencil.isAvailable())
+            + "  level fbo " + (fboStencil.isEmpty() ? NONE : fboStencil)
             + "   Gfx: " + (mode == null ? NONE : mode.name().toLowerCase(Locale.ROOT))
             + "   DH: " + yesNo(GraphicsCapabilities.distantHorizonsActive()), COLOR_IDLE));
 

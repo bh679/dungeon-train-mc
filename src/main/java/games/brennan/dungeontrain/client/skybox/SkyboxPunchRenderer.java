@@ -79,10 +79,11 @@ import java.util.UUID;
  * <h2>Shader packs</h2>
  * <p>Iris shades a deferred gbuffer. A colour-masked depth write leaves the albedo and normal
  * attachments untouched, so the composite pass would shade those pixels from cleared gbuffer
- * data — black, not sky. Rather than ship a known-wrong image we disable everything under a
- * shader pack, leaving the blocks simply invisible. The gate itself lives in
- * {@link ShaderCompat#allows} alongside the other four atmosphere systems' verdicts, so a future
- * measurement changes one table rather than this class.</p>
+ * data — black, not sky. Under a pack the punch therefore runs stencil-free (no per-variant
+ * sky pass; the pack owns the sky) and a second pass at {@code AFTER_WEATHER},
+ * {@link SkyboxHoleReopen}, pushes every hole pixel that is still visible back to the far plane
+ * so the composite paints the pack's own sky there. The on/off verdict lives in
+ * {@link ShaderCompat#allows} alongside the other atmosphere systems'.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class SkyboxPunchRenderer {
@@ -99,7 +100,10 @@ public final class SkyboxPunchRenderer {
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
+        RenderLevelStageEvent.Stage stage = event.getStage();
+        boolean afterSky = stage == RenderLevelStageEvent.Stage.AFTER_SKY;
+        boolean afterWeather = stage == RenderLevelStageEvent.Stage.AFTER_WEATHER;
+        if (!afterSky && !afterWeather) return;
 
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
@@ -107,9 +111,20 @@ public final class SkyboxPunchRenderer {
 
         Camera camera = event.getCamera();
         Vec3 cam = camera.getPosition();
-        // Feed the indexer even when the effect is disabled: it costs nothing and means
-        // re-enabling mid-session has a warm index on the next sweep.
-        SkyboxBlockIndex.reportCamera(cam);
+        boolean shaders = ShaderCompat.active();
+
+        if (afterSky) {
+            // Feed the indexer even when the effect is disabled: it costs nothing and means
+            // re-enabling mid-session has a warm index on the next sweep.
+            SkyboxBlockIndex.reportCamera(cam);
+            if (ShaderDiagnostics.recording()) {
+                ShaderDiagnostics.recordLevelFboStencil(SkyboxStencil.boundFramebufferStencil());
+            }
+        } else if (!shaders) {
+            // The reopen pass exists only for a deferred pack. Vanilla's sky pixels under the
+            // punch are already the sky, and its per-variant skies were drawn at AFTER_SKY.
+            return;
+        }
 
         if (!ClientDisplayConfig.isSkyboxPunchEnabled()) return;
 
@@ -117,7 +132,7 @@ public final class SkyboxPunchRenderer {
         // lets the diagnostics panel tell "no skybox blocks near the camera" apart from "blocks
         // are right here and the pack has the effect switched off".
         SkyboxBlockIndex.Snapshot snapshot = SkyboxBlockIndex.snapshot();
-        if (ShaderDiagnostics.recording()) {
+        if (afterSky && ShaderDiagnostics.recording()) {
             ShaderDiagnostics.recordSkybox(countCubes(snapshot), describeVariants(snapshot),
                 SkyboxStencil.isAvailable(), false);
         }
@@ -128,14 +143,29 @@ public final class SkyboxPunchRenderer {
         Matrix4f frustumMatrix = event.getModelViewMatrix();
         Frustum frustum = event.getFrustum();
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-
         Map<UUID, ClientSubLevel> subLevels = indexSubLevels(level, snapshot);
+
+        if (afterWeather) {
+            // Under a pack: mark the hole pixels nothing has covered since the punch, and push
+            // them back to the far plane so the composite treats them as sky. Same meshes, same
+            // matrices as the punch — see SkyboxHoleReopen for why this is a stencil pass.
+            SkyboxHoleReopen.run(() -> {
+                for (SkyboxSky sky : SkyboxSky.values()) {
+                    MeshData mesh = buildMesh(sky, snapshot, subLevels, frustumMatrix, frustum, cam, partialTick);
+                    if (mesh != null) BufferUploader.drawWithShader(mesh);
+                }
+            });
+            return;
+        }
+
         EnumSet<SkyboxSky> painted = EnumSet.noneOf(SkyboxSky.class);
 
         // Only variants that draw their own sky need the mask. A view containing nothing but
         // LIVE blocks does no stencil work at all — that variant is satisfied by the punch.
-        boolean wantsStencil = snapshot.main().keySet().stream().anyMatch(SkyboxSky::hasOwnSky)
-            || snapshot.subLevels().stream().anyMatch(e -> e.byVariant().keySet().stream().anyMatch(SkyboxSky::hasOwnSky));
+        // Under a pack no variant draws its own sky (the pack's composite owns the sky), so the
+        // punch runs stencil-free and the reopen pass above does the rest.
+        boolean wantsStencil = !shaders && (snapshot.main().keySet().stream().anyMatch(SkyboxSky::hasOwnSky)
+            || snapshot.subLevels().stream().anyMatch(e -> e.byVariant().keySet().stream().anyMatch(SkyboxSky::hasOwnSky)));
         boolean stencil = wantsStencil && SkyboxStencil.isAvailable();
 
         try {

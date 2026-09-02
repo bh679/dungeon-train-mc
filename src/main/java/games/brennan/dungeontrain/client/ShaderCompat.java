@@ -142,12 +142,12 @@ public final class ShaderCompat {
     public static boolean allows(Feature feature) {
         if (!active()) return true;
         return switch (feature) {
-            // Measured, and the reason is written up on SkyboxPunchRenderer: the effect is a
-            // colour-masked depth write, which reaches Iris' composite with cleared albedo and
-            // normal and resolves black rather than sky.
-            case SKYBOX_BLOCKS -> false;
-            // Not yet measured. Left rendering exactly as it does today rather than pre-emptively
-            // disabled — an effect a pack partly honours is worth more than a blank one.
+            // The depth punch alone reached Iris' composite as a black wall (cleared gbuffer at
+            // the cube's depth). SkyboxHoleReopen now pushes the still-visible hole pixels back
+            // to the far plane at AFTER_WEATHER, so the pack paints its own sky there.
+            case SKYBOX_BLOCKS -> true;
+            // Left rendering exactly as it does today rather than pre-emptively disabled — an
+            // effect a pack partly honours is worth more than a blank one.
             case BAND_SKYBOX, CARRIAGE_FOG, CARRIAGE_SKY_LIGHTING, CARRIAGE_TRANSITION -> true;
         };
     }
@@ -158,7 +158,7 @@ public final class ShaderCompat {
      */
     public static String reason(Feature feature) {
         if (!active()) return "no pack";
-        if (feature == Feature.SKYBOX_BLOCKS) return "off: gbuffer punch unshaded";
+        if (feature == Feature.SKYBOX_BLOCKS) return "on: punch + far-plane reopen (pack sky)";
         return "on: unmeasured";
     }
 
