@@ -59,6 +59,18 @@ for pack in "${PACKS[@]}"; do
     else
         printf 'enableShaders=true\nshaderPack=%s\nmaxShadowRenderDistance=32\n' "$pack" > run/config/iris.properties
     fi
+    # SWEEP_FRESH_SAVE=1 restores a pristine save before every pack.
+    #
+    # Off by default, and the reason is cost. It does remove "something accumulated in the reused
+    # world" as an explanation for the carriage room engaging for the first few packs and never
+    # again — but it also deletes every region file the earlier runs generated, so each pack pays
+    # for cold worldgen twice over. A validation run stalled past a three-minute join on exactly
+    # that. The room-box diagnostic answers the same question for free, so this is kept for when a
+    # result needs isolating rather than paid on every sweep.
+    if [ "${SWEEP_FRESH_SAVE:-0}" = "1" ] && [ -d "run/saves-template/$WORLD" ]; then
+        echo "  restoring pristine save (SWEEP_FRESH_SAVE=1 — expect a slow first join)"
+        rsync -a --delete "run/saves-template/$WORLD/" "run/saves/$WORLD/"
+    fi
     rm -f "$LOG"
 
     ./gradlew runClient --no-daemon -PshaderSweep="$WORLD" >"run/logs/sweep-launch.out" 2>&1 &

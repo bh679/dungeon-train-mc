@@ -179,81 +179,108 @@ File the results as `test-results/gate2-shader-compat-2026-09/<pack-id>-<site>.p
 
 ## Results
 
-**Status: partial. One sweep of twelve runs completed 2026-09-02; the band column is measured, the
-carriage column is not.** Read the caveats before quoting any of this.
+**Measured 2026-09-02**, one sweep, one build, one world (`SweepWorld`), Sodium 0.8.12 + Iris
+1.8.14-beta.1 — the pair `modpack.config.json` pins. Ten packs captured, two rejected as
+non-loading. Every pack returned 8/8 distinct frames and no stale-capture warnings, and DT's own ask
+was identical in all ten (`Band sky drawn` at ~1.0, `room DAY t=1.000 lift=0.250`), so every
+difference below is the pack's doing rather than DT's.
 
-### Pack load failures — the one unambiguous result
+### Two packs do not load at all
 
-Two of the eleven packs **do not load at all** on Iris `1.8.14-beta.1`, the build
-`modpack.config.json` pins:
-
-| Pack | Outcome |
+| Pack | Outcome on Iris 1.8.14-beta.1 |
 |---|---|
 | FOOTAGE 1.0 | `Unable to parse scale directive for composite1: 0.67 0.67` → `ArrayIndexOutOfBoundsException` → `Failed to create shader rendering pipeline, disabling shaders!` |
-| Solas 3.7b | Same signature: produced no captures, Iris fell back to no shaders |
+| Solas 3.7b | `Failed to create shader rendering pipeline, disabling shaders!` |
 
-Both are pack-authoring bugs against this Iris, not Dungeon Train problems. They matter here because
-Iris answers a failed pack by silently disabling shaders and carrying on — so a sweep run keeps
-going with no pack at all. `ShaderSweep` now refuses to capture in that state
-(`pack failed to load`); before that guard existed, those runs wrote their screenshots over the
-control's.
+Both reproduced twice, on two different worlds. These are pack-authoring bugs against this Iris, not
+Dungeon Train problems — but they are worth knowing before either is listed as supported, and worth
+re-testing if the pinned Iris moves.
 
-### Band atmosphere — measured
+### Skyboxes in bands — every pack replaces DT's sky
 
-Mean luma of the sky region (top 15–65% of frame, left of the panel), against the no-shader control.
-The scenes are genuinely dark — the void, the Nether's `#330808`, the underside of the upside-down
-band — so these are small absolute numbers and the ratio is what carries meaning.
+The upside-down band is the decisive site because DT paints it a flat, known colour:
+`SKY_RGB = 0x84B4E8` = `(132, 180, 232)`. With shaders off the frame comes back at
+**exactly (132.0, 180.0, 232.0)** — so the site is looking at nothing but DT's dome, and any
+departure is the pack overwriting it.
+
+| Pack | mean sky RGB | distance from DT's colour | what the frame shows |
+|---|---|---|---|
+| none (control) | (132.0, 180.0, 232.0) | 0.0 | DT's flat dome |
+| complementary_unbound | (111.2, 134.5, 178.8) | 73.0 | its own daylit sky, with a sun |
+| spooklementary | (77.4, 74.1, 74.5) | 197.5 | grey overcast |
+| hysteria | (27.4, 49.7, 71.0) | 232.1 | dark |
+| bsl | (18.7, 34.6, 44.4) | 263.0 | **night sky with stars** |
+| bliss | (10.8, 25.0, 46.0) | 270.8 | dark |
+| makeup_ultra_fast | (17.8, 22.8, 29.2) | 280.8 | dark |
+| insanity | (24.2, 20.0, 17.2) | 288.7 | dark |
+| complementary_reimagined | (10.3, 16.2, 25.1) | 290.6 | dark |
+| sildurs | (4.1, 5.6, 7.2) | 312.0 | near-black |
+
+**All nine loading packs discard the band sky dome.** Complementary Unbound is the closest numerically
+only because its own sky is also blue — the image shows its atmosphere and a sun, not DT's flat fill.
+BSL renders a *night sky with stars* where the control shows day, which is the clearest possible
+demonstration: DT submitted the dome (`Band sky drawn: flip 1.000` in every panel) and the pack's
+composite painted over it.
+
+The same pattern holds on the two dark bands, in the other direction — packs brighten the void and
+Nether 1.9-6.4x over vanilla, again because what is on screen is the pack's atmosphere rather than
+DT's:
 
 | Pack | void | nether | upside-down |
 |---|---|---|---|
-| none (control) | 11.1 | 10.7 | 12.9 |
-| complementary_unbound | 19.9 (1.80×) | 19.8 (1.86×) | 19.8 (1.54×) |
-| bsl | 13.0 (1.17×) | 17.1 (1.60×) | 16.6 (1.29×) |
-| insanity | 12.4 (1.12×) | 10.1 (0.95×) | 13.2 (1.03×) |
-| sildurs | 11.0 (1.00×) | 11.1 (1.04×) | 12.1 (0.94×) |
-| complementary_reimagined | 10.4 (0.94×) | 11.5 (1.08×) | 12.0 (0.93×) |
-| makeup_ultra_fast | 11.0 (0.99×) | 10.1 (0.95×) | 11.1 (0.86×) |
-| hysteria | 10.7 (0.96×) | 10.3 (0.96×) | 10.9 (0.84×) |
-| bliss | 10.4 (0.94×) | 10.6 (1.00×) | 10.6 (0.82×) |
-| spooklementary | 10.2 (0.92×) | 10.2 (0.95×) | 10.2 (0.80×) |
+| none (control) | 16.7 | 23.1 | 165.5 |
+| complementary_unbound | 5.90x | 6.17x | 0.91x |
+| hysteria | 6.44x | 3.86x | 0.47x |
+| insanity | 5.25x | 4.79x | 0.14x |
+| complementary_reimagined | 1.89x | 1.91x | 0.23x |
+| bsl | 1.92x | 1.51x | 0.21x |
+| bliss | 1.86x | 1.08x | 0.17x |
 
-In every run DT's own ask was identical and correct — `bandSky void/nether/flip` at ~1.0 with the
-fog tint applied — so the differences above are the pack's doing, not DT's.
+> Caveat: world time is not pinned. Each run reaches each site at roughly the same elapsed time, so
+> drift between packs is small, and DT's dome is a fixed-colour fill that does not vary with time —
+> but a pack's own sky does. Pinning `/time set day` per site would remove the variable entirely.
 
-**What this supports:** Complementary Unbound and BSL materially brighten the band atmosphere
-(1.5–1.9×); Spooklementary, Bliss and Hysteria slightly darken it; the rest track vanilla.
+### Dimensional carriage sky & lighting — asked for everywhere, not yet proven visible
 
-**What this does NOT support:** any claim that a pack discards DT's sky dome. The sites frame the
-band *environment* from where the train puts the camera, not the dome itself — in the upside-down
-band the day sky is below the train and out of shot entirely. Answering "does the dome survive"
-needs a site that puts the camera in open air aimed at it. That is the first thing to fix next.
+Every pack applied the lift: `room(DAY t=1.000 lift=0.250)` with the camera verified inside the
+server-named box (`roomBox=DAY[85..96, 230..236, 565..576]`). What the sweep cannot yet say is
+whether the lift *survives* a pack, because a lightmap lift is a subtle change to an already-lit
+scene and there is no A/B in the run. Answering it needs the same site captured twice per pack, once
+with the lift forced off — a small addition, and the obvious next step.
 
-### Carriage fog / sky & lighting — NOT measured
+### Dimensional carriage fog — not measurable from the plot
 
-Only `complementary_reimagined` and `complementary_unbound` ever produced a live room
-(`fogDist 192→60 cancelled=true`, `room DAY t=1.000 lift=0.250`). Every pack after them read
-`room(NONE t=0.000)` with byte-identical setup chat, including the three that ran a harness with a
-`portal test back` sweep added on the theory that stamps were accumulating in the reused save. That
-theory was wrong — the fix changed nothing — and the cause is still unknown. Two data points out of
-ten is not a column.
+`fogBox=none` at every site in every run. The fog is only sent for a structure the server considers
+occupied, and the editor plot is not one. Two packs produced live fog in an earlier sweep from the
+`portal test` twin on a reused world; on a clean world the twin sends no fog box at all. Unresolved.
 
-### Skybox blocks — not informative
+### Skybox Blocks — DT's own gate, not a measurement
 
-`ShaderCompat.allows` gates the effect off under every pack, so every shader row is "off by DT's own
-decision". Only the control cell could carry information, and that site was the most fragile of the
-eight.
+`ShaderCompat.allows` returns false under every pack, so every shader row would read "off" by our own
+decision. Only the control's cell could inform, and that site remained the most fragile of the eight.
 
-### The transition — not reachable
+### The transition — structurally unreachable
 
-Unchanged from the note above: `portal test` stamps a twin with no train and nothing that swaps, so
-`crossing` reads `0.000` everywhere.
+`portal test` stamps a twin with no train and nothing that swaps, so `ClientPortalCrossing` reads
+`0.000` everywhere. Measuring it needs a real portal crossing in play.
 
-## What the next pass has to do
+## What this means for the five systems
 
-1. **Aim the band sites at the sky.** Spectator, absolute coordinates over a forceloaded chunk,
-   above the train, camera pitched at the dome — the shape the skybox site eventually needed.
-2. **Find out why the room stops engaging.** Two packs worked, eight did not, with identical setup
-   chat. Suspect world state, not the packs; a fresh save per run would isolate it.
-3. **Run the sweep once, from a clean save, on one build.** This sweep is not internally consistent:
-   `gradle runClient` recompiles per launch, so mid-sweep source edits reached the later packs and
-   three of them ran a different harness than the first seven.
+| System | Verdict |
+|---|---|
+| Skyboxes in bands | **Broken under every pack.** The dome is drawn and then overwritten by the pack's own atmosphere. Needs the post-composite approach — nothing cheaper will do it. |
+| Skybox blocks | Off by DT's gate; unchanged. |
+| Carriage fog | Unknown — not reachable from the editor plot. |
+| Carriage sky & lighting | Applied under every pack; visibility unproven pending a lift-on/lift-off A/B. |
+| Carriage transition | Not measurable without a live crossing. |
+
+The band result is the one that settles a design question: since every pack replaces the sky rather
+than tinting it, per-pack overrides in `ShaderCompat.allows` cannot rescue the band skyboxes. Drawing
+DT's atmosphere after the pack's composite is the only approach that survives, which is exactly the
+expensive option this matrix existed to justify or rule out.
+
+## Evidence
+
+`test-results/gate2-shader-compat-2026-09/` — per-site contact sheets (all packs, control first) and
+`upside-down-band-comparison.png`, which shows the control's flat dome against Complementary
+Unbound's sun, BSL's starfield and Sildur's black.

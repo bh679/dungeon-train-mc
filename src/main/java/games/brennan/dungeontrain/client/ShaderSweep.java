@@ -86,7 +86,7 @@ public final class ShaderSweep {
      * with Sable, shaders and a cold chunk cache can take well over a minute, and the cost of
      * waiting too long is a slower sweep while the cost of waiting too little is no sweep at all.</p>
      */
-    private static final int JOIN_TIMEOUT_TICKS = 3600;
+    private static final int JOIN_TIMEOUT_TICKS = 12000;
 
     /** Ticks after the player exists before the first site — chunks, the train, the join popups. */
     private static final int SETTLE_TICKS = 400;
@@ -112,6 +112,12 @@ public final class ShaderSweep {
      * as "never asked" and say nothing about the pack.
      */
     private static final String CARRIAGE_ROOM = "backrooms";
+
+    /** Where a band shot is taken from: above every build, clear of the track, looking up. */
+    private static final int BAND_VIEW_Y = 250;
+    private static final int BAND_VIEW_Z = 0;
+    /** Pitched up far enough to fill the frame with sky, shallow enough to keep a horizon for scale. */
+    private static final int BAND_VIEW_PITCH = -55;
 
     /** A command of the form {@code wait:<ticks>} pauses the setup instead of being sent. */
     private static final String WAIT_PREFIX = "wait:";
@@ -432,7 +438,14 @@ public final class ShaderSweep {
             "dungeontrain editor portals enter " + CARRIAGE_ROOM,
             WAIT_PREFIX + "160",
             "dungeontrain editor portals mode endless_repetition",
-            "dungeontrain editor portals sky day"), CARRIAGE_TICKS));
+            "dungeontrain editor portals sky day",
+            WAIT_PREFIX + "60",
+            // Drop into the room's own box. The editor leaves the camera standing ON the plot
+            // floor, which the diagnostics showed is a couple of blocks ABOVE the box the server
+            // names — cam y=238 against roomBox y=230..236 — so the lift was never applied to a
+            // camera that was, by inches, outside the room it was measuring.
+            "tp @s ~ ~-5 ~ 0 0",
+            WAIT_PREFIX + "60"), CARRIAGE_TICKS));
         // Both captures are taken INSIDE the room. `portal test` lands the camera in the doorway,
         // which is on the edge of the room's own box — and the corridor ramp that would carry the
         // lift across that edge is dead in a twin with no train, so a doorway shot is a coin toss
@@ -447,6 +460,22 @@ public final class ShaderSweep {
         return out;
     }
 
+    /**
+     * A band stop, framed on the sky rather than on whatever the train happens to be pointing at.
+     *
+     * <p>The first sweep took these shots from wherever {@code /dtp} left the camera — on the train,
+     * usually inside a carriage. Every frame came back near black, and the numbers said so: mean
+     * luma 10-13 of 255 for every pack including the control. That measures the inside of a
+     * carriage, not the band's sky. The upside-down band was the clearest case, because its day sky
+     * is drawn <em>below</em> the train and was never in shot at all.</p>
+     *
+     * <p>So: ride in with {@code /dtp} (which is what makes the band state and the chunks real),
+     * then step off it. Spectator holds the camera still where a rider would be carried away;
+     * absolute coordinates over a forceloaded chunk because a rider sits on a Sable sub-level and
+     * the server resolves {@code ~} in far shipyard space; Y 250 is above every build; and the pitch
+     * puts the dome in frame. Band intensity is a function of world-X alone, so moving up and
+     * sideways costs nothing.</p>
+     */
     private static void addBandSite(List<Site> out, String id, double fromX, DoubleUnaryOperator ramp) {
         int x = scanForBand(fromX, ramp);
         if (x == Integer.MIN_VALUE) {
@@ -455,7 +484,14 @@ public final class ShaderSweep {
             return;
         }
         LOGGER.info("[DungeonTrain] sweep: '{}' band found at x={}", id, x);
-        out.add(new Site(id, List.of("dtp " + x), SITE_TICKS));
+        out.add(new Site(id, List.of(
+            "gamemode creative",
+            "dtp " + x,
+            WAIT_PREFIX + "300",
+            "gamemode spectator",
+            "forceload add " + (x - 16) + " " + (BAND_VIEW_Z - 16) + " " + (x + 16) + " " + (BAND_VIEW_Z + 16),
+            "tp @s " + x + " " + BAND_VIEW_Y + " " + BAND_VIEW_Z + " 0 " + BAND_VIEW_PITCH,
+            WAIT_PREFIX + "200"), SITE_TICKS));
     }
 
     /**
@@ -517,6 +553,27 @@ public final class ShaderSweep {
             ShaderDiagnostics.fmt(ShaderDiagnostics.roomSkyT()),
             ShaderDiagnostics.fmt(ShaderDiagnostics.roomSkyLift()),
             ShaderDiagnostics.fmt(ShaderDiagnostics.crossingT()));
+        logRoomGeometry(site);
+    }
+
+    /**
+     * Where the camera is, and which room boxes the server has named it.
+     *
+     * <p>The carriage sites read {@code room(NONE t=0)} for eight packs out of ten with byte-identical
+     * setup chat, and {@code t=0} alone cannot say whether the server never sent a room or sent one
+     * the camera is standing outside. These two lines answer that in one run instead of another
+     * sweep.</p>
+     */
+    private static void logRoomGeometry(Site site) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        LOGGER.info("[DungeonTrain] sweep[{}] cam=({}, {}, {}) roomBox={} fogBox={}",
+            site.id(),
+            String.format(Locale.ROOT, "%.1f", mc.player.getX()),
+            String.format(Locale.ROOT, "%.1f", mc.player.getY()),
+            String.format(Locale.ROOT, "%.1f", mc.player.getZ()),
+            ClientPortalRoomSky.describeRegion(),
+            ClientPortalRoomFog.describeRegion());
     }
 
     /**
