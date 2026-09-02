@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.cheat.KeepInventoryIntegrity;
 import games.brennan.dungeontrain.cheat.OperatorIntegrity;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.cheat.UnapprovedModIntegrity;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ShowFreePlayConfirmPacket;
@@ -239,6 +240,22 @@ public final class CheatDetectionEvents {
                     String.join(", ", CheatModIntegrity.detected()))
                 .withStyle(ChatFormatting.GRAY));
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.cheat_mods_fix")
+                .withStyle(ChatFormatting.GRAY));
+        }
+        if (UnapprovedModIntegrity.isSessionFreePlay()) {
+            // The whitelist's half of the same story (parallel to the cheat-mod block above): a mod
+            // is installed that we haven't approved. Deliberately worded as "not on the approved
+            // list" rather than as an accusation — most of these are ordinary mods nobody has got
+            // round to reviewing, and the run is recoverable by removing them. Known cheat mods are
+            // excluded from this list upstream, so the two notices never name the same mod.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.unapproved_mod"));
+            player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.free_play.unapproved_mods",
+                    String.join(", ", UnapprovedModIntegrity.detected()))
+                .withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.unapproved_mods_fix")
                 .withStyle(ChatFormatting.GRAY));
         }
         if (OperatorIntegrity.isSessionFreePlay()) {
