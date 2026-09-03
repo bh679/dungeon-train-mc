@@ -80,6 +80,17 @@ public final class ClientDisplayConfig {
     public static final boolean DEFAULT_EDITOR_PLOT_LIGHTING = true;
 
     /**
+     * Whether the debug screen reports a surface Y inside a dimensional carriage.
+     *
+     * <p>On, because the illusion is the feature: a dimensional carriage is stamped in the real
+     * carriage's own chunk columns, so F3 already agrees about X and Z and then prints the depth of
+     * the sealed lane it was stamped into and gives the whole thing away. The switch exists for
+     * whoever is debugging a portal room rather than riding one — F3 is a debug tool, and there has
+     * to be a way to get the true numbers back.</p>
+     */
+    public static final boolean DEFAULT_PORTAL_ROOM_SURFACE_COORDINATES = true;
+
+    /**
      * The tighter distance {@code AUTO} applies while the player stands in a template, in blocks.
      *
      * <p>Lives here beside its sibling so the config comment can name it and the two numbers are
@@ -154,6 +165,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue MENU_RENDER_DISTANCE;
     /** Whether a portal room's Sky lights its editor plot. See {@link #isEditorPlotLighting()}. */
     public static final ModConfigSpec.BooleanValue EDITOR_PLOT_LIGHTING;
+    /** Whether F3 lies about Y in a dimensional carriage. See {@link #isPortalRoomSurfaceCoordinates()}. */
+    public static final ModConfigSpec.BooleanValue PORTAL_ROOM_SURFACE_COORDINATES;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
@@ -307,6 +320,7 @@ public final class ClientDisplayConfig {
         EDITOR_PLOT_LIGHTING = pair.getLeft().editorPlotLighting;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
+        PORTAL_ROOM_SURFACE_COORDINATES = pair.getLeft().portalRoomSurfaceCoordinates;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
@@ -441,6 +455,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalCrossingFade = b
                 .comment("Fade a portal carriage's lighting into a flat hold as you walk toward the middle of its corridor, instead of leaving each copy lit by its own doorway. A portal carriage and the twin you are swapped into are built from the same blocks, but only one of them has a real door onto the train, so light leaks into one and not the other and the brightness can jump as you cross - most visibly near the train door, where turning round is enough to swap you. The hold is the same constant in both copies, so there is nothing left for the crossing to change; it ramps in from each doorway and is at full strength between the baffles. Set false for the old hard cut.")
                 .define("crossingFade", true);
+        ModConfigSpec.BooleanValue portalRoomSurfaceCoordinates = b
+                .comment("Report a surface Y on the debug screen (F3) while you are inside a dimensional carriage, instead of the depth it is really stamped at. A dimensional carriage is a twin corridor built into the sealed space under the world - or, inside the upside-down band, above its lid - standing in the real carriage's own chunk columns. X and Z therefore already read what the carriage would give you and only Y gives the trick away, by well over a hundred blocks. On, the Y figures are shifted so the corridor floor reads at the train's own height, and the Block, Chunk and Targeted Block lines are moved to agree with it; everything else on the screen, the biome and light levels included, is untouched and true. Set false to see where a portal room really is - which is what you want if you are debugging one rather than riding it. Client-side display only: nothing about the world moves.")
+                .define("roomSurfaceCoordinates", DEFAULT_PORTAL_ROOM_SURFACE_COORDINATES);
         b.pop();
 
         b.push("scribble");
@@ -647,7 +664,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, portalRoomSurfaceCoordinates, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
@@ -1405,6 +1422,19 @@ public final class ClientDisplayConfig {
         return isLoaded() ? EDITOR_PLOT_LIGHTING.get() : DEFAULT_EDITOR_PLOT_LIGHTING;
     }
 
+    /**
+     * Whether the debug screen reports a surface Y while the camera is inside a dimensional carriage.
+     *
+     * <p>Defaults to {@link #DEFAULT_PORTAL_ROOM_SURFACE_COORDINATES} before the config loads and
+     * when it never does, so a client with no config file behaves like one that has just accepted the
+     * default. Read per frame through {@code ClientPortalRoomDepth.shiftAt}, so switching it takes
+     * effect immediately and with nothing re-sent from the server.</p>
+     */
+    public static boolean isPortalRoomSurfaceCoordinates() {
+        return isLoaded() ? PORTAL_ROOM_SURFACE_COORDINATES.get()
+            : DEFAULT_PORTAL_ROOM_SURFACE_COORDINATES;
+    }
+
     /** Persist the editor plot lighting preference. Idempotent — skips the TOML write when unchanged. */
     public static void setEditorPlotLighting(boolean on) {
         if (!isLoaded()) return;
@@ -1604,6 +1634,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue portalCrossingFade,
+            ModConfigSpec.BooleanValue portalRoomSurfaceCoordinates,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue creativeShiftClickToHotbar,

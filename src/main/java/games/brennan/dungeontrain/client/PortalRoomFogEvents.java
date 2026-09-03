@@ -95,5 +95,8 @@ public final class PortalRoomFogEvents {
         // The twin boxes are a region cache like the first two, and stale ones would have the next
         // world declining to predict a shulker box in mid-air where a twin used to be.
         games.brennan.dungeontrain.client.portal.ClientPortalTwinBoxes.reset();
+        // And the debug screen's Y disguise, which is the same shape of cache again — a stale one
+        // would have the next world's F3 reading a hundred blocks off wherever the player landed.
+        ClientPortalRoomDepth.reset();
     }
 }

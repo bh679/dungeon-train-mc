@@ -222,13 +222,18 @@ public final class PortalTestCommand {
         }
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
 
-        // Take the room's fog, daylight and train audio back. The same call the ticker makes, run
-        // once more now that the player is standing outside the structure: the send pass finds
-        // nobody inside and the clear pass lifts all three. Without it the ticker simply stops —
-        // the session is gone — and they would walk around the plot still fogged.
+        // Take the room's fog, daylight, train audio and depth disguise back. The same call the
+        // ticker makes, run once more now that the player is standing outside the structure: the send
+        // pass finds nobody inside and the clear pass lifts all four. Without it the ticker simply
+        // stops — the session is gone — and they would walk around the plot still fogged.
+        //
+        // groundY only reaches the send pass, which finds nobody; it is read off the world anyway so
+        // that this call cannot be the one that disagrees with the ticker about the disguise.
         PortalCarriageEvents.sendRoomAmbience(dims,
             PortalCarriageBuilder.layoutFor(dims, session.structure().kind()),
-            session.structure(), java.util.List.of(player));
+            session.structure(),
+            DungeonTrainWorldData.get(overworld).getTrainY(),
+            java.util.List.of(player));
 
         // Sweep the whole WINDOW, not just the base room. footprintOf is deliberately blind to
         // tiling — copies are laid around the corridors rather than through them — so clearing only
