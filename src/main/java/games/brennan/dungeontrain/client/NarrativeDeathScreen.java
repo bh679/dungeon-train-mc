@@ -358,6 +358,9 @@ public final class NarrativeDeathScreen extends Screen {
     // This player's A/B arm for the donation page, resolved on first paint and then held: the
     // layout must not change under the cursor, and the telemetry must report one arm per visit.
     private DonateExperiment.Assignment donateAssignment = null;
+    // The card pair actually drawn this visit: the assigned arm's own, or — in the rotating arm —
+    // this death's rung of the cycle. Non-null once resolved, which is also the resolve-once latch.
+    private DonateCards.Arm donatePair = null;
     private Rect donateListViewport;        // supporter-list scroll viewport (hover / scroll hit-test)
     private Rect photosRect;
     // Trash toggle left of the reboard chip: delete the old world's save on reboard?
@@ -1771,19 +1774,30 @@ public final class NarrativeDeathScreen extends Screen {
      * requested, so the summary fetch stays anonymous.</p>
      */
     private DonateCards.Arm donateArm(DonationSummaryClient.Summary s) {
-        if (donateAssignment == null) {
+        // Everything here happens ONCE per screen. This method runs every frame, so a rotation
+        // advanced from the draw path would deal a new pair sixty times a second.
+        if (donatePair == null) {
             UUID uuid = this.minecraft != null && this.minecraft.getUser() != null
                     ? this.minecraft.getUser().getProfileId() : null;
             donateAssignment = DonateExperiment.resolve(s.experiment(), uuid, DonateCards.knownArms());
+            DonateCards.Arm assigned = DonateCards.armOf(donateAssignment.arm());
+            // A dev override changes what is DRAWN and never what is reported: the telemetry below
+            // keeps the arm this player actually belongs to, so flipping through layouts cannot
+            // write rows claiming clicks for an arm nobody was assigned.
+            DonateCards.Arm forced = DonateArmOverride.get();
+            DonateCards.Arm drawing = forced != null ? forced : assigned;
+            // The rotating arm shows a different one of the five pairs each death. The offset
+            // spreads where players start in that cycle — see DonateCards.pairFor.
+            donatePair = DonateCards.drawnPair(drawing, DonateRotationCounter.next(),
+                    uuid == null ? 0 : Math.floorMod(uuid.hashCode(), DonateCards.FIXED.size()));
             // Label the funnel from here on. Every death-screen event carries the arm, not just the
-            // Contribute click, so a difference can be traced to where in the page it happened.
-            UiAnalytics.setVariant(donateAssignment.experimentId(), donateAssignment.arm());
+            // Contribute click, so a difference can be traced to where in the page it happened. The
+            // pair rides alongside it for the rotating arm, whose arm id alone cannot say what was
+            // on screen.
+            UiAnalytics.setVariant(donateAssignment.experimentId(), donateAssignment.arm(),
+                    assigned.rotating() ? donatePair.id() : null);
         }
-        // A dev override changes what is DRAWN only — donateAssignment, and so the telemetry, keeps
-        // the arm this player actually belongs to. Flipping through layouts must not write rows
-        // claiming clicks for an arm nobody was assigned.
-        DonateCards.Arm forced = DonateArmOverride.get();
-        return forced != null ? forced : DonateCards.armOf(donateAssignment.arm());
+        return donatePair;
     }
 
     /**

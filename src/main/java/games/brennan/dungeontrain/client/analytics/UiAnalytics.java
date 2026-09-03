@@ -143,6 +143,11 @@ public final class UiAnalytics {
      */
     private static volatile String experimentId = null;
     private static volatile String variant = null;
+    // Which card pair was on screen. Only the rotating arm sets this — a fixed arm's id already
+    // says what it drew — and it is a SEPARATE dimension from `variant` on purpose: the arm is the
+    // treatment being compared, the pair is a detail inside one arm's rows. Folding the pair into
+    // the variant would create five phantom arms nobody was assigned to.
+    private static volatile String pair = null;
 
     private UiAnalytics() {}
 
@@ -152,8 +157,18 @@ public final class UiAnalytics {
      * than continuing to claim an arm that no longer exists.
      */
     public static void setVariant(String experiment, String arm) {
+        setVariant(experiment, arm, null);
+    }
+
+    /**
+     * As {@link #setVariant(String, String)}, additionally recording which card {@code pair} was
+     * drawn — set by the rotating arm, whose own id cannot say what was on screen. Null for every
+     * fixed arm.
+     */
+    public static void setVariant(String experiment, String arm, String cardPair) {
         experimentId = experiment == null || experiment.isBlank() ? null : experiment;
         variant = arm == null || arm.isBlank() ? null : arm;
+        pair = cardPair == null || cardPair.isBlank() ? null : cardPair;
     }
 
     /** A button/link was pressed (before any confirm screen). */
@@ -244,7 +259,7 @@ public final class UiAnalytics {
             String player = mc.getUser() != null ? mc.getUser().getName() : null;
             JsonObject payload = buildPayload(
                     noDashes(uuid), player, VersionInfo.VERSION, surface, target, action, durationMs,
-                    page, questionId, score, scoreMax, experimentId, variant);
+                    page, questionId, score, scoreMax, experimentId, variant, pair);
             HttpRequest req = HttpRequest.newBuilder(
                             URI.create(DungeonTrain.relayBaseUrl() + "/telemetry/ui-event"))
                     .timeout(REQUEST_TIMEOUT)
@@ -277,7 +292,7 @@ public final class UiAnalytics {
                                    String surface, String target, String action, long durationMs,
                                    String page, String questionId, int score, int scoreMax) {
         return buildPayload(uuid, player, modVersion, surface, target, action, durationMs,
-                page, questionId, score, scoreMax, null, null);
+                page, questionId, score, scoreMax, null, null, null);
     }
 
     /**
@@ -290,7 +305,7 @@ public final class UiAnalytics {
     static JsonObject buildPayload(String uuid, String player, String modVersion,
                                    String surface, String target, String action, long durationMs,
                                    String page, String questionId, int score, int scoreMax,
-                                   String exp, String arm) {
+                                   String exp, String arm, String cardPair) {
         JsonObject payload = new JsonObject();
         payload.addProperty("uuid", uuid);
         if (player != null && !player.isBlank()) {
@@ -323,6 +338,11 @@ public final class UiAnalytics {
             payload.addProperty("exp", exp);
             if (arm != null && !arm.isBlank()) {
                 payload.addProperty("variant", arm);
+                // The pair is meaningless without the arm it sits inside, so it rides on the same
+                // condition rather than on one of its own.
+                if (cardPair != null && !cardPair.isBlank()) {
+                    payload.addProperty("pair", cardPair);
+                }
             }
         }
         return payload;

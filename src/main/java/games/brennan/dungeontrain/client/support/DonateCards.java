@@ -50,7 +50,17 @@ public final class DonateCards {
         B_UPDATES_HOURS("b_updates_hours", Card.UPDATES, Card.HOURS),
         C_HOURS_ACTIVE("c_hours_active", Card.HOURS, Card.LAST_ACTIVE),
         D_ACTIVE_RAISED("d_active_raised", Card.LAST_ACTIVE, Card.RAISED),
-        E_RAISED_COVERED("e_raised_covered", Card.RAISED, Card.COVERED);
+        E_RAISED_COVERED("e_raised_covered", Card.RAISED, Card.COVERED),
+        /**
+         * The sixth arm has no pair of its own: it shows a <b>different one of the five above on
+         * every death</b>. Its hypothesis is variety itself — that a page which has something new
+         * on it each time is read again, where the same two tiles for the twentieth time are not.
+         *
+         * <p>It is an arm rather than a mode: assignment is still per-player and still stable, so
+         * "rotating" is one treatment compared against five fixed ones, and a player in it never
+         * sees a fixed arm. What rotates is the pair inside it, not which arm they are in.</p>
+         */
+        F_ROTATING("f_rotating", null, null);
 
         private final String id;
         private final Card first;
@@ -66,9 +76,41 @@ public final class DonateCards {
             return id;
         }
 
-        public List<Card> cards() {
-            return List.of(first, second);
+        /** Whether this arm draws a different pair each death rather than a pair of its own. */
+        public boolean rotating() {
+            return first == null;
         }
+
+        /**
+         * The arm's two cards. Empty for {@link #F_ROTATING}, which has none of its own — resolve
+         * it through {@link DonateCards#pairFor} first.
+         */
+        public List<Card> cards() {
+            return rotating() ? List.of() : List.of(first, second);
+        }
+    }
+
+    /** The fixed arms, in rotation order — the cycle {@link Arm#F_ROTATING} walks. */
+    public static final List<Arm> FIXED = List.of(
+            Arm.A_COVERED_UPDATES, Arm.B_UPDATES_HOURS, Arm.C_HOURS_ACTIVE,
+            Arm.D_ACTIVE_RAISED, Arm.E_RAISED_COVERED);
+
+    /**
+     * Which pair a rotating player sees on their {@code deathIndex}-th visit to the page.
+     *
+     * <p>{@code offset} spreads the starting point across players — derived from the uuid by the
+     * caller — so that a first death is not the same pair for everybody. Without it every player's
+     * first and most-attended-to impression of the page would be one particular pair, which is the
+     * impression most likely to convert and the one this arm would then be silently measuring.</p>
+     *
+     * <p>Returns the FIXED arm whose pair is being shown, so the pair reported to telemetry uses
+     * the same vocabulary as the fixed arms — "this rotating player saw the c_hours_active pair"
+     * is directly readable against arm C's own rows.</p>
+     */
+    public static Arm pairFor(int deathIndex, int offset) {
+        int n = FIXED.size();
+        // floorMod: a negative index (a wrapped counter, an odd offset) must still land in range.
+        return FIXED.get(Math.floorMod(deathIndex + offset, n));
     }
 
     /**
@@ -113,6 +155,15 @@ public final class DonateCards {
             if (availability.has(c)) out.add(c);
         }
         return List.copyOf(out);
+    }
+
+    /**
+     * The pair actually drawn for {@code arm} — itself for a fixed arm, and this death's rung of
+     * the rotation for {@link Arm#F_ROTATING}. The caller reports this to telemetry as the `pair`
+     * dimension, so a rotating player's row says which cards were on screen.
+     */
+    public static Arm drawnPair(Arm arm, int deathIndex, int offset) {
+        return arm.rotating() ? pairFor(deathIndex, offset) : arm;
     }
 
     /**

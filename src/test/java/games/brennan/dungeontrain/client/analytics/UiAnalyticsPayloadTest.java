@@ -136,7 +136,7 @@ class UiAnalyticsPayloadTest {
     void abDimensions() {
         JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
                 UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "open", -1,
-                UiAnalytics.PAGE_DONATE, null, -1, -1, "donate_cards_v1", "c_hours_active");
+                UiAnalytics.PAGE_DONATE, null, -1, -1, "donate_cards_v1", "c_hours_active", null);
         assertEquals("donate_cards_v1", out.get("exp").getAsString());
         assertEquals("c_hours_active", out.get("variant").getAsString());
     }
@@ -148,7 +148,7 @@ class UiAnalyticsPayloadTest {
         // ends. The relay reads an event with no `exp` as belonging to no arm.
         JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
                 UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "open", -1,
-                UiAnalytics.PAGE_DONATE, null, -1, -1, null, null);
+                UiAnalytics.PAGE_DONATE, null, -1, -1, null, null, null);
         assertFalse(out.has("exp"));
         assertFalse(out.has("variant"));
     }
@@ -160,8 +160,29 @@ class UiAnalyticsPayloadTest {
         // to either — the relay drops it, and this never sends it in the first place.
         JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
                 UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "open", -1,
-                UiAnalytics.PAGE_DONATE, null, -1, -1, "  ", "c_hours_active");
+                UiAnalytics.PAGE_DONATE, null, -1, -1, "  ", "c_hours_active", null);
         assertFalse(out.has("exp"));
         assertFalse(out.has("variant"));
+    }
+    @Test
+    @DisplayName("the rotating arm also reports which pair was on screen")
+    void rotatingArmCarriesThePair() {
+        JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
+                UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "open", -1,
+                UiAnalytics.PAGE_DONATE, null, -1, -1,
+                "donate_cards_v1", "f_rotating", "c_hours_active");
+        assertEquals("f_rotating", out.get("variant").getAsString(),
+                "the ARM stays the treatment being compared");
+        assertEquals("c_hours_active", out.get("pair").getAsString(),
+                "the pair is a separate dimension, never folded into the arm");
+    }
+
+    @Test
+    @DisplayName("a pair without its arm is dropped — it would belong to no treatment")
+    void pairNeedsItsArm() {
+        JsonObject out = UiAnalytics.buildPayload(UUID, "x", "v",
+                UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_PAGE, "open", -1,
+                UiAnalytics.PAGE_DONATE, null, -1, -1, "donate_cards_v1", null, "c_hours_active");
+        assertFalse(out.has("pair"));
     }
 }
