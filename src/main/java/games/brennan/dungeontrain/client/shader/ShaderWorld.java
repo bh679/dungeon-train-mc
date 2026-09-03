@@ -57,14 +57,15 @@ public final class ShaderWorld {
     }
 
     /** {@code from} → {@code to} at {@code w}. {@code w} outside (0,1) is a settled {@code to}. */
-    public record Blend(World from, World to, float w) {
-        public boolean fading() {
-            return w > 0.0f && w < 1.0f;
+    public record Blend(World from, World to, float w, World settled) {
+
+        /** Unstabilised, for callers that have no history to draw on. Used by the "no pack" path. */
+        Blend(World from, World to, float w) {
+            this(from, to, w, w >= 0.5f ? to : from);
         }
 
-        /** The world a single render should report: {@code to} once past the midpoint, else {@code from}. */
-        public World settled() {
-            return w >= 0.5f ? to : from;
+        public boolean fading() {
+            return w > 0.0f && w < 1.0f;
         }
     }
 
@@ -72,10 +73,45 @@ public final class ShaderWorld {
     public static final float FADE_WINDOW_START = 0.3f;
     public static final float FADE_WINDOW_END = 0.7f;
 
+    /**
+     * Hysteresis on the settled world, and why it is not optional.
+     *
+     * <p>The decision's only input is {@code camera.getPosition().x}, and on a train that camera
+     * rides a Sable sub-level whose position moves between tick space and render space from one
+     * frame to the next. A bare {@code w >= 0.5} threshold therefore flips the reported world back
+     * and forth across that jitter, and every flip swaps Iris' <em>entire</em> pipeline. Measured on
+     * Sildur's Enhanced Default: carriage lighting strobed from the band's leading edge onward, and
+     * the train kept casting an overworld sun shadow inside the Nether band because a good share of
+     * frames really were still the overworld pipeline.</p>
+     *
+     * <p>Entering takes {@code 0.6}, leaving takes {@code 0.4}, so the jitter band between them
+     * changes nothing. {@link #MIN_DWELL_FRAMES} then caps how often a change can happen at all, so
+     * no input sequence whatsoever can produce a per-frame swap.</p>
+     */
+    private static final float ENTER_AT = 0.6f;
+    private static final float LEAVE_AT = 0.4f;
+    private static final int MIN_DWELL_FRAMES = 20;
+
+    /** Frames of reported-world history the panel's swap counter looks back over. */
+    private static final int SWAP_WINDOW_FRAMES = 60;
+    /** Above this many swaps in a window something is oscillating; say so once. */
+    private static final int SWAP_ALARM = 2;
+
     private static final Blend NONE = new Blend(World.OVERWORLD, World.OVERWORLD, 0.0f);
 
     /** The world Iris should currently be told about, or {@code null} for the real one. Render thread. */
     private static volatile World reporting = null;
+
+    /** The settled world the hysteresis is currently holding, and how long it has held it. */
+    private static World held = World.OVERWORLD;
+    private static int framesHeld = MIN_DWELL_FRAMES;
+
+    // Reported-world changes over a rolling window, so an oscillation is visible on the panel and
+    // in a sweep log rather than only to someone watching the screen at the time.
+    private static int swapsThisWindow = 0;
+    private static int framesThisWindow = 0;
+    private static volatile int swapsLastWindow = 0;
+    private static boolean swapAlarmLogged = false;
 
     /** The frame's decision, kept for the diagnostics panel. */
     private static volatile Blend lastBlend = NONE;
@@ -112,16 +148,76 @@ public final class ShaderWorld {
             bandWorld = World.END;
             bandRamp = (float) end;
         }
-        float bandW = window(bandRamp);
-        Blend band = new Blend(World.OVERWORLD, bandWorld, bandWorld == World.OVERWORLD ? 0.0f : bandW);
+        float bandW = bandWorld == World.OVERWORLD ? 0.0f : window(bandRamp);
 
         // A dimensional carriage on top: its ease runs from whatever the band had settled on.
         World roomWorld = roomWorld(ClientPortalRoomSky.sky());
         float roomW = roomWorld == null ? 0.0f : clamp(ClientPortalRoomSky.applied());
-        if (roomWorld == null || roomW <= 0.0f) return band;
-        World base = band.settled();
-        if (roomWorld == base) return new Blend(base, base, 1.0f);
-        return new Blend(base, roomWorld, roomW);
+
+        // One stabilise per frame, over whichever of the two is actually asking. Doing it once, on
+        // the final answer, is what guarantees every Iris query within a frame agrees.
+        if (roomWorld == null || roomW <= 0.0f) {
+            return stabilise(World.OVERWORLD, bandWorld, bandW);
+        }
+        World base = held == World.OVERWORLD && bandW >= ENTER_AT ? bandWorld : held;
+        if (roomWorld == base) return stabilise(base, base, 1.0f);
+        return stabilise(base, roomWorld, roomW);
+    }
+
+    /**
+     * Apply the hysteresis and dwell, and return the blend carrying the world a single render
+     * should actually report. Called exactly once per frame, from {@link #decide}.
+     */
+    private static Blend stabilise(World from, World to, float w) {
+        if (framesHeld < Integer.MAX_VALUE) framesHeld++;
+
+        // Between the two thresholds nothing changes, which is the whole point.
+        World wanted = held;
+        if (w >= ENTER_AT) {
+            wanted = to;
+        } else if (w <= LEAVE_AT) {
+            wanted = from;
+        }
+
+        boolean swapped = false;
+        if (wanted != held && framesHeld >= MIN_DWELL_FRAMES) {
+            held = wanted;
+            framesHeld = 0;
+            swapped = true;
+        }
+
+        countSwap(swapped);
+        return new Blend(from, to, w, held);
+    }
+
+    /** Roll the swap window, and shout once if the reported world is oscillating. */
+    private static void countSwap(boolean swapped) {
+        if (swapped) swapsThisWindow++;
+        if (++framesThisWindow < SWAP_WINDOW_FRAMES) return;
+        swapsLastWindow = swapsThisWindow;
+        if (swapsThisWindow > SWAP_ALARM && !swapAlarmLogged) {
+            swapAlarmLogged = true;
+            LOGGER.warn("[DungeonTrain] Shader world oscillating: {} swaps in {} frames. The pipeline "
+                + "is being rebuilt repeatedly and lighting will strobe.", swapsThisWindow, SWAP_WINDOW_FRAMES);
+        }
+        swapsThisWindow = 0;
+        framesThisWindow = 0;
+    }
+
+    /** Swaps counted over the last completed window, for the diagnostics panel. A crossing reads 1. */
+    public static int swapsLastWindow() {
+        return swapsLastWindow;
+    }
+
+    /** Drop the hysteresis state. Wired to logging out, so one world's crossing never colours the next. */
+    public static void reset() {
+        held = World.OVERWORLD;
+        framesHeld = MIN_DWELL_FRAMES;
+        swapsThisWindow = 0;
+        framesThisWindow = 0;
+        swapsLastWindow = 0;
+        swapAlarmLogged = false;
+        reporting = null;
     }
 
     private static World roomWorld(PortalRoomSky sky) {
@@ -183,6 +279,11 @@ public final class ShaderWorld {
         }
         return String.format(Locale.ROOT, "%s -> %s w=%.2f (%d renders)",
             b.from().name().toLowerCase(Locale.ROOT), b.to().name().toLowerCase(Locale.ROOT), b.w(), lastRenders);
+    }
+
+    /** {@code "1"} across a healthy crossing; anything above a couple means the pipeline is thrashing. */
+    public static String describeSwaps() {
+        return swapsLastWindow + "/" + SWAP_WINDOW_FRAMES + "f";
     }
 
     // --- Pre-warm -----------------------------------------------------------------------------------

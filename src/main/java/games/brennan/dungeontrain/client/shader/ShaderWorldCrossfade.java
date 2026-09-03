@@ -119,7 +119,7 @@ public final class ShaderWorldCrossfade {
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        ShaderWorld.setReporting(null);
+        ShaderWorld.reset();
         warmupFramesLeft = 0;
     }
 

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin.client;
 import games.brennan.dungeontrain.client.ClientNetherBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
 import games.brennan.dungeontrain.client.NetherFogEvents;
+import games.brennan.dungeontrain.client.ShaderCompat;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -31,6 +32,11 @@ public abstract class ClientLevelBandSkyColorMixin {
 
     @Inject(method = "getSkyColor", at = @At("RETURN"), cancellable = true)
     private void dungeontrain$bandSkyColor(Vec3 pos, float partialTick, CallbackInfoReturnable<Vec3> cir) {
+        // Shader packs only. Iris reads this for its skyColor uniform, which is the whole reason the
+        // hook exists; vanilla reads it for the sky disc and the fog, both of which a band already
+        // handles by other means. Tinting it with no pack loaded would change the vanilla look for
+        // players who will never see the benefit.
+        if (!ShaderCompat.active()) return;
         ClientLevel level = (ClientLevel) (Object) this;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         double nether = ClientNetherBand.netherIntensityAt(pos.x);

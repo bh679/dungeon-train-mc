@@ -182,8 +182,11 @@ public final class ShaderDiagnosticsHud {
         }
 
         String world = games.brennan.dungeontrain.client.shader.ShaderWorld.describe();
-        lines.add(new Line("Shader world: " + (world.isEmpty() ? "overworld (pack default)" : world),
-            world.isEmpty() ? COLOR_IDLE : COLOR_ACTIVE));
+        String swaps = games.brennan.dungeontrain.client.shader.ShaderWorld.describeSwaps();
+        boolean thrashing = games.brennan.dungeontrain.client.shader.ShaderWorld.swapsLastWindow() > 2;
+        lines.add(new Line("Shader world: " + (world.isEmpty() ? "overworld (pack default)" : world)
+            + "   swaps " + swaps,
+            thrashing ? COLOR_OFF : (world.isEmpty() ? COLOR_IDLE : COLOR_ACTIVE)));
 
         String postPass = games.brennan.dungeontrain.client.shader.PostFogPass.lastDrawn();
         lines.add(new Line("Post pass: " + (postPass.isEmpty() ? NONE : postPass),
