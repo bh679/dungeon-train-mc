@@ -270,6 +270,11 @@ public final class CommandMenuState {
     }
 
     public static void close() {
+        // Dismiss first, and outside the open-check. The inventory-style editor screen is not this
+        // menu's stack — it never sets {@code open} — but it hosts the same shared screens, and
+        // several of them ("Save and test", the unsaved-check's Continue) end by calling this.
+        // Returning early on !open left those running their command with the menu still up.
+        dismissMenuScreen();
         if (!open) return;
         open = false;
         typingMode = false;
@@ -453,7 +458,11 @@ public final class CommandMenuState {
      */
     private static void dismissMenuScreen() {
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof CommandMenuGuiScreen) && !(mc.screen instanceof MenuTypingScreen)) return;
+        if (!(mc.screen instanceof CommandMenuGuiScreen)
+            && !(mc.screen instanceof MenuTypingScreen)
+            && !(mc.screen instanceof games.brennan.dungeontrain.client.menu.editorscreen.EditorGuiScreen)) {
+            return;
+        }
         try {
             mc.setScreen(null);
         } catch (IllegalStateException disconnectRace) {

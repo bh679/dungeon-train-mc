@@ -30,7 +30,7 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 4,
+    "weight": 5,
     "minLevel": 3,
     "mode": "endless_repetition"
   },
@@ -109,7 +109,7 @@
     "mode": "bedrockless"
   },
   "parkour": {
-    "weight": 1,
+    "weight": 3,
     "minLevel": 10,
     "mode": "bedrockless"
   },
