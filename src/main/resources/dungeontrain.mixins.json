@@ -89,6 +89,7 @@
     "client.GameRendererCrossfadeMixin",
     "client.LevelRendererSkyboxDepthMixin",
     "client.LightTextureSpoofedSkyMixin",
+    "client.DimensionAmbientLightBandMixin",
     "client.DimensionSpecialEffectsCloudHeightMixin",
     "client.ClientLevelBandSkyColorMixin",
     "client.LightTextureEndBandMixin",
