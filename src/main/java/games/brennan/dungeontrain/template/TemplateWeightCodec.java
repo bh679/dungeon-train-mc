@@ -52,7 +52,7 @@ public final class TemplateWeightCodec {
     /**
      * Optional per-kind flip block — which axes this template may be randomly flipped along, plus the
      * {@code rooms} scope flag. Opaque here in the same sense as {@link #K_MODE}: only the contents
-     * layer reads it. Absent means {@link FlipOptions#DEFAULT} (X on), which is why it is never
+     * layer reads it. Absent means {@link FlipOptions#DEFAULT} (Z on), which is why it is never
      * emitted for a default block — see {@link #parseFlip}/{@link #writeFlip}.
      */
     public static final String K_FLIP = "flip";
@@ -95,8 +95,8 @@ public final class TemplateWeightCodec {
     /**
      * The optional flip block on an entry object; {@code null} when absent, not an object, or equal
      * to {@link FlipOptions#DEFAULT} (the record's own constructor normalises the last case). Each
-     * missing field falls back to its {@code DEFAULT} value, so {@code {"flip":{"z":true}}} means
-     * "X and Z, still no Y" rather than "Z only" — an author edits one flag at a time.
+     * missing field falls back to its {@code DEFAULT} value, so {@code {"flip":{"x":true}}} means
+     * "X and Z, still no Y" rather than "X only" — an author edits one flag at a time.
      */
     public static FlipOptions parseFlip(JsonObject o) {
         JsonElement el = o.get(K_FLIP);

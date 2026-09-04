@@ -10,12 +10,14 @@ import java.util.Locale;
  * independently (see {@code ContentsFlip.roll}), so a template with X enabled reads authored on
  * roughly half the carriages it lands in and mirrored on the other half.</p>
  *
- * <p>{@link #DEFAULT} is <b>X on, Y and Z off, rooms off</b> — the behaviour every template gets
+ * <p>{@link #DEFAULT} is <b>Z on, X and Y off, rooms off</b> — the behaviour every template gets
  * when its {@code weights.json} entry carries no {@code flip} block, which is every template that
- * shipped before this option existed. X is the carriage's length axis: mirroring end-to-end is the
- * flip an interior is most likely to survive intact. Y (vertical) is best-effort — Minecraft has no
- * vertical block mirror and {@code EditorMirror.verticalFlip} can only toggle the common orientation
- * properties, so doors, beds and tall plants break — hence off by default.</p>
+ * shipped before this option existed. Z is the carriage's <b>width</b> axis, so a Z flip swaps the
+ * train's left side with its right — the mirror an interior is most likely to survive intact,
+ * because it leaves the direction of travel alone. X is the length axis (end-to-end, front to back
+ * along the train), and Y (vertical) is best-effort — Minecraft has no vertical block mirror and
+ * {@code EditorMirror.verticalFlip} can only toggle the common orientation properties, so doors,
+ * beds and tall plants break. Both off by default.</p>
  *
  * <p>{@link #rooms()} is a scope flag, not an axis: portal rooms tile the same furnishing template
  * many times inside one room, so flipping there is a louder change than a per-carriage roll and is
@@ -23,8 +25,8 @@ import java.util.Locale;
  */
 public record FlipOptions(boolean x, boolean y, boolean z, boolean rooms) {
 
-    /** X enabled, everything else off — what a template with no authored {@code flip} block gets. */
-    public static final FlipOptions DEFAULT = new FlipOptions(true, false, false, false);
+    /** Z (left ↔ right) enabled, everything else off — what a template with no authored {@code flip} block gets. */
+    public static final FlipOptions DEFAULT = new FlipOptions(false, false, true, false);
 
     /** Nothing may flip anywhere. */
     public static final FlipOptions NONE = new FlipOptions(false, false, false, false);

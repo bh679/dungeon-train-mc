@@ -101,7 +101,7 @@ final class CarriageContentsWeightsTest {
     }
 
     @Test
-    @DisplayName("flipFor falls back to the X-on default for an id with no entry or no flip block")
+    @DisplayName("flipFor falls back to the Z-on default for an id with no entry or no flip block")
     void flipFor_defaultsToXOnly() {
         CarriageContentsWeights w = CarriageContentsWeights.ofWeights(java.util.Map.of("books", 5));
         assertEquals(games.brennan.dungeontrain.template.FlipOptions.DEFAULT, w.flipFor("books"));
@@ -112,7 +112,7 @@ final class CarriageContentsWeightsTest {
     @DisplayName("flipFor returns an authored block, weight untouched")
     void flipFor_returnsAuthoredBlock() {
         games.brennan.dungeontrain.template.FlipOptions flip =
-            games.brennan.dungeontrain.template.FlipOptions.DEFAULT.with("z", true);
+            games.brennan.dungeontrain.template.FlipOptions.DEFAULT.with("x", true);
         CarriageContentsWeights w = new CarriageContentsWeights(java.util.Map.of("maze",
             new games.brennan.dungeontrain.template.TemplateMeta(
                 4, games.brennan.dungeontrain.template.TemplateGate.DEFAULT, null, null, flip)));

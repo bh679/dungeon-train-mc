@@ -1381,7 +1381,7 @@ public final class EditorCommand {
                 CarriageContentsWeights.current().flipFor(contents.id()).with(field, value));
             source.sendSuccess(() -> Component.literal(
                 "Editor: contents flip " + contents.id() + " " + field.toLowerCase(java.util.Locale.ROOT)
-                    + "=" + (value ? "on" : "off")
+                    + axisHint(field) + "=" + (value ? "on" : "off")
                     + " (now x=" + onOff(next.x()) + " y=" + onOff(next.y()) + " z=" + onOff(next.z())
                     + " rooms=" + onOff(next.rooms()) + ", saved to " + CarriageContentsWeights.configPath()
                     + "). Existing carriages keep the orientation they were stamped with."
@@ -1398,6 +1398,19 @@ public final class EditorCommand {
 
     private static String onOff(boolean on) {
         return on ? "on" : "off";
+    }
+
+    /**
+     * What an axis means in the carriage, appended to the flip command's echo — the letters alone
+     * are easy to mix up, and picking the wrong one silently mirrors the interior the other way.
+     */
+    private static String axisHint(String field) {
+        return switch (field == null ? "" : field.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "x" -> " (front\u2194back)";
+            case "y" -> " (up\u2194down)";
+            case "z" -> " (left\u2194right)";
+            default -> "";
+        };
     }
 
     /** Read-modify-write nudge for contents weight. Bounds clamp via {@link CarriageContentsWeights#set}. */

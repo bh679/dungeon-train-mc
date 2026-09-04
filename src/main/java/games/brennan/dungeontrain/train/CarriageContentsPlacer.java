@@ -262,7 +262,7 @@ public final class CarriageContentsPlacer {
 
     /**
      * The flip this carriage's contents stamp came out with — a fresh roll of whichever axes the
-     * template's {@link FlipOptions} enable (X only, unless an author says otherwise).
+     * template's {@link FlipOptions} enable (Z — left ↔ right — unless an author says otherwise).
      *
      * <p>{@link ContentsFlip#roll} is pure, so every pass of one placement calls this and gets the
      * same answer without threading state between the blocks pass and the entity pass that follows

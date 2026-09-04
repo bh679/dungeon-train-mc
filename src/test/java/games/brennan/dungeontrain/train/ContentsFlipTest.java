@@ -30,11 +30,11 @@ final class ContentsFlipTest {
     @Test
     @DisplayName("a disabled axis never flips; no axes enabled is never a flip at all")
     void disabledAxesNeverFlip() {
-        FlipOptions xOnly = FlipOptions.DEFAULT;
+        FlipOptions zOnly = FlipOptions.DEFAULT;
         for (int i = 0; i < 200; i++) {
-            Flip f = ContentsFlip.roll("books", xOnly, 99L, i);
+            Flip f = ContentsFlip.roll("books", zOnly, 99L, i);
+            assertFalse(f.x(), "x is off by default");
             assertFalse(f.y(), "y is off by default");
-            assertFalse(f.z(), "z is off by default");
             assertSame(Flip.NONE, ContentsFlip.roll("books", FlipOptions.NONE, 99L, i));
         }
     }
@@ -45,7 +45,7 @@ final class ContentsFlipTest {
         int flipped = 0;
         int n = 400;
         for (int i = 0; i < n; i++) {
-            if (ContentsFlip.roll("shop", FlipOptions.DEFAULT, 7L, i).x()) flipped++;
+            if (ContentsFlip.roll("shop", FlipOptions.DEFAULT, 7L, i).z()) flipped++;
         }
         assertTrue(flipped > n / 4 && flipped < 3 * n / 4,
             "expected a roughly even split, got " + flipped + "/" + n);
@@ -68,8 +68,8 @@ final class ContentsFlipTest {
     void idSaltsTheRoll() {
         boolean sawDifference = false;
         for (int i = 0; i < 200 && !sawDifference; i++) {
-            if (ContentsFlip.roll("maze", FlipOptions.DEFAULT, 3L, i).x()
-                    != ContentsFlip.roll("books", FlipOptions.DEFAULT, 3L, i).x()) {
+            if (ContentsFlip.roll("maze", FlipOptions.DEFAULT, 3L, i).z()
+                    != ContentsFlip.roll("books", FlipOptions.DEFAULT, 3L, i).z()) {
                 sawDifference = true;
             }
         }

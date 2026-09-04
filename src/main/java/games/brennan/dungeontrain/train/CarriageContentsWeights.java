@@ -209,7 +209,7 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
 
     /**
      * Which axes {@code id} may be randomly flipped along when it is stamped, and whether that roll
-     * also applies to portal-room furnishing. {@link FlipOptions#DEFAULT} (X on) for any id with no
+     * also applies to portal-room furnishing. {@link FlipOptions#DEFAULT} (Z on) for any id with no
      * entry or no authored {@code flip} block — i.e. for every template that shipped before the
      * option existed. Read by {@code ContentsFlip.roll} at placement time.
      */

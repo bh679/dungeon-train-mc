@@ -19,17 +19,20 @@ final class FlipOptionsCodecTest {
     private static final IntUnaryOperator CLAMP = v -> Math.max(0, Math.min(100, v));
 
     @Test
-    @DisplayName("the default is X on, Y/Z off, rooms off")
-    void defaultIsXOnly() {
-        assertTrue(FlipOptions.DEFAULT.x());
+    @DisplayName("the default is Z (left <-> right) on, X/Y off, rooms off")
+    void defaultIsZOnly() {
+        // Z is the carriage's width: a Z flip puts what was on the train's left on its right, which
+        // is the mirror an authored interior is most likely to survive. X (length) would mirror it
+        // end-to-end, along the direction of travel.
+        assertTrue(FlipOptions.DEFAULT.z());
+        assertFalse(FlipOptions.DEFAULT.x());
         assertFalse(FlipOptions.DEFAULT.y());
-        assertFalse(FlipOptions.DEFAULT.z());
         assertFalse(FlipOptions.DEFAULT.rooms());
         assertTrue(FlipOptions.DEFAULT.isDefault());
     }
 
     @Test
-    @DisplayName("an entry with no flip block reads as the default (X on)")
+    @DisplayName("an entry with no flip block reads as the default (Z on)")
     void absentBlockIsDefault() {
         TemplateMeta m = TemplateWeightCodec.parseEntry(JsonParser.parseString("7"), CLAMP);
         assertNull(m.flip());
@@ -39,14 +42,14 @@ final class FlipOptionsCodecTest {
     @Test
     @DisplayName("with() edits one named field and leaves the rest alone; an unknown name is a no-op")
     void withEditsOneField() {
-        FlipOptions off = FlipOptions.DEFAULT.with("x", false);
-        assertFalse(off.x());
-        FlipOptions andZ = off.with("z", true);
-        assertFalse(andZ.x());
-        assertTrue(andZ.z());
-        assertFalse(andZ.y());
-        assertEquals(andZ, andZ.with("nonsense", true));
-        assertTrue(andZ.noAxes() == false);
+        FlipOptions off = FlipOptions.DEFAULT.with("z", false);
+        assertFalse(off.z());
+        FlipOptions andX = off.with("x", true);
+        assertFalse(andX.z());
+        assertTrue(andX.x());
+        assertFalse(andX.y());
+        assertEquals(andX, andX.with("nonsense", true));
+        assertFalse(andX.noAxes());
         assertTrue(FlipOptions.NONE.noAxes());
     }
 
@@ -54,22 +57,22 @@ final class FlipOptionsCodecTest {
     @DisplayName("a flip block parses field by field, keeping the untouched fields at their defaults")
     void parsePartialBlock() {
         TemplateMeta m = TemplateWeightCodec.parseEntry(
-            JsonParser.parseString("{\"weight\":4,\"flip\":{\"z\":true}}"), CLAMP);
+            JsonParser.parseString("{\"weight\":4,\"flip\":{\"x\":true}}"), CLAMP);
         FlipOptions f = m.effectiveFlip();
-        assertTrue(f.x(), "x stays on — the author only asked about z");
-        assertTrue(f.z());
+        assertTrue(f.z(), "z stays on — the author only asked about x");
+        assertTrue(f.x());
         assertFalse(f.y());
     }
 
     @Test
     @DisplayName("a non-default flip block round-trips, emitting only the changed fields")
     void roundTripsNonDefault() {
-        FlipOptions flip = FlipOptions.DEFAULT.with("x", false).with("rooms", true);
+        FlipOptions flip = FlipOptions.DEFAULT.with("z", false).with("rooms", true);
         JsonObject json = TemplateWeightCodec.toJson(Map.of("maze",
             new TemplateMeta(4, TemplateGate.DEFAULT, null, null, flip)));
         JsonObject entry = json.getAsJsonObject("maze");
         JsonObject block = entry.getAsJsonObject("flip");
-        assertFalse(block.get("x").getAsBoolean());
+        assertFalse(block.get("z").getAsBoolean());
         assertTrue(block.get("rooms").getAsBoolean());
         assertFalse(block.has("y"), "y is at its default and is not emitted");
         assertEquals(flip, TemplateWeightCodec.parseEntry(entry, CLAMP).effectiveFlip());

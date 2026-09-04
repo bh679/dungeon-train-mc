@@ -107,7 +107,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
      *
      * <p>Meaningful only for CONTENTS models; {@link #NO_FLIP} for every other category and for the
      * clear packet. Note {@link #NO_FLIP} is not the same as "nothing enabled" — a contents template
-     * defaults to X on ({@link games.brennan.dungeontrain.template.FlipOptions#DEFAULT}).</p>
+     * defaults to Z on ({@link games.brennan.dungeontrain.template.FlipOptions#DEFAULT}).</p>
      */
     public static final int FLIP_X = 1;
     public static final int FLIP_Y = 2;
