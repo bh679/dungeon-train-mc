@@ -182,6 +182,11 @@ public final class ShaderDiagnosticsHud {
         }
 
         String world = games.brennan.dungeontrain.client.shader.ShaderWorld.describe();
+        String switched = games.brennan.dungeontrain.client.shader.ShaderPackSwitcher.describe();
+        if (!switched.isEmpty()) {
+            lines.add(new Line("Pack cycle: " + switched + "   (F3+7)", COLOR_IDLE));
+        }
+
         String bisect = games.brennan.dungeontrain.client.shader.ShaderBisect.describe();
         if (!bisect.isEmpty()) {
             lines.add(new Line("BISECT: " + bisect, COLOR_OFF));
