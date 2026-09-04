@@ -11100,12 +11100,8 @@
       "id": "nothing-but-books-burn-coverage",
       "version": "0.790.0",
       "type": "fix",
-      "title": "Nothing But Books recognizes every burnable book",
-      "summary": "The Nothing But Books advancement now credits every book type the mod's burn-after-reading mechanic knows about \u2014 Death Notes, Love Notes, shared/lectern letters, leaderboard books, and Faulthurst stat notes now count toward filling your inventory, not just starting/random/story/found books.",
-      "highlights": [
-        "Death Notes, Love Notes, and other curse/letter books now count toward Nothing But Books",
-        "Leaderboard books and Faulthurst stat notes now count once you've held them"
-      ],
+      "title": "Fix Nothing But Books",
+      "summary": "Fix Nothing But Books.",
       "date": "2026-09-04",
       "released": false,
       "released_in": null,
