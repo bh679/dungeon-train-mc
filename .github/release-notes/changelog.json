@@ -11181,6 +11181,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "contents-random-flip",
+      "version": "0.794.0",
+      "type": "feat",
+      "title": "Carriage interiors now sometimes mirror left to right",
+      "summary": "The same room no longer looks identical every time you meet it: each carriage decides at random whether to build its interior mirrored, swapping the train's left side with its right. Nothing is added or removed by the flip \u2014 the furniture, loot and mobs are all still there, just on the other side, so a layout you have learned still reads the way you expect while the walk up the train stops feeling copy-pasted.",
+      "highlights": [
+        "Carriage interiors randomly mirror left to right",
+        "Builders can choose which axes each room may flip along, or turn flipping off for it"
+      ],
+      "pr": 1296,
+      "date": "2026-09-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
