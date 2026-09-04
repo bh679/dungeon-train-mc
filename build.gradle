@@ -354,6 +354,15 @@ dependencies {
                          include: '*.jar',
                          builtBy: ['extractSableCompanion'])
 
+    // Distant Horizons API — COMPILE ONLY, and deliberately never on any run classpath.
+    // DH is an optional companion (opt-in in the modpack, `optional` in neoforge.mods.toml) and
+    // is not in the dev client; it ships the API classes inside its own jar, so at runtime they
+    // are either DH's or absent. The only DT class that names them
+    // (client/DistantHorizonsUpsideDown) is reached behind a ModList check, so nothing tries to
+    // link them when DH isn't installed. The API artifact version is DH's OWN api version, not the
+    // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}.
+    compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
+
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
