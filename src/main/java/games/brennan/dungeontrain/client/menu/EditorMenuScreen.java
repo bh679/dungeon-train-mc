@@ -273,6 +273,37 @@ public final class EditorMenuScreen implements MenuScreen {
         // Stage chip shows; to change the gate the player edits the Stage or picks Custom.
         if (weightRow != null) out.addAll(spawnGateRows(ctx));
 
+        // Random flip — contents only. Which axes this template MAY be flipped along when it is
+        // stamped into a carriage (each enabled axis is rolled per carriage), plus "Rooms": whether
+        // that roll also applies when the template furnishes a portal room.
+        if (ctx.category() == PlotCategory.CONTENTS && notEmpty(ctx.modelId())) {
+            out.addAll(flipRows(ctx.modelId(),
+                EditorStatusHudOverlay.flipX(), EditorStatusHudOverlay.flipY(),
+                EditorStatusHudOverlay.flipZ(), EditorStatusHudOverlay.flipRooms()));
+        }
+
+        return out;
+    }
+
+    /**
+     * The Flip label + X / Y / Z / Rooms quad for a contents template, shaped like the Settings
+     * tab's Mirror quad ({@link #addMirrorToggles}) — the two read alike because they mean related
+     * things, but this one is per-template spawn behaviour, not an editor authoring aid.
+     */
+    static List<CommandMenuEntry> flipRows(String modelId, boolean x, boolean y, boolean z, boolean rooms) {
+        String prefix = "dungeontrain editor contents flip " + modelId + " ";
+        List<CommandMenuEntry> out = new ArrayList<>();
+        out.add(new CommandMenuEntry.Label("Flip"));
+        // showStateText=false → state shown by the green (on) / grey (off) tint only, as on Mirror.
+        CommandMenuEntry xCell = new CommandMenuEntry.Toggle("X", x,
+            prefix + "x on", prefix + "x off", false);
+        CommandMenuEntry yCell = new CommandMenuEntry.Toggle("Y", y,
+            prefix + "y on", prefix + "y off", false);
+        CommandMenuEntry zCell = new CommandMenuEntry.Toggle("Z", z,
+            prefix + "z on", prefix + "z off", false);
+        CommandMenuEntry roomsCell = new CommandMenuEntry.Toggle("Rooms", rooms,
+            prefix + "rooms on", prefix + "rooms off", false);
+        out.add(new CommandMenuEntry.Quad(xCell, yCell, zCell, roomsCell, 0.25, 0.50, 0.75));
         return out;
     }
 

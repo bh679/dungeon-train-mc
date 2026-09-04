@@ -60,7 +60,8 @@ public record EditorStatusPacket(String category, String model, String modelId, 
                                  int weight, int minLevel, int maxLevel, int phaseMask,
                                  boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
                                  boolean mirrorVariants, Set<String> excludedContents, String stageId,
-                                 int roomLength, int roomWidth, int roomHeight, String roomMode)
+                                 int roomLength, int roomWidth, int roomHeight, String roomMode,
+                                 int flipMask)
     implements CustomPacketPayload {
 
     /** Sentinel for "weight is not applicable to this model". */
@@ -98,6 +99,30 @@ public record EditorStatusPacket(String category, String model, String modelId, 
 
     /** {@code phaseMask} value with all phases set; tracks {@link TrainPhase#ALL_MASK} so it grows with the enum. */
     public static final int ALL_PHASES_MASK = TrainPhase.ALL_MASK;
+
+    /**
+     * {@code flipMask} bits — which axes the focused contents template may be randomly flipped
+     * along, plus the portal-room scope flag. A bitmask rather than four booleans because it is one
+     * varint on the wire and one comparison in the change detector.
+     *
+     * <p>Meaningful only for CONTENTS models; {@link #NO_FLIP} for every other category and for the
+     * clear packet. Note {@link #NO_FLIP} is not the same as "nothing enabled" — a contents template
+     * defaults to X on ({@link games.brennan.dungeontrain.template.FlipOptions#DEFAULT}).</p>
+     */
+    public static final int FLIP_X = 1;
+    public static final int FLIP_Y = 2;
+    public static final int FLIP_Z = 4;
+    public static final int FLIP_ROOMS = 8;
+
+    /** Sentinel for "flip options are not applicable to this model". */
+    public static final int NO_FLIP = 0;
+
+    /** Pack a {@link games.brennan.dungeontrain.template.FlipOptions} into {@link #flipMask}. */
+    public static int flipMaskOf(games.brennan.dungeontrain.template.FlipOptions flip) {
+        if (flip == null) return NO_FLIP;
+        return (flip.x() ? FLIP_X : 0) | (flip.y() ? FLIP_Y : 0)
+            | (flip.z() ? FLIP_Z : 0) | (flip.rooms() ? FLIP_ROOMS : 0);
+    }
 
     public EditorStatusPacket {
         excludedContents = (excludedContents == null || excludedContents.isEmpty())
@@ -137,6 +162,17 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             roomLength, roomWidth, roomHeight, NO_MODE);
     }
 
+    /** Back-compat constructor from before contents carried flip options. */
+    public EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
+                              int weight, int minLevel, int maxLevel, int phaseMask,
+                              boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
+                              boolean mirrorVariants, Set<String> excludedContents, String stageId,
+                              int roomLength, int roomWidth, int roomHeight, String roomMode) {
+        this(category, model, modelId, modelName, devmode, weight, minLevel, maxLevel, phaseMask,
+            partMenuEnabled, mirrorX, mirrorY, mirrorZ, mirrorVariants, excludedContents, stageId,
+            roomLength, roomWidth, roomHeight, roomMode, NO_FLIP);
+    }
+
     public static final Type<EditorStatusPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"));
 
@@ -173,6 +209,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         buf.writeVarInt(roomWidth);
         buf.writeVarInt(roomHeight);
         buf.writeUtf(roomMode == null ? NO_MODE : roomMode, MODE_TAG_MAX);
+        buf.writeVarInt(flipMask);
     }
 
     public static EditorStatusPacket decode(FriendlyByteBuf buf) {
@@ -203,8 +240,9 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         int rw = buf.readVarInt();
         int rh = buf.readVarInt();
         String mode = buf.readUtf(MODE_TAG_MAX);
+        int flip = buf.readVarInt();
         return new EditorStatusPacket(c, m, id, name, d, w, minLv, maxLv, phases, pme, mx, my, mz, mv, excluded,
-            stageId, rl, rw, rh, mode);
+            stageId, rl, rw, rh, mode, flip);
     }
 
     @Override
@@ -218,6 +256,6 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             packet.devmode, packet.weight, packet.minLevel, packet.maxLevel, packet.phaseMask,
             packet.partMenuEnabled, packet.mirrorX, packet.mirrorY, packet.mirrorZ, packet.mirrorVariants,
             packet.excludedContents, packet.stageId,
-            packet.roomLength, packet.roomWidth, packet.roomHeight, packet.roomMode));
+            packet.roomLength, packet.roomWidth, packet.roomHeight, packet.roomMode, packet.flipMask));
     }
 }

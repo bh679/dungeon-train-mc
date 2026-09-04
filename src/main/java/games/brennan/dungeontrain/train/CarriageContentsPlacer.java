@@ -18,9 +18,12 @@ import games.brennan.dungeontrain.editor.EntityVariantApplicator;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
+import games.brennan.dungeontrain.template.FlipOptions;
+import games.brennan.dungeontrain.train.ContentsFlip.Flip;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -247,13 +250,43 @@ public final class CarriageContentsPlacer {
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                CarriageDims dims, long seed, int carriageIndex) {
+        Flip flip = carriageFlip(contents, seed, carriageIndex);
         placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
         applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE);
+            contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
         applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE);
+            contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
         applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            seed, carriageIndex, PortalCorridorMask.NONE);
+            seed, carriageIndex, PortalCorridorMask.NONE, flip);
+    }
+
+    /**
+     * The flip this carriage's contents stamp came out with — a fresh roll of whichever axes the
+     * template's {@link FlipOptions} enable (X only, unless an author says otherwise).
+     *
+     * <p>{@link ContentsFlip#roll} is pure, so every pass of one placement calls this and gets the
+     * same answer without threading state between the blocks pass and the entity pass that follows
+     * it ticks later.</p>
+     *
+     * <p>The editor never flips: an author looking at a plot must see what they authored, and the
+     * sentinel pIdx is exactly the "this is not a train carriage" signal the rest of this class
+     * already uses.</p>
+     */
+    private static Flip carriageFlip(CarriageContents contents, long seed, int carriageIndex) {
+        if (carriageIndex == EDITOR_SENTINEL_PIDX) return Flip.NONE;
+        return ContentsFlip.roll(contents.id(),
+            CarriageContentsWeights.current().flipFor(contents.id()), seed, carriageIndex);
+    }
+
+    /**
+     * The flip for a portal-room furnishing. A room tiles the same template many times inside one
+     * space, so flipping there is a louder change than a per-carriage roll — it is opted into per
+     * template via {@link FlipOptions#rooms()}, and off by default.
+     */
+    private static Flip roomFlip(CarriageContents contents, long seed, int carriageIndex) {
+        FlipOptions opts = CarriageContentsWeights.current().flipFor(contents.id());
+        if (!opts.rooms()) return Flip.NONE;
+        return ContentsFlip.roll(contents.id(), opts, seed, carriageIndex);
     }
 
     /**
@@ -287,13 +320,14 @@ public final class CarriageContentsPlacer {
      */
     public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                         CarriageDims dims, long seed, int carriageIndex) {
+        Flip flip = carriageFlip(contents, seed, carriageIndex);
         placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
         applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE);
+            contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
         applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE);
+            contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
         applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            seed, carriageIndex, PortalCorridorMask.NONE);
+            seed, carriageIndex, PortalCorridorMask.NONE, flip);
     }
 
     /**
@@ -326,10 +360,11 @@ public final class CarriageContentsPlacer {
         Optional<StructureTemplate> stored = CarriageContentsStore.getFitting(level, contents, box);
         if (stored.isEmpty()) return;
 
-        stampTemplateBlocks(level, anchor, stored.get(), safeMask);
+        Flip flip = roomFlip(contents, seed, carriageIndex);
+        stampTemplateBlocks(level, anchor, stored.get(), safeMask, flip);
         clearBakedNarrativeLecternBooks(level, anchor, box);
-        applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask);
-        applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask);
+        applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+        applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
         LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored box={}x{}x{} target=portal_room",
             contents.id(), anchor, box.getX(), box.getY(), box.getZ());
     }
@@ -372,11 +407,13 @@ public final class CarriageContentsPlacer {
         }
         BlockPos origin = interiorOrigin(carriageOrigin);
 
+        Flip flip = carriageFlip(contents, seed, carriagePIdx);
+
         Optional<StructureTemplate> stored = CarriageContentsStore.get(level, contents, size);
         if (stored.isPresent()) {
             StructureTemplate template = stored.get();
             if (placeBlocks) {
-                stampTemplateBlocks(level, origin, template);
+                stampTemplateBlocks(level, origin, template, PortalCorridorMask.NONE, flip);
                 // Narrative lecterns must spawn EMPTY so they resolve their book
                 // lazily on first right-click (via BookFactory.buildOrRandomForLectern)
                 // instead of showing a book baked into the template. Some carriage
@@ -386,13 +423,13 @@ public final class CarriageContentsPlacer {
                 clearBakedNarrativeLecternBooks(level, origin, size);
             }
             if (spawnEntities) {
-                spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed);
+                spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed, flip);
                 // Cell-link entity spawn — mirrors the block-side
                 // applyContentPools pass. Lets a player who placed a prefab
                 // armor stand in the editor without saving the template still
                 // get the stand at runtime: the link in ContainerContentsStore
                 // drives the entity spawn directly.
-                spawnLinkedEntities(level, origin, contents, carriagePIdx, seed, size);
+                spawnLinkedEntities(level, origin, contents, carriagePIdx, seed, size, flip);
                 // Mob-variant entity spawn — re-rolls the variant sidecar
                 // and spawns mobs at cells whose pick has entityId != null.
                 // Block pass already AIRed those cells via the existing
@@ -402,7 +439,7 @@ public final class CarriageContentsPlacer {
                 // (line 156). Passing the already-interior origin would
                 // double-offset every spawn by +1,+1,+1, landing entities a
                 // block off their authored cell (into the shell for edge cells).
-                spawnVariantMobsForContents(level, carriageOrigin, contents, dims, seed, carriagePIdx);
+                spawnVariantMobsForContents(level, carriageOrigin, contents, dims, seed, carriagePIdx, flip);
             }
             if (placeBlocks) {
                 LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored pIdx={} mode={}{}",
@@ -512,7 +549,7 @@ public final class CarriageContentsPlacer {
     private static void applyVariantBlocks(ServerLevel level, BlockPos origin, Vec3i size,
                                             CarriageContents contents,
                                             long seed, int carriageIndex,
-                                            PortalCorridorMask mask) {
+                                            PortalCorridorMask mask, Flip flip) {
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;
@@ -529,7 +566,10 @@ public final class CarriageContentsPlacer {
             VariantState picked = filterByDifficulty
                 ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
                 : sidecar.resolve(entry.localPos(), seed, carriageIndex);
-            BlockPos world = origin.offset(entry.localPos());
+            // The cell keeps its AUTHORED local position everywhere a roll is seeded from it — only
+            // where it lands moves with the flip, so a flipped carriage draws the same blocks as an
+            // unflipped one, mirrored.
+            BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
             if (mask.covers(world)) continue;
             if (picked == null) {
                 // Difficulty-filtered to nothing: the cell's only candidates were mob
@@ -550,6 +590,9 @@ public final class CarriageContentsPlacer {
                         picked.state(), picked.rotation(), picked.half(),
                         entry.localPos(), seed, carriageIndex,
                         sidecar.lockIdAt(entry.localPos()));
+                // Reflect AFTER the authored rotation roll, so the cell reads as the mirror image of
+                // what an unflipped stamp would have put there.
+                rotated = ContentsFlip.reflect(rotated, flip);
                 // First-band starter loot: swap rich loot/loot_irongold chests for the starter
                 // prefab while in the peaceful opening band. Skip the player scan for non-chest
                 // cells (null id) and never downgrade editor previews (sentinel pIdx).
@@ -585,7 +628,7 @@ public final class CarriageContentsPlacer {
     private static void applyContentPools(ServerLevel level, BlockPos origin, Vec3i size,
                                           CarriageContents contents,
                                           long seed, int carriageIndex,
-                                          PortalCorridorMask mask) {
+                                          PortalCorridorMask mask, Flip flip) {
         String plotKey = "contents:" + contents.id();
         games.brennan.dungeontrain.editor.ContainerContentsStore store =
             games.brennan.dungeontrain.editor.ContainerContentsStore.loadFor(plotKey);
@@ -604,7 +647,7 @@ public final class CarriageContentsPlacer {
             // else returns the local pool, else empty. Empty → skip.
             games.brennan.dungeontrain.editor.ContainerContentsPool pool = store.poolAt(localPos);
             if (pool.isEmpty()) continue;
-            BlockPos world = origin.offset(localPos);
+            BlockPos world = origin.offset(ContentsFlip.mapLocal(localPos, size, flip));
             if (mask.covers(world)) continue;
             rollAndApplyPool(level, world, localPos, pool, seed, carriageIndex);
         }
@@ -618,7 +661,9 @@ public final class CarriageContentsPlacer {
                 for (int z = 0; z < size.getZ(); z++) {
                     BlockPos localPos = new BlockPos(x, y, z);
                     if (variantPositions.contains(localPos) || storePositions.contains(localPos)) continue;
-                    BlockPos worldPos = origin.offset(localPos);
+                    // Walk AUTHORED cells and map each to where it landed: same coverage of the box,
+                    // but localPos stays the seed the loot roll expects.
+                    BlockPos worldPos = origin.offset(ContentsFlip.mapLocal(localPos, size, flip));
                     if (mask.covers(worldPos)) continue;
                     net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
                     if (!state.hasBlockEntity()) continue;
@@ -695,7 +740,7 @@ public final class CarriageContentsPlacer {
      * build's block-entity NBT.</p>
      */
     private static void applyHeadSkins(ServerLevel level, BlockPos origin, Vec3i size,
-                                       long seed, int carriageIndex, PortalCorridorMask mask) {
+                                       long seed, int carriageIndex, PortalCorridorMask mask, Flip flip) {
         // Warm the pools for the carriages just ahead of this one. The fetch is off-thread and a miss
         // costs nothing but a fallback skin, so the point is only that a run walking up the train
         // finds each index already resolved by the time it is generated.
@@ -707,13 +752,16 @@ public final class CarriageContentsPlacer {
                 for (int z = 0; z < size.getZ(); z++) {
                     BlockPos localPos = new BlockPos(x, y, z);
                     BlockPos worldPos = origin.offset(localPos);
+                    // mapLocal is its own inverse, so this is the authored cell that landed here —
+                    // the face a head wears follows the head, not the world position.
+                    BlockPos authored = ContentsFlip.mapLocal(localPos, size, flip);
                     if (mask.covers(worldPos)) continue;
                     net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
                     if (!state.is(Blocks.PLAYER_HEAD) && !state.is(Blocks.PLAYER_WALL_HEAD)) continue;
                     if (!(level.getBlockEntity(worldPos)
                             instanceof net.minecraft.world.level.block.entity.SkullBlockEntity skull)) continue;
                     if (skull.getOwnerProfile() != null) continue; // authored face wins
-                    DeathHeadSkins.pick(carriageIndex, seed, localPos).ifPresent(profile -> {
+                    DeathHeadSkins.pick(carriageIndex, seed, authored).ifPresent(profile -> {
                         skull.setOwner(profile);
                         skull.setChanged();
                     });
@@ -749,10 +797,6 @@ public final class CarriageContentsPlacer {
      * we always parse the entity list ourselves. {@code setIgnoreEntities(true)}
      * tells {@code placeInWorld} to skip its own entity pass.</p>
      */
-    private static void stampTemplateBlocks(ServerLevel level, BlockPos origin, StructureTemplate template) {
-        stampTemplateBlocks(level, origin, template, PortalCorridorMask.NONE);
-    }
-
     /**
      * {@link #stampTemplateBlocks} that leaves every cell {@code mask} covers alone — the portal-room
      * path, where the box a furnishing lands in may overlap a twin corridor or an open tile's
@@ -760,16 +804,31 @@ public final class CarriageContentsPlacer {
      * {@code CarriagePlacer.stampTemplateAt} masks a room's own stamp.
      */
     private static void stampTemplateBlocks(ServerLevel level, BlockPos origin, StructureTemplate template,
-                                            PortalCorridorMask mask) {
+                                            PortalCorridorMask mask, Flip flip) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         if (mask != null && !mask.isEmpty()) settings.addProcessor(mask.asProcessor());
+        // The stamp's random flip. X/Z ride vanilla's own mirror/rotation (so palette selection and
+        // block-entity handling are untouched) with the origin shifted by size-1 on each flipped
+        // axis, because vanilla mirrors about the origin rather than about the box — see
+        // ContentsFlip.originFor. Y has no vanilla equivalent and is a flipped copy of the template.
+        // The mask is unaffected either way: it tests world positions, which are already post-flip.
+        StructureTemplate stamped = template;
+        BlockPos stampOrigin = origin;
+        if (flip != null && !flip.isNone()) {
+            ContentsFlip.applyHorizontal(settings, flip);
+            stampOrigin = ContentsFlip.originFor(origin, template.getSize(), flip);
+            if (flip.y()) {
+                stamped = ContentsFlip.verticallyFlipped(template,
+                    level.registryAccess().lookupOrThrow(Registries.BLOCK));
+            }
+        }
         // Relighting stamp (flag 3): unlike the shell/pads, the contents pass is NOT placed in the source
         // world before a Sable assemble — it runs post-assemble at shipyard coords (train) or on a permanent
         // editor plot. A raw section-local write there bypasses LevelChunk.setBlockState and therefore Sable's
         // plot light-engine redirect, leaving plain interior geometry + non-block-entity light sources
         // (torch/glowstone/…) dark. Stamp through the light engine so interiors light up. Block-entity cells
         // (chests/barrels/…) still create + load their BE via placeInWorld so loot round-trips.
-        CarriagePlacer.stampTemplateRelit(level, origin, template, settings);
+        CarriagePlacer.stampTemplateRelit(level, stampOrigin, stamped, settings);
     }
 
     /**
@@ -795,7 +854,7 @@ public final class CarriageContentsPlacer {
      */
     private static void spawnEntitiesFromTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
                                                    int carriagePIdx, CarriageContents contents, Vec3i interiorSize,
-                                                   long seed) {
+                                                   long seed, Flip flip) {
         CompoundTag saved = template.save(new CompoundTag());
         if (!saved.contains("entities", Tag.TAG_LIST)) {
             return;
@@ -831,11 +890,16 @@ public final class CarriageContentsPlacer {
             double localX = posList.getDouble(0);
             double localY = posList.getDouble(1);
             double localZ = posList.getDouble(2);
-            // Variant roll owns this cell's entity slot — skip the baked entity.
+            // Variant roll owns this cell's entity slot — skip the baked entity. Keyed on the
+            // AUTHORED cell, which is what the sidecar is written against; the flip only decides
+            // where the entity ends up.
             if (entityOwned.contains(BlockPos.containing(localX, localY, localZ))) continue;
-            double worldX = origin.getX() + localX;
-            double worldY = origin.getY() + localY;
-            double worldZ = origin.getZ() + localZ;
+            // This pass reads the UNFLIPPED template (the vertically flipped copy exists only for
+            // the block stamp), so all three axes are mapped here — in continuous space, so an
+            // entity standing mid-cell stays mid-cell.
+            double worldX = origin.getX() + ContentsFlip.mapLocalCoord(localX, interiorSize.getX(), flip.x());
+            double worldY = origin.getY() + ContentsFlip.mapLocalCoord(localY, interiorSize.getY(), flip.y());
+            double worldZ = origin.getZ() + ContentsFlip.mapLocalCoord(localZ, interiorSize.getZ(), flip.z());
 
             CompoundTag entityNbt = entry.getCompound("nbt").copy();
             // minecraft:villager — strip baked dynamic state (CustomName / Offers /
@@ -860,11 +924,18 @@ public final class CarriageContentsPlacer {
             if (entityNbt.contains("TileX", Tag.TAG_INT) && entry.contains("blockPos", Tag.TAG_INT_ARRAY)) {
                 int[] localBlock = entry.getIntArray("blockPos");
                 if (localBlock.length == 3) {
-                    entityNbt.putInt("TileX", origin.getX() + localBlock[0]);
-                    entityNbt.putInt("TileY", origin.getY() + localBlock[1]);
-                    entityNbt.putInt("TileZ", origin.getZ() + localBlock[2]);
+                    BlockPos anchor = ContentsFlip.mapLocal(
+                        new BlockPos(localBlock[0], localBlock[1], localBlock[2]), interiorSize, flip);
+                    entityNbt.putInt("TileX", origin.getX() + anchor.getX());
+                    entityNbt.putInt("TileY", origin.getY() + anchor.getY());
+                    entityNbt.putInt("TileZ", origin.getZ() + anchor.getZ());
                 }
             }
+            // A hanging entity's wall is on the other side of a mirrored room, so its facing has to
+            // move with it or the frame ends up hung on air. Rotation (yaw) is mirrored for
+            // everything else on the same axes.
+            mirrorEntityFacing(entityNbt, flip);
+            mirrorEntityRotation(entityNbt, flip);
             // Persistent vanilla tag — survives save/load and chunk reload.
             // The CompoundTag "Tags" list is the NBT-side form of
             // {@code Entity.getTags()} and is read back by Entity.load.
@@ -973,6 +1044,41 @@ public final class CarriageContentsPlacer {
     }
 
     /**
+     * Mirror a wall-attached entity's stored facing across the flipped axes.
+     *
+     * <p>The two encodings in the entity NBT are distinguished by their key, not by entity id:
+     * item frames write {@code "Facing"} as a 3D data value (they can hang on floors and ceilings),
+     * paintings and other block-attached entities write {@code "facing"} as a 2D (horizontal) one.
+     * Anything with neither key is left alone.</p>
+     */
+    private static void mirrorEntityFacing(CompoundTag entityNbt, Flip flip) {
+        if (flip == null || flip.isNone()) return;
+        if (entityNbt.contains("Facing", Tag.TAG_BYTE)) {
+            Direction dir = Direction.from3DDataValue(entityNbt.getByte("Facing"));
+            Direction moved = games.brennan.dungeontrain.editor.EditorMirror.mirrorDirection(
+                dir, flip.x(), flip.y(), flip.z());
+            entityNbt.putByte("Facing", (byte) moved.get3DDataValue());
+        }
+        if (entityNbt.contains("facing", Tag.TAG_BYTE)) {
+            Direction dir = Direction.from2DDataValue(entityNbt.getByte("facing"));
+            Direction moved = games.brennan.dungeontrain.editor.EditorMirror.mirrorDirection(
+                dir, flip.x(), /*flipY*/ false, flip.z());
+            // A horizontal-only field: a vertical flip can't move it, and get2DDataValue would throw
+            // on an up/down direction, so Y is deliberately not passed above.
+            entityNbt.putByte("facing", (byte) moved.get2DDataValue());
+        }
+    }
+
+    /** Mirror an entity's stored yaw ({@code Rotation[0]}) across the flipped horizontal axes. */
+    private static void mirrorEntityRotation(CompoundTag entityNbt, Flip flip) {
+        if (flip == null || (!flip.x() && !flip.z())) return;
+        if (!entityNbt.contains("Rotation", Tag.TAG_LIST)) return;
+        ListTag rot = entityNbt.getList("Rotation", Tag.TAG_FLOAT);
+        if (rot.size() != 2) return;
+        rot.set(0, net.minecraft.nbt.FloatTag.valueOf(ContentsFlip.reflectYaw(rot.getFloat(0), flip)));
+    }
+
+    /**
      * Interior-local cells whose variant entry includes at least one entity
      * (mob / armor-stand) candidate. At such a cell the variant roll owns the
      * entity slot, so the always-on entity passes ({@link #spawnEntitiesFromTemplate}
@@ -1013,7 +1119,7 @@ public final class CarriageContentsPlacer {
      */
     private static void spawnLinkedEntities(ServerLevel level, BlockPos interiorOrigin,
                                              CarriageContents contents,
-                                             int carriagePIdx, long seed, Vec3i size) {
+                                             int carriagePIdx, long seed, Vec3i size, Flip flip) {
         ContainerContentsStore store = ContainerContentsStore.loadFor("contents:" + contents.id());
         java.util.Set<BlockPos> allPositions = store.allPositions();
         if (allPositions.isEmpty()) return;
@@ -1046,7 +1152,7 @@ public final class CarriageContentsPlacer {
             ContainerContentsPool pool = data.pool();
             if (pool == null || pool.isEmpty()) continue;
 
-            BlockPos worldPos = interiorOrigin.offset(localPos);
+            BlockPos worldPos = interiorOrigin.offset(ContentsFlip.mapLocal(localPos, size, flip));
             // Dedup: skip if a captured stand from the template was already
             // placed at this cell. spawnEntitiesFromTemplate runs first, so
             // captured entities are in the level by the time we get here.
@@ -1190,7 +1296,7 @@ public final class CarriageContentsPlacer {
      */
     private static void spawnVariantMobsForContents(ServerLevel level, BlockPos carriageOrigin,
                                                      CarriageContents contents, CarriageDims dims,
-                                                     long seed, int carriagePIdx) {
+                                                     long seed, int carriagePIdx, Flip flip) {
         // Editor preview / template-load path uses EDITOR_SENTINEL_PIDX —
         // skip variant mob spawning so authoring doesn't drop random live
         // mobs into the editor plot every time the template is restamped.
@@ -1210,7 +1316,7 @@ public final class CarriageContentsPlacer {
         for (var entry : sidecar.entries()) {
             VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx, diffTier);
             if (picked == null || !picked.isMob()) continue;
-            BlockPos world = origin.offset(entry.localPos());
+            BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
             if (spawnVariantMob(level, world, picked, carriagePIdx, seed)) spawned++;
         }
         if (spawned > 0) {

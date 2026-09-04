@@ -123,6 +123,31 @@ final class EditorMenuScreenTest {
         assertNull(EditorMenuScreen.removeEntryFor(PlotCategory.ARCHITECTURE, "x", "x"));
     }
 
+    // ---- Flip quad (contents-only per-template random flip) ----
+
+    @Test
+    @DisplayName("Flip quad dispatches the per-axis contents flip command and reflects current state")
+    void flip_quad_commandsAndState() {
+        List<CommandMenuEntry> rows = EditorMenuScreen.flipRows("maze", true, false, false, true);
+        assertEquals(2, rows.size(), "a Label and the quad");
+        assertInstanceOf(CommandMenuEntry.Label.class, rows.get(0));
+        CommandMenuEntry.Quad quad = assertInstanceOf(CommandMenuEntry.Quad.class, rows.get(1));
+
+        CommandMenuEntry.Toggle x = (CommandMenuEntry.Toggle) quad.e1();
+        assertEquals("X", x.label());
+        assertTrue(x.state(), "X is on by default for every contents template");
+        assertEquals("dungeontrain editor contents flip maze x on", x.cmdToTurnOn());
+        assertEquals("dungeontrain editor contents flip maze x off", x.cmdToTurnOff());
+
+        assertFalse(((CommandMenuEntry.Toggle) quad.e2()).state(), "Y off");
+        assertFalse(((CommandMenuEntry.Toggle) quad.e3()).state(), "Z off");
+
+        CommandMenuEntry.Toggle rooms = (CommandMenuEntry.Toggle) quad.e4();
+        assertEquals("Rooms", rooms.label());
+        assertTrue(rooms.state());
+        assertEquals("dungeontrain editor contents flip maze rooms on", rooms.cmdToTurnOn());
+    }
+
     // ---- New (latent same-bug, would have broken on first track-side click) ----
 
     @Test
