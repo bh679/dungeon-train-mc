@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderTileSpin;
+import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.editor.PlotCategory;
@@ -41,8 +43,15 @@ public final class EditorBrowserPane {
         public static final Hit NONE = new Hit(HitKind.NONE, -1);
     }
 
-    /** One chip of the filter row. */
-    private record Chip(EditorRosterIndex.Filter filter, String label, int x, int w) {}
+    /**
+     * One chip of the filter row.
+     *
+     * <p>{@code kind} says what a click does: the two provenance chips toggle, and the creator chip
+     * — a developer's tool, absent on release builds — steps to the next contributor.</p>
+     */
+    private record Chip(Kind kind, String label, boolean on, int x, int w) {}
+
+    private enum Kind { MINE, BUILTIN, CREATOR }
 
     /** One cell of the type strip. */
     private record StripCell(EditorRosterIndex.TypeStrip strip, int x, int w) {}
@@ -67,7 +76,47 @@ public final class EditorBrowserPane {
     public List<EditorRosterIndex.Tile> subTiles() { return subTiles; }
     public EditorRosterIndex.Tile subParent() { return subParent; }
     public EditorRosterIndex.TypeStrip stripAt(int i) { return i >= 0 && i < stripCells.size() ? stripCells.get(i).strip() : null; }
-    public EditorRosterIndex.Filter chipAt(int i) { return i >= 0 && i < chips.size() ? chips.get(i).filter() : null; }
+    /** Apply the click on chip {@code i} to the current filters, or return them unchanged. */
+    public EditorRosterIndex.Filters applyChip(int i, EditorRosterIndex.Filters current,
+                                               EditorRosterIndex index) {
+        if (i < 0 || i >= chips.size()) return current;
+        return switch (chips.get(i).kind()) {
+            case MINE -> current.withMine(!current.mine());
+            case BUILTIN -> current.withBuiltin(!current.builtin());
+            case CREATOR -> current.withCreator(nextCreator(current.creator(), index.creators()));
+        };
+    }
+
+    /** The creator after this one, wrapping through {@code ""} — which means every creator. */
+    static String nextCreator(String current, List<String> creators) {
+        if (creators.isEmpty()) return "";
+        int at = creators.indexOf(current);
+        return at + 1 >= creators.size() ? "" : creators.get(at + 1);
+    }
+
+    /**
+     * Whether the creator chip is offered at all.
+     *
+     * <p>Gated exactly like the DevMode row: it is for whoever is reviewing contributed packages on
+     * a working branch, and a release build has nothing to review.</p>
+     */
+    static boolean showCreatorChip(EditorRosterIndex index) {
+        return EditorMenuScreen.shouldShowDevModeToggle(VersionInfo.BRANCH) && !index.creators().isEmpty();
+    }
+
+    static String creatorLabel(String creator) {
+        return creator.isEmpty()
+            ? EditorScreenLang.text(EditorScreenLang.FILTER_CREATOR_ANY)
+            : EditorScreenLang.text(EditorScreenLang.FILTER_CREATOR, creator);
+    }
+
+    private static Chip chip(Kind kind, String label, boolean on, int x, Font font) {
+        return new Chip(kind, label, on, x, font.width(label) + CHIP_PAD * 2);
+    }
+
+    private static Chip last(List<Chip> chips) {
+        return chips.get(chips.size() - 1);
+    }
     public Hit hovered() { return hovered; }
 
     /** Where the filter text box starts — after the search icon that labels it. */
@@ -84,19 +133,19 @@ public final class EditorBrowserPane {
      */
     public int filterBoxWidth(InventoryEditorLayout.Rect filter, Font font) {
         int chipsW = 0;
-        for (EditorRosterIndex.Filter f : EditorRosterIndex.Filter.values()) {
-            chipsW += font.width(chipLabel(f)) + CHIP_PAD * 2 + CHIP_GAP;
+        for (String label : chipLabels(EditorRosterClient.index(), EditorScreenState.filters())) {
+            chipsW += font.width(label) + CHIP_PAD * 2 + CHIP_GAP;
         }
         return Math.max(24, filter.right() - chipsW - CHIP_GAP - filterBoxX(filter));
     }
 
-    static String chipLabel(EditorRosterIndex.Filter f) {
-        return EditorScreenLang.text(switch (f) {
-            case ALL -> EditorScreenLang.FILTER_ALL;
-            case BUILTIN -> EditorScreenLang.FILTER_BUILTIN;
-            case MINE -> EditorScreenLang.FILTER_MINE;
-            case COMMUNITY -> EditorScreenLang.FILTER_COMMUNITY;
-        });
+    /** The chips' labels, in row order — what the box has to leave room for. */
+    private static List<String> chipLabels(EditorRosterIndex index, EditorRosterIndex.Filters filters) {
+        List<String> out = new ArrayList<>(3);
+        out.add(EditorScreenLang.text(EditorScreenLang.FILTER_MINE));
+        out.add(EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN));
+        if (showCreatorChip(index)) out.add(creatorLabel(filters.creator()));
+        return out;
     }
 
     /** Lay the pane out for this frame from the roster and the remembered state. */
@@ -106,13 +155,18 @@ public final class EditorBrowserPane {
         gridRect = layout.grid();
 
         // Chips, right-aligned in the filter row after the text box.
+        EditorRosterIndex.Filters filters = EditorScreenState.filters();
         List<Chip> c = new ArrayList<>();
         int cx = filterBoxX(filterRect) + filterBoxWidth(filterRect, font) + CHIP_GAP;
-        for (EditorRosterIndex.Filter f : EditorRosterIndex.Filter.values()) {
-            String label = chipLabel(f);
-            int w = font.width(label) + CHIP_PAD * 2;
-            c.add(new Chip(f, label, cx, w));
-            cx += w + CHIP_GAP;
+        c.add(chip(Kind.MINE, EditorScreenLang.text(EditorScreenLang.FILTER_MINE),
+            filters.mine(), cx, font));
+        cx = last(c).x() + last(c).w() + CHIP_GAP;
+        c.add(chip(Kind.BUILTIN, EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN),
+            filters.builtin(), cx, font));
+        if (showCreatorChip(index)) {
+            cx = last(c).x() + last(c).w() + CHIP_GAP;
+            c.add(chip(Kind.CREATOR, creatorLabel(filters.creator()),
+                !filters.creator().isEmpty(), cx, font));
         }
         chips = c;
 
@@ -133,7 +187,7 @@ public final class EditorBrowserPane {
         // Tiles of the active strip, filtered.
         String typeName = EditorScreenState.effectiveTypeName(index);
         List<EditorRosterIndex.Tile> all = page == null ? List.of() : index.tiles(page, typeName);
-        tiles = EditorRosterIndex.filter(all, EditorScreenState.filter(), EditorScreenState.text());
+        tiles = EditorRosterIndex.filter(all, EditorScreenState.filters(), EditorScreenState.text());
 
         // The sub-variant grid, when the selection is a group or a member of one.
         subParent = null;
@@ -146,7 +200,7 @@ public final class EditorBrowserPane {
             if (parent != null && page != null && index.groupOf(parent.key()) != null
                 && index.groupOf(parent.key()).typeName().equals(typeName)) {
                 subParent = parent;
-                subTiles = EditorRosterIndex.subVariants(parent, EditorScreenState.filter(), EditorScreenState.text());
+                subTiles = EditorRosterIndex.subVariants(parent, EditorScreenState.filters(), EditorScreenState.text());
             }
         }
 
@@ -189,7 +243,7 @@ public final class EditorBrowserPane {
         // Filter chips.
         for (int i = 0; i < chips.size(); i++) {
             Chip chip = chips.get(i);
-            boolean on = chip.filter() == EditorScreenState.filter();
+            boolean on = chip.on();
             boolean hov = hovered.kind() == HitKind.CHIP && hovered.index() == i;
             g.fill(chip.x(), filterRect.y(), chip.x() + chip.w(), filterRect.bottom(),
                 hov ? CELL_HOVER : (on ? CELL_ON : CELL_IDLE));

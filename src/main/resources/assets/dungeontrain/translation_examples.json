@@ -4005,5 +4005,14 @@
         "nether"
       ]
     }
+  },
+  "gui.dungeontrain.editor_screen.filter.creator": {
+    "1": {
+      "label": "the name of the imported content package whose builds are being shown — one contributor's drop",
+      "examples": [
+        "night_market",
+        "oldtown_pack"
+      ]
+    }
   }
 }

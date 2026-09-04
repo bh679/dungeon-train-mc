@@ -37,7 +37,9 @@ final class EditorRosterIndexTest {
         return new EditorRosterIndex(List.of(
             new EditorRosterPacket.Group("carriages", "Carriages", "", List.of(e(standard, EditorPlotLabelsPacket.NO_WEIGHT))),
             new EditorRosterPacket.Group("parts", "Floor", "floor", List.of(e(oakFloor, EditorPlotLabelsPacket.NO_WEIGHT))),
-            new EditorRosterPacket.Group("contents", "Contents", "", List.of(e(armor, 2), e(cows, EditorPlotLabelsPacket.NO_WEIGHT))),
+            new EditorRosterPacket.Group("contents", "Contents", "", List.of(
+                new EditorRosterPacket.Entry(armor, 2, "night_market"),
+                e(cows, EditorPlotLabelsPacket.NO_WEIGHT))),
             new EditorRosterPacket.Group("portals", "Dimensional Carriage", "portal_room", List.of(e(house, 1)))),
             "contents", new EditorRosterPacket.TrainSize(9, 7, 7));
     }
@@ -68,17 +70,52 @@ final class EditorRosterIndexTest {
     }
 
     @Test
-    @DisplayName("filters keep a group parent whenever one of its members passes")
-    void filterKeepsParentOfHit() {
+    @DisplayName("no toggle set filters nothing; the two toggles add up rather than replacing each other")
+    void togglesAddUp() {
         EditorRosterIndex idx = sample();
         List<EditorRosterIndex.Tile> tiles = idx.tiles(PlotCategory.CONTENTS, "Contents");
-        List<EditorRosterIndex.Tile> community = EditorRosterIndex.filter(tiles, EditorRosterIndex.Filter.COMMUNITY, "");
-        assertEquals(List.of("armor"), community.stream().map(t -> t.variant().name()).toList());
-        List<EditorRosterIndex.Tile> mine = EditorRosterIndex.filter(tiles, EditorRosterIndex.Filter.MINE, "");
-        assertEquals(List.of("cows"), mine.stream().map(t -> t.variant().name()).toList());
-        List<EditorRosterIndex.Tile> text = EditorRosterIndex.filter(tiles, EditorRosterIndex.Filter.ALL, "5");
-        assertEquals(List.of("armor"), text.stream().map(t -> t.variant().name()).toList());
-        assertTrue(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filter.BUILTIN, "zzz").isEmpty());
+        List<String> all = names(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filters.NONE, ""));
+        assertEquals(List.of("armor", "cows"), all, "nothing set means nothing filtered out");
+
+        EditorRosterIndex.Filters mine = EditorRosterIndex.Filters.NONE.withMine(true);
+        assertEquals(List.of("cows"), names(EditorRosterIndex.filter(tiles, mine, "")));
+
+        // Built-in on its own keeps the parent, because a member of it is built-in.
+        EditorRosterIndex.Filters builtin = EditorRosterIndex.Filters.NONE.withBuiltin(true);
+        assertEquals(List.of("armor"), names(EditorRosterIndex.filter(tiles, builtin, "")));
+
+        // Both together is the union — the thing the old one-of-four picker could not say.
+        assertEquals(List.of("armor", "cows"),
+            names(EditorRosterIndex.filter(tiles, mine.withBuiltin(true), "")));
+    }
+
+    @Test
+    @DisplayName("the creator filter narrows to one package, and text still applies on top")
+    void creatorFilter() {
+        EditorRosterIndex idx = sample();
+        List<EditorRosterIndex.Tile> tiles = idx.tiles(PlotCategory.CONTENTS, "Contents");
+        assertEquals(List.of("night_market"), idx.creators());
+
+        EditorRosterIndex.Filters byPack = EditorRosterIndex.Filters.NONE.withCreator("night_market");
+        assertEquals(List.of("armor"), names(EditorRosterIndex.filter(tiles, byPack, "")));
+        assertTrue(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filters.NONE.withCreator("nope"), "").isEmpty());
+        assertEquals(List.of("armor"),
+            names(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filters.NONE, "5")));
+        assertTrue(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filters.NONE.withBuiltin(true), "zzz").isEmpty());
+    }
+
+    @Test
+    @DisplayName("the creator chip steps through every package and back to all of them")
+    void creatorCycles() {
+        List<String> creators = List.of("night_market", "oldtown");
+        assertEquals("night_market", EditorBrowserPane.nextCreator("", creators));
+        assertEquals("oldtown", EditorBrowserPane.nextCreator("night_market", creators));
+        assertEquals("", EditorBrowserPane.nextCreator("oldtown", creators), "wraps back to every creator");
+        assertEquals("", EditorBrowserPane.nextCreator("night_market", List.of()));
+    }
+
+    private static List<String> names(List<EditorRosterIndex.Tile> tiles) {
+        return tiles.stream().map(t -> t.variant().name()).toList();
     }
 
     @Test
@@ -88,11 +125,12 @@ final class EditorRosterIndexTest {
         EditorRosterIndex.Tile armor = idx.tiles(PlotCategory.CONTENTS, "Contents").get(0);
         assertTrue(armor.isGroup());
         assertEquals(2, armor.selfWeight());
-        List<EditorRosterIndex.Tile> members = EditorRosterIndex.subVariants(armor, EditorRosterIndex.Filter.ALL, "");
+        List<EditorRosterIndex.Tile> members = EditorRosterIndex.subVariants(armor, EditorRosterIndex.Filters.NONE, "");
         assertEquals(1, members.size());
         assertEquals("armor", members.get(0).key().parentId());
         assertTrue(members.get(0).key().isSubVariant());
-        assertTrue(EditorRosterIndex.subVariants(armor, EditorRosterIndex.Filter.MINE, "").isEmpty());
+        assertTrue(EditorRosterIndex.subVariants(armor,
+            EditorRosterIndex.Filters.NONE.withMine(true), "").isEmpty());
     }
 
     @Test

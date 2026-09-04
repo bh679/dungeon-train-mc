@@ -427,7 +427,8 @@ public final class EditorGuiScreen extends Screen {
         EditorRosterIndex index = EditorRosterClient.index();
         switch (hit.kind()) {
             case CHIP -> {
-                EditorScreenState.setFilter(browser.chipAt(hit.index()));
+                EditorScreenState.setFilters(
+                    browser.applyChip(hit.index(), EditorScreenState.filters(), index));
                 browser.resetScroll();
             }
             case STRIP -> {

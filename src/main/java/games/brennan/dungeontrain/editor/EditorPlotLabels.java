@@ -278,6 +278,21 @@ public final class EditorPlotLabels {
      * {@link UserContentPaths#provenanceOf(String, String)}, which checks
      * {@code user/} first and then every imported package directory.</p>
      */
+    /** Which imported package {@code file} came from, or {@code ""}. See {@link UserContentPaths#sourceOf}. */
+    static String sourceOf(java.nio.file.Path file) {
+        java.nio.file.Path userRoot = UserContentPaths.root();
+        java.nio.file.Path relPath;
+        try {
+            relPath = userRoot.relativize(file);
+        } catch (IllegalArgumentException unrelated) {
+            return "";
+        }
+        if (relPath.getNameCount() == 0) return "";
+        java.nio.file.Path parent = relPath.getParent();
+        String subSlug = parent == null ? "" : parent.toString().replace('\\', '/');
+        return UserContentPaths.sourceOf(subSlug, relPath.getFileName().toString());
+    }
+
     static Provenance provenanceOf(java.nio.file.Path file) {
         java.nio.file.Path userRoot = UserContentPaths.root();
         java.nio.file.Path relPath;

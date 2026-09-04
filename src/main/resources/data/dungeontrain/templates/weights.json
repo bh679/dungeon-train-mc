@@ -14,7 +14,7 @@
   "portal_short": 1,
   "shared": 1,
   "standard": {
-    "weight": 18,
+    "weight": 20,
     "minLevel": 51,
     "maxLevel": 70,
     "phases": [

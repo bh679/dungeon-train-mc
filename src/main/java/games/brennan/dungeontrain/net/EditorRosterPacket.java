@@ -47,8 +47,19 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         }
     }
 
-    /** One template row plus its group's self weight ({@code NO_WEIGHT} when it is no group). */
-    public record Entry(EditorTypeMenusPacket.Variant variant, int selfWeight) {}
+    /**
+     * One template row, its group's self weight ({@code NO_WEIGHT} when it is no group), and the
+     * imported package it came from ({@code ""} for the author's own and for bundled builds).
+     */
+    public record Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, String source) {
+        public Entry {
+            if (source == null) source = "";
+        }
+
+        public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight) {
+            this(variant, selfWeight, "");
+        }
+    }
 
     public static final Type<EditorRosterPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_roster"));
@@ -81,6 +92,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             for (Entry e : g.entries()) {
                 EditorTypeMenusPacket.encodeVariant(buf, e.variant());
                 buf.writeVarInt(e.selfWeight());
+                buf.writeUtf(e.source(), 64);
             }
         }
     }
@@ -98,7 +110,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             List<Entry> entries = new ArrayList<>(en);
             for (int j = 0; j < en; j++) {
                 EditorTypeMenusPacket.Variant v = EditorTypeMenusPacket.decodeVariant(buf);
-                entries.add(new Entry(v, buf.readVarInt()));
+                entries.add(new Entry(v, buf.readVarInt(), buf.readUtf(64)));
             }
             groups.add(new Group(categoryId, typeName, modelId, entries));
         }

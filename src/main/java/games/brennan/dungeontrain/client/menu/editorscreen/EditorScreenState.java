@@ -14,7 +14,7 @@ public final class EditorScreenState {
 
     private static EditorScreenPage page = EditorScreenPage.CARRIAGES;
     private static String typeName = "";
-    private static EditorRosterIndex.Filter filter = EditorRosterIndex.Filter.ALL;
+    private static EditorRosterIndex.Filters filters = EditorRosterIndex.Filters.NONE;
     private static String text = "";
     private static VariantKey selection;
 
@@ -22,7 +22,7 @@ public final class EditorScreenState {
 
     public static EditorScreenPage page() { return page; }
     public static String typeName() { return typeName; }
-    public static EditorRosterIndex.Filter filter() { return filter; }
+    public static EditorRosterIndex.Filters filters() { return filters; }
     public static String text() { return text; }
     public static VariantKey selection() { return selection; }
 
@@ -36,8 +36,8 @@ public final class EditorScreenState {
         typeName = next == null ? "" : next;
     }
 
-    public static void setFilter(EditorRosterIndex.Filter next) {
-        filter = next == null ? EditorRosterIndex.Filter.ALL : next;
+    public static void setFilters(EditorRosterIndex.Filters next) {
+        filters = next == null ? EditorRosterIndex.Filters.NONE : next;
     }
 
     public static void setText(String next) {
@@ -72,7 +72,7 @@ public final class EditorScreenState {
         EditorScreenPage target = EditorScreenPage.forCategory(selection.category());
         if (target != null) page = target;
         typeName = group != null ? group.typeName() : "";
-        filter = EditorRosterIndex.Filter.ALL;
+        filters = EditorRosterIndex.Filters.NONE;
         text = "";
     }
 

@@ -536,7 +536,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * Extracted as a pure predicate so the unit test can pin behavior without having to mutate
      * {@link VersionInfo}'s static initializer.
      */
-    static boolean shouldShowDevModeToggle(String branch) {
+    public static boolean shouldShowDevModeToggle(String branch) {
         return !"main".equals(branch);
     }
 

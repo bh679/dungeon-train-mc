@@ -92,9 +92,36 @@ public final class EditorRoster {
         List<EditorRosterPacket.Entry> entries = new ArrayList<>(rows.size());
         for (EditorTypeMenusPacket.Variant v : rows) {
             int self = selfWeight == null ? EditorPlotLabelsPacket.NO_WEIGHT : selfWeight.of(v);
-            entries.add(new EditorRosterPacket.Entry(v, self));
+            entries.add(new EditorRosterPacket.Entry(v, self, sourceOf(v)));
         }
         return new EditorRosterPacket.Group(categoryId, typeName, modelId, entries);
+    }
+
+    /**
+     * Which imported package a row's template came from, or {@code ""}.
+     *
+     * <p>Only asked for imported rows: the lookup walks the package directories, and every bundled
+     * or authored template would walk them all to answer "none".</p>
+     */
+    private static String sourceOf(EditorTypeMenusPacket.Variant v) {
+        if (!v.isImported()) return "";
+        PlotCategory category = v.plotCategory();
+        if (category == null) return "";
+        return switch (category) {
+            case CARRIAGES -> EditorPlotLabels.sourceOf(CarriageTemplateStore.fileForId(v.modelId()));
+            case CONTENTS -> EditorPlotLabels.sourceOf(CarriageContentsStore.fileForId(v.modelId()));
+            case PARTS -> {
+                CarriagePartKind kind = CarriagePartKind.fromId(v.modelId());
+                yield kind == null ? "" : EditorPlotLabels.sourceOf(
+                    CarriagePartTemplateStore.fileFor(kind, v.modelName()));
+            }
+            case TRACKS, PORTALS -> {
+                TrackKind kind = TrackKind.fromId(v.modelId());
+                yield kind == null ? "" : EditorPlotLabels.sourceOf(
+                    games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, v.modelName()));
+            }
+            case ARCHITECTURE -> "";
+        };
     }
 
     /** How a group parent's own template is weighted against its members — see the sidecars. */
