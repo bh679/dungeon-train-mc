@@ -17,14 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The updates card on the death screen's donation page — the third tile of the grid, in every
- * state. Two lines: how many updates have shipped, and the span they landed in. It displaces the
- * month's takings while the server bill is still the ask, and the settled bill itself once that
- * bill is paid.
+ * The updates card on the death screen's donation page — one of the five cards an experiment arm
+ * can place in the grid's two variable slots (see {@code DonateCards}). A figure over a caption,
+ * like every other card: how many updates have shipped, and the span they landed in.
  *
  * <pre>
- *   765 Updates
- *   in 1 week
+ *   765
+ *   Updates this week
  * </pre>
  *
  * <p>An <b>update</b> is a MINOR version bump: one per Gate 3 merge, one shipped change. The
@@ -245,40 +244,48 @@ public final class UpdateStats {
         return NumberFormat.getIntegerInstance(locale).format(f.week());
     }
 
-    /** The card's first line — "765 Updates" — for the language chosen in Minecraft. */
+    /** The card's figure — "765" — grouped for the language chosen in Minecraft. */
     public static Component value(Figures f, boolean hovered) {
-        return value(f, hovered, ClientLanguage.selected());
+        return value(f, hovered, DevHours.clientLocale());
     }
 
-    /** As {@link #value(Figures, boolean)}, for an explicit Minecraft language code. */
-    public static Component value(Figures f, boolean hovered, String localeCode) {
-        return PluralRules.clause(localeCode, "gui.dungeontrain.death.narr.updates_value",
-                countOf(f, span(f, hovered)));
+    /**
+     * As {@link #value(Figures, boolean)}, for an explicit grouping locale — kept pure for tests.
+     *
+     * <p>The bare number, with the word "Updates" moved down into the label: every other card in
+     * the grid is a figure over a caption, and this was the one that put a word on the value
+     * line.</p>
+     */
+    public static Component value(Figures f, boolean hovered, java.util.Locale grouping) {
+        return Component.literal(
+                NumberFormat.getIntegerInstance(grouping).format(countOf(f, span(f, hovered))));
     }
 
-    /** The card's second line — "in 1 week" / "in 5 months" / "in 1 year". */
+    /** The card's caption — "Updates this week" / "Updates this year" — in one line. */
     public static Component label(Figures f, boolean hovered) {
         return label(f, hovered, ClientLanguage.selected());
     }
 
-    /** As {@link #label(Figures, boolean)}, for an explicit Minecraft language code. */
-    public static Component label(Figures f, boolean hovered, String localeCode) {
-        return Component.translatable("gui.dungeontrain.death.narr.lbl_updates_in",
-                spanClause(f, span(f, hovered), localeCode));
-    }
-
     /**
-     * The span itself as a localized "N unit" clause, through the same
-     * {@code chat.dungeontrain.time.*} plural family {@link PresenceLine} uses for durations —
-     * so "1 week", "5 months" and "1 year" each take the grammatical number their language wants.
+     * As {@link #label(Figures, boolean)}, for an explicit Minecraft language code.
+     *
+     * <p>Still span-dependent, because hovering swaps the count to the longest window on offer and
+     * a caption that kept saying "this week" would then be a lie. The three named spans get their
+     * own whole sentence rather than an "Updates in %s" template: languages do not all build "in
+     * one week" the same way, and a template forces every translator through the one shape English
+     * happens to use. The unnamed case — a project younger than a year — is the exception, and
+     * keeps the template plus the existing month clause.</p>
      */
-    private static Component spanClause(Figures f, Span span, String localeCode) {
+    public static Component label(Figures f, boolean hovered, String localeCode) {
+        Span span = span(f, hovered);
         return switch (span) {
-            case WEEK -> PluralRules.clause(localeCode, "chat.dungeontrain.time.week", 1);
-            case MONTH -> PluralRules.clause(localeCode, "chat.dungeontrain.time.month", 1);
+            case WEEK -> Component.translatable("gui.dungeontrain.death.narr.lbl_updates_week");
+            case MONTH -> Component.translatable("gui.dungeontrain.death.narr.lbl_updates_month");
             case WINDOW -> f.windowMonths() >= MONTHS_IN_YEAR
-                    ? PluralRules.clause(localeCode, "chat.dungeontrain.time.year", 1)
-                    : PluralRules.clause(localeCode, "chat.dungeontrain.time.month", f.windowMonths());
+                    ? Component.translatable("gui.dungeontrain.death.narr.lbl_updates_year")
+                    : Component.translatable("gui.dungeontrain.death.narr.lbl_updates_months",
+                            PluralRules.clause(localeCode, "chat.dungeontrain.time.month",
+                                    f.windowMonths()));
         };
     }
 
