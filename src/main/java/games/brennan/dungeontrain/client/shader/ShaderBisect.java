@@ -38,6 +38,7 @@ public final class ShaderBisect {
         NO_SKYBOX_REOPEN("skybox hole reopen OFF"),
         NO_SPOOF("shader world spoof OFF"),
         NO_POST_FOG("post-composite fog OFF"),
+        NO_BAND_LIGHTMAP("band lightmap pin/lift OFF"),
         ALL_NEW_OFF("all shader work OFF (pre-branch behaviour)");
 
         private final String label;
@@ -128,9 +129,25 @@ public final class ShaderBisect {
         return allow(Mode.NO_POST_FOG);
     }
 
+    /**
+     * Whether a band may pin the daylight and lift the lightmap floor.
+     *
+     * <p>The one switchable thing here that predates this branch, and it earns the exception: the
+     * lift raises the lightmap's <em>floor</em>, which brightens enclosed space, and under a pack's
+     * per-dimension programs that is indistinguishable by eye from light leaking through walls.
+     * Being able to switch it off separates "Dungeon Train lifted it" from "the pack lit a world
+     * whose light data says overworld", which are different faults with different fixes.</p>
+     */
+    public static boolean bandLightmapEnabled() {
+        return allow(Mode.NO_BAND_LIGHTMAP);
+    }
+
     private static boolean allow(Mode disabledBy) {
         Mode m = mode;
-        return m != disabledBy && m != Mode.ALL_NEW_OFF;
+        if (m == disabledBy) return false;
+        // ALL_NEW_OFF means "as the mod behaved before this branch", so it must not switch off the
+        // band lightmap, which shipped long before any of this.
+        return m != Mode.ALL_NEW_OFF || disabledBy == Mode.NO_BAND_LIGHTMAP;
     }
 
     /** For the sweep log, so a run carries which mode produced it. */
