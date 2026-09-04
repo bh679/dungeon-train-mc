@@ -330,7 +330,9 @@ public final class TemplateDataSheet {
         int y = r.y() + 1;
         for (Line line : lines) {
             if (y + font.lineHeight > r.bottom()) break;
-            int x = r.x() + 2 + labelW + LABEL_GAP;
+            // A continuation line has no label, so it has no label column to clear either — it
+            // starts at the left edge and gets the whole width for the row it carries on.
+            int x = line.label().isEmpty() ? r.x() + 2 : r.x() + 2 + labelW + LABEL_GAP;
             for (Cell cell : line.cells()) {
                 int w = font.width(cell.text());
                 if (x + w > r.right()) break;

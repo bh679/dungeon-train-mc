@@ -188,6 +188,17 @@ final class TemplateDataSheetTest {
         for (TemplateDataSheet.Placed p : placed) {
             assertTrue(p.rect().x() >= r.x() && p.rect().right() <= r.right() + 2, "cell escaped: " + p);
         }
+        // A labelled line clears the label column; a continuation line starts at the left edge.
+        List<TemplateDataSheet.Line> withGate = carriageSheet(15, List.of());
+        List<TemplateDataSheet.Placed> gatePlaced = TemplateDataSheet.place(withGate, r, new FixedFont());
+        int labelled = gatePlaced.stream().filter(p -> p.rect().y() == gatePlaced.get(0).rect().y())
+            .findFirst().orElseThrow().rect().x();
+        int continuation = gatePlaced.stream()
+            .filter(p -> "Lv".equals(p.cell().text())).findFirst().orElseThrow().rect().x();
+        assertTrue(continuation < labelled,
+            "the unlabelled line must not be indented under the label column");
+        assertEquals(r.x() + 2, continuation);
+
         TemplateDataSheet.Placed clickable = placed.stream().filter(p -> p.cell().action() != null)
             .findFirst().orElseThrow();
         assertEquals(placed.indexOf(clickable),
