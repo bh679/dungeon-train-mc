@@ -1774,30 +1774,45 @@ public final class NarrativeDeathScreen extends Screen {
      * requested, so the summary fetch stays anonymous.</p>
      */
     private DonateCards.Arm donateArm(DonationSummaryClient.Summary s) {
-        // Everything here happens ONCE per screen. This method runs every frame, so a rotation
-        // advanced from the draw path would deal a new pair sixty times a second.
-        if (donatePair == null) {
-            UUID uuid = this.minecraft != null && this.minecraft.getUser() != null
-                    ? this.minecraft.getUser().getProfileId() : null;
-            donateAssignment = DonateExperiment.resolve(s.experiment(), uuid, DonateCards.knownArms());
-            DonateCards.Arm assigned = DonateCards.armOf(donateAssignment.arm());
-            // A dev override changes what is DRAWN and never what is reported: the telemetry below
-            // keeps the arm this player actually belongs to, so flipping through layouts cannot
-            // write rows claiming clicks for an arm nobody was assigned.
-            DonateCards.Arm forced = DonateArmOverride.get();
-            DonateCards.Arm drawing = forced != null ? forced : assigned;
-            // The rotating arm shows a different one of the five pairs each death. The offset
-            // spreads where players start in that cycle — see DonateCards.pairFor.
-            donatePair = DonateCards.drawnPair(drawing, DonateRotationCounter.next(),
-                    uuid == null ? 0 : Math.floorMod(uuid.hashCode(), DonateCards.FIXED.size()));
-            // Label the funnel from here on. Every death-screen event carries the arm, not just the
-            // Contribute click, so a difference can be traced to where in the page it happened. The
-            // pair rides alongside it for the rotating arm, whose arm id alone cannot say what was
-            // on screen.
-            UiAnalytics.setVariant(donateAssignment.experimentId(), donateAssignment.arm(),
-                    assigned.rotating() ? donatePair.id() : null);
-        }
+        resolveDonateAssignment(s);
         return donatePair;
+    }
+
+    /**
+     * Pick this player's arm — and, in the rotating arm, this death's pair — and label the funnel
+     * with them. Idempotent, and deliberately called from the screen's OPEN path rather than only
+     * from the draw path.
+     *
+     * <p>It used to run on the first paint of the donation page, which was too late by one event:
+     * the page's own {@code open} fires when the player navigates to it, so {@code reached_donate}
+     * — the denominator of every per-arm rate — went out carrying no arm at all. Resolving at open
+     * needs no network of its own, because the summary is normally already in
+     * {@link DonationSummaryCache} from the title-screen prefetch; when it is not, the draw path
+     * still resolves as a fallback and only that first page event goes unlabelled.</p>
+     */
+    private void resolveDonateAssignment(DonationSummaryClient.Summary s) {
+        // Once per screen. The draw path calls this every frame, so a rotation advanced here
+        // without the latch would deal a new pair sixty times a second.
+        if (donatePair != null || s == null) return;
+        UUID uuid = this.minecraft != null && this.minecraft.getUser() != null
+                ? this.minecraft.getUser().getProfileId() : null;
+        donateAssignment = DonateExperiment.resolve(s.experiment(), uuid, DonateCards.knownArms());
+        DonateCards.Arm assigned = DonateCards.armOf(donateAssignment.arm());
+        // A dev override changes what is DRAWN and never what is reported: the telemetry below
+        // keeps the arm this player actually belongs to, so flipping through layouts cannot
+        // write rows claiming clicks for an arm nobody was assigned.
+        DonateCards.Arm forced = DonateArmOverride.get();
+        DonateCards.Arm drawing = forced != null ? forced : assigned;
+        // The rotating arm shows a different one of the five pairs each death. The offset
+        // spreads where players start in that cycle — see DonateCards.pairFor.
+        donatePair = DonateCards.drawnPair(drawing, DonateRotationCounter.next(),
+                uuid == null ? 0 : Math.floorMod(uuid.hashCode(), DonateCards.FIXED.size()));
+        // Label the funnel from here on. Every death-screen event carries the arm, not just the
+        // Contribute click, so a difference can be traced to where in the page it happened. The
+        // pair rides alongside it for the rotating arm, whose arm id alone cannot say what was
+        // on screen.
+        UiAnalytics.setVariant(donateAssignment.experimentId(), donateAssignment.arm(),
+                assigned.rotating() ? donatePair.id() : null);
     }
 
     /**
@@ -2522,10 +2537,19 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private void kickDonationFetch() {
         OfficialLinks.ensureFetched();
+        // Settle the A/B arm before any page event goes out: reached_donate is the denominator of
+        // every per-arm rate, and it fires on navigation, well before the page is first drawn.
+        // The cache is normally warm from the title-screen prefetch, so this costs nothing.
+        resolveDonateAssignment(DonationSummaryCache.get());
         Minecraft mc = Minecraft.getInstance();
         String name = mc.getUser() != null ? mc.getUser().getName() : null;
         DonationSummaryClient.fetch(name, summary ->
-                Minecraft.getInstance().execute(() -> DonationSummaryCache.set(summary)));
+                Minecraft.getInstance().execute(() -> {
+                    DonationSummaryCache.set(summary);
+                    // A cold cache — a first death before the prefetch landed. Label what is left
+                    // of this screen's funnel rather than none of it.
+                    resolveDonateAssignment(summary);
+                }));
     }
 
     /** Open the full-screen Contribute window (Revolut / Patreon options), returning here on close. */
