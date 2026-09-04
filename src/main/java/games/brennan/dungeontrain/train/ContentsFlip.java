@@ -102,6 +102,23 @@ public final class ContentsFlip {
         return new Random(seed).nextBoolean();
     }
 
+    /** What {@link #label} reports when nothing flipped — the authored orientation. */
+    public static final String LABEL_NONE = "none";
+
+    /**
+     * How a flip reads on the F3+4 debug panel: {@link #LABEL_NONE} when the stamp came out
+     * authored, else the flipped axes joined ({@code X}, {@code Z}, {@code X+Z}, {@code X+Y+Z}).
+     * Here rather than at the panel so the recorded label and the roll can never drift apart.
+     */
+    public static String label(Flip flip) {
+        if (flip == null || flip.isNone()) return LABEL_NONE;
+        StringBuilder out = new StringBuilder(5);
+        if (flip.x()) out.append("X");
+        if (flip.y()) out.append(out.isEmpty() ? "Y" : "+Y");
+        if (flip.z()) out.append(out.isEmpty() ? "Z" : "+Z");
+        return out.toString();
+    }
+
     /**
      * Where an authored cell ends up inside the same box once {@code flip} is applied:
      * {@code c → size-1-c} on each flipped axis. Its own inverse.

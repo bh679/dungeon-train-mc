@@ -271,8 +271,12 @@ public final class CarriageContentsPlacer {
      * <p>The editor never flips: an author looking at a plot must see what they authored, and the
      * sentinel pIdx is exactly the "this is not a train carriage" signal the rest of this class
      * already uses.</p>
+     *
+     * <p>Package-visible because {@code CarriagePlacer} records the same answer into
+     * {@link PlacedCarriageFacts} for the F3+4 panel. It calls THIS method rather than rolling its
+     * own so the panel can never disagree with the stamp.</p>
      */
-    private static Flip carriageFlip(CarriageContents contents, long seed, int carriageIndex) {
+    static Flip carriageFlip(CarriageContents contents, long seed, int carriageIndex) {
         if (carriageIndex == EDITOR_SENTINEL_PIDX) return Flip.NONE;
         return ContentsFlip.roll(contents.id(),
             CarriageContentsWeights.current().flipFor(contents.id()), seed, carriageIndex);

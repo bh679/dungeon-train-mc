@@ -137,6 +137,18 @@ final class ContentsFlipTest {
     }
 
     @Test
+    @DisplayName("the debug label names the flipped axes, or none")
+    void labelNamesTheAxes() {
+        assertEquals("none", ContentsFlip.label(Flip.NONE));
+        assertEquals("none", ContentsFlip.label(null));
+        assertEquals("X", ContentsFlip.label(new Flip(true, false, false)));
+        assertEquals("Y", ContentsFlip.label(new Flip(false, true, false)));
+        assertEquals("Z", ContentsFlip.label(new Flip(false, false, true)));
+        assertEquals("X+Z", ContentsFlip.label(new Flip(true, false, true)));
+        assertEquals("X+Y+Z", ContentsFlip.label(new Flip(true, true, true)));
+    }
+
+    @Test
     @DisplayName("yaw mirrors with the axes: X negates it, Z reflects it about 180")
     void yawMirrors() {
         assertEquals(-90.0f, ContentsFlip.reflectYaw(90.0f, new Flip(true, false, false)), 1e-4);
