@@ -932,6 +932,8 @@
       "gui.dungeontrain.editor_screen.sheet.weight_down",
       "gui.dungeontrain.editor_screen.undo_nothing",
       "gui.dungeontrain.editor_screen.redo_nothing",
+      "gui.dungeontrain.editor_screen.sheet.train_size",
+      "gui.dungeontrain.editor_screen.go_here",
       "gui.dungeontrain.options.button",
       "gui.dungeontrain.options.title",
       "gui.dungeontrain.options.starts_with_train",

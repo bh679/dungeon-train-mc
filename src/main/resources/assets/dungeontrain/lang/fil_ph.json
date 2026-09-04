@@ -958,6 +958,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "Mas magaan — mas bihirang mapili",
   "gui.dungeontrain.editor_screen.undo_nothing": "Walang pwedeng i-undo",
   "gui.dungeontrain.editor_screen.redo_nothing": "Walang pwedeng i-redo",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "Ang sukat ng buong tren — bawat bagon, bahagi, at riles sa mundong ito. Ang pagbabago nito ay muling bubuo sa mga plot ng editor, at ang mga build na ginawa sa lumang sukat ay hindi na lilitaw hanggang maibalik ito.",
+  "gui.dungeontrain.editor_screen.go_here": "Pumunta rito",
   "gui.dungeontrain.options.button": "Mga Opsyon ng Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Mga Opsyon ng Mundo",
   "gui.dungeontrain.options.starts_with_train": "Nagsisimula na may tren",

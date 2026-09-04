@@ -615,6 +615,12 @@ public final class EditorCommand {
                         .executes(ctx -> runRenameCarriageById(ctx.getSource(),
                             StringArgumentType.getString(ctx, "id"),
                             StringArgumentType.getString(ctx, "new_name"))))))
+            // The train's own footprint — shared by every carriage, part and track in the world.
+            // Not to be confused with `editor portals size`, which is one room's box.
+            .then(Commands.literal("size")
+                .then(trainSizeNode("length"))
+                .then(trainSizeNode("width"))
+                .then(trainSizeNode("height")))
             .then(Commands.literal("exit").executes(ctx -> runExit(ctx.getSource())))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("blocks").executes(ctx -> runBlocks(ctx.getSource())))
@@ -3410,6 +3416,89 @@ public final class EditorCommand {
      * <p>Every id-addressed edit that reads blocks back out of a plot needs this: the plots of any
      * other category were wiped by the last category switch.</p>
      */
+    /**
+     * Resize the train itself: how long, wide and tall every carriage in this world is.
+     *
+     * <p><b>This is a world setting, not a template's.</b> A carriage plot is not sized by the
+     * build standing in it — every carriage, part and track shares one footprint, chosen when the
+     * world was made. Changing it here changes all of them at once, and the plots must be stamped
+     * again at the new size or the editor would keep showing cages that no longer match what is
+     * inside them.</p>
+     *
+     * <p>The cost worth knowing about: every store filters what it loads against the world's
+     * dimensions, so a template authored at the old size stops loading at the new one. It is still
+     * on disk, and setting the size back brings it back — but it will be missing from the roster
+     * meanwhile, which is why this says so rather than letting builds quietly disappear.</p>
+     *
+     * @param arg {@code dec} / {@code inc} to nudge by one, or a number to set outright
+     */
+    /** {@code editor size <axis> <dec|inc|N>} — one axis of the train's footprint. */
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> trainSizeNode(String axis) {
+        return Commands.literal(axis)
+            .then(Commands.argument("amount", StringArgumentType.word())
+                .executes(ctx -> runTrainSize(ctx.getSource(), axis,
+                    StringArgumentType.getString(ctx, "amount"))));
+    }
+
+    private static int runTrainSize(CommandSourceStack source, String axis, String arg) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        CarriageDims dims = data.dims();
+
+        int current = switch (axis) {
+            case "length" -> dims.length();
+            case "width" -> dims.width();
+            default -> dims.height();
+        };
+        int next;
+        if ("dec".equals(arg)) {
+            next = current - 1;
+        } else if ("inc".equals(arg)) {
+            next = current + 1;
+        } else {
+            try {
+                next = Integer.parseInt(arg.trim());
+            } catch (NumberFormatException e) {
+                source.sendFailure(Component.literal("'" + arg + "' is not a number."));
+                return 0;
+            }
+        }
+
+        CarriageDims updated;
+        try {
+            updated = switch (axis) {
+                case "length" -> CarriageDims.clamp(next, dims.width(), dims.height());
+                case "width" -> CarriageDims.clamp(dims.length(), next, dims.height());
+                default -> CarriageDims.clamp(dims.length(), dims.width(), next);
+            };
+        } catch (RuntimeException e) {
+            source.sendFailure(Component.literal(
+                "Train " + axis + " " + next + " is out of range."));
+            return 0;
+        }
+        if (updated.length() == dims.length() && updated.width() == dims.width()
+            && updated.height() == dims.height()) {
+            source.sendFailure(Component.literal(
+                "Train " + axis + " is already " + current + " — it cannot go further that way."));
+            return 0;
+        }
+
+        data.apply(data.getTrainY(), data.startsWithTrain(), updated);
+        source.sendSuccess(() -> Component.literal(
+            "Train is now " + updated.length() + " × " + updated.width() + " × " + updated.height()
+                + " — every carriage, part and track in this world."), true);
+        source.sendSuccess(() -> Component.literal(
+            "Templates authored at the old size will not load until it is set back."
+        ).withStyle(ChatFormatting.YELLOW), false);
+
+        // The cages are still the old size until they are stamped again, and nothing else
+        // re-measures them — so re-enter whichever category the author is in.
+        EditorCategory stamped = EditorStampedCategoryState.current().orElse(null);
+        return stamped == null ? 1 : runEnterCategory(source, stamped);
+    }
+
     private static boolean requireStamped(CommandSourceStack source, EditorCategory category) {
         EditorCategory stamped = EditorStampedCategoryState.current().orElse(null);
         if (stamped == category) return true;

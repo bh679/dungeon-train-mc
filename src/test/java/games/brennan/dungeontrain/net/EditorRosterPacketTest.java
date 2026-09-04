@@ -34,7 +34,7 @@ final class EditorRosterPacketTest {
                 List.of(new EditorRosterPacket.Entry(carriage, EditorPlotLabelsPacket.NO_WEIGHT))),
             new EditorRosterPacket.Group("contents", "Contents", "",
                 List.of(new EditorRosterPacket.Entry(parent, 3)))),
-            "contents");
+            "contents", new EditorRosterPacket.TrainSize(9, 7, 7));
     }
 
     @Test
@@ -52,13 +52,16 @@ final class EditorRosterPacketTest {
         assertEquals(List.of("desert"), parent.subVariants().get(0).stageIds());
         assertTrue(parent.subVariants().get(0).isUser());
         assertEquals(EditorPlotLabelsPacket.NO_WEIGHT, decoded.groups().get(0).entries().get(0).selfWeight());
+        assertEquals(new EditorRosterPacket.TrainSize(9, 7, 7), decoded.trainSize());
+        assertTrue(decoded.trainSize().isKnown());
     }
 
     @Test
     @DisplayName("an empty roster is buffer-symmetric and normalises a null stamped category")
     void empty() {
-        EditorRosterPacket decoded = roundTrip(new EditorRosterPacket(List.of(), null));
+        EditorRosterPacket decoded = roundTrip(new EditorRosterPacket(List.of(), null, null));
         assertTrue(decoded.groups().isEmpty());
         assertEquals("", decoded.stampedCategoryId());
+        assertFalse(decoded.trainSize().isKnown(), "an unknown footprint leaves the sheet measuring");
     }
 }

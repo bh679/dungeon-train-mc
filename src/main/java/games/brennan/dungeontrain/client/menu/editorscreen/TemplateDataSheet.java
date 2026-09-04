@@ -6,8 +6,10 @@ import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
+import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.gui.Font;
@@ -100,27 +102,56 @@ public final class TemplateDataSheet {
         String pending = EditorScreenLang.text(EditorScreenLang.SHEET_PENDING);
 
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_PATH), pathLabel));
-        out.add(sizeLine(summary, roomRows, pending));
+        out.add(sizeLine(summary, roomRows, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS), blocks(summary, pending)));
         out.add(weightLine(tile, key, pending));
-        out.add(stageLine(v, key, pending));
+        out.addAll(stageLines(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
         return out;
     }
 
     /**
-     * Size: the room's own box where there is one to set, the template's measured size otherwise.
+     * Size: a dimension's own box, or the train footprint every other build is cut to.
      *
-     * <p>A dimension's length, width and height are authored; every other category's size falls out
-     * of the blocks it contains, so there is nothing to click.</p>
+     * <p>The two are different things wearing the same word. A room's box belongs to that room. A
+     * carriage's does not belong to the carriage — it is the train's, shared by every carriage,
+     * part and track in the world — so typing here resizes all of them, and the cell says so on
+     * hover before it is touched.</p>
      */
-    static Line sizeLine(TemplateSummary summary, List<CommandMenuEntry> roomRows, String pending) {
+    static Line sizeLine(TemplateSummary summary, List<CommandMenuEntry> roomRows, VariantKey key,
+                         String pending) {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_SIZE);
-        List<Cell> editable = roomSizeCells(roomRows);
-        if (!editable.isEmpty()) return new Line(label, editable);
+        List<Cell> roomCells = roomSizeCells(roomRows);
+        if (!roomCells.isEmpty()) return new Line(label, roomCells);
+        if (key != null && key.category() != null && key.category() != PlotCategory.PORTALS) {
+            List<Cell> trainCells = trainSizeCells();
+            if (!trainCells.isEmpty()) return new Line(label, trainCells);
+        }
         if (summary == null || summary.isEmpty()) return Line.of(label, pending);
         var s = summary.declaredSize();
         return Line.of(label, s.getX() + " × " + s.getY() + " × " + s.getZ());
+    }
+
+    /**
+     * The train's own footprint as three typeable cells, or empty until the roster has arrived
+     * with it.
+     */
+    private static List<Cell> trainSizeCells() {
+        EditorRosterPacket.TrainSize dims = EditorRosterClient.index().trainSize();
+        if (!dims.isKnown()) return List.of();
+        String warning = EditorScreenLang.text(EditorScreenLang.SHEET_TRAIN_SIZE);
+        List<Cell> cells = new ArrayList<>(5);
+        cells.add(trainAxis("length", dims.length(), warning));
+        cells.add(Cell.plain("×"));
+        cells.add(trainAxis("width", dims.width(), warning));
+        cells.add(Cell.plain("×"));
+        cells.add(trainAxis("height", dims.height(), warning));
+        return cells;
+    }
+
+    private static Cell trainAxis(String axis, int value, String warning) {
+        return new Cell(Integer.toString(value),
+            new Action.Type("dungeontrain editor size " + axis), true).withTooltip(warning);
     }
 
     /** The three room dimensions as typeable cells, read out of the rows the old menu builds. */
@@ -182,21 +213,21 @@ public final class TemplateDataSheet {
      * the first place — and while a Stage owns the gate the bounds and letters beside it are
      * shown but not editable, since the Stage would set them back.</p>
      */
-    static Line stageLine(EditorTypeMenusPacket.Variant v, VariantKey key, String pending) {
+    static List<Line> stageLines(EditorTypeMenusPacket.Variant v, VariantKey key, String pending) {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_STAGE);
         if (v.phaseMask() == EditorTypeMenusPacket.Variant.NO_GATE || key == null) {
-            return Line.of(label, pending);
+            return List.of(Line.of(label, pending));
         }
         boolean linked = v.isStageLinked();
-        List<Cell> cells = new ArrayList<>(11);
 
         String stageName = linked ? v.primaryStageId()
             : EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT);
-        cells.add(new Cell(stageName,
+        Cell stage = new Cell(stageName,
             new Action.Open(new StagePickerScreen(key.category(), key.modelId(), key.modelName(),
                 linked ? v.primaryStageId() : "")), true)
-            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP)));
+            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP));
 
+        List<Cell> cells = new ArrayList<>(11);
         cells.add(Cell.plain("Lv"));
         addLevelCell(cells, key, "minlevel", Integer.toString(v.minLevel()), linked,
             EditorScreenLang.SHEET_MIN_LEVEL);
@@ -216,7 +247,19 @@ public final class TemplateDataSheet {
                 : new Cell(letter, new Action.Run(command), on);
             cells.add(cell.withTooltip(phaseName));
         }
-        return new Line(label, cells);
+        // Custom means the bounds and letters are all live, which is too much to sit beside the
+        // stage name — so they take a line of their own. A linked Stage's are read-only and fit.
+        return linked
+            ? List.of(new Line(label, prepend(stage, cells)))
+            : List.of(new Line(label, List.of(stage)), new Line("", cells));
+    }
+
+    /** {@code first} followed by {@code rest} — one line's worth of cells. */
+    private static List<Cell> prepend(Cell first, List<Cell> rest) {
+        List<Cell> all = new ArrayList<>(rest.size() + 1);
+        all.add(first);
+        all.addAll(rest);
+        return all;
     }
 
     /** A dimension's name, capitalised and un-underscored: {@code UPSIDE_DOWN} → "Upside down". */

@@ -4,6 +4,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorRoster;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
+import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -39,7 +41,9 @@ public record EditorRosterRequestPacket() implements CustomPacketPayload {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             if (!player.hasPermissions(PERMISSION_LEVEL)) return;
             String stamped = EditorStampedCategoryState.current().map(EditorCategory::id).orElse("");
-            DungeonTrainNet.sendTo(player, new EditorRosterPacket(EditorRoster.all(), stamped));
+            CarriageDims dims = DungeonTrainWorldData.get(player.server.overworld()).dims();
+            DungeonTrainNet.sendTo(player, new EditorRosterPacket(EditorRoster.all(), stamped,
+                new EditorRosterPacket.TrainSize(dims.length(), dims.width(), dims.height())));
         });
     }
 }

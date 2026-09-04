@@ -983,6 +983,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "Mais leve — escolhido com menos frequência",
   "gui.dungeontrain.editor_screen.undo_nothing": "Nada para desfazer",
   "gui.dungeontrain.editor_screen.redo_nothing": "Nada para refazer",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "O tamanho de todo o trem — cada vagão, peça e trilho neste mundo. Alterá-lo reconstrói os lotes do editor, e as construções feitas no tamanho antigo deixam de aparecer até que ele seja restaurado.",
+  "gui.dungeontrain.editor_screen.go_here": "Ir até aqui",
   "gui.dungeontrain.options.button": "Opções do Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opções do Mundo",
   "gui.dungeontrain.options.starts_with_train": "Começa com o trem",

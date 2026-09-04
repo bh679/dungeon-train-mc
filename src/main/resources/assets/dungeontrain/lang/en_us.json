@@ -1291,6 +1291,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "Lighter — picked less often",
   "gui.dungeontrain.editor_screen.undo_nothing": "Nothing to undo",
   "gui.dungeontrain.editor_screen.redo_nothing": "Nothing to redo",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "The whole train's size — every carriage, part and track in this world. Changing it rebuilds the plots, and builds made at the old size stop loading until it is set back.",
+  "gui.dungeontrain.editor_screen.go_here": "Go here",
   "gui.dungeontrain.options.button": "Dungeon Train Options…",
   "gui.dungeontrain.options.title": "Dungeon Train — World Options",
   "gui.dungeontrain.options.starts_with_train": "Starts with train",

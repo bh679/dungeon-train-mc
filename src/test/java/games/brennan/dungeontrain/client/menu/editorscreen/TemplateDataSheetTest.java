@@ -49,6 +49,15 @@ final class TemplateDataSheetTest {
         return null;
     }
 
+    /** The cells of the unlabelled line that follows the Stage line. */
+    private static List<TemplateDataSheet.Cell> gateCells(List<TemplateDataSheet.Line> lines) {
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_STAGE);
+        for (int i = 0; i < lines.size() - 1; i++) {
+            if (lines.get(i).label().equals(label)) return lines.get(i + 1).cells();
+        }
+        throw new AssertionError("no gate line after the Stage line");
+    }
+
     private static String typePrefix(TemplateDataSheet.Cell cell) {
         return assertInstanceOf(TemplateDataSheet.Action.Type.class, cell.action()).prefix();
     }
@@ -82,18 +91,20 @@ final class TemplateDataSheetTest {
         assertInstanceOf(TemplateDataSheet.Action.Open.class, cells.get(0).action());
         assertNotNull(cells.get(0).tooltip());
 
-        assertEquals("10", cells.get(2).text());
-        assertEquals("dungeontrain editor minlevel pen", typePrefix(cells.get(2)));
-        assertEquals("60", cells.get(4).text());
-        assertEquals("dungeontrain editor maxlevel pen", typePrefix(cells.get(4)));
+        List<TemplateDataSheet.Cell> gate = gateCells(carriageSheet(15, List.of()));
+        assertEquals("10", gate.get(1).text());
+        assertEquals("dungeontrain editor minlevel pen", typePrefix(gate.get(1)));
+        assertEquals("60", gate.get(3).text());
+        assertEquals("dungeontrain editor maxlevel pen", typePrefix(gate.get(3)));
 
         // Phase mask 1 is Overworld only: it turns off, and every other dimension turns on.
-        TemplateDataSheet.Cell overworld = cells.get(6);
+        cells = gate;
+        TemplateDataSheet.Cell overworld = cells.get(5);
         assertEquals("O", overworld.text());
         assertTrue(overworld.on());
         assertEquals("dungeontrain editor phase pen overworld off", runCommand(overworld));
         assertEquals("Overworld", overworld.tooltip());
-        TemplateDataSheet.Cell nether = cells.get(7);
+        TemplateDataSheet.Cell nether = cells.get(6);
         assertFalse(nether.on());
         assertEquals("dungeontrain editor phase pen nether on", runCommand(nether));
     }
@@ -106,20 +117,26 @@ final class TemplateDataSheetTest {
         List<TemplateDataSheet.Cell> cells = stage.cells();
         assertEquals("desert", cells.get(0).text());
         assertInstanceOf(TemplateDataSheet.Action.Open.class, cells.get(0).action());
-        // The Stage sets these, so editing them here would be undone by it.
+        // A linked gate is read-only and compact, so it stays on the one line.
         assertNull(cells.get(2).action(), "min level must be read-only under a Stage");
         assertNull(cells.get(4).action(), "max level must be read-only under a Stage");
         assertNull(cells.get(6).action(), "phases must be read-only under a Stage");
     }
 
     @Test
-    @DisplayName("a carriage's size is measured, not set, so nothing on that line is clickable")
-    void carriageSizeIsReadOnly() {
-        TemplateDataSheet.Line size = line(carriageSheet(15, List.of()), EditorScreenLang.SHEET_SIZE);
-        assertNotNull(size);
-        for (TemplateDataSheet.Cell cell : size.cells()) {
-            assertNull(cell.action(), "carriage size must not be editable: " + cell.text());
+    @DisplayName("a Custom stage keeps its name on the Stage line and its gate on the next one")
+    void customStageWrapsToASecondLine() {
+        List<TemplateDataSheet.Line> lines = carriageSheet(15, List.of());
+        int stageAt = -1;
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_STAGE);
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).label().equals(label)) stageAt = i;
         }
+        assertTrue(stageAt >= 0);
+        assertEquals(1, lines.get(stageAt).cells().size(), "the Stage line carries only the stage");
+        TemplateDataSheet.Line gate = lines.get(stageAt + 1);
+        assertEquals("", gate.label(), "the gate continues on an unlabelled line");
+        assertEquals("Lv", gate.cells().get(0).text());
     }
 
     @Test

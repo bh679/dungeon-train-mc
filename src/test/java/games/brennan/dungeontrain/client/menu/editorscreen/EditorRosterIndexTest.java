@@ -39,7 +39,7 @@ final class EditorRosterIndexTest {
             new EditorRosterPacket.Group("parts", "Floor", "floor", List.of(e(oakFloor, EditorPlotLabelsPacket.NO_WEIGHT))),
             new EditorRosterPacket.Group("contents", "Contents", "", List.of(e(armor, 2), e(cows, EditorPlotLabelsPacket.NO_WEIGHT))),
             new EditorRosterPacket.Group("portals", "Dimensional Carriage", "portal_room", List.of(e(house, 1)))),
-            "contents");
+            "contents", new EditorRosterPacket.TrainSize(9, 7, 7));
     }
 
     @Test

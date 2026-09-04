@@ -958,6 +958,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "เบาลง — ถูกเลือกน้อยลง",
   "gui.dungeontrain.editor_screen.undo_nothing": "ไม่มีอะไรให้เลิกทำ",
   "gui.dungeontrain.editor_screen.redo_nothing": "ไม่มีอะไรให้ทำซ้ำ",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "ขนาดของรถไฟทั้งขบวน — ตู้ ชิ้นส่วน และรางทุกชิ้นในโลกนี้ การเปลี่ยนขนาดจะสร้างแปลงของตัวแก้ไขใหม่ทั้งหมด และงานที่สร้างด้วยขนาดเดิมจะไม่แสดงผลจนกว่าจะตั้งขนาดกลับเป็นเหมือนเดิม",
+  "gui.dungeontrain.editor_screen.go_here": "ไปที่นี่",
   "gui.dungeontrain.options.button": "ตัวเลือก Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — ตัวเลือกโลก",
   "gui.dungeontrain.options.starts_with_train": "เริ่มพร้อมขบวนรถไฟ",

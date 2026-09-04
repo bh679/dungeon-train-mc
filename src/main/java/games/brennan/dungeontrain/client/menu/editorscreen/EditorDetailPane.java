@@ -34,7 +34,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, SAVE_ALL, ICON, ROW, TEST, PREVIEW, SHEET }
+    public enum HitKind { NONE, SAVE_ALL, ICON, ROW, TEST, PREVIEW, SHEET, GO_HERE }
 
     public record Hit(HitKind kind, int index, int sub) {
         public static final Hit NONE = new Hit(HitKind.NONE, -1, 0);
@@ -53,11 +53,15 @@ public final class EditorDetailPane {
     private int visibleRows;
     private Hit hovered = Hit.NONE;
     private int[] iconX = new int[0];
+    private InventoryEditorLayout.Rect goHereRect;
+    private CommandMenuEntry goHere;
 
     public Hit hovered() { return hovered; }
     public List<EditorScreenActions.Icon> icons() { return icons; }
     public List<CommandMenuEntry> rows() { return rows; }
     public CommandMenuEntry testEntry() { return test; }
+    /** The teleport button in the header, or null when the author is already standing there. */
+    public CommandMenuEntry goHereEntry() { return goHere; }
     public MenuHeaderAction saveAll() { return saveAll; }
     public EditorScreenActions.Ctx ctx() { return ctx; }
 
@@ -72,6 +76,10 @@ public final class EditorDetailPane {
             ? EditorMenuScreen.portalRows() : List.of();
         rows = EditorScreenActions.settingRows(ctx, () -> roomRows, EditorStatusHudOverlay::roomMode);
         test = EditorScreenActions.testEntry(ctx);
+        // Standing somewhere else is not just a fact to report — it is the one thing in the way of
+        // half these controls, so the header offers the walk rather than only naming it.
+        goHere = ctx.hasSelection() && !ctx.standingInSelection()
+            ? EditorScreenActions.enterEntry(ctx) : null;
         saveAll = EditorScreenActions.saveAll(ctx, nowMillis);
         visibleRows = Math.max(0, layout.settings().h() / ROW_H);
         scroll = Math.max(0, Math.min(scroll, Math.max(0, rows.size() - visibleRows)));
@@ -103,6 +111,8 @@ public final class EditorDetailPane {
         iconX = new int[0];
         visibleRows = 0;
         test = null;
+        goHere = null;
+        goHereRect = null;
         saveAll = null;
         hovered = Hit.NONE;
     }
@@ -166,21 +176,22 @@ public final class EditorDetailPane {
             g.fill(x, ty + 2, x + 4, ty + 6, TemplateTilePainter.DIRTY);
             x += 8;
         }
-        String status;
-        int statusColour;
-        if (ctx.standingInSelection()) {
-            status = "● " + EditorScreenLang.text(EditorScreenLang.YOU_ARE_HERE);
-            statusColour = HERE_TEXT;
-        } else if (ctx.standing() != null) {
-            status = EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.standing().displayName());
-            statusColour = theme.isLight() ? 0xFF3F3F3F : DIM_TEXT;
-        } else {
-            status = "";
-            statusColour = DIM_TEXT;
-        }
         int saveX = h.right() - ICON_SIZE - 1;
-        if (!status.isEmpty()) {
-            g.drawString(font, font.plainSubstrByWidth(status, Math.max(0, saveX - x - 4)), x, ty, statusColour, false);
+        goHereRect = null;
+        if (ctx.standingInSelection()) {
+            String status = "● " + EditorScreenLang.text(EditorScreenLang.YOU_ARE_HERE);
+            g.drawString(font, font.plainSubstrByWidth(status, Math.max(0, saveX - x - 4)),
+                x, ty, HERE_TEXT, false);
+        } else if (goHere != null) {
+            // A button, not a sentence: the answer to "you are not there" is to go.
+            String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
+            int w = font.width(label) + 8;
+            int bx = Math.min(x, Math.max(h.x(), saveX - w - 2));
+            goHereRect = new InventoryEditorLayout.Rect(bx, h.y() + 1, w, h.h() - 2);
+            boolean hot = hovered.kind() == HitKind.GO_HERE;
+            g.fill(goHereRect.x(), goHereRect.y(), goHereRect.right(), goHereRect.bottom(),
+                hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+            g.drawString(font, label, bx + 4, ty, hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
         }
         // Save-all icon: the same breathing tint as the header icon of the old menu.
         boolean hov = hovered.kind() == HitKind.SAVE_ALL;
@@ -253,6 +264,7 @@ public final class EditorDetailPane {
         if (layout == null) return Hit.NONE;
         InventoryEditorLayout.Rect h = layout.header();
         if (h.contains(mx, my) && mx >= h.right() - ICON_SIZE - 3) return new Hit(HitKind.SAVE_ALL, 0, 0);
+        if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
         if (layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
         int sheetCell = TemplateDataSheet.hit(sheetCells, mx, my);
         if (sheetCell >= 0) return new Hit(HitKind.SHEET, sheetCell, 0);
@@ -301,6 +313,9 @@ public final class EditorDetailPane {
                 yield placed == null || placed.cell().tooltip() == null
                     ? List.of() : List.of(placed.cell().tooltip());
             }
+            case GO_HERE -> goHere == null || ctx.selection() == null ? List.of()
+                : List.of(EditorScreenLang.text(EditorScreenLang.GO_HERE),
+                          EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.selection().displayName()));
             case TEST -> test == null
                 ? List.of(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
                           EditorScreenLang.text(EditorScreenLang.DISABLED_STAND_HERE))

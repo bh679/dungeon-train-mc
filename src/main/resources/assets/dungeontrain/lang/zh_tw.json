@@ -958,6 +958,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "更輕 — 被選中的頻率更低",
   "gui.dungeontrain.editor_screen.undo_nothing": "沒有可復原的操作",
   "gui.dungeontrain.editor_screen.redo_nothing": "沒有可重做的操作",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "整列火車的大小——這個世界中的每節車廂、部件和軌道都共用此設定。變更它會重建編輯器地塊,以舊尺寸建造的作品在改回原尺寸之前將不再顯示。",
+  "gui.dungeontrain.editor_screen.go_here": "前往此處",
   "gui.dungeontrain.options.button": "地牢列車選項…",
   "gui.dungeontrain.options.title": "地牢列車 — 世界選項",
   "gui.dungeontrain.options.starts_with_train": "以列車開場",

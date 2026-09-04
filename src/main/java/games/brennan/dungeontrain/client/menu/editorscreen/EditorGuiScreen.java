@@ -501,6 +501,11 @@ public final class EditorGuiScreen extends Screen {
                 dispatch(detail.testEntry());
                 return true;
             }
+            case GO_HERE -> {
+                if (detail.goHereEntry() == null) return false;
+                dispatch(detail.goHereEntry());
+                return true;
+            }
             default -> { return false; }
         }
     }

@@ -958,6 +958,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "Lebih ringan — lebih jarang dipilih",
   "gui.dungeontrain.editor_screen.undo_nothing": "Tidak ada yang bisa diurungkan",
   "gui.dungeontrain.editor_screen.redo_nothing": "Tidak ada yang bisa diulangi",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "Ukuran seluruh kereta — setiap gerbong, bagian, dan rel di dunia ini. Mengubahnya akan membangun ulang petak editor, dan build yang dibuat dengan ukuran lama akan berhenti muncul hingga dikembalikan.",
+  "gui.dungeontrain.editor_screen.go_here": "Ke sini",
   "gui.dungeontrain.options.button": "Opsi Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opsi Dunia",
   "gui.dungeontrain.options.starts_with_train": "Mulai dengan kereta",

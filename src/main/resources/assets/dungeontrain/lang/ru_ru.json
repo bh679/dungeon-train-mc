@@ -1013,6 +1013,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "Легче — выбирается реже",
   "gui.dungeontrain.editor_screen.undo_nothing": "Нечего отменять",
   "gui.dungeontrain.editor_screen.redo_nothing": "Нечего повторять",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "Размер всего поезда — каждого вагона, детали и пути в этом мире. Изменение пересоздаёт участки редактора, и постройки, созданные при старом размере, перестанут отображаться, пока он не будет возвращён обратно.",
+  "gui.dungeontrain.editor_screen.go_here": "Перейти сюда",
   "gui.dungeontrain.options.button": "Настройки Dungeon Train…",
   "gui.dungeontrain.options.title": "Настройки мира Dungeon Train",
   "gui.dungeontrain.options.starts_with_train": "Начинать с поездом",

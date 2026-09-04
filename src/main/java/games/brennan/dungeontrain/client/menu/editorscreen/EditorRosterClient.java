@@ -53,7 +53,7 @@ public final class EditorRosterClient {
     }
 
     public static void apply(EditorRosterPacket packet) {
-        index = new EditorRosterIndex(packet.groups(), packet.stampedCategoryId());
+        index = new EditorRosterIndex(packet.groups(), packet.stampedCategoryId(), packet.trainSize());
     }
 
     @SubscribeEvent

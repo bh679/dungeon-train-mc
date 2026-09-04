@@ -1319,6 +1319,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "Mai ușoară — aleasă mai rar",
   "gui.dungeontrain.editor_screen.undo_nothing": "Nimic de anulat",
   "gui.dungeontrain.editor_screen.redo_nothing": "Nimic de refăcut",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "Dimensiunea întregului tren — fiecare vagon, piesă și șină din această lume. Modificarea ei reconstruiește parcelele editorului, iar construcțiile create la dimensiunea veche nu vor mai apărea până când aceasta este readusă la valoarea inițială.",
+  "gui.dungeontrain.editor_screen.go_here": "Mergi aici",
   "gui.dungeontrain.options.button": "Opțiuni Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opțiuni lume",
   "gui.dungeontrain.options.starts_with_train": "Începe cu trenul",

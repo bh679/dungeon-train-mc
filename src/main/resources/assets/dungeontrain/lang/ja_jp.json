@@ -958,6 +958,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "軽くする — 選ばれにくくなる",
   "gui.dungeontrain.editor_screen.undo_nothing": "元に戻す操作がありません",
   "gui.dungeontrain.editor_screen.redo_nothing": "やり直す操作がありません",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "列車全体のサイズ——このワールド内のすべての車両、パーツ、線路が対象です。変更するとエディタの区画が再構築され、以前のサイズで作られたビルドは元に戻すまで表示されなくなります。",
+  "gui.dungeontrain.editor_screen.go_here": "ここへ行く",
   "gui.dungeontrain.options.button": "Dungeon Train オプション…",
   "gui.dungeontrain.options.title": "Dungeon Train — ワールドオプション",
   "gui.dungeontrain.options.starts_with_train": "列車付きで開始",

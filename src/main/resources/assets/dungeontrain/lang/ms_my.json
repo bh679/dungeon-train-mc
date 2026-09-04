@@ -958,6 +958,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "Lebih ringan — kurang kerap dipilih",
   "gui.dungeontrain.editor_screen.undo_nothing": "Tiada apa untuk dibuat asal",
   "gui.dungeontrain.editor_screen.redo_nothing": "Tiada apa untuk dibuat semula",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "Saiz keseluruhan kereta api — setiap gerabak, bahagian dan landasan dalam dunia ini. Menukarnya akan membina semula plot editor, dan binaan yang dibuat pada saiz lama akan berhenti dipaparkan sehingga saiz itu dikembalikan.",
+  "gui.dungeontrain.editor_screen.go_here": "Pergi ke sini",
   "gui.dungeontrain.options.button": "Pilihan Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Pilihan Dunia",
   "gui.dungeontrain.options.starts_with_train": "Bermula dengan kereta api",

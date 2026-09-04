@@ -45,14 +45,23 @@ public final class EditorRosterIndex {
         }
     }
 
-    public static final EditorRosterIndex EMPTY = new EditorRosterIndex(List.of(), "");
+    public static final EditorRosterIndex EMPTY = new EditorRosterIndex(List.of(), "",
+        EditorRosterPacket.TrainSize.UNKNOWN);
 
     private final List<EditorRosterPacket.Group> groups;
     private final String stampedCategoryId;
+    private final EditorRosterPacket.TrainSize trainSize;
 
-    public EditorRosterIndex(List<EditorRosterPacket.Group> groups, String stampedCategoryId) {
+    public EditorRosterIndex(List<EditorRosterPacket.Group> groups, String stampedCategoryId,
+                             EditorRosterPacket.TrainSize trainSize) {
         this.groups = List.copyOf(groups);
         this.stampedCategoryId = stampedCategoryId == null ? "" : stampedCategoryId;
+        this.trainSize = trainSize == null ? EditorRosterPacket.TrainSize.UNKNOWN : trainSize;
+    }
+
+    /** The world's carriage footprint, shared by every carriage, part and track. */
+    public EditorRosterPacket.TrainSize trainSize() {
+        return trainSize;
     }
 
     public boolean isEmpty() {

@@ -958,6 +958,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": "Nhẹ hơn — ít được chọn hơn",
   "gui.dungeontrain.editor_screen.undo_nothing": "Không có gì để hoàn tác",
   "gui.dungeontrain.editor_screen.redo_nothing": "Không có gì để làm lại",
+  "gui.dungeontrain.editor_screen.sheet.train_size": "Kích thước của toàn bộ đoàn tàu — mọi toa, bộ phận và đường ray trong thế giới này. Thay đổi nó sẽ xây dựng lại các ô của trình chỉnh sửa, và các công trình được tạo ở kích thước cũ sẽ không còn xuất hiện cho đến khi kích thước được đặt lại như cũ.",
+  "gui.dungeontrain.editor_screen.go_here": "Đến đây",
   "gui.dungeontrain.options.button": "Tùy Chọn Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Tùy Chọn Thế Giới",
   "gui.dungeontrain.options.starts_with_train": "Bắt đầu với đoàn tàu",

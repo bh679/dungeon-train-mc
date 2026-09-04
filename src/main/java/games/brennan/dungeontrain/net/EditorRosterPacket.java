@@ -22,9 +22,23 @@ import java.util.List;
  * @param groups            one per type strip entry, in tab and strip order
  * @param stampedCategoryId the lowercase id of the category whose plots are stamped right now,
  *                          or {@code ""} when none is; the screen routes cross-category enters on it
+ * @param trainSize         the world's carriage footprint. It rides here because it is a fact about
+ *                          the editor as a whole rather than about any one template, and because
+ *                          the client is otherwise told it only while a world is being created —
+ *                          which is no use to an author editing one that already exists
  */
-public record EditorRosterPacket(List<Group> groups, String stampedCategoryId)
+public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, TrainSize trainSize)
     implements CustomPacketPayload {
+
+    /** How long, wide and tall every carriage in this world is. */
+    public record TrainSize(int length, int width, int height) {
+        /** Unknown — the screen shows the template's measured size instead. */
+        public static final TrainSize UNKNOWN = new TrainSize(0, 0, 0);
+
+        public boolean isKnown() {
+            return length > 0 && width > 0 && height > 0;
+        }
+    }
 
     /** A type strip entry: the templates of one kind within one category. */
     public record Group(String categoryId, String typeName, String modelId, List<Entry> entries) {
@@ -45,10 +59,19 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId)
     public EditorRosterPacket {
         groups = groups == null ? List.of() : List.copyOf(groups);
         if (stampedCategoryId == null) stampedCategoryId = "";
+        if (trainSize == null) trainSize = TrainSize.UNKNOWN;
+    }
+
+    /** Convenience for call sites with no world to read a footprint from. */
+    public EditorRosterPacket(List<Group> groups, String stampedCategoryId) {
+        this(groups, stampedCategoryId, TrainSize.UNKNOWN);
     }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeUtf(stampedCategoryId, 32);
+        buf.writeVarInt(trainSize.length());
+        buf.writeVarInt(trainSize.width());
+        buf.writeVarInt(trainSize.height());
         buf.writeVarInt(groups.size());
         for (Group g : groups) {
             buf.writeUtf(g.categoryId(), 32);
@@ -64,6 +87,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId)
 
     public static EditorRosterPacket decode(FriendlyByteBuf buf) {
         String stamped = buf.readUtf(32);
+        TrainSize trainSize = new TrainSize(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
         int n = buf.readVarInt();
         List<Group> groups = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
@@ -78,7 +102,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId)
             }
             groups.add(new Group(categoryId, typeName, modelId, entries));
         }
-        return new EditorRosterPacket(groups, stamped);
+        return new EditorRosterPacket(groups, stamped, trainSize);
     }
 
     @Override

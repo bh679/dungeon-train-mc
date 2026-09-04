@@ -958,6 +958,8 @@
   "gui.dungeontrain.editor_screen.sheet.weight_down": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.undo_nothing": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.redo_nothing": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.editor_screen.sheet.train_size": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.editor_screen.go_here": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.options.button": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.options.title": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.options.starts_with_train": {"author": "Opus 4.8 (Claude)", "reviewer": ""},

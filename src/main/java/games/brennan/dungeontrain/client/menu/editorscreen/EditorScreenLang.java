@@ -48,6 +48,8 @@ public final class EditorScreenLang {
     public static final String SHEET_LEVELS_ALL = PREFIX + "sheet.levels_all";
     public static final String SHEET_STAGE = PREFIX + "sheet.stage";
     public static final String SHEET_STAGE_TOOLTIP = PREFIX + "sheet.stage_tooltip";
+    public static final String SHEET_TRAIN_SIZE = PREFIX + "sheet.train_size";
+    public static final String GO_HERE = PREFIX + "go_here";
     public static final String STAGE_CUSTOM_SHORT = PREFIX + "stage_custom_short";
     public static final String SHEET_MIN_LEVEL = PREFIX + "sheet.min_level";
     public static final String SHEET_MAX_LEVEL = PREFIX + "sheet.max_level";
