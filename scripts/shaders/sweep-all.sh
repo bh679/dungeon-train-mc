@@ -159,7 +159,14 @@ for pack in "${PACKS[@]}"; do
     fi
 
     if [ "$done_ok" -eq 1 ]; then
-        shots=$(ls -1 run/screenshots/sweep-*.png 2>/dev/null | wc -l | tr -d ' ')
+        # Count the shots this mode actually writes. Counting sweep-*.png during a preview run
+        # reported "0 shot(s)" after a capture that had in fact succeeded, which is the one thing a
+        # progress line must never do.
+        if [ "$PREVIEW" -eq 1 ]; then
+            shots=$(ls -1 run/screenshots/preview-*.png 2>/dev/null | wc -l | tr -d ' ')
+        else
+            shots=$(ls -1 run/screenshots/sweep-*.png 2>/dev/null | wc -l | tr -d ' ')
+        fi
         echo "  done — $shots shot(s) in run/screenshots so far"
     else
         echo "  FAILED — no '$MARKER' in $LOG"

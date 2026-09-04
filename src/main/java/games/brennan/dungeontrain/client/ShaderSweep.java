@@ -182,14 +182,13 @@ public final class ShaderSweep {
      */
     private static final String FRAME_PREFIX = "frame:";
     /**
-     * {@code sky:<ticks>} lets the train keep driving until it is under open sky.
+     * {@code sky:<ticks>} checks the stopped train is actually under open sky.
      *
-     * <p>The first preview run photographed the train inside a tunnel: dark, cramped, no sky, and
-     * completely useless for comparing one pack's sky and lighting against another's. Where the
-     * train happens to be when a save is loaded is not a property of the shader pack, so it cannot
-     * be allowed to decide the picture. The train is already moving, so the cheapest fix is to wait
-     * for it to come out — sustained open sky over the rider, not a one-tick gap between two roof
-     * sections, and a deadline so a save that never surfaces still produces a frame.</p>
+     * <p>The first preview run photographed the train inside a tunnel: dark, cramped, and useless
+     * for comparing one pack's sky against another's. This does not fix that by itself — the pin
+     * ({@link #PREVIEW_X}) does — but it is what catches the pin going stale in a world where that
+     * stretch has been built over, which would otherwise be nine dark frames nobody questioned.
+     * Sustained sky, not a one-tick gap between two roof sections.</p>
      */
     private static final String SKY_PREFIX = "sky:";
     /** Consecutive ticks of open sky before the train counts as out in the open. */
@@ -204,10 +203,22 @@ public final class ShaderSweep {
     private static final double PREVIEW_AIM_DOWN = 2.0;
     /** Morning: long shadows and a coloured sky, which is where packs differ most visibly. */
     private static final int PREVIEW_TIME = 1000;
-    /** How long the train may drive looking for open sky before the shot is taken regardless. */
-    private static final int SKY_SEARCH_TICKS = 2400;
-    /** Speed while hunting for open sky. Brisk, but well inside what the track handles. */
-    private static final double PREVIEW_SEARCH_SPEED = 8.0;
+    /**
+     * The world X the preview is taken at — a stretch of open, elevated track.
+     *
+     * <p>Riding until the train surfaced was tried first and cannot work: where it stops depends on
+     * where it started, and where it started is whatever the previous pack's run left in the save.
+     * Two packs surfaced 660 blocks apart. The camera offset was identical either way, so both
+     * framed the train the same, but the landscape behind it was not the same landscape — and a set
+     * of previews whose backgrounds differ compares places rather than packs.</p>
+     *
+     * <p>So the train is teleported here and stopped, and the sky check downgrades to a verification
+     * that says so if this stretch is ever covered. This X is on the elevated viaduct: open sky, a
+     * long run of track receding into the distance, and forest below.</p>
+     */
+    private static final int PREVIEW_X = 672;
+    /** How long open sky is waited for on the pin before the shot is taken anyway, with a warning. */
+    private static final int SKY_VERIFY_TICKS = 200;
 
     private enum Phase { BOOT, JOINING, SETTLE, SITE_SETUP, SITE_WAIT, CAPTURE, CAPTURE_WAIT, FINISHED }
 
@@ -486,20 +497,21 @@ public final class ShaderSweep {
             if (command.startsWith(SKY_PREFIX)) {
                 if (skyDeadline == 0) {
                     skyDeadline = parseTicks(command, SKY_PREFIX);
-                    LOGGER.info("[DungeonTrain] sweep[{}]: riding until the train is under open sky "
+                    LOGGER.info("[DungeonTrain] sweep[{}]: checking the train is under open sky "
                         + "(up to {} ticks)", site.id(), skyDeadline);
                 }
                 skyStreak = openSky(mc) ? skyStreak + 1 : 0;
                 if (skyStreak >= SKY_STREAK_TICKS) {
-                    LOGGER.info("[DungeonTrain] sweep[{}]: open sky at x={}", site.id(),
+                    LOGGER.info("[DungeonTrain] sweep[{}]: open sky confirmed, camera at x={}", site.id(),
                         mc.player == null ? "?" : String.format(Locale.ROOT, "%.1f", mc.player.getX()));
                     skyDeadline = 0;
                     skyStreak = 0;
                     return;
                 }
                 if (--skyDeadline <= 0) {
-                    LOGGER.warn("[DungeonTrain] sweep[{}]: never found open sky — framing where the "
-                        + "train is. The frame may be under cover.", site.id());
+                    LOGGER.warn("[DungeonTrain] sweep[{}]: the train is NOT under open sky at the "
+                        + "preview pin (x={}). The frame will be under cover and is not comparable "
+                        + "with the others — move PREVIEW_X.", site.id(), PREVIEW_X);
                     skyDeadline = 0;
                     skyStreak = 0;
                     return;
@@ -747,25 +759,17 @@ public final class ShaderSweep {
         // would each start from wherever the last one stopped — nine different places, which is not
         // a comparison. Scanned from the origin rather than from the player, so it is a property of
         // the world's cycle config and identical on every launch.
-        int plainX = scanForPlain(0.0);
         List<String> commands = new ArrayList<>();
         commands.add("gamerule doDaylightCycle false");
         commands.add("time set " + PREVIEW_TIME);
-        if (plainX != Integer.MIN_VALUE) {
-            commands.add("gamemode creative");
-            commands.add("dtp " + plainX);
-            commands.add(WAIT_PREFIX + "300");
-        } else {
-            LOGGER.warn("[DungeonTrain] sweep[preview]: no band-free stretch found — framing where "
-                + "the train already is, which will differ between packs.");
-        }
-        // Drive briskly while looking for open sky. At the world's own speed the train covered
-        // thirteen blocks in eighty seconds and the search expired under the same tunnel it started
-        // in — the mechanism was never given anything to work with.
-        commands.add("dungeontrain speed " + PREVIEW_SEARCH_SPEED);
-        commands.add(SKY_PREFIX + SKY_SEARCH_TICKS);
+        commands.add("gamemode creative");
+        commands.add("dtp " + PREVIEW_X);
+        commands.add(WAIT_PREFIX + "300");
+        // Stop the train on the pin. A moving train is a different picture every launch, and a
+        // nine-pack comparison in which the subject has moved is not a comparison.
         commands.add("dungeontrain speed 0.0");
-        commands.add(WAIT_PREFIX + "60");
+        commands.add(WAIT_PREFIX + "100");
+        commands.add(SKY_PREFIX + SKY_VERIFY_TICKS);
         commands.add("gamemode spectator");
         commands.add(FRAME_PREFIX);
         commands.add(WAIT_PREFIX + "60");
