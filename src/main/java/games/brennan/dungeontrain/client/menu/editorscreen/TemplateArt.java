@@ -4,7 +4,6 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
-import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.gui.GuiGraphics;
@@ -38,25 +37,6 @@ public record TemplateArt(BuilderPhotoPaths.Kind kind, String id, CarriagePartKi
         };
     }
 
-    /**
-     * The lookup for one of the player's uploaded builds, or null for a kind this build of the mod
-     * does not know.
-     *
-     * <p>A relay build names its store the same way a template does, so once the kind is resolved
-     * it draws through exactly the same model and photo path as an editor tile.</p>
-     */
-    public static TemplateArt ofBuild(BuilderProfilePacket.Entry entry) {
-        if (entry == null) return null;
-        BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(entry.kind());
-        if (kind == null) return null;
-        CarriagePartKind partKind = kind == BuilderPhotoPaths.Kind.PART
-            ? CarriagePartKind.fromId(entry.subKind()) : null;
-        TrackKind trackKind = kind == BuilderPhotoPaths.Kind.TRACK
-            ? TrackKind.fromId(entry.subKind()) : null;
-        if (kind == BuilderPhotoPaths.Kind.PART && partKind == null) return null;
-        if (kind == BuilderPhotoPaths.Kind.TRACK && trackKind == null) return null;
-        return new TemplateArt(kind, entry.buildName(), partKind, trackKind);
-    }
 
     /** Draw the baked model, or false when there is none yet or ever. */
     public boolean drawModel(GuiGraphics g, int x, int y, int w, int h, float yaw, float fill) {

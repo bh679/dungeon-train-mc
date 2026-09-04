@@ -170,7 +170,8 @@ public final class EditorBrowserPane {
         }
         chips = c;
 
-        // Type strip: equal cells across the row.
+        // Type strip: equal cells across the row. The All page has none — fifteen strips would not
+        // fit the row, and its whole point is the roster without one.
         PlotCategory page = EditorScreenState.page().category();
         List<EditorRosterIndex.TypeStrip> strips = page == null ? List.of() : index.typeStrips(page);
         List<StripCell> sc = new ArrayList<>();
@@ -186,8 +187,12 @@ public final class EditorBrowserPane {
 
         // Tiles of the active strip, filtered.
         String typeName = EditorScreenState.effectiveTypeName(index);
-        List<EditorRosterIndex.Tile> all = page == null ? List.of() : index.tiles(page, typeName);
-        tiles = EditorRosterIndex.filter(all, EditorScreenState.filters(), EditorScreenState.text());
+        List<EditorRosterIndex.Tile> all = page == null
+            ? (EditorScreenState.page() == EditorScreenPage.ALL ? index.allTiles() : List.of())
+            : index.tiles(page, typeName);
+        tiles = EditorRosterIndex.standingFirst(
+            EditorRosterIndex.filter(all, EditorScreenState.filters(), EditorScreenState.text()),
+            EditorScreenState.standingIn());
 
         // The sub-variant grid, when the selection is a group or a member of one.
         subParent = null;
@@ -200,7 +205,9 @@ public final class EditorBrowserPane {
             if (parent != null && page != null && index.groupOf(parent.key()) != null
                 && index.groupOf(parent.key()).typeName().equals(typeName)) {
                 subParent = parent;
-                subTiles = EditorRosterIndex.subVariants(parent, EditorScreenState.filters(), EditorScreenState.text());
+                subTiles = EditorRosterIndex.standingFirst(
+                    EditorRosterIndex.subVariants(parent, EditorScreenState.filters(), EditorScreenState.text()),
+                    EditorScreenState.standingIn());
             }
         }
 

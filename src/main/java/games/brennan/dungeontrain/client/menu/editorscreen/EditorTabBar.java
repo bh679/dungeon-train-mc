@@ -18,9 +18,9 @@ import java.util.function.ToIntFunction;
 public final class EditorTabBar {
 
     /** What a tab does when clicked. */
-    public enum Kind { CURRENT, PAGE, EXIT }
+    public enum Kind { PAGE, EXIT }
 
-    /** A laid-out tab. {@code page} is null for Current and Exit. */
+    /** A laid-out tab. {@code page} is null for Exit. */
     public record Tab(Kind kind, EditorScreenPage page, String label, int x, int w) {
         public boolean contains(double px) {
             return px >= x && px < x + w;
@@ -41,11 +41,10 @@ public final class EditorTabBar {
      */
     public static List<Tab> layout(InventoryEditorLayout.Rect strip, ToIntFunction<String> widthOf,
                                    List<String> labels) {
-        // labels: current, one per browse page (CARRIAGES..DIMENSIONS), my builds, settings
+        // labels: one per browse page (ALL..DIMENSIONS), then settings
         List<Tab> out = new ArrayList<>();
         int x = strip.x();
         int i = 0;
-        out.add(tab(Kind.CURRENT, null, labels.get(i), x, widthOf)); x = out.get(out.size() - 1).x() + out.get(out.size() - 1).w() + GAP; i++;
         for (EditorScreenPage page : EditorScreenPage.values()) {
             if (page == EditorScreenPage.SETTINGS) continue;
             Tab t = tab(Kind.PAGE, page, labels.get(i++), x, widthOf);
@@ -98,9 +97,6 @@ public final class EditorTabBar {
             int tx = x0 + PAD_X;
             int ty = strip.y() + (strip.h() - font.lineHeight) / 2 + 1;
             g.drawString(font, t.label(), tx, ty, textColour, false);
-            if (t.kind() == Kind.CURRENT && dirty) {
-                g.fill(x1 - 6, ty + 1, x1 - 3, ty + 4, DIRTY);
-            }
             if (t.kind() == Kind.PAGE && t.page() == herePage) {
                 g.fill(x1 - 6, ty + 1, x1 - 3, ty + 4, HERE);
             }

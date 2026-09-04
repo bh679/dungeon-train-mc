@@ -7,7 +7,6 @@ import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
-import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
@@ -282,40 +281,6 @@ public final class TemplateDataSheet {
             case USER -> EditorScreenLang.text(EditorScreenLang.SOURCE_MINE);
             case IMPORTED -> EditorScreenLang.text(EditorScreenLang.SOURCE_COMMUNITY);
         };
-    }
-
-    // ------------------------------------------------------------------
-    // Lines for an uploaded build
-    // ------------------------------------------------------------------
-
-    /**
-     * The lines for one of the player's uploaded builds.
-     *
-     * <p>Different facts, and none of them editable from here: a relay build has no spawn weight
-     * and no plot, and what matters about it is what kind it is, where it stands with the reviewer,
-     * and whether the copy on this machine has drifted from the uploaded one.</p>
-     */
-    public static List<Line> buildLines(BuilderProfilePacket.Entry entry, TemplateSummary summary) {
-        List<Line> out = new ArrayList<>(5);
-        if (entry == null) return out;
-        String pending = EditorScreenLang.text(EditorScreenLang.SHEET_PENDING);
-        out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_TYPE), EditorMyBuildsPane.typeLabel(entry)));
-        out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_STATUS), EditorMyBuildsPane.statusLabel(entry)));
-        if (summary == null || summary.isEmpty()) {
-            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SIZE), pending));
-            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS), pending));
-        } else {
-            var s = summary.declaredSize();
-            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SIZE),
-                s.getX() + " × " + s.getY() + " × " + s.getZ()));
-            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS),
-                Integer.toString(summary.blocks())));
-        }
-        if (entry.changes() > 0) {
-            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_CHANGES),
-                Integer.toString(entry.changes())));
-        }
-        return out;
     }
 
     // ------------------------------------------------------------------

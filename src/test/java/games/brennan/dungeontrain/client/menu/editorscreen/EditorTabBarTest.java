@@ -13,27 +13,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class EditorTabBarTest {
 
-    private static final List<String> LABELS = List.of("Current", "Carriages", "Contents", "Tracks",
-        "Dimensions", "My Builds", "Settings");
+    private static final List<String> LABELS = List.of("All", "Carriages", "Contents", "Tracks",
+        "Dimensions", "Settings");
 
     private static List<EditorTabBar.Tab> tabs(int width) {
         return EditorTabBar.layout(new Rect(6, 4, width - 12, 16), s -> s.length() * 6, LABELS);
     }
 
     @Test
-    @DisplayName("Current is first, the pages follow in order, Settings and Exit are locked to the right")
+    @DisplayName("All is first, the pages follow in order, Settings and Exit are locked to the right")
     void order() {
         List<EditorTabBar.Tab> t = tabs(640);
-        assertEquals(EditorTabBar.Kind.CURRENT, t.get(0).kind());
+        assertEquals(EditorScreenPage.ALL, t.get(0).page());
         assertEquals(EditorScreenPage.CARRIAGES, t.get(1).page());
         assertEquals(EditorScreenPage.DIMENSIONS, t.get(4).page());
-        assertEquals(EditorScreenPage.MY_BUILDS, t.get(5).page());
-        assertEquals(EditorScreenPage.SETTINGS, t.get(6).page());
-        assertEquals(EditorTabBar.Kind.EXIT, t.get(7).kind());
-        EditorTabBar.Tab exit = t.get(7);
+        assertEquals(EditorScreenPage.SETTINGS, t.get(5).page());
+        assertEquals(EditorTabBar.Kind.EXIT, t.get(6).kind());
+        EditorTabBar.Tab exit = t.get(6);
         assertEquals(6 + 640 - 12, exit.x() + exit.w());
-        assertTrue(t.get(6).x() + t.get(6).w() <= exit.x());
-        assertTrue(t.get(5).x() + t.get(5).w() <= t.get(6).x());
+        assertTrue(t.get(5).x() + t.get(5).w() <= exit.x());
+        assertTrue(t.get(4).x() + t.get(4).w() <= t.get(5).x());
     }
 
     @Test

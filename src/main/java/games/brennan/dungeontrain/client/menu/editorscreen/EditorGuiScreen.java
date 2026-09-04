@@ -43,7 +43,6 @@ public final class EditorGuiScreen extends Screen {
     static final int REFRESH_DELAY_TICKS = 10;
 
     private final EditorBrowserPane browser = new EditorBrowserPane();
-    private final EditorMyBuildsPane myBuilds = new EditorMyBuildsPane();
     private final EditorDetailPane detail = new EditorDetailPane();
     private final OrbitState orbit = new OrbitState();
     private final InlineEdit inlineEdit = new InlineEdit();
@@ -69,17 +68,6 @@ public final class EditorGuiScreen extends Screen {
         EditorRosterClient.request();
         EditorSaveStatus.request();
         Minecraft.getInstance().setScreen(new EditorGuiScreen());
-    }
-
-    /**
-     * Ask the relay for this player's uploaded builds.
-     *
-     * <p>The no-argument request means "my own profile" — the same one the builder profile screen
-     * sends, landing in the same {@code BuilderProfileState} cache, so opening either surface fills
-     * the other.</p>
-     */
-    private static void requestMyBuilds() {
-        DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket());
     }
 
     @Override
@@ -110,9 +98,6 @@ public final class EditorGuiScreen extends Screen {
         // scissor, so neither the typed value nor the hint can escape the box.
         addWidget(filterBox);
         filterBox.visible = EditorScreenState.page().isBrowser();
-
-        // Reopening on the My Builds tab should not show a stale list from last time.
-        if (EditorScreenState.page() == EditorScreenPage.MY_BUILDS) requestMyBuilds();
     }
 
     @Override
@@ -162,7 +147,6 @@ public final class EditorGuiScreen extends Screen {
         orbit.advance(seconds);
 
         boolean browsing = EditorScreenState.page().isBrowser();
-        boolean myBuildsPage = EditorScreenState.page() == EditorScreenPage.MY_BUILDS;
         filterBox.visible = browsing;
         filterBox.setEditable(browsing);
 
@@ -181,28 +165,16 @@ public final class EditorGuiScreen extends Screen {
             browser.layout(layout, this.font, index);
             browser.render(g, this.font, theme, seconds, mx, my);
             drawFilterBox(g, mouseX, mouseY, partialTick);
-        } else if (myBuildsPage) {
-            myBuilds.layout(layout);
-            myBuilds.render(g, this.font, seconds, mx, my);
         } else {
             drawSettingsPage(g, theme, mx, my);
         }
 
-        if (myBuildsPage) {
-            // A relay build, not a template: its own preview, its own facts, no editor controls.
-            var entry = myBuilds.selectedBuild();
-            TemplateArt buildArt = TemplateArt.ofBuild(entry);
-            detail.layoutForBuild(layout);
-            detail.renderBuild(g, this.font, theme, buildArt,
-                buildArt == null ? null : buildArt.summary(), entry, orbit.yaw());
-        } else {
-            EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
-            TemplateArt art = TemplateArt.of(ctx.selection());
-            TemplateSummary summary = art == null ? null : art.summary();
-            detail.layout(layout, ctx, System.currentTimeMillis());
-            detail.render(g, this.font, theme, art, summary, tile,
-                EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
-        }
+        EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
+        TemplateArt art = TemplateArt.of(ctx.selection());
+        TemplateSummary summary = art == null ? null : art.summary();
+        detail.layout(layout, ctx, System.currentTimeMillis());
+        detail.render(g, this.font, theme, art, summary, tile,
+            EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
 
         if (browsing && index.isEmpty()) {
             String loading = EditorScreenLang.text(EditorScreenLang.NO_ROSTER);
@@ -232,12 +204,11 @@ public final class EditorGuiScreen extends Screen {
 
     private List<String> tabLabels() {
         return List.of(
-            EditorScreenLang.text(EditorScreenLang.TAB_CURRENT),
+            EditorScreenLang.text(EditorScreenLang.TAB_ALL),
             EditorScreenLang.text(EditorScreenLang.TAB_CARRIAGES),
             EditorScreenLang.text(EditorScreenLang.TAB_CONTENTS),
             EditorScreenLang.text(EditorScreenLang.TAB_TRACKS),
             EditorScreenLang.text(EditorScreenLang.TAB_DIMENSIONS),
-            EditorScreenLang.text(EditorScreenLang.TAB_MY_BUILDS),
             EditorScreenLang.text(EditorScreenLang.TAB_SETTINGS));
     }
 
@@ -303,8 +274,6 @@ public final class EditorGuiScreen extends Screen {
             tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
         } else if (EditorScreenState.page().isBrowser()) {
             tip = browser.tooltipAt(browser.hovered());
-        } else if (EditorScreenState.page() == EditorScreenPage.MY_BUILDS) {
-            tip = myBuilds.tooltipAt(myBuilds.hovered());
         }
         if (tip != null) {
             g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
@@ -377,14 +346,6 @@ public final class EditorGuiScreen extends Screen {
                 onBrowserHit(hit);
                 return true;
             }
-        } else if (EditorScreenState.page() == EditorScreenPage.MY_BUILDS) {
-            int build = myBuilds.hitTest(mouseX, mouseY);
-            if (build != TemplateTileGridLayout.NONE) {
-                click();
-                myBuilds.select(build);
-                orbit.reset();
-                return true;
-            }
         } else if (onSettingsClick(mouseX, mouseY)) {
             click();
             return true;
@@ -405,19 +366,10 @@ public final class EditorGuiScreen extends Screen {
     private void onTab(EditorTabBar.Tab tab) {
         EditorRosterIndex index = EditorRosterClient.index();
         switch (tab.kind()) {
-            case CURRENT -> {
-                EditorScreenState.showStandingIn(index);
-                filterBox.setValue("");
-                browser.resetScroll();
-            }
             case EXIT -> modal.runAndClose("dungeontrain editor exit");
             case PAGE -> {
                 EditorScreenState.setPage(tab.page());
                 browser.resetScroll();
-                if (tab.page() == EditorScreenPage.MY_BUILDS) {
-                    myBuilds.resetScroll();
-                    requestMyBuilds();
-                }
             }
         }
     }
@@ -581,10 +533,6 @@ public final class EditorGuiScreen extends Screen {
         int dir = scrollY > 0 ? -1 : 1;
         if (EditorScreenState.page().isBrowser() && browser.overGrid(mouseX, mouseY)) {
             if (browser.scrollBy(dir)) return true;
-        }
-        if (EditorScreenState.page() == EditorScreenPage.MY_BUILDS
-            && myBuilds.overGrid(mouseX, mouseY) && myBuilds.scrollBy(dir)) {
-            return true;
         }
         if (!EditorScreenState.page().isBrowser() && layout != null && layout.grid().contains(mouseX, mouseY)) {
             settingsScroll = Math.max(0, settingsScroll + dir);

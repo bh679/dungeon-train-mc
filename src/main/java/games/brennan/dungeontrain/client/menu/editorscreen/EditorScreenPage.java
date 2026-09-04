@@ -9,11 +9,12 @@ import games.brennan.dungeontrain.editor.PlotCategory;
  * player-facing name of the Portals category — the data key underneath is unchanged.</p>
  */
 public enum EditorScreenPage {
+    /** Every template in the editor, from every category, in one grid. */
+    ALL(null, EditorScreenLang.TAB_ALL),
     CARRIAGES(PlotCategory.CARRIAGES, EditorScreenLang.TAB_CARRIAGES),
     CONTENTS(PlotCategory.CONTENTS, EditorScreenLang.TAB_CONTENTS),
     TRACKS(PlotCategory.TRACKS, EditorScreenLang.TAB_TRACKS),
     DIMENSIONS(PlotCategory.PORTALS, EditorScreenLang.TAB_DIMENSIONS),
-    MY_BUILDS(null, EditorScreenLang.TAB_MY_BUILDS),
     SETTINGS(null, EditorScreenLang.TAB_SETTINGS);
 
     private final PlotCategory category;
@@ -24,7 +25,7 @@ public enum EditorScreenPage {
         this.langKey = langKey;
     }
 
-    /** The category this page browses, or null for My Builds and Settings. */
+    /** The one category this page browses, or null for All and for Settings. */
     public PlotCategory category() {
         return category;
     }
@@ -33,8 +34,9 @@ public enum EditorScreenPage {
         return langKey;
     }
 
+    /** Whether this page shows the tile browser. All has no category of its own but is one. */
     public boolean isBrowser() {
-        return category != null;
+        return category != null || this == ALL;
     }
 
     /** The browse page for a category; parts browse under Carriages. Null for architecture. */

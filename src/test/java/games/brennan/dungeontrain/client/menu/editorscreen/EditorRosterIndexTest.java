@@ -114,6 +114,35 @@ final class EditorRosterIndexTest {
         assertEquals("", EditorBrowserPane.nextCreator("night_market", List.of()));
     }
 
+    @Test
+    @DisplayName("All lists every template in the roster, from every category")
+    void allTiles() {
+        List<String> all = names(sample().allTiles());
+        assertEquals(List.of("standard", "oak", "armor", "cows", "house"), all);
+    }
+
+    @Test
+    @DisplayName("the template underfoot sorts to the front, wherever it appears")
+    void standingSortsFirst() {
+        EditorRosterIndex idx = sample();
+        List<EditorRosterIndex.Tile> tiles = idx.allTiles();
+        VariantKey standing = VariantKey.of(PlotCategory.CONTENTS, "cows", "cows");
+        assertEquals("cows", names(EditorRosterIndex.standingFirst(tiles, standing)).get(0));
+
+        // Order is otherwise untouched, and nothing is lost or duplicated.
+        List<String> moved = names(EditorRosterIndex.standingFirst(tiles, standing));
+        assertEquals(tiles.size(), moved.size());
+        assertEquals(List.of("cows", "standard", "oak", "armor", "house"), moved);
+
+        // Standing nowhere in this list, or nowhere at all, leaves it as it was.
+        assertEquals(names(tiles), names(EditorRosterIndex.standingFirst(tiles, null)));
+        assertEquals(names(tiles), names(EditorRosterIndex.standingFirst(tiles,
+            VariantKey.of(PlotCategory.TRACKS, "tile", "nope"))));
+        // Already first is a no-op rather than a shuffle.
+        assertEquals(names(tiles), names(EditorRosterIndex.standingFirst(tiles,
+            VariantKey.of(PlotCategory.CARRIAGES, "standard", "standard"))));
+    }
+
     private static List<String> names(List<EditorRosterIndex.Tile> tiles) {
         return tiles.stream().map(t -> t.variant().name()).toList();
     }

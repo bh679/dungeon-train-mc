@@ -10,12 +10,11 @@ public final class EditorScreenLang {
 
     private static final String PREFIX = "gui.dungeontrain.editor_screen.";
 
-    public static final String TAB_CURRENT = PREFIX + "tab.current";
+    public static final String TAB_ALL = PREFIX + "tab.all";
     public static final String TAB_CARRIAGES = PREFIX + "tab.carriages";
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
     public static final String TAB_DIMENSIONS = PREFIX + "tab.dimensions";
-    public static final String TAB_MY_BUILDS = PREFIX + "tab.my_builds";
     public static final String TAB_SETTINGS = PREFIX + "tab.settings";
     public static final String TAB_EXIT = PREFIX + "tab.exit";
 
@@ -59,9 +58,6 @@ public final class EditorScreenLang {
     public static final String UNDO_NOTHING = PREFIX + "undo_nothing";
     public static final String REDO_NOTHING = PREFIX + "redo_nothing";
     public static final String SHEET_SOURCE = PREFIX + "sheet.source";
-    public static final String SHEET_TYPE = PREFIX + "sheet.type";
-    public static final String SHEET_STATUS = PREFIX + "sheet.status";
-    public static final String SHEET_CHANGES = PREFIX + "sheet.changes";
     public static final String SOURCE_BUILTIN = PREFIX + "source.builtin";
     public static final String SOURCE_MINE = PREFIX + "source.mine";
     public static final String SOURCE_COMMUNITY = PREFIX + "source.community";

@@ -141,6 +141,45 @@ public final class EditorRosterIndex {
         return List.of();
     }
 
+    /**
+     * Every template in the roster, in one list — what the All page shows.
+     *
+     * <p>No type strip goes with it: fifteen strips across four categories would not fit the row,
+     * and the point of the page is the whole roster at once. The filter box and the chips are what
+     * narrow it.</p>
+     */
+    public List<Tile> allTiles() {
+        List<Tile> out = new ArrayList<>();
+        for (EditorRosterPacket.Group g : groups) {
+            for (EditorRosterPacket.Entry e : g.entries()) {
+                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight(), e.source()));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The template the author is standing in, moved to the front.
+     *
+     * <p>Every page does this, so wherever they are in the browser the build under their feet is
+     * the one already in reach — which is what the old Current tab was for, without spending a tab
+     * on it.</p>
+     */
+    public static List<Tile> standingFirst(List<Tile> tiles, VariantKey standing) {
+        if (standing == null || tiles.size() < 2) return tiles;
+        for (int i = 0; i < tiles.size(); i++) {
+            if (!tiles.get(i).key().sameTemplate(standing)) continue;
+            if (i == 0) return tiles;
+            List<Tile> out = new ArrayList<>(tiles.size());
+            out.add(tiles.get(i));
+            for (int j = 0; j < tiles.size(); j++) {
+                if (j != i) out.add(tiles.get(j));
+            }
+            return out;
+        }
+        return tiles;
+    }
+
     /** The first type strip of a page, or null when the page is empty — the default strip. */
     public TypeStrip firstStrip(PlotCategory page) {
         List<TypeStrip> strips = typeStrips(page);
