@@ -11141,6 +11141,17 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "hide-distant-horizons-upside-down",
+      "version": "0.792.0",
+      "type": "fix",
+      "title": "Distant Horizons in the upside-down section",
+      "summary": "Distant Horizons now pauses in the upside-down section, instead of drawing the world the right way up around you.",
+      "date": "2026-09-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
