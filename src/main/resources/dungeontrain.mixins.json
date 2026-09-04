@@ -78,6 +78,7 @@
     "client.ProgressScreenThemeMixin",
     "client.WorldOpenFlowsDelayMixin",
     "client.AdvancementsScreenAccessor",
+    "client.AdvancementsScreenEditorTabMixin",
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",
     "client.DeathScreenMoveTextMixin",
