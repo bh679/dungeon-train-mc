@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.MenuHeaderAction;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import net.minecraft.client.gui.Font;
@@ -75,6 +76,36 @@ public final class EditorDetailPane {
             x += ICON_CELL + ICON_GAP;
         }
         iconX = xs;
+    }
+
+    /**
+     * Lay the right pane out for one of the player's uploaded builds.
+     *
+     * <p>Preview and facts only. The icon row, the plot settings and Test the Carriage all act on
+     * an editor plot, and a relay build is not one — so rather than grey them out, they are absent,
+     * and every hit-test below finds nothing.</p>
+     */
+    public void layoutForBuild(InventoryEditorLayout layout) {
+        this.layout = layout;
+        this.ctx = new EditorScreenActions.Ctx(null, null, -1, null, null, false);
+        icons = List.of();
+        rows = List.of();
+        iconX = new int[0];
+        visibleRows = 0;
+        test = null;
+        saveAll = null;
+        hovered = Hit.NONE;
+    }
+
+    public void renderBuild(GuiGraphics g, Font font, EditorScreenTheme theme, TemplateArt art,
+                            TemplateSummary summary, BuilderProfilePacket.Entry entry, float yaw) {
+        InventoryEditorLayout.Rect h = layout.header();
+        String name = entry == null
+            ? EditorScreenLang.text(EditorScreenLang.NOTHING_SELECTED) : entry.buildName();
+        g.drawString(font, font.plainSubstrByWidth(name, h.w() - 4), h.x() + 2,
+            h.y() + (h.h() - font.lineHeight) / 2, theme.panelText(), !theme.isLight());
+        PreviewPane.draw(g, font, layout.preview(), art, entry == null ? "" : entry.buildName(), yaw, theme);
+        TemplateDataSheet.draw(g, font, layout.sheet(), TemplateDataSheet.buildLines(entry, summary));
     }
 
     public boolean overSettings(double mx, double my) {

@@ -256,14 +256,39 @@ public final class EditorTypeMenus {
     /** One packet row per top-level contents, each carrying its group's members as sub-variants. */
     static List<EditorTypeMenusPacket.Variant> contentsRows(List<CarriageContents> topLevel) {
         String cat = EditorCategory.CONTENTS.name();
-        List<EditorTypeMenusPacket.Variant> rows = contentsRows(topLevel);
+        CarriageContentsWeights weights = CarriageContentsWeights.current();
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(topLevel.size());
+        for (CarriageContents c : topLevel) {
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
+                CarriageContentsStore.fileForId(c.id()));
+            TemplateGate g = weights.gateFor(c.id());
+            String stageId = weights.stageIdFor(c.id());
+            rows.add(new EditorTypeMenusPacket.Variant(
+                c.id(), weights.weightFor(c.id()),
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                cat, c.id(), c.id(), p.isUser(), p.isImported(),
+                subVariantsFor(c.id(), cat), stageId == null ? "" : stageId));
+        }
         return rows;
     }
 
     /** One packet row per top-level variant of a track-side kind, owned by {@code owner}'s category. */
     static List<EditorTypeMenusPacket.Variant> trackKindRows(TrackKind kind, List<String> names,
                                                              EditorCategory owner) {
-        List<EditorTypeMenusPacket.Variant> rows = trackKindRows(kind, names, owner);
+        String cat = owner.name();
+        String modelId = kind.id();
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
+        for (String name : names) {
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
+                games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, name));
+            TemplateGate g = TrackVariantWeights.gateFor(kind, name);
+            String stageId = TrackVariantWeights.stageIdFor(kind, name);
+            rows.add(new EditorTypeMenusPacket.Variant(
+                name, TrackVariantWeights.weightFor(kind, name),
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                cat, modelId, name, p.isUser(), p.isImported(),
+                subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId));
+        }
         return rows;
     }
 

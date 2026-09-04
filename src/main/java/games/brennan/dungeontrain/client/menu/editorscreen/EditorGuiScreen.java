@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
-import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
@@ -12,6 +11,8 @@ import games.brennan.dungeontrain.client.menu.HotbarPassthrough;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
+import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
@@ -42,6 +43,7 @@ public final class EditorGuiScreen extends Screen {
     static final int REFRESH_DELAY_TICKS = 10;
 
     private final EditorBrowserPane browser = new EditorBrowserPane();
+    private final EditorMyBuildsPane myBuilds = new EditorMyBuildsPane();
     private final EditorDetailPane detail = new EditorDetailPane();
     private final OrbitState orbit = new OrbitState();
     private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
@@ -68,6 +70,17 @@ public final class EditorGuiScreen extends Screen {
         Minecraft.getInstance().setScreen(new EditorGuiScreen());
     }
 
+    /**
+     * Ask the relay for this player's uploaded builds.
+     *
+     * <p>The no-argument request means "my own profile" — the same one the builder profile screen
+     * sends, landing in the same {@code BuilderProfileState} cache, so opening either surface fills
+     * the other.</p>
+     */
+    private static void requestMyBuilds() {
+        DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket());
+    }
+
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -78,17 +91,27 @@ public final class EditorGuiScreen extends Screen {
         layout = InventoryEditorLayout.of(this.width, this.height);
         InventoryEditorLayout.Rect f = layout.filter();
         int boxW = browser.filterBoxWidth(f, this.font);
-        filterBox = new EditBox(this.font, f.x(), f.y(), boxW, f.h(), Component.literal("filter"));
-        filterBox.setBordered(true);
+        filterBox = new EditBox(this.font, browser.filterBoxX(f), f.y(), boxW, f.h(),
+            Component.literal("filter"));
+        filterBox.setBordered(false);
         filterBox.setMaxLength(32);
-        filterBox.setHint(Component.translatable(EditorScreenLang.FILTER_HINT));
+        // The hint is only offered when it fits. An EditBox draws its hint unclipped, and this box
+        // is as narrow as the filter chips leave it, so a hint too long for it would run straight
+        // across them — the magnifier beside the box already says what it is for.
+        Component hint = Component.translatable(EditorScreenLang.FILTER_HINT);
+        filterBox.setHint(this.font.width(hint) <= boxW - 2 ? hint : Component.empty());
         filterBox.setValue(EditorScreenState.text());
         filterBox.setResponder(text -> {
             EditorScreenState.setText(text);
             browser.resetScroll();
         });
-        addRenderableWidget(filterBox);
+        // Added as a plain child rather than a renderable: this screen draws it itself, inside a
+        // scissor, so neither the typed value nor the hint can escape the box.
+        addWidget(filterBox);
         filterBox.visible = EditorScreenState.page().isBrowser();
+
+        // Reopening on the My Builds tab should not show a stale list from last time.
+        if (EditorScreenState.page() == EditorScreenPage.MY_BUILDS) requestMyBuilds();
     }
 
     @Override
@@ -138,6 +161,7 @@ public final class EditorGuiScreen extends Screen {
         orbit.advance(seconds);
 
         boolean browsing = EditorScreenState.page().isBrowser();
+        boolean myBuildsPage = EditorScreenState.page() == EditorScreenPage.MY_BUILDS;
         filterBox.visible = browsing;
         filterBox.setEditable(browsing);
 
@@ -155,18 +179,31 @@ public final class EditorGuiScreen extends Screen {
         if (browsing) {
             browser.layout(layout, this.font, index);
             browser.render(g, this.font, theme, seconds, mx, my);
+            drawFilterBox(g, mouseX, mouseY, partialTick);
+        } else if (myBuildsPage) {
+            myBuilds.layout(layout);
+            myBuilds.render(g, this.font, seconds, mx, my);
         } else {
             drawSettingsPage(g, theme, mx, my);
         }
 
-        EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
-        TemplateArt art = TemplateArt.of(ctx.selection());
-        TemplateSummary summary = art == null ? null : art.summary();
-        detail.layout(layout, ctx, System.currentTimeMillis());
-        detail.render(g, this.font, theme, art, summary, tile,
-            EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
+        if (myBuildsPage) {
+            // A relay build, not a template: its own preview, its own facts, no editor controls.
+            var entry = myBuilds.selectedBuild();
+            TemplateArt buildArt = TemplateArt.ofBuild(entry);
+            detail.layoutForBuild(layout);
+            detail.renderBuild(g, this.font, theme, buildArt,
+                buildArt == null ? null : buildArt.summary(), entry, orbit.yaw());
+        } else {
+            EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
+            TemplateArt art = TemplateArt.of(ctx.selection());
+            TemplateSummary summary = art == null ? null : art.summary();
+            detail.layout(layout, ctx, System.currentTimeMillis());
+            detail.render(g, this.font, theme, art, summary, tile,
+                EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
+        }
 
-        if (index.isEmpty()) {
+        if (browsing && index.isEmpty()) {
             String loading = EditorScreenLang.text(EditorScreenLang.NO_ROSTER);
             g.drawString(this.font, loading, layout.grid().x() + 4, layout.grid().y() + 4, 0xFFFFFFFF, true);
         }
@@ -221,6 +258,26 @@ public final class EditorGuiScreen extends Screen {
         }
     }
 
+    /**
+     * The filter box, drawn inside its own rectangle and nowhere else.
+     *
+     * <p>An {@code EditBox} draws its value and its hint without clipping either, and this one is
+     * only as wide as the filter chips leave it. Scissored, the text simply disappears where the
+     * chips begin instead of running across them. The dark fill under it is what makes a
+     * borderless field read as a field on the light panel.</p>
+     */
+    private void drawFilterBox(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (filterBox == null || !filterBox.visible) return;
+        int x = filterBox.getX();
+        int y = filterBox.getY();
+        int w = filterBox.getWidth();
+        int h = filterBox.getHeight();
+        g.fill(x - 1, y, x + w + 1, y + h, MenuRowPainter.CELL_IDLE);
+        g.enableScissor(x, y, x + w, y + h);
+        filterBox.render(g, mouseX, mouseY, partialTick);
+        g.disableScissor();
+    }
+
     private List<CommandMenuEntry> settingsRows() {
         VariantKey standing = EditorScreenState.standingIn();
         PlotCategory cat = standing == null ? null : standing.category();
@@ -244,6 +301,8 @@ public final class EditorGuiScreen extends Screen {
             tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
         } else if (EditorScreenState.page().isBrowser()) {
             tip = browser.tooltipAt(browser.hovered());
+        } else if (EditorScreenState.page() == EditorScreenPage.MY_BUILDS) {
+            tip = myBuilds.tooltipAt(myBuilds.hovered());
         }
         if (tip == null) tip = detail.tooltipAt(detail.hovered());
         if (tip != null) g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
@@ -305,6 +364,14 @@ public final class EditorGuiScreen extends Screen {
                 onBrowserHit(hit);
                 return true;
             }
+        } else if (EditorScreenState.page() == EditorScreenPage.MY_BUILDS) {
+            int build = myBuilds.hitTest(mouseX, mouseY);
+            if (build != TemplateTileGridLayout.NONE) {
+                click();
+                myBuilds.select(build);
+                orbit.reset();
+                return true;
+            }
         } else if (onSettingsClick(mouseX, mouseY)) {
             click();
             return true;
@@ -332,12 +399,12 @@ public final class EditorGuiScreen extends Screen {
             }
             case EXIT -> modal.runAndClose("dungeontrain editor exit");
             case PAGE -> {
-                if (tab.page() == EditorScreenPage.MY_BUILDS) {
-                    this.minecraft.setScreen(new BuilderProfileScreen(null));
-                    return;
-                }
                 EditorScreenState.setPage(tab.page());
                 browser.resetScroll();
+                if (tab.page() == EditorScreenPage.MY_BUILDS) {
+                    myBuilds.resetScroll();
+                    requestMyBuilds();
+                }
             }
         }
     }
@@ -475,6 +542,10 @@ public final class EditorGuiScreen extends Screen {
         int dir = scrollY > 0 ? -1 : 1;
         if (EditorScreenState.page().isBrowser() && browser.overGrid(mouseX, mouseY)) {
             if (browser.scrollBy(dir)) return true;
+        }
+        if (EditorScreenState.page() == EditorScreenPage.MY_BUILDS
+            && myBuilds.overGrid(mouseX, mouseY) && myBuilds.scrollBy(dir)) {
+            return true;
         }
         if (!EditorScreenState.page().isBrowser() && layout != null && layout.grid().contains(mouseX, mouseY)) {
             settingsScroll = Math.max(0, settingsScroll + dir);

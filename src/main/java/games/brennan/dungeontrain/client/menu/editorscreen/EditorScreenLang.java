@@ -48,6 +48,9 @@ public final class EditorScreenLang {
     public static final String SHEET_LEVELS_ALL = PREFIX + "sheet.levels_all";
     public static final String SHEET_STAGE = PREFIX + "sheet.stage";
     public static final String SHEET_SOURCE = PREFIX + "sheet.source";
+    public static final String SHEET_TYPE = PREFIX + "sheet.type";
+    public static final String SHEET_STATUS = PREFIX + "sheet.status";
+    public static final String SHEET_CHANGES = PREFIX + "sheet.changes";
     public static final String SOURCE_BUILTIN = PREFIX + "source.builtin";
     public static final String SOURCE_MINE = PREFIX + "source.mine";
     public static final String SOURCE_COMMUNITY = PREFIX + "source.community";

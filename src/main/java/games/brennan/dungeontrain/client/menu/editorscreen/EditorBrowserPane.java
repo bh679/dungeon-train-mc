@@ -26,6 +26,9 @@ public final class EditorBrowserPane {
     static final int SUB_GAP = 6;
     static final int CHIP_PAD = 4;
     static final int CHIP_GAP = 2;
+    /** The magnifier that labels the filter box, and the breathing room either side of it. */
+    static final int SEARCH_ICON = 8;
+    static final int SEARCH_GAP = 2;
     static final int CELL_ON = 0x8040AA40;
     static final int CELL_IDLE = 0x30FFFFFF;
     static final int CELL_HOVER = 0xB0FFCC33;
@@ -67,13 +70,24 @@ public final class EditorBrowserPane {
     public EditorRosterIndex.Filter chipAt(int i) { return i >= 0 && i < chips.size() ? chips.get(i).filter() : null; }
     public Hit hovered() { return hovered; }
 
-    /** The left edge the filter text box should occupy — the chips take the rest of the row. */
+    /** Where the filter text box starts — after the search icon that labels it. */
+    public int filterBoxX(InventoryEditorLayout.Rect filter) {
+        return filter.x() + SEARCH_GAP + SEARCH_ICON + SEARCH_GAP;
+    }
+
+    /**
+     * How wide the filter text box may be: whatever the chips leave.
+     *
+     * <p>It can end up narrow, which is why the screen draws the box inside a scissor and drops
+     * the hint when it no longer fits — the text has to disappear behind the chips rather than
+     * run across them.</p>
+     */
     public int filterBoxWidth(InventoryEditorLayout.Rect filter, Font font) {
         int chipsW = 0;
         for (EditorRosterIndex.Filter f : EditorRosterIndex.Filter.values()) {
             chipsW += font.width(chipLabel(f)) + CHIP_PAD * 2 + CHIP_GAP;
         }
-        return Math.max(40, filter.w() - chipsW - 2);
+        return Math.max(24, filter.right() - chipsW - CHIP_GAP - filterBoxX(filter));
     }
 
     static String chipLabel(EditorRosterIndex.Filter f) {
@@ -93,7 +107,7 @@ public final class EditorBrowserPane {
 
         // Chips, right-aligned in the filter row after the text box.
         List<Chip> c = new ArrayList<>();
-        int cx = filterRect.x() + filterBoxWidth(filterRect, font) + 2;
+        int cx = filterBoxX(filterRect) + filterBoxWidth(filterRect, font) + CHIP_GAP;
         for (EditorRosterIndex.Filter f : EditorRosterIndex.Filter.values()) {
             String label = chipLabel(f);
             int w = font.width(label) + CHIP_PAD * 2;
@@ -166,6 +180,11 @@ public final class EditorBrowserPane {
     public void render(GuiGraphics g, Font font, EditorScreenTheme theme, float seconds,
                        int mouseX, int mouseY) {
         hovered = hitTest(mouseX, mouseY);
+
+        // The magnifier in front of the filter box — the box itself is drawn by the screen, which
+        // owns the widget and scissors it so its text cannot spill across the chips.
+        g.blitSprite(EditorIcons.SEARCH, filterRect.x() + SEARCH_GAP,
+            filterRect.y() + (filterRect.h() - SEARCH_ICON) / 2, SEARCH_ICON, SEARCH_ICON);
 
         // Filter chips.
         for (int i = 0; i < chips.size(); i++) {

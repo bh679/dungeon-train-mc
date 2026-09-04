@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import net.minecraft.client.gui.Font;
@@ -52,6 +53,38 @@ public final class TemplateDataSheet {
         out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT), weight));
         out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_SPAWNS), spawns(v)));
         out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
+        return out;
+    }
+
+    /**
+     * The lines for one of the player's uploaded builds.
+     *
+     * <p>Different facts from a template's: a relay build has no spawn weight and no plot, and what
+     * matters about it is what kind it is, where it stands with the reviewer, and whether the copy
+     * on this machine has drifted from the uploaded one.</p>
+     */
+    public static List<Line> buildLines(BuilderProfilePacket.Entry entry, TemplateSummary summary) {
+        List<Line> out = new ArrayList<>(5);
+        if (entry == null) return out;
+        String pending = EditorScreenLang.text(EditorScreenLang.SHEET_PENDING);
+        out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_TYPE),
+            EditorMyBuildsPane.typeLabel(entry)));
+        out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_STATUS),
+            EditorMyBuildsPane.statusLabel(entry)));
+        if (summary == null || summary.isEmpty()) {
+            out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_SIZE), pending));
+            out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS), pending));
+        } else {
+            var s = summary.declaredSize();
+            out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_SIZE),
+                s.getX() + " × " + s.getY() + " × " + s.getZ()));
+            out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS),
+                Integer.toString(summary.blocks())));
+        }
+        if (entry.changes() > 0) {
+            out.add(new Line(EditorScreenLang.text(EditorScreenLang.SHEET_CHANGES),
+                Integer.toString(entry.changes())));
+        }
         return out;
     }
 
