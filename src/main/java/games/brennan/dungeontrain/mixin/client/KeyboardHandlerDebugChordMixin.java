@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.client.ShaderDiagnostics;
 import games.brennan.dungeontrain.client.TrainDebugState;
+import games.brennan.dungeontrain.client.shader.ShaderBisect;
 import net.minecraft.client.KeyboardHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,8 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Claims <b>F3 + 4</b> for the Dungeon Train debug panel
  * ({@link games.brennan.dungeontrain.client.TrainDebugHudOverlay}) and <b>F3 + 5</b> for the
  * shader-compatibility read-out
- * ({@link games.brennan.dungeontrain.client.ShaderDiagnosticsHud}), alongside vanilla's own F3
- * chords. {@code 4} and {@code 5} are free in 1.21.1 — vanilla's {@code handleDebugKeys} takes
+ * ({@link games.brennan.dungeontrain.client.ShaderDiagnosticsHud}) and <b>F3 + 6</b> for the
+ * shader-feature bisect ({@link ShaderBisect}), alongside vanilla's own F3
+ * chords. {@code 4}, {@code 5} and {@code 6} are free in 1.21.1 — vanilla's {@code handleDebugKeys} takes
  * {@code 1}/{@code 2}/{@code 3} for the profiler charts but stops there.
  *
  * <p>Returning {@code true} is the whole reason this is a mixin rather than an
@@ -40,6 +42,11 @@ public class KeyboardHandlerDebugChordMixin {
         }
         if (key == InputConstants.KEY_5) {
             ShaderDiagnostics.toggleVisible();
+            cir.setReturnValue(true);
+            return;
+        }
+        if (key == InputConstants.KEY_6) {
+            ShaderBisect.cycle();
             cir.setReturnValue(true);
         }
     }

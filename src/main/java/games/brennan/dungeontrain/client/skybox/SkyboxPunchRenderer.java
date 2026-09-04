@@ -120,7 +120,7 @@ public final class SkyboxPunchRenderer {
             if (ShaderDiagnostics.recording()) {
                 ShaderDiagnostics.recordLevelFboStencil(SkyboxStencil.boundFramebufferStencil());
             }
-        } else if (!shaders) {
+        } else if (!shaders || !games.brennan.dungeontrain.client.shader.ShaderBisect.skyboxReopenEnabled()) {
             // The reopen pass exists only for a deferred pack. Vanilla's sky pixels under the
             // punch are already the sky, and its per-variant skies were drawn at AFTER_SKY.
             return;

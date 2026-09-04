@@ -133,7 +133,7 @@ public final class PostFogPass {
 
     private static void capture(RenderLevelStageEvent event) {
         captured = false;
-        if (!ShaderCompat.active() || shader == null) {
+        if (!ShaderCompat.active() || shader == null || !ShaderBisect.postFogEnabled()) {
             requested = false;
             return;
         }

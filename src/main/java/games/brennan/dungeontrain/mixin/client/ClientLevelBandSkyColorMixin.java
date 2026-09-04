@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.client.ClientNetherBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
 import games.brennan.dungeontrain.client.NetherFogEvents;
 import games.brennan.dungeontrain.client.ShaderCompat;
+import games.brennan.dungeontrain.client.shader.ShaderBisect;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -36,7 +37,7 @@ public abstract class ClientLevelBandSkyColorMixin {
         // hook exists; vanilla reads it for the sky disc and the fog, both of which a band already
         // handles by other means. Tinting it with no pack loaded would change the vanilla look for
         // players who will never see the benefit.
-        if (!ShaderCompat.active()) return;
+        if (!ShaderCompat.active() || !ShaderBisect.skyColourEnabled()) return;
         ClientLevel level = (ClientLevel) (Object) this;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         double nether = ClientNetherBand.netherIntensityAt(pos.x);

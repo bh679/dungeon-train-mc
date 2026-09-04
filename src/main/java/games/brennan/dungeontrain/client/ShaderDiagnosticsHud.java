@@ -182,6 +182,11 @@ public final class ShaderDiagnosticsHud {
         }
 
         String world = games.brennan.dungeontrain.client.shader.ShaderWorld.describe();
+        String bisect = games.brennan.dungeontrain.client.shader.ShaderBisect.describe();
+        if (!bisect.isEmpty()) {
+            lines.add(new Line("BISECT: " + bisect, COLOR_OFF));
+        }
+
         String swaps = games.brennan.dungeontrain.client.shader.ShaderWorld.describeSwaps();
         boolean thrashing = games.brennan.dungeontrain.client.shader.ShaderWorld.swapsLastWindow() > 2;
         lines.add(new Line("Shader world: " + (world.isEmpty() ? "overworld (pack default)" : world)

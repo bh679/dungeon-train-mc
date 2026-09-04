@@ -257,6 +257,7 @@ public final class ShaderWorld {
      * {@code null} to leave Iris' own answer alone. Called from the mixin on every Iris query.
      */
     public static Object irisOverride() {
+        if (!ShaderBisect.spoofEnabled()) return null;
         World w = reporting;
         if (w == null) return null;
         resolveIris();
