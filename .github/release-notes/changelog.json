@@ -11101,6 +11101,17 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-carriage-inside-only-teleport",
+      "version": "0.790.0",
+      "type": "fix",
+      "title": "Portal carriage fix",
+      "summary": "Portal carriages now only take you through if you are actually inside them.",
+      "date": "2026-09-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
