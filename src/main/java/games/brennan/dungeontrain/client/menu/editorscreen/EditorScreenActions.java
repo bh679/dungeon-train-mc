@@ -90,9 +90,8 @@ public final class EditorScreenActions {
                  : packetAction(ctx, EditorPlotActionPacket.Action.SAVE, sendPacket),
             EditorScreenLang.DISABLED_STAND_HERE));
 
-        CommandMenuEntry rename = here && !ctx.isSubVariant() ? renameEntry(cat, model) : null;
-        out.add(new Icon("rename", EditorScreenLang.ICON_RENAME, rename,
-            here ? EditorScreenLang.DISABLED_BUILTIN : EditorScreenLang.DISABLED_STAND_HERE));
+        out.add(new Icon("rename", EditorScreenLang.ICON_RENAME, renameEntry(ctx),
+            EditorScreenLang.DISABLED_BUILTIN));
 
         out.add(new Icon("remove", EditorScreenLang.ICON_REMOVE, removeEntry(ctx),
             EditorScreenLang.DISABLED_NOT_HERE));
@@ -119,13 +118,31 @@ public final class EditorScreenActions {
         return out;
     }
 
-    /** Rename for a top-level template; null for built-ins and categories with no rename verb. */
-    static CommandMenuEntry renameEntry(PlotCategory cat, String model) {
-        if (cat == PlotCategory.PARTS) {
-            // The part builder wants the kind:name model string it splits itself.
-            return null;
-        }
-        return EditorMenuScreen.renameEntryFor(cat, model);
+    /**
+     * Rename the selected template, from wherever the player is standing.
+     *
+     * <p>Addressed by id rather than by position, so it renames what the pane is showing rather
+     * than whatever plot the author happens to be in. The server still refuses when the template's
+     * category is not the stamped one — its plots are cleared then, and the rename captures blocks
+     * from the plot.</p>
+     *
+     * <p>Null for built-ins, sub-variants, and the categories with no rename verb.</p>
+     */
+    static CommandMenuEntry renameEntry(Ctx ctx) {
+        if (!ctx.hasSelection() || ctx.isSubVariant()) return null;
+        VariantKey sel = ctx.selection();
+        String id = sel.modelId();
+        String label = EditorScreenLang.text(EditorScreenLang.ICON_RENAME);
+        return switch (sel.category()) {
+            case CARRIAGES -> EditorMenuScreen.isReservedCarriageBuiltin(id) ? null
+                : new CommandMenuEntry.TypeArg(label, "new_name",
+                    "dungeontrain editor rename " + id, "", id);
+            case CONTENTS -> EditorMenuScreen.isReservedContentsBuiltin(id) ? null
+                : new CommandMenuEntry.TypeArg(label, "new_name",
+                    "dungeontrain editor contents rename " + id, "", id);
+            // Parts rename through their own kind:name verb; tracks and rooms have none.
+            case PARTS, TRACKS, PORTALS, ARCHITECTURE -> null;
+        };
     }
 
     /**
@@ -212,97 +229,75 @@ public final class EditorScreenActions {
                                                      Supplier<String> roomMode) {
         List<CommandMenuEntry> out = new ArrayList<>();
         if (!ctx.hasSelection()) return out;
-        addIfPresent(out, weightRow(ctx));
+        // Weight, the level bounds, the phases and a room's length, width and height are edited on
+        // the data sheet, on the lines that show them. Only what the sheet has no room for lands
+        // here: the Stage link, the contents allow-list, and what a room does at its walls.
         if (ctx.standingInSelection() && ctx.category() == PlotCategory.PORTALS) {
-            out.addAll(portalRows.get());
+            for (CommandMenuEntry row : portalRows.get()) {
+                if (!isRoomSizeRow(row)) out.add(row);
+            }
         }
         if (!ctx.isSubVariant()) {
-            out.addAll(gateRows(ctx));
+            addIfPresent(out, stageRow(ctx));
         }
         addIfPresent(out, contentsAllowEntry(ctx, roomMode));
         return out;
     }
 
-    /** The weight stepper: the category's own for a template, the group verb for a member. */
-    static CommandMenuEntry weightRow(Ctx ctx) {
+    /** True for the length, width and height steppers, which the Size line now carries. */
+    static boolean isRoomSizeRow(CommandMenuEntry row) {
+        TemplateDataSheet.Stepper stepper = TemplateDataSheet.Stepper.of(row);
+        return stepper != null && stepper.isRoomAxis();
+    }
+
+    /** The Stage chip, or the Custom picker when the template is unlinked. */
+    static CommandMenuEntry stageRow(Ctx ctx) {
         VariantKey sel = ctx.selection();
-        int weight = ctx.variant().weight();
-        if (weight == EditorPlotLabelsPacket.NO_WEIGHT) return null;
+        EditorTypeMenusPacket.Variant v = ctx.variant();
+        if (!sel.category().hasGate() || v.phaseMask() == EditorTypeMenusPacket.Variant.NO_GATE) return null;
+        // A linked Stage already shows as the Spawns line; the row would say it twice.
+        if (v.isStageLinked()) return null;
+        return new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM),
+            new StagePickerScreen(sel.category(), sel.modelId(), sel.modelName(), ""));
+    }
+
+    /** The weight stepper for a key, for the sheet to take apart. Null when there is no weight pool. */
+    public static CommandMenuEntry weightRow(VariantKey sel, int weight) {
+        if (sel == null || weight == EditorPlotLabelsPacket.NO_WEIGHT) return null;
         if (!sel.isSubVariant()) {
             return EditorMenuScreen.weightTripleFor(sel.category(), sel.modelId(), sel.modelName(), weight);
         }
         String dec;
         String inc;
+        String prefix;
         switch (sel.category()) {
             case CONTENTS -> {
                 dec = EditorPlotTeleport.groupMemberWeightCommandFor(sel.parentId(), sel.modelName(), "dec");
                 inc = EditorPlotTeleport.groupMemberWeightCommandFor(sel.parentId(), sel.modelName(), "inc");
+                prefix = "dungeontrain editor contents group set-weight " + sel.parentId() + " " + sel.modelName();
             }
             case PORTALS -> {
                 dec = EditorPlotTeleport.portalRoomGroupWeightCommandFor(sel.parentId(), sel.modelName(), "dec");
                 inc = EditorPlotTeleport.portalRoomGroupWeightCommandFor(sel.parentId(), sel.modelName(), "inc");
+                prefix = "dungeontrain editor portals group set-weight " + sel.parentId() + " " + sel.modelName();
             }
+            // Track-side groups have no per-member weight verb yet.
             default -> {
-                // Track-side groups have no weight verb yet; show the value without a stepper.
-                return new CommandMenuEntry.Label(EditorScreenLang.text(EditorScreenLang.WEIGHT_READ_ONLY, weight));
+                return null;
             }
         }
         return new CommandMenuEntry.Triple(
             new CommandMenuEntry.Stay("-", dec),
-            new CommandMenuEntry.Label(EditorScreenLang.text(EditorScreenLang.WEIGHT, weight)),
+            new CommandMenuEntry.TypeArg(EditorScreenLang.text(EditorScreenLang.WEIGHT, weight), "0-100", prefix),
             new CommandMenuEntry.Stay("+", inc),
             0.10, 0.90);
     }
 
-    /**
-     * Min Lv, Max Lv, Phases and Stage for a top-level template with a gate; a single Stage chip
-     * when it is linked. Values come from the roster row, so they are right for any selection.
-     */
-    static List<CommandMenuEntry> gateRows(Ctx ctx) {
-        VariantKey sel = ctx.selection();
-        EditorTypeMenusPacket.Variant v = ctx.variant();
-        List<CommandMenuEntry> out = new ArrayList<>();
-        if (!sel.category().hasGate() || v.phaseMask() == EditorTypeMenusPacket.Variant.NO_GATE) return out;
-        if (v.isStageLinked()) {
-            out.add(new CommandMenuEntry.DrillIn(
-                EditorScreenLang.text(EditorScreenLang.STAGE_LINKED, v.primaryStageId()),
-                new StagePickerScreen(sel.category(), sel.modelId(), sel.modelName(), v.primaryStageId())));
-            return out;
-        }
-        addIfPresent(out, EditorMenuScreen.levelTripleFor(sel.category(), sel.modelId(), sel.modelName(),
-            "minlevel", "Min Lv (" + v.minLevel() + ")", "0-1000"));
-        addIfPresent(out, EditorMenuScreen.levelTripleFor(sel.category(), sel.modelId(), sel.modelName(),
-            "maxlevel", "Max Lv (" + (v.maxLevel() < 0 ? "all" : Integer.toString(v.maxLevel())) + ")",
-            "-1..1000"));
-        out.add(new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.PHASES),
-            phasesScreen(sel, v.phaseMask())));
-        out.add(new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM),
-            new StagePickerScreen(sel.category(), sel.modelId(), sel.modelName(), "")));
-        return out;
-    }
-
-    /** The phase toggles for a template, read from its own row rather than the plot the player stands in. */
-    static MenuScreen phasesScreen(VariantKey sel, int mask) {
-        List<CommandMenuEntry> rows = new ArrayList<>();
-        for (TrainPhase p : TrainPhase.values()) {
-            String on = EditorPlotTeleport.phaseCommandFor(sel.category(), sel.modelId(), sel.modelName(), p.token(), "on");
-            String off = EditorPlotTeleport.phaseCommandFor(sel.category(), sel.modelId(), sel.modelName(), p.token(), "off");
-            String others = EditorPlotTeleport.phaseCommandFor(sel.category(), sel.modelId(), sel.modelName(), p.token(), "others");
-            if (on == null) continue;
-            rows.add(new CommandMenuEntry.Toggle(phaseLabel(p), (mask & p.bit()) != 0, on, off, true, others));
-        }
-        rows.add(new CommandMenuEntry.Back("< Back"));
-        List<CommandMenuEntry> frozen = List.copyOf(rows);
-        String title = EditorScreenLang.text(EditorScreenLang.PHASES);
-        return new MenuScreen() {
-            @Override public String title() { return title; }
-            @Override public List<CommandMenuEntry> entries() { return frozen; }
-        };
-    }
-
-    private static String phaseLabel(TrainPhase p) {
-        String n = p.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
-        return Character.toUpperCase(n.charAt(0)) + n.substring(1);
+    /** A level-bound stepper for a key, for the sheet to take apart. */
+    public static CommandMenuEntry levelRow(VariantKey sel, String sub, String shown) {
+        if (sel == null || sel.isSubVariant()) return null;
+        return EditorMenuScreen.levelTripleFor(sel.category(), sel.modelId(), sel.modelName(),
+            sub, "(" + shown + ")", sub.equals("minlevel") ? "0-1000" : "-1..1000");
     }
 
     /**

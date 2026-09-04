@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.MenuHeaderAction;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
@@ -33,7 +34,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, SAVE_ALL, ICON, ROW, TEST, PREVIEW }
+    public enum HitKind { NONE, SAVE_ALL, ICON, ROW, TEST, PREVIEW, SHEET }
 
     public record Hit(HitKind kind, int index, int sub) {
         public static final Hit NONE = new Hit(HitKind.NONE, -1, 0);
@@ -43,6 +44,9 @@ public final class EditorDetailPane {
     private EditorScreenActions.Ctx ctx;
     private List<EditorScreenActions.Icon> icons = List.of();
     private List<CommandMenuEntry> rows = List.of();
+    private List<CommandMenuEntry> roomRows = List.of();
+    private List<TemplateDataSheet.Line> sheetLines = List.of();
+    private List<TemplateDataSheet.Placed> sheetCells = List.of();
     private CommandMenuEntry test;
     private MenuHeaderAction saveAll;
     private int scroll;
@@ -62,7 +66,11 @@ public final class EditorDetailPane {
         this.layout = layout;
         this.ctx = ctx;
         icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer);
-        rows = EditorScreenActions.settingRows(ctx, EditorMenuScreen::portalRows, EditorStatusHudOverlay::roomMode);
+        // Read once: the Size line takes the room's own dimensions from these, and the rows below
+        // take everything else. Reading them twice could show two different numbers for one axis.
+        roomRows = ctx.standingInSelection() && ctx.category() == PlotCategory.PORTALS
+            ? EditorMenuScreen.portalRows() : List.of();
+        rows = EditorScreenActions.settingRows(ctx, () -> roomRows, EditorStatusHudOverlay::roomMode);
         test = EditorScreenActions.testEntry(ctx);
         saveAll = EditorScreenActions.saveAll(ctx, nowMillis);
         visibleRows = Math.max(0, layout.settings().h() / ROW_H);
@@ -90,6 +98,8 @@ public final class EditorDetailPane {
         this.ctx = new EditorScreenActions.Ctx(null, null, -1, null, null, false);
         icons = List.of();
         rows = List.of();
+        roomRows = List.of();
+        sheetCells = List.of();
         iconX = new int[0];
         visibleRows = 0;
         test = null;
@@ -105,7 +115,9 @@ public final class EditorDetailPane {
         g.drawString(font, font.plainSubstrByWidth(name, h.w() - 4), h.x() + 2,
             h.y() + (h.h() - font.lineHeight) / 2, theme.panelText(), !theme.isLight());
         PreviewPane.draw(g, font, layout.preview(), art, entry == null ? "" : entry.buildName(), yaw, theme);
-        TemplateDataSheet.draw(g, font, layout.sheet(), TemplateDataSheet.buildLines(entry, summary));
+        sheetLines = TemplateDataSheet.buildLines(entry, summary);
+        sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
+        TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells, -1);
     }
 
     public boolean overSettings(double mx, double my) {
@@ -131,8 +143,12 @@ public final class EditorDetailPane {
         drawHeader(g, font, theme);
         String name = tile == null ? "" : tile.variant().name();
         PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme);
-        TemplateDataSheet.draw(g, font, layout.sheet(), TemplateDataSheet.lines(tile, pathLabel, summary,
-            tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant())));
+        sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
+            tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
+            ctx.selection(), roomRows);
+        sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
+        TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
+            hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
         drawIcons(g);
         drawRows(g, font, theme);
         drawTest(g, font);
@@ -238,6 +254,8 @@ public final class EditorDetailPane {
         InventoryEditorLayout.Rect h = layout.header();
         if (h.contains(mx, my) && mx >= h.right() - ICON_SIZE - 3) return new Hit(HitKind.SAVE_ALL, 0, 0);
         if (layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
+        int sheetCell = TemplateDataSheet.hit(sheetCells, mx, my);
+        if (sheetCell >= 0) return new Hit(HitKind.SHEET, sheetCell, 0);
         InventoryEditorLayout.Rect ir = layout.icons();
         if (my >= ir.y() && my < ir.y() + ICON_CELL) {
             for (int i = 0; i < iconX.length; i++) {
@@ -258,20 +276,34 @@ public final class EditorDetailPane {
         return Hit.NONE;
     }
 
-    /** The tooltip for the hovered control, or null. */
-    public String tooltipAt(Hit hit) {
+    /**
+     * The tooltip for the hovered control: its name, and why it is off when it is.
+     *
+     * <p>Two lines rather than one long one — a name joined to a sentence ran off the edge of the
+     * screen, and the name is what the pointer is asking about.</p>
+     */
+    public List<String> tooltipAt(Hit hit) {
         return switch (hit.kind()) {
-            case SAVE_ALL -> saveAll == null ? null : saveAll.label();
+            case SAVE_ALL -> saveAll == null ? List.of() : List.of(saveAll.label());
             case ICON -> {
-                if (hit.index() < 0 || hit.index() >= icons.size()) yield null;
+                if (hit.index() < 0 || hit.index() >= icons.size()) yield List.of();
                 EditorScreenActions.Icon icon = icons.get(hit.index());
                 String label = EditorScreenLang.text(icon.labelKey());
-                yield icon.enabled() || icon.disabledKey() == null ? label
-                    : label + " — " + EditorScreenLang.text(icon.disabledKey());
+                yield icon.enabled() || icon.disabledKey() == null
+                    ? List.of(label)
+                    : List.of(label, EditorScreenLang.text(icon.disabledKey()));
             }
-            case TEST -> test == null ? EditorScreenLang.text(EditorScreenLang.DISABLED_STAND_HERE) : null;
-            default -> null;
+            case TEST -> test == null
+                ? List.of(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
+                          EditorScreenLang.text(EditorScreenLang.DISABLED_STAND_HERE))
+                : List.of();
+            default -> List.of();
         };
+    }
+
+    /** The sheet cell a click landed on, or null. */
+    public TemplateDataSheet.Placed sheetCell(int index) {
+        return index >= 0 && index < sheetCells.size() ? sheetCells.get(index) : null;
     }
 
     /** The roster group label for the sheet's Path line. */

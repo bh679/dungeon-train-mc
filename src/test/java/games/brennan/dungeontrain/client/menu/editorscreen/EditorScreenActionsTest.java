@@ -87,8 +87,10 @@ final class EditorScreenActionsTest {
         Map<String, EditorScreenActions.Icon> icons = iconsById(c, sent);
         assertFalse(icons.get("undo").enabled());
         assertFalse(icons.get("redo").enabled());
-        assertFalse(icons.get("rename").enabled());
         assertEquals(EditorScreenLang.DISABLED_STAND_HERE, icons.get("undo").disabledKey());
+        // Rename is addressed by id now, so it acts on the selection from anywhere.
+        CommandMenuEntry.TypeArg rename = assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
+        assertEquals("dungeontrain editor rename pen", rename.commandPrefix());
         for (String id : List.of("save", "reset", "clear")) {
             CommandMenuEntry.ClientAction a = assertInstanceOf(CommandMenuEntry.ClientAction.class, icons.get(id).entry(), id);
             a.action().run();
@@ -123,7 +125,7 @@ final class EditorScreenActionsTest {
         VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "standard", "standard");
         Map<String, EditorScreenActions.Icon> icons = iconsById(
             ctx(k, gated("CARRIAGES", "standard", "standard", 19, List.of()), k, PlotCategory.CARRIAGES), new ArrayList<>());
-        assertFalse(icons.get("rename").enabled());
+        assertFalse(icons.get("rename").enabled(), "a protected built-in has no rename verb");
         assertEquals(EditorScreenLang.DISABLED_BUILTIN, icons.get("rename").disabledKey());
     }
 
@@ -171,54 +173,45 @@ final class EditorScreenActionsTest {
         c -> EditorScreenActions.settingRows(c, () -> List.of(new CommandMenuEntry.Label("ROOM")), () -> "");
 
     @Test
-    @DisplayName("a top-level carriage gets weight, min/max, phases, stage and the contents allow-list")
+    @DisplayName("the rows below the icons carry only what the sheet has no line for")
     void carriageRows() {
         VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
         List<CommandMenuEntry> rows = ROWS.apply(ctx(k, gated("CARRIAGES", "pen", "pen", 15, List.of()), null, PlotCategory.CARRIAGES));
-        List<String> labels = rows.stream().map(CommandMenuEntry::label).toList();
-        assertEquals(6, rows.size(), labels.toString());
-        CommandMenuEntry.Triple weight = assertInstanceOf(CommandMenuEntry.Triple.class, rows.get(0));
-        assertEquals("dungeontrain editor weight pen dec", ((CommandMenuEntry.Stay) weight.leftEntry()).command());
-        CommandMenuEntry.Triple min = assertInstanceOf(CommandMenuEntry.Triple.class, rows.get(1));
-        assertEquals("dungeontrain editor minlevel pen inc", ((CommandMenuEntry.Stay) min.rightEntry()).command());
-        assertTrue(min.middleEntry().label().contains("10"));
-        assertTrue(rows.get(2).label().contains("60"));
-        CommandMenuEntry.DrillIn phases = assertInstanceOf(CommandMenuEntry.DrillIn.class, rows.get(3));
-        List<CommandMenuEntry> toggles = phases.target().entries();
-        CommandMenuEntry.Toggle overworld = assertInstanceOf(CommandMenuEntry.Toggle.class, toggles.get(0));
-        assertTrue(overworld.state());
-        assertEquals("dungeontrain editor phase pen overworld off", overworld.cmdToTurnOff());
-        assertInstanceOf(CommandMenuEntry.Back.class, toggles.get(toggles.size() - 1));
-        assertInstanceOf(StagePickerScreen.class, ((CommandMenuEntry.DrillIn) rows.get(4)).target());
-        assertNotNull(rows.get(5));
+        // Weight, the level bounds and the phases moved onto the data sheet; what is left is the
+        // Stage picker and the contents allow-list.
+        assertEquals(2, rows.size(), rows.stream().map(CommandMenuEntry::label).toList().toString());
+        assertInstanceOf(StagePickerScreen.class, ((CommandMenuEntry.DrillIn) rows.get(0)).target());
+        assertNotNull(rows.get(1));
     }
 
     @Test
-    @DisplayName("a stage-linked template collapses the gate into one Stage chip")
+    @DisplayName("a stage-linked template drops the Stage row, because the Spawns line already is one")
     void stageLinkedRows() {
         VariantKey k = VariantKey.of(PlotCategory.CONTENTS, "fire", "fire");
         List<CommandMenuEntry> rows = ROWS.apply(ctx(k, gated("CONTENTS", "fire", "fire", 2, List.of("nether")), null, PlotCategory.CONTENTS));
-        assertEquals(2, rows.size(), rows.toString());
-        // The chip's text is a translated format string, unresolved in a unit test; the target is the pin.
-        assertInstanceOf(StagePickerScreen.class, ((CommandMenuEntry.DrillIn) rows.get(1)).target());
+        assertTrue(rows.isEmpty(), rows.toString());
     }
 
     @Test
-    @DisplayName("a contents sub-variant gets only the group weight verb")
-    void subVariantRows() {
+    @DisplayName("a sub-variant's weight uses its group's verb, on the sheet")
+    void subVariantWeight() {
         VariantKey member = new VariantKey(PlotCategory.CONTENTS, "armor5", "armor5", "armor");
-        EditorTypeMenusPacket.Variant v = new EditorTypeMenusPacket.Variant("armor5", 6, "CONTENTS", "armor5", "armor5", false, false);
-        List<CommandMenuEntry> rows = ROWS.apply(ctx(member, v, null, PlotCategory.CONTENTS));
-        assertEquals(1, rows.size());
-        CommandMenuEntry.Triple weight = assertInstanceOf(CommandMenuEntry.Triple.class, rows.get(0));
+        CommandMenuEntry.Triple weight = assertInstanceOf(CommandMenuEntry.Triple.class,
+            EditorScreenActions.weightRow(member, 6));
         assertEquals("dungeontrain editor contents group set-weight armor armor5 inc",
             ((CommandMenuEntry.Stay) weight.rightEntry()).command());
+        assertEquals("dungeontrain editor contents group set-weight armor armor5",
+            ((CommandMenuEntry.TypeArg) weight.middleEntry()).commandPrefix());
+
         VariantKey roomMember = new VariantKey(PlotCategory.PORTALS, "portal_room", "evilhouse", "house");
-        EditorTypeMenusPacket.Variant rv = new EditorTypeMenusPacket.Variant("evilhouse", 1, "PORTALS", "portal_room", "evilhouse", false, false);
         CommandMenuEntry.Triple rw = assertInstanceOf(CommandMenuEntry.Triple.class,
-            ROWS.apply(ctx(roomMember, rv, null, PlotCategory.PORTALS)).get(0));
+            EditorScreenActions.weightRow(roomMember, 1));
         assertEquals("dungeontrain editor portals group set-weight house evilhouse dec",
             ((CommandMenuEntry.Stay) rw.leftEntry()).command());
+
+        // A sub-variant has no rows of its own left: its weight is the sheet's Weight line.
+        EditorTypeMenusPacket.Variant v = new EditorTypeMenusPacket.Variant("armor5", 6, "CONTENTS", "armor5", "armor5", false, false);
+        assertTrue(ROWS.apply(ctx(member, v, null, PlotCategory.CONTENTS)).isEmpty());
     }
 
     @Test
@@ -227,7 +220,8 @@ final class EditorScreenActionsTest {
         VariantKey room = VariantKey.of(PlotCategory.PORTALS, "portal_room", "house");
         EditorTypeMenusPacket.Variant v = gated("PORTALS", "portal_room", "house", 1, List.of());
         List<CommandMenuEntry> inside = ROWS.apply(ctx(room, v, room, PlotCategory.PORTALS));
-        assertTrue(inside.stream().anyMatch(e -> "ROOM".equals(e.label())));
+        assertTrue(inside.stream().anyMatch(e -> "ROOM".equals(e.label())),
+            "the room's non-size rows still belong under the icons");
         List<CommandMenuEntry> away = ROWS.apply(ctx(room, v, null, PlotCategory.PORTALS));
         assertFalse(away.stream().anyMatch(e -> "ROOM".equals(e.label())));
         // A part has no weight pool and no gate: nothing to show.

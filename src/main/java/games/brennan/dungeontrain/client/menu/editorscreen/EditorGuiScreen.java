@@ -46,6 +46,7 @@ public final class EditorGuiScreen extends Screen {
     private final EditorMyBuildsPane myBuilds = new EditorMyBuildsPane();
     private final EditorDetailPane detail = new EditorDetailPane();
     private final OrbitState orbit = new OrbitState();
+    private final InlineEdit inlineEdit = new InlineEdit();
     private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
 
     private EditBox filterBox;
@@ -208,6 +209,7 @@ public final class EditorGuiScreen extends Screen {
             g.drawString(this.font, loading, layout.grid().x() + 4, layout.grid().y() + 4, 0xFFFFFFFF, true);
         }
 
+        inlineEdit.render(g, this.font);
         modal.render(g, this.font, this.width, this.height, mouseX, mouseY);
         drawTooltips(g, mouseX, mouseY);
     }
@@ -295,7 +297,7 @@ public final class EditorGuiScreen extends Screen {
     }
 
     private void drawTooltips(GuiGraphics g, int mouseX, int mouseY) {
-        if (modal.isOpen()) return;
+        if (modal.isOpen() || inlineEdit.active()) return;
         String tip = null;
         if (hoveredTab != null && hoveredTab.kind() == EditorTabBar.Kind.EXIT) {
             tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
@@ -304,8 +306,16 @@ public final class EditorGuiScreen extends Screen {
         } else if (EditorScreenState.page() == EditorScreenPage.MY_BUILDS) {
             tip = myBuilds.tooltipAt(myBuilds.hovered());
         }
-        if (tip == null) tip = detail.tooltipAt(detail.hovered());
-        if (tip != null) g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
+        if (tip != null) {
+            g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
+            return;
+        }
+        List<String> lines = detail.tooltipAt(detail.hovered());
+        if (!lines.isEmpty()) {
+            g.renderComponentTooltip(this.font,
+                lines.stream().map(l -> (net.minecraft.network.chat.Component) Component.literal(l)).toList(),
+                mouseX, mouseY);
+        }
     }
 
     private EditorScreenActions.Ctx context(EditorRosterIndex index) {
@@ -342,6 +352,9 @@ public final class EditorGuiScreen extends Screen {
         if (modal.isOpen()) {
             return modal.mouseClicked(mouseX, mouseY);
         }
+        // A click anywhere else abandons a half-typed value rather than leaving it hanging over
+        // a cell whose row may be about to change underneath it.
+        if (inlineEdit.active()) inlineEdit.cancel();
         if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             return super.mouseClicked(mouseX, mouseY, button);
         }
@@ -478,6 +491,11 @@ public final class EditorGuiScreen extends Screen {
                 dispatchAt(detail.rows().get(hit.index()), hit.sub());
                 return true;
             }
+            case SHEET -> {
+                TemplateDataSheet.Placed placed = detail.sheetCell(hit.index());
+                if (placed == null) return false;
+                return onSheetCell(placed);
+            }
             case TEST -> {
                 if (detail.testEntry() == null) return false;
                 dispatch(detail.testEntry());
@@ -499,6 +517,26 @@ public final class EditorGuiScreen extends Screen {
         if (sub < 0) return false;
         dispatchAt(rows.get(idx), sub);
         return true;
+    }
+
+    /** A click on a data-sheet cell: type over it, run its command, or open its picker. */
+    private boolean onSheetCell(TemplateDataSheet.Placed placed) {
+        TemplateDataSheet.Action action = placed.cell().action();
+        if (action instanceof TemplateDataSheet.Action.Type type) {
+            inlineEdit.begin(type.prefix(), placed.cell().text(), placed.rect());
+            setFocused(null);
+            return true;
+        }
+        if (action instanceof TemplateDataSheet.Action.Run run) {
+            CommandRunner.run(run.command());
+            afterCommand();
+            return true;
+        }
+        if (action instanceof TemplateDataSheet.Action.Open open) {
+            modal.open(open.screen());
+            return true;
+        }
+        return false;
     }
 
     private void dispatch(CommandMenuEntry entry) {
@@ -558,6 +596,21 @@ public final class EditorGuiScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (inlineEdit.active()) {
+            switch (keyCode) {
+                case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
+                    String command = inlineEdit.submit();
+                    if (command != null) {
+                        CommandRunner.run(command);
+                        afterCommand();
+                    }
+                    return true;
+                }
+                case GLFW.GLFW_KEY_ESCAPE -> { inlineEdit.cancel(); return true; }
+                case GLFW.GLFW_KEY_BACKSPACE -> { inlineEdit.backspace(); return true; }
+                default -> { return true; }
+            }
+        }
         if (modal.isTyping()) {
             switch (keyCode) {
                 case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> { modal.submitTyped(); return true; }
@@ -587,6 +640,7 @@ public final class EditorGuiScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
+        if (inlineEdit.active()) return inlineEdit.charTyped(codePoint);
         if (modal.isTyping()) return modal.charTyped(codePoint);
         return super.charTyped(codePoint, modifiers);
     }

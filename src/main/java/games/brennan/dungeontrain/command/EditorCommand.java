@@ -609,6 +609,12 @@ public final class EditorCommand {
                 .then(Commands.argument("new_name", StringArgumentType.word())
                     .executes(ctx -> runSave(ctx.getSource(),
                         StringArgumentType.getString(ctx, "new_name")))))
+            .then(Commands.literal("rename")
+                .then(Commands.argument("id", StringArgumentType.word())
+                    .then(Commands.argument("new_name", StringArgumentType.word())
+                        .executes(ctx -> runRenameCarriageById(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "id"),
+                            StringArgumentType.getString(ctx, "new_name"))))))
             .then(Commands.literal("exit").executes(ctx -> runExit(ctx.getSource())))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("blocks").executes(ctx -> runBlocks(ctx.getSource())))
@@ -734,6 +740,13 @@ public final class EditorCommand {
                             .executes(ctx -> runContentsEnter(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "contents"),
                                 StringArgumentType.getString(ctx, "shell_variant"))))))
+                .then(Commands.literal("rename")
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .then(Commands.argument("new_name", StringArgumentType.word())
+                            .executes(ctx -> runRenameContentsById(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "id"),
+                                StringArgumentType.getString(ctx, "new_name"))))))
                 .then(Commands.literal("save")
                     .executes(ctx -> runContentsSave(ctx.getSource(), null))
                     .then(Commands.argument("new_name", StringArgumentType.word())
@@ -3354,6 +3367,69 @@ public final class EditorCommand {
         }
 
         // Rename path.
+        return renameCarriageTo(source, player, current, newName);
+    }
+
+    /**
+     * Rename the named carriage, from anywhere in the carriages editor.
+     *
+     * <p>The X menu renames whatever is selected, which is rarely the plot the author happens to be
+     * standing in. What it may never do is rename a template whose plots are not stamped: the
+     * rename captures blocks from the plot, and a category that is not the stamped one has been
+     * cleared, so the capture would write an empty template over a real one and delete the
+     * original. Hence the guard — refuse, and say why, rather than quietly destroy the build.</p>
+     */
+    private static int runRenameCarriageById(CommandSourceStack source, String id, String newName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        if (!requireStamped(source, EditorCategory.CARRIAGES)) return 0;
+        CarriageVariant current = CarriageVariantRegistry.find(id).orElse(null);
+        if (current == null) {
+            source.sendFailure(Component.literal("Unknown carriage '" + id + "'."));
+            return 0;
+        }
+        return renameCarriageTo(source, player, current, newName);
+    }
+
+    /** {@link #runRenameCarriageById} for a contents template. */
+    private static int runRenameContentsById(CommandSourceStack source, String id, String newName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        if (!requireStamped(source, EditorCategory.CONTENTS)) return 0;
+        CarriageContents current = CarriageContentsRegistry.find(id).orElse(null);
+        if (current == null) {
+            source.sendFailure(Component.literal("Unknown contents '" + id + "'."));
+            return 0;
+        }
+        return renameContentsTo(source, player, current, newName);
+    }
+
+    /**
+     * True when {@code category}'s plots are the ones currently built into the world.
+     *
+     * <p>Every id-addressed edit that reads blocks back out of a plot needs this: the plots of any
+     * other category were wiped by the last category switch.</p>
+     */
+    private static boolean requireStamped(CommandSourceStack source, EditorCategory category) {
+        EditorCategory stamped = EditorStampedCategoryState.current().orElse(null);
+        if (stamped == category) return true;
+        source.sendFailure(Component.literal(
+            "Switch to the " + category.displayName() + " editor first — "
+                + category.displayName().toLowerCase(Locale.ROOT)
+                + " plots are not built into the world right now."
+        ));
+        return false;
+    }
+
+    /**
+     * Rename {@code current} to {@code newName}, capturing its plot as it goes.
+     *
+     * <p>Split out of {@link #runSave} so the id-addressed rename can reuse it verbatim rather than
+     * grow a second copy of these checks — the name rules and the reserved-name list are the sort
+     * of thing that drifts the moment there are two of them.</p>
+     */
+    private static int renameCarriageTo(CommandSourceStack source, ServerPlayer player,
+                                        CarriageVariant current, String newName) {
         if (PROTECTED_BUILTINS.contains(current.id())) {
             source.sendFailure(Component.literal(
                 "Cannot rename '" + current.id() + "' — it is a protected built-in."
@@ -4337,6 +4413,12 @@ public final class EditorCommand {
         }
 
         // Rename path.
+        return renameContentsTo(source, player, current, newName);
+    }
+
+    /** {@link #renameCarriageTo} for a contents template — same split, same reason. */
+    private static int renameContentsTo(CommandSourceStack source, ServerPlayer player,
+                                        CarriageContents current, String newName) {
         if (current.isBuiltin()) {
             source.sendFailure(Component.literal(
                 "Cannot rename '" + current.id() + "' — it is a built-in contents variant."
