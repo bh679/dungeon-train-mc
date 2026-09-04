@@ -122,6 +122,19 @@ public final class ClientDisplayConfig {
     /** Ships unscaled — the curve in {@code TrainEngineSound} is the intended mix. */
     public static final double DEFAULT_TRAIN_ENGINE_VOLUME = 1.0;
 
+    /**
+     * Default approach margin, in blocks, for hiding Distant Horizons around the upside-down band —
+     * see {@link #UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN}. 1024 covers a DH horizon of 64 chunks, which is
+     * already past what most machines run.
+     */
+    public static final int DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN = 1024;
+
+    /** No margin: DH stops drawing exactly at the flipped zone's edge. */
+    public static final int MIN_DISTANT_HORIZONS_HIDE_MARGIN = 0;
+
+    /** Ceiling for the margin — 16k blocks is wider than any DH render distance. */
+    public static final int MAX_DISTANT_HORIZONS_HIDE_MARGIN = 16384;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.DoubleValue ALL_SCALE;
     public static final ModConfigSpec.DoubleValue WORLDSPACE_CHANNEL;
@@ -144,6 +157,21 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_FLUSH_MIN_TPS;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_ON_DISK;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_RESOLUTION;
+    /**
+     * Whether Distant Horizons stops drawing while the camera is in (or approaching) the upside-down
+     * band. DH renders its own LODs and never sees DT's block-model flip, so its horizon shows the band
+     * the right way up while the loaded terrain in front of the player hangs inverted — two contradictory
+     * views of the same world. On by default; set false to see DH's own rendering in-band again.
+     */
+    public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_HIDE_DISTANT_HORIZONS;
+
+    /**
+     * How many blocks before the flipped zone DH stops drawing. The band enters DH's draw distance long
+     * before the camera does, so without a margin you would watch an upright DH copy of the band on the
+     * way in. Raise it if your DH render distance is very large.
+     */
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN;
+
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
@@ -302,6 +330,8 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_FLUSH_MIN_TPS = pair.getLeft().rideSnapshotFlushMinTps;
         RIDE_SNAPSHOT_MAX_ON_DISK = pair.getLeft().rideSnapshotMaxOnDisk;
         RIDE_SNAPSHOT_MAX_RESOLUTION = pair.getLeft().rideSnapshotMaxResolution;
+        UPSIDE_DOWN_HIDE_DISTANT_HORIZONS = pair.getLeft().upsideDownHideDistantHorizons;
+        UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN = pair.getLeft().upsideDownDistantHorizonsMargin;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
@@ -418,6 +448,16 @@ public final class ClientDisplayConfig {
         ModConfigSpec.IntValue rideSnapshotMaxResolution = b
                 .comment("Ceiling (long-edge pixels) for ride-photo capture. 0 = AUTO: the standard 1080, rising to 1440/2160 only when Distant Horizons is active together with shaders or Fabulous graphics (picked by frame rate). A positive value CAPS that result — e.g. 1440 clamps to <=1440, 1080 disables the higher-resolution tiers entirely. It never raises resolution above what the auto logic and your real window size already allow. Values below 1080 will shrink normal photos too. Also settable in-game via the X menu -> Options -> Snapshot Max Resolution.")
                 .defineInRange("maxResolution", 0, 0, 4320);
+        b.pop();
+
+        b.push("distantHorizons");
+        ModConfigSpec.BooleanValue upsideDownHideDistantHorizons = b
+                .comment("Stop Distant Horizons drawing while you are in, or approaching, the upside-down section of the track. DH renders its own copy of the world from its own data and never sees the flip Dungeon Train applies to the blocks around you, so in-band its horizon stands the right way up under an inverted sky and inverted terrain. Set false to let DH draw in-band anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
+                .define("hideInUpsideDown", true);
+        ModConfigSpec.IntValue upsideDownDistantHorizonsMargin = b
+                .comment("How many blocks ahead of the upside-down section DH stops drawing. The band comes into DH's draw distance well before you reach it, so with no margin you would watch an upright DH copy of it on the way in. Raise this if you run a very large DH render distance; 0 cuts DH out exactly at the band's edge.")
+                .defineInRange("hideMarginBlocks", DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN,
+                        MIN_DISTANT_HORIZONS_HIDE_MARGIN, MAX_DISTANT_HORIZONS_HIDE_MARGIN);
         b.pop();
 
         b.push("framerateThrottle");
@@ -662,6 +702,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
+                upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1632,6 +1673,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue rideSnapshotFlushMinTps,
             ModConfigSpec.IntValue rideSnapshotMaxOnDisk,
             ModConfigSpec.IntValue rideSnapshotMaxResolution,
+            ModConfigSpec.BooleanValue upsideDownHideDistantHorizons,
+            ModConfigSpec.IntValue upsideDownDistantHorizonsMargin,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
