@@ -11128,13 +11128,8 @@
       "id": "hide-distant-horizons-upside-down",
       "version": "0.792.0",
       "type": "fix",
-      "title": "Distant Horizons no longer fights the upside-down section",
-      "summary": "In the upside-down stretch of the track, Distant Horizons drew its own view of the world the right way up while everything around you hung inverted. It now stops drawing as you approach that section and picks up again once you are past it.",
-      "highlights": [
-        "Distant Horizons pauses in (and just before) the upside-down section, so its horizon can't contradict the flipped terrain in front of you.",
-        "Only DH's drawing is paused \u2014 your Distant Horizons settings and the terrain it has already mapped are untouched.",
-        "Both are adjustable in Dungeon Train's client config: turn the pause off, or change how far ahead of the section it kicks in."
-      ],
+      "title": "Distant Horizons in the upside-down section",
+      "summary": "Distant Horizons now pauses in the upside-down section, instead of drawing the world the right way up around you.",
       "date": "2026-09-04",
       "released": false,
       "released_in": null,
