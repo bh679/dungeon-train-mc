@@ -7,6 +7,10 @@ import games.brennan.dungeontrain.client.ClientVoidBand;
 import games.brennan.dungeontrain.client.ShaderCompat;
 import games.brennan.dungeontrain.portal.PortalRoomSky;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
+import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 
@@ -262,6 +266,35 @@ public final class ShaderWorld {
         if (w == null) return null;
         resolveIris();
         return w == World.NETHER ? idNether : w == World.END ? idEnd : null;
+    }
+
+    /**
+     * The sky angle the dimension being spoofed would actually report, or {@code null} to leave
+     * Iris' own answer alone.
+     *
+     * <p>The real Nether and End are <em>fixed-time</em> dimensions: their {@code DimensionType}
+     * carries a {@code fixedTime}, so {@code timeOfDay} ignores the world clock and the sun never
+     * moves. A band is the overworld, which has no such fix, so telling a pack "this is the Nether"
+     * while handing it a travelling sun left the train lit and shadowed by an overworld sun inside
+     * the Nether — the one part of the illusion that stayed obviously wrong.</p>
+     *
+     * <p>Read from the registry rather than hard-coded, so it is whatever the dimension actually
+     * declares, including if a datapack changes it.</p>
+     */
+    public static Float spoofedSkyAngle() {
+        World w = reporting;
+        if (w == null || w == World.OVERWORLD) return null;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return null;
+        try {
+            ResourceKey<DimensionType> key = w == World.NETHER
+                ? BuiltinDimensionTypes.NETHER : BuiltinDimensionTypes.END;
+            DimensionType type = mc.level.registryAccess()
+                .registryOrThrow(Registries.DIMENSION_TYPE).get(key);
+            return type == null ? null : type.timeOfDay(mc.level.getDayTime());
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     /** Record what the frame actually did, for the panel. */

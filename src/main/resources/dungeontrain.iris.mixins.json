@@ -7,7 +7,8 @@
   "refmap": "dungeontrain.refmap.json",
   "mixins": [],
   "client": [
-    "client.iris.IrisCurrentDimensionMixin"
+    "client.iris.IrisCurrentDimensionMixin",
+    "client.iris.IrisCelestialTimeMixin"
   ],
   "server": [],
   "injectors": {
