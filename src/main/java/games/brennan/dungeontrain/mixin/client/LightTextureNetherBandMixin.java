@@ -88,6 +88,7 @@ public abstract class LightTextureNetherBandMixin {
             )
     )
     private float dungeontrain$pinNetherDim(float skyDarken) {
+        if (!games.brennan.dungeontrain.client.shader.ShaderBisect.bandLightmapEnabled()) return skyDarken;
         float n = dungeontrain$netherIntensity();
         this.dungeontrain$netherN = n;
         return n <= 0.0F ? skyDarken : Mth.lerp(n, skyDarken, DUNGEONTRAIN_NETHER_SKY);
@@ -108,6 +109,7 @@ public abstract class LightTextureNetherBandMixin {
             )
     )
     private void dungeontrain$liftNetherFloor(float partialTicks, CallbackInfo ci, @Local(ordinal = 1) Vector3f cellColor) {
+        if (!games.brennan.dungeontrain.client.shader.ShaderBisect.bandLightmapEnabled()) return;
         float n = this.dungeontrain$netherN;
         if (n > 0.0F) {
             cellColor.lerp(DUNGEONTRAIN_NETHER_TINT, DUNGEONTRAIN_NETHER_LIFT * n);

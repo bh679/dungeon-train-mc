@@ -112,9 +112,34 @@ public final class ClientPortalRoomSky {
         return applied;
     }
 
+    /**
+     * The room box the server last named, for the diagnostics panel — {@code "none"} when it has
+     * named none.
+     *
+     * <p>Purely observational, and the whole point of it is to separate two failures that look the
+     * same from outside: the server never sent a room (nothing here), and the server sent one the
+     * camera is not standing in (a box that does not contain the player). A sweep that only reports
+     * {@code t=0} cannot tell those apart, and they have entirely different causes.</p>
+     */
+    public static String describeRegion() {
+        PortalRoomSkyPacket r = region;
+        if (r.minX() == 0 && r.maxX() == 0 && r.minY() == 0 && r.maxY() == 0) return "none";
+        return r.skyKind() + "[" + r.minX() + ".." + r.maxX() + ", "
+            + r.minY() + ".." + r.maxY() + ", " + r.minZ() + ".." + r.maxZ() + "]";
+    }
+
     /** The sky the current lift is toward — only meaningful while {@link #advance} returns above zero. */
     public static PortalRoomSky sky() {
         return easing;
+    }
+
+    /**
+     * How much of the lift is applied right now, {@code 0}..{@code 1}, <em>without</em> advancing
+     * the ease. For readers that need the room's state several times a frame — the shader-world
+     * decision — while {@link #advance} stays the single owner of the ease.
+     */
+    public static float applied() {
+        return applied;
     }
 
     /**

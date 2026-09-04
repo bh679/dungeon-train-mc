@@ -50,6 +50,7 @@ public abstract class LightTextureUpsideDownBandMixin {
             )
     )
     private float dungeontrain$udPinDaylight(float skyDarken) {
+        if (!games.brennan.dungeontrain.client.shader.ShaderBisect.bandLightmapEnabled()) return skyDarken;
         float t = dungeontrain$udBandIntensity();
         this.dungeontrain$udBandT = t;
         return t <= 0.0F ? skyDarken : Mth.lerp(t, skyDarken, 1.0F);
@@ -66,6 +67,7 @@ public abstract class LightTextureUpsideDownBandMixin {
             )
     )
     private void dungeontrain$udLiftFloor(float partialTicks, CallbackInfo ci, @Local(ordinal = 1) Vector3f cellColor) {
+        if (!games.brennan.dungeontrain.client.shader.ShaderBisect.bandLightmapEnabled()) return;
         float t = this.dungeontrain$udBandT;
         if (t > 0.0F) {
             cellColor.lerp(DUNGEONTRAIN_UD_TINT, DUNGEONTRAIN_UD_LIFT * t);
