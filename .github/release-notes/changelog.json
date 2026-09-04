@@ -11066,6 +11066,63 @@
       "released": true,
       "released_in": "v0.788.0",
       "released_at": "2026-09-02T12:47:47Z"
+    },
+    {
+      "id": "nether-arrival-tuning",
+      "version": "0.789.0",
+      "type": "feat",
+      "title": "Nether tweaks",
+      "summary": "Nether tweaks.",
+      "pr": 1284,
+      "date": "2026-09-02",
+      "released": true,
+      "released_in": "v0.790.0",
+      "released_at": "2026-09-04T10:50:37Z"
+    },
+    {
+      "id": "deathnote-leaderboard-naming",
+      "version": "0.789.0",
+      "type": "fix",
+      "title": "Rename Death Note leaderboard wording",
+      "summary": "Rename Death Note leaderboard wording.",
+      "pr": 1285,
+      "date": "2026-09-02",
+      "released": true,
+      "released_in": "v0.790.0",
+      "released_at": "2026-09-04T10:50:37Z"
+    },
+    {
+      "id": "nothing-but-books-burn-coverage",
+      "version": "0.790.0",
+      "type": "fix",
+      "title": "Fix Nothing But Books",
+      "summary": "Fix Nothing But Books.",
+      "date": "2026-09-04",
+      "released": true,
+      "released_in": "v0.790.0",
+      "released_at": "2026-09-04T10:50:37Z"
+    },
+    {
+      "id": "portal-carriage-inside-only-teleport",
+      "version": "0.790.0",
+      "type": "fix",
+      "title": "Portal carriage fix",
+      "summary": "Portal carriages now only take you through if you are actually inside them.",
+      "date": "2026-09-04",
+      "released": true,
+      "released_in": "v0.790.0",
+      "released_at": "2026-09-04T10:50:37Z"
+    },
+    {
+      "id": "donate-page-card-experiment",
+      "version": "0.791.0",
+      "type": "feat",
+      "title": "Support page tidy-up",
+      "summary": "The stats on the support page have been cleaned up, with a little more to see.",
+      "date": "2026-09-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

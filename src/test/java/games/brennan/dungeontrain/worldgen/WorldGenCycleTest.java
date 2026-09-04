@@ -439,6 +439,35 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("netherCoreDepth: -1 outside the core (both crossfades included), 0 at the first full-Nether column")
+    void netherCoreDepth() {
+        // Band world-X [1300, 1960): rise [1300,1420), megaHold [1420,1480), crossfade-in
+        // [1480,1530), CORE [1530,1730), crossfade-out [1730,1780), megaHold, fall.
+        assertEquals(-1L, C.netherCoreDepth(1000));    // anchor — plain overworld gap
+        assertEquals(-1L, C.netherCoreDepth(1299));    // one before the band
+        assertEquals(-1L, C.netherCoreDepth(1350));    // mountain rise
+        assertEquals(-1L, C.netherCoreDepth(1450));    // mega plateau
+        assertEquals(-1L, C.netherCoreDepth(1480));    // crossfade-in start
+        assertEquals(-1L, C.netherCoreDepth(1505));    // mid crossfade — netherRamp 0.5, still not the core
+        assertEquals(0.5, C.netherRamp(1505), EPS);    // ...which the ramp alone cannot distinguish
+        assertEquals(-1L, C.netherCoreDepth(1529));    // last crossfade column
+
+        assertEquals(0L, C.netherCoreDepth(1530));     // first full-Nether column
+        assertEquals(1.0, C.netherRamp(1530), EPS);
+        assertEquals(100L, C.netherCoreDepth(1630));   // depth counts up across the core
+        assertEquals(199L, C.netherCoreDepth(1729));   // last core column
+
+        assertEquals(-1L, C.netherCoreDepth(1730));    // crossfade-out begins — core over
+        assertEquals(1.0, C.netherRamp(1730), EPS);    // (the ramp is still 1 here; depth is not)
+        assertEquals(-1L, C.netherCoreDepth(1800));    // trailing mega plateau
+        assertEquals(-1L, C.netherCoreDepth(2000));    // past the band
+
+        // Repeats with the cycle, exactly like every other band reading.
+        assertEquals(0L, C.netherCoreDepth(1530 + PERIOD));
+        assertEquals(-1L, C.netherCoreDepth(1505 + PERIOD));
+    }
+
+    @Test
     @DisplayName("a disabled phase collapses to zero length")
     void disabledCollapse() {
         WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, new int[] {1, 5, 20}, 0, 0, 0, 0, 100, 40, 200, 0, 0, 0, 0);
