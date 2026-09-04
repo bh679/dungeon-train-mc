@@ -84,9 +84,7 @@ public final class SkyboxHoleReopen {
         RenderSystem.applyModelViewMatrix();
         try {
             // Mark: stencil the pixels where a cube face is still the frontmost surface.
-            SkyboxStencil.beginMaskPass();
-            RenderSystem.stencilMask(STILL_VISIBLE_BIT);
-            RenderSystem.stencilFunc(GL11.GL_ALWAYS, STILL_VISIBLE_BIT, STILL_VISIBLE_BIT);
+            SkyboxStencil.beginMarkPass(STILL_VISIBLE_BIT);
             RenderSystem.setShader(GameRenderer::getPositionShader);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             RenderSystem.disableBlend();

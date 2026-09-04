@@ -147,6 +147,29 @@ public final class SkyboxStencil {
         RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_REPLACE);
     }
 
+    /**
+     * Configure the stencil for a pass that stamps a single <em>bit</em>, leaving every other bit
+     * of the buffer alone.
+     *
+     * <p>Unlike {@link #beginMaskPass()} this does not clear. That matters: the variant ids written
+     * at {@code AFTER_SKY} are what the post-composite sky pass reads to tell one hole from another,
+     * and clearing here would erase them halfway through the frame.</p>
+     */
+    public static void beginMarkPass(int bit) {
+        GL11.glEnable(GL11.GL_STENCIL_TEST);
+        RenderSystem.stencilMask(bit);
+        RenderSystem.stencilFunc(GL11.GL_ALWAYS, bit, bit);
+        RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_REPLACE);
+    }
+
+    /**
+     * Restrict drawing to one variant's holes that also survived to the end of the frame — variant
+     * id in the low bits, {@code markBit} set. Read-only: pair with {@link #beginSkyPass()}.
+     */
+    public static void variantSkyRef(int stencilRef, int markBit) {
+        RenderSystem.stencilFunc(GL11.GL_EQUAL, markBit | stencilRef, markBit | 0x0F);
+    }
+
     /** Stamp subsequent draws with this variant's id wherever they pass the depth test. */
     public static void maskRef(int stencilRef) {
         RenderSystem.stencilFunc(GL11.GL_ALWAYS, stencilRef, 0xFF);
