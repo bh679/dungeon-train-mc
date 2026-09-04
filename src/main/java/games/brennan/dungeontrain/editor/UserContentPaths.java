@@ -282,31 +282,6 @@ public final class UserContentPaths {
      *       variant must come from the jar classpath).</li>
      * </ul>
      */
-    /**
-     * Which imported package a file came from, or {@code ""} when it is the author's own or
-     * bundled with the mod.
-     *
-     * <p>A package is one contributor's drop, so this is as close as the editor gets to "who made
-     * this" — the roster carries it so a developer reviewing submissions can look at one
-     * contributor's builds at a time.</p>
-     */
-    public static String sourceOf(String subSlug, String basenameWithExt) {
-        if (games.brennan.dungeontrain.cheat.EditorContentIntegrity.isSuppressed()) return "";
-        if (Files.isRegularFile(activeSubDir(subSlug).resolve(basenameWithExt))) return "";
-        for (PackageInfo pkg : PackageRegistry.enabledPackages()) {
-            if (pkg.name().equals(PackageRegistry.active().name())) continue;
-            if (Files.isRegularFile(pkg.workingDir().resolve(subSlug).resolve(basenameWithExt))) {
-                return pkg.name();
-            }
-        }
-        for (Path pkg : importedPackageDirs()) {
-            if (Files.isRegularFile(pkg.resolve(subSlug).resolve(basenameWithExt))) {
-                return pkg.getFileName().toString();
-            }
-        }
-        return "";
-    }
-
     public static Provenance provenanceOf(String subSlug, String basenameWithExt) {
         // Suppressed ⇒ nothing loads from a package, so everything really is bundled. Reporting
         // USER/IMPORTED here would tint the variant menus for files that aren't being read.

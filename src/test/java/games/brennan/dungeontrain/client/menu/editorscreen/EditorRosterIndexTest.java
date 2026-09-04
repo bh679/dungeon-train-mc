@@ -37,9 +37,8 @@ final class EditorRosterIndexTest {
         return new EditorRosterIndex(List.of(
             new EditorRosterPacket.Group("carriages", "Carriages", "", List.of(e(standard, EditorPlotLabelsPacket.NO_WEIGHT))),
             new EditorRosterPacket.Group("parts", "Floor", "floor", List.of(e(oakFloor, EditorPlotLabelsPacket.NO_WEIGHT))),
-            new EditorRosterPacket.Group("contents", "Contents", "", List.of(
-                new EditorRosterPacket.Entry(armor, 2, "night_market"),
-                e(cows, EditorPlotLabelsPacket.NO_WEIGHT))),
+            new EditorRosterPacket.Group("contents", "Contents", "",
+                List.of(e(armor, 2), e(cows, EditorPlotLabelsPacket.NO_WEIGHT))),
             new EditorRosterPacket.Group("portals", "Dimensional Carriage", "portal_room", List.of(e(house, 1)))),
             "contents", new EditorRosterPacket.TrainSize(9, 7, 7));
     }
@@ -87,31 +86,6 @@ final class EditorRosterIndexTest {
         // Both together is the union — the thing the old one-of-four picker could not say.
         assertEquals(List.of("armor", "cows"),
             names(EditorRosterIndex.filter(tiles, mine.withBuiltin(true), "")));
-    }
-
-    @Test
-    @DisplayName("the creator filter narrows to one package, and text still applies on top")
-    void creatorFilter() {
-        EditorRosterIndex idx = sample();
-        List<EditorRosterIndex.Tile> tiles = idx.tiles(PlotCategory.CONTENTS, "Contents");
-        assertEquals(List.of("night_market"), idx.creators());
-
-        EditorRosterIndex.Filters byPack = EditorRosterIndex.Filters.NONE.withCreator("night_market");
-        assertEquals(List.of("armor"), names(EditorRosterIndex.filter(tiles, byPack, "")));
-        assertTrue(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filters.NONE.withCreator("nope"), "").isEmpty());
-        assertEquals(List.of("armor"),
-            names(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filters.NONE, "5")));
-        assertTrue(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filters.NONE.withBuiltin(true), "zzz").isEmpty());
-    }
-
-    @Test
-    @DisplayName("the creator chip steps through every package and back to all of them")
-    void creatorCycles() {
-        List<String> creators = List.of("night_market", "oldtown");
-        assertEquals("night_market", EditorBrowserPane.nextCreator("", creators));
-        assertEquals("oldtown", EditorBrowserPane.nextCreator("night_market", creators));
-        assertEquals("", EditorBrowserPane.nextCreator("oldtown", creators), "wraps back to every creator");
-        assertEquals("", EditorBrowserPane.nextCreator("night_market", List.of()));
     }
 
     @Test

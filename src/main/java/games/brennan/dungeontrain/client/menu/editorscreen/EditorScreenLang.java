@@ -22,7 +22,7 @@ public final class EditorScreenLang {
     public static final String FILTER_BUILTIN = PREFIX + "filter.builtin";
     public static final String FILTER_MINE = PREFIX + "filter.mine";
     public static final String FILTER_CREATOR = PREFIX + "filter.creator";
-    public static final String FILTER_CREATOR_ANY = PREFIX + "filter.creator_any";
+    public static final String FILTER_FIND_CREATOR = PREFIX + "filter.find_creator";
 
     public static final String SUB_VARIANTS_OF = PREFIX + "sub_variants_of";
     public static final String TILE_NEW = PREFIX + "tile.new";

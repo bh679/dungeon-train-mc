@@ -11,7 +11,10 @@
   "gui.dungeontrain.options.catch_up_burst.auto": {
     "1": {
       "label": "the catch-up mode AUTO chose for this machine — one of the Off / Burst 2 / Fill all values of this same setting, already translated",
-      "examples": ["Fill all", "Burst 2"]
+      "examples": [
+        "Fill all",
+        "Burst 2"
+      ]
     }
   },
   "chat.dungeontrain.book_burns_author": {
@@ -2149,7 +2152,9 @@
   "gui.dungeontrain.ai_policy.used.3": {
     "1": {
       "label": "a link to the Discord channel the change logs are posted in",
-      "examples": ["#minor-updates on Discord"]
+      "examples": [
+        "#minor-updates on Discord"
+      ]
     }
   },
   "gui.dungeontrain.credits.translations.lang_percent": {
@@ -2976,63 +2981,91 @@
   "gui.dungeontrain.builder.profile.full": {
     "1": {
       "label": "how many builds a player's profile can hold on the build server",
-      "examples": ["200"]
+      "examples": [
+        "200"
+      ]
     }
   },
   "gui.dungeontrain.builder.reconcile.toast.body": {
     "1": {
       "label": "how many builds were sent back to the build server",
-      "examples": ["3", "17"]
+      "examples": [
+        "3",
+        "17"
+      ]
     }
   },
   "gui.dungeontrain.builder.reconcile.body": {
     "1": {
       "label": "how many of the player's builds the build server no longer has",
-      "examples": ["3", "17"]
+      "examples": [
+        "3",
+        "17"
+      ]
     }
   },
   "gui.dungeontrain.builder.reconcile.backups.off": {
     "1": {
       "label": "how many further builds exist only inside a backup",
-      "examples": ["2", "9"]
+      "examples": [
+        "2",
+        "9"
+      ]
     }
   },
   "gui.dungeontrain.builder.reconcile.backups.on": {
     "1": {
       "label": "how many further builds exist only inside a backup",
-      "examples": ["2", "9"]
+      "examples": [
+        "2",
+        "9"
+      ]
     }
   },
   "gui.dungeontrain.builder.reconcile.started": {
     "1": {
       "label": "how many builds are being sent back up to the build server",
-      "examples": ["3", "17"]
+      "examples": [
+        "3",
+        "17"
+      ]
     }
   },
   "gui.dungeontrain.builder.reconcile.done": {
     "1": {
       "label": "how many builds were restored",
-      "examples": ["3", "17"]
+      "examples": [
+        "3",
+        "17"
+      ]
     }
   },
   "gui.dungeontrain.builder.reconcile.partial": {
     "1": {
       "label": "how many builds were restored in this run",
-      "examples": ["150"]
+      "examples": [
+        "150"
+      ]
     },
     "2": {
       "label": "how many builds are left for the next run",
-      "examples": ["12"]
+      "examples": [
+        "12"
+      ]
     }
   },
   "gui.dungeontrain.builder.reconcile.some_failed": {
     "1": {
       "label": "how many builds were restored",
-      "examples": ["14"]
+      "examples": [
+        "14"
+      ]
     },
     "2": {
       "label": "how many builds could not be sent",
-      "examples": ["2"]
+      "examples": [
+        "2"
+      ]
     }
   },
   "gui.dungeontrain.builder.profile.owner_other": {
@@ -3047,23 +3080,35 @@
   "gui.dungeontrain.builder.favourites.tab.builds": {
     "1": {
       "label": "how many builds this player has starred, on the tab that shows them",
-      "examples": ["5", "0"]
+      "examples": [
+        "5",
+        "0"
+      ]
     }
   },
   "gui.dungeontrain.builder.favourites.tab.builders": {
     "1": {
       "label": "how many builders this player has starred, on the tab that shows them",
-      "examples": ["2", "0"]
+      "examples": [
+        "2",
+        "0"
+      ]
     }
   },
   "gui.dungeontrain.builder.favourites.tile": {
     "1": {
       "label": "the name of a starred build, as the caption under its tile",
-      "examples": ["brick_cabin", "library"]
+      "examples": [
+        "brick_cabin",
+        "library"
+      ]
     },
     "2": {
-      "label": "the player who built it \u2014 this list spans builders, so each tile names its own",
-      "examples": ["Brennan", "Steve"]
+      "label": "the player who built it — this list spans builders, so each tile names its own",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
     }
   },
   "gui.dungeontrain.builder.creators.row": {
@@ -4008,10 +4053,10 @@
   },
   "gui.dungeontrain.editor_screen.filter.creator": {
     "1": {
-      "label": "the name of the imported content package whose builds are being shown — one contributor's drop",
+      "label": "the name of the player whose uploaded builds are being viewed",
       "examples": [
-        "night_market",
-        "oldtown_pack"
+        "Steve",
+        "Edda Marsh"
       ]
     }
   }

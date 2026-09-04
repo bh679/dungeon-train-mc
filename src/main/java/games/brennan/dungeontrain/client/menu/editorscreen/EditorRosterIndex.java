@@ -27,11 +27,9 @@ public final class EditorRosterIndex {
      * <p>Toggles rather than a one-of-four choice, so "mine and the built-ins, but nothing
      * imported" is sayable — it was not before. Neither toggle set means no filtering at all,
      * which is why there is no longer an "All" to pick.</p>
-     *
-     * @param creator an imported package name, or {@code ""} for every creator
      */
-    public record Filters(boolean mine, boolean builtin, String creator) {
-        public static final Filters NONE = new Filters(false, false, "");
+    public record Filters(boolean mine, boolean builtin) {
+        public static final Filters NONE = new Filters(false, false);
 
         /**
          * What the browser opens on: the author's own builds, without the built-ins.
@@ -39,31 +37,22 @@ public final class EditorRosterIndex {
          * <p>An editor is opened to work on your own things far more often than to look at what
          * shipped, and the built-ins outnumber them heavily in every category.</p>
          */
-        public static final Filters DEFAULT = new Filters(true, false, "");
-
-        public Filters {
-            if (creator == null) creator = "";
-        }
+        public static final Filters DEFAULT = new Filters(true, false);
 
         public Filters withMine(boolean on) {
-            return new Filters(on, builtin, creator);
+            return new Filters(on, builtin);
         }
 
         public Filters withBuiltin(boolean on) {
-            return new Filters(mine, on, creator);
-        }
-
-        public Filters withCreator(String next) {
-            return new Filters(mine, builtin, next);
+            return new Filters(mine, on);
         }
 
         /** True when nothing is being filtered out. */
         public boolean isEmpty() {
-            return !mine && !builtin && creator.isEmpty();
+            return !mine && !builtin;
         }
 
-        boolean admits(Provenance p, String source) {
-            if (!creator.isEmpty() && !creator.equals(source)) return false;
+        boolean admits(Provenance p) {
             if (!mine && !builtin) return true;
             return (mine && p == Provenance.USER) || (builtin && p == Provenance.BUILTIN);
         }
@@ -72,13 +61,8 @@ public final class EditorRosterIndex {
     /** One entry of a page's type strip. */
     public record TypeStrip(String typeName, String modelId, PlotCategory category, int count) {}
 
-    /** A tile: the row, its key, the group's self weight when it is a parent, and its creator. */
-    public record Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight,
-                       String source) {
-        public Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight) {
-            this(variant, key, selfWeight, "");
-        }
-
+    /** A tile: the row, its key, and the group's self weight when it is a parent. */
+    public record Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight) {
         public boolean isGroup() {
             return !variant.subVariants().isEmpty();
         }
@@ -134,7 +118,7 @@ public final class EditorRosterIndex {
             if (!onPage) continue;
             List<Tile> out = new ArrayList<>(g.entries().size());
             for (EditorRosterPacket.Entry e : g.entries()) {
-                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight(), e.source()));
+                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight()));
             }
             return out;
         }
@@ -152,7 +136,7 @@ public final class EditorRosterIndex {
         List<Tile> out = new ArrayList<>();
         for (EditorRosterPacket.Group g : groups) {
             for (EditorRosterPacket.Entry e : g.entries()) {
-                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight(), e.source()));
+                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight()));
             }
         }
         return out;
@@ -195,12 +179,12 @@ public final class EditorRosterIndex {
         String needle = text == null ? "" : text.trim().toLowerCase(Locale.ROOT);
         List<Tile> out = new ArrayList<>();
         for (Tile t : tiles) {
-            if (passes(t.variant(), t.source(), filters, needle)) {
+            if (passes(t.variant(), filters, needle)) {
                 out.add(t);
                 continue;
             }
             for (EditorTypeMenusPacket.Variant sv : t.variant().subVariants()) {
-                if (passes(sv, t.source(), filters, needle)) {
+                if (passes(sv, filters, needle)) {
                     out.add(t);
                     break;
                 }
@@ -209,16 +193,6 @@ public final class EditorRosterIndex {
         return out;
     }
 
-    /** Every creator whose builds are in the roster, sorted, for the developer's filter to cycle. */
-    public List<String> creators() {
-        java.util.TreeSet<String> names = new java.util.TreeSet<>();
-        for (EditorRosterPacket.Group g : groups) {
-            for (EditorRosterPacket.Entry e : g.entries()) {
-                if (!e.source().isEmpty()) names.add(e.source());
-            }
-        }
-        return List.copyOf(names);
-    }
 
     /** The members of a group tile that pass the filter row, keyed under their parent. */
     public static List<Tile> subVariants(Tile parent, Filters filters, String text) {
@@ -226,15 +200,14 @@ public final class EditorRosterIndex {
         List<Tile> out = new ArrayList<>();
         String parentId = parent.key().displayName();
         for (EditorTypeMenusPacket.Variant sv : parent.variant().subVariants()) {
-            if (!passes(sv, parent.source(), filters, needle)) continue;
-            out.add(new Tile(sv, VariantKey.of(sv, parentId), 0, parent.source()));
+            if (!passes(sv, filters, needle)) continue;
+            out.add(new Tile(sv, VariantKey.of(sv, parentId), 0));
         }
         return out;
     }
 
-    private static boolean passes(EditorTypeMenusPacket.Variant v, String source, Filters filters,
-                                  String needle) {
-        if (filters != null && !filters.admits(provenanceOf(v), source)) return false;
+    private static boolean passes(EditorTypeMenusPacket.Variant v, Filters filters, String needle) {
+        if (filters != null && !filters.admits(provenanceOf(v))) return false;
         return needle.isEmpty() || v.name().toLowerCase(Locale.ROOT).contains(needle);
     }
 
@@ -256,12 +229,12 @@ public final class EditorRosterIndex {
                 EditorTypeMenusPacket.Variant v = e.variant();
                 VariantKey top = VariantKey.of(v, "");
                 if (top.sameTemplate(key)) {
-                    return new Tile(v, top, e.selfWeight(), e.source());
+                    return new Tile(v, top, e.selfWeight());
                 }
                 for (EditorTypeMenusPacket.Variant sv : v.subVariants()) {
                     VariantKey member = VariantKey.of(sv, top.displayName());
                     if (member.sameTemplate(key)) {
-                        return new Tile(sv, member, 0, e.source());
+                        return new Tile(sv, member, 0);
                     }
                 }
             }
@@ -291,7 +264,7 @@ public final class EditorRosterIndex {
             for (EditorRosterPacket.Entry e : g.entries()) {
                 VariantKey top = VariantKey.of(e.variant(), "");
                 if (top.category() == key.category() && top.displayName().equals(key.parentId())) {
-                    return new Tile(e.variant(), top, e.selfWeight(), e.source());
+                    return new Tile(e.variant(), top, e.selfWeight());
                 }
             }
         }

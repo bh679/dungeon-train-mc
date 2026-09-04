@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.builder.BuilderCreatorSearchScreen;
+import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
+import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
@@ -379,8 +382,11 @@ public final class EditorGuiScreen extends Screen {
         EditorRosterIndex index = EditorRosterClient.index();
         switch (hit.kind()) {
             case CHIP -> {
-                EditorScreenState.setFilters(
-                    browser.applyChip(hit.index(), EditorScreenState.filters(), index));
+                if (browser.isPlayerChip(hit.index())) {
+                    openCreatorSearch();
+                    return;
+                }
+                EditorScreenState.setFilters(browser.applyChip(hit.index(), EditorScreenState.filters()));
                 browser.resetScroll();
             }
             case STRIP -> {
@@ -405,6 +411,25 @@ public final class EditorGuiScreen extends Screen {
                 browser.subParent() == null ? null : browser.subParent().key(), standing));
             default -> { }
         }
+    }
+
+    /**
+     * Find a player and open their uploaded builds — the same two screens the pause menu's My
+     * Builds uses, so a reviewer follows one flow rather than two that look alike.
+     *
+     * <p>Their profile replaces this screen and comes back to it on Back. Nothing about the editor
+     * roster changes: these are builds on the relay, not templates on this machine.</p>
+     */
+    private void openCreatorSearch() {
+        this.minecraft.setScreen(new BuilderCreatorSearchScreen(this, creator -> {
+            if (creator == null) {
+                BuilderProfileState.setViewed("", "");
+                this.minecraft.setScreen(this);
+                return;
+            }
+            BuilderProfileState.setViewed(creator.uuid(), creator.name());
+            this.minecraft.setScreen(new BuilderProfileScreen(this, creator.uuid(), creator.name()));
+        }));
     }
 
     private static EditorRosterIndex.TypeStrip stripByName(EditorRosterIndex index, PlotCategory page, String name) {

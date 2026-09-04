@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTileSpin;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
@@ -47,11 +48,13 @@ public final class EditorBrowserPane {
      * One chip of the filter row.
      *
      * <p>{@code kind} says what a click does: the two provenance chips toggle, and the creator chip
-     * — a developer's tool, absent on release builds — steps to the next contributor.</p>
+     * — a developer's tool, absent on release builds — opens a search for a player whose uploaded
+     * builds you want to look through.</p>
      */
     private record Chip(Kind kind, String label, boolean on, int x, int w) {}
 
-    private enum Kind { MINE, BUILTIN, CREATOR }
+    /** {@code PLAYER} is not a filter: it opens the creator search. See {@link #isPlayerChip}. */
+    private enum Kind { MINE, BUILTIN, PLAYER }
 
     /** One cell of the type strip. */
     private record StripCell(EditorRosterIndex.TypeStrip strip, int x, int w) {}
@@ -77,37 +80,37 @@ public final class EditorBrowserPane {
     public EditorRosterIndex.Tile subParent() { return subParent; }
     public EditorRosterIndex.TypeStrip stripAt(int i) { return i >= 0 && i < stripCells.size() ? stripCells.get(i).strip() : null; }
     /** Apply the click on chip {@code i} to the current filters, or return them unchanged. */
-    public EditorRosterIndex.Filters applyChip(int i, EditorRosterIndex.Filters current,
-                                               EditorRosterIndex index) {
+    public EditorRosterIndex.Filters applyChip(int i, EditorRosterIndex.Filters current) {
         if (i < 0 || i >= chips.size()) return current;
         return switch (chips.get(i).kind()) {
             case MINE -> current.withMine(!current.mine());
             case BUILTIN -> current.withBuiltin(!current.builtin());
-            case CREATOR -> current.withCreator(nextCreator(current.creator(), index.creators()));
+            // Not a filter — the screen opens the search for it.
+            case PLAYER -> current;
         };
     }
 
-    /** The creator after this one, wrapping through {@code ""} — which means every creator. */
-    static String nextCreator(String current, List<String> creators) {
-        if (creators.isEmpty()) return "";
-        int at = creators.indexOf(current);
-        return at + 1 >= creators.size() ? "" : creators.get(at + 1);
+    /** True when chip {@code i} is the creator search rather than a filter toggle. */
+    public boolean isPlayerChip(int i) {
+        return i >= 0 && i < chips.size() && chips.get(i).kind() == Kind.PLAYER;
     }
 
     /**
-     * Whether the creator chip is offered at all.
+     * Whether the creator search is offered at all.
      *
-     * <p>Gated exactly like the DevMode row: it is for whoever is reviewing contributed packages on
-     * a working branch, and a release build has nothing to review.</p>
+     * <p>Gated exactly like the DevMode row: it is for whoever is reviewing what players have
+     * uploaded, and a release build has nothing to review.</p>
      */
-    static boolean showCreatorChip(EditorRosterIndex index) {
-        return EditorMenuScreen.shouldShowDevModeToggle(VersionInfo.BRANCH) && !index.creators().isEmpty();
+    static boolean showCreatorChip() {
+        return EditorMenuScreen.shouldShowDevModeToggle(VersionInfo.BRANCH);
     }
 
-    static String creatorLabel(String creator) {
-        return creator.isEmpty()
-            ? EditorScreenLang.text(EditorScreenLang.FILTER_CREATOR_ANY)
-            : EditorScreenLang.text(EditorScreenLang.FILTER_CREATOR, creator);
+    /** The chip's label: whose builds are loaded, or the invitation to go and find someone. */
+    static String creatorLabel() {
+        String viewed = BuilderProfileState.viewedName();
+        return viewed == null || viewed.isEmpty()
+            ? EditorScreenLang.text(EditorScreenLang.FILTER_FIND_CREATOR)
+            : EditorScreenLang.text(EditorScreenLang.FILTER_CREATOR, viewed);
     }
 
     private static Chip chip(Kind kind, String label, boolean on, int x, Font font) {
@@ -133,18 +136,18 @@ public final class EditorBrowserPane {
      */
     public int filterBoxWidth(InventoryEditorLayout.Rect filter, Font font) {
         int chipsW = 0;
-        for (String label : chipLabels(EditorRosterClient.index(), EditorScreenState.filters())) {
+        for (String label : chipLabels()) {
             chipsW += font.width(label) + CHIP_PAD * 2 + CHIP_GAP;
         }
         return Math.max(24, filter.right() - chipsW - CHIP_GAP - filterBoxX(filter));
     }
 
     /** The chips' labels, in row order — what the box has to leave room for. */
-    private static List<String> chipLabels(EditorRosterIndex index, EditorRosterIndex.Filters filters) {
+    private static List<String> chipLabels() {
         List<String> out = new ArrayList<>(3);
         out.add(EditorScreenLang.text(EditorScreenLang.FILTER_MINE));
         out.add(EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN));
-        if (showCreatorChip(index)) out.add(creatorLabel(filters.creator()));
+        if (showCreatorChip()) out.add(creatorLabel());
         return out;
     }
 
@@ -163,10 +166,10 @@ public final class EditorBrowserPane {
         cx = last(c).x() + last(c).w() + CHIP_GAP;
         c.add(chip(Kind.BUILTIN, EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN),
             filters.builtin(), cx, font));
-        if (showCreatorChip(index)) {
+        if (showCreatorChip()) {
             cx = last(c).x() + last(c).w() + CHIP_GAP;
-            c.add(chip(Kind.CREATOR, creatorLabel(filters.creator()),
-                !filters.creator().isEmpty(), cx, font));
+            String viewed = BuilderProfileState.viewedName();
+            c.add(chip(Kind.PLAYER, creatorLabel(), viewed != null && !viewed.isEmpty(), cx, font));
         }
         chips = c;
 
