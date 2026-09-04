@@ -143,10 +143,10 @@ final class EditorScreenActionsTest {
     void historyIcons() {
         EditorScreenActions.Icon live = EditorScreenActions.historyIcon("undo",
             EditorScreenLang.ICON_UNDO, "dungeontrain editor undo",
-            "Place — carriages/pen", EditorScreenLang.UNDO_NOTHING);
+            "Place", EditorScreenLang.UNDO_NOTHING);
         assertTrue(live.enabled());
         assertEquals("dungeontrain editor undo", command(live.entry()));
-        assertEquals("Place — carriages/pen", live.detail());
+        assertEquals("Place", live.detail());
 
         EditorScreenActions.Icon empty = EditorScreenActions.historyIcon("redo",
             EditorScreenLang.ICON_REDO, "dungeontrain editor redo", "", EditorScreenLang.REDO_NOTHING);

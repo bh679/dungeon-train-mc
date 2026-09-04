@@ -23,9 +23,9 @@ final class EditorHistoryPacketTest {
     @DisplayName("both labels survive the round trip")
     void roundTrip() {
         EditorHistoryPacket decoded = roundTrip(
-            new EditorHistoryPacket("Place — carriages/pen", "Clear — contents/armor5"));
-        assertEquals("Place — carriages/pen", decoded.undoLabel());
-        assertEquals("Clear — contents/armor5", decoded.redoLabel());
+            new EditorHistoryPacket("Place", "Clear"));
+        assertEquals("Place", decoded.undoLabel());
+        assertEquals("Clear", decoded.redoLabel());
     }
 
     @Test

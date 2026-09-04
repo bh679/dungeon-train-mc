@@ -233,12 +233,12 @@ public final class EditorEditHistory {
     }
 
     /**
-     * What undo would step back, as {@code "<label> — <plot>"}, or {@code ""} when there is
-     * nothing to undo.
+     * What undo would step back, or {@code ""} when there is nothing to undo.
      *
-     * <p>Named rather than counted: the menu's Undo button says what it is about to reverse, and
-     * the author may be nowhere near the plot it happened in — which is why the plot is in the
-     * text, exactly as {@code runUndoRedo} phrases it afterwards.</p>
+     * <p>The step's own label and nothing else. The plot it happened in is deliberately left out:
+     * the menu shows this on a button the author is already pointing at, where the useful half is
+     * what the action was. {@code runUndoRedo} still names the plot afterwards, when they may have
+     * moved on and the answer to "what just changed" is somewhere else.</p>
      */
     public static synchronized String peekUndoLabel(UUID player) {
         return describe(HISTORY.get(player), /*redoing*/ false);
@@ -252,9 +252,7 @@ public final class EditorEditHistory {
     private static String describe(Stacks stacks, boolean redoing) {
         if (stacks == null) return "";
         Deque<Step> stack = redoing ? stacks.redo : stacks.undo;
-        if (stack.isEmpty()) return "";
-        Step step = stack.peekLast();
-        return step.label() + " — " + step.plotKey();
+        return stack.isEmpty() ? "" : stack.peekLast().label();
     }
 
     public static synchronized int undoDepth(UUID player) {

@@ -19,6 +19,7 @@
     "maxLevel": 70,
     "phases": [
       "OVERWORLD",
+      "NETHER",
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS"
