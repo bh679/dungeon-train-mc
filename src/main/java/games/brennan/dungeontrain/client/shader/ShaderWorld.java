@@ -297,6 +297,61 @@ public final class ShaderWorld {
         }
     }
 
+    // --- Upside-down: a sun that never rises and never sets --------------------------------------
+
+    /**
+     * Sky angle at which the sun sits just above the horizon with dawn colours. {@code 0.0} is the
+     * sun exactly on the line; a hair above keeps shadow maps from degenerating into infinitely
+     * long streaks, which is what a light at zero elevation does to them.
+     */
+    private static final float DAWN_SKY_ANGLE = 0.02f;
+    /** Elevation of the light vector above the horizon, in degrees, for the same reason. */
+    private static final float DAWN_ELEVATION_DEG = 8.0f;
+
+    /** How far into the upside-down band the camera is, {@code 0}..{@code 1}, or {@code 0}. */
+    public static float upsideDownIntensity() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || mc.gameRenderer == null) return 0.0f;
+        if (!mc.level.dimension().equals(Level.OVERWORLD)) return 0.0f;
+        var camera = mc.gameRenderer.getMainCamera();
+        if (camera == null) return 0.0f;
+        return clamp((float) games.brennan.dungeontrain.client.ClientUpsideDownBand
+            .upsideDownIntensityAt(camera.getPosition().x));
+    }
+
+    /**
+     * The sky angle a pack should see in the upside-down band: the real one, eased toward dawn by
+     * the band. The band's own sun is drawn orbiting the horizon, so the sky it sits in should read
+     * as a permanent sunrise rather than cycling through noon and midnight above it.
+     *
+     * <p>Eased toward whichever of {@code 0} and {@code 1} is nearer, since the angle wraps: easing
+     * {@code 0.9} toward {@code 0.0} directly would drag the sun back through noon on the way.</p>
+     */
+    public static Float upsideDownSkyAngle(float real) {
+        float t = upsideDownIntensity();
+        if (t <= 0.0f) return null;
+        float target = DAWN_SKY_ANGLE;
+        if (Math.abs(real - (1.0f + DAWN_SKY_ANGLE)) < Math.abs(real - DAWN_SKY_ANGLE)) target = 1.0f + DAWN_SKY_ANGLE;
+        return real + (target - real) * t;
+    }
+
+    /**
+     * Where the band's sun is, as a world-space direction, matching the billboard
+     * {@code UpsideDownSkyRenderer} draws: rotated about +Y by {@code timeOfDay * 360}, which takes
+     * the body's {@code (0, 0, -1)} to {@code (-sin, 0, -cos)}, lifted by {@link #DAWN_ELEVATION_DEG}.
+     * {@code null} outside the band.
+     */
+    public static float[] upsideDownSunDirection() {
+        float t = upsideDownIntensity();
+        if (t <= 0.0f) return null;
+        Minecraft mc = Minecraft.getInstance();
+        float partial = mc.getTimer().getGameTimeDeltaPartialTick(false);
+        double az = Math.toRadians(mc.level.getTimeOfDay(partial) * 360.0);
+        double el = Math.toRadians(DAWN_ELEVATION_DEG);
+        double cx = Math.cos(el);
+        return new float[] { (float) (-Math.sin(az) * cx), (float) Math.sin(el), (float) (-Math.cos(az) * cx), t };
+    }
+
     /** Record what the frame actually did, for the panel. */
     static void recordFrame(Blend blend, int renders) {
         lastBlend = blend;

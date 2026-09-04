@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.mixin.client.iris;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.shader.ShaderWorld;
+import com.mojang.blaze3d.systems.RenderSystem;
+import org.joml.Vector4f;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -41,6 +43,50 @@ public abstract class IrisCelestialTimeMixin {
                 cir.getReturnValueF());
         }
         Float angle = ShaderWorld.spoofedSkyAngle();
-        if (angle != null) cir.setReturnValue(angle);
+        if (angle != null) {
+            cir.setReturnValue(angle);
+            return;
+        }
+        // Upside-down: permanent dawn. Only reached when no Nether/End spoof is in force.
+        Float dawn = ShaderWorld.upsideDownSkyAngle(cir.getReturnValueF());
+        if (dawn != null) cir.setReturnValue(dawn);
+    }
+
+    /**
+     * The direction the shadow map is rendered from, in world space — the one uniform BSL was found
+     * to actually read. In the upside-down band the sun orbits the horizon, so the light it casts
+     * is swung round with it, blended in by the band so it eases rather than snaps.
+     */
+    @Inject(method = "getShadowLightPositionInWorldSpace", at = @At("RETURN"), cancellable = true)
+    private void dungeontrain$horizonSunWorld(CallbackInfoReturnable<Vector4f> cir) {
+        float[] d = ShaderWorld.upsideDownSunDirection();
+        if (d == null) return;
+        Vector4f real = cir.getReturnValue();
+        cir.setReturnValue(dungeontrain$blendDir(real, d));
+    }
+
+    /** View-space twin, for packs that read {@code shadowLightPosition} instead. */
+    @Inject(method = "getShadowLightPosition", at = @At("RETURN"), cancellable = true)
+    private void dungeontrain$horizonSunView(CallbackInfoReturnable<Vector4f> cir) {
+        float[] d = ShaderWorld.upsideDownSunDirection();
+        if (d == null) return;
+        Vector4f world = new Vector4f(d[0], d[1], d[2], 0.0f);
+        Vector4f view = new Vector4f(world).mul(RenderSystem.getModelViewMatrix());
+        cir.setReturnValue(dungeontrain$blendDir(cir.getReturnValue(), new float[] { view.x, view.y, view.z, d[3] }));
+    }
+
+    private static Vector4f dungeontrain$blendDir(Vector4f real, float[] target) {
+        float t = target[3];
+        Vector4f out = new Vector4f(
+            real.x + (target[0] - real.x) * t,
+            real.y + (target[1] - real.y) * t,
+            real.z + (target[2] - real.z) * t,
+            real.w);
+        float len = (float) Math.sqrt(out.x * out.x + out.y * out.y + out.z * out.z);
+        if (len > 1.0e-5f) { out.x /= len; out.y /= len; out.z /= len; }
+        // Iris hands these out at the scale it computed them in; keep that scale.
+        float realLen = (float) Math.sqrt(real.x * real.x + real.y * real.y + real.z * real.z);
+        if (realLen > 1.0e-5f) { out.x *= realLen; out.y *= realLen; out.z *= realLen; }
+        return out;
     }
 }

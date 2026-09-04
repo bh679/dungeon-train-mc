@@ -266,6 +266,19 @@ the frames for Complementary Unbound and BSL), ran the skybox punch under the pa
 carriage room with the post-composite fog pass. The `far` column differs between 192 and 264 with
 whatever render distance the pack's own settings leave; the room radius (60) is what matters.
 
+### Also on this branch (found by riding, not by the sweep)
+
+- **Carriages lit through a Nether roof.** A pack's Nether programs still sample a shadow map, and
+  the band's was rendered for a light the real Nether does not have. Fixed by clearing both shadow
+  depth textures to 0.0 after Iris' pass in a spoofed band (`IrisShadowOccludeMixin`): every sample
+  reads "occluded", exactly as a dimension with no shadow-casting light. Verified on BSL with the
+  pack's own shadows on; cleared Sildur's strobing too.
+- **Upside-down band: permanent dawn.** Its sun orbits the horizon, so the pack now sees a sky angle
+  eased to just-above-horizon dawn and a shadow light swung round with the drawn sun
+  (`IrisCelestialTimeMixin`). Never noon, never night.
+- **Water shaded per chunk in the upside-down band** is pre-existing and shader-independent
+  (`LevelGetShadeMixin` reads the camera from Sodium's meshing threads). Not fixed here.
+
 ### Known limits
 
 - **Translucents behind a skybox block show through it** under a pack: the reopen has to run before
