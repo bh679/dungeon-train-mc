@@ -11106,13 +11106,8 @@
       "id": "portal-carriage-inside-only-teleport",
       "version": "0.790.0",
       "type": "fix",
-      "title": "Portal carriages only take you through if you are actually inside",
-      "summary": "Standing outside a portal carriage, right up against the end of it, could teleport you as though you had walked down the corridor \u2014 you crossed through the wall instead of through the door. Now only the doorway counts: press against the outside of a portal carriage (or of its twin corridor in the room) and nothing happens. Walking in through the door and crossing works exactly as it always did.",
-      "highlights": [
-        "No more crossing by standing outside the carriage and clipping through its end wall",
-        "The same fix applies to the twin corridor inside the portal room",
-        "Walking in through the door is unchanged"
-      ],
+      "title": "Portal carriage fix",
+      "summary": "Portal carriages now only take you through if you are actually inside them.",
       "date": "2026-09-04",
       "released": false,
       "released_in": null,
