@@ -11072,37 +11072,54 @@
       "version": "0.789.0",
       "type": "feat",
       "title": "Nether tweaks",
-      "summary": "Some adjustments to the Nether, including how ghasts show up.",
+      "summary": "Nether tweaks.",
       "pr": 1284,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.790.0",
+      "released_at": "2026-09-04T10:50:37Z"
     },
     {
       "id": "deathnote-leaderboard-naming",
       "version": "0.789.0",
       "type": "fix",
-      "title": "Death Note leaderboards now say \"named\" instead of \"cursed\"",
-      "summary": "The two Death Note leaderboard books have been reworded to match the rest of the game's language. \"Most Curses Survived\" is now \"Most Death Notes Survived\", and \"Most People Cursed\" is now \"Most People Named\" \u2014 a Death Note is a name written down, so that is what the boards say. Your scores and standings are unchanged; only the wording on the covers and the question inside is different.",
-      "highlights": [
-        "\"Most Curses Survived\" is now \"Most Death Notes Survived\"",
-        "\"Most People Cursed\" is now \"Most People Named\"",
-        "Scores and rankings are untouched \u2014 wording only"
-      ],
+      "title": "Rename Death Note leaderboard wording",
+      "summary": "Rename Death Note leaderboard wording.",
       "pr": 1285,
       "date": "2026-09-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.790.0",
+      "released_at": "2026-09-04T10:50:37Z"
+    },
+    {
+      "id": "nothing-but-books-burn-coverage",
+      "version": "0.790.0",
+      "type": "fix",
+      "title": "Fix Nothing But Books",
+      "summary": "Fix Nothing But Books.",
+      "date": "2026-09-04",
+      "released": true,
+      "released_in": "v0.790.0",
+      "released_at": "2026-09-04T10:50:37Z"
+    },
+    {
+      "id": "portal-carriage-inside-only-teleport",
+      "version": "0.790.0",
+      "type": "fix",
+      "title": "Portal carriage fix",
+      "summary": "Portal carriages now only take you through if you are actually inside them.",
+      "date": "2026-09-04",
+      "released": true,
+      "released_in": "v0.790.0",
+      "released_at": "2026-09-04T10:50:37Z"
     },
     {
       "id": "donate-page-card-experiment",
-      "version": "0.790.0",
+      "version": "0.791.0",
       "type": "feat",
       "title": "Support page tidy-up",
       "summary": "The stats on the support page have been cleaned up, with a little more to see.",
-      "date": "2026-09-03",
+      "date": "2026-09-04",
       "released": false,
       "released_in": null,
       "released_at": null

@@ -217,12 +217,18 @@ public record PortalCarriageLayout(int length, int height, int width) {
     }
 
     /**
-     * The corridor interior as a box in local coordinates, pads included.
+     * The corridor interior as a box in local coordinates, pads included — the <b>search box</b>.
      *
-     * <p>Exists so the volume can be handed to a spatial query — the puppet pass asks the level for
-     * every entity in a corridor — without restating the bounds {@link #insideCorridor} tests. Two
-     * copies of that arithmetic would be free to drift apart, and an entity search that disagreed
-     * with the containment rule would put a puppet in a corridor the swap says you are not in.</p>
+     * <p>Exists so the volume can be handed to a spatial query: the puppet pass asks the level for
+     * every entity in a corridor, and a query needs a box rather than a predicate.</p>
+     *
+     * <p><b>A superset of {@link #insideCorridor}, and only at the two end faces.</b> The X pads
+     * reach half a block past the end planes, which is <i>outside the carriage altogether</i> — see
+     * {@link #insideCorridor} for why only the doorway column of those two slabs counts as being in
+     * the corridor. Everywhere else the two agree face for face. A search box that is the larger of
+     * the two is the safe way round: it can only over-collect candidates the containment rule then
+     * drops ({@code PortalPuppets.describe} discards a null {@code mirror}), whereas a smaller one
+     * would lose entities standing at the walls.</p>
      */
     public record Bounds(double minX, double minY, double minZ,
                          double maxX, double maxY, double maxZ) {}
@@ -234,12 +240,45 @@ public record PortalCarriageLayout(int length, int height, int width) {
             length + PAD, ceilingY() + PAD, interiorMaxZ() + 1 + PAD);
     }
 
-    /** True if the local position is inside the corridor interior, pads included. */
+    /**
+     * True if the local position is inside the corridor interior, pads included.
+     *
+     * <p><b>Past an end plane, only the doorway counts.</b> The Y and Z pads stop half-way inside
+     * the floor, ceiling and side wall blocks, so no position outside the shell can reach them. The
+     * X pads are not like that: they reach past the end planes into open space — beyond an ENTRY
+     * corridor's near door that is the gap at the edge of the carriage group, and around a twin it
+     * is the pocket room's open air. A player pressed against the <i>outside</i> of an end wall sits
+     * at local X {@code -0.3} or {@code length + 0.3}, which the raw box calls inside; the facing
+     * rule then teleported them the moment they looked the wrong way, and they crossed by clipping
+     * through the shell rather than by walking in.</p>
+     *
+     * <p>The pad still has the job it was added for — a player <i>stepping through the doorway</i>
+     * has their centre past the plane while they are plainly in the corridor — so it survives
+     * exactly there, and nowhere else, via {@link #inDoorwayColumn}.</p>
+     */
     public boolean insideCorridor(double localX, double localY, double localZ) {
         Bounds b = localBounds();
-        return localX >= b.minX() && localX <= b.maxX()
+        boolean inBox = localX >= b.minX() && localX <= b.maxX()
             && localY >= b.minY() && localY <= b.maxY()
             && localZ >= b.minZ() && localZ <= b.maxZ();
+        if (!inBox) return false;
+
+        boolean pastAnEndPlane = localX < 0 || localX > length;
+        return !pastAnEndPlane || inDoorwayColumn(localY, localZ);
+    }
+
+    /**
+     * True if a local Y/Z pair lies in the two-block doorway column an end plane leaves open — the
+     * cells {@link #isDoorwayCell} describes, as a continuous volume.
+     *
+     * <p><b>Padded in Y, not in Z.</b> The Y pad absorbs a step or a jump through the opening. Z
+     * gets none on purpose: the doorway is one block wide and a 0.6-wide player walking through it
+     * is centred well within that block, so anyone whose centre is off the column is standing in
+     * front of the solid part of the end plane — which is the very thing this stops counting.</p>
+     */
+    public boolean inDoorwayColumn(double localY, double localZ) {
+        return localZ >= doorZ() && localZ <= doorZ() + 1
+            && localY >= floorY() + 1 - PAD && localY <= floorY() + 3 + PAD;
     }
 
     /**
