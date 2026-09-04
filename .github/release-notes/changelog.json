@@ -11141,6 +11141,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "chest-break-counts-as-open",
+      "version": "0.792.0",
+      "type": "fix",
+      "title": "Breaking a chest counts as opening it",
+      "summary": "Smashing a chest or barrel now counts the same as opening one. It ends your \"no chest or barrel\" run, so the Not My Chest advancements and the Walk Past The Loot leaderboard can no longer be won by mining every container and picking the loot up off the floor.",
+      "highlights": [
+        "Breaking a chest or barrel ends the chest-free streak and counts toward your containers-opened total.",
+        "Decorated pots are still fair game, and breaking an ender chest still won't cost you Contained Loop."
+      ],
+      "pr": 1294,
+      "date": "2026-09-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
