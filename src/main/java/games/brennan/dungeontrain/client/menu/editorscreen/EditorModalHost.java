@@ -32,6 +32,8 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
     static final int SIDE_GAP = 6;
     static final int BG = 0xE8000000;
     static final int MAX_TYPED = 32;
+    /** Above every pane, below vanilla's tooltips at 400. */
+    static final int MODAL_Z = 300;
 
     private final Deque<MenuScreen> stack = new ArrayDeque<>();
     private final Runnable closeScreen;
@@ -198,12 +200,21 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
         sx = px + pw + SIDE_GAP;
         sy = py;
 
-        g.fill(0, 0, screenW, screenH, 0x60000000);
         updateHover(mouseX, mouseY, visible, sideVisible);
+
+        // Text is batched and flushed at the end of the frame, so a panel drawn later still lands
+        // *under* text drawn earlier — which is how a picker ended up behind the settings rows it
+        // was opened from. Commit what is already queued, then draw the whole modal above it.
+        g.flush();
+        g.pose().pushPose();
+        g.pose().translate(0, 0, MODAL_Z);
+        g.fill(0, 0, screenW, screenH, 0x60000000);
         drawPanel(g, font, px, py, pw, ph, top.title(), entries, scroll, visible, false);
         if (sw > 0) {
             drawPanel(g, font, sx, sy, sw, sh, side.title(), sideEntries, sideScroll, sideVisible, true);
         }
+        g.flush();
+        g.pose().popPose();
     }
 
     private void drawPanel(GuiGraphics g, Font font, int x, int y, int w, int h, String title,
