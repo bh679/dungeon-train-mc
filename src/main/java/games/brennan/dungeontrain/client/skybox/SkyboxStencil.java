@@ -175,8 +175,16 @@ public final class SkyboxStencil {
         RenderSystem.stencilFunc(GL11.GL_ALWAYS, stencilRef, 0xFF);
     }
 
-    /** Switch to read-only stencil for the sky pass: test, never write. */
+    /**
+     * Switch to read-only stencil for the sky pass: test, never write.
+     *
+     * <p>Enables the test itself rather than assuming a mask pass left it on. In the vanilla flow
+     * one did, but the post-composite pass runs after {@link #endStencil()} has switched it off —
+     * and a sky draw with the test disabled ignores the stencil function entirely and covers the
+     * whole screen instead of one block's hole, which is exactly what it did.</p>
+     */
     public static void beginSkyPass() {
+        GL11.glEnable(GL11.GL_STENCIL_TEST);
         RenderSystem.stencilMask(0x00);
         RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_KEEP);
     }

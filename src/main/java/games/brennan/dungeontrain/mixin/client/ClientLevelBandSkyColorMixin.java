@@ -48,7 +48,7 @@ public abstract class ClientLevelBandSkyColorMixin {
         Vec3 target;
         double t;
         if (nether > 0.0) {
-            int rgb = NetherFogEvents.netherTargetColor(level, BlockPos.containing(pos));
+            int rgb = NetherFogEvents.smoothedNetherColor(level, BlockPos.containing(pos), false);
             target = new Vec3(((rgb >> 16) & 0xFF) / 255.0, ((rgb >> 8) & 0xFF) / 255.0, (rgb & 0xFF) / 255.0);
             t = Math.min(1.0, nether);
         } else {

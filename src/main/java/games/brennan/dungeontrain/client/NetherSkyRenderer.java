@@ -41,7 +41,7 @@ public final class NetherSkyRenderer {
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
         double n = ClientNetherBand.netherIntensityAt(camera.getPosition().x);
         if (n <= 0.0) return;
-        int rgb = NetherFogEvents.netherTargetColor(mc.level, camera.getBlockPosition());
+        int rgb = NetherFogEvents.smoothedNetherColor(mc.level, camera.getBlockPosition(), false);
         float alpha = (float) Math.min(1.0, n);
         draw(frustumMatrix, alpha, rgb);
         if (ShaderDiagnostics.recording()) {
@@ -60,7 +60,7 @@ public final class NetherSkyRenderer {
     public static void renderAsSkySource(Matrix4f frustumMatrix, Camera camera) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
-        draw(frustumMatrix, 1.0F, NetherFogEvents.netherTargetColor(mc.level, camera.getBlockPosition()));
+        draw(frustumMatrix, 1.0F, NetherFogEvents.smoothedNetherColor(mc.level, camera.getBlockPosition(), false));
     }
 
     private static void draw(Matrix4f frustumMatrix, float alpha, int rgb) {
