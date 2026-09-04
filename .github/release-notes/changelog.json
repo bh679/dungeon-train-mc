@@ -11128,14 +11128,14 @@
       "id": "shader-pack-atmosphere",
       "version": "0.791.0",
       "type": "feat",
-      "title": "Shader packs now render the train's dimensions properly",
-      "summary": "With a shader pack installed, the Nether and End bands are now rendered by the pack itself, so they look like its own Nether and End rather than a recoloured overworld. The change fades in as you ride into a band instead of cutting. Skybox blocks, dimensional carriage fog and the upside-down band's permanent sunrise all work under shaders too.",
+      "title": "Shader packs now render the Nether and the End properly",
+      "summary": "With a shader pack installed, the Nether and the End are rendered by the pack itself \u2014 its own sky, fog and lighting \u2014 and the change eases in as you travel into them rather than cutting. Skybox blocks, dimensional carriage fog and the upside-down band's permanent sunrise all work under shaders too.",
       "highlights": [
-        "Nether and End bands use the shader pack's own sky, fog and lighting, blended in as you arrive",
+        "The Nether and the End use your shader pack's own sky, fog and lighting, easing in as you arrive",
         "Skybox blocks show their own sky again under a pack, and no longer let you see through them",
         "Dimensional carriage fog reaches you through a shader pack's own rendering",
-        "The upside-down band stays at its low sunrise sun at every hour, instead of going dark at night",
-        "Carriages are no longer lit through solid ceilings inside a band"
+        "The upside-down band keeps its low sunrise sun at every hour, instead of going dark at night",
+        "Carriages are no longer lit through solid ceilings"
       ],
       "date": "2026-09-04",
       "released": false,
@@ -11143,8 +11143,32 @@
       "released_at": null
     },
     {
-      "id": "chest-break-counts-as-open",
+      "id": "hide-distant-horizons-upside-down",
       "version": "0.792.0",
+      "type": "fix",
+      "title": "Distant Horizons in the upside-down section",
+      "summary": "Distant Horizons now pauses in the upside-down section, instead of drawing the world the right way up around you.",
+      "date": "2026-09-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-advancements-creative-only",
+      "version": "0.792.0",
+      "type": "feat",
+      "title": "Editor advancements tab hidden in survival",
+      "summary": "The Editor advancement tab only shows in Creative now. Its advancements are all earned inside the Train Editor, so on a survival run it was an empty tab next to the one tracking your actual progress.",
+      "highlights": [],
+      "pr": 1291,
+      "date": "2026-09-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "chest-break-counts-as-open",
+      "version": "0.793.0",
       "type": "fix",
       "title": "Breaking a chest counts as opening it",
       "summary": "Smashing a chest or barrel now counts the same as opening one. It ends your \"no chest or barrel\" run, so the Not My Chest advancements and the Walk Past The Loot leaderboard can no longer be won by mining every container and picking the loot up off the floor.",
