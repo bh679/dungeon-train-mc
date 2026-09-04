@@ -11128,14 +11128,14 @@
       "id": "shader-pack-atmosphere",
       "version": "0.791.0",
       "type": "feat",
-      "title": "Shader packs now render the train's dimensions properly",
-      "summary": "With a shader pack installed, the Nether and End bands are now rendered by the pack itself, so they look like its own Nether and End rather than a recoloured overworld. The change fades in as you ride into a band instead of cutting. Skybox blocks, dimensional carriage fog and the upside-down band's permanent sunrise all work under shaders too.",
+      "title": "Shader packs now render the Nether and the End properly",
+      "summary": "With a shader pack installed, the Nether and the End are rendered by the pack itself \u2014 its own sky, fog and lighting \u2014 and the change eases in as you travel into them rather than cutting. Skybox blocks, dimensional carriage fog and the upside-down band's permanent sunrise all work under shaders too.",
       "highlights": [
-        "Nether and End bands use the shader pack's own sky, fog and lighting, blended in as you arrive",
+        "The Nether and the End use your shader pack's own sky, fog and lighting, easing in as you arrive",
         "Skybox blocks show their own sky again under a pack, and no longer let you see through them",
         "Dimensional carriage fog reaches you through a shader pack's own rendering",
-        "The upside-down band stays at its low sunrise sun at every hour, instead of going dark at night",
-        "Carriages are no longer lit through solid ceilings inside a band"
+        "The upside-down band keeps its low sunrise sun at every hour, instead of going dark at night",
+        "Carriages are no longer lit through solid ceilings"
       ],
       "date": "2026-09-04",
       "released": false,
