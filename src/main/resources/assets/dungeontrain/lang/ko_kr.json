@@ -965,6 +965,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "상태",
   "gui.dungeontrain.editor_screen.creator.read_only": "릴레이에 있음 — 이 편집기 라이브러리에는 없습니다.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "빌드 선택",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "사본으로 불러오기",
   "gui.dungeontrain.options.button": "Dungeon Train 옵션…",
   "gui.dungeontrain.options.title": "Dungeon Train — 세계 옵션",
   "gui.dungeontrain.options.starts_with_train": "기차와 함께 시작",

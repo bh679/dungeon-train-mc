@@ -965,6 +965,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "狀態",
   "gui.dungeontrain.editor_screen.creator.read_only": "位於中繼 — 不在此編輯器的資料庫中。",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "選擇一個建築",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "載入為副本",
   "gui.dungeontrain.options.button": "地牢列車選項…",
   "gui.dungeontrain.options.title": "地牢列車 — 世界選項",
   "gui.dungeontrain.options.starts_with_train": "以列車開場",

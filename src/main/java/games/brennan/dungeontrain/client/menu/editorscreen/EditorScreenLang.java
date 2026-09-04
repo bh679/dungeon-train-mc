@@ -50,6 +50,9 @@ public final class EditorScreenLang {
     public static final String CREATOR_STATUS = PREFIX + "creator.status";
     public static final String CREATOR_READ_ONLY = PREFIX + "creator.read_only";
     public static final String CREATOR_NOTHING_SELECTED = PREFIX + "creator.nothing_selected";
+    public static final String CREATOR_LOAD = "gui.dungeontrain.builder.profile.load_into_editor";
+    public static final String CREATOR_LOAD_COPY = PREFIX + "creator.load_copy";
+    public static final String CREATOR_LOADING_BUILD = "gui.dungeontrain.builder.profile.downloading";
 
     public static final String SUB_VARIANTS_OF = PREFIX + "sub_variants_of";
     public static final String TILE_NEW = PREFIX + "tile.new";

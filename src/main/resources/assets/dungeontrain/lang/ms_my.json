@@ -965,6 +965,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "Status",
   "gui.dungeontrain.editor_screen.creator.read_only": "Di relai — bukan dalam pustaka editor ini.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Pilih binaan",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "Muatkan sebagai salinan",
   "gui.dungeontrain.options.button": "Pilihan Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Pilihan Dunia",
   "gui.dungeontrain.options.starts_with_train": "Bermula dengan kereta api",

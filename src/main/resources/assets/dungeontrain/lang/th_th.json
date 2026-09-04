@@ -965,6 +965,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "สถานะ",
   "gui.dungeontrain.editor_screen.creator.read_only": "อยู่บนรีเลย์ — ไม่ได้อยู่ในคลังของตัวแก้ไขนี้",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "เลือกงานสร้าง",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "โหลดเป็นสำเนา",
   "gui.dungeontrain.options.button": "ตัวเลือก Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — ตัวเลือกโลก",
   "gui.dungeontrain.options.starts_with_train": "เริ่มพร้อมขบวนรถไฟ",

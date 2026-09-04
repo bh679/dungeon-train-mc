@@ -1298,6 +1298,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "Status",
   "gui.dungeontrain.editor_screen.creator.read_only": "On the relay \u2014 not in this editor\u2019s library.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Pick a build",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "Load as a copy",
   "gui.dungeontrain.options.button": "Dungeon Train Options…",
   "gui.dungeontrain.options.title": "Dungeon Train — World Options",
   "gui.dungeontrain.options.starts_with_train": "Starts with train",

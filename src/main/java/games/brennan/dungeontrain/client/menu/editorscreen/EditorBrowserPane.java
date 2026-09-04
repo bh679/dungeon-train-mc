@@ -2,7 +2,9 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTileSpin;
+import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
@@ -330,9 +332,12 @@ public final class EditorBrowserPane {
             int y = mainGrid.yFor(i, scroll);
             int size = mainGrid.tile();
             float yaw = spin.advance(art == null ? String.valueOf(entry.relayId()) : art.spinKey(), hov, seconds);
+            // On screen, so worth a picture: the ask is cheap to repeat and the cache answers for
+            // everything already here.
+            RelayBuildPreviews.request(entry.relayId(), entry.ownerUuid(), BuilderProfileState.live());
             TemplateTilePainter.draw(g, font, art, EditorCreatorBuilds.label(entry),
                 EditorPlotLabelsPacket.NO_WEIGHT, x, y, size, yaw,
-                new TemplateTilePainter.Marks(selected, hov, false, false, false));
+                new TemplateTilePainter.Marks(selected, hov, false, false, false), entry.relayId());
             int border = BuilderReviewState.borderColourFor(entry.review());
             if (border != BuilderReviewState.BORDER_NONE) g.renderOutline(x, y, size, size, border);
         }

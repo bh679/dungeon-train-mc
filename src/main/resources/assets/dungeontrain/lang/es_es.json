@@ -990,6 +990,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "Estado",
   "gui.dungeontrain.editor_screen.creator.read_only": "En el relé: no está en la biblioteca de este editor.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Elige una construcción",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "Cargar como copia",
   "gui.dungeontrain.options.button": "Opciones del Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opciones del mundo",
   "gui.dungeontrain.options.starts_with_train": "Empieza con tren",

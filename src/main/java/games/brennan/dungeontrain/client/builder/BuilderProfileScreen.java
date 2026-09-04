@@ -664,7 +664,7 @@ public final class BuilderProfileScreen extends Screen {
     }
 
     /** The line to show for an outcome — each sends the player somewhere different. */
-    static String noteKeyFor(BuilderRelayDownload.Outcome outcome) {
+    public static String noteKeyFor(BuilderRelayDownload.Outcome outcome) {
         return switch (outcome) {
             case INSTALLED -> "gui.dungeontrain.builder.profile.downloaded";
             case ALREADY_HERE -> "gui.dungeontrain.builder.profile.download_already_here";

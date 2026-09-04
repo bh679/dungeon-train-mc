@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
+import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
+import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
@@ -26,7 +28,8 @@ public final class EditorCreatorPane {
     private EditorCreatorPane() {}
 
     public static void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
-                              EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw) {
+                              EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
+                              String note, boolean asCopy, boolean loadHovered) {
         InventoryEditorLayout.Rect h = layout.header();
         int ty = h.y() + (h.h() - font.lineHeight) / 2;
         String title = entry == null
@@ -37,7 +40,8 @@ public final class EditorCreatorPane {
 
         InventoryEditorLayout.Rect p = layout.preview();
         TemplateArt art = entry == null ? null : EditorCreatorBuilds.artOf(entry);
-        PreviewPane.draw(g, font, p, art, entry == null ? "" : EditorCreatorBuilds.label(entry), yaw, theme);
+        PreviewPane.draw(g, font, p, art, entry == null ? "" : EditorCreatorBuilds.label(entry), yaw, theme,
+            entry == null ? 0 : entry.relayId());
         // The review colour rings the picture rather than sitting in the sheet as a fourth word:
         // it is the one fact a reviewer scans for, and My Builds already teaches the colours.
         if (entry != null) {
@@ -55,11 +59,39 @@ public final class EditorCreatorPane {
             y += LINE_H;
         }
 
-        // Why the toolbar is missing, said once rather than as eight disabled buttons.
-        InventoryEditorLayout.Rect note = layout.settings();
+        // Why the toolbar is missing, said once rather than as eight disabled buttons — and, under
+        // it, whatever the last press of Load came back with.
+        InventoryEditorLayout.Rect lines = layout.settings();
         g.drawString(font, font.plainSubstrByWidth(
-                EditorScreenLang.text(EditorScreenLang.CREATOR_READ_ONLY), note.w() - 4),
-            note.x() + 2, note.y(), EditorDetailPane.DIM_TEXT, false);
+                EditorScreenLang.text(EditorScreenLang.CREATOR_READ_ONLY), lines.w() - 4),
+            lines.x() + 2, lines.y(), EditorDetailPane.DIM_TEXT, false);
+        if (note != null && !note.isEmpty()) {
+            g.drawString(font, font.plainSubstrByWidth(note, lines.w() - 4),
+                lines.x() + 2, lines.y() + LINE_H + 2, 0xFFFFEEBB, false);
+        }
+
+        drawLoad(g, font, layout.test(), entry != null, asCopy, loadHovered);
+    }
+
+    /**
+     * <b>Load into editor</b>, where a template has <b>Test the Carriage</b>.
+     *
+     * <p>The one thing this pane does rather than reports, and the point of the whole detour: a
+     * build that is only a picture cannot be walked through. Loading writes it into this install's
+     * library, after which it is an ordinary template — it appears in the roster, can be stood in
+     * and tested like anything else. Once a name here is already taken the button offers the copy
+     * instead, because that is the only answer left that does not overwrite somebody's work.</p>
+     */
+    static void drawLoad(GuiGraphics g, Font font, InventoryEditorLayout.Rect r, boolean enabled,
+                         boolean asCopy, boolean hovered) {
+        boolean hot = enabled && hovered;
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), !enabled ? EditorDetailPane.DISABLED
+            : hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+        String label = EditorScreenLang.text(asCopy
+            ? EditorScreenLang.CREATOR_LOAD_COPY : EditorScreenLang.CREATOR_LOAD);
+        g.drawString(font, font.plainSubstrByWidth(label, r.w() - 6),
+            r.x() + (r.w() - font.width(label)) / 2, r.y() + (r.h() - font.lineHeight) / 2 + 1,
+            !enabled ? 0x80FFFFFF : hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
     }
 
     /** The sheet: who made it, what it is, and what has happened to it. */
@@ -72,6 +104,16 @@ public final class EditorCreatorPane {
             EditorScreenLang.text(EditorCreatorBuilds.kindKey(entry.kind()))});
         if (!entry.stage().isEmpty()) {
             out.add(new String[] {EditorScreenLang.text(EditorScreenLang.SHEET_STAGE), entry.stage()});
+        }
+        // The numbers come from the blocks the relay sent for the picture, so they appear with it
+        // rather than being asked for separately.
+        TemplateSummary summary = RelayBuildPreviews.summary(entry.relayId());
+        if (summary != null) {
+            out.add(new String[] {EditorScreenLang.text(EditorScreenLang.SHEET_SIZE),
+                summary.declaredSize().getX() + " × " + summary.declaredSize().getY()
+                    + " × " + summary.declaredSize().getZ()});
+            out.add(new String[] {EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS),
+                Integer.toString(summary.blocks())});
         }
         out.add(new String[] {EditorScreenLang.text(EditorScreenLang.CREATOR_CHANGES),
             Integer.toString(entry.changes())});

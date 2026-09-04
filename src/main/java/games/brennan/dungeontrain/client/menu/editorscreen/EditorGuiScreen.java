@@ -1,7 +1,13 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.builder.BuilderNewOptions;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
+import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
+import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
+import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.CommandMenuKeyBindings;
@@ -11,6 +17,8 @@ import games.brennan.dungeontrain.client.menu.HotbarPassthrough;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
+import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
+import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
@@ -59,6 +67,11 @@ public final class EditorGuiScreen extends Screen {
     private VariantKey previewKey;
     private int refreshTicks;
     private int settingsScroll;
+    /** What the last press of Load came back with, already worded for the player. */
+    private String creatorNote;
+    /** Whether the next press should bring the build down under a name this install is not using. */
+    private boolean loadAsCopy;
+    private List<String> takenNames = List.of();
 
     public EditorGuiScreen() {
         super(Component.literal("Dungeon Train Editor"));
@@ -100,14 +113,17 @@ public final class EditorGuiScreen extends Screen {
         addWidget(filterBox);
         filterBox.visible = EditorScreenState.page().isBrowser();
         EditorCreatorBuilds.attach();
+        BuilderProfileState.listenForDownloads(this::onDownloadResult);
     }
 
     @Override
     public void removed() {
         super.removed();
         BuilderTilePreviews.clear();
+        RelayBuildPreviews.clear();
         search.close();
         EditorCreatorBuilds.detach();
+        BuilderProfileState.listenForDownloads(null);
     }
 
     @Override
@@ -143,6 +159,7 @@ public final class EditorGuiScreen extends Screen {
         layout = InventoryEditorLayout.of(this.width, this.height);
         float seconds = frameSeconds();
         BuilderTilePreviews.beginFrame(BAKES_PER_FRAME);
+        RelayBuildPreviews.beginFrame();
 
         EditorScreenActions.Ctx ctx = context(index);
         if (previewKey == null ? ctx.selection() != null : !previewKey.equals(ctx.selection())) {
@@ -179,7 +196,8 @@ public final class EditorGuiScreen extends Screen {
         if (EditorCreatorBuilds.active()) {
             // A relay row is not a template: none of the detail pane's controls apply to one, so
             // the pane that has no controls stands in for it rather than eight disabled buttons.
-            EditorCreatorPane.render(g, this.font, layout, theme, selectedCreatorBuild(), orbit.yaw());
+            EditorCreatorPane.render(g, this.font, layout, theme, selectedCreatorBuild(), orbit.yaw(),
+                creatorNote, loadAsCopy, layout.test().contains(mouseX, mouseY) && !covered);
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
             TemplateArt art = TemplateArt.of(ctx.selection());
@@ -293,6 +311,49 @@ public final class EditorGuiScreen extends Screen {
         return index.isEmpty() ? EditorScreenLang.text(EditorScreenLang.NO_ROSTER) : null;
     }
 
+    /**
+     * Bring the selected relay build down into this install's library.
+     *
+     * <p>The same download My Builds runs, and the reason a preview is not the end of the story: a
+     * mesh can be turned around in the pane, but only a template on disk can be stood in, tested and
+     * ridden. Once it lands the roster picks it up like any other template.</p>
+     *
+     * <p>A first press asks for the build under its own name. If that name is already spoken for
+     * here, the press after it loads a copy instead — the build is somebody else's work and this
+     * screen will not write over whatever is already wearing the name.</p>
+     */
+    private void loadSelectedCreatorBuild() {
+        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
+        if (entry == null) return;
+        boolean live = BuilderProfileState.live();
+        String owner = EditorCreatorBuilds.viewedUuid();
+        DungeonTrainNet.sendToServer(loadAsCopy
+            ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
+                BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, live, false)
+            : new BuilderProfileDownloadPacket(entry.relayId(), owner, live));
+        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
+    }
+
+    /** Drop what the last Load said — it was about a build that is no longer the one on screen. */
+    private void forgetLastLoad() {
+        creatorNote = null;
+        loadAsCopy = false;
+        takenNames = List.of();
+    }
+
+    /** A download finished: say what happened, and pick up what landed. */
+    private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
+        creatorNote = EditorScreenLang.text(BuilderProfileScreen.noteKeyFor(packet.outcome()));
+        boolean nameInUse = packet.outcome() == BuilderRelayDownload.Outcome.ALREADY_HERE
+            || packet.outcome() == BuilderRelayDownload.Outcome.NAME_TAKEN;
+        takenNames = nameInUse ? List.copyOf(packet.takenNames()) : List.of();
+        loadAsCopy = nameInUse;
+        if (packet.outcome() == BuilderRelayDownload.Outcome.INSTALLED) {
+            // It is a template now, so the roster has to be asked again before it will show one.
+            afterCommand();
+        }
+    }
+
     /** The builder's upload the browser has selected, or null. */
     private static BuilderProfilePacket.Entry selectedCreatorBuild() {
         return EditorCreatorBuilds.byId(EditorCreatorBuilds.selectedId());
@@ -385,6 +446,19 @@ public final class EditorGuiScreen extends Screen {
             click();
             return true;
         }
+        if (EditorCreatorBuilds.active()) {
+            if (layout.test().contains(mouseX, mouseY)) {
+                click();
+                loadSelectedCreatorBuild();
+                return true;
+            }
+            if (layout.preview().contains(mouseX, mouseY)) {
+                orbit.beginDrag();
+                return true;
+            }
+            setFocused(null);
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
         EditorDetailPane.Hit hit = detail.hitTest(mouseX, mouseY);
         if (hit.kind() == EditorDetailPane.HitKind.PREVIEW) {
             orbit.beginDrag();
@@ -427,8 +501,11 @@ public final class EditorGuiScreen extends Screen {
                 browser.resetScroll();
             }
             case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
-            case CREATOR_TILE -> EditorCreatorBuilds.select(
-                browser.creatorTiles().get(hit.index()).relayId());
+            case CREATOR_TILE -> {
+                EditorCreatorBuilds.select(browser.creatorTiles().get(hit.index()).relayId());
+                // The note and the copy offer belonged to the build that was selected before.
+                forgetLastLoad();
+            }
             case SUB_TILE -> {
                 if (hit.index() == -1) selectOrEnter(browser.subParent().key());
                 else selectOrEnter(browser.subTiles().get(hit.index()).key());
@@ -465,12 +542,14 @@ public final class EditorGuiScreen extends Screen {
             case PICKED -> {
                 click();
                 EditorCreatorBuilds.show(result.creator().uuid(), result.creator().name());
+                forgetLastLoad();
                 browser.resetScroll();
                 search.close();
             }
             case CLEARED -> {
                 click();
                 EditorCreatorBuilds.clear();
+                forgetLastLoad();
                 browser.resetScroll();
                 search.close();
             }

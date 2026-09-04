@@ -965,6 +965,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "Trạng thái",
   "gui.dungeontrain.editor_screen.creator.read_only": "Trên relay — không có trong thư viện của trình sửa này.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Chọn một công trình",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "Tải dưới dạng bản sao",
   "gui.dungeontrain.options.button": "Tùy Chọn Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Tùy Chọn Thế Giới",
   "gui.dungeontrain.options.starts_with_train": "Bắt đầu với đoàn tàu",

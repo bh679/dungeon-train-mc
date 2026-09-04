@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -31,8 +32,25 @@ public final class TemplateTilePainter {
 
     public static void draw(GuiGraphics g, Font font, TemplateArt art, String name, int weight,
                             int x, int y, int size, float yaw, Marks marks) {
+        draw(g, font, art, name, weight, x, y, size, yaw, marks, 0);
+    }
+
+    /**
+     * As above for a build that lives on the relay.
+     *
+     * <p>{@code relayId} is tried first and the local art second, because a builder's upload may
+     * have both: a reviewer looking at their own profile has the file too, and the copy that came
+     * down the wire is the one the relay actually holds. Zero means "no relay build here" and this
+     * is the ordinary template path.</p>
+     */
+    public static void draw(GuiGraphics g, Font font, TemplateArt art, String name, int weight,
+                            int x, int y, int size, float yaw, Marks marks, int relayId) {
         boolean drawn = false;
-        if (art != null) {
+        if (relayId > 0) {
+            g.fill(x, y, x + size, y + size, MODEL_BACKDROP);
+            drawn = RelayBuildPreviews.draw(g, relayId, x + 1, y + 1, size - 2, size - 2, yaw, FILL);
+        }
+        if (!drawn && art != null) {
             g.fill(x, y, x + size, y + size, MODEL_BACKDROP);
             drawn = art.drawModel(g, x + 1, y + 1, size - 2, size - 2, yaw, FILL);
             if (!drawn) drawn = art.drawPhoto(g, x + 1, y + 1, size - 2, size - 2);

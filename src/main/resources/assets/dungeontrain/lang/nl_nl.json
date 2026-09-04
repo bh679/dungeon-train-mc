@@ -990,6 +990,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "Status",
   "gui.dungeontrain.editor_screen.creator.read_only": "Op de relay — niet in de bibliotheek van deze editor.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Kies een bouwsel",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "Als kopie laden",
   "gui.dungeontrain.options.button": "Dungeon Train-opties…",
   "gui.dungeontrain.options.title": "Dungeon Train — Wereldopties",
   "gui.dungeontrain.options.starts_with_train": "Begint met trein",

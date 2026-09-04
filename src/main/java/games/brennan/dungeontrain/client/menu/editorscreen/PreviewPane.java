@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,8 +18,16 @@ public final class PreviewPane {
 
     public static void draw(GuiGraphics g, Font font, InventoryEditorLayout.Rect r, TemplateArt art,
                             String name, float yaw, EditorScreenTheme theme) {
+        draw(g, font, r, art, name, yaw, theme, 0);
+    }
+
+    /** As above, preferring the blocks a relay build sent down over any local file of the same name. */
+    public static void draw(GuiGraphics g, Font font, InventoryEditorLayout.Rect r, TemplateArt art,
+                            String name, float yaw, EditorScreenTheme theme, int relayId) {
         g.fill(r.x(), r.y(), r.right(), r.bottom(), BACKDROP);
-        boolean drawn = art != null && art.drawModel(g, r.x(), r.y(), r.w(), r.h(), yaw, FILL);
+        boolean drawn = relayId > 0
+            && RelayBuildPreviews.draw(g, relayId, r.x(), r.y(), r.w(), r.h(), yaw, FILL);
+        if (!drawn) drawn = art != null && art.drawModel(g, r.x(), r.y(), r.w(), r.h(), yaw, FILL);
         if (!drawn && art != null) {
             drawn = art.drawPhoto(g, r.x(), r.y(), r.w(), r.h());
         }

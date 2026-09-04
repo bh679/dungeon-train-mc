@@ -990,6 +990,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "Status",
   "gui.dungeontrain.editor_screen.creator.read_only": "Auf dem Relay – nicht in der Bibliothek dieses Editors.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Bau auswählen",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "Als Kopie laden",
   "gui.dungeontrain.options.button": "Dungeon-Train-Optionen…",
   "gui.dungeontrain.options.title": "Dungeon Train — Weltoptionen",
   "gui.dungeontrain.options.starts_with_train": "Beginnt mit Zug",

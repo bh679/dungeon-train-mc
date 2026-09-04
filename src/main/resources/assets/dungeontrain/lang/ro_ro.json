@@ -1326,6 +1326,7 @@
   "gui.dungeontrain.editor_screen.creator.status": "Stare",
   "gui.dungeontrain.editor_screen.creator.read_only": "Pe releu — nu în biblioteca acestui editor.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Alege o construcție",
+  "gui.dungeontrain.editor_screen.creator.load_copy": "Încarcă drept copie",
   "gui.dungeontrain.options.button": "Opțiuni Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opțiuni lume",
   "gui.dungeontrain.options.starts_with_train": "Începe cu trenul",
