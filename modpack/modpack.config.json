@@ -421,6 +421,15 @@
       "required": true,
       "modrinth_project": "crash-assistant",
       "modrinth_version": "18SR4EJw"
+    },
+    {
+      "name": "Vivecraft Sable Compat",
+      "slug": "vivecraft-sable-compat",
+      "project_id": 1678662,
+      "file_id": 8790529,
+      "required": false,
+      "modrinth_project": "vivecraft-sable-compat",
+      "modrinth_version": "6JgjKuhh"
     }
   ],
   "curseforge_relations": [

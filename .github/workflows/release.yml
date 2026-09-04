@@ -293,6 +293,7 @@ jobs:
             durability-tooltip(optional)
             supermartijn642s-config-lib(optional)
             crash-assistant(optional)
+            vivecraft-sable-compat(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
