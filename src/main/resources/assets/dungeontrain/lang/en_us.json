@@ -1268,8 +1268,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Not available for this template",
   "gui.dungeontrain.editor_screen.test_carriage": "Test the Carriage",
   "gui.dungeontrain.editor_screen.enter": "Enter",
-  "gui.dungeontrain.editor_screen.save_all": "Save all",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Save all — unsaved changes",
   "gui.dungeontrain.editor_screen.theme": "Theme",
   "gui.dungeontrain.editor_screen.theme.light": "Light",
   "gui.dungeontrain.editor_screen.theme.dark": "Dark",

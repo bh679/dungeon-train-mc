@@ -2,15 +2,14 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
+import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
-import games.brennan.dungeontrain.client.menu.MenuHeaderAction;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
 import games.brennan.dungeontrain.client.menu.PackageListScreen;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
-import games.brennan.dungeontrain.client.menu.UnsavedCheckScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
@@ -199,15 +198,6 @@ public final class EditorScreenActions {
     // Header, enter, test
     // ------------------------------------------------------------------
 
-    /** The header Save-all icon: parts route through the part-aware subcommand. */
-    public static MenuHeaderAction saveAll(Ctx ctx, long nowMillis) {
-        PlotCategory cat = ctx.standing() != null ? ctx.standing().category() : ctx.category();
-        MenuHeaderAction base = EditorMenuScreen.saveHeaderAction(cat, ctx.dirty(), nowMillis);
-        String command = cat == PlotCategory.PARTS ? "dungeontrain editor part save all" : "dungeontrain save all";
-        String label = EditorScreenLang.text(ctx.dirty() ? EditorScreenLang.SAVE_ALL_DIRTY : EditorScreenLang.SAVE_ALL);
-        return new MenuHeaderAction(base.icon(), label, command, base.tint());
-    }
-
     /**
      * Go and stand in the selection. Same stamped category: the plain enter command. Another
      * category: through the unsaved check, which switches category and follows up with the
@@ -222,8 +212,14 @@ public final class EditorScreenActions {
         if (ctx.stampedCategory() != null && sel.category().owner() == ctx.stampedCategory().owner()) {
             return new CommandMenuEntry.Run(label, command);
         }
-        return new CommandMenuEntry.DrillIn(label,
-            new UnsavedCheckScreen(sel.category().owner().id(), command));
+        // Another category: switch, then go. No save prompt in between — it listed every plot the
+        // scan could see rather than the ones actually edited, so it stood between the author and
+        // the build they asked for while saying nothing they could act on.
+        String switchTo = "dungeontrain editor " + sel.category().owner().id();
+        return new CommandMenuEntry.ClientAction(label, () -> {
+            CommandRunner.run(switchTo);
+            CommandRunner.run(command);
+        });
     }
 
     /** Test the Carriage: dimensions only, and only from inside the room it tests. */

@@ -935,8 +935,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "このテンプレートでは利用できません",
   "gui.dungeontrain.editor_screen.test_carriage": "車両をテスト",
   "gui.dungeontrain.editor_screen.enter": "入る",
-  "gui.dungeontrain.editor_screen.save_all": "すべて保存",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "すべて保存 — 未保存の変更あり",
   "gui.dungeontrain.editor_screen.theme": "テーマ",
   "gui.dungeontrain.editor_screen.theme.light": "ライト",
   "gui.dungeontrain.editor_screen.theme.dark": "ダーク",

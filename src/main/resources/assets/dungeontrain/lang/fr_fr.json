@@ -960,8 +960,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Non disponible pour ce modèle",
   "gui.dungeontrain.editor_screen.test_carriage": "Tester le wagon",
   "gui.dungeontrain.editor_screen.enter": "Entrer",
-  "gui.dungeontrain.editor_screen.save_all": "Tout enregistrer",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Tout enregistrer — modifications non enregistrées",
   "gui.dungeontrain.editor_screen.theme": "Thème",
   "gui.dungeontrain.editor_screen.theme.light": "Clair",
   "gui.dungeontrain.editor_screen.theme.dark": "Sombre",

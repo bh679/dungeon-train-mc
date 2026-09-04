@@ -990,8 +990,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Недоступно для этого шаблона",
   "gui.dungeontrain.editor_screen.test_carriage": "Испытать вагон",
   "gui.dungeontrain.editor_screen.enter": "Войти",
-  "gui.dungeontrain.editor_screen.save_all": "Сохранить всё",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Сохранить всё — есть несохранённые изменения",
   "gui.dungeontrain.editor_screen.theme": "Тема",
   "gui.dungeontrain.editor_screen.theme.light": "Светлая",
   "gui.dungeontrain.editor_screen.theme.dark": "Тёмная",

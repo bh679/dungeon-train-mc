@@ -67,15 +67,18 @@ public record InventoryEditorLayout(
         Rect strip = new Rect(left.x(), filter.bottom() + 2, left.w(), STRIP_H);
         Rect grid = new Rect(left.x(), strip.bottom() + 2, left.w(), Math.max(0, left.bottom() - strip.bottom() - 2));
 
+        // Header, then the tools, then what they act on. The icon row sits above the model rather
+        // than below the facts: it is the pane's toolbar, and a toolbar buried under six lines of
+        // read-out is one the eye has to go looking for.
         Rect header = new Rect(right.x(), right.y(), right.w(), HEADER_H);
+        Rect icons = new Rect(right.x(), header.bottom() + 1, right.w(), ICONS_H);
         int previewH = clamp((int) Math.round(right.h() * 0.34), PREVIEW_MIN_H, PREVIEW_MAX_H);
         int previewW = Math.min(right.w(), PREVIEW_MAX_W);
-        Rect preview = new Rect(right.x(), header.bottom() + 1, previewW, previewH);
+        Rect preview = new Rect(right.x(), icons.bottom() + 2, previewW, previewH);
         Rect sheet = new Rect(right.x(), preview.bottom() + 2, right.w(), SHEET_H);
-        Rect icons = new Rect(right.x(), sheet.bottom() + 2, right.w(), ICONS_H);
         Rect test = new Rect(right.x(), right.bottom() - TEST_H, right.w(), TEST_H);
-        Rect settings = new Rect(right.x(), icons.bottom() + 2, right.w(),
-            Math.max(0, test.y() - 2 - icons.bottom() - 2));
+        Rect settings = new Rect(right.x(), sheet.bottom() + 2, right.w(),
+            Math.max(0, test.y() - 2 - sheet.bottom() - 2));
 
         int tile = panel.h() < 210 ? TILE_SMALL : TILE_LARGE;
         return new InventoryEditorLayout(tabs, panel, filter, strip, grid,

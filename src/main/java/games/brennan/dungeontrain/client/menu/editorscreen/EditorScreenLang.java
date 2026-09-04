@@ -81,8 +81,6 @@ public final class EditorScreenLang {
 
     public static final String TEST_CARRIAGE = PREFIX + "test_carriage";
     public static final String ENTER = PREFIX + "enter";
-    public static final String SAVE_ALL = PREFIX + "save_all";
-    public static final String SAVE_ALL_DIRTY = PREFIX + "save_all_dirty";
     public static final String THEME = PREFIX + "theme";
     public static final String THEME_LIGHT = PREFIX + "theme.light";
     public static final String THEME_DARK = PREFIX + "theme.dark";

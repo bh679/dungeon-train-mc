@@ -935,8 +935,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Không khả dụng cho mẫu này",
   "gui.dungeontrain.editor_screen.test_carriage": "Thử nghiệm Toa",
   "gui.dungeontrain.editor_screen.enter": "Vào",
-  "gui.dungeontrain.editor_screen.save_all": "Lưu tất cả",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Lưu tất cả — có thay đổi chưa lưu",
   "gui.dungeontrain.editor_screen.theme": "Giao diện",
   "gui.dungeontrain.editor_screen.theme.light": "Sáng",
   "gui.dungeontrain.editor_screen.theme.dark": "Tối",

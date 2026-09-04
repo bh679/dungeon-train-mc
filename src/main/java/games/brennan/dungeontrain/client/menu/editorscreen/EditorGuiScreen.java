@@ -477,11 +477,6 @@ public final class EditorGuiScreen extends Screen {
 
     private boolean onDetailHit(EditorDetailPane.Hit hit) {
         switch (hit.kind()) {
-            case SAVE_ALL -> {
-                CommandRunner.run(detail.saveAll().command());
-                afterCommand();
-                return true;
-            }
             case ICON -> {
                 EditorScreenActions.Icon icon = detail.icons().get(hit.index());
                 if (!icon.enabled()) return false;

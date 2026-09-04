@@ -14,7 +14,7 @@ public final class EditorScreenState {
 
     private static EditorScreenPage page = EditorScreenPage.CARRIAGES;
     private static String typeName = "";
-    private static EditorRosterIndex.Filters filters = EditorRosterIndex.Filters.NONE;
+    private static EditorRosterIndex.Filters filters = EditorRosterIndex.Filters.DEFAULT;
     private static String text = "";
     private static VariantKey selection;
 

@@ -960,8 +960,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Non disponibile per questo modello",
   "gui.dungeontrain.editor_screen.test_carriage": "Prova il vagone",
   "gui.dungeontrain.editor_screen.enter": "Entra",
-  "gui.dungeontrain.editor_screen.save_all": "Salva tutto",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Salva tutto — modifiche non salvate",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Chiaro",
   "gui.dungeontrain.editor_screen.theme.dark": "Scuro",

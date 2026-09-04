@@ -935,8 +935,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Tidak tersedia untuk templat ini",
   "gui.dungeontrain.editor_screen.test_carriage": "Uji Gerabak",
   "gui.dungeontrain.editor_screen.enter": "Masuk",
-  "gui.dungeontrain.editor_screen.save_all": "Simpan semua",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Simpan semua — perubahan belum disimpan",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Cerah",
   "gui.dungeontrain.editor_screen.theme.dark": "Gelap",

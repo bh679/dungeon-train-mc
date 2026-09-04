@@ -2,7 +2,7 @@
   "locale": "ru_ru",
   "name": "ИИ без проверки человеком",
   "human_reviewed": false,
-  "total_keys": 2030,
-  "ai_authored": 1035,
-  "ai_unreviewed": 989
+  "total_keys": 2028,
+  "ai_authored": 1033,
+  "ai_unreviewed": 987
 }

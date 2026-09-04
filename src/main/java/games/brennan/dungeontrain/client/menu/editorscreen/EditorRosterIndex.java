@@ -33,6 +33,14 @@ public final class EditorRosterIndex {
     public record Filters(boolean mine, boolean builtin, String creator) {
         public static final Filters NONE = new Filters(false, false, "");
 
+        /**
+         * What the browser opens on: the author's own builds, without the built-ins.
+         *
+         * <p>An editor is opened to work on your own things far more often than to look at what
+         * shipped, and the built-ins outnumber them heavily in every category.</p>
+         */
+        public static final Filters DEFAULT = new Filters(true, false, "");
+
         public Filters {
             if (creator == null) creator = "";
         }

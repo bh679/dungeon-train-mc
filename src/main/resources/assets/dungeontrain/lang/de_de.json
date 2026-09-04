@@ -960,8 +960,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Für diese Vorlage nicht verfügbar",
   "gui.dungeontrain.editor_screen.test_carriage": "Waggon testen",
   "gui.dungeontrain.editor_screen.enter": "Betreten",
-  "gui.dungeontrain.editor_screen.save_all": "Alles speichern",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Alles speichern — ungespeicherte Änderungen",
   "gui.dungeontrain.editor_screen.theme": "Design",
   "gui.dungeontrain.editor_screen.theme.light": "Hell",
   "gui.dungeontrain.editor_screen.theme.dark": "Dunkel",

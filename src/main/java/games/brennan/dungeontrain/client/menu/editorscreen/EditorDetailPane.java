@@ -4,7 +4,7 @@ import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
-import games.brennan.dungeontrain.client.menu.MenuHeaderAction;
+import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.editor.PlotCategory;
@@ -34,7 +34,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, SAVE_ALL, ICON, ROW, TEST, PREVIEW, SHEET, GO_HERE }
+    public enum HitKind { NONE, ICON, ROW, TEST, PREVIEW, SHEET, GO_HERE }
 
     public record Hit(HitKind kind, int index, int sub) {
         public static final Hit NONE = new Hit(HitKind.NONE, -1, 0);
@@ -48,7 +48,6 @@ public final class EditorDetailPane {
     private List<TemplateDataSheet.Line> sheetLines = List.of();
     private List<TemplateDataSheet.Placed> sheetCells = List.of();
     private CommandMenuEntry test;
-    private MenuHeaderAction saveAll;
     private int scroll;
     private int visibleRows;
     private Hit hovered = Hit.NONE;
@@ -62,7 +61,6 @@ public final class EditorDetailPane {
     public CommandMenuEntry testEntry() { return test; }
     /** The teleport button in the header, or null when the author is already standing there. */
     public CommandMenuEntry goHereEntry() { return goHere; }
-    public MenuHeaderAction saveAll() { return saveAll; }
     public EditorScreenActions.Ctx ctx() { return ctx; }
 
     /** Build this frame's rows and icons from the selection. */
@@ -80,7 +78,6 @@ public final class EditorDetailPane {
         // half these controls, so the header offers the walk rather than only naming it.
         goHere = ctx.hasSelection() && !ctx.standingInSelection()
             ? EditorScreenActions.enterEntry(ctx) : null;
-        saveAll = EditorScreenActions.saveAll(ctx, nowMillis);
         visibleRows = Math.max(0, layout.settings().h() / ROW_H);
         scroll = Math.max(0, Math.min(scroll, Math.max(0, rows.size() - visibleRows)));
 
@@ -113,7 +110,6 @@ public final class EditorDetailPane {
         test = null;
         goHere = null;
         goHereRect = null;
-        saveAll = null;
         hovered = Hit.NONE;
     }
 
@@ -176,7 +172,7 @@ public final class EditorDetailPane {
             g.fill(x, ty + 2, x + 4, ty + 6, TemplateTilePainter.DIRTY);
             x += 8;
         }
-        int saveX = h.right() - ICON_SIZE - 1;
+        int saveX = h.right() - 1;
         goHereRect = null;
         if (ctx.standingInSelection()) {
             String status = "● " + EditorScreenLang.text(EditorScreenLang.YOU_ARE_HERE);
@@ -193,12 +189,6 @@ public final class EditorDetailPane {
                 hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
             g.drawString(font, label, bx + 4, ty, hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
         }
-        // Save-all icon: the same breathing tint as the header icon of the old menu.
-        boolean hov = hovered.kind() == HitKind.SAVE_ALL;
-        g.fill(saveX - 2, h.y(), h.right(), h.bottom(), hov ? MenuRowPainter.CELL_HOVER : 0x30000000);
-        tint(g, saveAll.tint());
-        g.blitSprite(saveAll.icon(), saveX, h.y() + (h.h() - ICON_SIZE) / 2 + 1, ICON_SIZE, ICON_SIZE);
-        g.setColor(1f, 1f, 1f, 1f);
     }
 
     private void drawIcons(GuiGraphics g) {
@@ -211,8 +201,17 @@ public final class EditorDetailPane {
             int fill = !icon.enabled() ? DISABLED
                 : hov ? (danger ? 0xC0FF5544 : MenuRowPainter.CELL_HOVER) : MenuRowPainter.CELL_IDLE;
             g.fill(x, r.y(), x + ICON_CELL, r.y() + ICON_CELL, fill);
-            if (!icon.enabled()) tint(g, DISABLED_ICON);
-            else if (hov) tint(g, 0xFF000000);
+            if (!icon.enabled()) {
+                tint(g, DISABLED_ICON);
+            } else if ("save".equals(icon.id())) {
+                // Save says the state as well as offering the action: breathing green while this
+                // build has unsaved work, steady blue once it matches what is on disk. It is the
+                // only status the pane cannot show as a number, so it lives on its own button
+                // rather than on a second one beside it.
+                tint(g, EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis()));
+            } else if (hov) {
+                tint(g, 0xFF000000);
+            }
             g.blitSprite(EditorIcons.forAction(icon.id()), x + (ICON_CELL - ICON_SIZE) / 2,
                 r.y() + (ICON_CELL - ICON_SIZE) / 2, ICON_SIZE, ICON_SIZE);
             g.setColor(1f, 1f, 1f, 1f);
@@ -262,8 +261,6 @@ public final class EditorDetailPane {
 
     public Hit hitTest(double mx, double my) {
         if (layout == null) return Hit.NONE;
-        InventoryEditorLayout.Rect h = layout.header();
-        if (h.contains(mx, my) && mx >= h.right() - ICON_SIZE - 3) return new Hit(HitKind.SAVE_ALL, 0, 0);
         if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
         if (layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
         int sheetCell = TemplateDataSheet.hit(sheetCells, mx, my);
@@ -296,7 +293,6 @@ public final class EditorDetailPane {
      */
     public List<String> tooltipAt(Hit hit) {
         return switch (hit.kind()) {
-            case SAVE_ALL -> saveAll == null ? List.of() : List.of(saveAll.label());
             case ICON -> {
                 if (hit.index() < 0 || hit.index() >= icons.size()) yield List.of();
                 EditorScreenActions.Icon icon = icons.get(hit.index());

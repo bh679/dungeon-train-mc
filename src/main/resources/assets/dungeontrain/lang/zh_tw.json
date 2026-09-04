@@ -935,8 +935,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "此範本無法使用",
   "gui.dungeontrain.editor_screen.test_carriage": "測試車廂",
   "gui.dungeontrain.editor_screen.enter": "進入",
-  "gui.dungeontrain.editor_screen.save_all": "全部儲存",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "全部儲存 — 有未儲存的變更",
   "gui.dungeontrain.editor_screen.theme": "主題",
   "gui.dungeontrain.editor_screen.theme.light": "淺色",
   "gui.dungeontrain.editor_screen.theme.dark": "深色",

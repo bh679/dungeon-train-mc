@@ -960,8 +960,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "No disponible para esta plantilla",
   "gui.dungeontrain.editor_screen.test_carriage": "Probar el vagón",
   "gui.dungeontrain.editor_screen.enter": "Entrar",
-  "gui.dungeontrain.editor_screen.save_all": "Guardar todo",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Guardar todo — cambios sin guardar",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Claro",
   "gui.dungeontrain.editor_screen.theme.dark": "Oscuro",

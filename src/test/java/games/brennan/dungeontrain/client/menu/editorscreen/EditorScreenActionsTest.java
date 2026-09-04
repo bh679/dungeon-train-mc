@@ -4,7 +4,6 @@ import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.ConfirmScreen;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
-import games.brennan.dungeontrain.client.menu.UnsavedCheckScreen;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
@@ -158,14 +157,16 @@ final class EditorScreenActionsTest {
     // ---- enter / test ----
 
     @Test
-    @DisplayName("enter within the stamped category runs the enter command; across categories it goes through the unsaved check")
+    @DisplayName("enter runs the enter command; across categories it switches first, with no prompt in between")
     void enter() {
         VariantKey contents = VariantKey.of(PlotCategory.CONTENTS, "armor", "armor");
         EditorTypeMenusPacket.Variant v = gated("CONTENTS", "armor", "armor", 5, List.of());
         CommandMenuEntry same = EditorScreenActions.enterEntry(ctx(contents, v, null, PlotCategory.CONTENTS));
         assertEquals("dungeontrain editor contents enter armor", ((CommandMenuEntry.Run) same).command());
+        // Across categories it is a client action that sends both commands — no save prompt, which
+        // listed every plot the scan could see rather than the ones actually edited.
         CommandMenuEntry cross = EditorScreenActions.enterEntry(ctx(contents, v, null, PlotCategory.CARRIAGES));
-        assertInstanceOf(UnsavedCheckScreen.class, ((CommandMenuEntry.DrillIn) cross).target());
+        assertInstanceOf(CommandMenuEntry.ClientAction.class, cross);
         // Parts stamp with carriages, so from a carriage plot a part is a same-category enter.
         VariantKey part = VariantKey.of(PlotCategory.PARTS, "floor", "oak");
         EditorTypeMenusPacket.Variant pv = new EditorTypeMenusPacket.Variant("oak", -1, "PARTS", "floor", "oak", false, false);

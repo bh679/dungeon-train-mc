@@ -960,8 +960,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Não disponível para este modelo",
   "gui.dungeontrain.editor_screen.test_carriage": "Testar a Carruagem",
   "gui.dungeontrain.editor_screen.enter": "Entrar",
-  "gui.dungeontrain.editor_screen.save_all": "Guardar todas",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Guardar todas — alterações não guardadas",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Claro",
   "gui.dungeontrain.editor_screen.theme.dark": "Escuro",

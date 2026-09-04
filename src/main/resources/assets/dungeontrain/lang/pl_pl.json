@@ -985,8 +985,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Niedostępne dla tego szablonu",
   "gui.dungeontrain.editor_screen.test_carriage": "Przetestuj wagon",
   "gui.dungeontrain.editor_screen.enter": "Wejdź",
-  "gui.dungeontrain.editor_screen.save_all": "Zapisz wszystkie",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "Zapisz wszystkie — niezapisane zmiany",
   "gui.dungeontrain.editor_screen.theme": "Motyw",
   "gui.dungeontrain.editor_screen.theme.light": "Jasny",
   "gui.dungeontrain.editor_screen.theme.dark": "Ciemny",

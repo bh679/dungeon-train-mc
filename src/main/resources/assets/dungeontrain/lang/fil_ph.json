@@ -935,8 +935,6 @@
   "gui.dungeontrain.editor_screen.disabled.not_here": "Hindi available para sa template na ito",
   "gui.dungeontrain.editor_screen.test_carriage": "Subukan ang Bagon",
   "gui.dungeontrain.editor_screen.enter": "Pumasok",
-  "gui.dungeontrain.editor_screen.save_all": "I-save lahat",
-  "gui.dungeontrain.editor_screen.save_all_dirty": "I-save lahat — may hindi pa na-save",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Maliwanag",
   "gui.dungeontrain.editor_screen.theme.dark": "Madilim",
