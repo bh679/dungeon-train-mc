@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.mixin.client.iris;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.shader.ShaderWorld;
+import org.slf4j.Logger;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,6 +31,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(targets = "net.irisshaders.iris.uniforms.CelestialUniforms", remap = false)
 public abstract class IrisNoDirectionalLightMixin {
 
+    private static final Logger DUNGEONTRAIN_LOGGER = LogUtils.getLogger();
+    /**
+     * One line per hook, the first time each fires. Without it an override that silently stopped
+     * matching is indistinguishable from one that matched and did not help — the config runs at
+     * {@code defaultRequire: 0}, so nothing complains either way.
+     */
+    private static final java.util.Set<String> DUNGEONTRAIN_ANNOUNCED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    private static void dungeontrain$announce(String hook) {
+        if (DUNGEONTRAIN_ANNOUNCED.add(hook)) {
+            DUNGEONTRAIN_LOGGER.info("[DungeonTrain] Iris direct-light hook live: {}", hook);
+        }
+    }
+
     /** Straight down, in the space these uniforms are expressed in. Nothing faces it. */
     private static Vector4f dungeontrain$below() {
         return new Vector4f(0.0f, -1.0f, 0.0f, 0.0f);
@@ -41,16 +57,31 @@ public abstract class IrisNoDirectionalLightMixin {
 
     @Inject(method = "getShadowLightPosition", at = @At("RETURN"), cancellable = true)
     private void dungeontrain$noShadowLight(CallbackInfoReturnable<Vector4f> cir) {
+        dungeontrain$announce("shadowLightPosition");
+        if (dungeontrain$suppress()) cir.setReturnValue(dungeontrain$below());
+    }
+
+    /**
+     * The one the shadow <em>render</em> uses. {@code ShadowRenderer} builds its model-view from
+     * this, so leaving it alone meant the shadow map was still being rendered from the overworld
+     * sun's direction however the view-space uniform was answered — which is why pointing the other
+     * three downward changed nothing a player could see.
+     */
+    @Inject(method = "getShadowLightPositionInWorldSpace", at = @At("RETURN"), cancellable = true)
+    private void dungeontrain$noWorldShadowLight(CallbackInfoReturnable<Vector4f> cir) {
+        dungeontrain$announce("shadowLightPositionInWorldSpace");
         if (dungeontrain$suppress()) cir.setReturnValue(dungeontrain$below());
     }
 
     @Inject(method = "getSunPosition", at = @At("RETURN"), cancellable = true)
     private void dungeontrain$noSun(CallbackInfoReturnable<Vector4f> cir) {
+        dungeontrain$announce("sunPosition");
         if (dungeontrain$suppress()) cir.setReturnValue(dungeontrain$below());
     }
 
     @Inject(method = "getMoonPosition", at = @At("RETURN"), cancellable = true)
     private void dungeontrain$noMoon(CallbackInfoReturnable<Vector4f> cir) {
+        dungeontrain$announce("moonPosition");
         if (dungeontrain$suppress()) cir.setReturnValue(dungeontrain$below());
     }
 }
