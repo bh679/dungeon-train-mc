@@ -1,13 +1,15 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
-import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTileSpin;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
+import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -38,7 +40,7 @@ public final class EditorBrowserPane {
     static final int SUB_HEADER_BG = 0xD0000000;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, CHIP, STRIP, TILE, NEW, SUB_TILE, NEW_SUB }
+    public enum HitKind { NONE, CHIP, STRIP, TILE, NEW, SUB_TILE, NEW_SUB, CREATOR_TILE }
 
     public record Hit(HitKind kind, int index) {
         public static final Hit NONE = new Hit(HitKind.NONE, -1);
@@ -66,6 +68,9 @@ public final class EditorBrowserPane {
     private List<StripCell> stripCells = List.of();
     private List<EditorRosterIndex.Tile> tiles = List.of();
     private List<EditorRosterIndex.Tile> subTiles = List.of();
+    /** The loaded builder's uploads, drawn in the main grid in place of the roster's tiles. */
+    private List<BuilderProfilePacket.Entry> creatorTiles = List.of();
+    private boolean creatorMode;
     private EditorRosterIndex.Tile subParent;
     private TemplateTileGridLayout mainGrid;
     private TemplateTileGridLayout subGrid;
@@ -76,6 +81,7 @@ public final class EditorBrowserPane {
     private Hit hovered = Hit.NONE;
 
     public List<EditorRosterIndex.Tile> tiles() { return tiles; }
+    public List<BuilderProfilePacket.Entry> creatorTiles() { return creatorTiles; }
     public List<EditorRosterIndex.Tile> subTiles() { return subTiles; }
     public EditorRosterIndex.Tile subParent() { return subParent; }
     public EditorRosterIndex.TypeStrip stripAt(int i) { return i >= 0 && i < stripCells.size() ? stripCells.get(i).strip() : null; }
@@ -107,7 +113,7 @@ public final class EditorBrowserPane {
 
     /** The chip's label: whose builds are loaded, or the invitation to go and find someone. */
     static String creatorLabel() {
-        String viewed = BuilderProfileState.viewedName();
+        String viewed = EditorCreatorBuilds.viewedName();
         return viewed == null || viewed.isEmpty()
             ? EditorScreenLang.text(EditorScreenLang.FILTER_FIND_CREATOR)
             : EditorScreenLang.text(EditorScreenLang.FILTER_CREATOR, viewed);
@@ -145,8 +151,13 @@ public final class EditorBrowserPane {
     /** The chips' labels, in row order — what the box has to leave room for. */
     private static List<String> chipLabels() {
         List<String> out = new ArrayList<>(3);
-        out.add(EditorScreenLang.text(EditorScreenLang.FILTER_MINE));
-        out.add(EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN));
+        // A builder's uploads carry no provenance to narrow: the two roster chips would sit there
+        // saying nothing about what is on screen, so only the one naming whose builds these are is
+        // offered — and it is the way back out.
+        if (!EditorCreatorBuilds.active()) {
+            out.add(EditorScreenLang.text(EditorScreenLang.FILTER_MINE));
+            out.add(EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN));
+        }
         if (showCreatorChip()) out.add(creatorLabel());
         return out;
     }
@@ -159,24 +170,27 @@ public final class EditorBrowserPane {
 
         // Chips, right-aligned in the filter row after the text box.
         EditorRosterIndex.Filters filters = EditorScreenState.filters();
+        creatorMode = EditorCreatorBuilds.active();
         List<Chip> c = new ArrayList<>();
         int cx = filterBoxX(filterRect) + filterBoxWidth(filterRect, font) + CHIP_GAP;
-        c.add(chip(Kind.MINE, EditorScreenLang.text(EditorScreenLang.FILTER_MINE),
-            filters.mine(), cx, font));
-        cx = last(c).x() + last(c).w() + CHIP_GAP;
-        c.add(chip(Kind.BUILTIN, EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN),
-            filters.builtin(), cx, font));
-        if (showCreatorChip()) {
+        if (!creatorMode) {
+            c.add(chip(Kind.MINE, EditorScreenLang.text(EditorScreenLang.FILTER_MINE),
+                filters.mine(), cx, font));
             cx = last(c).x() + last(c).w() + CHIP_GAP;
-            String viewed = BuilderProfileState.viewedName();
-            c.add(chip(Kind.PLAYER, creatorLabel(), viewed != null && !viewed.isEmpty(), cx, font));
+            c.add(chip(Kind.BUILTIN, EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN),
+                filters.builtin(), cx, font));
+            cx = last(c).x() + last(c).w() + CHIP_GAP;
+        }
+        if (showCreatorChip()) {
+            c.add(chip(Kind.PLAYER, creatorLabel(), creatorMode, cx, font));
         }
         chips = c;
 
         // Type strip: equal cells across the row. The All page has none — fifteen strips would not
         // fit the row, and its whole point is the roster without one.
         PlotCategory page = EditorScreenState.page().category();
-        List<EditorRosterIndex.TypeStrip> strips = page == null ? List.of() : index.typeStrips(page);
+        List<EditorRosterIndex.TypeStrip> strips = page == null || creatorMode
+            ? List.of() : index.typeStrips(page);
         List<StripCell> sc = new ArrayList<>();
         if (!strips.isEmpty()) {
             int cellW = stripRect.w() / strips.size();
@@ -188,11 +202,18 @@ public final class EditorBrowserPane {
         }
         stripCells = sc;
 
+        // Somebody else's uploads take the main grid whole: they are not roster tiles, have no
+        // type strip to sit under and no sub-variants to open, so every other list goes empty for
+        // the duration rather than being drawn against a roster this grid is not showing.
+        creatorTiles = creatorMode
+            ? EditorCreatorBuilds.forPage(EditorScreenState.page(), EditorScreenState.text())
+            : List.of();
+
         // Tiles of the active strip, filtered.
         String typeName = EditorScreenState.effectiveTypeName(index);
-        List<EditorRosterIndex.Tile> all = page == null
+        List<EditorRosterIndex.Tile> all = creatorMode ? List.of() : (page == null
             ? (EditorScreenState.page() == EditorScreenPage.ALL ? index.allTiles() : List.of())
-            : index.tiles(page, typeName);
+            : index.tiles(page, typeName));
         tiles = EditorRosterIndex.standingFirst(
             EditorRosterIndex.filter(all, EditorScreenState.filters(), EditorScreenState.text()),
             EditorScreenState.standingIn());
@@ -200,7 +221,7 @@ public final class EditorBrowserPane {
         // The sub-variant grid, when the selection is a group or a member of one.
         subParent = null;
         subTiles = List.of();
-        VariantKey sel = EditorScreenState.selection();
+        VariantKey sel = creatorMode ? null : EditorScreenState.selection();
         if (sel != null) {
             EditorRosterIndex.Tile selTile = index.find(sel);
             EditorRosterIndex.Tile parent = selTile == null ? null
@@ -216,7 +237,8 @@ public final class EditorBrowserPane {
 
         int tile = layout.tile();
         mainGrid = TemplateTileGridLayout.of(gridRect.x(), gridRect.y(), gridRect.w(), gridRect.h(), tile, TILE_GAP);
-        int mainCount = tiles.size() + 1;
+        // No "+" cell in creator mode: there is nothing here this editor can add to.
+        int mainCount = creatorMode ? creatorTiles.size() : tiles.size() + 1;
         int subTop = gridRect.y() + mainGrid.contentHeight(mainCount) + SUB_GAP + SUB_HEADER_H + 2;
         subGrid = TemplateTileGridLayout.of(gridRect.x(), subTop, gridRect.w(), gridRect.h(), tile, TILE_GAP);
         contentHeight = subParent == null
@@ -279,6 +301,11 @@ public final class EditorBrowserPane {
         g.enableScissor(gridRect.x(), gridRect.y(), gridRect.right(), gridRect.bottom());
         VariantKey selection = EditorScreenState.selection();
         VariantKey standing = EditorScreenState.standingIn();
+        if (creatorMode) {
+            drawCreatorTiles(g, font, seconds);
+            g.disableScissor();
+            return;
+        }
         drawTiles(g, font, mainGrid, tiles, selection, standing, seconds, HitKind.TILE, HitKind.NEW, null);
         if (subParent != null) {
             int headerY = gridRect.y() + mainGrid.contentHeight(tiles.size() + 1) + SUB_GAP - scroll;
@@ -289,6 +316,26 @@ public final class EditorBrowserPane {
             drawTiles(g, font, subGrid, subTiles, selection, standing, seconds, HitKind.SUB_TILE, HitKind.NEW_SUB, subParent);
         }
         g.disableScissor();
+    }
+
+    /** The loaded builder's uploads: the same tile the roster draws, ringed by its review state. */
+    private void drawCreatorTiles(GuiGraphics g, Font font, float seconds) {
+        for (int i = 0; i < creatorTiles.size(); i++) {
+            if (!mainGrid.isVisible(i, scroll)) continue;
+            BuilderProfilePacket.Entry entry = creatorTiles.get(i);
+            boolean hov = hovered.kind() == HitKind.CREATOR_TILE && hovered.index() == i;
+            boolean selected = entry.relayId() == EditorCreatorBuilds.selectedId();
+            TemplateArt art = EditorCreatorBuilds.artOf(entry);
+            int x = mainGrid.xFor(i);
+            int y = mainGrid.yFor(i, scroll);
+            int size = mainGrid.tile();
+            float yaw = spin.advance(art == null ? String.valueOf(entry.relayId()) : art.spinKey(), hov, seconds);
+            TemplateTilePainter.draw(g, font, art, EditorCreatorBuilds.label(entry),
+                EditorPlotLabelsPacket.NO_WEIGHT, x, y, size, yaw,
+                new TemplateTilePainter.Marks(selected, hov, false, false, false));
+            int border = BuilderReviewState.borderColourFor(entry.review());
+            if (border != BuilderReviewState.BORDER_NONE) g.renderOutline(x, y, size, size, border);
+        }
     }
 
     /** One grid: a self tile first when it is a sub-variant grid, then the tiles, then "+". */
@@ -338,10 +385,19 @@ public final class EditorBrowserPane {
             case TILE -> hit.index() >= 0 && hit.index() < tiles.size() ? tooltipFor(tiles.get(hit.index()), false) : null;
             case SUB_TILE -> hit.index() == -1 && subParent != null ? tooltipFor(subParent, true)
                 : hit.index() >= 0 && hit.index() < subTiles.size() ? tooltipFor(subTiles.get(hit.index()), false) : null;
+            case CREATOR_TILE -> hit.index() >= 0 && hit.index() < creatorTiles.size()
+                ? tooltipFor(creatorTiles.get(hit.index())) : null;
             case NEW -> EditorScreenLang.text(EditorScreenLang.TILE_NEW);
             case NEW_SUB -> EditorScreenLang.text(EditorScreenLang.TILE_NEW_SUB_VARIANT);
             default -> null;
         };
+    }
+
+    /** A builder's upload: what it is called, what kind it is, and where it stands with a reviewer. */
+    private static String tooltipFor(BuilderProfilePacket.Entry entry) {
+        return EditorCreatorBuilds.label(entry)
+            + "  ·  " + EditorScreenLang.text(EditorCreatorBuilds.kindKey(entry.kind()))
+            + "  ·  " + EditorScreenLang.text(EditorCreatorBuilds.reviewKey(entry.review()));
     }
 
     private static String tooltipFor(EditorRosterIndex.Tile tile, boolean asSelf) {
@@ -372,6 +428,10 @@ public final class EditorBrowserPane {
             return Hit.NONE;
         }
         if (gridRect == null || !gridRect.contains(mx, my) || mainGrid == null) return Hit.NONE;
+        if (creatorMode) {
+            int c = mainGrid.indexAt(mx, my, scroll, creatorTiles.size());
+            return c >= 0 && c < creatorTiles.size() ? new Hit(HitKind.CREATOR_TILE, c) : Hit.NONE;
+        }
         int mainCount = tiles.size() + 1;
         int m = mainGrid.indexAt(mx, my, scroll, mainCount);
         if (m >= 0) return m < tiles.size() ? new Hit(HitKind.TILE, m) : new Hit(HitKind.NEW, -1);

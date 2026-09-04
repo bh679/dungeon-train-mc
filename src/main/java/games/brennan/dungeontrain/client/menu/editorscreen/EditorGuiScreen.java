@@ -1,9 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
-import games.brennan.dungeontrain.client.builder.BuilderCreatorSearchScreen;
-import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
-import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
@@ -14,7 +11,7 @@ import games.brennan.dungeontrain.client.menu.HotbarPassthrough;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
-import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.editor.PlotCategory;
@@ -50,6 +47,7 @@ public final class EditorGuiScreen extends Screen {
     private final OrbitState orbit = new OrbitState();
     private final InlineEdit inlineEdit = new InlineEdit();
     private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
+    private final EditorCreatorSearch search = new EditorCreatorSearch();
 
     private EditBox filterBox;
     private InventoryEditorLayout layout;
@@ -101,17 +99,21 @@ public final class EditorGuiScreen extends Screen {
         // scissor, so neither the typed value nor the hint can escape the box.
         addWidget(filterBox);
         filterBox.visible = EditorScreenState.page().isBrowser();
+        EditorCreatorBuilds.attach();
     }
 
     @Override
     public void removed() {
         super.removed();
         BuilderTilePreviews.clear();
+        search.close();
+        EditorCreatorBuilds.detach();
     }
 
     @Override
     public void tick() {
         super.tick();
+        search.tick();
         if (refreshTicks > 0 && --refreshTicks == 0) {
             EditorSaveStatus.request();
         }
@@ -157,13 +159,15 @@ public final class EditorGuiScreen extends Screen {
 
         drawPanel(g, theme);
         tabs = EditorTabBar.layout(layout.tabs(), this.font::width, tabLabels());
-        hoveredTab = modal.isOpen() ? null : EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
+        hoveredTab = modal.isOpen() || search.isOpen() ? null
+            : EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
         EditorTabBar.draw(g, this.font, layout.tabs(), tabs, EditorScreenState.page(),
             EditorScreenPage.forCategory(ctx.standing() == null ? null : ctx.standing().category()),
             ctx.dirty(), hoveredTab, theme);
 
-        int mx = modal.isOpen() ? -1 : mouseX;
-        int my = modal.isOpen() ? -1 : mouseY;
+        boolean covered = modal.isOpen() || search.isOpen();
+        int mx = covered ? -1 : mouseX;
+        int my = covered ? -1 : mouseY;
         if (browsing) {
             browser.layout(layout, this.font, index);
             browser.render(g, this.font, theme, seconds, mx, my);
@@ -172,19 +176,26 @@ public final class EditorGuiScreen extends Screen {
             drawSettingsPage(g, theme, mx, my);
         }
 
-        EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
-        TemplateArt art = TemplateArt.of(ctx.selection());
-        TemplateSummary summary = art == null ? null : art.summary();
-        detail.layout(layout, ctx, System.currentTimeMillis());
-        detail.render(g, this.font, theme, art, summary, tile,
-            EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
+        if (EditorCreatorBuilds.active()) {
+            // A relay row is not a template: none of the detail pane's controls apply to one, so
+            // the pane that has no controls stands in for it rather than eight disabled buttons.
+            EditorCreatorPane.render(g, this.font, layout, theme, selectedCreatorBuild(), orbit.yaw());
+        } else {
+            EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
+            TemplateArt art = TemplateArt.of(ctx.selection());
+            TemplateSummary summary = art == null ? null : art.summary();
+            detail.layout(layout, ctx, System.currentTimeMillis());
+            detail.render(g, this.font, theme, art, summary, tile,
+                EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
+        }
 
-        if (browsing && index.isEmpty()) {
-            String loading = EditorScreenLang.text(EditorScreenLang.NO_ROSTER);
-            g.drawString(this.font, loading, layout.grid().x() + 4, layout.grid().y() + 4, 0xFFFFFFFF, true);
+        String empty = browsing ? emptyGridNote(index) : null;
+        if (empty != null) {
+            g.drawString(this.font, empty, layout.grid().x() + 4, layout.grid().y() + 4, 0xFFFFFFFF, true);
         }
 
         inlineEdit.render(g, this.font);
+        search.render(g, this.font, layout, theme, mouseX, mouseY);
         modal.render(g, this.font, this.width, this.height, mouseX, mouseY);
         drawTooltips(g, mouseX, mouseY);
     }
@@ -270,8 +281,25 @@ public final class EditorGuiScreen extends Screen {
         return k < visible && idx < rows.size() ? idx : -1;
     }
 
+    /** Why the grid is empty, or null when it is not: six answers that mean different things. */
+    private String emptyGridNote(EditorRosterIndex index) {
+        if (EditorCreatorBuilds.active()) {
+            if (!browser.creatorTiles().isEmpty()) return null;
+            BuilderProfilePacket.Status status = EditorCreatorBuilds.status();
+            if (status == null) return EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING);
+            return EditorScreenLang.text(status == BuilderProfilePacket.Status.OK
+                ? EditorScreenLang.CREATOR_EMPTY : EditorScreenLang.CREATOR_UNAVAILABLE);
+        }
+        return index.isEmpty() ? EditorScreenLang.text(EditorScreenLang.NO_ROSTER) : null;
+    }
+
+    /** The builder's upload the browser has selected, or null. */
+    private static BuilderProfilePacket.Entry selectedCreatorBuild() {
+        return EditorCreatorBuilds.byId(EditorCreatorBuilds.selectedId());
+    }
+
     private void drawTooltips(GuiGraphics g, int mouseX, int mouseY) {
-        if (modal.isOpen() || inlineEdit.active()) return;
+        if (modal.isOpen() || search.isOpen() || inlineEdit.active()) return;
         String tip = null;
         if (hoveredTab != null && hoveredTab.kind() == EditorTabBar.Kind.EXIT) {
             tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
@@ -323,6 +351,10 @@ public final class EditorGuiScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (modal.isOpen()) {
             return modal.mouseClicked(mouseX, mouseY);
+        }
+        if (search.isOpen()) {
+            onSearchClick(search.mouseClicked(mouseX, mouseY));
+            return true;
         }
         // A click anywhere else abandons a half-typed value rather than leaving it hanging over
         // a cell whose row may be about to change underneath it.
@@ -395,6 +427,8 @@ public final class EditorGuiScreen extends Screen {
                 browser.resetScroll();
             }
             case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
+            case CREATOR_TILE -> EditorCreatorBuilds.select(
+                browser.creatorTiles().get(hit.index()).relayId());
             case SUB_TILE -> {
                 if (hit.index() == -1) selectOrEnter(browser.subParent().key());
                 else selectOrEnter(browser.subTiles().get(hit.index()).key());
@@ -421,15 +455,29 @@ public final class EditorGuiScreen extends Screen {
      * roster changes: these are builds on the relay, not templates on this machine.</p>
      */
     private void openCreatorSearch() {
-        this.minecraft.setScreen(new BuilderCreatorSearchScreen(this, creator -> {
-            if (creator == null) {
-                BuilderProfileState.setViewed("", "");
-                this.minecraft.setScreen(this);
-                return;
+        setFocused(null);   // the filter box must not eat what is typed into the panel
+        search.open();
+    }
+
+    /** What the search panel's click meant: a builder to load, the way back, or nothing. */
+    private void onSearchClick(EditorCreatorSearch.Result result) {
+        switch (result.outcome()) {
+            case PICKED -> {
+                click();
+                EditorCreatorBuilds.show(result.creator().uuid(), result.creator().name());
+                browser.resetScroll();
+                search.close();
             }
-            BuilderProfileState.setViewed(creator.uuid(), creator.name());
-            this.minecraft.setScreen(new BuilderProfileScreen(this, creator.uuid(), creator.name()));
-        }));
+            case CLEARED -> {
+                click();
+                EditorCreatorBuilds.clear();
+                browser.resetScroll();
+                search.close();
+            }
+            // A click outside the panel closes it, the way clicking off any picker does.
+            case NONE -> search.close();
+            case CONSUMED -> { }
+        }
     }
 
     private static EditorRosterIndex.TypeStrip stripByName(EditorRosterIndex index, PlotCategory page, String name) {
@@ -556,6 +604,7 @@ public final class EditorGuiScreen extends Screen {
         if (scrollY == 0) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         if (modal.isOpen()) return modal.mouseScrolled(mouseX, mouseY, scrollY);
         int dir = scrollY > 0 ? -1 : 1;
+        if (search.isOpen()) return search.scrollBy(dir);
         if (EditorScreenState.page().isBrowser() && browser.overGrid(mouseX, mouseY)) {
             if (browser.scrollBy(dir)) return true;
         }
@@ -582,6 +631,15 @@ public final class EditorGuiScreen extends Screen {
                 }
                 case GLFW.GLFW_KEY_ESCAPE -> { inlineEdit.cancel(); return true; }
                 case GLFW.GLFW_KEY_BACKSPACE -> { inlineEdit.backspace(); return true; }
+                default -> { return true; }
+            }
+        }
+        if (search.isOpen()) {
+            switch (keyCode) {
+                case GLFW.GLFW_KEY_ESCAPE -> { search.close(); return true; }
+                case GLFW.GLFW_KEY_BACKSPACE -> { search.backspace(); return true; }
+                // Everything else is swallowed: the panel is a text field, and X would close the
+                // screen out from under a half-typed name.
                 default -> { return true; }
             }
         }
@@ -614,6 +672,7 @@ public final class EditorGuiScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
+        if (search.isOpen()) return search.charTyped(codePoint);
         if (inlineEdit.active()) return inlineEdit.charTyped(codePoint);
         if (modal.isTyping()) return modal.charTyped(codePoint);
         return super.charTyped(codePoint, modifiers);
@@ -621,6 +680,7 @@ public final class EditorGuiScreen extends Screen {
 
     @Override
     public void onClose() {
+        search.close();
         modal.closeAll();
         super.onClose();
     }

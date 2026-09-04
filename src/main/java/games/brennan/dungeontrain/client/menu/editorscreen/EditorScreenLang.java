@@ -24,6 +24,33 @@ public final class EditorScreenLang {
     public static final String FILTER_CREATOR = PREFIX + "filter.creator";
     public static final String FILTER_FIND_CREATOR = PREFIX + "filter.find_creator";
 
+    /**
+     * The in-menu builder search, which speaks the pause menu's own words.
+     *
+     * <p>Pointed at the existing {@code builder.creators.*} keys rather than copied into this
+     * screen's namespace: it is the same search asking the same question, and two translations of
+     * "No builder by that name" that could drift apart would be two chances to be wrong.</p>
+     */
+    public static final String CREATORS_TITLE = "gui.dungeontrain.builder.creators.title";
+    public static final String CREATORS_HINT = "gui.dungeontrain.builder.creators.hint";
+    public static final String CREATORS_ROW = "gui.dungeontrain.builder.creators.row";
+    public static final String CREATORS_PROMPT = "gui.dungeontrain.builder.creators.prompt";
+    public static final String CREATORS_FAVOURITES = "gui.dungeontrain.builder.creators.favourites";
+    public static final String CREATORS_SEARCHING = "gui.dungeontrain.builder.creators.searching";
+    public static final String CREATORS_NONE = "gui.dungeontrain.builder.creators.none";
+    public static final String CREATORS_UNAVAILABLE = "gui.dungeontrain.builder.creators.unavailable";
+    public static final String CREATORS_MINE = "gui.dungeontrain.builder.profile.back_to_mine";
+    public static final String CREATOR_EMPTY = "gui.dungeontrain.builder.profile.empty_other";
+
+    public static final String CREATOR_LOADING = PREFIX + "creator.loading";
+    public static final String CREATOR_UNAVAILABLE = PREFIX + "creator.unavailable";
+    public static final String CREATOR_BY = PREFIX + "creator.by";
+    public static final String CREATOR_KIND = PREFIX + "creator.kind";
+    public static final String CREATOR_CHANGES = PREFIX + "creator.changes";
+    public static final String CREATOR_STATUS = PREFIX + "creator.status";
+    public static final String CREATOR_READ_ONLY = PREFIX + "creator.read_only";
+    public static final String CREATOR_NOTHING_SELECTED = PREFIX + "creator.nothing_selected";
+
     public static final String SUB_VARIANTS_OF = PREFIX + "sub_variants_of";
     public static final String TILE_NEW = PREFIX + "tile.new";
     public static final String TILE_NEW_SUB_VARIANT = PREFIX + "tile.new_sub_variant";
