@@ -8,7 +8,8 @@
   "mixins": [],
   "client": [
     "client.iris.IrisCurrentDimensionMixin",
-    "client.iris.IrisCelestialTimeMixin"
+    "client.iris.IrisCelestialTimeMixin",
+    "client.iris.IrisNoDirectionalLightMixin"
   ],
   "server": [],
   "injectors": {
