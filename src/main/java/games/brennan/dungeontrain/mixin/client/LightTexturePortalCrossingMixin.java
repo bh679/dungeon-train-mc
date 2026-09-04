@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.client.ClientPortalCrossing;
+import games.brennan.dungeontrain.client.ShaderDiagnostics;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import org.joml.Vector3f;
 import net.minecraft.client.renderer.LightTexture;
@@ -97,6 +98,9 @@ public abstract class LightTexturePortalCrossingMixin {
         float t = ClientPortalCrossing.advance();
         this.dungeontrain$crossingT =
             ClientDisplayConfig.isPortalCrossingFadeEnabled() ? t : 0.0F;
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordCrossing(this.dungeontrain$crossingT);
+        }
     }
 
     /**

@@ -79,6 +79,10 @@ import java.util.UUID;
  *       "no container opened" streak by stamping
  *       {@link ModDataAttachments#CARTS_AT_LAST_CONTAINER_OPEN}; (ender chest) →
  *       set {@link ModDataAttachments#OPENED_ENDER_CHEST_THIS_LIFE}.</li>
+ *   <li>{@link BlockEvent.BreakEvent} → stamp
+ *       {@link ModDataAttachments#CARTS_AT_LAST_BLOCK_BREAK} for any block, and for a
+ *       broken chest/barrel break the "no container opened" streak exactly as an
+ *       open does — mining a container spills the same loot.</li>
  *   <li>{@link LivingDeathEvent} → grant {@code contained_loop} for a life of
  *       1000+ carriages that never opened an ender chest.</li>
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} → reset
@@ -147,6 +151,21 @@ public final class AchievementEvents {
 
     // ---------------- Chest opens ----------------
 
+    /**
+     * The loot containers the "no chest or barrel" streak is about.
+     *
+     * <p>{@link ChestBlock} covers both regular and trapped chests (in vanilla 1.21.1
+     * {@code TrappedChestBlock extends ChestBlock}). {@link EnderChestBlock} does NOT extend it and
+     * is deliberately out — an ender chest is the player's own, and only disqualifies "Contained
+     * Loop". Decorated pots are out too: vases have always been fair game for this streak.</p>
+     *
+     * <p>Shared by the open path ({@link #onRightClickBlock}) and the break path
+     * ({@link #onBlockBreak}) so the two can never drift apart on what counts as loot.</p>
+     */
+    static boolean isLootContainer(Block block) {
+        return block instanceof ChestBlock || block instanceof BarrelBlock;
+    }
+
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (event.getLevel().isClientSide) return;
@@ -163,9 +182,7 @@ public final class AchievementEvents {
             player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.TRUE);
             return;
         }
-        // ChestBlock covers both regular chests and trapped chests
-        // (TrappedChestBlock extends ChestBlock in vanilla 1.21.1).
-        if (!(block instanceof ChestBlock || block instanceof BarrelBlock)) return;
+        if (!isLootContainer(block)) return;
         // Skip the "sneaking-with-block-to-place" case so adjacent placements
         // don't get counted as chest opens.
         if (player.isShiftKeyDown() && event.getItemStack().getItem() instanceof BlockItem) return;
@@ -206,12 +223,20 @@ public final class AchievementEvents {
     /**
      * Any block a player breaks ends the "no block broken" streak: the next milestone is
      * measured from this carriage reading onward. Deliberately unfiltered — decorated pots
-     * count here, unlike the chest/barrel streak above where vases are fair game.
+     * count here, unlike the chest/barrel streak below where vases are fair game.
+     *
+     * <p>Breaking a chest or barrel additionally counts as <em>opening</em> it. Mining a container
+     * spills the same loot on the floor, so leaving the break path out let a player empty every
+     * carriage on the train and still take "Not My Chest" and the top of the {@code
+     * carriages_no_chest} board. The break path therefore runs the same
+     * {@link PlayerRunState#openedLootContainer()} + {@code CARTS_AT_LAST_CONTAINER_OPEN} pair the
+     * right-click path does, which is what keeps the advancement and the leaderboard agreeing.</p>
      *
      * <p>Fires on the same {@link BlockEvent.BreakEvent} that {@code RunStatsEvents.onPotBreak}
      * uses, so a pot mined with a tool lands here too. A pot shattered from range by a
      * projectile never raises this event and so cannot break the streak — the same blind spot
-     * the existing pot accounting has.</p>
+     * the existing pot accounting has, and now the container streak's too: a chest destroyed with
+     * no player attributed (an explosion, say) breaks neither streak.</p>
      */
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
@@ -220,6 +245,13 @@ public final class AchievementEvents {
         if (!(event.getPlayer() instanceof ServerPlayer player)) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         player.setData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get(), effectiveTravelled(run));
+
+        // Broke a chest or barrel — that is an open. Ends the chest-free streak (advancement AND
+        // leaderboard) and feeds the containers-opened tally. The unique-chest streak stays
+        // right-click-only: smashing a chest is not "opening a distinct chest".
+        if (!isLootContainer(event.getState().getBlock())) return;
+        run.openedLootContainer();
+        player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), effectiveTravelled(run));
     }
 
     // ---------------- Carriages-in-run ----------------

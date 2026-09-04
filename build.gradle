@@ -151,6 +151,20 @@ neoForge {
             if (project.hasProperty('dpiBypassTest')) {
                 systemProperty 'dungeontrain.dpi_bypass_test', project.property('dpiBypassTest').toString()
             }
+            // Shader-compat sweep: ./gradlew runClient -PshaderSweep="<world folder name>" opens that
+            // world and drives itself round the five atmosphere sites, writing one screenshot each to
+            // run/screenshots/ with the F3+5 panel up, then logs SHADER SWEEP COMPLETE and stops. Lets
+            // one pack be measured per shell command instead of by hand. See client/ShaderSweep and
+            // docs/shaders/compat-matrix.md. Property rather than env var for the same daemon-
+            // environment reason as relayBaseUrl above.
+            if (project.hasProperty('shaderSweep')) {
+                systemProperty 'dungeontrain.shader_sweep', project.property('shaderSweep').toString()
+            }
+            // -PshaderSweepSites=05,06,07 captures only those sites. A fix to one site should not
+            // cost a re-run of all eight across a dozen packs.
+            if (project.hasProperty('shaderSweepSites')) {
+                systemProperty 'dungeontrain.shader_sweep_sites', project.property('shaderSweepSites').toString()
+            }
         }
 
         server {
@@ -353,6 +367,15 @@ dependencies {
     compileOnly fileTree(dir: layout.buildDirectory.dir('extracted/sable-companion'),
                          include: '*.jar',
                          builtBy: ['extractSableCompanion'])
+
+    // Distant Horizons API — COMPILE ONLY, and deliberately never on any run classpath.
+    // DH is an optional companion (opt-in in the modpack, `optional` in neoforge.mods.toml) and
+    // is not in the dev client; it ships the API classes inside its own jar, so at runtime they
+    // are either DH's or absent. The only DT class that names them
+    // (client/DistantHorizonsUpsideDown) is reached behind a ModList check, so nothing tries to
+    // link them when DH isn't installed. The API artifact version is DH's OWN api version, not the
+    // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}.
+    compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
 
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
