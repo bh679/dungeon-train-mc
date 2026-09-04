@@ -9,7 +9,8 @@
   "client": [
     "client.iris.IrisCurrentDimensionMixin",
     "client.iris.IrisCelestialTimeMixin",
-    "client.iris.IrisShadowOccludeMixin"
+    "client.iris.IrisShadowOccludeMixin",
+    "client.iris.IrisWorldTimeMixin"
   ],
   "server": [],
   "injectors": {

@@ -300,13 +300,34 @@ public final class ShaderWorld {
     // --- Upside-down: a sun that never rises and never sets --------------------------------------
 
     /**
-     * Sky angle at which the sun sits just above the horizon with dawn colours. {@code 0.0} is the
-     * sun exactly on the line; a hair above keeps shadow maps from degenerating into infinitely
-     * long streaks, which is what a light at zero elevation does to them.
+     * The one tick the upside-down band is pinned to: shortly after sunrise, sun a little above the
+     * horizon. Everything a pack reads about the time — the sky angle, {@code worldTime}, the sky
+     * colour, the shadow light — is derived from this single number so none of them can disagree.
+     *
+     * <p>A first cut pinned the <em>sky angle</em> to {@code 0.02}, which on vanilla's curve is just
+     * past noon, not dawn: sunrise is {@code 0.785} (tick 0), noon is {@code 0.0}. Derive, do not
+     * guess.</p>
      */
-    private static final float DAWN_SKY_ANGLE = 0.02f;
-    /** Elevation of the light vector above the horizon, in degrees, for the same reason. */
+    public static final int DAWN_TICK = 1000;
+    /** Elevation of the shadow light above the horizon, in degrees; zero degenerates a shadow map. */
     private static final float DAWN_ELEVATION_DEG = 8.0f;
+    private static final float DAWN_SKY_ANGLE = skyAngleOf(DAWN_TICK);
+
+    /** Vanilla's {@code DimensionType.timeOfDay} for a dimension with no fixed time. */
+    private static float skyAngleOf(long tick) {
+        double d0 = net.minecraft.util.Mth.frac((double) tick / 24000.0 - 0.25);
+        double d1 = 0.5 - Math.cos(d0 * Math.PI) / 2.0;
+        return (float) ((d0 * 2.0 + d1) / 3.0);
+    }
+
+    /** Ease {@code from} toward {@code to} by {@code t} along the shorter way round a unit ring. */
+    private static float easeOnRing(float from, float to, float t) {
+        float delta = to - from;
+        if (delta > 0.5f) delta -= 1.0f;
+        if (delta < -0.5f) delta += 1.0f;
+        float out = from + delta * t;
+        return out - (float) Math.floor(out);
+    }
 
     /** How far into the upside-down band the camera is, {@code 0}..{@code 1}, or {@code 0}. */
     public static float upsideDownIntensity() {
@@ -330,9 +351,20 @@ public final class ShaderWorld {
     public static Float upsideDownSkyAngle(float real) {
         float t = upsideDownIntensity();
         if (t <= 0.0f) return null;
-        float target = DAWN_SKY_ANGLE;
-        if (Math.abs(real - (1.0f + DAWN_SKY_ANGLE)) < Math.abs(real - DAWN_SKY_ANGLE)) target = 1.0f + DAWN_SKY_ANGLE;
-        return real + (target - real) * t;
+        return easeOnRing(real, DAWN_SKY_ANGLE, t);
+    }
+
+    /**
+     * The {@code worldTime} a pack should see in the band: the real tick eased toward
+     * {@link #DAWN_TICK} the shorter way round the day. Packs read this directly for their brightness
+     * and day/night factors, independently of the sky angle, so pinning the angle alone still left
+     * them in the dark at midnight.
+     */
+    public static Integer upsideDownWorldTime(int real) {
+        float t = upsideDownIntensity();
+        if (t <= 0.0f) return null;
+        float eased = easeOnRing(real / 24000.0f, DAWN_TICK / 24000.0f, t);
+        return Math.round(eased * 24000.0f) % 24000;
     }
 
     /**

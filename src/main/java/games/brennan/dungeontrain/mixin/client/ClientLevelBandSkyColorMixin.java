@@ -42,7 +42,16 @@ public abstract class ClientLevelBandSkyColorMixin {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         double nether = ClientNetherBand.netherIntensityAt(pos.x);
         double end = nether > 0.0 ? 0.0 : ClientVoidBand.endSkyIntensityAt(pos.x);
-        if (nether <= 0.0 && end <= 0.0) return;
+        if (nether <= 0.0 && end <= 0.0) {
+            // Upside-down: the pack's ambient follows skyColor, and vanilla's is night-dark at
+            // midnight. The band is a permanent dawn, so hand it the band's own day-blue instead.
+            double flip = games.brennan.dungeontrain.client.ClientUpsideDownBand.upsideDownIntensityAt(pos.x);
+            if (flip <= 0.0) return;
+            int rgb = games.brennan.dungeontrain.client.UpsideDownSkyRenderer.SKY_RGB;
+            Vec3 day = new Vec3(((rgb >> 16) & 0xFF) / 255.0, ((rgb >> 8) & 0xFF) / 255.0, (rgb & 0xFF) / 255.0);
+            cir.setReturnValue(cir.getReturnValue().lerp(day, Math.min(1.0, flip)));
+            return;
+        }
 
         Vec3 sky = cir.getReturnValue();
         Vec3 target;
