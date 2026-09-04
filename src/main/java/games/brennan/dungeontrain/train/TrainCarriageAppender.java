@@ -6147,7 +6147,7 @@ public final class TrainCarriageAppender {
             return new TrainDebugCarriagePacket(true, pIdx, "", "", "");
         }
         return new TrainDebugCarriagePacket(
-            true, pIdx, facts.variantId(), facts.contentsId(), facts.subVariantId());
+            true, pIdx, facts.variantId(), facts.contentsId(), facts.subVariantId(), facts.flip());
     }
 
     /**
