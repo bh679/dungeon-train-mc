@@ -104,6 +104,16 @@ public final class SkyboxPunchRenderer {
      */
     private static EnumSet<SkyboxSky> paintedForPostComposite = EnumSet.noneOf(SkyboxSky.class);
 
+    /**
+     * Everything needed to redraw this frame's cubes once more, so the depth the reopen pass threw
+     * away can be put back before the translucents draw. Set at the reopen, consumed and cleared in
+     * the same frame; never read across frames.
+     */
+    private record ReopenFrame(SkyboxBlockIndex.Snapshot snapshot, Map<UUID, ClientSubLevel> subLevels,
+                               Matrix4f frustumMatrix, Frustum frustum, Vec3 cam, float partialTick) {}
+
+    private static ReopenFrame reopenFrame = null;
+
     private SkyboxPunchRenderer() {}
 
     @SubscribeEvent
@@ -172,6 +182,7 @@ public final class SkyboxPunchRenderer {
                     if (mesh != null) BufferUploader.drawWithShader(mesh);
                 }
             });
+            reopenFrame = new ReopenFrame(snapshot, subLevels, frustumMatrix, frustum, cam, partialTick);
             return;
         }
 
@@ -231,6 +242,59 @@ public final class SkyboxPunchRenderer {
             RenderSystem.depthFunc(GL11.GL_LEQUAL);
             RenderSystem.disableBlend();
             RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        }
+    }
+
+    /**
+     * Put the holes' real depth back, after the pack has painted its sky into them and before the
+     * translucents draw.
+     *
+     * <h2>The leak this closes</h2>
+     * <p>The reopen pass pushes every visible hole pixel to the far plane so the pack's deferred
+     * pass treats it as sky. That is the whole point, but it also means those pixels no longer
+     * occlude anything: translucent geometry behind the block draws after the deferred pass, passes
+     * a depth test against 1.0, and shows through. The block reads as an x-ray window. It was only
+     * visible on {@link SkyboxSky#LIVE} and {@link SkyboxSky#SURFACE}, because every other variant
+     * has its own sky painted over the hole afterwards, which hid the leak rather than fixing it.</p>
+     *
+     * <p>Redrawing the cubes here writes their true depth back at exactly the pixels the reopen
+     * touched — the stencil's reserved bit says which those are — so the translucent pass occludes
+     * against the block again. {@code LEQUAL} rather than {@code ALWAYS} so the nearest face wins
+     * with culling off, exactly as in the original punch.</p>
+     *
+     * <p>Called from {@code LevelRendererSkyboxDepthMixin} at the one instruction that sits between
+     * the pack's deferred pass and the translucent draw.</p>
+     */
+    public static void restoreHoleDepth() {
+        ReopenFrame frame = reopenFrame;
+        reopenFrame = null;
+        if (frame == null || !SkyboxStencil.isAvailable()) return;
+
+        boolean depthMaskWas = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+        try {
+            SkyboxStencil.beginSkyPass();
+            RenderSystem.stencilFunc(GL11.GL_EQUAL,
+                SkyboxHoleReopen.STILL_VISIBLE_BIT, SkyboxHoleReopen.STILL_VISIBLE_BIT);
+            RenderSystem.setShader(GameRenderer::getPositionShader);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            RenderSystem.disableBlend();
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            RenderSystem.depthMask(true);
+            RenderSystem.colorMask(false, false, false, false);
+            RenderSystem.disableCull();
+            for (SkyboxSky sky : SkyboxSky.values()) {
+                MeshData mesh = buildMesh(sky, frame.snapshot(), frame.subLevels(),
+                    frame.frustumMatrix(), frame.frustum(), frame.cam(), frame.partialTick());
+                if (mesh != null) BufferUploader.drawWithShader(mesh);
+            }
+        } finally {
+            SkyboxStencil.endStencil();
+            RenderSystem.colorMask(true, true, true, true);
+            RenderSystem.enableCull();
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            RenderSystem.depthMask(depthMaskWas);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
     }
