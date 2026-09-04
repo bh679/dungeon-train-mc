@@ -11120,9 +11120,9 @@
       "title": "Support page tidy-up",
       "summary": "The stats on the support page have been cleaned up, with a little more to see.",
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "shader-pack-atmosphere",
@@ -11138,9 +11138,9 @@
         "Carriages are no longer lit through solid ceilings"
       ],
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "hide-distant-horizons-upside-down",
@@ -11149,9 +11149,9 @@
       "title": "Distant Horizons in the upside-down section",
       "summary": "Distant Horizons now pauses in the upside-down section, instead of drawing the world the right way up around you.",
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "editor-advancements-creative-only",
@@ -11162,9 +11162,9 @@
       "highlights": [],
       "pr": 1291,
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "chest-break-counts-as-open",
@@ -11178,9 +11178,9 @@
       ],
       "pr": 1294,
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "contents-random-flip",
@@ -11194,9 +11194,9 @@
       ],
       "pr": 1296,
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     }
   ]
 }
