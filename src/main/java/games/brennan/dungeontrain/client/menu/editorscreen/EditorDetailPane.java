@@ -28,6 +28,8 @@ public final class EditorDetailPane {
     static final int ICON_CELL = 20;
     static final int ICON_GAP = 2;
     static final int ICON_GROUP_GAP = 6;
+    /** Below this a button stops reading as one, so the spacing goes before the size does. */
+    static final int MIN_ICON_CELL = 12;
     static final int HERE_TEXT = 0xFF55FF55;
     static final int DIM_TEXT = 0xB0FFFFFF;
     static final int DISABLED = 0x30FFFFFF;
@@ -52,6 +54,7 @@ public final class EditorDetailPane {
     private int visibleRows;
     private Hit hovered = Hit.NONE;
     private int[] iconX = new int[0];
+    private int iconCell = ICON_CELL;
     private InventoryEditorLayout.Rect goHereRect;
     private CommandMenuEntry goHere;
 
@@ -81,14 +84,64 @@ public final class EditorDetailPane {
         visibleRows = Math.max(0, layout.settings().h() / ROW_H);
         scroll = Math.max(0, Math.min(scroll, Math.max(0, rows.size() - visibleRows)));
 
-        int[] xs = new int[icons.size()];
-        int x = layout.icons().x();
-        for (int i = 0; i < icons.size(); i++) {
-            if (i == 3 || i == 5 || i == 7) x += ICON_GROUP_GAP;
-            xs[i] = x;
-            x += ICON_CELL + ICON_GAP;
+        IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
+        iconX = row.x();
+        iconCell = row.cell();
+    }
+
+    /** Icon-row geometry: how big each button is, and where each one starts. */
+    record IconRow(int cell, int[] x) {}
+
+    /**
+     * Fit {@code count} buttons across {@code width}.
+     *
+     * <p>The row is the pane's toolbar and every button in it matters, so it gives up looks before
+     * it gives up buttons. Size goes first: a button two pixels narrower still reads as one,
+     * whereas the wider breaks are what hold Remove and Clear apart from the buttons either side of
+     * them, and that is a safety cue rather than a decoration. Only once the buttons would shrink
+     * past legible does the grouping go, and then the spacing between them.</p>
+     */
+    static IconRow layoutIcons(int count, int x0, int width) {
+        if (count <= 0) return new IconRow(0, new int[0]);
+        int gap = ICON_GAP;
+        int groupGap = ICON_GROUP_GAP;
+        int cell = fit(count, width, gap, groupGap * groupBreaks(count));
+        if (cell < MIN_ICON_CELL) {
+            // Out of room to shrink: the grouping goes, the buttons stay.
+            groupGap = 0;
+            cell = fit(count, width, gap, 0);
         }
-        iconX = xs;
+        if (cell < MIN_ICON_CELL) {
+            gap = 1;
+            cell = Math.max(1, fit(count, width, gap, 0));
+        }
+
+        int[] xs = new int[count];
+        int x = x0;
+        for (int i = 0; i < count; i++) {
+            if (isGroupBreak(i)) x += groupGap;
+            xs[i] = x;
+            x += cell + gap;
+        }
+        return new IconRow(cell, xs);
+    }
+
+    /** The widest cell that fits, never larger than a button wants to be. */
+    private static int fit(int count, int width, int gap, int groupGaps) {
+        return Math.min(ICON_CELL, (width - (count - 1) * gap - groupGaps) / count);
+    }
+
+    /** Save · Rename · Remove | Undo · Redo | Reset · Clear | Package — the breaks between groups. */
+    private static boolean isGroupBreak(int i) {
+        return i == 3 || i == 5 || i == 7;
+    }
+
+    private static int groupBreaks(int count) {
+        int n = 0;
+        for (int i = 0; i < count; i++) {
+            if (isGroupBreak(i)) n++;
+        }
+        return n;
     }
 
     /**
@@ -106,6 +159,7 @@ public final class EditorDetailPane {
         roomRows = List.of();
         sheetCells = List.of();
         iconX = new int[0];
+        iconCell = ICON_CELL;
         visibleRows = 0;
         test = null;
         goHere = null;
@@ -200,7 +254,7 @@ public final class EditorDetailPane {
             boolean danger = "remove".equals(icon.id()) || "clear".equals(icon.id());
             int fill = !icon.enabled() ? DISABLED
                 : hov ? (danger ? 0xC0FF5544 : MenuRowPainter.CELL_HOVER) : MenuRowPainter.CELL_IDLE;
-            g.fill(x, r.y(), x + ICON_CELL, r.y() + ICON_CELL, fill);
+            g.fill(x, r.y(), x + iconCell, r.y() + iconCell, fill);
             if (!icon.enabled()) {
                 tint(g, DISABLED_ICON);
             } else if ("save".equals(icon.id())) {
@@ -212,8 +266,9 @@ public final class EditorDetailPane {
             } else if (hov) {
                 tint(g, 0xFF000000);
             }
-            g.blitSprite(EditorIcons.forAction(icon.id()), x + (ICON_CELL - ICON_SIZE) / 2,
-                r.y() + (ICON_CELL - ICON_SIZE) / 2, ICON_SIZE, ICON_SIZE);
+            int sprite = Math.min(ICON_SIZE, iconCell);
+            g.blitSprite(EditorIcons.forAction(icon.id()), x + (iconCell - sprite) / 2,
+                r.y() + (iconCell - sprite) / 2, sprite, sprite);
             g.setColor(1f, 1f, 1f, 1f);
         }
     }
@@ -266,9 +321,9 @@ public final class EditorDetailPane {
         int sheetCell = TemplateDataSheet.hit(sheetCells, mx, my);
         if (sheetCell >= 0) return new Hit(HitKind.SHEET, sheetCell, 0);
         InventoryEditorLayout.Rect ir = layout.icons();
-        if (my >= ir.y() && my < ir.y() + ICON_CELL) {
+        if (my >= ir.y() && my < ir.y() + iconCell) {
             for (int i = 0; i < iconX.length; i++) {
-                if (mx >= iconX[i] && mx < iconX[i] + ICON_CELL) return new Hit(HitKind.ICON, i, 0);
+                if (mx >= iconX[i] && mx < iconX[i] + iconCell) return new Hit(HitKind.ICON, i, 0);
             }
         }
         InventoryEditorLayout.Rect r = layout.settings();
