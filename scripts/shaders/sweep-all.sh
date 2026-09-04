@@ -79,6 +79,14 @@ for pack in "${PACKS[@]}"; do
     else
         printf 'enableShaders=true\nshaderPack=%s\nmaxShadowRenderDistance=32\n' "$pack" > run/config/iris.properties
     fi
+    # A preview run does NOT restore the save, deliberately.
+    #
+    # The first attempt did, on the reasoning that nine frames must start from the same state. It
+    # cost a cold worldgen join that blew past the harness's ten-minute join deadline and produced
+    # no shot at all. The determinism is bought instead in the site itself: it rides to a band-free
+    # stretch scanned from the origin, so every pack photographs the same place whatever the save
+    # was left holding. SWEEP_FRESH_SAVE=1 still works if a run needs isolating.
+
     # SWEEP_FRESH_SAVE=1 restores a pristine save before every pack.
     #
     # Off by default, and the reason is cost. It does remove "something accumulated in the reused

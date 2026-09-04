@@ -148,6 +148,10 @@ Confirm the stack took, in `run/logs/latest.log`:
 Alongside each screenshot the harness logs a `sweep[<site>]` line carrying every panel value, so a
 result can be grepped across all eleven runs rather than only read off an image.
 
+The same harness has a second mode, `--preview` / `-PshaderPreview`, which captures the title
+screen's **Shaders** page previews instead of the diagnostic sites: one site, the train stopped, the
+panel off. See [`menu-previews.md`](menu-previews.md).
+
 > **The window must be allowed to render, but not to be focused.** The sweep sets
 > `pauseOnLostFocus=false` in code and in `run/options.txt`. Without it a background window is an
 > unfocused one, vanilla opens the pause screen, the integrated server halts, and every site is
