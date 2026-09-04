@@ -11128,13 +11128,9 @@
       "id": "editor-advancements-creative-only",
       "version": "0.792.0",
       "type": "feat",
-      "title": "Editor advancements tab only shows where you can earn it",
-      "summary": "The Editor advancement tab no longer appears in your advancements screen while you're playing survival. Every advancement in it is earned inside the Train Editor, so on a normal run it was an empty tab sitting next to the one that tracks your actual progress. It comes back the moment you're in Creative \u2014 including the builder world \u2014 or if your run is already Free Play.",
-      "highlights": [
-        "Editor advancements tab hidden in Survival, Adventure and Spectator",
-        "Still shown in Creative, in the builder world, and on Free Play runs",
-        "Works on both the vanilla and Better Advancements screens, and updates without a relog"
-      ],
+      "title": "Editor advancements tab hidden in survival",
+      "summary": "The Editor advancement tab only shows in Creative now. Its advancements are all earned inside the Train Editor, so on a survival run it was an empty tab next to the one tracking your actual progress.",
+      "highlights": [],
       "pr": 1291,
       "date": "2026-09-04",
       "released": false,
