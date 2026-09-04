@@ -11100,13 +11100,8 @@
       "id": "donate-page-card-experiment",
       "version": "0.790.0",
       "type": "feat",
-      "title": "The engine room shows different stats to different travellers",
-      "summary": "The support page at the end of the death screen has always shown the same four tiles. It now varies which two of them sit between the ask and the Contribute button, so the ones worth showing can be found out rather than guessed at. Some travellers see a new pair on every death. Everyone still sees what the money is for, and the Contribute button never moves.",
-      "highlights": [
-        "A new Last Active tile: how long ago work last landed on the mod, its sibling mods or the server behind them \u2014 the newest commit, not the newest release, so the automated re-releases cannot speak for it.",
-        "The Hours Spent tile is no longer held back until every funding goal is met; the hours are just as true while the bill is unpaid.",
-        "The Updates tile reads as one line \u2014 \"765 / Updates this week\" \u2014 matching every other tile on the page."
-      ],
+      "title": "Support page tidy-up",
+      "summary": "The stats on the support page have been cleaned up, with a little more to see.",
       "date": "2026-09-03",
       "released": false,
       "released_in": null,
