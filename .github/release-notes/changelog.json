@@ -11152,6 +11152,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-advancements-creative-only",
+      "version": "0.792.0",
+      "type": "feat",
+      "title": "Editor advancements tab hidden in survival",
+      "summary": "The Editor advancement tab only shows in Creative now. Its advancements are all earned inside the Train Editor, so on a survival run it was an empty tab next to the one tracking your actual progress.",
+      "highlights": [],
+      "pr": 1291,
+      "date": "2026-09-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
