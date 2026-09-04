@@ -11095,6 +11095,17 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nothing-but-books-burn-coverage",
+      "version": "0.790.0",
+      "type": "fix",
+      "title": "Fix Nothing But Books",
+      "summary": "Fix Nothing But Books.",
+      "date": "2026-09-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
