@@ -80,6 +80,9 @@ public final class EditorScreenLang {
     public static final String THEME = PREFIX + "theme";
     public static final String THEME_LIGHT = PREFIX + "theme.light";
     public static final String THEME_DARK = PREFIX + "theme.dark";
+    public static final String RELAY = PREFIX + "relay";
+    public static final String RELAY_LIVE = PREFIX + "relay.live";
+    public static final String RELAY_DEV = PREFIX + "relay.dev";
     public static final String EXIT_EDITOR = PREFIX + "exit_editor";
     public static final String WEIGHT = PREFIX + "weight";
     public static final String WEIGHT_READ_ONLY = PREFIX + "weight_read_only";
