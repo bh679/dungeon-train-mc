@@ -289,9 +289,17 @@ public final class EditorDetailPane {
                 if (hit.index() < 0 || hit.index() >= icons.size()) yield List.of();
                 EditorScreenActions.Icon icon = icons.get(hit.index());
                 String label = EditorScreenLang.text(icon.labelKey());
-                yield icon.enabled() || icon.disabledKey() == null
-                    ? List.of(label)
-                    : List.of(label, EditorScreenLang.text(icon.disabledKey()));
+                if (!icon.enabled()) {
+                    yield icon.disabledKey() == null ? List.of(label)
+                        : List.of(label, EditorScreenLang.text(icon.disabledKey()));
+                }
+                // Undo and Redo name the step they would apply; the rest speak for themselves.
+                yield icon.detail() == null ? List.of(label) : List.of(label, icon.detail());
+            }
+            case SHEET -> {
+                TemplateDataSheet.Placed placed = sheetCell(hit.index());
+                yield placed == null || placed.cell().tooltip() == null
+                    ? List.of() : List.of(placed.cell().tooltip());
             }
             case TEST -> test == null
                 ? List.of(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),

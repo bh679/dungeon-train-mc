@@ -70,34 +70,46 @@ final class TemplateDataSheetTest {
     }
 
     @Test
-    @DisplayName("both level bounds type, and each phase letter toggles the way it is not set")
-    void spawnsAreEditable() {
-        TemplateDataSheet.Line spawns = line(carriageSheet(15, List.of()), EditorScreenLang.SHEET_SPAWNS);
-        assertNotNull(spawns);
-        List<TemplateDataSheet.Cell> cells = spawns.cells();
-        assertEquals("10", cells.get(1).text());
-        assertEquals("dungeontrain editor minlevel pen", typePrefix(cells.get(1)));
-        assertEquals("60", cells.get(3).text());
-        assertEquals("dungeontrain editor maxlevel pen", typePrefix(cells.get(3)));
+    @DisplayName("Custom opens the picker, both bounds type, and each phase toggles the way it is not set")
+    void stageLineIsEditableWhenCustom() {
+        TemplateDataSheet.Line stage = line(carriageSheet(15, List.of()), EditorScreenLang.SHEET_STAGE);
+        assertNotNull(stage);
+        List<TemplateDataSheet.Cell> cells = stage.cells();
+
+        // A Stage and a spawn gate are one thing, so they share a line — and an unlinked template
+        // says Custom, which is itself the way to link one.
+        assertEquals(EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT), cells.get(0).text());
+        assertInstanceOf(TemplateDataSheet.Action.Open.class, cells.get(0).action());
+        assertNotNull(cells.get(0).tooltip());
+
+        assertEquals("10", cells.get(2).text());
+        assertEquals("dungeontrain editor minlevel pen", typePrefix(cells.get(2)));
+        assertEquals("60", cells.get(4).text());
+        assertEquals("dungeontrain editor maxlevel pen", typePrefix(cells.get(4)));
 
         // Phase mask 1 is Overworld only: it turns off, and every other dimension turns on.
-        TemplateDataSheet.Cell overworld = cells.get(5);
+        TemplateDataSheet.Cell overworld = cells.get(6);
         assertEquals("O", overworld.text());
         assertTrue(overworld.on());
         assertEquals("dungeontrain editor phase pen overworld off", runCommand(overworld));
-        TemplateDataSheet.Cell nether = cells.get(6);
+        assertEquals("Overworld", overworld.tooltip());
+        TemplateDataSheet.Cell nether = cells.get(7);
         assertFalse(nether.on());
         assertEquals("dungeontrain editor phase pen nether on", runCommand(nether));
     }
 
     @Test
-    @DisplayName("a linked Stage replaces the gate with a chip that opens the picker")
-    void stageLinkedSpawns() {
-        TemplateDataSheet.Line spawns = line(carriageSheet(15, List.of("desert")), EditorScreenLang.SHEET_SPAWNS);
-        assertNotNull(spawns);
-        assertEquals(1, spawns.cells().size());
-        assertTrue(spawns.cells().get(0).text().contains("desert"));
-        assertInstanceOf(TemplateDataSheet.Action.Open.class, spawns.cells().get(0).action());
+    @DisplayName("a linked Stage names itself and owns the gate, so the bounds beside it are read-only")
+    void stageLinkedOwnsTheGate() {
+        TemplateDataSheet.Line stage = line(carriageSheet(15, List.of("desert")), EditorScreenLang.SHEET_STAGE);
+        assertNotNull(stage);
+        List<TemplateDataSheet.Cell> cells = stage.cells();
+        assertEquals("desert", cells.get(0).text());
+        assertInstanceOf(TemplateDataSheet.Action.Open.class, cells.get(0).action());
+        // The Stage sets these, so editing them here would be undone by it.
+        assertNull(cells.get(2).action(), "min level must be read-only under a Stage");
+        assertNull(cells.get(4).action(), "max level must be read-only under a Stage");
+        assertNull(cells.get(6).action(), "phases must be read-only under a Stage");
     }
 
     @Test
@@ -143,9 +155,9 @@ final class TemplateDataSheetTest {
         assertNotNull(weight);
         assertEquals(1, weight.cells().size());
         assertNull(weight.cells().get(0).action());
-        TemplateDataSheet.Line spawns = line(lines, EditorScreenLang.SHEET_SPAWNS);
-        assertNotNull(spawns);
-        assertNull(spawns.cells().get(0).action(), "a part has no spawn gate to edit");
+        TemplateDataSheet.Line stage = line(lines, EditorScreenLang.SHEET_STAGE);
+        assertNotNull(stage);
+        assertNull(stage.cells().get(0).action(), "a part has no spawn gate to edit");
     }
 
     @Test

@@ -56,9 +56,17 @@ public final class TemplateDataSheet {
      * @param action null for plain text, which is never clickable
      * @param on     whether the cell reads as set — a phase that is off is dimmed
      */
-    public record Cell(String text, Action action, boolean on) {
+    public record Cell(String text, Action action, boolean on, String tooltip) {
         public static Cell plain(String text) {
-            return new Cell(text, null, true);
+            return new Cell(text, null, true, null);
+        }
+
+        public Cell(String text, Action action, boolean on) {
+            this(text, action, on, null);
+        }
+
+        public Cell withTooltip(String tooltip) {
+            return new Cell(text, action, on, tooltip);
         }
     }
 
@@ -95,7 +103,7 @@ public final class TemplateDataSheet {
         out.add(sizeLine(summary, roomRows, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS), blocks(summary, pending)));
         out.add(weightLine(tile, key, pending));
-        out.add(spawnsLine(v, key, pending));
+        out.add(stageLine(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
         return out;
     }
@@ -122,7 +130,8 @@ public final class TemplateDataSheet {
             Stepper stepper = Stepper.of(row);
             if (stepper == null || !stepper.isRoomAxis()) continue;
             if (!cells.isEmpty()) cells.add(Cell.plain("×"));
-            cells.add(new Cell(stepper.value(), new Action.Type(stepper.prefix()), true));
+            cells.add(new Cell(stepper.value(), new Action.Type(stepper.prefix()), true)
+                .withTooltip(stepper.axisName()));
         }
         return cells;
     }
@@ -151,9 +160,12 @@ public final class TemplateDataSheet {
         if (stepper == null) {
             cells.add(Cell.plain(Integer.toString(weight)));
         } else {
-            cells.add(new Cell(Integer.toString(weight), new Action.Type(stepper.prefix()), true));
-            cells.add(new Cell("-", new Action.Run(stepper.dec()), true));
-            cells.add(new Cell("+", new Action.Run(stepper.inc()), true));
+            cells.add(new Cell(Integer.toString(weight), new Action.Type(stepper.prefix()), true)
+                .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_TOOLTIP)));
+            cells.add(new Cell("-", new Action.Run(stepper.dec()), true)
+                .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_DOWN)));
+            cells.add(new Cell("+", new Action.Run(stepper.inc()), true)
+                .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_UP)));
         }
         if (tile.isGroup()) {
             cells.add(Cell.plain(EditorScreenLang.text(EditorScreenLang.SHEET_SHARE, v.subVariants().size())));
@@ -161,43 +173,64 @@ public final class TemplateDataSheet {
         return new Line(label, cells);
     }
 
-    /** Spawns: level bounds that type, and a phase letter per dimension that toggles. */
-    static Line spawnsLine(EditorTypeMenusPacket.Variant v, VariantKey key, String pending) {
-        String label = EditorScreenLang.text(EditorScreenLang.SHEET_SPAWNS);
+    /**
+     * Stage: which preset the template is on, and the levels and dimensions it spawns across.
+     *
+     * <p>One line, because they are one thing. A Stage <em>is</em> a named spawn gate, so showing
+     * "Stage" and "Spawns" separately said the same fact twice under two names. The stage cell
+     * opens the picker — including when it reads Custom, which is how a template gets linked in
+     * the first place — and while a Stage owns the gate the bounds and letters beside it are
+     * shown but not editable, since the Stage would set them back.</p>
+     */
+    static Line stageLine(EditorTypeMenusPacket.Variant v, VariantKey key, String pending) {
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_STAGE);
         if (v.phaseMask() == EditorTypeMenusPacket.Variant.NO_GATE || key == null) {
             return Line.of(label, pending);
         }
-        if (v.isStageLinked()) {
-            // A linked Stage owns the gate, so the chip replaces it — editing one here would be
-            // edited back by the Stage on the next change.
-            return new Line(label, List.of(new Cell(
-                EditorScreenLang.text(EditorScreenLang.SHEET_STAGE) + " " + v.primaryStageId(),
-                new Action.Open(new StagePickerScreen(key.category(), key.modelId(), key.modelName(),
-                    v.primaryStageId())), true)));
-        }
+        boolean linked = v.isStageLinked();
+        List<Cell> cells = new ArrayList<>(11);
 
-        List<Cell> cells = new ArrayList<>(10);
+        String stageName = linked ? v.primaryStageId()
+            : EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT);
+        cells.add(new Cell(stageName,
+            new Action.Open(new StagePickerScreen(key.category(), key.modelId(), key.modelName(),
+                linked ? v.primaryStageId() : "")), true)
+            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP)));
+
         cells.add(Cell.plain("Lv"));
-        addLevelCell(cells, key, "minlevel", Integer.toString(v.minLevel()));
+        addLevelCell(cells, key, "minlevel", Integer.toString(v.minLevel()), linked,
+            EditorScreenLang.SHEET_MIN_LEVEL);
         cells.add(Cell.plain("—"));
         addLevelCell(cells, key, "maxlevel", v.maxLevel() < 0
-            ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()));
+                ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()),
+            linked, EditorScreenLang.SHEET_MAX_LEVEL);
         cells.add(Cell.plain("·"));
         for (TrainPhase p : TrainPhase.values()) {
             boolean on = (v.phaseMask() & p.bit()) != 0;
-            String command = EditorPlotTeleport.phaseCommandFor(key.category(), key.modelId(),
-                key.modelName(), p.token(), on ? "off" : "on");
             String letter = String.valueOf(Character.toUpperCase(p.name().charAt(0)));
-            cells.add(command == null ? Cell.plain(letter)
-                : new Cell(letter, new Action.Run(command), on));
+            String phaseName = phaseName(p);
+            String command = linked ? null : EditorPlotTeleport.phaseCommandFor(key.category(),
+                key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
+            Cell cell = command == null
+                ? new Cell(letter, null, on)
+                : new Cell(letter, new Action.Run(command), on);
+            cells.add(cell.withTooltip(phaseName));
         }
         return new Line(label, cells);
     }
 
-    private static void addLevelCell(List<Cell> cells, VariantKey key, String sub, String shown) {
-        Stepper stepper = Stepper.of(EditorScreenActions.levelRow(key, sub, shown));
-        cells.add(stepper == null ? Cell.plain(shown)
-            : new Cell(shown, new Action.Type(stepper.prefix()), true));
+    /** A dimension's name, capitalised and un-underscored: {@code UPSIDE_DOWN} → "Upside down". */
+    static String phaseName(TrainPhase p) {
+        String n = p.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+        return Character.toUpperCase(n.charAt(0)) + n.substring(1);
+    }
+
+    private static void addLevelCell(List<Cell> cells, VariantKey key, String sub, String shown,
+                                     boolean linked, String tooltipKey) {
+        Stepper stepper = linked ? null : Stepper.of(EditorScreenActions.levelRow(key, sub, shown));
+        Cell cell = stepper == null ? new Cell(shown, null, true)
+            : new Cell(shown, new Action.Type(stepper.prefix()), true);
+        cells.add(cell.withTooltip(EditorScreenLang.text(tooltipKey)));
     }
 
     static String sourceLabel(EditorRosterIndex.Provenance p) {
@@ -317,6 +350,12 @@ public final class TemplateDataSheet {
             if (!(t.rightEntry() instanceof CommandMenuEntry.Stay right)) return null;
             return new Stepper(middle.commandPrefix(), left.command(), right.command(),
                 valueIn(middle.label()), middle.label());
+        }
+
+        /** The axis this row sets, for its cell's tooltip: the label without its value. */
+        String axisName() {
+            int open = label.indexOf('(');
+            return open > 0 ? label.substring(0, open).trim() : label;
         }
 
         /** A room axis row is the one whose command sets length, width or height. */

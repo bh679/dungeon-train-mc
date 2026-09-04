@@ -22,6 +22,7 @@ public final class InlineEdit {
 
     private String prefix = "";
     private String buffer = "";
+    private String shown = "";
     private InventoryEditorLayout.Rect rect;
 
     public boolean active() {
@@ -33,21 +34,27 @@ public final class InlineEdit {
     }
 
     /**
-     * Start typing over {@code rect}, replacing whatever it showed.
+     * Start typing over {@code rect}.
      *
-     * @param prefix  the command this becomes, with the typed value appended
-     * @param initial what the cell showed, pre-filled so a small nudge is a keystroke away; a
-     *                non-numeric label (such as "all") starts empty rather than un-typeable
+     * <p>The field starts empty, so what is typed replaces the old value rather than running on
+     * from it — clicking a weight of 20 and typing 5 means five, not two hundred and five. The old
+     * value stays on screen behind the caret until the first keystroke, so it is still there to
+     * read while deciding.</p>
+     *
+     * @param prefix the command this becomes, with the typed value appended
+     * @param shown  what the cell was showing, drawn faintly until typing starts
      */
-    public void begin(String prefix, String initial, InventoryEditorLayout.Rect rect) {
+    public void begin(String prefix, String shown, InventoryEditorLayout.Rect rect) {
         this.prefix = prefix == null ? "" : prefix;
-        this.buffer = isTypeable(initial) ? initial : "";
+        this.buffer = "";
+        this.shown = shown == null ? "" : shown;
         this.rect = rect;
     }
 
     public void cancel() {
         prefix = "";
         buffer = "";
+        shown = "";
         rect = null;
     }
 
@@ -73,23 +80,16 @@ public final class InlineEdit {
         return true;
     }
 
-    /** Whether {@code text} is something this field could have produced. */
-    private static boolean isTypeable(String text) {
-        if (text == null || text.isEmpty() || text.length() > MAX_LENGTH) return false;
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-            if (c >= '0' && c <= '9') continue;
-            if (c == '-' && i == 0) continue;
-            return false;
-        }
-        return true;
-    }
-
     public void render(GuiGraphics g, Font font) {
         if (!active()) return;
-        g.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), MenuRowPainter.TYPING_BG);
-        String shown = buffer + "_";
-        g.drawString(font, font.plainSubstrByWidth(shown, rect.w()), rect.x() + 1,
+        // Wide enough for what is being typed, so a longer value is not painted over the cell
+        // beside it while it is being entered.
+        String text = buffer.isEmpty() ? shown : buffer;
+        int width = Math.max(rect.w(), font.width(text) + 6);
+        g.fill(rect.x(), rect.y(), rect.x() + width, rect.bottom(), MenuRowPainter.TYPING_BG);
+        int colour = buffer.isEmpty() ? 0x60000000 : MenuRowPainter.TEXT_ON_HOVER;
+        g.drawString(font, text, rect.x() + 1, rect.y() + (rect.h() - font.lineHeight) / 2, colour, false);
+        g.drawString(font, "_", rect.x() + 1 + font.width(buffer),
             rect.y() + (rect.h() - font.lineHeight) / 2, MenuRowPainter.TEXT_ON_HOVER, false);
     }
 }

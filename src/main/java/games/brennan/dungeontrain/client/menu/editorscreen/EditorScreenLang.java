@@ -47,6 +47,15 @@ public final class EditorScreenLang {
     public static final String SHEET_SPAWNS = PREFIX + "sheet.spawns";
     public static final String SHEET_LEVELS_ALL = PREFIX + "sheet.levels_all";
     public static final String SHEET_STAGE = PREFIX + "sheet.stage";
+    public static final String SHEET_STAGE_TOOLTIP = PREFIX + "sheet.stage_tooltip";
+    public static final String STAGE_CUSTOM_SHORT = PREFIX + "stage_custom_short";
+    public static final String SHEET_MIN_LEVEL = PREFIX + "sheet.min_level";
+    public static final String SHEET_MAX_LEVEL = PREFIX + "sheet.max_level";
+    public static final String SHEET_WEIGHT_TOOLTIP = PREFIX + "sheet.weight_tooltip";
+    public static final String SHEET_WEIGHT_UP = PREFIX + "sheet.weight_up";
+    public static final String SHEET_WEIGHT_DOWN = PREFIX + "sheet.weight_down";
+    public static final String UNDO_NOTHING = PREFIX + "undo_nothing";
+    public static final String REDO_NOTHING = PREFIX + "redo_nothing";
     public static final String SHEET_SOURCE = PREFIX + "sheet.source";
     public static final String SHEET_TYPE = PREFIX + "sheet.type";
     public static final String SHEET_STATUS = PREFIX + "sheet.status";

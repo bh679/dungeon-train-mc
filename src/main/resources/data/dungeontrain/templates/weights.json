@@ -13,6 +13,16 @@
   "portal_middle": 0,
   "portal_short": 1,
   "shared": 1,
-  "standard": 19,
+  "standard": {
+    "weight": 18,
+    "minLevel": 51,
+    "maxLevel": 70,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
   "windowed": 20
 }

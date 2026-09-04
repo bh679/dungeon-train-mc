@@ -232,6 +232,31 @@ public final class EditorEditHistory {
         trim(stacks.undo);
     }
 
+    /**
+     * What undo would step back, as {@code "<label> — <plot>"}, or {@code ""} when there is
+     * nothing to undo.
+     *
+     * <p>Named rather than counted: the menu's Undo button says what it is about to reverse, and
+     * the author may be nowhere near the plot it happened in — which is why the plot is in the
+     * text, exactly as {@code runUndoRedo} phrases it afterwards.</p>
+     */
+    public static synchronized String peekUndoLabel(UUID player) {
+        return describe(HISTORY.get(player), /*redoing*/ false);
+    }
+
+    /** What redo would step forward, in the same shape as {@link #peekUndoLabel}. */
+    public static synchronized String peekRedoLabel(UUID player) {
+        return describe(HISTORY.get(player), /*redoing*/ true);
+    }
+
+    private static String describe(Stacks stacks, boolean redoing) {
+        if (stacks == null) return "";
+        Deque<Step> stack = redoing ? stacks.redo : stacks.undo;
+        if (stack.isEmpty()) return "";
+        Step step = stack.peekLast();
+        return step.label() + " — " + step.plotKey();
+    }
+
     public static synchronized int undoDepth(UUID player) {
         Stacks stacks = HISTORY.get(player);
         return stacks == null ? 0 : stacks.undo.size();

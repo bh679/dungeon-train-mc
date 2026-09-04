@@ -67,9 +67,10 @@ final class EditorScreenActionsTest {
             new ArrayList<>(icons.keySet()));
         assertEquals("dungeontrain save", command(icons.get("save").entry()));
         assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
-        assertEquals("dungeontrain editor undo", command(icons.get("undo").entry()));
-        assertEquals("dungeontrain editor redo", command(icons.get("redo").entry()));
         assertEquals("dungeontrain reset", command(icons.get("reset").entry()));
+        // Undo and Redo follow the server's history stack, which is empty here — see historyIcon.
+        assertFalse(icons.get("undo").enabled());
+        assertFalse(icons.get("redo").enabled());
         CommandMenuEntry.DrillIn clear = assertInstanceOf(CommandMenuEntry.DrillIn.class, icons.get("clear").entry());
         assertInstanceOf(ConfirmScreen.class, clear.target());
         CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class, icons.get("remove").entry());
@@ -78,7 +79,7 @@ final class EditorScreenActionsTest {
     }
 
     @Test
-    @DisplayName("selecting another plot: undo, redo and rename are disabled; save, reset and clear go by packet")
+    @DisplayName("selecting another plot: save, reset and clear go by packet; rename still acts on the selection")
     void iconsWhenElsewhere() {
         VariantKey sel = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
         VariantKey standing = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
@@ -87,7 +88,7 @@ final class EditorScreenActionsTest {
         Map<String, EditorScreenActions.Icon> icons = iconsById(c, sent);
         assertFalse(icons.get("undo").enabled());
         assertFalse(icons.get("redo").enabled());
-        assertEquals(EditorScreenLang.DISABLED_STAND_HERE, icons.get("undo").disabledKey());
+        assertEquals(EditorScreenLang.UNDO_NOTHING, icons.get("undo").disabledKey());
         // Rename is addressed by id now, so it acts on the selection from anywhere.
         CommandMenuEntry.TypeArg rename = assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
         assertEquals("dungeontrain editor rename pen", rename.commandPrefix());
@@ -137,6 +138,23 @@ final class EditorScreenActionsTest {
         assertTrue(icons.get("package").enabled());
     }
 
+    @Test
+    @DisplayName("Undo and Redo name the step they would apply, and switch off with an empty stack")
+    void historyIcons() {
+        EditorScreenActions.Icon live = EditorScreenActions.historyIcon("undo",
+            EditorScreenLang.ICON_UNDO, "dungeontrain editor undo",
+            "Place — carriages/pen", EditorScreenLang.UNDO_NOTHING);
+        assertTrue(live.enabled());
+        assertEquals("dungeontrain editor undo", command(live.entry()));
+        assertEquals("Place — carriages/pen", live.detail());
+
+        EditorScreenActions.Icon empty = EditorScreenActions.historyIcon("redo",
+            EditorScreenLang.ICON_REDO, "dungeontrain editor redo", "", EditorScreenLang.REDO_NOTHING);
+        assertFalse(empty.enabled());
+        assertNull(empty.detail());
+        assertEquals(EditorScreenLang.REDO_NOTHING, empty.disabledKey());
+    }
+
     // ---- enter / test ----
 
     @Test
@@ -177,11 +195,10 @@ final class EditorScreenActionsTest {
     void carriageRows() {
         VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
         List<CommandMenuEntry> rows = ROWS.apply(ctx(k, gated("CARRIAGES", "pen", "pen", 15, List.of()), null, PlotCategory.CARRIAGES));
-        // Weight, the level bounds and the phases moved onto the data sheet; what is left is the
-        // Stage picker and the contents allow-list.
-        assertEquals(2, rows.size(), rows.stream().map(CommandMenuEntry::label).toList().toString());
-        assertInstanceOf(StagePickerScreen.class, ((CommandMenuEntry.DrillIn) rows.get(0)).target());
-        assertNotNull(rows.get(1));
+        // Weight, the level bounds, the phases and the Stage link all moved onto the data sheet —
+        // a Stage is a spawn gate, so it shares that line. Only the allow-list has no line.
+        assertEquals(1, rows.size(), rows.stream().map(CommandMenuEntry::label).toList().toString());
+        assertNotNull(rows.get(0));
     }
 
     @Test

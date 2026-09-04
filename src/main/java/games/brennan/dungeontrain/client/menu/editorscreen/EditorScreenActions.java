@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
+import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.MenuHeaderAction;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
@@ -65,7 +66,12 @@ public final class EditorScreenActions {
     }
 
     /** One icon of the file row. {@code entry} null means disabled, with {@code disabledKey} saying why. */
-    public record Icon(String id, String labelKey, CommandMenuEntry entry, String disabledKey) {
+    public record Icon(String id, String labelKey, CommandMenuEntry entry, String disabledKey,
+                       String detail) {
+        public Icon(String id, String labelKey, CommandMenuEntry entry, String disabledKey) {
+            this(id, labelKey, entry, disabledKey, null);
+        }
+
         public boolean enabled() {
             return entry != null;
         }
@@ -96,12 +102,12 @@ public final class EditorScreenActions {
         out.add(new Icon("remove", EditorScreenLang.ICON_REMOVE, removeEntry(ctx),
             EditorScreenLang.DISABLED_NOT_HERE));
 
-        out.add(new Icon("undo", EditorScreenLang.ICON_UNDO,
-            here ? new CommandMenuEntry.Stay("Undo", "dungeontrain editor undo") : null,
-            EditorScreenLang.DISABLED_STAND_HERE));
-        out.add(new Icon("redo", EditorScreenLang.ICON_REDO,
-            here ? new CommandMenuEntry.Stay("Redo", "dungeontrain editor redo") : null,
-            EditorScreenLang.DISABLED_STAND_HERE));
+        // The history is the player's own and spans every plot, so these are live wherever they
+        // stand — and each says what it would step through, read from the server's own stack.
+        out.add(historyIcon("undo", EditorScreenLang.ICON_UNDO, "dungeontrain editor undo",
+            EditorHistoryState.undoLabel(), EditorScreenLang.UNDO_NOTHING));
+        out.add(historyIcon("redo", EditorScreenLang.ICON_REDO, "dungeontrain editor redo",
+            EditorHistoryState.redoLabel(), EditorScreenLang.REDO_NOTHING));
 
         out.add(new Icon("reset", EditorScreenLang.ICON_RESET,
             here && !parts ? new CommandMenuEntry.Stay("Reset", "dungeontrain reset")
@@ -116,6 +122,18 @@ public final class EditorScreenActions {
         out.add(new Icon("package", EditorScreenLang.ICON_PACKAGE,
             new CommandMenuEntry.DrillIn("Package", new PackageListScreen()), null));
         return out;
+    }
+
+    /**
+     * One of the two history buttons, naming the step it would apply.
+     *
+     * <p>Off when its stack is empty, which is the only reason either is ever off: the history is
+     * per player and spans plots, so standing somewhere else does not stop it.</p>
+     */
+    static Icon historyIcon(String id, String labelKey, String command, String step, String emptyKey) {
+        boolean has = step != null && !step.isEmpty();
+        return new Icon(id, labelKey, has ? new CommandMenuEntry.Stay(id, command) : null,
+            emptyKey, has ? step : null);
     }
 
     /**
@@ -237,9 +255,6 @@ public final class EditorScreenActions {
                 if (!isRoomSizeRow(row)) out.add(row);
             }
         }
-        if (!ctx.isSubVariant()) {
-            addIfPresent(out, stageRow(ctx));
-        }
         addIfPresent(out, contentsAllowEntry(ctx, roomMode));
         return out;
     }
@@ -248,17 +263,6 @@ public final class EditorScreenActions {
     static boolean isRoomSizeRow(CommandMenuEntry row) {
         TemplateDataSheet.Stepper stepper = TemplateDataSheet.Stepper.of(row);
         return stepper != null && stepper.isRoomAxis();
-    }
-
-    /** The Stage chip, or the Custom picker when the template is unlinked. */
-    static CommandMenuEntry stageRow(Ctx ctx) {
-        VariantKey sel = ctx.selection();
-        EditorTypeMenusPacket.Variant v = ctx.variant();
-        if (!sel.category().hasGate() || v.phaseMask() == EditorTypeMenusPacket.Variant.NO_GATE) return null;
-        // A linked Stage already shows as the Spawns line; the row would say it twice.
-        if (v.isStageLinked()) return null;
-        return new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM),
-            new StagePickerScreen(sel.category(), sel.modelId(), sel.modelName(), ""));
     }
 
     /** The weight stepper for a key, for the sheet to take apart. Null when there is no weight pool. */
