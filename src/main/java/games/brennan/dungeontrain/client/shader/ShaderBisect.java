@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.shader;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.TrainDebugState;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 
 import java.util.Locale;
@@ -49,16 +51,50 @@ public final class ShaderBisect {
         }
     }
 
+    /**
+     * Shortest gap between two accepted steps.
+     *
+     * <p>Not politeness — correctness. {@code handleDebugKeys} fires on key <em>repeat</em> as well
+     * as on the first press, so holding the chord for a moment tore through the whole cycle at the
+     * OS repeat rate and left the tester unable to say which mode they were looking at. Measured at
+     * 260-290 ms between repeats, so a 400 ms floor absorbs the repeat while still allowing
+     * deliberate presses as fast as anyone can watch a result.</p>
+     */
+    private static final long MIN_STEP_MS = 400L;
+
     private static volatile Mode mode = Mode.ALL_ON;
+    private static long lastStepAt = 0L;
 
     private ShaderBisect() {}
 
-    /** Advance to the next mode and announce it. No-op without a live debug grant. */
+    /**
+     * Advance to the next mode and announce it, on screen and in the log. No-op without a live
+     * debug grant, and no-op for a key repeat inside {@link #MIN_STEP_MS}.
+     */
     public static void cycle() {
         if (!TrainDebugState.permitted()) return;
+        long now = System.currentTimeMillis();
+        if (now - lastStepAt < MIN_STEP_MS) return;
+        lastStepAt = now;
+
         Mode[] all = Mode.values();
         mode = all[(mode.ordinal() + 1) % all.length];
         LOGGER.info("[DungeonTrain] Shader bisect: {}", mode.label());
+        announce();
+    }
+
+    /**
+     * Put the mode above the hotbar. The F3+5 panel carries it too, but reading it there means
+     * having the panel open, and the whole point of the chord is to be usable while watching the
+     * train rather than the read-out.
+     */
+    private static void announce() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.gui == null) return;
+        int step = mode.ordinal();
+        int last = Mode.values().length - 1;
+        mc.gui.setOverlayMessage(
+            Component.literal("Shader bisect " + step + "/" + last + ": " + mode.label()), false);
     }
 
     public static Mode mode() {
