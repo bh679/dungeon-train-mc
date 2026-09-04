@@ -72,6 +72,7 @@ public abstract class LightTextureEndBandMixin {
             )
     )
     private float dungeontrain$pinDaylight(float skyDarken) {
+        if (!games.brennan.dungeontrain.client.shader.ShaderBisect.bandLightmapEnabled()) return skyDarken;
         float t = dungeontrain$bandIntensity();
         this.dungeontrain$bandT = t;
         return t <= 0.0F ? skyDarken : Mth.lerp(t, skyDarken, 1.0F);
@@ -91,6 +92,7 @@ public abstract class LightTextureEndBandMixin {
             )
     )
     private void dungeontrain$liftFloor(float partialTicks, CallbackInfo ci, @Local(ordinal = 1) Vector3f cellColor) {
+        if (!games.brennan.dungeontrain.client.shader.ShaderBisect.bandLightmapEnabled()) return;
         float t = this.dungeontrain$bandT;
         if (t > 0.0F) {
             cellColor.lerp(DUNGEONTRAIN_END_TINT, DUNGEONTRAIN_END_LIFT * t);
