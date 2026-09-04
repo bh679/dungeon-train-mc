@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.client.builder.TrainBuilderMenuButton;
 import games.brennan.dungeontrain.client.builder.TrainBuilderScreen;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
+import games.brennan.dungeontrain.client.shaders.ShaderMenuScreen;
 import games.brennan.dungeontrain.client.videotools.VideoToolsScreen;
 import games.brennan.dungeontrain.client.localization.LocalizationCredit;
 import games.brennan.dungeontrain.client.localization.LocalizationCreditLabel;
@@ -33,8 +34,9 @@ import java.util.List;
 /**
  * Restructures the title screen so the NeoForge "Mods" button slot is replaced
  * by a 50/50 split of <b>Train Editor</b> + <b>Video Tools</b>, and the
- * vanilla Options/Quit row absorbs the displaced Mods button as a 33/33/33
- * split of <b>Mods | Options | Quit Game</b>.
+ * vanilla Options/Quit row absorbs the displaced Mods button plus a new
+ * <b>Shaders</b> button as a four-way split of
+ * <b>Mods | Shaders | Options | Quit</b>.
  *
  * <p>Video Tools opens the filming guide for content creators. It holds the slot
  * Discord used to occupy — Discord now rides the icon column above Credits (see
@@ -60,6 +62,13 @@ public final class TitleScreenLayoutHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final Component VIDEO_TOOLS_LABEL = Component.translatable("gui.dungeontrain.video_tools.button");
+    private static final Component SHADERS_LABEL = Component.translatable("gui.dungeontrain.shaders.button");
+    /**
+     * A quarter row is ~47px, and vanilla's "Quit Game" is wider than that — a label that marquees
+     * is a label nobody reads. "Quit" says the same thing and fits, so the vanilla button is
+     * relabelled rather than the row being made to hold something it cannot.
+     */
+    private static final Component QUIT_SHORT_LABEL = Component.translatable("gui.dungeontrain.menu.quit_short");
 
     private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
     private static final Component OPTIONS_KEY = Component.translatable("menu.options");
@@ -140,19 +149,28 @@ public final class TitleScreenLayoutHandler {
         int rowRight = Math.max(options.getX() + options.getWidth(), quit.getX() + quit.getWidth());
         int rowY = options.getY();
         int rowWidth = rowRight - rowLeft;
-        int thirdW = (rowWidth - 2 * GAP) / 3;
+        int quarterW = (rowWidth - 3 * GAP) / 4;
 
         mods.setX(rowLeft);
         mods.setY(rowY);
-        mods.setWidth(thirdW);
+        mods.setWidth(quarterW);
 
-        options.setX(rowLeft + thirdW + GAP);
+        // Shaders takes the second quarter — the nine supported Iris packs, downloaded and applied
+        // from one page. It sits beside Mods because that is what it is: what else to install.
+        event.addListener(new DarkTintedButton(rowLeft + quarterW + GAP, rowY, quarterW,
+                options.getHeight(), SHADERS_LABEL, b -> {
+                    UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_SHADERS);
+                    Minecraft.getInstance().setScreen(new ShaderMenuScreen(titleScreen));
+                }));
+
+        options.setX(rowLeft + 2 * (quarterW + GAP));
         options.setY(rowY);
-        options.setWidth(thirdW);
+        options.setWidth(quarterW);
 
-        quit.setX(rowLeft + 2 * (thirdW + GAP));
+        quit.setX(rowLeft + 3 * (quarterW + GAP));
         quit.setY(rowY);
-        quit.setWidth(thirdW);
+        quit.setWidth(quarterW);
+        quit.setMessage(QUIT_SHORT_LABEL);
 
         // Train Editor by default; holding Shift swaps this same widget to the unfinished Train
         // Builder. The slot is only half a row wide (Video Tools has the other half), so a second

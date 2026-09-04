@@ -73,6 +73,19 @@ public final class ShaderSweep {
      */
     private static final String SITES_PROPERTY = "dungeontrain.shader_sweep_sites";
 
+    /**
+     * {@code -PshaderPreview=<world folder>} — capture the Shaders menu's preview frame instead of
+     * sweeping the diagnostic sites.
+     *
+     * <p>Same harness, different product. The sweep photographs eight instrumented sites with the
+     * F3+5 panel up, because there the panel is half the measurement; a menu preview is a picture a
+     * player looks at, so the panel is off and there is exactly one site. What the two share is the
+     * thing that makes either worth anything — one launch per pack, an identical world, an identical
+     * camera, an identical hour — which is precisely what makes nine previews comparable rather
+     * than nine unrelated screenshots.</p>
+     */
+    private static final String PREVIEW_PROPERTY = "dungeontrain.shader_preview";
+
     /** The line the shell wrapper watches for to know the run is over. */
     public static final String DONE_MARKER = "[DungeonTrain] SHADER SWEEP COMPLETE";
 
@@ -134,6 +147,25 @@ public final class ShaderSweep {
 
     /** A command of the form {@code wait:<ticks>} pauses the setup instead of being sent. */
     private static final String WAIT_PREFIX = "wait:";
+    /**
+     * {@code frame:} places the preview camera from wherever the train has actually come to rest.
+     *
+     * <p>It cannot be a literal teleport in the command list: the list is built while the train is
+     * still rolling, and the train keeps rolling for the sixty ticks it takes {@code speed 0} to
+     * bring it down. Coordinates computed at build time would frame empty track. Resolved at
+     * dispatch instead, so the shot is always of the stopped train.</p>
+     */
+    private static final String FRAME_PREFIX = "frame:";
+
+    /** Where the preview camera stands relative to the stopped train, and what it looks at. */
+    private static final double PREVIEW_BACK = 34.0;
+    private static final double PREVIEW_SIDE = 22.0;
+    private static final double PREVIEW_UP = 9.0;
+    /** Aim slightly ahead of and below the rider, so the shot is of the train, not of the sky. */
+    private static final double PREVIEW_AIM_AHEAD = 6.0;
+    private static final double PREVIEW_AIM_DOWN = 2.0;
+    /** Morning: long shadows and a coloured sky, which is where packs differ most visibly. */
+    private static final int PREVIEW_TIME = 1000;
 
     private enum Phase { BOOT, JOINING, SETTLE, SITE_SETUP, SITE_WAIT, CAPTURE, CAPTURE_WAIT, FINISHED }
 
@@ -184,10 +216,19 @@ public final class ShaderSweep {
         return false;
     }
 
-    /** The world folder to open, or {@code null} when the sweep is off. */
+    /** The world folder to open, or {@code null} when both modes are off. */
     public static String world() {
         String raw = System.getProperty(PROPERTY);
+        if (raw == null || raw.isBlank()) {
+            raw = System.getProperty(PREVIEW_PROPERTY);
+        }
         return raw == null || raw.isBlank() ? null : raw;
+    }
+
+    /** True when the run is capturing the Shaders menu's preview rather than the diagnostic sites. */
+    public static boolean previewMode() {
+        String raw = System.getProperty(PREVIEW_PROPERTY);
+        return raw != null && !raw.isBlank();
     }
 
     public static boolean enabled() {
@@ -334,6 +375,10 @@ public final class ShaderSweep {
                 LOGGER.info("[DungeonTrain] sweep[{}]: waiting {} ticks", site.id(), setupWait);
                 return;
             }
+            if (command.startsWith(FRAME_PREFIX)) {
+                frameTrain(mc, site.id());
+                return;
+            }
             LOGGER.info("[DungeonTrain] sweep[{}]: /{}", site.id(), command);
             CommandRunner.run(command);
             return;
@@ -354,14 +399,22 @@ public final class ShaderSweep {
     private static void tickSiteWait(Minecraft mc) {
         unpause(mc);
         dismissScreen(mc);
-        showPanel();
+        // The panel is the sweep's measurement and the preview's blemish — a menu screenshot with a
+        // debug read-out over it is not a picture of a shader pack.
+        if (previewMode()) {
+            hidePanel();
+        } else {
+            showPanel();
+        }
         if (--timer > 0) return;
         phase = Phase.CAPTURE;
     }
 
     private static void tickCapture(Minecraft mc) {
         Site site = sites.get(siteIndex);
-        pendingCapture = String.format(Locale.ROOT, "sweep-%s-%s.png", ShaderCompat.token(), site.id());
+        pendingCapture = previewMode()
+            ? String.format(Locale.ROOT, "preview-%s.png", ShaderCompat.token())
+            : String.format(Locale.ROOT, "sweep-%s-%s.png", ShaderCompat.token(), site.id());
         logPanel(site);
         phase = Phase.CAPTURE_WAIT;
         timer = CAPTURE_TICKS;
@@ -391,6 +444,11 @@ public final class ShaderSweep {
     private static List<Site> buildSites(Minecraft mc) {
         List<Site> out = new ArrayList<>();
         double here = mc.player == null ? 0.0 : mc.player.getX();
+
+        if (previewMode()) {
+            out.add(buildPreviewSite());
+            return out;
+        }
 
         int plainX = scanForPlain(here);
 
@@ -500,6 +558,63 @@ public final class ShaderSweep {
             ClientUpsideDownBand::upsideDownIntensityAt, CLOUD_DOWN_PITCH);
 
         return out;
+    }
+
+    /**
+     * The single site behind {@code -PshaderPreview}: the train stopped, in the morning, from one
+     * camera. Everything a player compares between packs is in this frame, so nothing about it may
+     * vary between runs — the hour is pinned, the daylight cycle is held, and the camera is placed
+     * relative to the train rather than at a coordinate that would be right for one save only.
+     */
+    private static Site buildPreviewSite() {
+        return new Site("preview", List.of(
+            "gamerule doDaylightCycle false",
+            "time set " + PREVIEW_TIME,
+            // Stop the train before framing it. A moving train is a different picture every launch,
+            // and a nine-pack comparison in which the subject has moved is not a comparison.
+            "dungeontrain speed 0.0",
+            WAIT_PREFIX + "60",
+            // Spectator first: a rider sits on a Sable sub-level, so the server resolves a rider's
+            // relative coordinates in far shipyard plot space rather than on the track.
+            "gamemode spectator",
+            FRAME_PREFIX,
+            WAIT_PREFIX + "60"), SITE_TICKS);
+    }
+
+    /**
+     * Force-load the camera's chunk and teleport there, aimed at the train, from where the player
+     * is standing right now. Two commands rather than one because a teleport into a chunk nothing
+     * has asked the server for answers "that position is not loaded".
+     */
+    private static void frameTrain(Minecraft mc, String siteId) {
+        if (mc.player == null) {
+            LOGGER.warn("[DungeonTrain] sweep[{}]: no player to frame the train from", siteId);
+            return;
+        }
+        double px = mc.player.getX();
+        double py = mc.player.getY();
+        double pz = mc.player.getZ();
+        double cx = px - PREVIEW_BACK;
+        double cy = py + PREVIEW_UP;
+        double cz = pz - PREVIEW_SIDE;
+
+        double dx = (px + PREVIEW_AIM_AHEAD) - cx;
+        double dy = (py - PREVIEW_AIM_DOWN) - cy;
+        double dz = pz - cz;
+        double flat = Math.sqrt(dx * dx + dz * dz);
+        float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
+        float pitch = (float) -Math.toDegrees(Math.atan2(dy, flat));
+
+        String forceload = String.format(Locale.ROOT, "forceload add %d %d %d %d",
+            (int) cx - 16, (int) cz - 16, (int) cx + 16, (int) cz + 16);
+        String tp = String.format(Locale.ROOT, "tp @s %.2f %.2f %.2f %.1f %.1f",
+            cx, cy, cz, yaw, pitch);
+        LOGGER.info("[DungeonTrain] sweep[{}]: /{}", siteId, forceload);
+        CommandRunner.run(forceload);
+        LOGGER.info("[DungeonTrain] sweep[{}]: /{} (train at {}, {}, {})", siteId, tp,
+            String.format(Locale.ROOT, "%.1f", px), String.format(Locale.ROOT, "%.1f", py),
+            String.format(Locale.ROOT, "%.1f", pz));
+        CommandRunner.run(tp);
     }
 
     /**
@@ -675,6 +790,10 @@ public final class ShaderSweep {
     /** Make sure the panel is up — every shot has to carry the ask, or it is only half a record. */
     private static void showPanel() {
         if (!ShaderDiagnostics.visible()) ShaderDiagnostics.toggleVisible();
+    }
+
+    private static void hidePanel() {
+        if (ShaderDiagnostics.visible()) ShaderDiagnostics.toggleVisible();
     }
 
     /**
