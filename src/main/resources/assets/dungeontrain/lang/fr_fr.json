@@ -1001,6 +1001,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Chargement de tous les modèles de cette page…",
   "gui.dungeontrain.editor_screen.version": "v%s sur %s",
   "gui.dungeontrain.editor_screen.version.current": "Actuelle",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Seule une voiture dimensionnelle peut être dressée",
   "gui.dungeontrain.options.button": "Options du Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Options du monde",
   "gui.dungeontrain.options.starts_with_train": "Commence avec un train",

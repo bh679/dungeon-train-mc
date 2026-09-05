@@ -111,6 +111,7 @@ public final class EditorScreenLang {
     public static final String DISABLED_STAND_HERE = PREFIX + "disabled.stand_here";
     public static final String DISABLED_BUILTIN = PREFIX + "disabled.builtin";
     public static final String DISABLED_NOT_HERE = PREFIX + "disabled.not_here";
+    public static final String DISABLED_DIMENSIONS_ONLY = PREFIX + "disabled.dimensions_only";
 
     public static final String TEST_CARRIAGE = PREFIX + "test_carriage";
     public static final String ENTER = PREFIX + "enter";

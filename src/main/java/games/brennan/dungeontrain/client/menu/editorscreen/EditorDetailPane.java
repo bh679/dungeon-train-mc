@@ -347,9 +347,11 @@ public final class EditorDetailPane {
             case GO_HERE -> goHere == null || ctx.selection() == null ? List.of()
                 : List.of(EditorScreenLang.text(EditorScreenLang.GO_HERE),
                           EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.selection().displayName()));
+            // Only dimensions can be stood up, and that is the whole of why the button is off —
+            // it no longer asks the author to stand anywhere.
             case TEST -> test == null
                 ? List.of(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
-                          EditorScreenLang.text(EditorScreenLang.DISABLED_STAND_HERE))
+                          EditorScreenLang.text(EditorScreenLang.DISABLED_DIMENSIONS_ONLY))
                 : List.of();
             default -> List.of();
         };

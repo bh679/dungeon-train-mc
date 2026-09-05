@@ -976,6 +976,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Nilo-load ang lahat ng template sa pahinang ito…",
   "gui.dungeontrain.editor_screen.version": "v%s ng %s",
   "gui.dungeontrain.editor_screen.version.current": "Kasalukuyan",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Dimensional carriage lang ang maitatayo",
   "gui.dungeontrain.options.button": "Mga Opsyon ng Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Mga Opsyon ng Mundo",
   "gui.dungeontrain.options.starts_with_train": "Nagsisimula na may tren",

@@ -1026,6 +1026,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Wczytywanie wszystkich szablonów z tej strony…",
   "gui.dungeontrain.editor_screen.version": "v%s z %s",
   "gui.dungeontrain.editor_screen.version.current": "Bieżąca",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Postawić można tylko wagon wymiarowy",
   "gui.dungeontrain.options.button": "Opcje Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opcje świata",
   "gui.dungeontrain.options.starts_with_train": "Zaczyna z pociągiem",

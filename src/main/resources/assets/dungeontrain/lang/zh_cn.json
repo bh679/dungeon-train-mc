@@ -976,6 +976,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "正在载入本页所有模板…",
   "gui.dungeontrain.editor_screen.version": "第 %s / %s 版",
   "gui.dungeontrain.editor_screen.version.current": "当前",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "只有维度车厢可以放置",
   "gui.dungeontrain.options.button": "地牢列车选项…",
   "gui.dungeontrain.options.title": "地牢列车 — 世界选项",
   "gui.dungeontrain.options.starts_with_train": "以列车为起点",

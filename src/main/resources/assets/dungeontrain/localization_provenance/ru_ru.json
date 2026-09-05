@@ -547,6 +547,7 @@
       "gui.dungeontrain.editor_screen.load_all.progress",
       "gui.dungeontrain.editor_screen.version",
       "gui.dungeontrain.editor_screen.version.current",
+      "gui.dungeontrain.editor_screen.disabled.dimensions_only",
       "gui.dungeontrain.options.button",
       "gui.dungeontrain.options.starts_with_train",
       "gui.dungeontrain.options.train_y",

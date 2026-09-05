@@ -976,6 +976,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Memuatkan semua templat di halaman ini…",
   "gui.dungeontrain.editor_screen.version": "v%s drpd %s",
   "gui.dungeontrain.editor_screen.version.current": "Semasa",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Hanya gerabak dimensi boleh didirikan",
   "gui.dungeontrain.options.button": "Pilihan Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Pilihan Dunia",
   "gui.dungeontrain.options.starts_with_train": "Bermula dengan kereta api",

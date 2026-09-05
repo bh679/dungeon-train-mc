@@ -976,6 +976,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "このページのテンプレートを読み込み中…",
   "gui.dungeontrain.editor_screen.version": "v%s / %s",
   "gui.dungeontrain.editor_screen.version.current": "現在",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "設置できるのは次元車両だけです",
   "gui.dungeontrain.options.button": "Dungeon Train オプション…",
   "gui.dungeontrain.options.title": "Dungeon Train — ワールドオプション",
   "gui.dungeontrain.options.starts_with_train": "列車付きで開始",

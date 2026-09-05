@@ -976,6 +976,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "กำลังโหลดเทมเพลตทั้งหมดในหน้านี้…",
   "gui.dungeontrain.editor_screen.version": "v%s จาก %s",
   "gui.dungeontrain.editor_screen.version.current": "ปัจจุบัน",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "สร้างได้เฉพาะตู้มิติเท่านั้น",
   "gui.dungeontrain.options.button": "ตัวเลือก Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — ตัวเลือกโลก",
   "gui.dungeontrain.options.starts_with_train": "เริ่มพร้อมขบวนรถไฟ",

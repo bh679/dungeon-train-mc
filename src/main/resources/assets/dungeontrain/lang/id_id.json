@@ -976,6 +976,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Memuat semua templat di halaman ini…",
   "gui.dungeontrain.editor_screen.version": "v%s dari %s",
   "gui.dungeontrain.editor_screen.version.current": "Saat ini",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Hanya gerbong dimensi yang bisa didirikan",
   "gui.dungeontrain.options.button": "Opsi Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opsi Dunia",
   "gui.dungeontrain.options.starts_with_train": "Mulai dengan kereta",

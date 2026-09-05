@@ -1001,6 +1001,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Alle Vorlagen dieser Seite werden geladen…",
   "gui.dungeontrain.editor_screen.version": "v%s von %s",
   "gui.dungeontrain.editor_screen.version.current": "Aktuell",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Nur ein Dimensionswaggon lässt sich aufstellen",
   "gui.dungeontrain.options.button": "Dungeon-Train-Optionen…",
   "gui.dungeontrain.options.title": "Dungeon Train — Weltoptionen",
   "gui.dungeontrain.options.starts_with_train": "Beginnt mit Zug",

@@ -1031,6 +1031,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Загрузка всех шаблонов страницы…",
   "gui.dungeontrain.editor_screen.version": "v%s из %s",
   "gui.dungeontrain.editor_screen.version.current": "Текущая",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Построить можно только вагон-измерение",
   "gui.dungeontrain.options.button": "Настройки Dungeon Train…",
   "gui.dungeontrain.options.title": "Настройки мира Dungeon Train",
   "gui.dungeontrain.options.starts_with_train": "Начинать с поездом",

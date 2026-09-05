@@ -1001,6 +1001,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Carregando todos os modelos desta página…",
   "gui.dungeontrain.editor_screen.version": "v%s de %s",
   "gui.dungeontrain.editor_screen.version.current": "Atual",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Só um vagão dimensional pode ser erguido",
   "gui.dungeontrain.options.button": "Opções do Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opções do Mundo",
   "gui.dungeontrain.options.starts_with_train": "Começa com o trem",

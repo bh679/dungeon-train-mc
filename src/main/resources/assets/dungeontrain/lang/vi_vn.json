@@ -976,6 +976,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Đang tải mọi mẫu trong trang này…",
   "gui.dungeontrain.editor_screen.version": "v%s trên %s",
   "gui.dungeontrain.editor_screen.version.current": "Hiện tại",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Chỉ toa không gian mới dựng được",
   "gui.dungeontrain.options.button": "Tùy Chọn Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Tùy Chọn Thế Giới",
   "gui.dungeontrain.options.starts_with_train": "Bắt đầu với đoàn tàu",

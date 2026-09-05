@@ -1001,6 +1001,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Alle sjablonen op deze pagina laden…",
   "gui.dungeontrain.editor_screen.version": "v%s van %s",
   "gui.dungeontrain.editor_screen.version.current": "Huidig",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Alleen een dimensiewagon kan worden neergezet",
   "gui.dungeontrain.options.button": "Dungeon Train-opties…",
   "gui.dungeontrain.options.title": "Dungeon Train — Wereldopties",
   "gui.dungeontrain.options.starts_with_train": "Begint met trein",

@@ -222,9 +222,15 @@ public final class EditorScreenActions {
         });
     }
 
-    /** Test the Carriage: dimensions only, and only from inside the room it tests. */
+    /**
+     * Test the Carriage: dimensions only, from anywhere.
+     *
+     * <p>It used to require standing in the room, because the command could only name the plot the
+     * author was in. The room is stamped in its own band in the basement either way, so where they
+     * were standing was never part of what it tested — only of how it was named.</p>
+     */
     public static CommandMenuEntry testEntry(Ctx ctx) {
-        if (!ctx.standingInSelection() || ctx.category() != PlotCategory.PORTALS) return null;
+        if (!ctx.hasSelection() || ctx.category() != PlotCategory.PORTALS) return null;
         return new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
             new PortalTestSaveCheckScreen(ctx.selection().modelName()));
     }

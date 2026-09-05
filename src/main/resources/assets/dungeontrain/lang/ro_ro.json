@@ -1337,6 +1337,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Se încarcă toate șabloanele din pagină…",
   "gui.dungeontrain.editor_screen.version": "v%s din %s",
   "gui.dungeontrain.editor_screen.version.current": "Curentă",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Doar un vagon dimensional poate fi ridicat",
   "gui.dungeontrain.options.button": "Opțiuni Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opțiuni lume",
   "gui.dungeontrain.options.starts_with_train": "Începe cu trenul",

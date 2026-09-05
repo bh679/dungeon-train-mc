@@ -175,15 +175,26 @@ final class EditorScreenActionsTest {
     }
 
     @Test
-    @DisplayName("Test the Carriage is offered only from inside the selected dimension room")
+    @DisplayName("Test the Carriage is offered for any selected dimension room, wherever the author stands")
     void testCarriage() {
         VariantKey room = VariantKey.of(PlotCategory.PORTALS, "portal_room", "house");
         EditorTypeMenusPacket.Variant v = gated("PORTALS", "portal_room", "house", 1, List.of());
+
         CommandMenuEntry inside = EditorScreenActions.testEntry(ctx(room, v, room, PlotCategory.PORTALS));
         assertInstanceOf(PortalTestSaveCheckScreen.class, ((CommandMenuEntry.DrillIn) inside).target());
-        assertNull(EditorScreenActions.testEntry(ctx(room, v, VariantKey.of(PlotCategory.PORTALS, "portal_room", "beam"), PlotCategory.PORTALS)));
+
+        // Standing in a different room, or in no plot at all: the test stamps its own band in the
+        // basement either way, so where the author is standing is not part of what it tests.
+        CommandMenuEntry elsewhere = EditorScreenActions.testEntry(
+            ctx(room, v, VariantKey.of(PlotCategory.PORTALS, "portal_room", "beam"), PlotCategory.PORTALS));
+        assertInstanceOf(PortalTestSaveCheckScreen.class, ((CommandMenuEntry.DrillIn) elsewhere).target());
+        CommandMenuEntry nowhere = EditorScreenActions.testEntry(ctx(room, v, null, PlotCategory.PORTALS));
+        assertInstanceOf(PortalTestSaveCheckScreen.class, ((CommandMenuEntry.DrillIn) nowhere).target());
+
+        // Still dimensions only — nothing else has a room to stand up.
         VariantKey carriage = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
         assertNull(EditorScreenActions.testEntry(ctx(carriage, gated("CARRIAGES", "pen", "pen", 1, List.of()), carriage, PlotCategory.CARRIAGES)));
+        assertNull(EditorScreenActions.testEntry(ctx(null, null, null, null)));
     }
 
     // ---- settings rows ----

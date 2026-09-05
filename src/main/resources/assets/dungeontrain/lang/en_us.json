@@ -1309,6 +1309,7 @@
   "gui.dungeontrain.editor_screen.load_all.progress": "Loading every template on this page\u2026",
   "gui.dungeontrain.editor_screen.version": "v%s of %s",
   "gui.dungeontrain.editor_screen.version.current": "Current",
+  "gui.dungeontrain.editor_screen.disabled.dimensions_only": "Only a dimensional carriage can be stood up",
   "gui.dungeontrain.options.button": "Dungeon Train Options…",
   "gui.dungeontrain.options.title": "Dungeon Train — World Options",
   "gui.dungeontrain.options.starts_with_train": "Starts with train",
