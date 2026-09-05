@@ -11251,6 +11251,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "terrarium-dimensional-carriage",
+      "version": "0.796.0",
+      "type": "content",
+      "title": "A new dimensional carriage: the Terrarium",
+      "summary": "Firefly_on_ytb built the Terrarium \u2014 a tall glass house of sand, grass and trees, open to the daylight \u2014 and it joins House's rooms, so a dimensional carriage can now drop you into it from level 4 onward.",
+      "highlights": [
+        "Built by Firefly_on_ytb"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
