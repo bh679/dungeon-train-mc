@@ -11318,6 +11318,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "build-creator-credit",
+      "version": "0.799.0",
+      "type": "feat",
+      "title": "Downloaded builds remember who made them",
+      "summary": "A carriage, room or part you load from another player's profile now keeps their name. Open it in the Train Builder and the info panel says who built it \u2014 and it stays theirs when you edit it, rename it, or pass it on to somebody else.",
+      "highlights": [
+        "Builds loaded from another creator are captioned \"Built by <name>\" in the Train Builder's info panel.",
+        "The original creator sticks: editing and re-saving a downloaded build never re-attributes it to you.",
+        "Attribution survives being passed along \u2014 a build that travels through a second player's profile still names the person who actually made it."
+      ],
+      "pr": 1303,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
