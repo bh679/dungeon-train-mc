@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.builder.relay;
 
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.BuilderTemplateIdentity;
 import games.brennan.dungeontrain.data.PlayerDataBackup;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Turning a file on disk into the archive entry it was backed up as.
@@ -28,6 +31,39 @@ final class BuilderTemplateSourceTest {
         return List.of(
             new PlayerDataBackup.Source("dungeontrain", tmp.resolve("dungeontrain"), Set.of("backups")),
             new PlayerDataBackup.Source("dtpacks", tmp.resolve("dtpacks")));
+    }
+
+    @Test
+    @DisplayName("a path under a store directory resolves to the triple the credits are filed under")
+    void identityOfAPath() {
+        // Flat id-space: the store's own directory, and the basename is the id.
+        BuilderTemplateIdentity.Identity carriage =
+            BuilderTemplateSource.identityOf("templates", "brick_cabin.nbt").orElseThrow();
+        assertEquals(BuilderPhotoPaths.Kind.CARRIAGE, carriage.kind());
+        assertEquals("", carriage.subKind());
+        assertEquals("brick_cabin", carriage.id());
+
+        // Sub-kinded: `standard` is a floor here and a door one directory over, which is the whole
+        // reason a credit is keyed by the triple rather than by the name.
+        BuilderTemplateIdentity.Identity floor =
+            BuilderTemplateSource.identityOf("parts/floor", "standard.nbt").orElseThrow();
+        assertEquals(BuilderPhotoPaths.Kind.PART, floor.kind());
+        assertEquals("floor", floor.subKind());
+
+        BuilderTemplateIdentity.Identity room =
+            BuilderTemplateSource.identityOf("portals/room", "man.nbt").orElseThrow();
+        assertEquals(BuilderPhotoPaths.Kind.PORTAL_ROOM, room.kind());
+        assertEquals("man", room.id());
+
+        // Windows separators reach here from a path relativised on this machine.
+        assertTrue(BuilderTemplateSource.identityOf("parts\\floor", "standard.nbt").isPresent());
+
+        // Not a template, or not under a store: nothing to file a byline against.
+        assertTrue(BuilderTemplateSource.identityOf("portals/room", "man.variants.json").isEmpty());
+        assertTrue(BuilderTemplateSource.identityOf("credits", "build-credits.json").isEmpty());
+        assertTrue(BuilderTemplateSource.identityOf("nowhere", "man.nbt").isEmpty());
+        assertTrue(BuilderTemplateSource.identityOf("portals/room", ".nbt").isEmpty());
+        assertTrue(BuilderTemplateSource.identityOf(null, "man.nbt").isEmpty());
     }
 
     @Test
