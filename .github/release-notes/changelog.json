@@ -11318,6 +11318,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-variant-and-contents-menus",
+      "version": "0.799.0",
+      "type": "feat",
+      "title": "Variant and loot menus work in the Train Builder",
+      "summary": "The block-variant menu (Z) and the container-contents menu (C) now work while you are building a carriage, room, part, track piece or portal room in the Train Builder \u2014 not just in the Train Editor. What you author is kept with that build and written onto the template when you save it, and loaded back when you open one. Both menus also follow the block you are looking at rather than the ground you are standing on, so you can back off a build and keep editing it from outside.",
+      "highlights": [
+        "Tap Z on any block of your build to give it a pool of random variants, and C on a chest to fill it with weighted loot.",
+        "Variant pools and chest contents follow a build: they load when you open a template and are written back when you save it.",
+        "Wireframes and lock-group labels are drawn in the builder, so you can see which blocks you have flagged.",
+        "Both menus open on whatever you are looking at, so authoring a wall from outside the carriage works."
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
