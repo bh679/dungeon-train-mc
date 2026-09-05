@@ -11209,9 +11209,9 @@
         "Most noticeable with a shader pack, which leans on that lighting for its ambient"
       ],
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.795.0",
+      "released_at": "2026-09-05T06:48:12Z"
     },
     {
       "id": "shader-menu",
@@ -11229,9 +11229,9 @@
       ],
       "pr": 1298,
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.795.0",
+      "released_at": "2026-09-05T06:48:12Z"
     }
   ]
 }
