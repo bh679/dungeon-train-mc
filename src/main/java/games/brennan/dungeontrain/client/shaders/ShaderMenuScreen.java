@@ -71,6 +71,18 @@ public final class ShaderMenuScreen extends Screen {
     private Button action;
     private Button packPage;
     private ShaderPackList.Row selected;
+    /**
+     * The detail pane's geometry, computed once in {@link #init()} and reused by the draw.
+     *
+     * <p>Both used to work it out independently from slightly different pane heights, so the
+     * preview reserved more room in one than the other and the text pane began well below the name
+     * it belongs to — a band of dead space under the title with the scroll box squeezed beneath it.
+     * One source, one answer.</p>
+     */
+    private int paneX;
+    private int paneW;
+    private int paneBottom;
+    private int previewH;
     /** Survives a resize, so re-opening the page or resizing does not silently reorder the list. */
     private ShaderPack.Sort sort = ShaderPack.Sort.AUTHOR;
 
@@ -81,8 +93,8 @@ public final class ShaderMenuScreen extends Screen {
 
     @Override
     protected void init() {
-        int paneX = MARGIN + LIST_W + GAP;
-        int paneW = this.width - paneX - MARGIN;
+        paneX = MARGIN + LIST_W + GAP;
+        paneW = this.width - paneX - MARGIN;
         int contentBottom = this.height - MARGIN - BOTTOM_ROW_H - GAP;
 
         // The sort control sits above the list it reorders, which is the only place it can mean
@@ -120,10 +132,13 @@ public final class ShaderMenuScreen extends Screen {
         // The text block below the pack's name is its own scrolling window: version, performance,
         // what the performance means, and the download status. None of it has a fixed position, so
         // a long sentence in any language can neither collide with what follows nor be cut off.
-        int previewH = previewHeight(paneW, contentBottom - TOP);
-        int detailsY = TOP + previewH + 6 + this.font.lineHeight + 2;
-        details = addRenderableWidget(new ShaderDetailPane(this.font, paneX, detailsY, paneW,
-                Math.max(this.font.lineHeight, packPage.getY() - GAP - detailsY)));
+        paneBottom = actionY - GAP;
+        previewH = previewHeight(paneW, paneBottom - TOP);
+        int detailsY = nameY() + this.font.lineHeight + 2;
+        // Inset by 2 so the pane's own padding lands the text under the name rather than two pixels
+        // left of it, and stop short of the bottom so a full scroll box does not touch the border.
+        details = addRenderableWidget(new ShaderDetailPane(this.font, paneX + 2, detailsY, paneW - 4,
+                Math.max(this.font.lineHeight, paneBottom - detailsY - 2)));
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(this.width / 2 - 100, this.height - MARGIN - BOTTOM_ROW_H, 200, BOTTOM_ROW_H)
@@ -252,10 +267,7 @@ public final class ShaderMenuScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(this.font, this.title, this.width / 2, 14, 0xFFFFFF);
 
-        int paneX = MARGIN + LIST_W + GAP;
-        int paneW = this.width - paneX - MARGIN;
-        int paneBottom = packPage.getY() - GAP;
-        renderDetail(g, paneX, TOP, paneW, paneBottom - TOP);
+        renderDetail(g);
 
         // A download reports progress on its own thread; the button's label is only refreshed when
         // something happens, so the bar under it is what actually moves.
@@ -272,38 +284,43 @@ public final class ShaderMenuScreen extends Screen {
                 h - this.font.lineHeight * 8));
     }
 
-    private void renderDetail(GuiGraphics g, int x, int y, int w, int h) {
-        g.fill(x, y, x + w, y + h, PANE_BG);
+    /** Where the pack's name sits: immediately under the preview. */
+    private int nameY() {
+        return TOP + previewH + 4;
+    }
+
+    private void renderDetail(GuiGraphics g) {
+        int paneH = paneBottom - TOP;
+        g.fill(paneX, TOP, paneX + paneW, TOP + paneH, PANE_BG);
         ShaderPack pack = selected == null ? null : selected.pack();
         boolean active = pack == null ? ShaderPackLibrary.shadersOff() : ShaderPackLibrary.active(pack);
 
-        int previewH = previewHeight(w, h);
         if (pack == null) {
             if (hasTexture("vanilla", ShaderPack.vanillaPreview())) {
-                drawContain(g, ShaderPack.vanillaPreview(), x, y, w, previewH);
+                drawContain(g, ShaderPack.vanillaPreview(), paneX, TOP, paneW, previewH);
             } else {
-                drawPlaceholder(g, x, y, w, previewH,
+                drawPlaceholder(g, paneX, TOP, paneW, previewH,
                         Component.translatable("gui.dungeontrain.shaders.off.preview"));
             }
         } else if (hasPreview(pack)) {
-            drawContain(g, pack.preview(), x, y, w, previewH);
+            drawContain(g, pack.preview(), paneX, TOP, paneW, previewH);
         } else {
-            drawPlaceholder(g, x, y, w, previewH,
+            drawPlaceholder(g, paneX, TOP, paneW, previewH,
                     Component.translatable("gui.dungeontrain.shaders.no_preview"));
         }
-        // The same green edge the list gives the running pack, so the two halves of the page agree
-        // at a glance about which one you are actually looking at.
-        if (active) {
-            ShaderPackList.drawBorder(g, x, y, w, previewH, ShaderPackList.ACTIVE_BORDER);
-        }
 
-        int textY = y + previewH + 6;
-        int textX = x + 6;
         g.drawString(this.font, pack == null
                         ? Component.translatable("gui.dungeontrain.shaders.off")
                         : Component.literal(pack.name()),
-                textX, textY, 0xFFFFFF);
+                paneX + 6, nameY(), 0xFFFFFF);
         details.setLines(detailLines(pack));
+
+        // The green edge goes round the whole right-hand column — preview, name and text together —
+        // because they are one thing: what the running pack is. Around the image alone it read as a
+        // caption on the picture rather than as the state of the pack.
+        if (active) {
+            ShaderPackList.drawBorder(g, paneX, TOP, paneW, paneH, ShaderPackList.ACTIVE_BORDER);
+        }
     }
 
     /** Everything below the name, in reading order. The pane wraps and scrolls it. */
