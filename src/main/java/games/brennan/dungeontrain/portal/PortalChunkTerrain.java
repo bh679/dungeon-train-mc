@@ -564,7 +564,7 @@ public final class PortalChunkTerrain {
             }
         }
         return new PortalChunkSlice(source, SIZE, HEIGHT, states,
-            blockEntitiesIn(level, chunk, pos, anchor));
+            blockEntitiesIn(level, chunk, pos, anchor), occupantsIn(chunk, pos, anchor));
     }
 
     /**
@@ -589,6 +589,32 @@ public final class PortalChunkTerrain {
                 out.put(index, blockEntity.saveWithFullMetadata(level.registryAccess()));
             }
         });
+        return out;
+    }
+
+    /**
+     * The entities the sample was generated with, in room-local coordinates.
+     *
+     * <p>The biome's own animals and whatever the structure was placed with — both arrive as NBT in
+     * the throwaway chunk's entity list, because a generating chunk holds its mobs the way a saved
+     * one does rather than as live entities in a world.</p>
+     */
+    private static java.util.List<PortalChunkSlice.Occupant> occupantsIn(ProtoChunk chunk,
+                                                                        ChunkPos pos, int anchor) {
+        java.util.List<PortalChunkSlice.Occupant> out = new java.util.ArrayList<>();
+        for (CompoundTag nbt : chunk.getEntities()) {
+            net.minecraft.nbt.ListTag position = nbt.getList("Pos", net.minecraft.nbt.Tag.TAG_DOUBLE);
+            if (position.size() != 3) continue;
+            double x = position.getDouble(0) - pos.getMinBlockX();
+            double y = position.getDouble(1) - anchor + SURFACE_ROW;
+            double z = position.getDouble(2) - pos.getMinBlockZ();
+            if (x < 0 || z < 0 || x >= SIZE || z >= SIZE || y < 0 || y >= HEIGHT) continue;
+            CompoundTag copy = nbt.copy();
+            // The sample's own identity goes no further: spawning a mob under the UUID it was
+            // generated with would collide with itself the second time a cube is used.
+            copy.remove("UUID");
+            out.add(new PortalChunkSlice.Occupant(copy, x, y, z));
+        }
         return out;
     }
 

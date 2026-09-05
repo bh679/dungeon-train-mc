@@ -136,7 +136,7 @@ class PortalChunkDimensionTest {
         }
         PortalChunkSlice slice =
             new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, width, height, states,
-                java.util.Map.of());
+                java.util.Map.of(), java.util.List.of());
 
         PortalRoomSettings fitted = PortalChunkDoors.fit(
             PortalRoomSettings.parse(SHIPPED_TAG), slice, DEFAULT_DIMS,
@@ -161,7 +161,7 @@ class PortalChunkDimensionTest {
         java.util.Arrays.fill(states, stone);   // solid to the ceiling, everywhere
         PortalChunkSlice slice =
             new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, width, height, states,
-                java.util.Map.of());
+                java.util.Map.of(), java.util.List.of());
 
         PortalRoomSettings fitted = PortalChunkDoors.fit(
             PortalRoomSettings.parse(SHIPPED_TAG), slice, DEFAULT_DIMS,
@@ -185,7 +185,7 @@ class PortalChunkDimensionTest {
         // Keyed exactly as the states are, so a cell's block and its block entity cannot drift apart.
         int index = (2 * width + 1) * width + 3;
         PortalChunkSlice slice = new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, width,
-            height, states, java.util.Map.of(index, chest));
+            height, states, java.util.Map.of(index, chest), java.util.List.of());
 
         assertEquals("minecraft:chests/village/village_weaponsmith",
             slice.blockEntityAt(3, 2, 1).getString("LootTable"));
@@ -202,7 +202,7 @@ class PortalChunkDimensionTest {
             new net.minecraft.world.level.block.state.BlockState[width * width * height];
         PortalChunkSlice slice =
             new PortalChunkSlice(PortalChunkTerrain.Source.END, width, height, states,
-                java.util.Map.of());
+                java.util.Map.of(), java.util.List.of());
 
         assertEquals(width, slice.width());
         assertEquals(height, slice.height());

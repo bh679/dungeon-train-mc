@@ -23,6 +23,7 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.slf4j.Logger;
 
@@ -48,14 +49,27 @@ import java.util.Random;
  * discarded a moment later — containment for free, rather than a sweep afterwards. Still no chunk in
  * any world is loaded, generated or saved.</p>
  *
+ * <h2>The mobs come with the chunk</h2>
+ * <p>A chunk is not just its blocks. The animals a biome starts its chunks with, and the villagers,
+ * pillagers or piglins a structure is placed with, are entities the generation passes add through
+ * the region — into the same throwaway chunks, where {@link PortalChunkTerrain} reads them back as
+ * NBT and the room spawns them for real. So a sampled meadow arrives with its sheep and a sampled
+ * outpost with the people who live in it, rather than as scenery.</p>
+ *
  * <h2>Always at least one structure</h2>
  * <p>Vanilla puts a structure in something like one chunk in a hundred, so sampling and hoping would
  * make "a chunk with a village in it" a thing a player heard about rather than saw. A structure is
  * therefore <b>chosen</b> for the sample: one of the ones whose own biome list admits the biome that
- * was sampled, generated at the sample's own chunk so it sits on that terrain, and kept only if what
- * it produced actually reaches the slice a player will walk into. The pick is a plain draw from the
- * structures that fit, so what turns up is still the world's own vocabulary — a desert has pyramids
- * and a plain has villages, because that is what their biome lists say.</p>
+ * was sampled, generated at the sample's own chunk so it sits on that terrain. The pick is a plain
+ * draw from the structures that fit, so what turns up is still the world's own vocabulary — a desert
+ * has pyramids and a plain has villages, because that is what their biome lists say.</p>
+ *
+ * <p>A start that lands outside the rows the room will show is <b>moved onto them</b> rather than
+ * discarded. That is the ordinary case away from the Overworld's surface: a fortress or a bastion
+ * sits at the Y its own placement wants and an End city stands on an island, while the cube is cut
+ * around whichever cavern floor or ledge the sample was anchored on, so the two rarely meet by luck.
+ * Moving it is what makes the guarantee hold in all three dimensions instead of mostly holding in
+ * one.</p>
  */
 final class PortalChunkFeatures {
 
@@ -189,6 +203,7 @@ final class PortalChunkFeatures {
         // Deterministic in the seed and the pair, like every other choice a pair makes, so a
         // re-sampled room is the same room.
         Random rng = new Random(worldSeed ^ ((long) pairKey * 0x9E3779B97F4A7C15L));
+        StructureStart fallback = null;
         for (int attempt = 0; attempt < STRUCTURE_ATTEMPTS && !candidates.isEmpty(); attempt++) {
             Structure structure = candidates.remove(rng.nextInt(candidates.size()));
             StructureStart start = structure.generate(
@@ -198,11 +213,44 @@ final class PortalChunkFeatures {
                 // outlying pieces can veto the whole start for landing one chunk over.
                 biome -> true);
             if (!start.isValid()) continue;
-            if (!start.getBoundingBox().intersects(window)) continue;
-            chunk.setStartForStructure(structure, start);
-            chunk.addReferenceForStructure(structure, chunk.getPos().toLong());
-            return;
+            if (spanOf(start).intersects(window)) {
+                register(chunk, start);
+                return;
+            }
+            if (fallback == null) fallback = start;
         }
+
+        // Nothing generated where the room can see it. That is the ordinary case in the Nether and
+        // the End rather than a rarity: a fortress or a bastion sits at the Y its own placement
+        // wants, and an End city stands on an island, while the cube is cut around whichever cavern
+        // floor or ledge the sample was anchored on — so the two rarely meet by luck. The structure
+        // is moved onto the room's ground instead of being thrown away, which is what makes "always
+        // at least one structure" true in all three dimensions rather than mostly true in one.
+        if (fallback == null) return;
+        BoundingBox span = spanOf(fallback);
+        fallback.getPieces().forEach(piece ->
+            piece.move(0, window.minY() + PortalChunkTerrain.SURFACE_ROW - span.minY(), 0));
+        register(chunk, fallback);
+    }
+
+    /** Put a start on the chunk, with the reference that makes the decoration pass place it. */
+    private static void register(ProtoChunk chunk, StructureStart start) {
+        chunk.setStartForStructure(start.getStructure(), start);
+        chunk.addReferenceForStructure(start.getStructure(), chunk.getPos().toLong());
+    }
+
+    /**
+     * The box a start's pieces actually occupy, computed rather than read off the start.
+     *
+     * <p>{@link StructureStart#getBoundingBox()} memoises, and these pieces get moved — so asking it
+     * once before a move and again afterwards answers the same stale box both times.</p>
+     */
+    private static BoundingBox spanOf(StructureStart start) {
+        BoundingBox span = null;
+        for (StructurePiece piece : start.getPieces()) {
+            span = span == null ? piece.getBoundingBox() : span.encapsulate(piece.getBoundingBox());
+        }
+        return span == null ? start.getBoundingBox() : span;
     }
 
     /** Every structure whose own biome list admits the biome at the sample's surface. */

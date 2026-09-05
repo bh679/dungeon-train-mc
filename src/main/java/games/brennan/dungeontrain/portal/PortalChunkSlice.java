@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.portal;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,14 +28,34 @@ public final class PortalChunkSlice {
     private final int height;
     private final BlockState[] states;
     private final Map<Integer, CompoundTag> blockEntities;
+    private final List<Occupant> occupants;
+
+    /**
+     * One entity the sample was generated with, and where it stood in the column — room-local, so a
+     * room spawns it at the same place in its own terrain that it stood in the world's.
+     */
+    public record Occupant(CompoundTag nbt, double x, double y, double z) {}
 
     PortalChunkSlice(PortalChunkTerrain.Source source, int width, int height, BlockState[] states,
-                     Map<Integer, CompoundTag> blockEntities) {
+                     Map<Integer, CompoundTag> blockEntities, List<Occupant> occupants) {
         this.source = source;
         this.width = width;
         this.height = height;
         this.states = states;
         this.blockEntities = Map.copyOf(blockEntities);
+        this.occupants = List.copyOf(occupants);
+    }
+
+    /**
+     * The entities the sample was generated with — the biome's own animals and whatever the
+     * structure was placed with.
+     *
+     * <p>Read once, when the room is first decorated: they are spawned into the world at that point
+     * and live there like any other mob. Re-stamping a room does not re-read them, or a train that
+     * drifted twice would leave three herds of sheep standing in the same field.</p>
+     */
+    public List<Occupant> occupants() {
+        return occupants;
     }
 
     /** Which dimension's generator this was sampled from. */

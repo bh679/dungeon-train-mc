@@ -596,6 +596,7 @@ public final class PortalCarriageEvents {
         // The sampled chunks. Pair-keyed like everything else here, so the next world opened must
         // not inherit them.
         games.brennan.dungeontrain.portal.PortalChunkTerrain.clear();
+        games.brennan.dungeontrain.portal.PortalChunkDimension.clear();
     }
 
     /**
