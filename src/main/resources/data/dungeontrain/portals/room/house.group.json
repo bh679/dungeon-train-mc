@@ -72,6 +72,10 @@
     {
       "id": "suspiciousfurniturestore",
       "weight": 1
+    },
+    {
+      "id": "peateargriffin",
+      "weight": 2
     }
   ]
 }
