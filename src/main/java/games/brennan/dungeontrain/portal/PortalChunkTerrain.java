@@ -12,10 +12,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
@@ -48,10 +48,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Nothing here touches a chunk in the world. A forced {@code getChunk(FULL, true)} on the server
  * tick is the shape of the Sable worldgen deadlock — the reason {@code PortalRoomTiler.chunksLoaded}
  * asks rather than forces — and a portal room is stamped from inside exactly that loop. So the
- * generator is asked for its <b>columns</b> ({@link ChunkGenerator#getBaseColumn}, which builds its
- * own noise chunk and consults no world state), the result is poured into a throwaway
- * {@link ProtoChunk} that belongs to nobody, and the dimension's real surface rules are run over
- * that. No chunk is generated, loaded, saved or kept, in this world or any other.</p>
+ * generator fills a throwaway {@link ProtoChunk} that belongs to nobody, the dimension's real
+ * surface rules are run over that, and the carvers, one structure and the biome's features follow
+ * in a region built over the same throwaway chunks ({@link PortalChunkFeatures}). No chunk is
+ * generated, loaded, saved or kept, in this world or any other.</p>
  *
  * <p>It is the same trick {@code NetherCoreGeometry} already plays on the Nether's density router,
  * one level up: that samples a function, this samples the whole stack of them that turns noise into
@@ -329,7 +329,13 @@ public final class PortalChunkTerrain {
      */
     private record Sample(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
                           ProtoChunk chunk, ChunkPos pos, Source source, int anchor, int minY,
-                          int maxY) {
+                          int maxY, int probes) {
+
+        /** The same sample cut around a different row — what carving the ground under it moves. */
+        Sample at(int newAnchor) {
+            return new Sample(level, generator, random, chunk, pos, source, newAnchor, minY, maxY,
+                probes);
+        }
 
         /** The cube as the chunk currently stands — called once per generation pass. */
         PortalChunkSlice read() {
@@ -372,13 +378,47 @@ public final class PortalChunkTerrain {
         // nothing is solid at all, and the open ocean, whose seabed has water on top of it rather
         // than air and so offers no row to stand on. Rivers, lakes, coastlines and cave floors all
         // still pass, because in each of those a player can stand on the ground and breathe.
-        Site site = pickSite(noiseGenerator, random, level, worldSeed, pairKey);
-        if (site == null) return null;
-        ChunkPos pos = site.pos();
-        int anchor = site.anchor();
+        //
+        // Each candidate is generated to be judged, rather than probed column by column first. A
+        // whole chunk costs about what four of those probes did: a column asked for on its own runs
+        // the entire noise router down the world's height, while a chunk gets vanilla's interpolated
+        // cell grid — which is the reason the game generates chunks and not columns, and the reason
+        // a portal carriage used to wait ten seconds for its room.
+        Sample best = null;
+        for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
+            Sample candidate = groundAt(level, noiseGenerator, random, settings, biomes,
+                siteFor(worldSeed, pairKey, attempt), source, minY, maxY);
+            if (candidate == null) continue;
+            if (candidate.probes() >= PROBES_REQUIRED) {
+                best = candidate;
+                break;
+            }
+            if (best == null || candidate.probes() > best.probes()) best = candidate;
+        }
+        if (best == null) return null;
 
+        // Only the site that was kept pays for its caves.
+        PortalChunkFeatures.carve(noiseGenerator, level, random, best.chunk(), level.getSeed(),
+            pairKey);
+        // Re-read after carving: a cavern opened under the middle column moves the row this cube is
+        // cut around, and the doorways are fitted to whatever it ends up being.
+        int anchor = standableRow(best.chunk(), SIZE / 2, SIZE / 2, minY, maxY);
+        return anchor == NO_GROUND ? best : best.at(anchor);
+    }
+
+    /**
+     * Generate one candidate site's ground — terrain and surface rules — and judge it.
+     *
+     * <p>Null when the middle column has nowhere to stand at all: open ocean, the End's void, or
+     * solid rock to the ceiling. Otherwise the sample carries how many of its five probe columns
+     * agree on roughly one ground height, which is what {@link #sampleTerrain} ranks sites by.</p>
+     */
+    private static Sample groundAt(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                   RandomState random, NoiseGeneratorSettings settings,
+                                   Registry<Biome> biomes, ChunkPos pos, Source source,
+                                   int minY, int maxY) {
         ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomes, null);
-        chunk.fillBiomesFromNoise(noiseGenerator.getBiomeSource(), random.sampler());
+        chunk.fillBiomesFromNoise(generator.getBiomeSource(), random.sampler());
         // A chunk nobody generated is at ChunkStatus.EMPTY, and half of vanilla refuses to answer
         // questions about one: ProtoChunk.getNoiseBiome throws "Asking for biomes before we have
         // biomes" below BIOMES, whatever its biome container actually holds. Saying where this
@@ -387,38 +427,34 @@ public final class PortalChunkTerrain {
         // have this chunk doing lighting work for a world it is not in.
         chunk.setPersistedStatus(ChunkStatus.SURFACE);
 
-        int fillLo = Math.max(minY, anchor - CONTEXT_BELOW);
-        int fillHi = Math.min(maxY, anchor + CONTEXT_ABOVE);
-        fillColumns(noiseGenerator, random, level, chunk, pos, fillLo, fillHi);
-        Heightmap.primeHeightmaps(chunk, EnumSet.of(
+        // Vanilla's own fill, and it needs a structure manager to bear the terrain down under
+        // whatever was built there. The one bound to the sample's own region answers out of the
+        // throwaway chunks it is made of, so nothing reaches into the world for a structure start —
+        // which is what handing it the level's own manager would have done, a chunk load at a time.
+        ChunkAccess filled = generator.fillFromNoise(Blender.empty(), random,
+            PortalChunkFeatures.structuresFor(level, generator, random, chunk), chunk).join();
+        if (!(filled instanceof ProtoChunk ground)) return null;
+        Heightmap.primeHeightmaps(ground, EnumSet.of(
             Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
             Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
-        dressSurface(noiseGenerator, level, random, settings, biomes, chunk);
-        // Before the doors are fitted to this ground, because a carver can take the ground away.
-        PortalChunkFeatures.carve(noiseGenerator, level, random, chunk, level.getSeed(), pairKey);
+        dressSurface(generator, level, random, settings, biomes, ground);
 
-        return new Sample(level, noiseGenerator, random, chunk, pos, source, anchor, minY, maxY);
-    }
+        int anchor = standableRow(ground, SIZE / 2, SIZE / 2, minY, maxY);
+        if (anchor == NO_GROUND) return null;
 
-    /** Pour the generator's own columns into the throwaway chunk, over the window that matters. */
-    private static void fillColumns(NoiseBasedChunkGenerator generator, RandomState random,
-                                    ServerLevel level, ProtoChunk chunk, ChunkPos pos,
-                                    int fillLo, int fillHi) {
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int dx = 0; dx < SIZE; dx++) {
-            for (int dz = 0; dz < SIZE; dz++) {
-                int worldX = pos.getMinBlockX() + dx;
-                int worldZ = pos.getMinBlockZ() + dz;
-                NoiseColumn column = generator.getBaseColumn(worldX, worldZ, level, random);
-                for (int y = fillLo; y <= fillHi; y++) {
-                    BlockState state = column.getBlock(y);
-                    // The chunk starts empty, so air is already what is there — and skipping it
-                    // keeps the section palettes off every cell of open sky above the ground.
-                    if (state.isAir()) continue;
-                    chunk.setBlockState(cursor.set(worldX, y, worldZ), state, false);
-                }
-            }
+        int agreeing = 1;
+        int[][] corners = {
+            {PROBE_INSET, PROBE_INSET},
+            {SIZE - 1 - PROBE_INSET, PROBE_INSET},
+            {PROBE_INSET, SIZE - 1 - PROBE_INSET},
+            {SIZE - 1 - PROBE_INSET, SIZE - 1 - PROBE_INSET},
+        };
+        for (int[] corner : corners) {
+            int row = standableRow(ground, corner[0], corner[1], minY, maxY);
+            if (row != NO_GROUND && Math.abs(row - anchor) <= PROBE_SPREAD) agreeing++;
         }
+        return new Sample(level, generator, random, ground, pos, source, anchor, minY, maxY,
+            agreeing);
     }
 
     /**
@@ -479,62 +515,6 @@ public final class PortalChunkTerrain {
         return new PortalChunkSlice(source, SIZE, states);
     }
 
-    /** A sample site that was probed: where it is, what row its ground sits on, and how much of it. */
-    private record Site(ChunkPos pos, int anchor, int probes) {}
-
-    /**
-     * Walk the pair's sequence of candidate sites and take the first that is somewhere worth
-     * standing in, or the best of the ones seen when none of them is.
-     *
-     * <p>"Worth standing in" is {@link #PROBES_REQUIRED} of five columns having standable ground
-     * within {@link #PROBE_SPREAD} of the middle one's. Falling back to the best rejected site
-     * rather than to nothing is deliberate: an End pair whose whole sequence was void still gets a
-     * room, and an island's edge is a better room than the template alone.</p>
-     */
-    private static Site pickSite(NoiseBasedChunkGenerator generator, RandomState random,
-                                 ServerLevel level, long worldSeed, int pairKey) {
-        int minY = level.getMinBuildHeight();
-        int maxY = Math.min(level.getMaxBuildHeight() - 1,
-            minY + level.dimensionType().logicalHeight() - 1);
-        Site best = null;
-        for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
-            ChunkPos pos = siteFor(worldSeed, pairKey, attempt);
-            Site site = probe(generator, random, level, pos, minY, maxY);
-            if (site == null) continue;
-            if (site.probes() >= PROBES_REQUIRED) return site;
-            if (best == null || site.probes() > best.probes()) best = site;
-        }
-        return best;
-    }
-
-    /**
-     * Measure one candidate: the middle column decides the row, the four corners say how much of the
-     * chunk agrees with it. Null when the middle column has nowhere to stand at all — open ocean,
-     * the End's void, or solid rock to the ceiling.
-     */
-    private static Site probe(NoiseBasedChunkGenerator generator, RandomState random,
-                              ServerLevel level, ChunkPos pos, int minY, int maxY) {
-        int anchor = standableRow(
-            generator.getBaseColumn(pos.getMiddleBlockX(), pos.getMiddleBlockZ(), level, random),
-            minY, maxY);
-        if (anchor == NO_GROUND) return null;
-
-        int agreeing = 1;
-        int[][] corners = {
-            {PROBE_INSET, PROBE_INSET},
-            {SIZE - 1 - PROBE_INSET, PROBE_INSET},
-            {PROBE_INSET, SIZE - 1 - PROBE_INSET},
-            {SIZE - 1 - PROBE_INSET, SIZE - 1 - PROBE_INSET},
-        };
-        for (int[] corner : corners) {
-            int row = standableRow(generator.getBaseColumn(
-                pos.getMinBlockX() + corner[0], pos.getMinBlockZ() + corner[1], level, random),
-                minY, maxY);
-            if (row != NO_GROUND && Math.abs(row - anchor) <= PROBE_SPREAD) agreeing++;
-        }
-        return new Site(pos, anchor, agreeing);
-    }
-
     /** What {@link #standableRow} answers for a column with nowhere to stand. */
     private static final int NO_GROUND = Integer.MIN_VALUE;
 
@@ -553,14 +533,15 @@ public final class PortalChunkTerrain {
      * the pair tries somewhere else — while a lake or a river, which is ground with a puddle on it,
      * still passes on the columns either side.</p>
      */
-    private static int standableRow(NoiseColumn column, int minY, int maxY) {
+    private static int standableRow(ChunkAccess chunk, int localX, int localZ, int minY, int maxY) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int worldX = chunk.getPos().getMinBlockX() + localX;
+        int worldZ = chunk.getPos().getMinBlockZ() + localZ;
         for (int y = maxY - ANCHOR_HEADROOM; y > minY; y--) {
-            BlockState below = column.getBlock(y - 1);
-            if (below.isAir() || !below.getFluidState().isEmpty()) continue;
+            if (!chunk.getBlockState(cursor.set(worldX, y - 1, worldZ)).blocksMotion()) continue;
             boolean clear = true;
             for (int h = 0; h < ANCHOR_HEADROOM; h++) {
-                BlockState above = column.getBlock(y + h);
-                if (!above.isAir()) {
+                if (!chunk.getBlockState(cursor.set(worldX, y + h, worldZ)).isAir()) {
                     clear = false;
                     break;
                 }

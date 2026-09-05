@@ -119,7 +119,19 @@ final class PortalChunkFeatures {
         }
     }
 
-    /** The region both passes work in — see {@link #regionAround}. */
+    /**
+     * A structure manager bound to a region over the sample's own throwaway chunks.
+     *
+     * <p>What {@code fillFromNoise} needs to bear terrain down under a structure. Handing it the
+     * level's own manager instead would have it read structure starts out of the world — one chunk
+     * load at a time, on a worker thread, for a chunk sixty thousand chunks from anything.</p>
+     */
+    static StructureManager structuresFor(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                          RandomState random, ProtoChunk chunk) {
+        return level.structureManager().forWorldGenRegion(regionFor(level, generator, random, chunk));
+    }
+
+    /** The region every pass works in — see {@link #regionAround}. */
     private static WorldGenRegion regionFor(ServerLevel level, NoiseBasedChunkGenerator generator,
                                             RandomState random, ProtoChunk chunk) {
         return regionAround(level, generator, random, chunk,
