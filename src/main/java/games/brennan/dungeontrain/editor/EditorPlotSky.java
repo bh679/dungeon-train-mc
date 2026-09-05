@@ -1,8 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
+import games.brennan.dungeontrain.portal.PlayerSkyRegions;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.portal.PortalRoomSky;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -10,9 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Light a portal room's editor plot with the room's own Sky, the way the room will be lit once it is
@@ -42,13 +39,6 @@ import java.util.UUID;
  */
 public final class EditorPlotSky {
 
-    /**
-     * Last region sent to each player, so a player standing still on a plot costs one comparison a
-     * tick rather than a packet. Cleared through {@link #forget} on the way out of the build area
-     * and wholesale when the server stops.
-     */
-    private static final Map<UUID, PortalRoomSkyPacket> LAST = new HashMap<>();
-
     private EditorPlotSky() {}
 
     /**
@@ -63,10 +53,7 @@ public final class EditorPlotSky {
             clear(player);
             return;
         }
-        UUID id = player.getUUID();
-        if (region.equals(LAST.get(id))) return;
-        LAST.put(id, region);
-        DungeonTrainNet.sendTo(player, region);
+        PlayerSkyRegions.send(player, region);
     }
 
     /**
@@ -109,12 +96,11 @@ public final class EditorPlotSky {
     }
 
     private static void clear(ServerPlayer player) {
-        if (LAST.remove(player.getUUID()) == null) return;
-        DungeonTrainNet.sendTo(player, PortalRoomSkyPacket.none());
+        PlayerSkyRegions.clear(player);
     }
 
     /** Wipe every player's dedup state — the integrated server has stopped. */
     public static void clearAll() {
-        LAST.clear();
+        PlayerSkyRegions.clearAll();
     }
 }
