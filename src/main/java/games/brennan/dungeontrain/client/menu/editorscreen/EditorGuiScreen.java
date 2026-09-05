@@ -397,10 +397,16 @@ public final class EditorGuiScreen extends Screen {
         boolean live = BuilderProfileState.live();
         // The row's own owner, not the builder being viewed: the pooled listing spans them.
         String owner = EditorCreatorBuilds.ownerOf(entry);
+        // The name this screen has been showing over their builds, so the install can caption the
+        // template with whose work it is — the fetch itself never answers that. In the pooled
+        // listing the viewed name is nobody's, so the row's own is what carries it.
+        String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
+            ? EditorCreatorBuilds.viewedName()
+            : entry.ownerName();
         DungeonTrainNet.sendToServer(loadAsCopy
             ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
-                BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, live, false)
-            : new BuilderProfileDownloadPacket(entry.relayId(), owner, live));
+                BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false)
+            : new BuilderProfileDownloadPacket(entry.relayId(), owner, ownerName, live));
         creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
     }
 

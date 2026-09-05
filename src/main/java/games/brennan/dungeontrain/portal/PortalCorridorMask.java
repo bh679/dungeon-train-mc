@@ -176,8 +176,8 @@ public record PortalCorridorMask(List<BoundingBox> boxes) {
      *
      * <p>The corridor box and the plug are never optional. Those hold the doorway and the corridor's
      * own blocks, and a write into either is the thing this whole class exists to prevent. Only the
-     * ring around the mouth is released, and only to the room copy that owns that plane — which then
-     * repairs any air it leaves. See {@code PortalRoomSealRepair}.</p>
+     * ring around the mouth is released, and only to the room copy that owns that plane. What that
+     * copy leaves as air stays air — see {@link PortalRoomDoorWall}.</p>
      */
     public static PortalCorridorMask forStructure(PortalStructure structure, CarriageDims dims,
                                                   PortalCarriageLayout layout, int plugDepth,

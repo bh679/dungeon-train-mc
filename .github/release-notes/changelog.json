@@ -11301,6 +11301,106 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-seal-block",
+      "version": "0.798.0",
+      "type": "feat",
+      "title": "Sealed portal rooms can be walled in any block",
+      "summary": "A dimensional carriage set to Bedrock Lock used to be wrapped in bedrock, always. The block is now the room author's choice: a Lock row in the portal-room editor, sitting right under Walls, that takes whatever block you are holding when you tap it. Bedrock unless you say otherwise, so every room that exists today looks exactly as it did \u2014 but a room can now be sealed in obsidian, deepslate, or a skybox block that makes its edges read as open air. Emptying your hand sets it to nothing at all, which leaves the room genuinely unsealed.",
+      "highlights": [
+        "New Lock row in the dimensional-carriage editor \u2014 tap it with a block in hand to seal the room in that block",
+        "Applies to the whole shell: the skin around the room, both corridors, and the plugs behind their dead outer doors",
+        "Chunk-dimension rooms take the setting too \u2014 they are sealed the same way",
+        "An empty hand means no shell at all, for a room meant to be dug out of"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "builder-variant-and-contents-menus",
+      "version": "0.799.0",
+      "type": "feat",
+      "title": "Variant and loot menus work in the Train Builder",
+      "summary": "The block-variant menu (Z) and the container-contents menu (C) now work while you are building a carriage, room, part, track piece or portal room in the Train Builder \u2014 not just in the Train Editor. What you author is kept with that build and written onto the template when you save it, and loaded back when you open one. Both menus also follow the block you are looking at rather than the ground you are standing on, so you can back off a build and keep editing it from outside.",
+      "highlights": [
+        "Tap Z on any block of your build to give it a pool of random variants, and C on a chest to fill it with weighted loot.",
+        "Variant pools and chest contents follow a build: they load when you open a template and are written back when you save it.",
+        "Wireframes and lock-group labels are drawn in the builder, so you can see which blocks you have flagged.",
+        "Both menus open on whatever you are looking at, so authoring a wall from outside the carriage works."
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "build-creator-credit",
+      "version": "0.799.0",
+      "type": "feat",
+      "title": "Downloaded builds remember who made them",
+      "summary": "A carriage, room or part you load from another player's profile now keeps their name. Open it in the Train Builder and the info panel says who built it \u2014 and it stays theirs when you edit it, rename it, or pass it on to somebody else.",
+      "highlights": [
+        "Builds loaded from another creator are captioned \"Built by <name>\" in the Train Builder's info panel.",
+        "The original creator sticks: editing and re-saving a downloaded build never re-attributes it to you.",
+        "Attribution survives being passed along \u2014 a build that travels through a second player's profile still names the person who actually made it."
+      ],
+      "pr": 1303,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-rooms-tile-as-authored",
+      "version": "0.799.0",
+      "type": "feat",
+      "title": "Dimensional carriages tile exactly as their author built them",
+      "summary": "Endless rooms no longer get extra walls added by the game. Copies of a room used to have the wall between them cut open, their outer edges bricked up with mirrored blocks, and the doorway back to the train boxed in with a wall of the room's own floor block \u2014 an open-sided room ended up with walls nobody built. Every room now repeats as drawn: openings stay open, edges stay as they are, and the way back to the train is whatever the room has there. Room authors who want the old merged look can turn it on per room in the editor (Room Walls: Merged). Also fixes the editor's Test the Carriage button stamping a room one block too small on some tries, restores the Book room's floor and walls, and adds a batch of new rooms \u2014 Outside the Box, Foundation and Chess by Firefly_on_ytb, Suspicious Furniture Store and Nostalgia by Lil Detective Crunch, and Peatear Griffin by Dot.",
+      "highlights": [
+        "Built by Firefly_on_ytb (Outside the Box, Foundation, Chess), Lil Detective Crunch (Suspicious Furniture Store, Nostalgia) and Dot (Peatear Griffin)",
+        "Endless rooms repeat exactly as authored \u2014 no invented walls at the doorway, no bricked-up edges, no cut seams (Room Walls now defaults to Kept)",
+        "Test the Carriage always stamps the room at its true size, and says so when the plot has unsaved size changes",
+        "Book room's floor and walls are back",
+        "New house rooms: Suspicious Furniture Store, Peatear Griffin, Foundation, Chess, Nostalgia",
+        "New patterns rooms Bigger and Smallpat, a second Single Pillar, an Ender room among the distant enemies, and Outside the Box",
+        "Abandoned Room, Upside Down, Cubes, Patterns and Deserter rebuilt; Book and Labyrinth appear a little less often"
+      ],
+      "pr": 1305,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-polish",
+      "version": "0.800.0",
+      "type": "feat",
+      "title": "Dimensional carriage polish",
+      "summary": "A small refinement to dimensional carriages.",
+      "highlights": [],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "afk-pause-train-time",
+      "version": "0.801.0",
+      "type": "feat",
+      "title": "Your clock pauses when you stop playing",
+      "summary": "Time on the train is now a measure of play rather than of the game being left open. The clock pauses while the pause menu is open, after 30 seconds without mouse movement, after 5 minutes without input, or if you haven't passed 3 carriages in 10 minutes \u2014 and starts again the moment you move. Nothing else about your run changes: you don't die, nothing resets, and you can stand still as long as you like. Those minutes simply aren't added to your time. Every place the game reports that time \u2014 the death screen, run reports, and the Longest Aboard leaderboards \u2014 now shows time on the train instead of time since you spawned.",
+      "highlights": [
+        "Idle and paused minutes no longer count toward your time on the train \u2014 your run keeps going, only the clock stops",
+        "The death screen and both Longest Aboard leaderboards now report time on the train, not time since spawn"
+      ],
+      "pr": 1306,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

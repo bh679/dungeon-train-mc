@@ -71,7 +71,31 @@
     {
       "id": "terrarium",
       "weight": 1,
-      "minLevel": 4
+      "minLevel": 11
+    },
+    {
+      "id": "suspiciousfurniturestore",
+      "weight": 1,
+      "minLevel": 66,
+      "maxLevel": 108
+    },
+    {
+      "id": "peateargriffin",
+      "weight": 1,
+      "minLevel": 31,
+      "maxLevel": 34
+    },
+    {
+      "id": "foundation",
+      "weight": 1
+    },
+    {
+      "id": "chess",
+      "weight": 1
+    },
+    {
+      "id": "nostalgia",
+      "weight": 1
     }
   ]
 }

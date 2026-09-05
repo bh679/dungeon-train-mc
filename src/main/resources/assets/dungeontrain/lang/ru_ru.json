@@ -904,6 +904,7 @@
   "gui.dungeontrain.builder.info.stage_any": "Любой уровень",
   "gui.dungeontrain.builder.info.size": "%1$s × %2$s × %3$s",
   "gui.dungeontrain.builder.info.weight": "частота %1$s",
+  "gui.dungeontrain.builder.info.creator": "Построил %1$s",
   "gui.dungeontrain.builder.new.title": "Новый",
   "gui.dungeontrain.builder.new.name": "Имя",
   "gui.dungeontrain.builder.new.subtype": "Подтип",

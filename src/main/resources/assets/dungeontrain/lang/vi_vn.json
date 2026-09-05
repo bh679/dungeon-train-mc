@@ -849,6 +849,7 @@
   "gui.dungeontrain.builder.info.stage_any": "Any stage",
   "gui.dungeontrain.builder.info.size": "%1$s × %2$s × %3$s",
   "gui.dungeontrain.builder.info.weight": "weight %1$s",
+  "gui.dungeontrain.builder.info.creator": "Được xây bởi %1$s",
   "gui.dungeontrain.builder.new.title": "New",
   "gui.dungeontrain.builder.new.name": "Name",
   "gui.dungeontrain.builder.new.subtype": "Sub type",

@@ -318,7 +318,7 @@ public final class BuilderFavouritesScreen extends Screen {
         // authorises a fetch by owner uuid, and naming ourselves would be asking for a build we do
         // not own under a name that owns nothing.
         DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(),
-                entry.ownerUuid(), BuilderProfileState.live()));
+                entry.ownerUuid(), entry.ownerName(), BuilderProfileState.live()));
         this.downloadButton.active = false;
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
     }

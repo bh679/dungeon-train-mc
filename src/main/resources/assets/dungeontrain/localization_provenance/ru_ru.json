@@ -447,6 +447,7 @@
       "gui.dungeontrain.exit_to_title",
       "gui.dungeontrain.editor_button",
       "gui.dungeontrain.builder.info.size",
+      "gui.dungeontrain.builder.info.creator",
       "gui.dungeontrain.new_world",
       "gui.dungeontrain.localization_credits.prefix",
       "gui.dungeontrain.editor_help.title",

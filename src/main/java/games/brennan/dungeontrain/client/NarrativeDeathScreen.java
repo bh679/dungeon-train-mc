@@ -477,7 +477,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (ClientDisplayConfig.getLastNpsScore() > DONATE_NPS_THRESHOLD) return true;
         DeathStatsPacket s = DeathStatsCache.get();
         if (s == null) return false;
-        if (s.runTicks() > DONATE_PLAYTIME_TICKS) return true;
+        if (s.trainTimeTicks() > DONATE_PLAYTIME_TICKS) return true;
         long runs = s.lifeDeaths();
         return runs >= DONATE_EVERY_N_RUNS && runs % DONATE_EVERY_N_RUNS == 0; // 3rd, 6th… never the first
     }
@@ -1075,7 +1075,7 @@ public final class NarrativeDeathScreen extends Screen {
             int third = w / 3;
             drawCell(g, left + third / 2, y, Integer.toString(s.cartsTravelled()), "gui.dungeontrain.death.narr.lbl_carriage");
             drawCell(g, left + third + third / 2, y, fmtDist(s.distanceBlocks()), "gui.dungeontrain.death.narr.lbl_distance");
-            drawCell(g, left + 2 * third + third / 2, y, fmtTime(s.runTicks()), "gui.dungeontrain.death.narr.lbl_time");
+            drawCell(g, left + 2 * third + third / 2, y, fmtTime(s.trainTimeTicks()), "gui.dungeontrain.death.narr.lbl_time");
         }
         return y + 34;
     }

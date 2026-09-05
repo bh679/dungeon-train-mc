@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
+import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
@@ -141,8 +142,30 @@ public final class PortalTestCommand {
         //
         // The basement rather than PortalTwinSpace.regionFor, because the basement is the region this
         // command actually stamps into — originFor stands the lane on the build floor.
-        Vec3i authoredSize = PortalRoomSizes.sizeOf(roomName, dims);
+        //
+        // Read off the TEMPLATE, not off PortalRoomSizes: the box and the blocks put into it have to
+        // be the same size, and only the template can answer for both. PortalRoomSizes is a
+        // process-wide cache with a `pending` override for a plot resize that disk does not have
+        // yet, so it drifts from the template in both directions — and a box that disagrees sends
+        // stampRoomAt down its resize branch, which lays the built-in shell and clips the authored
+        // room to the box. Either way an edge of the room is not the author's. Under endless
+        // repetition every tile inherits it, because the tiler stamps all of them from this one
+        // size. This is the call planStructure makes in play, so a test now sizes the room exactly
+        // as a player would meet it.
+        Vec3i authoredSize = PortalRoomTemplateStore.sizeOf(overworld, roomName, dims);
         PortalRoomSettings authored = PortalRoomSettings.of(roomName);
+
+        // A plot resized but not saved: the test can only stand up what is on disk, so say so rather
+        // than stamping the last save and letting the author read it as their new room.
+        Vec3i plot = PortalRoomSizes.sizeOf(roomName, dims);
+        if (!plot.equals(authoredSize)) {
+            source.sendSuccess(() -> Component.literal(
+                "'" + roomName + "' is " + plot.getX() + "x" + plot.getY() + "x" + plot.getZ()
+                    + " in the plot but " + authoredSize.getX() + "x" + authoredSize.getY() + "x"
+                    + authoredSize.getZ() + " on disk — testing what was saved. Save it to test the "
+                    + "size you are building."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
         PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
         Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authoredSize);
 
@@ -287,13 +310,18 @@ public final class PortalTestCommand {
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
         DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.none());
 
-        // Take the room's fog, daylight and train audio back. The same call the ticker makes, run
-        // once more now that the player is standing outside the structure: the send pass finds
-        // nobody inside and the clear pass lifts all three. Without it the ticker simply stops —
-        // the session is gone — and they would walk around the plot still fogged.
+        // Take the room's fog, daylight, train audio and depth disguise back. The same call the
+        // ticker makes, run once more now that the player is standing outside the structure: the send
+        // pass finds nobody inside and the clear pass lifts all four. Without it the ticker simply
+        // stops — the session is gone — and they would walk around the plot still fogged.
+        //
+        // groundY only reaches the send pass, which finds nobody; it is read off the world anyway so
+        // that this call cannot be the one that disagrees with the ticker about the disguise.
         PortalCarriageEvents.sendRoomAmbience(dims,
             PortalCarriageBuilder.layoutFor(dims, session.structure().kind()),
-            session.structure(), java.util.List.of(player));
+            session.structure(),
+            DungeonTrainWorldData.get(overworld).getTrainY(),
+            java.util.List.of(player));
 
         // Sweep the whole WINDOW, not just the base room. footprintOf is deliberately blind to
         // tiling — copies are laid around the corridors rather than through them — so clearing only

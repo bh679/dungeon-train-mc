@@ -34,6 +34,9 @@ public final class DungeonTrainNet {
 
         registrar.playToClient(VariantHoverPacket.TYPE, VariantHoverPacket.STREAM_CODEC, VariantHoverPacket::handle);
         registrar.playToClient(CarriageIndexPacket.TYPE, CarriageIndexPacket.STREAM_CODEC, CarriageIndexPacket::handle);
+
+        // Dev-HUD read-out: is time on the train banking, and if not, which idle rule stopped it.
+        registrar.playToClient(ActivityStatePacket.TYPE, ActivityStatePacket.STREAM_CODEC, ActivityStatePacket::handle);
         registrar.playToClient(EditorStatusPacket.TYPE, EditorStatusPacket.STREAM_CODEC, EditorStatusPacket::handle);
         registrar.playToClient(BookSuspensionSyncPacket.TYPE, BookSuspensionSyncPacket.STREAM_CODEC, BookSuspensionSyncPacket::handle);
         registrar.playToServer(VariantHotkeyPacket.TYPE, VariantHotkeyPacket.STREAM_CODEC, VariantHotkeyPacket::handle);
@@ -86,6 +89,11 @@ public final class DungeonTrainNet {
         // …and the same region trick for the engine sound: a twin corridor is not a sub-level, so the
         // client cannot work out from the train's geometry that it should still sound like one.
         registrar.playToClient(PortalTrainAudioPacket.TYPE, PortalTrainAudioPacket.STREAM_CODEC, PortalTrainAudioPacket::handle);
+        // …and the same region trick once more for the debug screen: a twin corridor stands in the
+        // carriage's own chunk columns, so F3 already agrees about X and Z and then prints the Y of
+        // the sealed lane it was stamped into. The box and the shift go over; the client rewrites its
+        // own readout. See client/ClientPortalRoomDepth.
+        registrar.playToClient(PortalRoomDepthPacket.TYPE, PortalRoomDepthPacket.STREAM_CODEC, PortalRoomDepthPacket::handle);
         // …and the swing back the other way: a puppet is not an entity, so a hit on one needs its own
         // round trip. The id is re-validated against the live pairing before anything is damaged.
         registrar.playToServer(PortalPuppetAttackPacket.TYPE, PortalPuppetAttackPacket.STREAM_CODEC, PortalPuppetAttackPacket::handle);
@@ -120,6 +128,14 @@ public final class DungeonTrainNet {
         // Client-only actions the server can't see (currently: the train engine volume setting
         // changing). Allowlisted server-side — see ClientActionPacket.
         registrar.playToServer(ClientActionPacket.TYPE, ClientActionPacket.STREAM_CODEC, ClientActionPacket::handle);
+
+        // Pause-screen open/close. The server can't see a client's screen, and on a dedicated
+        // server the world keeps ticking behind the menu — see PlayerActivityTracker.
+        registrar.playToServer(PlayerPausedPacket.TYPE, PlayerPausedPacket.STREAM_CODEC, PlayerPausedPacket::handle);
+
+        // Mouse movement / clicks inside an open screen, which freeze the camera and so are
+        // invisible to the server's own look sampling — see PlayerActivityTracker.
+        registrar.playToServer(ClientInputPacket.TYPE, ClientInputPacket.STREAM_CODEC, ClientInputPacket::handle);
 
         // Book vote: client casts 👍/👎 from the virtual vote page (buttons or Y/N hotkeys); server
         // re-validates the held stack's identity, stamps dt_book_vote (offline burn color), and

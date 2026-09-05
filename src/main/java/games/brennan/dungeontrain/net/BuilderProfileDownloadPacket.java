@@ -32,22 +32,31 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * not wait on one.</p>
  */
 public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Resolution resolution,
-                                           String name, String ownerUuid,
+                                           String name, String ownerUuid, String ownerName,
                                            boolean live, boolean overwriteUnsaved)
         implements CustomPacketPayload {
 
+    public BuilderProfileDownloadPacket {
+        ownerName = ownerName == null ? "" : ownerName;
+    }
+
     /** The first press on one of my own builds: install it, unless the name is already in use here. */
     public BuilderProfileDownloadPacket(int relayId) {
-        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", false, false);
+        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", "", false, false);
     }
 
     /**
      * The first press on a build in the profile being viewed — which may be somebody else's, and may
      * be on the live relay. Both come from the screen that listed it, so a build is always fetched
      * from the pool it was shown in.
+     *
+     * <p>{@code ownerName} is the display name that screen was captioning the build with. It is a
+     * label, not an identity — {@code ownerUuid} is what the relay is asked about, and what a
+     * recorded credit is keyed on — so a client saying something odd here can misspell a byline and
+     * nothing more. Empty when the screen never knew a name.</p>
      */
-    public BuilderProfileDownloadPacket(int relayId, String ownerUuid, boolean live) {
-        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", ownerUuid, live, false);
+    public BuilderProfileDownloadPacket(int relayId, String ownerUuid, String ownerName, boolean live) {
+        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", ownerUuid, ownerName, live, false);
     }
 
     public static final Type<BuilderProfileDownloadPacket> TYPE =
@@ -60,12 +69,13 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
                 buf.writeEnum(packet.resolution);
                 buf.writeUtf(packet.name, 64);
                 buf.writeUtf(packet.ownerUuid, 48);
+                buf.writeUtf(packet.ownerName, 64);
                 buf.writeBoolean(packet.live);
                 buf.writeBoolean(packet.overwriteUnsaved);
             },
             buf -> new BuilderProfileDownloadPacket(buf.readVarInt(),
                     buf.readEnum(BuilderRelayInstall.Resolution.class), buf.readUtf(64), buf.readUtf(48),
-                    buf.readBoolean(), buf.readBoolean())
+                    buf.readUtf(64), buf.readBoolean(), buf.readBoolean())
         );
 
     @Override
@@ -81,7 +91,7 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
             String owner = BuilderProfileRequestPacket.viewedOwner(player, packet.ownerUuid);
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
             BuilderRelayDownload.download(player, level, packet.relayId, packet.resolution, packet.name,
-                            owner, live, packet.overwriteUnsaved)
+                            owner, packet.ownerName, live, packet.overwriteUnsaved)
                     .thenAccept(result -> player.getServer().execute(() -> {
                         if (player.hasDisconnected()) return;
                         DungeonTrainNet.sendTo(player, BuilderProfileDownloadResultPacket.of(result));

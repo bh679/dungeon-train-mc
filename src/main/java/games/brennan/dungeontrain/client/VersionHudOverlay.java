@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.ActivityStatePacket;
 import games.brennan.dungeontrain.net.CarriageGroupGapPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.LayeredDraw;
@@ -40,6 +41,7 @@ public final class VersionHudOverlay {
     private static volatile boolean boardingProgressPresent = false;
     private static volatile int travelledCarriageIndex = 0;
     private static volatile int difficultyTier = 0;
+    private static volatile ActivityStatePacket activityState = null;
 
     private VersionHudOverlay() {}
 
@@ -86,6 +88,40 @@ public final class VersionHudOverlay {
     }
 
     /**
+     * Called from {@code ActivityStatePacket.handle} on the client main thread. Drives the dev-HUD
+     * "Time:" read-out — whether time on the train is banking, and what stopped it.
+     */
+    public static void setActivityState(ActivityStatePacket state) {
+        activityState = state;
+    }
+
+    /** {@code M:SS}, or {@code H:MM:SS} once it runs past an hour. */
+    private static String formatClock(long ticks) {
+        long totalSeconds = Math.max(0L, ticks) / 20L;
+        long hours = totalSeconds / 3600L;
+        long minutes = (totalSeconds % 3600L) / 60L;
+        long seconds = totalSeconds % 60L;
+        return hours > 0
+            ? String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
+            : String.format(Locale.ROOT, "%d:%02d", minutes, seconds);
+    }
+
+    /**
+     * The state half of the "Time:" line. Mirrors
+     * {@code PlayerActivityTracker.Reason} ordinals — the server owns the rules, this only names
+     * them.
+     */
+    private static String activityLabel(ActivityStatePacket state) {
+        return switch (state.reason()) {
+            case 1 -> "⏸ paused";
+            case 2 -> "⏸ mouse idle " + formatClock(state.stoppedSeconds() * 20L);
+            case 3 -> "⏸ no input " + formatClock(state.stoppedSeconds() * 20L);
+            case 4 -> "⏸ no progress " + state.carriagesInWindow() + "/3";
+            default -> "▶ tracking";
+        };
+    }
+
+    /**
      * Whether this HUD is putting anything in the top-left corner right now.
      *
      * <p>Shared with the render lambda rather than duplicated, so
@@ -116,6 +152,9 @@ public final class VersionHudOverlay {
         int lines = 1; // the version/carriage title line, always present when drawing
         if (boardingProgressPresent) {
             lines += 2; // Diff-Car + Diff-Level
+        }
+        if (activityState != null) {
+            lines += 1; // Time: banking state + the train clock
         }
         if (carriagePresent && DebugFlagsState.hudDistance()
                 && CarriageGroupGapState.findByCarriage(carriageIndex) != null) {
@@ -150,6 +189,19 @@ public final class VersionHudOverlay {
                 HudText.drawScaled(graphics, mc.font, levelText,
                     4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
                     0xFFFFD080, true);
+                line++;
+            }
+
+            // Is time banking, and if not, which rule stopped it? Server-pushed, because the
+            // idle rules and the counters both live there.
+            ActivityStatePacket activity = activityState;
+            if (activity != null) {
+                String timeText = String.format(Locale.ROOT, "  Time: %s   train %s",
+                    activityLabel(activity),
+                    formatClock(activity.trainTimeTicks()));
+                HudText.drawScaled(graphics, mc.font, timeText,
+                    4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
+                    activity.countingTrain() ? 0xFF80FF80 : 0xFFFFC060, true);
                 line++;
             }
 

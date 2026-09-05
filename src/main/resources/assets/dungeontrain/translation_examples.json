@@ -2741,6 +2741,15 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.info.creator": {
+    "1": {
+      "label": "the name of the player who originally built this template",
+      "examples": [
+        "Edda",
+        "soll_marra"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.info.weight": {
     "1": {
       "label": "how often the train picks this build, as a spawn weight",

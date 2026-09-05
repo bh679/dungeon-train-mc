@@ -43,7 +43,7 @@ public record DeathStatsPacket(
         int mobKills,
         int cartsTravelled,
         double distanceBlocks,
-        long runTicks,
+        long trainTimeTicks,
         int containersOpened,
         int booksRead,
         int booksWritten,
@@ -96,7 +96,7 @@ public record DeathStatsPacket(
         buf.writeVarInt(mobKills);
         buf.writeVarInt(cartsTravelled);
         buf.writeDouble(distanceBlocks);
-        buf.writeVarLong(runTicks);
+        buf.writeVarLong(trainTimeTicks);
         buf.writeVarInt(containersOpened);
         buf.writeVarInt(booksRead);
         buf.writeVarInt(booksWritten);
@@ -151,7 +151,7 @@ public record DeathStatsPacket(
         int mobKills = buf.readVarInt();
         int cartsTravelled = buf.readVarInt();
         double distanceBlocks = buf.readDouble();
-        long runTicks = buf.readVarLong();
+        long trainTimeTicks = buf.readVarLong();
         int containersOpened = buf.readVarInt();
         int booksRead = buf.readVarInt();
         int booksWritten = buf.readVarInt();
@@ -198,7 +198,7 @@ public record DeathStatsPacket(
         for (int i = 0; i < tamedTypes; i++) {
             tamedAnimals.add(buf.readResourceLocation());
         }
-        return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
+        return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, trainTimeTicks,
                 containersOpened, booksRead, booksWritten, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
