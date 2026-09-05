@@ -455,6 +455,11 @@ public final class BuilderWorldSetup {
         EditorPlotSnapshots.clearAll();
         // The plot went with everything else, so the world is no longer holding a track build.
         data.setBuilderTrackKind("");
+        // The variant pools and container contents described blocks that are no longer standing, so
+        // they go with them. Every Open arm calls this before it stamps and then seeds its own
+        // template's documents on top, which is why clearing here is not clearing what it is about
+        // to read — and it is what makes New, and a mode switch, start from nothing.
+        BuilderSidecarCarry.reset(level);
 
         applyScenery(level, mode);
     }
@@ -914,6 +919,7 @@ public final class BuilderWorldSetup {
         data.setBuilderStage(stageId);
         data.setBuilderSubType(request.subTypeToken(), request.partKindId());
         data.setBuilderMirror(open.mirror());
+        seedSidecars(level, dims, request);
 
         for (int i = 0; i < carriages; i++) {
             BlockPos origin = carriageOrigin(dims, carriages, i);
@@ -932,6 +938,22 @@ public final class BuilderWorldSetup {
                 shownStage.isEmpty() ? "<none>" : shownStage);
         BuilderStructureStamp.apply(level);
         return true;
+    }
+
+    /**
+     * Copy the opened template's variant pools and container contents into this build's own working
+     * copies, so the Z and C menus open onto what the template already has rather than onto nothing.
+     *
+     * <p>A template with no sidecar seeds an empty document, which is also what a build with no
+     * template behind it — a carriage group, or anything New made — starts from.</p>
+     */
+    private static void seedSidecars(ServerLevel level, CarriageDims dims, BuilderOpenRequest request) {
+        String plotKey = request.templatePlotKey();
+        // Null means the template has no sidecar of its own (a carriage group). Nothing to seed —
+        // resetScene has already emptied the working copies, which is the right starting point.
+        if (plotKey == null) return;
+        BuilderSidecarCarry.seedFromTemplate(level, plotKey, dims,
+                BuilderSidecarCarry.offsetFor(request.kind(), request.partKind(), dims));
     }
 
     // ---- track-side templates ----
@@ -990,6 +1012,7 @@ public final class BuilderWorldSetup {
         data.setBuilderTrackKind(kind.id());
         data.setBuilderStage("");
         data.setBuilderMirror(trackMirrorOf(kind, name, size));
+        seedSidecars(level, dims, request);
         EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(kind, name), level, origin,
                 size.getX(), size.getY(), size.getZ());
         LOGGER.info("[DungeonTrain] Builder open: track {} '{}' into mode '{}' at {}",
@@ -1124,6 +1147,7 @@ public final class BuilderWorldSetup {
         // A room's mirroring is authored in its own sidecar, not in the builder's flags; carrying
         // the last build's axes over would apply them to geometry never authored against them.
         data.setBuilderMirror(BuilderMirrorFlags.DEFAULT);
+        seedSidecars(level, dims, request);
 
         EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(0), level, origin,
                 size.getX(), size.getY(), size.getZ());
