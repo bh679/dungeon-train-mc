@@ -40,7 +40,8 @@ public final class ClientPortalCrossing {
      * the "it all happens at the end" this is meant not to do. {@code 0.20} lands the lag near a
      * block while still turning the server's per-block steps into a slope.</p>
      */
-    private static final float EASE_PER_REBUILD = 0.20f;
+    private static final float FADE_SECONDS = 0.8f;
+    private static final long[] FADE_CLOCK = new long[1];
 
     /** Below this the lift is not worth applying, and the mixin hands the lightmap back to vanilla. */
     private static final float OFF_EPSILON = 0.004f;
@@ -87,8 +88,33 @@ public final class ClientPortalCrossing {
      * a value {@link #advance} stepped earlier in the same rebuild is the point: all three effects
      * then move together, which is what makes the corridor read as one transition.</p>
      */
+
+    /**
+     * Shape a linear 0..1 progress into a fade that eases at both ends.
+     *
+     * <p>The ease this replaced was exponential — {@code applied += (want - applied) * rate} — whose
+     * largest step is its <em>first</em>. For a lift that brightens unlit cells that is backwards:
+     * the change was most abrupt exactly where it should have been imperceptible, and under a shader
+     * pack, which leans on the lightmap for ambient, it read as the lighting snapping on.</p>
+     */
+    private static float shaped(float progress) {
+        float x = Math.max(0.0f, Math.min(1.0f, progress));
+        return x * x * (3.0f - 2.0f * x);
+    }
+
+    /** Move {@code from} toward {@code to} at a fixed pace in real seconds, frame rate be damned. */
+    private static float approach(float from, float to, float seconds, long[] lastNanos) {
+        long now = System.nanoTime();
+        float dt = lastNanos[0] == 0L ? 0.0f : (now - lastNanos[0]) / 1_000_000_000.0f;
+        lastNanos[0] = now;
+        dt = Math.max(0.0f, Math.min(0.25f, dt));
+        float step = seconds <= 0.0f ? 1.0f : dt / seconds;
+        if (to > from) return Math.min(to, from + step);
+        return Math.max(to, from - step);
+    }
+
     public static float current() {
-        return applied;
+        return shaped(applied);
     }
 
     /**
@@ -114,11 +140,11 @@ public final class ClientPortalCrossing {
 
         if (wanted <= 0.0f && applied <= 0.0f) return 0.0f;
 
-        applied += (wanted - applied) * EASE_PER_REBUILD;
+        applied = approach(applied, wanted, FADE_SECONDS, FADE_CLOCK);
         if (wanted <= 0.0f && applied <= OFF_EPSILON) {
             applied = 0.0f;
             return 0.0f;
         }
-        return applied;
+        return shaped(applied);
     }
 }
