@@ -11373,6 +11373,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-polish",
+      "version": "0.800.0",
+      "type": "feat",
+      "title": "Dimensional carriage polish",
+      "summary": "A small refinement to dimensional carriages.",
+      "highlights": [],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
