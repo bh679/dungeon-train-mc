@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 50,
+  "variants": [
+    {
+      "id": "chunk_dimension_nether",
+      "weight": 8,
+      "minLevel": 4
+    },
+    {
+      "id": "chunk_dimension_end",
+      "weight": 2,
+      "minLevel": 5
+    }
+  ]
+}

@@ -11283,6 +11283,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "chunk-dimension-carriage",
+      "version": "0.797.0",
+      "type": "feat",
+      "title": "Chunk dimensions: a portal room made of real world generation",
+      "summary": "A new kind of dimensional carriage opens onto a single chunk of genuine Minecraft world \u2014 terrain, caves, trees, a structure and the mobs that live there \u2014 sealed in a box of sky, with its doorways standing on the ground. Most are a slice of the Overworld; deeper in the run, the Nether and the End turn up too.",
+      "highlights": [
+        "Every chunk dimension is a real 16x16 chunk, two chunks tall: noise, surface, carvers, decoration and one guaranteed structure, generated from the seed rather than built by hand.",
+        "Walk out onto the ground rather than a floor \u2014 each of the room's two doorways stands at the height of the terrain in front of it, so a sloped chunk gives you two doors at two heights.",
+        "The chunk comes inhabited: a meadow with its animals, a village with its villagers, a Nether cavern with its zombified piglins, and chests that hold what that structure's loot table says they hold.",
+        "One room in ten borrows another dimension's structure \u2014 an End city standing in a meadow, a bastion in a birch forest.",
+        "Nether and End chunk dimensions unlock at Diff-Level 4 and 5."
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
