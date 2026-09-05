@@ -37,10 +37,11 @@ class PortalRoomSettingsTest {
     // ---- the stored tag ----
 
     @Test
-    @DisplayName("Door Wall is absent from every tag ever written, and reads back Sealed")
-    void doorWallDefaultsSealedForEveryLegacyTag() {
-        // The setting changes what is standing in a world that already exists, so this is the test
-        // that matters: nothing written before it existed may come back as anything but Sealed.
+    @DisplayName("Door Wall is absent from every tag ever written; repetition rooms read back Kept, the rest Sealed")
+    void doorWallDefaultsKeptForEveryLegacyTag() {
+        // Kept is the default since 2026-09-05 — a deliberate migration of every shipped endless room
+        // — but only where the control applies. Every other mode is pinned to Sealed, and none of
+        // these tags may grow a segment on the way back out.
         for (String tag : new String[] {
             "bedrock_lock", "bedrockless", "endless_open", "endless_repetition",
             "endless_repetition/dynamic", "endless_repetition/dynamic/fit",
@@ -50,21 +51,48 @@ class PortalRoomSettingsTest {
             "endless_repetition/dynamic/fit/random:12/mix:0:0:1",
             "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day",
         }) {
-            assertEquals(PortalRoomDoorWall.SEALED, PortalRoomSettings.parse(tag).doorWall(), tag);
-            assertEquals(tag, PortalRoomSettings.parse(tag).toTag(), tag + " round-trips unchanged");
+            PortalRoomSettings parsed = PortalRoomSettings.parse(tag);
+            assertEquals(PortalRoomDoorWall.REPEATED, parsed.doorWall(), tag);
+            assertEquals(parsed.doorWallApplies() ? PortalRoomDoorWall.REPEATED : PortalRoomDoorWall.SEALED,
+                parsed.effectiveDoorWall(), tag + " effective");
+            assertEquals(tag, parsed.toTag(), tag + " round-trips unchanged");
         }
     }
 
     @Test
-    @DisplayName("Repeated is written as the seventh segment, with the six in front of it")
-    void repeatedDoorWallRoundTrips() {
+    @DisplayName("Merged is the value that now has to be written, and only where the control applies")
+    void sealedDoorWallRoundTripsAndNeverLeaksOntoOtherModes() {
+        String tag = new PortalRoomSettings(PortalRoomMode.ENDLESS_REPETITION,
+            PortalRoomCopies.DYNAMIC, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT,
+            PortalRoomSky.NONE, PortalRoomDoorWall.SEALED).toTag();
+        assertEquals(7, tag.split("/", -1).length, tag);
+        assertTrue(tag.endsWith("/sealed"), tag);
+        assertEquals(PortalRoomDoorWall.SEALED, PortalRoomSettings.parse(tag).doorWall());
+        assertEquals(tag, PortalRoomSettings.parse(tag).toTag());
+
+        // An Endless Open room is effectively Sealed, but that is the mode's doing, not a value to
+        // store: writing it would grow "/sealed" onto every such tag on its next save.
+        String open = new PortalRoomSettings(PortalRoomMode.ENDLESS_OPEN,
+            PortalRoomCopies.DYNAMIC, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT,
+            PortalRoomSky.NONE, PortalRoomDoorWall.SEALED).toTag();
+        assertEquals("endless_open/dynamic", open);
+    }
+
+    @Test
+    @DisplayName("Repeated is the default, so it is not written — and an explicit one is read then dropped")
+    void repeatedDoorWallIsTheUnwrittenDefault() {
         String tag = new PortalRoomSettings(PortalRoomMode.ENDLESS_REPETITION,
             PortalRoomCopies.DYNAMIC, PortalRoomContents.DEFAULT, null, PortalRoomBooks.DEFAULT,
             PortalRoomSky.NONE, PortalRoomDoorWall.REPEATED).toTag();
-        assertEquals(7, tag.split("/", -1).length, tag);
-        assertTrue(tag.endsWith("/repeated"), tag);
+        assertEquals("endless_repetition/dynamic", tag);
         assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomSettings.parse(tag).doorWall());
-        assertEquals(tag, PortalRoomSettings.parse(tag).toTag());
+        // library_dimension shipped with the segment spelt out while it was the opt-in; it still
+        // parses, and the writer folds it away as the redundant default it now is.
+        PortalRoomSettings explicit = PortalRoomSettings.parse(
+            "endless_repetition/dynamic/off/on/off/none/repeated");
+        assertEquals(PortalRoomDoorWall.REPEATED, explicit.doorWall());
+        // "on" exits are Endless Repetition's own default too, so the whole tail folds away.
+        assertEquals("endless_repetition/dynamic", explicit.toTag());
     }
 
     @Test
@@ -88,7 +116,7 @@ class PortalRoomSettingsTest {
             "endless_repetition/dynamic/fit/random:12",
             "endless_repetition/dynamic/fit/random:12/mix:0:0:1",
             "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day",
-            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day/repeated",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day/sealed",
         }) {
             assertEquals(PortalRoomDoorOffset.DEFAULT, PortalRoomSettings.parse(tag).doorOffset(), tag);
             assertEquals(tag, PortalRoomSettings.parse(tag).toTag(), tag + " round-trips unchanged");
@@ -121,8 +149,8 @@ class PortalRoomSettingsTest {
             "endless_repetition/dynamic/fit/random:12",
             "endless_repetition/dynamic/fit/random:12/mix:0:0:1",
             "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day",
-            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day/repeated",
-            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day/repeated/3",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day/sealed",
+            "endless_repetition/dynamic/fit/random:12/mix:0:0:1/day/sealed/3",
         }) {
             assertEquals(PortalRoomDoorHeightOffset.DEFAULT,
                 PortalRoomSettings.parse(tag).doorHeightOffset(), tag);

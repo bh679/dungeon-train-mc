@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
 
 /**
@@ -92,6 +93,17 @@ import java.util.Set;
 public final class PortalCarriageBuilder {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
+    /**
+     * Size mismatches already reported, so the editor's size steppers do not fill a log.
+     *
+     * <p>Keyed on the room and both sizes, not on the room alone: a stepper walked from 11 to 13
+     * one click at a time is three distinct mismatches worth seeing once each, while the same click
+     * re-stamping the same plot over and over is one. Never cleared — the set is bounded by the
+     * number of distinct sizes an author steps through in a session, and a mismatch that has been
+     * said once has been said.</p>
+     */
+    private static final Set<String> REPORTED_SIZE_MISMATCHES = ConcurrentHashMap.newKeySet();
 
     /** Corridor shell — walls, floor, ceiling, door planes and baffles. */
     private static final BlockState SHELL = Blocks.STONE_BRICKS.defaultBlockState();
@@ -1028,7 +1040,8 @@ public final class PortalCarriageBuilder {
         // entry corridor and the near end of an exit one.
         int sealX = PortalCorridorMask.sealPlaneX(corridorOrigin, layout, role);
         sealCorridorMouth(level, sealX, corridorOrigin, dims, roomOrigin, roomSize,
-            sealSource.roomOrigin(dims, layout), role);
+            sealSource.roomOrigin(dims, layout), role,
+            /*wallOnly*/ base.settings().effectiveDoorWall().repeats());
 
         // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
         // Lock: the room's own skin stops at its ±X ends, so the plugs are what closes off the two
@@ -1851,6 +1864,14 @@ public final class PortalCarriageBuilder {
         // fits, and only genuinely new space comes back as the built-in room. Replacing the whole
         // thing with the built-in room — which is what used to happen — threw the work away on
         // every stepper click.
+        //
+        // Logged because everywhere OUTSIDE the editor's resize this branch is a bug: the caller
+        // sized the box from something other than the template it is about to stamp, and the room a
+        // player walks into loses an edge to the clip (or gains a built-in one). It used to happen
+        // silently — /dungeontrain portal test sized its box off the PortalRoomSizes cache and
+        // stamped the same room at two different sizes minutes apart, which took reading a session
+        // log to spot.
+        warnSizeMismatch(roomName, size, stored.get().getSize());
         stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
         CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
             clipTo(roomOrigin, size, writeMask), relight, boxOf(roomOrigin, size));
@@ -2096,14 +2117,23 @@ public final class PortalCarriageBuilder {
      * the same way: what closes a face should be what the player would have seen had the room simply
      * carried on. See {@link #sealFillFor} for the three tiers.</p>
      *
-     * <p><b>The plane still fills the room's whole cross-section and is still solid.</b> It is the
-     * only thing between the room and the basement rock when the next copy is never stamped — the
-     * budget is spent, or the chunks are not loaded — which {@link PortalCorridorMask}'s javadoc
-     * records at length. Only the material changed.</p>
+     * <p><b>Under {@link PortalRoomDoorWall#SEALED} the plane fills the room's whole cross-section
+     * and is solid.</b> It is the only thing between the room and the basement rock when the next
+     * copy is never stamped — the budget is spent, or the chunks are not loaded — which
+     * {@link PortalCorridorMask}'s javadoc records at length.</p>
+     *
+     * <p><b>Under {@link PortalRoomDoorWall#REPEATED} — the default — only the wall is carried on
+     * ({@code wallOnly}).</b> Where the room's own end column has a block, the plane continues it;
+     * where the author drew air, the cell is left as the rock it was cut from. Nothing is invented:
+     * an open-sided room used to get a plane of its own floor block here, which is the wall nobody
+     * drew that Kept exists to keep out. The copy at tile {@code (±1, 0)} lands nearest-first and
+     * stamps its own end column over this plane, air and all, so the rock is what a player sees for
+     * the tick or two before it does.</p>
      */
     private static void sealCorridorMouth(ServerLevel level, int planeX, BlockPos corridorOrigin,
                                           CarriageDims dims, BlockPos roomOrigin, Vec3i roomSize,
-                                          BlockPos baseRoomOrigin, PortalCarriageRole role) {
+                                          BlockPos baseRoomOrigin, PortalCarriageRole role,
+                                          boolean wallOnly) {
         int floorY = roomOrigin.getY();
         int ceilingY = floorY + roomSize.getY() - 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -2115,14 +2145,15 @@ public final class PortalCarriageBuilder {
                 // offset, or an exit door placed apart from its entry door, stands its corridor
                 // somewhere else in the box. The old test then bricked the top rows of the doorway
                 // and left the rows beneath it unfilled, which is a hole into the rock at the mouth.
-                // PortalCorridorMask.forCorridor and PortalRoomSealRepair already read it this way.
+                // PortalCorridorMask.forCorridor already reads it this way.
                 boolean coveredByCorridor = z >= corridorOrigin.getZ()
                     && z < corridorOrigin.getZ() + dims.width()
                     && y >= corridorOrigin.getY()
                     && y < corridorOrigin.getY() + dims.height();
                 if (coveredByCorridor) continue;
                 BlockState fill = sealFillFor(level, baseRoomOrigin, roomOrigin, roomSize, role,
-                    y, z, floorY);
+                    y, z, floorY, wallOnly);
+                if (fill == null) continue;
                 level.setBlock(pos.set(planeX, y, z), fill, Block.UPDATE_ALL);
             }
         }
@@ -2149,15 +2180,19 @@ public final class PortalCarriageBuilder {
      * chests along the boundary, and a copied stair or torch keeps the facing it had and leaves a
      * hole besides.</p>
      */
-    // Package-private rather than private: PortalRoomSealRepair fills the cells a room copy's own
-    // stamp left as air in the same plane, and it must do it by the same three-tier rule — a second
-    // implementation is a second chance to leave air in a plane that may not have any.
+    // Package-private rather than private so the tier rule can be exercised from a test.
+    /**
+     * As documented above, or — with {@code wallOnly} — tier 1 alone: the wall carried on where the
+     * room has one, and {@code null} where it does not, which the caller leaves untouched.
+     */
     static BlockState sealFillFor(ServerLevel level, BlockPos baseRoomOrigin,
                                           BlockPos roomOrigin, Vec3i roomSize,
-                                          PortalCarriageRole role, int y, int z, int floorY) {
+                                          PortalCarriageRole role, int y, int z, int floorY,
+                                          boolean wallOnly) {
         BlockPos wall = sealFillSource(baseRoomOrigin, roomOrigin, roomSize, role, y, z);
         BlockState wallState = level.getBlockState(wall);
         if (PortalRoomTiler.usableAsFill(level, wall, wallState)) return wallState;
+        if (wallOnly) return null;
 
         BlockPos floor = wall.atY(baseRoomOrigin.getY());
         BlockState floorState = level.getBlockState(floor);
@@ -2194,5 +2229,24 @@ public final class PortalCarriageBuilder {
             baseRoomOrigin.getX() + localX,
             y - (roomOrigin.getY() - baseRoomOrigin.getY()),
             z - (roomOrigin.getZ() - baseRoomOrigin.getZ()));
+    }
+
+    /**
+     * Say once that a room was stamped into a box that is not its own size.
+     *
+     * <p>Legitimate on the editor's own plot, where the box follows the size steppers and the
+     * template only catches up on save. Everywhere else it means the caller sized the box from
+     * something other than the template it then stamped — and the room a player walks into loses its
+     * far edges to the clip, or gains a built-in one where it was grown. Under endless repetition
+     * every tile inherits that, since the tiler stamps all of them from one size.</p>
+     */
+    private static void warnSizeMismatch(String roomName, Vec3i box, Vec3i template) {
+        String key = roomName + "|" + box + "|" + template;
+        if (!REPORTED_SIZE_MISMATCHES.add(key)) return;
+        LOGGER.warn("[DungeonTrain] Room '{}' stamped into a {}x{}x{} box but its template is "
+                + "{}x{}x{} — the authored room is clipped or shelled to fit. Expected while the "
+                + "editor's size steppers are ahead of the last save; a bug anywhere else.",
+            roomName, box.getX(), box.getY(), box.getZ(),
+            template.getX(), template.getY(), template.getZ());
     }
 }

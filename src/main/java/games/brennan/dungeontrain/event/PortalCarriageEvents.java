@@ -44,6 +44,7 @@ import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.portal.PortalTwinRegion;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
+import games.brennan.dungeontrain.net.PortalRoomDepthPacket;
 import games.brennan.dungeontrain.net.PortalRoomFogPacket;
 import games.brennan.dungeontrain.net.PortalCrossingPacket;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
@@ -324,6 +325,12 @@ public final class PortalCarriageEvents {
      * Player → the daylit-room box they were last told about, on the same "only when it changes"
      * rule as {@link #LAST_FOG}.
      */
+
+    /**
+     * Player → the debug-screen Y disguise they were last told about, on the same "only when it
+     * changes" rule as {@link #LAST_FOG}. A player standing still in a room therefore sends nothing.
+     */
+    private static final Map<UUID, PortalRoomDepthPacket> LAST_DEPTH = new HashMap<>();
 
     /**
      * Player → the corridor hold they were last told about, on the same "only when it changes" rule
@@ -1006,6 +1013,7 @@ public final class PortalCarriageEvents {
             clearFogFor(players, Set.of());
             clearSkyFor(players, Set.of());
             clearTrainAudioFor(players, Set.of());
+            clearDepthFor(players, Set.of());
             PortalPairResidency.syncTo(level, Set.of());
             // Still called with nothing occupied: this is what un-freezes a train whose last
             // structure has just gone, and the tick that advances a frozen train's counter.
@@ -1016,9 +1024,14 @@ public final class PortalCarriageEvents {
         // Snapshot: the tiler replaces entries as it works, and every candidate copy is tested
         // against the others so no two pairs stamp into each other.
         List<Map.Entry<Integer, PortalStructure>> pairs = new ArrayList<>(STRUCTURES.entrySet());
+        // What the debug screen's Y disguise is measured against — the world's own train height, so a
+        // world that was built at a different one disguises to its own surface rather than to a
+        // config value that has since changed. Read once: it is the same answer for every pair.
+        int groundY = DungeonTrainWorldData.get(level).getTrainY();
         Set<UUID> fogged = new HashSet<>();
         Set<UUID> skied = new HashSet<>();
         Set<UUID> inStructure = new HashSet<>();
+        Set<UUID> depthed = new HashSet<>();
         Set<Integer> occupiedPairs = new HashSet<>();
 
         for (Map.Entry<Integer, PortalStructure> pair : pairs) {
@@ -1058,11 +1071,13 @@ public final class PortalCarriageEvents {
             sendFogFor(players, dims, layout, next, fogged);
             sendSkyFor(players, dims, layout, next, skied);
             sendTrainAudioFor(players, dims, next, inStructure);
+            sendDepthFor(players, dims, next, groundY, depthed);
         }
 
         clearFogFor(players, fogged);
         clearSkyFor(players, skied);
         clearTrainAudioFor(players, inStructure);
+        clearDepthFor(players, depthed);
         // Take and release in one pass, so a ticket's lifetime is exactly a room's occupancy.
         PortalPairResidency.syncTo(level, occupiedPairs);
         // And stop the trains whose rooms those are, when nobody is left outside to see it. The
@@ -1109,33 +1124,38 @@ public final class PortalCarriageEvents {
      * has.</p>
      */
     /**
-     * Send one structure's fog, sky and train audio to whoever is inside it, and take all three back
-     * from whoever is not — the ambience half of {@link #tickRoomTiling}, for a caller that has
-     * exactly one structure rather than every live pair.
+     * Send one structure's fog, sky, train audio and depth disguise to whoever is inside it, and take
+     * all four back from whoever is not — the ambience half of {@link #tickRoomTiling}, for a caller
+     * that has exactly one structure rather than every live pair.
      *
-     * <p><b>Why this exists rather than a second implementation.</b> The three senders below dedupe
-     * against {@link #LAST_FOG}, {@code PlayerSkyRegions} and {@link #LAST_TRAIN_AUDIO}, so a packet only
-     * goes out when the answer changes. A parallel copy in another class would not merely duplicate
-     * them, it would fight them over that state — and a test room lit differently from a live one is
-     * exactly the thing a test room must not be. {@code PortalTestTicker} calls this.</p>
+     * <p><b>Why this exists rather than a second implementation.</b> The four senders below dedupe
+     * against {@link #LAST_FOG}, {@code PlayerSkyRegions}, {@link #LAST_TRAIN_AUDIO} and
+     * {@link #LAST_DEPTH}, so a packet only goes out when the answer changes. A parallel copy in
+     * another class would not merely duplicate them, it would fight them over that state — and a
+     * test room lit differently from a live one is a room inspected wrong. {@code PortalTestTicker}
+     * calls this.</p>
      *
      * <p>The live tick keeps its own loop rather than calling this per pair: it accumulates the
      * still-inside sets across every structure and clears once at the end, and clearing per pair
      * would take the fog off a player standing in the next one.</p>
      */
     public static void sendRoomAmbience(CarriageDims dims, PortalCarriageLayout layout,
-                                        PortalStructure structure, List<ServerPlayer> players) {
+                                        PortalStructure structure, int groundY,
+                                        List<ServerPlayer> players) {
         Set<UUID> fogged = new HashSet<>();
         Set<UUID> skied = new HashSet<>();
         Set<UUID> inStructure = new HashSet<>();
+        Set<UUID> depthed = new HashSet<>();
 
         sendFogFor(players, dims, layout, structure, fogged);
         sendSkyFor(players, dims, layout, structure, skied);
         sendTrainAudioFor(players, dims, structure, inStructure);
+        sendDepthFor(players, dims, structure, groundY, depthed);
 
         clearFogFor(players, fogged);
         clearSkyFor(players, skied);
         clearTrainAudioFor(players, inStructure);
+        clearDepthFor(players, depthed);
     }
 
     private static void sendTrainAudioFor(List<ServerPlayer> players, CarriageDims dims,
@@ -1174,6 +1194,57 @@ public final class PortalCarriageEvents {
         // Same reasoning as the fog: somebody who left the world never gets the message, which is why
         // the client holds a region it can simply stop being inside.
         LAST_TRAIN_AUDIO.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
+    }
+
+    /**
+     * Tell whoever is inside a structure how far its Y readout has to move for the debug screen to
+     * report the depth they believe they are at.
+     *
+     * <p><b>Why the client cannot work this out.</b> A twin corridor is stamped into twin space — the
+     * sealed basement under the world's bedrock, or the attic over the upside-down band's lid — and
+     * which lane inside it a pair was handed is a server-side allocation ({@code PortalTwinLanes}).
+     * The client knows it is somewhere unusual; it has no way to know how far unusual.</p>
+     *
+     * <p>The shift is measured from the twin's own floor to the train's Y, so a player standing in a
+     * corridor reads the Y the carriage it stands in for would have given them. A room whose door
+     * carries a height offset stands its floor a few rows under the corridor lane and reads
+     * correspondingly lower — which is the honest answer for a room a few rows down, and still
+     * nowhere near the depth it is actually at.</p>
+     *
+     * <p>Sent for <b>every</b> room mode, like the train audio and unlike the fog: this is about
+     * where the structure was stamped, which is true of all of them.</p>
+     */
+    private static void sendDepthFor(List<ServerPlayer> players, CarriageDims dims,
+                                     PortalStructure structure, int groundY, Set<UUID> inStructure) {
+        AABB box = structureBox(dims, structure);
+        // The entry twin's minimum corner is the corridor's floor; the exit twin shares that Y — it
+        // is offset along X only — so one shift covers the whole structure.
+        PortalRoomDepthPacket region = new PortalRoomDepthPacket(
+            (int) Math.floor(box.minX), (int) Math.floor(box.minY), (int) Math.floor(box.minZ),
+            (int) Math.ceil(box.maxX), (int) Math.ceil(box.maxY), (int) Math.ceil(box.maxZ),
+            groundY - structure.origin().getY());
+
+        for (ServerPlayer player : players) {
+            if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
+            inStructure.add(player.getUUID());
+            if (region.equals(LAST_DEPTH.get(player.getUUID()))) continue;
+            LAST_DEPTH.put(player.getUUID(), region);
+            PacketDistributor.sendToPlayer(player, region);
+        }
+    }
+
+    /** Hand the debug screen back its honest numbers for anyone who has left a structure. */
+    private static void clearDepthFor(List<ServerPlayer> players, Set<UUID> stillInside) {
+        if (LAST_DEPTH.isEmpty()) return;
+        for (ServerPlayer player : players) {
+            UUID id = player.getUUID();
+            if (stillInside.contains(id) || !LAST_DEPTH.containsKey(id)) continue;
+            LAST_DEPTH.remove(id);
+            PacketDistributor.sendToPlayer(player, PortalRoomDepthPacket.none());
+        }
+        // Same reasoning as the fog: somebody who left the world never gets the message, which is why
+        // the client holds a region it can simply stop being inside.
+        LAST_DEPTH.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
     }
 
     /**
