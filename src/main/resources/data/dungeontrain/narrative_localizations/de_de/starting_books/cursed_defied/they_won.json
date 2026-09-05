@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Sie gewannen.\n\n\n%TARGET% hat dich getötet.\nWieder, genau genommen.\nDu warst schon fort.\n\n\nWaggon %CARRIAGE%.\n%DAYS% Tage Warten.\n\n\n%STORY%\n\n\nSie nahmen die Notiz von der Leiche.\nDeine Handschrift.\nDein Name darauf.\n\n\nIrgendwo in einer Welt, die du nie besuchen wirst, hat jemand deine Todesnotiz in einer Truhe.\n\n\nWie fühlt sich das an?",
-    "Wegen des Namens, den du geschrieben hast.\n\n\n%TARGET%.\n\n\nAtmet noch.\n\n\nDein Echo fand sie in Waggon %CARRIAGE%, %DAYS% Tage zu spät, und verlor.\n\n\n%GEAR%\nEs hatte dein Gesicht.\nEs kämpfte wie du.\n\n\n%STORY%\n\n\nDer letzte Teil ist vielleicht das Problem.\n\n\n.\n\n\nMehr Glück im nächsten Leben."
+    "Sie gewannen.\n%PAGE%\n%TARGET% hat dich getötet.\nWieder, genau genommen.\nDu warst schon fort.\n%PAGE%\nWaggon %CARRIAGE%.\n%DAYS% Tage Warten.\n%PAGE%\n%STORY%\n%PAGE%\nSie nahmen die Notiz von der Leiche.\nDeine Handschrift.\nDein Name darauf.\n%PAGE%\nIrgendwo in einer Welt, die du nie besuchen wirst, hat jemand deine Todesnotiz in einer Truhe.\n%PAGE%\nWie fühlt sich das an?",
+    "Wegen des Namens, den du geschrieben hast.\n%PAGE%\n%TARGET%.\n%PAGE%\nAtmet noch.\n%PAGE%\nDein Echo fand sie in Waggon %CARRIAGE%, %DAYS% Tage zu spät, und verlor.\n%PAGE%\n%GEAR%\nEs hatte dein Gesicht.\nEs kämpfte wie du.\n%PAGE%\n%STORY%\n%PAGE%\nDer letzte Teil ist vielleicht das Problem.\n%PAGE%\n.\n%PAGE%\nMehr Glück im nächsten Leben."
   ]
 }

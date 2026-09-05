@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "你寫下了一個名字。\n還記得嗎？\n\n\n%TARGET%。\n你寫下了 %TARGET%。\n\n\n它應驗了。\n不是照你要求的方式。\n是照它自己的方式。\n\n\n你死在第 %CARRIAGE% 節車廂。\n你的某一部分留在了那裡。\n%GEAR%\n\n\n它等了 %DAYS% 天。\n\n\n然後 %TARGET% 走進了第 %CARRIAGE% 節車廂，在一個你永遠不會看見的世界裡。\n\n\n%STORY%\n\n\n紙上就寫到這裡為止。\n\n\n我不知道後來怎麼結束的。\n你也不知道。\n\n\n那就是你當初訂下的交易。",
-    "歡迎回來。\n列車是什麼？\n你為什麼在這裡？\n你做了什麼？\n\n\n這幾個問題裡，只有一個變了。\n\n\n%TARGET% 在第 %CARRIAGE% 節車廂遇見了你。\n\n\n不是你。\n是你留在那裡的那一部分。\n\n\n它等了 %DAYS% 天。\n真有耐心的東西。\n它有著你的臉。\n\n\n%STORY%\n\n\n.\n\n\n我很想告訴你是誰走出去的。\n\n\n沒有人把它寫下來。"
+    "你寫下了一個名字。\n還記得嗎？\n%PAGE%\n%TARGET%。\n你寫下了 %TARGET%。\n%PAGE%\n它應驗了。\n不是照你要求的方式。\n是照它自己的方式。\n%PAGE%\n你死在第 %CARRIAGE% 節車廂。\n你的某一部分留在了那裡。\n%GEAR%\n%PAGE%\n它等了 %DAYS% 天。\n%PAGE%\n然後 %TARGET% 走進了第 %CARRIAGE% 節車廂，在一個你永遠不會看見的世界裡。\n%PAGE%\n%STORY%\n%PAGE%\n紙上就寫到這裡為止。\n%PAGE%\n我不知道後來怎麼結束的。\n你也不知道。\n%PAGE%\n那就是你當初訂下的交易。",
+    "歡迎回來。\n列車是什麼？\n你為什麼在這裡？\n你做了什麼？\n%PAGE%\n這幾個問題裡，只有一個變了。\n%PAGE%\n%TARGET% 在第 %CARRIAGE% 節車廂遇見了你。\n%PAGE%\n不是你。\n是你留在那裡的那一部分。\n%PAGE%\n它等了 %DAYS% 天。\n真有耐心的東西。\n它有著你的臉。\n%PAGE%\n%STORY%\n%PAGE%\n.\n%PAGE%\n我很想告訴你是誰走出去的。\n%PAGE%\n沒有人把它寫下來。"
   ]
 }

@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Memulai di akhir berarti memulai di awal.\n\n\nJadi ke mana ini akan menuju?\nDi mana ia akan.. berakhir?\n\n\nItu terserah padamu. Sebagaimana kau seharusnya berada di kereta.",
-    "Awal yang lain... akhir yang lain.\n\n\nAkhir sesungguhnya.\n\n\nKau mulai di akhir.\n\n\nBiasanya bukan begitu jalannya.\n\n\nTapi kereta tak keberatan.\n\n\nIa mulai di mana pun kau mulai.\n\n\nBahkan di sini.\nDi dalam gelap.\nDi dalam sunyi.\n\n\nAda kereta di depan.\nMulailah.",
-    "Selamat datang di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang seharusnya kaulakukan?\n...dan mengapa ia mulai di akhir?\n\n\nSemua ini pertanyaan bagus\n\n\nKau mulai di akhir.\n\n\nBiasanya bukan begitu jalannya.\n\n\nTapi kereta tak keberatan.\n\n\nIa mulai di mana pun kau mulai.\n\n\nBahkan di sini.\nDi dalam gelap.\nDi dalam sunyi.\n\n\nAda kereta di depan.\nMulailah."
+    "Memulai di akhir berarti memulai di awal.\n%PAGE%\nJadi ke mana ini akan menuju?\nDi mana ia akan.. berakhir?\n%PAGE%\nItu terserah padamu. Sebagaimana kau seharusnya berada di kereta.",
+    "Awal yang lain... akhir yang lain.\n%PAGE%\nAkhir sesungguhnya.\n%PAGE%\nKau mulai di akhir.\n%PAGE%\nBiasanya bukan begitu jalannya.\n%PAGE%\nTapi kereta tak keberatan.\n%PAGE%\nIa mulai di mana pun kau mulai.\n%PAGE%\nBahkan di sini.\nDi dalam gelap.\nDi dalam sunyi.\n%PAGE%\nAda kereta di depan.\nMulailah.",
+    "Selamat datang di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang seharusnya kaulakukan?\n...dan mengapa ia mulai di akhir?\n%PAGE%\nSemua ini pertanyaan bagus\n%PAGE%\nKau mulai di akhir.\n%PAGE%\nBiasanya bukan begitu jalannya.\n%PAGE%\nTapi kereta tak keberatan.\n%PAGE%\nIa mulai di mana pun kau mulai.\n%PAGE%\nBahkan di sini.\nDi dalam gelap.\nDi dalam sunyi.\n%PAGE%\nAda kereta di depan.\nMulailah."
   ]
 }

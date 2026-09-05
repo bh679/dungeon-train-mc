@@ -16,7 +16,7 @@ import { createLibrary, contextLabel } from './library.js';
 import { createFrame, measurePage, SAFE_LINE_CHARS, SAFE_LINES } from './book-frame.js';
 import {
   paginateSpans, splicePage, pageSource, resolveKeybinds,
-  MAX_CHARS_PER_PAGE, MAX_PAGES, MAX_TITLE_CHARS, EXPLICIT, PAGE_BREAK,
+  MAX_CHARS_PER_PAGE, MAX_PAGES, MAX_TITLE_CHARS, EXPLICIT, PAGE_BREAK_TEXT,
 } from './paginate.js';
 import { TEMPLATE_CONTEXTS, substitute, tokensIn } from './tokens.js';
 
@@ -188,8 +188,9 @@ function insertPageAfter(blank = false) {
   const page = currentPage();
   const text = blank ? '' : 'New page';
   const source = body();
-  // Both corpora break the page on the same run of newlines now — `\n\n\n`.
-  setBody(source.slice(0, page.end) + PAGE_BREAK + text + source.slice(page.end));
+  // Starting books break on a %PAGE% line; flow books on three newlines.
+  const sep = state.current.mode === EXPLICIT ? PAGE_BREAK_TEXT : '\n\n\n';
+  setBody(source.slice(0, page.end) + sep + text + source.slice(page.end));
   state.pageIdx += blank ? 1 : 1;
   repaint();
 }
@@ -198,17 +199,25 @@ function deletePage() {
   const list = pages();
   if (list.length <= 1) { state.status = 'A book needs at least one page.'; repaint(); return; }
   const page = currentPage(list);
+  // A page that shares its source chunk (an oversize paragraph the game spills over several pages)
+  // cannot be deleted alone — the chunk is the unit. Say how many pages go before doing it.
+  if (!page.exclusive) {
+    const spilled = list.filter((p) => p.start === page.start && p.end === page.end).length;
+    if (!confirm(`This page is part of one oversize chunk that the game spills across ${spilled} `
+      + 'pages. Deleting it removes all of them. Continue?')) return;
+  }
   const source = body();
   let start = page.start;
   let end = page.end;
-  // Explicit mode: take exactly one page break, so a neighbouring blank-page slot survives.
-  // Flow mode: the whole newline run between the two paragraphs is the separator.
-  const runAfter = source.slice(end).match(/^\n{2,}/);
-  const runBefore = source.slice(0, start).match(/\n{2,}$/);
-  const take = (run) => (state.current.mode === EXPLICIT
-    ? Math.min(run[0].length, PAGE_BREAK.length) : run[0].length);
-  if (runAfter) end += take(runAfter);
-  else if (runBefore) start -= take(runBefore);
+  // Take the separator that joined this page to a neighbour: one %PAGE% marker in explicit mode,
+  // the whole newline run between two paragraphs in flow mode.
+  const explicit = state.current.mode === EXPLICIT;
+  const afterRe = explicit ? /^(?:\r?\n)?[ \t]*%PAGE%[ \t]*(?:\r?\n)?/ : /^\n{2,}/;
+  const beforeRe = explicit ? /(?:\r?\n)?[ \t]*%PAGE%[ \t]*(?:\r?\n)?$/ : /\n{2,}$/;
+  const runAfter = source.slice(end).match(afterRe);
+  const runBefore = source.slice(0, start).match(beforeRe);
+  if (runAfter) end += runAfter[0].length;
+  else if (runBefore) start -= runBefore[0].length;
   setBody(source.slice(0, start) + source.slice(end));
   state.pageIdx = Math.max(0, state.pageIdx - (state.pageIdx >= list.length - 1 ? 1 : 0));
   repaint();
@@ -236,6 +245,7 @@ function mergeWithNext() {
   const next = list[state.pageIdx + 1];
   if (!next) return;
   const source = body();
+  // Softening the break leaves a blank line where the page turn was.
   setBody(source.slice(0, page.end) + '\n\n' + source.slice(next.start));
   repaint();
 }
@@ -447,8 +457,12 @@ function renderFrame(keepFocus) {
     el('button', { type: 'button', title, textContent: label, disabled, onclick: fn });
   if (!readOnlyView()) {
     tools.push(
-      tool('◀ move', 'Move this page earlier', () => movePage(-1), state.pageIdx === 0),
-      tool('move ▶', 'Move this page later', () => movePage(1), state.pageIdx >= list.length - 1),
+      tool('◀ move', page.exclusive ? 'Move this page earlier'
+        : 'This page shares an oversize chunk with its neighbours — nothing to move on its own',
+        () => movePage(-1), state.pageIdx === 0 || !page.exclusive),
+      tool('move ▶', page.exclusive ? 'Move this page later'
+        : 'This page shares an oversize chunk with its neighbours — nothing to move on its own',
+        () => movePage(1), state.pageIdx >= list.length - 1 || !page.exclusive),
       tool('+ page', 'Insert a page after this one', () => insertPageAfter(false)),
       tool('+ blank', 'Insert an intentional blank page after this one', () => insertPageAfter(true)),
       tool('␡ page', 'Delete this page', deletePage),
@@ -484,8 +498,8 @@ function renderSide() {
     notes.push(`${list.length} pages — the game truncates at ${MAX_PAGES}.`);
   }
   if (state.current.mode === EXPLICIT && page.text.includes('\n\n')) {
-    notes.push('The blank line(s) on this page stay on the page — in starting books it takes '
-      + 'a doubled blank line (three newlines) to break to a new page.');
+    notes.push('Blank lines stay on the page — starting books break only on a %PAGE% line, '
+      + 'which the page buttons below write for you.');
   }
   if (!readOnlyView() && pageSource(body(), page).trim() !== page.text) {
     notes.push('The game trims / packs this page, so the render differs slightly from the source.');

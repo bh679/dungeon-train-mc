@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "It worked.\n\n\n%TARGET% is dead.\n\n\nYou werent there.\nYou were already dead.\n\n\nCarriage %CARRIAGE%.\nThe number you died on became the number they died on.\n\n\nIt waited %DAYS% days to do it.\n%GEAR%\n\n\nHeres how it went.\n\n\n%STORY%\n\n\nDoesnt that feel strange?\nSomething with your face,\nin a world you never saw,\nfinishing what you started.\n\n\nYou dont have to feel good about it.\nYou dont have to feel bad about it.\n\n\nYou just have to know.\n\n\nYou know now.",
-    "Welcome back to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat did you write?\nThese are all good questions\n\n\nYou wrote %TARGET%.\n\n\n%DAYS% days later, at carriage %CARRIAGE%, the paper was right.\n\n\n%STORY%\n\n\nPaper usually isnt.\n\n\nI am paper.\nI am rarely right.\n\n\nThat one was.\n\n\nSleep well."
+    "It worked.\n%PAGE%\n%TARGET% is dead.\n%PAGE%\nYou werent there.\nYou were already dead.\n%PAGE%\nCarriage %CARRIAGE%.\nThe number you died on became the number they died on.\n%PAGE%\nIt waited %DAYS% days to do it.\n%GEAR%\n%PAGE%\nHeres how it went.\n%PAGE%\n%STORY%\n%PAGE%\nDoesnt that feel strange?\nSomething with your face,\nin a world you never saw,\nfinishing what you started.\n%PAGE%\nYou dont have to feel good about it.\nYou dont have to feel bad about it.\n%PAGE%\nYou just have to know.\n%PAGE%\nYou know now.",
+    "Welcome back to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat did you write?\nThese are all good questions\n%PAGE%\nYou wrote %TARGET%.\n%PAGE%\n%DAYS% days later, at carriage %CARRIAGE%, the paper was right.\n%PAGE%\n%STORY%\n%PAGE%\nPaper usually isnt.\n%PAGE%\nI am paper.\nI am rarely right.\n%PAGE%\nThat one was.\n%PAGE%\nSleep well."
   ]
 }

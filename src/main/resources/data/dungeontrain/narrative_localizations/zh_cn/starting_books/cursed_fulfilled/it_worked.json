@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "它奏效了。\n\n\n%TARGET% 死了。\n\n\n你不在场。\n你早就死了。\n\n\n第 %CARRIAGE% 节车厢。\n你死在哪个号码上，他们就死在哪个号码上。\n\n\n它为此等了 %DAYS% 天。\n%GEAR%\n\n\n事情是这样的。\n\n\n%STORY%\n\n\n不觉得奇怪吗？\n一个顶着你的脸的东西，\n在一个你从未见过的世界里，\n替你把开的头收了尾。\n\n\n你不必为此感到高兴。\n你也不必为此感到难过。\n\n\n你只需要知道。\n\n\n现在你知道了。",
-    "欢迎回到地牢列车\n列车是什么？\n你为什么会在这里？\n你写下了什么？\n这些都是好问题\n\n\n你写下的是 %TARGET%。\n\n\n%DAYS% 天后，在第 %CARRIAGE% 节车厢，那张纸说对了。\n\n\n%STORY%\n\n\n纸通常是说不准的。\n\n\n我就是纸。\n我很少说对。\n\n\n那一张说对了。\n\n\n好梦。"
+    "它奏效了。\n%PAGE%\n%TARGET% 死了。\n%PAGE%\n你不在场。\n你早就死了。\n%PAGE%\n第 %CARRIAGE% 节车厢。\n你死在哪个号码上，他们就死在哪个号码上。\n%PAGE%\n它为此等了 %DAYS% 天。\n%GEAR%\n%PAGE%\n事情是这样的。\n%PAGE%\n%STORY%\n%PAGE%\n不觉得奇怪吗？\n一个顶着你的脸的东西，\n在一个你从未见过的世界里，\n替你把开的头收了尾。\n%PAGE%\n你不必为此感到高兴。\n你也不必为此感到难过。\n%PAGE%\n你只需要知道。\n%PAGE%\n现在你知道了。",
+    "欢迎回到地牢列车\n列车是什么？\n你为什么会在这里？\n你写下了什么？\n这些都是好问题\n%PAGE%\n你写下的是 %TARGET%。\n%PAGE%\n%DAYS% 天后，在第 %CARRIAGE% 节车厢，那张纸说对了。\n%PAGE%\n%STORY%\n%PAGE%\n纸通常是说不准的。\n%PAGE%\n我就是纸。\n我很少说对。\n%PAGE%\n那一张说对了。\n%PAGE%\n好梦。"
   ]
 }

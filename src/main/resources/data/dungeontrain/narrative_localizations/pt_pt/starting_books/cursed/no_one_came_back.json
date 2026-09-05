@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Escreveste um nome.\nLembras-te?\n\n\n%TARGET%.\nEscreveste %TARGET%.\n\n\nResultou.\nNão como pediste.\nComo sempre resulta.\n\n\nMorreste na carruagem %CARRIAGE%.\nAlgo de ti ficou lá.\n%GEAR%\n\n\nEsperou %DAYS% dias.\n\n\nDepois %TARGET% entrou na carruagem %CARRIAGE%, num mundo que nunca verás.\n\n\n%STORY%\n\n\nE aí o papel para.\n\n\nNão sei como acabou.\nTu também não.\n\n\nFoi esse o acordo que fizeste.",
-    "Bem-vindo de volta.\nO que é o comboio?\nPorque estás aqui?\nO que fizeste?\n\n\nSó uma dessas mudou.\n\n\n%TARGET% encontrou-te na carruagem %CARRIAGE%.\n\n\nNão a ti.\nA parte de ti que ficou para trás.\n\n\nEsperou %DAYS% dias.\nCoisa paciente.\nTinha a tua cara.\n\n\n%STORY%\n\n\n.\n\n\nDir-te-ia quem se afastou dali.\n\n\nNinguém o escreveu."
+    "Escreveste um nome.\nLembras-te?\n%PAGE%\n%TARGET%.\nEscreveste %TARGET%.\n%PAGE%\nResultou.\nNão como pediste.\nComo sempre resulta.\n%PAGE%\nMorreste na carruagem %CARRIAGE%.\nAlgo de ti ficou lá.\n%GEAR%\n%PAGE%\nEsperou %DAYS% dias.\n%PAGE%\nDepois %TARGET% entrou na carruagem %CARRIAGE%, num mundo que nunca verás.\n%PAGE%\n%STORY%\n%PAGE%\nE aí o papel para.\n%PAGE%\nNão sei como acabou.\nTu também não.\n%PAGE%\nFoi esse o acordo que fizeste.",
+    "Bem-vindo de volta.\nO que é o comboio?\nPorque estás aqui?\nO que fizeste?\n%PAGE%\nSó uma dessas mudou.\n%PAGE%\n%TARGET% encontrou-te na carruagem %CARRIAGE%.\n%PAGE%\nNão a ti.\nA parte de ti que ficou para trás.\n%PAGE%\nEsperou %DAYS% dias.\nCoisa paciente.\nTinha a tua cara.\n%PAGE%\n%STORY%\n%PAGE%\n.\n%PAGE%\nDir-te-ia quem se afastou dali.\n%PAGE%\nNinguém o escreveu."
   ]
 }

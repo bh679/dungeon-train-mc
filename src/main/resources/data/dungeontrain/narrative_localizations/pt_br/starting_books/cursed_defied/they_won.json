@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Eles venceram.\n\n\n%TARGET% matou você.\nDe novo, tecnicamente.\nVocê já tinha ido embora.\n\n\nVagão %CARRIAGE%.\n%DAYS% dias de espera.\n\n\n%STORY%\n\n\nTiraram a nota do corpo.\nA sua letra.\nO seu nome nela.\n\n\nEm algum lugar de um mundo que você nunca vai visitar, alguém tem a sua nota da morte guardada num baú.\n\n\nComo é que isso te cai?",
-    "Sobre aquele nome que você escreveu.\n\n\n%TARGET%.\n\n\nAinda respirando.\n\n\nO seu eco os achou no vagão %CARRIAGE%, %DAYS% dias atrasado, e perdeu.\n\n\n%GEAR%\nTinha o seu rosto.\nLutava como você.\n\n\n%STORY%\n\n\nEssa última parte talvez seja o problema.\n\n\n.\n\n\nMais sorte na próxima vida."
+    "Eles venceram.\n%PAGE%\n%TARGET% matou você.\nDe novo, tecnicamente.\nVocê já tinha ido embora.\n%PAGE%\nVagão %CARRIAGE%.\n%DAYS% dias de espera.\n%PAGE%\n%STORY%\n%PAGE%\nTiraram a nota do corpo.\nA sua letra.\nO seu nome nela.\n%PAGE%\nEm algum lugar de um mundo que você nunca vai visitar, alguém tem a sua nota da morte guardada num baú.\n%PAGE%\nComo é que isso te cai?",
+    "Sobre aquele nome que você escreveu.\n%PAGE%\n%TARGET%.\n%PAGE%\nAinda respirando.\n%PAGE%\nO seu eco os achou no vagão %CARRIAGE%, %DAYS% dias atrasado, e perdeu.\n%PAGE%\n%GEAR%\nTinha o seu rosto.\nLutava como você.\n%PAGE%\n%STORY%\n%PAGE%\nEssa última parte talvez seja o problema.\n%PAGE%\n.\n%PAGE%\nMais sorte na próxima vida."
   ]
 }

@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Beginnen bij het einde is beginnen bij het begin.\n\n\nDus waar zal dit heen leiden?\nWaar zal het.. eindigen?\n\n\nDat is aan jou. Net zoals jij op de trein hoort te zijn.",
-    "Weer een begin... weer een einde.\n\n\nHet einde, om precies te zijn.\n\n\nJe bent bij het einde begonnen.\n\n\nZo gaat dit meestal niet.\n\n\nMaar de trein maalt er niet om.\n\n\nHij begint waar jij ook begint.\n\n\nZelfs hier.\nIn het donker.\nIn de stilte.\n\n\nEr is een trein verderop.\nBegin.",
-    "Welkom bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\n...en waarom begint het bij het einde?\n\n\nDit zijn allemaal goede vragen\n\n\nJe bent bij het einde begonnen.\n\n\nZo gaat dit meestal niet.\n\n\nMaar de trein maalt er niet om.\n\n\nHij begint waar jij ook begint.\n\n\nZelfs hier.\nIn het donker.\nIn de stilte.\n\n\nEr is een trein verderop.\nBegin."
+    "Beginnen bij het einde is beginnen bij het begin.\n%PAGE%\nDus waar zal dit heen leiden?\nWaar zal het.. eindigen?\n%PAGE%\nDat is aan jou. Net zoals jij op de trein hoort te zijn.",
+    "Weer een begin... weer een einde.\n%PAGE%\nHet einde, om precies te zijn.\n%PAGE%\nJe bent bij het einde begonnen.\n%PAGE%\nZo gaat dit meestal niet.\n%PAGE%\nMaar de trein maalt er niet om.\n%PAGE%\nHij begint waar jij ook begint.\n%PAGE%\nZelfs hier.\nIn het donker.\nIn de stilte.\n%PAGE%\nEr is een trein verderop.\nBegin.",
+    "Welkom bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\n...en waarom begint het bij het einde?\n%PAGE%\nDit zijn allemaal goede vragen\n%PAGE%\nJe bent bij het einde begonnen.\n%PAGE%\nZo gaat dit meestal niet.\n%PAGE%\nMaar de trein maalt er niet om.\n%PAGE%\nHij begint waar jij ook begint.\n%PAGE%\nZelfs hier.\nIn het donker.\nIn de stilte.\n%PAGE%\nEr is een trein verderop.\nBegin."
   ]
 }

@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Selamat datang di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang seharusnya kaulakukan?\nSemua ini pertanyaan bagus\n\n\nKembalilah lain kali kalau kau ingin lebih banyak pertanyaan."
+    "Selamat datang di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang seharusnya kaulakukan?\nSemua ini pertanyaan bagus\n%PAGE%\nKembalilah lain kali kalau kau ingin lebih banyak pertanyaan."
   ]
 }

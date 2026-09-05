@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Gumana ito.\n\n\nPatay na si %TARGET%.\n\n\nWala ka roon.\nPatay ka na noon.\n\n\nBagon %CARRIAGE%.\nAng bilang na kinamatayan mo ang naging bilang na kinamatayan nila.\n\n\nNaghintay ito nang %DAYS% araw para gawin ito.\n%GEAR%\n\n\nGanito ang nangyari.\n\n\n%STORY%\n\n\nHindi ba kakaiba ang pakiramdam?\nIsang bagay na may mukha mo,\nsa mundong hindi mo nakita,\ntinatapos ang sinimulan mo.\n\n\nHindi mo kailangang matuwa rito.\nHindi mo kailangang malungkot dito.\n\n\nKailangan mo lang malaman.\n\n\nAlam mo na ngayon.",
-    "Maligayang pagdating sa Dungeon Train\nAno ang tren?\nBakit ka naririto?\nAno ang isinulat mo?\nMabubuting tanong ang mga ito\n\n\nIsinulat mo si %TARGET%.\n\n\n%DAYS% araw ang lumipas, sa bagon %CARRIAGE%, tama ang papel.\n\n\n%STORY%\n\n\nKaraniwan ay hindi.\n\n\nPapel ako.\nBihira akong magkatama.\n\n\nTama ang isang iyon.\n\n\nMatulog kang mabuti."
+    "Gumana ito.\n%PAGE%\nPatay na si %TARGET%.\n%PAGE%\nWala ka roon.\nPatay ka na noon.\n%PAGE%\nBagon %CARRIAGE%.\nAng bilang na kinamatayan mo ang naging bilang na kinamatayan nila.\n%PAGE%\nNaghintay ito nang %DAYS% araw para gawin ito.\n%GEAR%\n%PAGE%\nGanito ang nangyari.\n%PAGE%\n%STORY%\n%PAGE%\nHindi ba kakaiba ang pakiramdam?\nIsang bagay na may mukha mo,\nsa mundong hindi mo nakita,\ntinatapos ang sinimulan mo.\n%PAGE%\nHindi mo kailangang matuwa rito.\nHindi mo kailangang malungkot dito.\n%PAGE%\nKailangan mo lang malaman.\n%PAGE%\nAlam mo na ngayon.",
+    "Maligayang pagdating sa Dungeon Train\nAno ang tren?\nBakit ka naririto?\nAno ang isinulat mo?\nMabubuting tanong ang mga ito\n%PAGE%\nIsinulat mo si %TARGET%.\n%PAGE%\n%DAYS% araw ang lumipas, sa bagon %CARRIAGE%, tama ang papel.\n%PAGE%\n%STORY%\n%PAGE%\nKaraniwan ay hindi.\n%PAGE%\nPapel ako.\nBihira akong magkatama.\n%PAGE%\nTama ang isang iyon.\n%PAGE%\nMatulog kang mabuti."
   ]
 }

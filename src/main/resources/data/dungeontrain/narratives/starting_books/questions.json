@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Questions?\nWelcome to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat are you meant to do?\nThese are all good questions\n\n\nYou wont find answers in this stack of paper.\n\n\nThe answers simply are not here.\n\n\nI ask the questions, you find the answers.\n\n\nSo \"what is the question\" you ask?\n\n\nPerhaps that is the answer."
+    "Questions?\nWelcome to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat are you meant to do?\nThese are all good questions\n%PAGE%\nYou wont find answers in this stack of paper.\n%PAGE%\nThe answers simply are not here.\n%PAGE%\nI ask the questions, you find the answers.\n%PAGE%\nSo \"what is the question\" you ask?\n%PAGE%\nPerhaps that is the answer."
   ]
 }

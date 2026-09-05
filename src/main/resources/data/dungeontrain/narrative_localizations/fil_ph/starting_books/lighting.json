@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "GRABE, kidlat ba iyon? \nBigla ba akong napalitaw sa pag-iral dahil sa kidlat?\n\n\nDinala ba ako nito rito?\nSinakyan ko ba ang kidlat?\n\n\nO sumabog lang ako sa nakagugulat na pag-iral dahil doon?\n Woahhh ano???\n\n\nEwan, wild iyon.\nKaya siguro ikaw ang pinagbigyan sa akin ng mensahe..?\n\n\nMay tren sa unahan, sumakay ka rito.\n Iyon lang siguro.\n\n\nGood luck!",
-    "Woah, nakagulat iyon.\n Dinala ba ako niyon rito?\nGUSTO ko kapag nangyayari iyon\nEwan...\n\n\nMaligayang pagdating sa Dungeon Train!\nMay tanong ka ba?\n\n\nAba isa lang akong libro, kaya hindi kita marinig\n\n\nAng tren na ito ang tanging paraan para makakuha ng sagot."
+    "GRABE, kidlat ba iyon? \nBigla ba akong napalitaw sa pag-iral dahil sa kidlat?\n%PAGE%\nDinala ba ako nito rito?\nSinakyan ko ba ang kidlat?\n%PAGE%\nO sumabog lang ako sa nakagugulat na pag-iral dahil doon?\n Woahhh ano???\n%PAGE%\nEwan, wild iyon.\nKaya siguro ikaw ang pinagbigyan sa akin ng mensahe..?\n%PAGE%\nMay tren sa unahan, sumakay ka rito.\n Iyon lang siguro.\n%PAGE%\nGood luck!",
+    "Woah, nakagulat iyon.\n Dinala ba ako niyon rito?\nGUSTO ko kapag nangyayari iyon\nEwan...\n%PAGE%\nMaligayang pagdating sa Dungeon Train!\nMay tanong ka ba?\n%PAGE%\nAba isa lang akong libro, kaya hindi kita marinig\n%PAGE%\nAng tren na ito ang tanging paraan para makakuha ng sagot."
   ]
 }

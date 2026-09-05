@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "To chyba jakiś błąd?\n Czy to jest w porządku?\n\n\nMoże to bug?\nTo nie jest świat, który znam.\n\n\nCóż... powodzenia!",
+    "To chyba jakiś błąd?\n Czy to jest w porządku?\n%PAGE%\nMoże to bug?\nTo nie jest świat, który znam.\n%PAGE%\nCóż... powodzenia!",
     "Nieskończony pociąg, przeskakujący między wymiarami, światami i rzeczywistościami.",
-    "Witaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nTo wszystko dobre pytania\n\n\nChociaż...\n\n\nCzemu jesteś tutaj, w Netherze, konkretnie?\n\n\nZacząłeś w piekle.\n\n\nCelowo?\n\n\n...Odważnie.\n\n\nPrzed tobą jest pociąg. Wsiadaj.\nSzybko, zanim coś cię zauważy."
+    "Witaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nTo wszystko dobre pytania\n%PAGE%\nChociaż...\n%PAGE%\nCzemu jesteś tutaj, w Netherze, konkretnie?\n%PAGE%\nZacząłeś w piekle.\n%PAGE%\nCelowo?\n%PAGE%\n...Odważnie.\n%PAGE%\nPrzed tobą jest pociąg. Wsiadaj.\nSzybko, zanim coś cię zauważy."
   ]
 }

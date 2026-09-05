@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "They won.\n\n\n%TARGET% killed you.\nAgain, technically.\nYou were already gone.\n\n\nCarriage %CARRIAGE%.\n%DAYS% days of waiting.\n\n\n%STORY%\n\n\nThey took the note off the body.\nYour handwriting.\nYour name on it.\n\n\nSomewhere in a world you will never visit, someone has your death note in a chest.\n\n\nHow does that sit?",
-    "About that name you wrote.\n\n\n%TARGET%.\n\n\nStill breathing.\n\n\nYour echo found them at carriage %CARRIAGE%, %DAYS% days late, and lost.\n\n\n%GEAR%\nIt had your face.\nIt fought like you.\n\n\n%STORY%\n\n\nThat last part might be the problem.\n\n\n.\n\n\nBetter luck next life."
+    "They won.\n%PAGE%\n%TARGET% killed you.\nAgain, technically.\nYou were already gone.\n%PAGE%\nCarriage %CARRIAGE%.\n%DAYS% days of waiting.\n%PAGE%\n%STORY%\n%PAGE%\nThey took the note off the body.\nYour handwriting.\nYour name on it.\n%PAGE%\nSomewhere in a world you will never visit, someone has your death note in a chest.\n%PAGE%\nHow does that sit?",
+    "About that name you wrote.\n%PAGE%\n%TARGET%.\n%PAGE%\nStill breathing.\n%PAGE%\nYour echo found them at carriage %CARRIAGE%, %DAYS% days late, and lost.\n%PAGE%\n%GEAR%\nIt had your face.\nIt fought like you.\n%PAGE%\n%STORY%\n%PAGE%\nThat last part might be the problem.\n%PAGE%\n.\n%PAGE%\nBetter luck next life."
   ]
 }

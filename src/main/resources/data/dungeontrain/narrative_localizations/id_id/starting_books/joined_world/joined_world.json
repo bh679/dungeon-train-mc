@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Selamat Datang di Kereta, Petualang!\nBergabung ke sebuah dunia ya! Itu menyenangkan.\n\n\nJelajahi bersama, terhubung dengan kereta bersama-sama!\n\n\nDengan lebih banyak orang di sekitar, kereta pasti akan tumbuh!\n\n\nMenurutmu apa kita akan mendapat lebih banyak gerbong kereta?",
-    "Hei, kau berhasil! Kau bergabung ke dunia baru!\nKereta baru!\nSelamat datang di Dungeon Train!\n\n\nApa itu dungeon train?\nMengapa ia ada di sini?\nApa yang akan kau temukan?\n\n\nSemoga beruntung!",
-    "Kau berhasil! Kau bergabung ke dunia baru!\nKau bergabung ke Dungeon Train!\n\n\nMultipemain,\nBanyak orang, dalam satu dunia!\nBersama-sama.\n\n\nSungguh teknologi luar biasa!\nKomputer, saling terhubung.\nOrang-orang berinteraksi,\ndi sebuah kereta\ndi dalam komputermu\ndi internet!"
+    "Selamat Datang di Kereta, Petualang!\nBergabung ke sebuah dunia ya! Itu menyenangkan.\n%PAGE%\nJelajahi bersama, terhubung dengan kereta bersama-sama!\n%PAGE%\nDengan lebih banyak orang di sekitar, kereta pasti akan tumbuh!\n%PAGE%\nMenurutmu apa kita akan mendapat lebih banyak gerbong kereta?",
+    "Hei, kau berhasil! Kau bergabung ke dunia baru!\nKereta baru!\nSelamat datang di Dungeon Train!\n%PAGE%\nApa itu dungeon train?\nMengapa ia ada di sini?\nApa yang akan kau temukan?\n%PAGE%\nSemoga beruntung!",
+    "Kau berhasil! Kau bergabung ke dunia baru!\nKau bergabung ke Dungeon Train!\n%PAGE%\nMultipemain,\nBanyak orang, dalam satu dunia!\nBersama-sama.\n%PAGE%\nSungguh teknologi luar biasa!\nKomputer, saling terhubung.\nOrang-orang berinteraksi,\ndi sebuah kereta\ndi dalam komputermu\ndi internet!"
   ]
 }

@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Mereka menang.\n\n\n%TARGET% membunuhmu.\nLagi, secara teknis.\nKau sudah tiada sejak tadi.\n\n\nGerbong %CARRIAGE%.\n%DAYS% hari menunggu.\n\n\n%STORY%\n\n\nMereka mengambil catatan itu dari tubuhnya.\nTulisan tanganmu.\nNamamu di atasnya.\n\n\nDi suatu tempat di dunia yang takkan pernah kaukunjungi, seseorang menyimpan catatan kematianmu di dalam sebuah peti.\n\n\nBagaimana rasanya?",
-    "Soal nama yang kautulis itu.\n\n\n%TARGET%.\n\n\nMasih bernapas.\n\n\nGemamu menemukan mereka di gerbong %CARRIAGE%, terlambat %DAYS% hari, dan kalah.\n\n\n%GEAR%\nIa punya wajahmu.\nIa bertarung sepertimu.\n\n\n%STORY%\n\n\nBagian terakhir itu mungkin masalahnya.\n\n\n.\n\n\nSemoga lebih beruntung di kehidupan berikutnya."
+    "Mereka menang.\n%PAGE%\n%TARGET% membunuhmu.\nLagi, secara teknis.\nKau sudah tiada sejak tadi.\n%PAGE%\nGerbong %CARRIAGE%.\n%DAYS% hari menunggu.\n%PAGE%\n%STORY%\n%PAGE%\nMereka mengambil catatan itu dari tubuhnya.\nTulisan tanganmu.\nNamamu di atasnya.\n%PAGE%\nDi suatu tempat di dunia yang takkan pernah kaukunjungi, seseorang menyimpan catatan kematianmu di dalam sebuah peti.\n%PAGE%\nBagaimana rasanya?",
+    "Soal nama yang kautulis itu.\n%PAGE%\n%TARGET%.\n%PAGE%\nMasih bernapas.\n%PAGE%\nGemamu menemukan mereka di gerbong %CARRIAGE%, terlambat %DAYS% hari, dan kalah.\n%PAGE%\n%GEAR%\nIa punya wajahmu.\nIa bertarung sepertimu.\n%PAGE%\n%STORY%\n%PAGE%\nBagian terakhir itu mungkin masalahnya.\n%PAGE%\n.\n%PAGE%\nSemoga lebih beruntung di kehidupan berikutnya."
   ]
 }

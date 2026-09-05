@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "PURÉE, c'était un éclair ? \nJe viens de surgir dans l'existence à cause d'un éclair ?\n\n\nÇa m'a amené ici ?\nJ'ai chevauché l'éclair ?\n\n\nOu bien j'ai juste explosé dans une existence électrisante à cause de ça ?\n Ouahh quoiii ???\n\n\nBref, c'était dingue.\nDonc j'imagine que c'est à toi que le message était destiné..?\n\n\nIl y a un train devant toi, monte dedans.\n C'est à peu près tout, j'imagine.\n\n\nBonne chance !",
-    "Ouah, quelle décharge.\n Est-ce que ça m'a amené ici ?\nJ'ADORE quand ça arrive\nBref...\n\n\nBienvenue dans le Dungeon Train !\nTu as des questions ?\n\n\nEh bien, je ne suis qu'un livre, donc je ne peux pas t'entendre\n\n\nCe train est peut-être le seul moyen d'obtenir des réponses."
+    "PURÉE, c'était un éclair ? \nJe viens de surgir dans l'existence à cause d'un éclair ?\n%PAGE%\nÇa m'a amené ici ?\nJ'ai chevauché l'éclair ?\n%PAGE%\nOu bien j'ai juste explosé dans une existence électrisante à cause de ça ?\n Ouahh quoiii ???\n%PAGE%\nBref, c'était dingue.\nDonc j'imagine que c'est à toi que le message était destiné..?\n%PAGE%\nIl y a un train devant toi, monte dedans.\n C'est à peu près tout, j'imagine.\n%PAGE%\nBonne chance !",
+    "Ouah, quelle décharge.\n Est-ce que ça m'a amené ici ?\nJ'ADORE quand ça arrive\nBref...\n%PAGE%\nBienvenue dans le Dungeon Train !\nTu as des questions ?\n%PAGE%\nEh bien, je ne suis qu'un livre, donc je ne peux pas t'entendre\n%PAGE%\nCe train est peut-être le seul moyen d'obtenir des réponses."
   ]
 }

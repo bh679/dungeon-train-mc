@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Ganharam.\n\n\n%TARGET% matou-te.\nOutra vez, tecnicamente.\nJá tinhas partido.\n\n\nCarruagem %CARRIAGE%.\n%DAYS% dias de espera.\n\n\n%STORY%\n\n\nTiraram a nota do corpo.\nA tua letra.\nO teu nome nela.\n\n\nAlgures, num mundo que nunca visitarás, alguém tem a tua nota de morte dentro de um baú.\n\n\nComo é que isso te assenta?",
-    "Quanto àquele nome que escreveste.\n\n\n%TARGET%.\n\n\nAinda respira.\n\n\nO teu eco encontrou-o na carruagem %CARRIAGE%, %DAYS% dias tarde de mais, e perdeu.\n\n\n%GEAR%\nTinha a tua cara.\nLutava como tu.\n\n\n%STORY%\n\n\nTalvez o problema seja essa última parte.\n\n\n.\n\n\nMais sorte na próxima vida."
+    "Ganharam.\n%PAGE%\n%TARGET% matou-te.\nOutra vez, tecnicamente.\nJá tinhas partido.\n%PAGE%\nCarruagem %CARRIAGE%.\n%DAYS% dias de espera.\n%PAGE%\n%STORY%\n%PAGE%\nTiraram a nota do corpo.\nA tua letra.\nO teu nome nela.\n%PAGE%\nAlgures, num mundo que nunca visitarás, alguém tem a tua nota de morte dentro de um baú.\n%PAGE%\nComo é que isso te assenta?",
+    "Quanto àquele nome que escreveste.\n%PAGE%\n%TARGET%.\n%PAGE%\nAinda respira.\n%PAGE%\nO teu eco encontrou-o na carruagem %CARRIAGE%, %DAYS% dias tarde de mais, e perdeu.\n%PAGE%\n%GEAR%\nTinha a tua cara.\nLutava como tu.\n%PAGE%\n%STORY%\n%PAGE%\nTalvez o problema seja essa última parte.\n%PAGE%\n.\n%PAGE%\nMais sorte na próxima vida."
   ]
 }

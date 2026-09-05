@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Du hast einen Namen aufgeschrieben.\nErinnerst du dich?\n\n\n%TARGET%.\nDu schriebst %TARGET%.\n\n\nEs hat gewirkt.\nNicht so, wie du batest.\nSo, wie es das tut.\n\n\nDu starbst in Waggon %CARRIAGE%.\nEtwas von dir blieb dort.\n%GEAR%\n\n\nEs wartete %DAYS% Tage.\n\n\nDann betrat %TARGET% Waggon %CARRIAGE%, in einer Welt, die du nie sehen wirst.\n\n\n%STORY%\n\n\nUnd dort hört das Papier auf.\n\n\nIch weiß nicht, wie es ausging.\nDu auch nicht.\n\n\nDas ist der Handel, den du geschlossen hast.",
-    "Willkommen zurück.\nWas ist der Zug?\nWarum bist du hier?\nWas hast du getan?\n\n\nNur eine davon hat sich geändert.\n\n\n%TARGET% traf dich in Waggon %CARRIAGE%.\n\n\nNicht dich.\nDen Teil von dir, der zurückblieb.\n\n\n%DAYS% Tage hat er gewartet.\nGeduldiges Ding.\nEr hatte dein Gesicht.\n\n\n%STORY%\n\n\n.\n\n\nIch würde dir sagen, wer davongegangen ist.\n\n\nNiemand hat es aufgeschrieben."
+    "Du hast einen Namen aufgeschrieben.\nErinnerst du dich?\n%PAGE%\n%TARGET%.\nDu schriebst %TARGET%.\n%PAGE%\nEs hat gewirkt.\nNicht so, wie du batest.\nSo, wie es das tut.\n%PAGE%\nDu starbst in Waggon %CARRIAGE%.\nEtwas von dir blieb dort.\n%GEAR%\n%PAGE%\nEs wartete %DAYS% Tage.\n%PAGE%\nDann betrat %TARGET% Waggon %CARRIAGE%, in einer Welt, die du nie sehen wirst.\n%PAGE%\n%STORY%\n%PAGE%\nUnd dort hört das Papier auf.\n%PAGE%\nIch weiß nicht, wie es ausging.\nDu auch nicht.\n%PAGE%\nDas ist der Handel, den du geschlossen hast.",
+    "Willkommen zurück.\nWas ist der Zug?\nWarum bist du hier?\nWas hast du getan?\n%PAGE%\nNur eine davon hat sich geändert.\n%PAGE%\n%TARGET% traf dich in Waggon %CARRIAGE%.\n%PAGE%\nNicht dich.\nDen Teil von dir, der zurückblieb.\n%PAGE%\n%DAYS% Tage hat er gewartet.\nGeduldiges Ding.\nEr hatte dein Gesicht.\n%PAGE%\n%STORY%\n%PAGE%\n.\n%PAGE%\nIch würde dir sagen, wer davongegangen ist.\n%PAGE%\nNiemand hat es aufgeschrieben."
   ]
 }

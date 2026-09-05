@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Ia berkesan.\n\n\n%TARGET% sudah mati.\n\n\nKau tiada di situ.\nKau sudah pun mati.\n\n\nGerabak %CARRIAGE%.\nNombor tempat kau mati menjadi nombor tempat dia mati.\n\n\nIa menunggu %DAYS% hari untuk melakukannya.\n%GEAR%\n\n\nBeginilah ceritanya.\n\n\n%STORY%\n\n\nTidakkah itu terasa ganjil?\nSesuatu yang berwajahmu,\ndalam dunia yang tak pernah kau lihat,\nmenyelesaikan apa yang kau mulakan.\n\n\nKau tak perlu rasa senang tentangnya.\nKau tak perlu rasa bersalah tentangnya.\n\n\nKau cuma perlu tahu.\n\n\nSekarang kau tahu.",
-    "Selamat kembali ke Dungeon Train\nApa itu kereta api ini?\nKenapa kau di sini?\nApa yang kau tulis?\nSemuanya soalan yang baik\n\n\nKau menulis %TARGET%.\n\n\n%DAYS% hari kemudian, di gerabak %CARRIAGE%, kertas itu betul.\n\n\n%STORY%\n\n\nKertas selalunya tidak betul.\n\n\nAku ini kertas.\nAku jarang betul.\n\n\nYang itu betul.\n\n\nTidurlah lena."
+    "Ia berkesan.\n%PAGE%\n%TARGET% sudah mati.\n%PAGE%\nKau tiada di situ.\nKau sudah pun mati.\n%PAGE%\nGerabak %CARRIAGE%.\nNombor tempat kau mati menjadi nombor tempat dia mati.\n%PAGE%\nIa menunggu %DAYS% hari untuk melakukannya.\n%GEAR%\n%PAGE%\nBeginilah ceritanya.\n%PAGE%\n%STORY%\n%PAGE%\nTidakkah itu terasa ganjil?\nSesuatu yang berwajahmu,\ndalam dunia yang tak pernah kau lihat,\nmenyelesaikan apa yang kau mulakan.\n%PAGE%\nKau tak perlu rasa senang tentangnya.\nKau tak perlu rasa bersalah tentangnya.\n%PAGE%\nKau cuma perlu tahu.\n%PAGE%\nSekarang kau tahu.",
+    "Selamat kembali ke Dungeon Train\nApa itu kereta api ini?\nKenapa kau di sini?\nApa yang kau tulis?\nSemuanya soalan yang baik\n%PAGE%\nKau menulis %TARGET%.\n%PAGE%\n%DAYS% hari kemudian, di gerabak %CARRIAGE%, kertas itu betul.\n%PAGE%\n%STORY%\n%PAGE%\nKertas selalunya tidak betul.\n%PAGE%\nAku ini kertas.\nAku jarang betul.\n%PAGE%\nYang itu betul.\n%PAGE%\nTidurlah lena."
   ]
 }

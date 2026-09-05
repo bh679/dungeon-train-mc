@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Zadziałało.\n\n\n%TARGET% nie żyje.\n\n\nNie było cię tam.\nByłeś już martwy.\n\n\nWagon %CARRIAGE%.\nNumer, na którym zginąłeś, stał się numerem, na którym zginął on.\n\n\nCzekało %DAYS% dni, żeby to zrobić.\n%GEAR%\n\n\nOto jak poszło.\n\n\n%STORY%\n\n\nCzy to nie wydaje ci się dziwne?\nCoś z twoją twarzą,\nw świecie, którego nigdy nie widziałeś,\nkończy to, co zacząłeś.\n\n\nNie musisz czuć się z tym dobrze.\nNie musisz czuć się z tym źle.\n\n\nMusisz tylko wiedzieć.\n\n\nTeraz już wiesz.",
-    "Witaj z powrotem w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo napisałeś?\nTo wszystko dobre pytania\n\n\nNapisałeś %TARGET%.\n\n\n%DAYS% dni później, przy wagonie %CARRIAGE%, papier miał rację.\n\n\n%STORY%\n\n\nPapier zwykle jej nie ma.\n\n\nJa jestem papierem.\nRzadko mam rację.\n\n\nTym razem miałem.\n\n\nŚpij dobrze."
+    "Zadziałało.\n%PAGE%\n%TARGET% nie żyje.\n%PAGE%\nNie było cię tam.\nByłeś już martwy.\n%PAGE%\nWagon %CARRIAGE%.\nNumer, na którym zginąłeś, stał się numerem, na którym zginął on.\n%PAGE%\nCzekało %DAYS% dni, żeby to zrobić.\n%GEAR%\n%PAGE%\nOto jak poszło.\n%PAGE%\n%STORY%\n%PAGE%\nCzy to nie wydaje ci się dziwne?\nCoś z twoją twarzą,\nw świecie, którego nigdy nie widziałeś,\nkończy to, co zacząłeś.\n%PAGE%\nNie musisz czuć się z tym dobrze.\nNie musisz czuć się z tym źle.\n%PAGE%\nMusisz tylko wiedzieć.\n%PAGE%\nTeraz już wiesz.",
+    "Witaj z powrotem w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo napisałeś?\nTo wszystko dobre pytania\n%PAGE%\nNapisałeś %TARGET%.\n%PAGE%\n%DAYS% dni później, przy wagonie %CARRIAGE%, papier miał rację.\n%PAGE%\n%STORY%\n%PAGE%\nPapier zwykle jej nie ma.\n%PAGE%\nJa jestem papierem.\nRzadko mam rację.\n%PAGE%\nTym razem miałem.\n%PAGE%\nŚpij dobrze."
   ]
 }

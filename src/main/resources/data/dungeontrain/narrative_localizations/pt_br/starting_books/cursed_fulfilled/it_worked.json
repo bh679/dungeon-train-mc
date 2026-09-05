@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Funcionou.\n\n\n%TARGET% está morto.\n\n\nVocê não estava lá.\nVocê já estava morto.\n\n\nVagão %CARRIAGE%.\nO número em que você morreu virou o número em que eles morreram.\n\n\nAquilo esperou %DAYS% dias para fazer isso.\n%GEAR%\n\n\nFoi assim que aconteceu.\n\n\n%STORY%\n\n\nNão é estranho?\nUma coisa com o seu rosto,\nnum mundo que você nunca viu,\nterminando o que você começou.\n\n\nVocê não precisa se sentir bem com isso.\nVocê não precisa se sentir mal com isso.\n\n\nVocê só precisa saber.\n\n\nAgora você sabe.",
-    "Bem-vindo de volta ao Dungeon Train\nO que é o trem?\nPor que você está aqui?\nO que foi que você escreveu?\nTodas essas são boas perguntas\n\n\nVocê escreveu %TARGET%.\n\n\n%DAYS% dias depois, no vagão %CARRIAGE%, o papel estava certo.\n\n\n%STORY%\n\n\nPapel normalmente não está.\n\n\nEu sou papel.\nEu raramente estou certo.\n\n\nAquele estava.\n\n\nDurma bem."
+    "Funcionou.\n%PAGE%\n%TARGET% está morto.\n%PAGE%\nVocê não estava lá.\nVocê já estava morto.\n%PAGE%\nVagão %CARRIAGE%.\nO número em que você morreu virou o número em que eles morreram.\n%PAGE%\nAquilo esperou %DAYS% dias para fazer isso.\n%GEAR%\n%PAGE%\nFoi assim que aconteceu.\n%PAGE%\n%STORY%\n%PAGE%\nNão é estranho?\nUma coisa com o seu rosto,\nnum mundo que você nunca viu,\nterminando o que você começou.\n%PAGE%\nVocê não precisa se sentir bem com isso.\nVocê não precisa se sentir mal com isso.\n%PAGE%\nVocê só precisa saber.\n%PAGE%\nAgora você sabe.",
+    "Bem-vindo de volta ao Dungeon Train\nO que é o trem?\nPor que você está aqui?\nO que foi que você escreveu?\nTodas essas são boas perguntas\n%PAGE%\nVocê escreveu %TARGET%.\n%PAGE%\n%DAYS% dias depois, no vagão %CARRIAGE%, o papel estava certo.\n%PAGE%\n%STORY%\n%PAGE%\nPapel normalmente não está.\n%PAGE%\nEu sou papel.\nEu raramente estou certo.\n%PAGE%\nAquele estava.\n%PAGE%\nDurma bem."
   ]
 }

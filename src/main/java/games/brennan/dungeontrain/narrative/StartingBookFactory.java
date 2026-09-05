@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 /**
  * Pool-aware builder for {@code Items.WRITTEN_BOOK} stacks rolled from
@@ -35,6 +36,15 @@ import java.util.function.Consumer;
 public final class StartingBookFactory {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /**
+     * The page break for starting books: a line holding exactly {@code %PAGE%}.
+     * The match takes the marker plus one newline on either side, so the
+     * newlines an author writes around it stay theirs — see
+     * {@link #paginateExplicit}. Horizontal whitespace around the marker is
+     * tolerated because a stray trailing space should not break a book.
+     */
+    static final Pattern PAGE_BREAK = Pattern.compile("(?:\\r?\\n)?[ \\t]*%PAGE%[ \\t]*(?:\\r?\\n)?");
 
     /** Splittable-mix salt for the book-pick stage. */
     private static final long SALT_BOOK_PICK    = 0x57A47E8B00C0FFEEL;
@@ -319,59 +329,56 @@ public final class StartingBookFactory {
     }
 
     /**
-     * Pagination strategy specific to starting books: <b>every {@code \n\n\n}
-     * in the source is exactly one page break</b>. This gives authors precise
-     * per-page control while still leaving them a blank line to write with:
+     * Pagination strategy specific to starting books: <b>a line containing
+     * exactly {@code %PAGE%} is a page break, and every newline in the source
+     * is literal content</b>. That separation is the whole design — the
+     * delimiter is not made of the same character as the text, so an author can
+     * write blank lines anywhere, in any number, including at the top of a page
+     * to push its text down.
      * <ul>
-     *   <li>{@code "page A\n\n\npage B"} → 2 pages.</li>
-     *   <li>{@code "line one\n\nline two"} → 1 page with a blank line in it.</li>
-     *   <li>{@code "page A\n\n\n\n\n\npage B"} → 3 pages (A, blank, B):
-     *       two breaks with an empty chunk between them.</li>
-     *   <li>{@code "page A\n\n\n \n\n\npage B"} → 3 pages (A, blank, B) —
-     *       a whitespace-only chunk between two breaks is a blank-page slot too.</li>
-     *   <li>Single {@code \n} stays as a line break within a page.</li>
+     *   <li>{@code "page A\n%PAGE%\npage B"} → 2 pages.</li>
+     *   <li>{@code "line one\n\n\n\nline two"} → 1 page with three blank
+     *       lines in the middle of it.</li>
+     *   <li>{@code "%PAGE%\n%PAGE%"} between two pages → a blank page slot.</li>
      * </ul>
      *
-     * <p>The marker was {@code \n\n} until 2026-09; it moved up one newline so
-     * that a blank line could exist <em>inside</em> a page, which the old rule
-     * made unwritable. The corpus (and every translation of it) was migrated in
-     * the same change, so no book's pagination moved. Ports of this algorithm
-     * live in {@code scripts/books-editor/web/js/paginate.js} and dp-relay's
-     * {@code web/js/book-paginate.js} — change all three together.</p>
+     * <p>The delimiter swallows the marker line plus one newline on each side;
+     * everything else survives verbatim, so pages are NOT stripped. Leading and
+     * trailing blank pages are still dropped — opening a book on a blank page
+     * (or trailing dead pages) is never useful — while internal blanks stay.</p>
      *
-     * <p>Trimming:</p>
-     * <ul>
-     *   <li>Each page's leading/trailing whitespace is stripped.</li>
-     *   <li>Leading + trailing blank pages are removed — opening a book on
-     *       a blank page (or having dead pages at the end) is never useful.
-     *       Internal blank pages are preserved as visual padding.</li>
-     * </ul>
-     *
-     * <p>Overflow: if a single chunk between page breaks exceeds
+     * <p>Overflow: if a chunk between markers exceeds
      * {@link BookFactory#MAX_CHARS_PER_PAGE}, it spills into additional pages
-     * via {@link BookFactory#paginate} (sentence / word fallback). Without
-     * this an unbroken long paragraph would visually clip the in-game page.</p>
+     * via {@link BookFactory#paginate} (sentence / word fallback), which packs
+     * paragraphs and so does not preserve hand-placed blank lines. Without it an
+     * unbroken long paragraph would visually clip the in-game page.</p>
+     *
+     * <p>History: the break was {@code \n\n} until 2026-09, then {@code \n\n\n}
+     * briefly; both made blank lines unwritable past a point, since the marker and
+     * the content shared an alphabet. The corpus and every translation of it were
+     * migrated with each change, so no shipped book's pagination moved. Ports of
+     * this algorithm live in {@code scripts/books-editor/web/js/paginate.js} and
+     * dp-relay's {@code web/js/book-paginate.js} — change all three together.</p>
      */
     static List<String> paginateExplicit(String body) {
         List<String> pages = new ArrayList<>();
-        // Split on EXACTLY three consecutive newlines. The -1 limit keeps
-        // trailing empty chunks so they can become blank pages (or be
-        // trimmed off at the end below).
-        String[] chunks = body.split("\\n\\n\\n", -1);
-        for (String chunk : chunks) {
-            String page = chunk.strip();
+        // Split on the marker line. The -1 limit keeps trailing empty chunks so
+        // they can become blank pages (or be trimmed off at the end below).
+        String[] chunks = PAGE_BREAK.split(body, -1);
+        for (String page : chunks) {
+            // No strip: the author's newlines ARE the layout of the page.
             if (page.length() <= BookFactory.MAX_CHARS_PER_PAGE) {
-                pages.add(page);  // empty pages are intentional blank slots
+                pages.add(page);  // blank chunks are intentional blank slots
             } else {
                 pages.addAll(BookFactory.paginate(page));
             }
         }
         // Drop leading + trailing blanks. A book that opens on a blank page
         // looks broken, and trailing blanks are dead pages.
-        while (!pages.isEmpty() && pages.get(0).isEmpty()) {
+        while (!pages.isEmpty() && pages.get(0).isBlank()) {
             pages.remove(0);
         }
-        while (!pages.isEmpty() && pages.get(pages.size() - 1).isEmpty()) {
+        while (!pages.isEmpty() && pages.get(pages.size() - 1).isBlank()) {
             pages.remove(pages.size() - 1);
         }
         return pages;

@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Nu poate fi bine, nu?\n Așa trebuie să fie?\n\n\nPoate e un bug?\nAsta nu e lumea pe care o știu.\n\n\nMă rog... baftă!",
+    "Nu poate fi bine, nu?\n Așa trebuie să fie?\n%PAGE%\nPoate e un bug?\nAsta nu e lumea pe care o știu.\n%PAGE%\nMă rog... baftă!",
     "Un tren fără sfârșit, sărind între dimensiuni, lumi și realități.",
-    "Bine ai venit în Dungeon Train\nCe este trenul?\nDe ce ești aici?\nCe ar trebui să faci?\nToate sunt întrebări bune\n\n\nDeși...\n\n\nDe ce ești aici, în Nether, mai exact?\n\n\nAi început în iad.\n\n\nIntenționat?\n\n\n...Îndrăzneț.\n\n\nE un tren mai în față. Urcă-te în el.\nRepede, până nu te observă ceva."
+    "Bine ai venit în Dungeon Train\nCe este trenul?\nDe ce ești aici?\nCe ar trebui să faci?\nToate sunt întrebări bune\n%PAGE%\nDeși...\n%PAGE%\nDe ce ești aici, în Nether, mai exact?\n%PAGE%\nAi început în iad.\n%PAGE%\nIntenționat?\n%PAGE%\n...Îndrăzneț.\n%PAGE%\nE un tren mai în față. Urcă-te în el.\nRepede, până nu te observă ceva."
   ]
 }

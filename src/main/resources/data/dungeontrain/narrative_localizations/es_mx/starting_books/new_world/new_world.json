@@ -5,11 +5,11 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "¡Ahhh, un mundo nuevo! ¡Uno fresquecito!\n¡Adiós, mundo viejo!\n¡No te necesitamos!\n\n\n¡Ese mundo viejo nos estaba frenando!\n¡Ya no, con este grande y hermoso mundo nuevo!\n\n\n¡Míralo! ¡Con toda su novedad, bloques nuevos y posibilidades nuevas!",
+    "¡Ahhh, un mundo nuevo! ¡Uno fresquecito!\n¡Adiós, mundo viejo!\n¡No te necesitamos!\n%PAGE%\n¡Ese mundo viejo nos estaba frenando!\n¡Ya no, con este grande y hermoso mundo nuevo!\n%PAGE%\n¡Míralo! ¡Con toda su novedad, bloques nuevos y posibilidades nuevas!",
     "Esto está... diferente. ¡Todo un mundo nuevo!",
-    "Mundo nuevo, tren nuevo... espera... ¿ese es el mismo tren?\n\n\n¡No puede ser!\n¿El tren puede cruzar mundos?\n\n\n¡¿Un tren interdimensional?!\n\n\nSupongo que eso sería un tren que viaja del mundo superior al nether y al end, pero esto ... es diferente\n\n\n¡Viaja más allá de las dimensiones!\n Realidades.. nuevas..",
-    "Bueno, esto es lo que te ganas por romper las reglas. ¡Todo un mundo nuevo!\n\n\nDe verdad la hiciste esta vez, ¿no?\nTuviste que abandonar aquel otro mundo.\n\n\n¿Valió la pena?\n\n\n¿Por fin estás feliz?",
-    "¡Mira este lugar!\nTodo es nuevo y diferente.\n\n\nBloques nuevos,\ncriaturas nuevas,\n¡tren nuevo!\n\n\n¿Es un tren nuevo...?\n\n\n¿O simplemente estamos tan avanzados en el mismo tren que entramos a un mundo nuevo?",
-    "¡Mundo nuevo, vida nueva!\n\n\n¡Por fin, puedes ser la versión de ti que estabas destinado a ser!\n\n\n¡Sin el mundo viejo arrastrándote hacia abajo!"
+    "Mundo nuevo, tren nuevo... espera... ¿ese es el mismo tren?\n%PAGE%\n¡No puede ser!\n¿El tren puede cruzar mundos?\n%PAGE%\n¡¿Un tren interdimensional?!\n%PAGE%\nSupongo que eso sería un tren que viaja del mundo superior al nether y al end, pero esto ... es diferente\n%PAGE%\n¡Viaja más allá de las dimensiones!\n Realidades.. nuevas..",
+    "Bueno, esto es lo que te ganas por romper las reglas. ¡Todo un mundo nuevo!\n%PAGE%\nDe verdad la hiciste esta vez, ¿no?\nTuviste que abandonar aquel otro mundo.\n%PAGE%\n¿Valió la pena?\n%PAGE%\n¿Por fin estás feliz?",
+    "¡Mira este lugar!\nTodo es nuevo y diferente.\n%PAGE%\nBloques nuevos,\ncriaturas nuevas,\n¡tren nuevo!\n%PAGE%\n¿Es un tren nuevo...?\n%PAGE%\n¿O simplemente estamos tan avanzados en el mismo tren que entramos a un mundo nuevo?",
+    "¡Mundo nuevo, vida nueva!\n%PAGE%\n¡Por fin, puedes ser la versión de ti que estabas destinado a ser!\n%PAGE%\n¡Sin el mundo viejo arrastrándote hacia abajo!"
   ]
 }

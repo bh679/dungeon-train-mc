@@ -5,11 +5,11 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Ahhh, a new world! A freshie!\nGoodbye old world!\nWe dont need you!\n\n\nThat old world was holding us back!\nNot anymore with this big beautiful new world!\n\n\nLook at it! With all it newness, new blocks and new possaiblitie!",
+    "Ahhh, a new world! A freshie!\nGoodbye old world!\nWe dont need you!\n%PAGE%\nThat old world was holding us back!\nNot anymore with this big beautiful new world!\n%PAGE%\nLook at it! With all it newness, new blocks and new possaiblitie!",
     "This is... different. A whole new world!",
-    "New world, new train... wait... is that the same train?\n\n\nIt cant be!\nThe train can cross worlds?\n\n\nAn inter dimentional train!?\n\n\nI guess that would be a train that travels from overworld to the neather and end, but this ... is different\n\n\nIt travels beyond dimensions!\n New.. Realities..",
-    "Well, this is what you get for breaking the rules. A whole new world!\n\n\nYou really did it this time didn't you?\nHad to abadond that other world.\n\n\nWas it worth it?\n\n\nAre you finally happy?",
-    "Look at this place!\nIts all new and different.\n\n\nNew blocks,\nnew mobs,\nnew train!\n\n\nIs it a new train...?\n\n\nOr are we just so far along the same train we entered a new world?",
-    "New world, new life!\n\n\nFinally, you can be the version of you, you were meant to be!\n\n\nWithout the old world dragging you down!"
+    "New world, new train... wait... is that the same train?\n%PAGE%\nIt cant be!\nThe train can cross worlds?\n%PAGE%\nAn inter dimentional train!?\n%PAGE%\nI guess that would be a train that travels from overworld to the neather and end, but this ... is different\n%PAGE%\nIt travels beyond dimensions!\n New.. Realities..",
+    "Well, this is what you get for breaking the rules. A whole new world!\n%PAGE%\nYou really did it this time didn't you?\nHad to abadond that other world.\n%PAGE%\nWas it worth it?\n%PAGE%\nAre you finally happy?",
+    "Look at this place!\nIts all new and different.\n%PAGE%\nNew blocks,\nnew mobs,\nnew train!\n%PAGE%\nIs it a new train...?\n%PAGE%\nOr are we just so far along the same train we entered a new world?",
+    "New world, new life!\n%PAGE%\nFinally, you can be the version of you, you were meant to be!\n%PAGE%\nWithout the old world dragging you down!"
   ]
 }

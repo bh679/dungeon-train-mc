@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Willkommen im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\nDas sind alles gute Fragen\n\n\nKomm nächstes Mal wieder, wenn du mehr Fragen willst."
+    "Willkommen im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\nDas sind alles gute Fragen\n%PAGE%\nKomm nächstes Mal wieder, wenn du mehr Fragen willst."
   ]
 }

@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Bine ai venit în Dungeon Train\nCe este trenul?\nDe ce ești aici?\nCe ar trebui să faci?\nToate acestea sunt întrebări bune\n\n\nÎntoarce-te data viitoare dacă vrei mai multe întrebări."
+    "Bine ai venit în Dungeon Train\nCe este trenul?\nDe ce ești aici?\nCe ar trebui să faci?\nToate acestea sunt întrebări bune\n%PAGE%\nÎntoarce-te data viitoare dacă vrei mai multe întrebări."
   ]
 }

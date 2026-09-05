@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Ça ne peut pas être normal ?\n Est-ce que c'est normal ?\n\n\nPeut-être que c'est un bug ?\nCe n'est pas le monde que je connais.\n\n\nBon... bonne chance !",
+    "Ça ne peut pas être normal ?\n Est-ce que c'est normal ?\n%PAGE%\nPeut-être que c'est un bug ?\nCe n'est pas le monde que je connais.\n%PAGE%\nBon... bonne chance !",
     "Un train sans fin, sautant entre les dimensions, les mondes et les réalités.",
-    "Bienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions\n\n\nCela dit...\n\n\nPourquoi es-tu ici, dans le Nether, précisément ?\n\n\nTu as commencé en enfer.\n\n\nExprès ?\n\n\n...Audacieux.\n\n\nIl y a un train devant toi. Monte dedans.\nVite, avant que quelque chose ne te remarque."
+    "Bienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions\n%PAGE%\nCela dit...\n%PAGE%\nPourquoi es-tu ici, dans le Nether, précisément ?\n%PAGE%\nTu as commencé en enfer.\n%PAGE%\nExprès ?\n%PAGE%\n...Audacieux.\n%PAGE%\nIl y a un train devant toi. Monte dedans.\nVite, avant que quelque chose ne te remarque."
   ]
 }

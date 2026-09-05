@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Am Ende zu beginnen heißt, am Anfang zu beginnen.\n\n\nWohin also wird das führen?\nWo wird es.. enden?\n\n\nDas liegt an dir. So wie du im Zug sein solltest.",
-    "Ein weiterer Anfang... ein weiteres Ende.\n\n\nDas Ende, um genau zu sein.\n\n\nDu hast am Ende begonnen.\n\n\nSo läuft das normalerweise nicht.\n\n\nAber der Zug stört sich nicht daran.\n\n\nEr beginnt, wo immer du beginnst.\n\n\nSogar hier.\nIm Dunkeln.\nIn der Stille.\n\n\nDa ist ein Zug voraus.\nBeginne.",
-    "Willkommen im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\n...und warum beginnt es am Ende?\n\n\nDas sind alles gute Fragen\n\n\nDu hast am Ende begonnen.\n\n\nSo läuft das normalerweise nicht.\n\n\nAber der Zug stört sich nicht daran.\n\n\nEr beginnt, wo immer du beginnst.\n\n\nSogar hier.\nIm Dunkeln.\nIn der Stille.\n\n\nDa ist ein Zug voraus.\nBeginne."
+    "Am Ende zu beginnen heißt, am Anfang zu beginnen.\n%PAGE%\nWohin also wird das führen?\nWo wird es.. enden?\n%PAGE%\nDas liegt an dir. So wie du im Zug sein solltest.",
+    "Ein weiterer Anfang... ein weiteres Ende.\n%PAGE%\nDas Ende, um genau zu sein.\n%PAGE%\nDu hast am Ende begonnen.\n%PAGE%\nSo läuft das normalerweise nicht.\n%PAGE%\nAber der Zug stört sich nicht daran.\n%PAGE%\nEr beginnt, wo immer du beginnst.\n%PAGE%\nSogar hier.\nIm Dunkeln.\nIn der Stille.\n%PAGE%\nDa ist ein Zug voraus.\nBeginne.",
+    "Willkommen im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas sollst du tun?\n...und warum beginnt es am Ende?\n%PAGE%\nDas sind alles gute Fragen\n%PAGE%\nDu hast am Ende begonnen.\n%PAGE%\nSo läuft das normalerweise nicht.\n%PAGE%\nAber der Zug stört sich nicht daran.\n%PAGE%\nEr beginnt, wo immer du beginnst.\n%PAGE%\nSogar hier.\nIm Dunkeln.\nIn der Stille.\n%PAGE%\nDa ist ein Zug voraus.\nBeginne."
   ]
 }

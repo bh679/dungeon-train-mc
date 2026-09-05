@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "AMBOI WAH, adakah itu kilat? \nAdakah aku baru sahaja tersentak menjadi wujud daripada kilat?\n\n\nAdakah ia membawaku ke sini?\nAdakah aku menunggang kilat?\n\n\nAtau adakah aku baru sahaja meletup menjadi kewujudan yang mengejutkan daripada itu?\n Woahhh apa???\n\n\nApa pun, itu memang liar.\nJadi aku rasa kaulah orang yang aku diberi pesanan untuknya..?\n\n\nAda kereta api di hadapan, naiklah.\n Itu sahaja agaknya.\n\n\nSemoga berjaya!",
-    "Woah, itu satu kejutan.\n Adakah itu membawaku ke sini?\nAku SUKA bila itu berlaku\nApa pun...\n\n\nSelamat datang ke Dungeon Train!\nAda soalan?\n\n\nWell aku cuma sebuah buku, jadi aku tak boleh dengar kau\n\n\nKereta api ini mungkin satu-satunya cara untuk mendapat jawapan."
+    "AMBOI WAH, adakah itu kilat? \nAdakah aku baru sahaja tersentak menjadi wujud daripada kilat?\n%PAGE%\nAdakah ia membawaku ke sini?\nAdakah aku menunggang kilat?\n%PAGE%\nAtau adakah aku baru sahaja meletup menjadi kewujudan yang mengejutkan daripada itu?\n Woahhh apa???\n%PAGE%\nApa pun, itu memang liar.\nJadi aku rasa kaulah orang yang aku diberi pesanan untuknya..?\n%PAGE%\nAda kereta api di hadapan, naiklah.\n Itu sahaja agaknya.\n%PAGE%\nSemoga berjaya!",
+    "Woah, itu satu kejutan.\n Adakah itu membawaku ke sini?\nAku SUKA bila itu berlaku\nApa pun...\n%PAGE%\nSelamat datang ke Dungeon Train!\nAda soalan?\n%PAGE%\nWell aku cuma sebuah buku, jadi aku tak boleh dengar kau\n%PAGE%\nKereta api ini mungkin satu-satunya cara untuk mendapat jawapan."
   ]
 }

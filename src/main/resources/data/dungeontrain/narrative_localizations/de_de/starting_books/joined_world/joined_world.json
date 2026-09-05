@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Willkommen an Bord, Abenteurer!\nEiner Welt beigetreten, was? Das ist aufregend.\n\n\nErkundet gemeinsam, verbindet euch mit dem Zug gemeinsam!\n\n\nMit mehr Leuten drum herum wird der Zug bestimmt wachsen!\n\n\nGlaubst du, wir bekommen mehr Zugwaggons?",
-    "Hey, du hast es geschafft! Du bist einer neuen Welt beigetreten!\nEin neuer Zug!\nWillkommen im Dungeon Train!\n\n\nWas ist der Dungeon Train?\nWarum ist er hier?\nWas wirst du finden?\n\n\nViel Glück!",
-    "Du hast es geschafft! Du bist einer neuen Welt beigetreten!\nDu bist dem Dungeon Train beigetreten!\n\n\nMehrspieler,\nmehrere Leute, in einer einzigen Welt!\nGemeinsam.\n\n\nWas für eine Technologie!\nComputer, die sich verbinden.\nMenschen, die miteinander umgehen,\nin einem Zug\nin deinem Computer\nim Internet!"
+    "Willkommen an Bord, Abenteurer!\nEiner Welt beigetreten, was? Das ist aufregend.\n%PAGE%\nErkundet gemeinsam, verbindet euch mit dem Zug gemeinsam!\n%PAGE%\nMit mehr Leuten drum herum wird der Zug bestimmt wachsen!\n%PAGE%\nGlaubst du, wir bekommen mehr Zugwaggons?",
+    "Hey, du hast es geschafft! Du bist einer neuen Welt beigetreten!\nEin neuer Zug!\nWillkommen im Dungeon Train!\n%PAGE%\nWas ist der Dungeon Train?\nWarum ist er hier?\nWas wirst du finden?\n%PAGE%\nViel Glück!",
+    "Du hast es geschafft! Du bist einer neuen Welt beigetreten!\nDu bist dem Dungeon Train beigetreten!\n%PAGE%\nMehrspieler,\nmehrere Leute, in einer einzigen Welt!\nGemeinsam.\n%PAGE%\nWas für eine Technologie!\nComputer, die sich verbinden.\nMenschen, die miteinander umgehen,\nin einem Zug\nin deinem Computer\nim Internet!"
   ]
 }

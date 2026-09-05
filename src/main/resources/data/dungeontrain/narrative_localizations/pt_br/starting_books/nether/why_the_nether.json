@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Isso não pode estar certo?\n Isso está certo?\n\n\nSerá que é um bug?\nEste não é o mundo que eu conheço.\n\n\nBom... boa sorte!",
+    "Isso não pode estar certo?\n Isso está certo?\n%PAGE%\nSerá que é um bug?\nEste não é o mundo que eu conheço.\n%PAGE%\nBom... boa sorte!",
     "Um trem sem fim, saltando entre dimensões, mundos e realidades.",
-    "Bem-vindo ao Dungeon Train\nO que é o trem?\nPor que você está aqui?\nO que você deve fazer?\nEssas são todas boas perguntas\n\n\nAinda que...\n\n\nPor que você está aqui, no Nether, especificamente?\n\n\nVocê começou no inferno.\n\n\nDe propósito?\n\n\n...Ousado.\n\n\nHá um trem à frente. Entre nele.\nRápido, antes que algo repare em você."
+    "Bem-vindo ao Dungeon Train\nO que é o trem?\nPor que você está aqui?\nO que você deve fazer?\nEssas são todas boas perguntas\n%PAGE%\nAinda que...\n%PAGE%\nPor que você está aqui, no Nether, especificamente?\n%PAGE%\nVocê começou no inferno.\n%PAGE%\nDe propósito?\n%PAGE%\n...Ousado.\n%PAGE%\nHá um trem à frente. Entre nele.\nRápido, antes que algo repare em você."
   ]
 }

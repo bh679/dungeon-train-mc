@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Добро пожаловать в Dungeon Train\nЧто такое поезд?\nЗачем ты здесь?\nЧто ты должен сделать?\nИнтересные вопросы\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\nЭта страница намеренно оставлена пустой\n\n\n.\n\n\n.\n\n\nА эта — нет.\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\nЭта попросту не пуста.\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\nЧто ты делаешь в бесконечном поезде?\n\n\n.\n\n\n.\n\n\nЗачем ты в этом поезде?\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\n.\n\n\nЧто это за поезд?"
+    "Добро пожаловать в Dungeon Train\nЧто такое поезд?\nЗачем ты здесь?\nЧто ты должен сделать?\nИнтересные вопросы\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\nЭта страница намеренно оставлена пустой\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\nА эта — нет.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\nЭта попросту не пуста.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\nЧто ты делаешь в бесконечном поезде?\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\nЗачем ты в этом поезде?\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\n.\n%PAGE%\nЧто это за поезд?"
   ]
 }

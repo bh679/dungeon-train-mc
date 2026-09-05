@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Vragen?\nWelkom bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\nDit zijn allemaal goede vragen\n\n\nJe zult geen antwoorden vinden in deze stapel papier.\n\n\nDe antwoorden zijn hier simpelweg niet.\n\n\nIk stel de vragen, jij vindt de antwoorden.\n\n\nDus \"wat is de vraag\", vraag je?\n\n\nMisschien is dat het antwoord."
+    "Vragen?\nWelkom bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat wordt er van je verwacht?\nDit zijn allemaal goede vragen\n%PAGE%\nJe zult geen antwoorden vinden in deze stapel papier.\n%PAGE%\nDe antwoorden zijn hier simpelweg niet.\n%PAGE%\nIk stel de vragen, jij vindt de antwoorden.\n%PAGE%\nDus \"wat is de vraag\", vraag je?\n%PAGE%\nMisschien is dat het antwoord."
   ]
 }

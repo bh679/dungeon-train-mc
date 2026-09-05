@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Empezar por el final es empezar por el principio.\n\n\n¿Entonces a dónde llevará esto?\n¿Dónde... terminará?\n\n\nEso depende de ti. Como tú deberías depender del tren.",
-    "Otro comienzo... otro final.\n\n\nEl Fin, de hecho.\n\n\nEmpezaste por el final.\n\n\nAsí no suele ser esto.\n\n\nPero al tren no le importa.\n\n\nComienza donde tú comiences.\n\n\nIncluso aquí.\nEn la oscuridad.\nEn el silencio.\n\n\nHay un tren adelante.\nComienza.",
-    "Bienvenido al Dungeon Train\n¿Qué es el tren?\n¿Por qué estás aquí?\n¿Qué se supone que debes hacer?\n...y ¿por qué comienza por el final?\n\n\nTodas estas son buenas preguntas\n\n\nEmpezaste por el final.\n\n\nAsí no suele ser esto.\n\n\nPero al tren no le importa.\n\n\nComienza donde tú comiences.\n\n\nIncluso aquí.\nEn la oscuridad.\nEn el silencio.\n\n\nHay un tren adelante.\nComienza."
+    "Empezar por el final es empezar por el principio.\n%PAGE%\n¿Entonces a dónde llevará esto?\n¿Dónde... terminará?\n%PAGE%\nEso depende de ti. Como tú deberías depender del tren.",
+    "Otro comienzo... otro final.\n%PAGE%\nEl Fin, de hecho.\n%PAGE%\nEmpezaste por el final.\n%PAGE%\nAsí no suele ser esto.\n%PAGE%\nPero al tren no le importa.\n%PAGE%\nComienza donde tú comiences.\n%PAGE%\nIncluso aquí.\nEn la oscuridad.\nEn el silencio.\n%PAGE%\nHay un tren adelante.\nComienza.",
+    "Bienvenido al Dungeon Train\n¿Qué es el tren?\n¿Por qué estás aquí?\n¿Qué se supone que debes hacer?\n...y ¿por qué comienza por el final?\n%PAGE%\nTodas estas son buenas preguntas\n%PAGE%\nEmpezaste por el final.\n%PAGE%\nAsí no suele ser esto.\n%PAGE%\nPero al tren no le importa.\n%PAGE%\nComienza donde tú comiences.\n%PAGE%\nIncluso aquí.\nEn la oscuridad.\nEn el silencio.\n%PAGE%\nHay un tren adelante.\nComienza."
   ]
 }

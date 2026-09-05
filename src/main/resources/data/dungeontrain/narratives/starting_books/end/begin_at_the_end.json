@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "To begin at the end is to begin at the beginning.\n\n\nSo where will this lead?\nWhere will it.. end?\n\n\nThat is on you. As you should be on the train.",
-    "Another beginning... another end.\n\n\nThe End in fact.\n\n\nYou started at the end.\n\n\nThats not how this usually goes.\n\n\nBut the train doesnt mind.\n\n\nIt begins wherever you do.\n\n\nEven here.\nIn the dark.\nIn the quiet.\n\n\nTheres a train ahead.\nBegin.",
-    "Welcome to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat are you meant to do?\n...and why does it begin at the end?\n\n\nThese are all good questions\n\n\nYou started at the end.\n\n\nThats not how this usually goes.\n\n\nBut the train doesnt mind.\n\n\nIt begins wherever you do.\n\n\nEven here.\nIn the dark.\nIn the quiet.\n\n\nTheres a train ahead.\nBegin."
+    "To begin at the end is to begin at the beginning.\n%PAGE%\nSo where will this lead?\nWhere will it.. end?\n%PAGE%\nThat is on you. As you should be on the train.",
+    "Another beginning... another end.\n%PAGE%\nThe End in fact.\n%PAGE%\nYou started at the end.\n%PAGE%\nThats not how this usually goes.\n%PAGE%\nBut the train doesnt mind.\n%PAGE%\nIt begins wherever you do.\n%PAGE%\nEven here.\nIn the dark.\nIn the quiet.\n%PAGE%\nTheres a train ahead.\nBegin.",
+    "Welcome to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat are you meant to do?\n...and why does it begin at the end?\n%PAGE%\nThese are all good questions\n%PAGE%\nYou started at the end.\n%PAGE%\nThats not how this usually goes.\n%PAGE%\nBut the train doesnt mind.\n%PAGE%\nIt begins wherever you do.\n%PAGE%\nEven here.\nIn the dark.\nIn the quiet.\n%PAGE%\nTheres a train ahead.\nBegin."
   ]
 }

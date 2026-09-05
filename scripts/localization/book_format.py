@@ -72,6 +72,22 @@ def tokens(value) -> list[str]:
     return sorted(set(placeholders(value)))
 
 
+#: The starting-book page break — a line holding exactly ``%PAGE%``. Mirrors
+#: ``StartingBookFactory.PAGE_BREAK``; see that folder's CLAUDE.md §3.
+PAGE_BREAK = re.compile(r"(?:\r?\n)?[ \t]*%PAGE%[ \t]*(?:\r?\n)?")
+
+
+def page_breaks(value) -> int:
+    """How many page breaks ``value`` carries.
+
+    Unlike ``{brace}`` placeholders, the COUNT is the contract: a starting book's pages are the
+    text between these markers, so a translation that drops one silently glues two pages together
+    (and one that invents one splits a page in half). Nothing else in the pipeline would notice —
+    the book still loads, still reads, and simply paginates differently than the author wrote it.
+    """
+    return len(PAGE_BREAK.findall(value)) if isinstance(value, str) else 0
+
+
 def unresolved(value) -> list[str]:
     """The tokens in `value` that nothing will substitute, sorted and without repeats.
 

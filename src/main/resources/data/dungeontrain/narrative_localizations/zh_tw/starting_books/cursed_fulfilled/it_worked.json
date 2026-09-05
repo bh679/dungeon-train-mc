@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "它應驗了。\n\n\n%TARGET% 死了。\n\n\n你不在場。\n你早就已經死了。\n\n\n第 %CARRIAGE% 節車廂。\n你死在的那個號碼，成了他們死在的那個號碼。\n\n\n它等了 %DAYS% 天才動手。\n%GEAR%\n\n\n經過是這樣的。\n\n\n%STORY%\n\n\n不覺得奇怪嗎？\n一個有著你的臉的東西，\n在一個你從未見過的世界裡，\n把你開的頭收了尾。\n\n\n你不必為此覺得痛快。\n你也不必為此覺得難受。\n\n\n你只需要知道。\n\n\n你現在知道了。",
-    "歡迎回到地牢列車\n列車是什麼？\n你為什麼在這裡？\n你寫了什麼？\n這些都是很好的問題\n\n\n你寫下了 %TARGET%。\n\n\n%DAYS% 天後，在第 %CARRIAGE% 節車廂，那張紙說對了。\n\n\n%STORY%\n\n\n紙通常是不對的。\n\n\n我就是紙。\n我很少說對。\n\n\n那一次說對了。\n\n\n好好睡吧。"
+    "它應驗了。\n%PAGE%\n%TARGET% 死了。\n%PAGE%\n你不在場。\n你早就已經死了。\n%PAGE%\n第 %CARRIAGE% 節車廂。\n你死在的那個號碼，成了他們死在的那個號碼。\n%PAGE%\n它等了 %DAYS% 天才動手。\n%GEAR%\n%PAGE%\n經過是這樣的。\n%PAGE%\n%STORY%\n%PAGE%\n不覺得奇怪嗎？\n一個有著你的臉的東西，\n在一個你從未見過的世界裡，\n把你開的頭收了尾。\n%PAGE%\n你不必為此覺得痛快。\n你也不必為此覺得難受。\n%PAGE%\n你只需要知道。\n%PAGE%\n你現在知道了。",
+    "歡迎回到地牢列車\n列車是什麼？\n你為什麼在這裡？\n你寫了什麼？\n這些都是很好的問題\n%PAGE%\n你寫下了 %TARGET%。\n%PAGE%\n%DAYS% 天後，在第 %CARRIAGE% 節車廂，那張紙說對了。\n%PAGE%\n%STORY%\n%PAGE%\n紙通常是不對的。\n%PAGE%\n我就是紙。\n我很少說對。\n%PAGE%\n那一次說對了。\n%PAGE%\n好好睡吧。"
   ]
 }

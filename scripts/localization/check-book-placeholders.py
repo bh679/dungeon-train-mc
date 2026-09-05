@@ -132,6 +132,40 @@ def divergences(narrative_dir: Path, english_dir: Path) -> dict[str, dict]:
     return found
 
 
+#: Only starting books are paginated by an in-band marker; random books and stories flow.
+STARTING_BOOKS = "starting_books/"
+
+
+def page_break_problems(narrative_dir: Path, english_dir: Path) -> list[str]:
+    """Translated starting books that gained or lost a ``%PAGE%`` marker.
+
+    Separate from the placeholder check above because the contract is different: placeholders are
+    compared as a SET (a translator may legitimately say a repeated figure once), while page breaks
+    are compared by COUNT — each one is a page turn the author composed, and dropping one merges two
+    pages of their layout. Not baselined: unlike the ordinal divergences, there is no reading of a
+    missing page break that is correct.
+    """
+    problems = []
+    for locale in pio.narrative_locales(narrative_dir):
+        locale_dir = narrative_dir / locale
+        for book_path in pio.narrative_books(locale_dir):
+            if not book_path.startswith(STARTING_BOOKS):
+                continue
+            english = fields_of(english_path(english_dir, book_path))
+            if english is None:
+                continue        # a locale-only book has no original to be measured against
+            for field, value in (fields_of(locale_dir / f"{book_path}.json") or {}).items():
+                if field not in english:
+                    continue    # structure drift, reported elsewhere
+                want = bf.page_breaks(english[field])
+                got = bf.page_breaks(value)
+                if want != got:
+                    problems.append(
+                        f"{locale}/{book_path}#{field}: {got} %PAGE% marker(s), English has {want} "
+                        "— the translation would paginate differently than the author wrote it")
+    return problems
+
+
 def load_baseline(path: Path) -> dict[str, dict]:
     """The tolerated divergences. A missing file means none are — the guard is strict by default."""
     if not path.is_file():
@@ -209,6 +243,7 @@ def main(argv: list[str] | None = None) -> int:
 
     problems = check_english(args.english_dir)
     problems += report(found, load_baseline(args.baseline))
+    problems += page_break_problems(args.narrative_dir, args.english_dir)
     if problems:
         print(f"{len(problems)} book placeholder problem(s):")
         for line in problems:

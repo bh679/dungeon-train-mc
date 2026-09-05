@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Ai scris un nume.\nÎți amintești?\n\n\n%TARGET%.\nAi scris %TARGET%.\n\n\nA funcționat.\nNu cum ai cerut.\nCum funcționează el mereu.\n\n\nAi murit la vagonul %CARRIAGE%.\nCeva din tine a rămas acolo.\n%GEAR%\n\n\nA așteptat %DAYS% zile.\n\n\nApoi %TARGET% a intrat în vagonul %CARRIAGE%, într-o lume pe care tu n-o vei vedea niciodată.\n\n\n%STORY%\n\n\nȘi acolo se oprește hârtia.\n\n\nNu știu cum s-a sfârșit.\nNici tu.\n\n\nĂsta e târgul pe care l-ai făcut.",
-    "Bine ai revenit.\nCe este trenul?\nDe ce ești aici?\nCe ai făcut?\n\n\nDoar una dintre ele s-a schimbat.\n\n\n%TARGET% te-a întâlnit la vagonul %CARRIAGE%.\n\n\nNu pe tine.\nPartea din tine care a rămas în urmă.\n\n\n%DAYS% zile a așteptat.\nLucru răbdător.\nAvea fața ta.\n\n\n%STORY%\n\n\n.\n\n\nȚi-aș spune cine a plecat de acolo.\n\n\nNimeni n-a scris-o."
+    "Ai scris un nume.\nÎți amintești?\n%PAGE%\n%TARGET%.\nAi scris %TARGET%.\n%PAGE%\nA funcționat.\nNu cum ai cerut.\nCum funcționează el mereu.\n%PAGE%\nAi murit la vagonul %CARRIAGE%.\nCeva din tine a rămas acolo.\n%GEAR%\n%PAGE%\nA așteptat %DAYS% zile.\n%PAGE%\nApoi %TARGET% a intrat în vagonul %CARRIAGE%, într-o lume pe care tu n-o vei vedea niciodată.\n%PAGE%\n%STORY%\n%PAGE%\nȘi acolo se oprește hârtia.\n%PAGE%\nNu știu cum s-a sfârșit.\nNici tu.\n%PAGE%\nĂsta e târgul pe care l-ai făcut.",
+    "Bine ai revenit.\nCe este trenul?\nDe ce ești aici?\nCe ai făcut?\n%PAGE%\nDoar una dintre ele s-a schimbat.\n%PAGE%\n%TARGET% te-a întâlnit la vagonul %CARRIAGE%.\n%PAGE%\nNu pe tine.\nPartea din tine care a rămas în urmă.\n%PAGE%\n%DAYS% zile a așteptat.\nLucru răbdător.\nAvea fața ta.\n%PAGE%\n%STORY%\n%PAGE%\n.\n%PAGE%\nȚi-aș spune cine a plecat de acolo.\n%PAGE%\nNimeni n-a scris-o."
   ]
 }

@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Mga tanong?\nMaligayang pagdating sa Dungeon Train\nAno ang tren?\nBakit ka naririto?\nAno ang dapat mong gawin?\nMabubuting tanong ang mga ito\n\n\nHindi ka makakakita ng sagot sa tumpok na ito ng papel.\n\n\nWala lang talaga rito ang mga sagot.\n\n\nAko ang nagtatanong, ikaw ang naghahanap ng sagot.\n\n\nKaya \"ano ang tanong\" tanong mo?\n\n\nBaka iyon ang sagot."
+    "Mga tanong?\nMaligayang pagdating sa Dungeon Train\nAno ang tren?\nBakit ka naririto?\nAno ang dapat mong gawin?\nMabubuting tanong ang mga ito\n%PAGE%\nHindi ka makakakita ng sagot sa tumpok na ito ng papel.\n%PAGE%\nWala lang talaga rito ang mga sagot.\n%PAGE%\nAko ang nagtatanong, ikaw ang naghahanap ng sagot.\n%PAGE%\nKaya \"ano ang tanong\" tanong mo?\n%PAGE%\nBaka iyon ang sagot."
   ]
 }

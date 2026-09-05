@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Mereka menang.\n\n\n%TARGET% membunuh kau.\nSekali lagi, secara teknikalnya.\nKau sudah pun tiada.\n\n\nGerabak %CARRIAGE%.\n%DAYS% hari menunggu.\n\n\n%STORY%\n\n\nMereka mengambil nota itu daripada mayatnya.\nTulisan tanganmu.\nNamamu tertera padanya.\n\n\nDi suatu tempat dalam dunia yang tidak akan pernah kau kunjungi, ada orang menyimpan Nota Kematianmu di dalam peti.\n\n\nBagaimana rasanya?",
-    "Tentang nama yang kau tulis itu.\n\n\n%TARGET%.\n\n\nMasih bernafas.\n\n\nGemamu menemuinya di gerabak %CARRIAGE%, %DAYS% hari terlambat, lalu kalah.\n\n\n%GEAR%\nIa punya wajahmu.\nIa bertarung sepertimu.\n\n\n%STORY%\n\n\nBahagian terakhir itu mungkin masalahnya.\n\n\n.\n\n\nSemoga bernasib baik pada hayat seterusnya."
+    "Mereka menang.\n%PAGE%\n%TARGET% membunuh kau.\nSekali lagi, secara teknikalnya.\nKau sudah pun tiada.\n%PAGE%\nGerabak %CARRIAGE%.\n%DAYS% hari menunggu.\n%PAGE%\n%STORY%\n%PAGE%\nMereka mengambil nota itu daripada mayatnya.\nTulisan tanganmu.\nNamamu tertera padanya.\n%PAGE%\nDi suatu tempat dalam dunia yang tidak akan pernah kau kunjungi, ada orang menyimpan Nota Kematianmu di dalam peti.\n%PAGE%\nBagaimana rasanya?",
+    "Tentang nama yang kau tulis itu.\n%PAGE%\n%TARGET%.\n%PAGE%\nMasih bernafas.\n%PAGE%\nGemamu menemuinya di gerabak %CARRIAGE%, %DAYS% hari terlambat, lalu kalah.\n%PAGE%\n%GEAR%\nIa punya wajahmu.\nIa bertarung sepertimu.\n%PAGE%\n%STORY%\n%PAGE%\nBahagian terakhir itu mungkin masalahnya.\n%PAGE%\n.\n%PAGE%\nSemoga bernasib baik pada hayat seterusnya."
   ]
 }

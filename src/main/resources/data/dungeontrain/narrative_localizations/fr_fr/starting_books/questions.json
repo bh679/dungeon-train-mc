@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Des questions ?\nBienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions\n\n\nTu ne trouveras pas de réponses dans cette liasse de papier.\n\n\nLes réponses ne sont tout simplement pas ici.\n\n\nJe pose les questions, tu trouves les réponses.\n\n\nAlors « quelle est la question », demandes-tu ?\n\n\nPeut-être est-ce là la réponse."
+    "Des questions ?\nBienvenue dans le Dungeon Train\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQue dois-tu faire ?\nVoilà de bonnes questions\n%PAGE%\nTu ne trouveras pas de réponses dans cette liasse de papier.\n%PAGE%\nLes réponses ne sont tout simplement pas ici.\n%PAGE%\nJe pose les questions, tu trouves les réponses.\n%PAGE%\nAlors « quelle est la question », demandes-tu ?\n%PAGE%\nPeut-être est-ce là la réponse."
   ]
 }

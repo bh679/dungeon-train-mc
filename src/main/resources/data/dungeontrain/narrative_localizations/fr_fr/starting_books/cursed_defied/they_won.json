@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Ils ont gagné.\n\n\n%TARGET% t'a tué.\nEncore, techniquement.\nTu étais déjà parti.\n\n\nWagon %CARRIAGE%.\n%DAYS% jours d'attente.\n\n\n%STORY%\n\n\nIls ont pris la note sur le corps.\nTon écriture.\nTon nom dessus.\n\n\nQuelque part, dans un monde que tu ne visiteras jamais, quelqu'un garde ta Note de Mort dans un coffre.\n\n\nComment tu le prends ?",
-    "À propos de ce nom que tu as écrit.\n\n\n%TARGET%.\n\n\nRespire toujours.\n\n\nTon écho l'a trouvé au wagon %CARRIAGE%, avec %DAYS% jours de retard, et a perdu.\n\n\n%GEAR%\nIl avait ton visage.\nIl se battait comme toi.\n\n\n%STORY%\n\n\nC'est peut-être là le problème.\n\n\n.\n\n\nMeilleure chance à la prochaine vie."
+    "Ils ont gagné.\n%PAGE%\n%TARGET% t'a tué.\nEncore, techniquement.\nTu étais déjà parti.\n%PAGE%\nWagon %CARRIAGE%.\n%DAYS% jours d'attente.\n%PAGE%\n%STORY%\n%PAGE%\nIls ont pris la note sur le corps.\nTon écriture.\nTon nom dessus.\n%PAGE%\nQuelque part, dans un monde que tu ne visiteras jamais, quelqu'un garde ta Note de Mort dans un coffre.\n%PAGE%\nComment tu le prends ?",
+    "À propos de ce nom que tu as écrit.\n%PAGE%\n%TARGET%.\n%PAGE%\nRespire toujours.\n%PAGE%\nTon écho l'a trouvé au wagon %CARRIAGE%, avec %DAYS% jours de retard, et a perdu.\n%PAGE%\n%GEAR%\nIl avait ton visage.\nIl se battait comme toi.\n%PAGE%\n%STORY%\n%PAGE%\nC'est peut-être là le problème.\n%PAGE%\n.\n%PAGE%\nMeilleure chance à la prochaine vie."
   ]
 }

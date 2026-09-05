@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Berhasil.\n\n\n%TARGET% mati.\n\n\nKau tidak ada di sana.\nKau sudah mati lebih dulu.\n\n\nGerbong %CARRIAGE%.\nAngka tempatmu mati menjadi angka tempat mereka mati.\n\n\nIa menunggu %DAYS% hari untuk melakukannya.\n%GEAR%\n\n\nBeginilah jalannya.\n\n\n%STORY%\n\n\nTidakkah itu terasa ganjil?\nSesuatu berwajah kau,\ndi dunia yang tak pernah kaulihat,\nmenuntaskan apa yang kaumulai.\n\n\nKau tak harus merasa senang soal itu.\nKau tak harus merasa buruk soal itu.\n\n\nKau hanya harus tahu.\n\n\nSekarang kau tahu.",
-    "Selamat datang kembali di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang kautulis?\nSemua ini pertanyaan bagus\n\n\nKau menulis %TARGET%.\n\n\n%DAYS% hari kemudian, di gerbong %CARRIAGE%, kertas itu benar.\n\n\n%STORY%\n\n\nKertas biasanya tidak benar.\n\n\nAku ini kertas.\nAku jarang benar.\n\n\nYang itu benar.\n\n\nTidurlah yang nyenyak."
+    "Berhasil.\n%PAGE%\n%TARGET% mati.\n%PAGE%\nKau tidak ada di sana.\nKau sudah mati lebih dulu.\n%PAGE%\nGerbong %CARRIAGE%.\nAngka tempatmu mati menjadi angka tempat mereka mati.\n%PAGE%\nIa menunggu %DAYS% hari untuk melakukannya.\n%GEAR%\n%PAGE%\nBeginilah jalannya.\n%PAGE%\n%STORY%\n%PAGE%\nTidakkah itu terasa ganjil?\nSesuatu berwajah kau,\ndi dunia yang tak pernah kaulihat,\nmenuntaskan apa yang kaumulai.\n%PAGE%\nKau tak harus merasa senang soal itu.\nKau tak harus merasa buruk soal itu.\n%PAGE%\nKau hanya harus tahu.\n%PAGE%\nSekarang kau tahu.",
+    "Selamat datang kembali di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang kautulis?\nSemua ini pertanyaan bagus\n%PAGE%\nKau menulis %TARGET%.\n%PAGE%\n%DAYS% hari kemudian, di gerbong %CARRIAGE%, kertas itu benar.\n%PAGE%\n%STORY%\n%PAGE%\nKertas biasanya tidak benar.\n%PAGE%\nAku ini kertas.\nAku jarang benar.\n%PAGE%\nYang itu benar.\n%PAGE%\nTidurlah yang nyenyak."
   ]
 }

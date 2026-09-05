@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Bem-vindo a bordo, aventureiro!\nEntraste num mundo, então! Que emocionante.\n\n\nExplorem juntos, liguem-se ao comboio juntos!\n\n\nCom mais gente por perto, o comboio há de crescer, com certeza!\n\n\nAchas que vamos ter mais vagões?",
-    "Ei, conseguiste! Entraste num mundo novo!\nUm comboio novo!\nBem-vindo ao Dungeon Train!\n\n\nO que é o dungeon train?\nPorque está aqui?\nO que vais encontrar?\n\n\nBoa sorte!",
-    "Conseguiste! Entraste num mundo novo!\nEntraste no Dungeon Train!\n\n\nMultijogador,\nVárias pessoas, num único mundo!\nJuntas.\n\n\nQue tecnologia!\nComputadores a ligarem-se.\nPessoas a interagir,\nnum comboio\nno teu computador\nna internet!"
+    "Bem-vindo a bordo, aventureiro!\nEntraste num mundo, então! Que emocionante.\n%PAGE%\nExplorem juntos, liguem-se ao comboio juntos!\n%PAGE%\nCom mais gente por perto, o comboio há de crescer, com certeza!\n%PAGE%\nAchas que vamos ter mais vagões?",
+    "Ei, conseguiste! Entraste num mundo novo!\nUm comboio novo!\nBem-vindo ao Dungeon Train!\n%PAGE%\nO que é o dungeon train?\nPorque está aqui?\nO que vais encontrar?\n%PAGE%\nBoa sorte!",
+    "Conseguiste! Entraste num mundo novo!\nEntraste no Dungeon Train!\n%PAGE%\nMultijogador,\nVárias pessoas, num único mundo!\nJuntas.\n%PAGE%\nQue tecnologia!\nComputadores a ligarem-se.\nPessoas a interagir,\nnum comboio\nno teu computador\nna internet!"
   ]
 }

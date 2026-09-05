@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Hai scritto un nome.\nTe lo ricordi?\n\n\n%TARGET%.\nHai scritto %TARGET%.\n\n\nHa funzionato.\nNon come avevi chiesto.\nCome funziona lui.\n\n\nSei morto al vagone %CARRIAGE%.\nQualcosa di te è rimasto lì.\n%GEAR%\n\n\nHa aspettato %DAYS% giorni.\n\n\nPoi %TARGET% è entrato nel vagone %CARRIAGE%, in un mondo che non vedrai mai.\n\n\n%STORY%\n\n\nE lì la carta si ferma.\n\n\nNon so come sia finita.\nNemmeno tu.\n\n\nÈ il patto che hai fatto.",
-    "Bentornato.\nCos'è il treno?\nPerché sei qui?\nChe cosa hai fatto?\n\n\nSolo una di queste è cambiata.\n\n\n%TARGET% ti ha incontrato al vagone %CARRIAGE%.\n\n\nNon te.\nLa parte di te rimasta indietro.\n\n\n%DAYS% giorni ha aspettato.\nCosa paziente.\nAveva la tua faccia.\n\n\n%STORY%\n\n\n.\n\n\nTi direi chi se n'è andato vivo.\n\n\nNessuno l'ha scritto."
+    "Hai scritto un nome.\nTe lo ricordi?\n%PAGE%\n%TARGET%.\nHai scritto %TARGET%.\n%PAGE%\nHa funzionato.\nNon come avevi chiesto.\nCome funziona lui.\n%PAGE%\nSei morto al vagone %CARRIAGE%.\nQualcosa di te è rimasto lì.\n%GEAR%\n%PAGE%\nHa aspettato %DAYS% giorni.\n%PAGE%\nPoi %TARGET% è entrato nel vagone %CARRIAGE%, in un mondo che non vedrai mai.\n%PAGE%\n%STORY%\n%PAGE%\nE lì la carta si ferma.\n%PAGE%\nNon so come sia finita.\nNemmeno tu.\n%PAGE%\nÈ il patto che hai fatto.",
+    "Bentornato.\nCos'è il treno?\nPerché sei qui?\nChe cosa hai fatto?\n%PAGE%\nSolo una di queste è cambiata.\n%PAGE%\n%TARGET% ti ha incontrato al vagone %CARRIAGE%.\n%PAGE%\nNon te.\nLa parte di te rimasta indietro.\n%PAGE%\n%DAYS% giorni ha aspettato.\nCosa paziente.\nAveva la tua faccia.\n%PAGE%\n%STORY%\n%PAGE%\n.\n%PAGE%\nTi direi chi se n'è andato vivo.\n%PAGE%\nNessuno l'ha scritto."
   ]
 }

@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "¡Bienvenido a bordo, aventurero!\n¡Te uniste a un mundo, eh! Qué emocionante.\n\n\n¡Exploren juntos, conéctense con el tren juntos!\n\n\nCon más gente alrededor, ¡el tren seguro crecerá!\n\n\n¿Crees que conseguiremos más vagones?",
-    "¡Oye, lo lograste! ¡Te uniste a un mundo nuevo!\n¡Un tren nuevo!\n¡Bienvenido al Dungeon Train!\n\n\n¿Qué es el dungeon train?\n¿Por qué está aquí?\n¿Qué encontrarás?\n\n\n¡Buena suerte!",
-    "¡Lo lograste! ¡Te uniste a un mundo nuevo!\n¡Te uniste al Dungeon Train!\n\n\nMultijugador,\n¡Varias personas, en un solo mundo!\nJuntas.\n\n\n¡Qué tecnología!\nComputadoras, conectándose.\nGente interactuando,\nen un tren\nen tu computadora\n¡en internet!"
+    "¡Bienvenido a bordo, aventurero!\n¡Te uniste a un mundo, eh! Qué emocionante.\n%PAGE%\n¡Exploren juntos, conéctense con el tren juntos!\n%PAGE%\nCon más gente alrededor, ¡el tren seguro crecerá!\n%PAGE%\n¿Crees que conseguiremos más vagones?",
+    "¡Oye, lo lograste! ¡Te uniste a un mundo nuevo!\n¡Un tren nuevo!\n¡Bienvenido al Dungeon Train!\n%PAGE%\n¿Qué es el dungeon train?\n¿Por qué está aquí?\n¿Qué encontrarás?\n%PAGE%\n¡Buena suerte!",
+    "¡Lo lograste! ¡Te uniste a un mundo nuevo!\n¡Te uniste al Dungeon Train!\n%PAGE%\nMultijugador,\n¡Varias personas, en un solo mundo!\nJuntas.\n%PAGE%\n¡Qué tecnología!\nComputadoras, conectándose.\nGente interactuando,\nen un tren\nen tu computadora\n¡en internet!"
   ]
 }

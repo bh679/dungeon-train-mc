@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "NOSSA, aquilo foi um raio? \nEu acabei de surgir na existência a partir de um raio?\n\n\nFoi ele que me trouxe aqui?\nEu cavalguei o raio?\n\n\nOu eu simplesmente explodi para dentro de uma existência chocante por causa daquilo?\n Uau, o quê???\n\n\nEnfim, aquilo foi doido.\nEntão acho que você é aquele para quem me deram a mensagem..?\n\n\nHá um trem à frente, entre nele.\n É mais ou menos isso, acho.\n\n\nBoa sorte!",
-    "Uau, que susto.\n Foi isso que me trouxe aqui?\nEu AMO quando isso acontece\nEnfim...\n\n\nBem-vindo ao Dungeon Train!\nTem alguma pergunta?\n\n\nBom, eu sou só um livro, então não consigo te ouvir\n\n\nEste trem pode ser a única forma de conseguir respostas."
+    "NOSSA, aquilo foi um raio? \nEu acabei de surgir na existência a partir de um raio?\n%PAGE%\nFoi ele que me trouxe aqui?\nEu cavalguei o raio?\n%PAGE%\nOu eu simplesmente explodi para dentro de uma existência chocante por causa daquilo?\n Uau, o quê???\n%PAGE%\nEnfim, aquilo foi doido.\nEntão acho que você é aquele para quem me deram a mensagem..?\n%PAGE%\nHá um trem à frente, entre nele.\n É mais ou menos isso, acho.\n%PAGE%\nBoa sorte!",
+    "Uau, que susto.\n Foi isso que me trouxe aqui?\nEu AMO quando isso acontece\nEnfim...\n%PAGE%\nBem-vindo ao Dungeon Train!\nTem alguma pergunta?\n%PAGE%\nBom, eu sou só um livro, então não consigo te ouvir\n%PAGE%\nEste trem pode ser a única forma de conseguir respostas."
   ]
 }

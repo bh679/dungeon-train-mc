@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Você escreveu um nome.\nVocê lembra?\n\n\n%TARGET%.\nVocê escreveu %TARGET%.\n\n\nFuncionou.\nNão do jeito que você pediu.\nDo jeito que funciona.\n\n\nVocê morreu no vagão %CARRIAGE%.\nAlgo de você ficou lá.\n%GEAR%\n\n\nAquilo esperou %DAYS% dias.\n\n\nEntão %TARGET% entrou no vagão %CARRIAGE%, num mundo que você nunca vai ver.\n\n\n%STORY%\n\n\nE aí o papel para.\n\n\nNão sei como terminou.\nVocê também não.\n\n\nFoi esse o trato que você fez.",
-    "Bem-vindo de volta.\nO que é o trem?\nPor que você está aqui?\nO que foi que você fez?\n\n\nSó uma dessas mudou.\n\n\n%TARGET% encontrou você no vagão %CARRIAGE%.\n\n\nNão você.\nA parte de você que ficou para trás.\n\n\n%DAYS% dias ela esperou.\nCoisa paciente.\nTinha o seu rosto.\n\n\n%STORY%\n\n\n.\n\n\nEu te diria quem saiu andando.\n\n\nNinguém anotou."
+    "Você escreveu um nome.\nVocê lembra?\n%PAGE%\n%TARGET%.\nVocê escreveu %TARGET%.\n%PAGE%\nFuncionou.\nNão do jeito que você pediu.\nDo jeito que funciona.\n%PAGE%\nVocê morreu no vagão %CARRIAGE%.\nAlgo de você ficou lá.\n%GEAR%\n%PAGE%\nAquilo esperou %DAYS% dias.\n%PAGE%\nEntão %TARGET% entrou no vagão %CARRIAGE%, num mundo que você nunca vai ver.\n%PAGE%\n%STORY%\n%PAGE%\nE aí o papel para.\n%PAGE%\nNão sei como terminou.\nVocê também não.\n%PAGE%\nFoi esse o trato que você fez.",
+    "Bem-vindo de volta.\nO que é o trem?\nPor que você está aqui?\nO que foi que você fez?\n%PAGE%\nSó uma dessas mudou.\n%PAGE%\n%TARGET% encontrou você no vagão %CARRIAGE%.\n%PAGE%\nNão você.\nA parte de você que ficou para trás.\n%PAGE%\n%DAYS% dias ela esperou.\nCoisa paciente.\nTinha o seu rosto.\n%PAGE%\n%STORY%\n%PAGE%\n.\n%PAGE%\nEu te diria quem saiu andando.\n%PAGE%\nNinguém anotou."
   ]
 }

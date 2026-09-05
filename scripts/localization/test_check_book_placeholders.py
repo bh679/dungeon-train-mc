@@ -18,8 +18,12 @@ REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
 
 EN_EPITAPHS = [{"id": "fall", "epitaph": "the {deaths_nth} to fall. perhaps not the last."}]
 
+#: A two-page starting book — the pages are the text either side of the %PAGE% marker.
+EN_STARTING = {"id": "welcome", "title": "Welcome",
+               "variants": ["Page one.\n%PAGE%\nPage two."]}
 
-def workspace(english=None, translated=None, baseline=None, story=None):
+
+def workspace(english=None, translated=None, baseline=None, story=None, starting=None):
     """A miniature two-tree repo: one English death_lore + book, one locale mirroring them."""
     ws = tempfile.mkdtemp(prefix="book-placeholder-test-")
     write(os.path.join(ws, "en", "death_lore", "default.json"),
@@ -31,6 +35,9 @@ def workspace(english=None, translated=None, baseline=None, story=None):
     write(os.path.join(ws, "locales", "xx_yy", "random_books", "deathnote.json"),
           {"id": "deathnote", "title": "Eine Notiz",
            "variants": ["eins", "zwei"]} if story is None else story)
+    write(os.path.join(ws, "en", "narratives", "starting_books", "welcome.json"), EN_STARTING)
+    write(os.path.join(ws, "locales", "xx_yy", "starting_books", "welcome.json"),
+          EN_STARTING if starting is None else starting)
     if baseline is not None:
         write(os.path.join(ws, "baseline.json"), baseline)
     return ws
@@ -141,6 +148,34 @@ def test_write_baseline_makes_the_run_green():
     assert run(ws, "--write-baseline").returncode == 0
     proc = run(ws)
     assert proc.returncode == 0, proc.stdout
+
+
+def test_a_translation_that_drops_a_page_break_fails():
+    """A merged page is invisible to every other guard: the book still loads and still reads."""
+    ws = workspace(starting={"id": "welcome", "title": "Willkommen",
+                             "variants": ["Seite eins.\nSeite zwei."]})
+    proc = run(ws)
+    assert proc.returncode == 1, proc.stdout
+    assert "xx_yy/starting_books/welcome#variants.0" in proc.stdout
+    assert "%PAGE%" in proc.stdout
+
+
+def test_a_translation_that_invents_a_page_break_fails():
+    ws = workspace(starting={"id": "welcome", "title": "Willkommen",
+                             "variants": ["Seite eins.\n%PAGE%\nSeite zwei.\n%PAGE%\nUnd drei."]})
+    proc = run(ws)
+    assert proc.returncode == 1, proc.stdout
+    assert "2 %PAGE% marker(s), English has 1" in proc.stdout
+
+
+def test_page_break_parity_ignores_blank_lines_and_flow_books():
+    """Newlines are the translator's to place — only the marker count is the contract."""
+    ws = workspace(starting={"id": "welcome", "title": "Willkommen",
+                             "variants": ["Seite eins.\n\n\nnoch text\n%PAGE%\nSeite zwei."]},
+                   story={"id": "deathnote", "title": "Eine Notiz",
+                          "variants": ["eins\n\n\nmehr", "zwei"]})
+    proc = run(ws)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
 def test_the_real_repo_is_clean():

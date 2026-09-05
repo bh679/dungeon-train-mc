@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Zacząć na końcu to zacząć na początku.\n\n\nWięc dokąd to zaprowadzi?\nGdzie się to.. skończy?\n\n\nTo zależy od ciebie. Tak jak powinieneś być w pociągu.",
-    "Kolejny początek... kolejny koniec.\n\n\nA właściwie Koniec.\n\n\nZacząłeś na końcu.\n\n\nTak to zwykle nie wygląda.\n\n\nAle pociągowi to niestraszne.\n\n\nZaczyna się tam, gdzie ty.\n\n\nNawet tutaj.\nW ciemności.\nW ciszy.\n\n\nPrzed tobą jest pociąg.\nZaczynaj.",
-    "Witaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\n...i czemu zaczyna się na końcu?\n\n\nTo wszystko dobre pytania\n\n\nZacząłeś na końcu.\n\n\nTak to zwykle nie wygląda.\n\n\nAle pociągowi to niestraszne.\n\n\nZaczyna się tam, gdzie ty.\n\n\nNawet tutaj.\nW ciemności.\nW ciszy.\n\n\nPrzed tobą jest pociąg.\nZaczynaj."
+    "Zacząć na końcu to zacząć na początku.\n%PAGE%\nWięc dokąd to zaprowadzi?\nGdzie się to.. skończy?\n%PAGE%\nTo zależy od ciebie. Tak jak powinieneś być w pociągu.",
+    "Kolejny początek... kolejny koniec.\n%PAGE%\nA właściwie Koniec.\n%PAGE%\nZacząłeś na końcu.\n%PAGE%\nTak to zwykle nie wygląda.\n%PAGE%\nAle pociągowi to niestraszne.\n%PAGE%\nZaczyna się tam, gdzie ty.\n%PAGE%\nNawet tutaj.\nW ciemności.\nW ciszy.\n%PAGE%\nPrzed tobą jest pociąg.\nZaczynaj.",
+    "Witaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\n...i czemu zaczyna się na końcu?\n%PAGE%\nTo wszystko dobre pytania\n%PAGE%\nZacząłeś na końcu.\n%PAGE%\nTak to zwykle nie wygląda.\n%PAGE%\nAle pociągowi to niestraszne.\n%PAGE%\nZaczyna się tam, gdzie ty.\n%PAGE%\nNawet tutaj.\nW ciemności.\nW ciszy.\n%PAGE%\nPrzed tobą jest pociąg.\nZaczynaj."
   ]
 }

@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Bienvenue à bord, aventurier !\nTu as rejoint un monde, dis donc ! C'est excitant.\n\n\nExplorez ensemble, connectez-vous au train ensemble !\n\n\nAvec plus de monde autour, le train va sûrement grandir !\n\n\nCrois-tu qu'on aura plus de wagons ?",
-    "Hé, tu as réussi ! Tu as rejoint un nouveau monde !\nUn nouveau train !\nBienvenue dans le Dungeon Train !\n\n\nQu'est-ce que le dungeon train ?\nPourquoi est-il là ?\nQue vas-tu trouver ?\n\n\nBonne chance !",
-    "Tu as réussi ! Tu as rejoint un nouveau monde !\nTu as rejoint le Dungeon Train !\n\n\nLe multijoueur,\nplusieurs personnes, dans un seul monde !\nEnsemble.\n\n\nQuelle technologie !\nDes ordinateurs qui se connectent.\nDes gens qui interagissent,\nsur un train\ndans ton ordinateur\nsur internet !"
+    "Bienvenue à bord, aventurier !\nTu as rejoint un monde, dis donc ! C'est excitant.\n%PAGE%\nExplorez ensemble, connectez-vous au train ensemble !\n%PAGE%\nAvec plus de monde autour, le train va sûrement grandir !\n%PAGE%\nCrois-tu qu'on aura plus de wagons ?",
+    "Hé, tu as réussi ! Tu as rejoint un nouveau monde !\nUn nouveau train !\nBienvenue dans le Dungeon Train !\n%PAGE%\nQu'est-ce que le dungeon train ?\nPourquoi est-il là ?\nQue vas-tu trouver ?\n%PAGE%\nBonne chance !",
+    "Tu as réussi ! Tu as rejoint un nouveau monde !\nTu as rejoint le Dungeon Train !\n%PAGE%\nLe multijoueur,\nplusieurs personnes, dans un seul monde !\nEnsemble.\n%PAGE%\nQuelle technologie !\nDes ordinateurs qui se connectent.\nDes gens qui interagissent,\nsur un train\ndans ton ordinateur\nsur internet !"
   ]
 }

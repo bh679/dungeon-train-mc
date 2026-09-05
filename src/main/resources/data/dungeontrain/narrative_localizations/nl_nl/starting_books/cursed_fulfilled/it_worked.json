@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Het werkte.\n\n\n%TARGET% is dood.\n\n\nJij was er niet bij.\nJij was al dood.\n\n\nWagon %CARRIAGE%.\nHet nummer waarop jij stierf werd het nummer waarop diegene stierf.\n\n\nHet wachtte er %DAYS% dagen op.\n%GEAR%\n\n\nZo ging het.\n\n\n%STORY%\n\n\nVoelt dat niet vreemd?\nIets met jouw gezicht,\nin een wereld die jij nooit zag,\ndat afmaakt wat jij begon.\n\n\nJe hoeft je er niet goed over te voelen.\nJe hoeft je er niet slecht over te voelen.\n\n\nJe hoeft het alleen te weten.\n\n\nNu weet je het.",
-    "Welkom terug bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat heb je geschreven?\nDit zijn allemaal goede vragen\n\n\nJe schreef %TARGET%.\n\n\n%DAYS% dagen later, bij wagon %CARRIAGE%, had het papier gelijk.\n\n\n%STORY%\n\n\nPapier heeft dat meestal niet.\n\n\nIk ben papier.\nIk heb zelden gelijk.\n\n\nDie keer wel.\n\n\nSlaap lekker."
+    "Het werkte.\n%PAGE%\n%TARGET% is dood.\n%PAGE%\nJij was er niet bij.\nJij was al dood.\n%PAGE%\nWagon %CARRIAGE%.\nHet nummer waarop jij stierf werd het nummer waarop diegene stierf.\n%PAGE%\nHet wachtte er %DAYS% dagen op.\n%GEAR%\n%PAGE%\nZo ging het.\n%PAGE%\n%STORY%\n%PAGE%\nVoelt dat niet vreemd?\nIets met jouw gezicht,\nin een wereld die jij nooit zag,\ndat afmaakt wat jij begon.\n%PAGE%\nJe hoeft je er niet goed over te voelen.\nJe hoeft je er niet slecht over te voelen.\n%PAGE%\nJe hoeft het alleen te weten.\n%PAGE%\nNu weet je het.",
+    "Welkom terug bij de Dungeon Train\nWat is de trein?\nWaarom ben je hier?\nWat heb je geschreven?\nDit zijn allemaal goede vragen\n%PAGE%\nJe schreef %TARGET%.\n%PAGE%\n%DAYS% dagen later, bij wagon %CARRIAGE%, had het papier gelijk.\n%PAGE%\n%STORY%\n%PAGE%\nPapier heeft dat meestal niet.\n%PAGE%\nIk ben papier.\nIk heb zelden gelijk.\n%PAGE%\nDie keer wel.\n%PAGE%\nSlaap lekker."
   ]
 }

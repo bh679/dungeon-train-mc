@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Bine ai venit la bord, aventurierule!\nTe-ai alăturat unei lumi, ia uite! Ce palpitant.\n\n\nExplorați împreună, conectați-vă la tren împreună!\n\n\nCu mai mulți oameni prin preajmă, trenul sigur o să crească!\n\n\nCrezi că o să primim mai multe vagoane?",
-    "Hei, ai reușit! Te-ai alăturat unei lumi noi!\nUn tren nou!\nBine ai venit în Dungeon Train!\n\n\nCe este dungeon train-ul?\nDe ce e aici?\nCe o să găsești?\n\n\nBaftă!",
-    "Ai reușit! Te-ai alăturat unei lumi noi!\nTe-ai alăturat lui Dungeon Train!\n\n\nMultiplayer,\nMai mulți oameni, într-o singură lume!\nÎmpreună.\n\n\nCe tehnologie!\nCalculatoare, conectându-se.\nOameni interacționând,\nîntr-un tren\nîn calculatorul tău\npe internet!"
+    "Bine ai venit la bord, aventurierule!\nTe-ai alăturat unei lumi, ia uite! Ce palpitant.\n%PAGE%\nExplorați împreună, conectați-vă la tren împreună!\n%PAGE%\nCu mai mulți oameni prin preajmă, trenul sigur o să crească!\n%PAGE%\nCrezi că o să primim mai multe vagoane?",
+    "Hei, ai reușit! Te-ai alăturat unei lumi noi!\nUn tren nou!\nBine ai venit în Dungeon Train!\n%PAGE%\nCe este dungeon train-ul?\nDe ce e aici?\nCe o să găsești?\n%PAGE%\nBaftă!",
+    "Ai reușit! Te-ai alăturat unei lumi noi!\nTe-ai alăturat lui Dungeon Train!\n%PAGE%\nMultiplayer,\nMai mulți oameni, într-o singură lume!\nÎmpreună.\n%PAGE%\nCe tehnologie!\nCalculatoare, conectându-se.\nOameni interacționând,\nîntr-un tren\nîn calculatorul tău\npe internet!"
   ]
 }

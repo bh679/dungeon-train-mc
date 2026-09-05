@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Bạn đã viết một cái tên.\nCòn nhớ không?\n\n\n%TARGET%.\nBạn đã viết %TARGET%.\n\n\nNó ứng nghiệm.\nKhông theo cách bạn xin.\nMà theo cách của nó.\n\n\nBạn chết ở toa %CARRIAGE%.\nMột phần của bạn ở lại đó.\n%GEAR%\n\n\nNó chờ %DAYS% ngày.\n\n\nRồi %TARGET% bước vào toa %CARRIAGE%, trong một thế giới bạn sẽ chẳng bao giờ thấy.\n\n\n%STORY%\n\n\nVà tờ giấy dừng lại ở đó.\n\n\nTôi không biết chuyện kết thúc ra sao.\nBạn cũng vậy.\n\n\nĐó là giao kèo bạn đã lập.",
-    "Chào mừng trở lại.\nCon tàu là gì?\nVì sao bạn ở đây?\nBạn đã làm gì?\n\n\nChỉ một trong số đó là đã đổi.\n\n\n%TARGET% gặp bạn ở toa %CARRIAGE%.\n\n\nKhông phải bạn.\nLà phần của bạn đã ở lại phía sau.\n\n\n%DAYS% ngày nó chờ.\nMột thứ thật kiên nhẫn.\nNó mang khuôn mặt bạn.\n\n\n%STORY%\n\n\n.\n\n\nTôi rất muốn nói cho bạn biết ai đã bước đi.\n\n\nKhông ai ghi lại điều đó."
+    "Bạn đã viết một cái tên.\nCòn nhớ không?\n%PAGE%\n%TARGET%.\nBạn đã viết %TARGET%.\n%PAGE%\nNó ứng nghiệm.\nKhông theo cách bạn xin.\nMà theo cách của nó.\n%PAGE%\nBạn chết ở toa %CARRIAGE%.\nMột phần của bạn ở lại đó.\n%GEAR%\n%PAGE%\nNó chờ %DAYS% ngày.\n%PAGE%\nRồi %TARGET% bước vào toa %CARRIAGE%, trong một thế giới bạn sẽ chẳng bao giờ thấy.\n%PAGE%\n%STORY%\n%PAGE%\nVà tờ giấy dừng lại ở đó.\n%PAGE%\nTôi không biết chuyện kết thúc ra sao.\nBạn cũng vậy.\n%PAGE%\nĐó là giao kèo bạn đã lập.",
+    "Chào mừng trở lại.\nCon tàu là gì?\nVì sao bạn ở đây?\nBạn đã làm gì?\n%PAGE%\nChỉ một trong số đó là đã đổi.\n%PAGE%\n%TARGET% gặp bạn ở toa %CARRIAGE%.\n%PAGE%\nKhông phải bạn.\nLà phần của bạn đã ở lại phía sau.\n%PAGE%\n%DAYS% ngày nó chờ.\nMột thứ thật kiên nhẫn.\nNó mang khuôn mặt bạn.\n%PAGE%\n%STORY%\n%PAGE%\n.\n%PAGE%\nTôi rất muốn nói cho bạn biết ai đã bước đi.\n%PAGE%\nKhông ai ghi lại điều đó."
   ]
 }

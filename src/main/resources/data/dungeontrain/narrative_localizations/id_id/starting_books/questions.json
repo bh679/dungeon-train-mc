@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Pertanyaan?\nSelamat datang di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang seharusnya kaulakukan?\nSemua ini pertanyaan bagus\n\n\nKau tak akan menemukan jawaban di tumpukan kertas ini.\n\n\nJawabannya sekadar tak ada di sini.\n\n\nAku yang mengajukan pertanyaan, kau yang mencari jawaban.\n\n\nJadi \"apa pertanyaannya\" kau bertanya?\n\n\nMungkin itulah jawabannya."
+    "Pertanyaan?\nSelamat datang di Dungeon Train\nApa itu kereta ini?\nMengapa kau ada di sini?\nApa yang seharusnya kaulakukan?\nSemua ini pertanyaan bagus\n%PAGE%\nKau tak akan menemukan jawaban di tumpukan kertas ini.\n%PAGE%\nJawabannya sekadar tak ada di sini.\n%PAGE%\nAku yang mengajukan pertanyaan, kau yang mencari jawaban.\n%PAGE%\nJadi \"apa pertanyaannya\" kau bertanya?\n%PAGE%\nMungkin itulah jawabannya."
   ]
 }

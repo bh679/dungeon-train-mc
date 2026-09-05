@@ -5,11 +5,11 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Ahhh, un nouveau monde ! Tout frais !\nAdieu, vieux monde !\nOn n'a pas besoin de toi !\n\n\nCe vieux monde nous freinait !\nPlus maintenant, avec ce grand et magnifique nouveau monde !\n\n\nRegarde-le ! Avec toute sa nouveauté, ses nouveaux blocs et ses nouvelles possibilités !",
+    "Ahhh, un nouveau monde ! Tout frais !\nAdieu, vieux monde !\nOn n'a pas besoin de toi !\n%PAGE%\nCe vieux monde nous freinait !\nPlus maintenant, avec ce grand et magnifique nouveau monde !\n%PAGE%\nRegarde-le ! Avec toute sa nouveauté, ses nouveaux blocs et ses nouvelles possibilités !",
     "C'est... différent. Un tout nouveau monde !",
-    "Nouveau monde, nouveau train... attends... c'est le même train ?\n\n\nCe n'est pas possible !\nLe train peut traverser les mondes ?\n\n\nUn train interdimensionnel !?\n\n\nJ'imagine que ce serait un train qui voyage du monde principal vers le Nether et l'End, mais ça... c'est différent\n\n\nIl voyage au-delà des dimensions !\n De nouvelles.. réalités..",
-    "Eh bien, voilà ce qui arrive quand on enfreint les règles. Un tout nouveau monde !\n\n\nTu as vraiment fait fort cette fois, hein ?\nTu as dû abandonner cet autre monde.\n\n\nÇa en valait la peine ?\n\n\nEs-tu enfin heureux ?",
-    "Regarde cet endroit !\nTout est nouveau et différent.\n\n\nDe nouveaux blocs,\nde nouveaux mobs,\nun nouveau train !\n\n\nEst-ce un nouveau train...?\n\n\nOu avons-nous simplement avancé si loin sur le même train que nous sommes entrés dans un nouveau monde ?",
-    "Nouveau monde, nouvelle vie !\n\n\nEnfin, tu peux être la version de toi que tu étais destiné à être !\n\n\nSans le vieux monde qui te tire vers le bas !"
+    "Nouveau monde, nouveau train... attends... c'est le même train ?\n%PAGE%\nCe n'est pas possible !\nLe train peut traverser les mondes ?\n%PAGE%\nUn train interdimensionnel !?\n%PAGE%\nJ'imagine que ce serait un train qui voyage du monde principal vers le Nether et l'End, mais ça... c'est différent\n%PAGE%\nIl voyage au-delà des dimensions !\n De nouvelles.. réalités..",
+    "Eh bien, voilà ce qui arrive quand on enfreint les règles. Un tout nouveau monde !\n%PAGE%\nTu as vraiment fait fort cette fois, hein ?\nTu as dû abandonner cet autre monde.\n%PAGE%\nÇa en valait la peine ?\n%PAGE%\nEs-tu enfin heureux ?",
+    "Regarde cet endroit !\nTout est nouveau et différent.\n%PAGE%\nDe nouveaux blocs,\nde nouveaux mobs,\nun nouveau train !\n%PAGE%\nEst-ce un nouveau train...?\n%PAGE%\nOu avons-nous simplement avancé si loin sur le même train que nous sommes entrés dans un nouveau monde ?",
+    "Nouveau monde, nouvelle vie !\n%PAGE%\nEnfin, tu peux être la version de toi que tu étais destiné à être !\n%PAGE%\nSans le vieux monde qui te tire vers le bas !"
   ]
 }

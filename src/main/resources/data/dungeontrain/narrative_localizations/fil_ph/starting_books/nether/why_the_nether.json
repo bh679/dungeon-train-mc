@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Hindi ito maaaring tama?\n Tama ba ito?\n\n\nBaka bug ito?\nHindi ito ang mundong kilala ko.\n\n\nAba... good luck!",
+    "Hindi ito maaaring tama?\n Tama ba ito?\n%PAGE%\nBaka bug ito?\nHindi ito ang mundong kilala ko.\n%PAGE%\nAba... good luck!",
     "Isang walang-hanggang tren, lumulukso sa pagitan ng mga dimensiyon, mundo, at realidad.",
-    "Maligayang pagdating sa Dungeon Train\nAno ang tren?\nBakit ka naririto?\nAno ang dapat mong gawin?\nMabubuting tanong ang mga ito\n\n\nBagama't...\n\n\nBakit ka naririto, sa Nether, partikular?\n\n\nNagsimula ka sa impiyerno.\n\n\nSinadya?\n\n\n...Matapang.\n\n\nMay tren sa unahan. Sumakay ka rito.\nBilisan mo, bago may makapansin sa iyo."
+    "Maligayang pagdating sa Dungeon Train\nAno ang tren?\nBakit ka naririto?\nAno ang dapat mong gawin?\nMabubuting tanong ang mga ito\n%PAGE%\nBagama't...\n%PAGE%\nBakit ka naririto, sa Nether, partikular?\n%PAGE%\nNagsimula ka sa impiyerno.\n%PAGE%\nSinadya?\n%PAGE%\n...Matapang.\n%PAGE%\nMay tren sa unahan. Sumakay ka rito.\nBilisan mo, bago may makapansin sa iyo."
   ]
 }

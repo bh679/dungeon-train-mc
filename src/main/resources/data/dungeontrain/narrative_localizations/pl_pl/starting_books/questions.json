@@ -5,6 +5,6 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Pytania?\nWitaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nTo wszystko dobre pytania\n\n\nNie znajdziesz odpowiedzi w tym stosie papieru.\n\n\nOdpowiedzi po prostu tu nie ma.\n\n\nJa zadaję pytania, ty znajdujesz odpowiedzi.\n\n\nWięc „jakie jest pytanie”, pytasz?\n\n\nMoże to właśnie jest odpowiedź."
+    "Pytania?\nWitaj w Dungeon Train\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo masz robić?\nTo wszystko dobre pytania\n%PAGE%\nNie znajdziesz odpowiedzi w tym stosie papieru.\n%PAGE%\nOdpowiedzi po prostu tu nie ma.\n%PAGE%\nJa zadaję pytania, ty znajdujesz odpowiedzi.\n%PAGE%\nWięc „jakie jest pytanie”, pytasz?\n%PAGE%\nMoże to właśnie jest odpowiedź."
   ]
 }

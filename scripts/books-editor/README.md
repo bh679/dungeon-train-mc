@@ -15,7 +15,7 @@ tree, so treat a save like any other edit: review it with `git diff` and commit 
 
 | Corpus | Pagination | Notes |
 |---|---|---|
-| `narratives/starting_books/` | `StartingBookFactory.paginateExplicit` — **`\n\n\n` is a page break**, `\n\n` a blank line | grouped by lifecycle context folder, which is the routing (see that folder's `CLAUDE.md`) |
+| `narratives/starting_books/` | `StartingBookFactory.paginateExplicit` — **a `%PAGE%` line is the page break**; newlines are content | grouped by lifecycle context folder, which is the routing (see that folder's `CLAUDE.md`) |
 | `narratives/random_books/` | `BookFactory.paginate` — flow | blank-line paragraphs greedy-packed to 256 chars |
 | `narratives/stories/` | `BookFactory.paginate` — flow | letter picker; title from `story`, author from `character` |
 
@@ -25,7 +25,7 @@ tree, so treat a save like any other edit: review it with `git diff` and commit 
 
 Each rendered page carries the `[start, end)` span of the source text it came from
 (`web/js/paginate.js`), so typing on page 4 splices only that span: nothing else in the file moves.
-For starting books a page is exactly one `\n\n\n` chunk, so pages are independent (and a blank line inside one stays inside it). For flow books a
+For starting books a page is exactly one `%PAGE%`-delimited chunk, so pages are independent and any newlines inside one stay inside it. For flow books a
 page is the paragraph(s) that packed onto it, and an edit reflows across pages exactly as the game
 would. When one oversize chunk spills across several pages the span is shared — the editor says so,
 and editing rewrites the whole chunk.

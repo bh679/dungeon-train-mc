@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Tu as écrit un nom.\nTu t'en souviens ?\n\n\n%TARGET%.\nTu as écrit %TARGET%.\n\n\nÇa a marché.\nPas comme tu l'avais demandé.\nComme ça marche, c'est tout.\n\n\nTu es mort au wagon %CARRIAGE%.\nQuelque chose de toi y est resté.\n%GEAR%\n\n\nIl a attendu %DAYS% jours.\n\n\nPuis %TARGET% est entré dans le wagon %CARRIAGE%, dans un monde que tu ne verras jamais.\n\n\n%STORY%\n\n\nEt là, le papier s'arrête.\n\n\nJe ne sais pas comment ça s'est fini.\nToi non plus.\n\n\nC'est le marché que tu as passé.",
-    "Bienvenue de retour.\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQu'as-tu fait ?\n\n\nUne seule de ces réponses a changé.\n\n\n%TARGET% t'a rencontré au wagon %CARRIAGE%.\n\n\nPas toi.\nLa part de toi qui est restée en arrière.\n\n\nIl a attendu %DAYS% jours.\nPatiente chose.\nIl avait ton visage.\n\n\n%STORY%\n\n\n.\n\n\nJe te dirais bien qui est reparti.\n\n\nPersonne ne l'a écrit."
+    "Tu as écrit un nom.\nTu t'en souviens ?\n%PAGE%\n%TARGET%.\nTu as écrit %TARGET%.\n%PAGE%\nÇa a marché.\nPas comme tu l'avais demandé.\nComme ça marche, c'est tout.\n%PAGE%\nTu es mort au wagon %CARRIAGE%.\nQuelque chose de toi y est resté.\n%GEAR%\n%PAGE%\nIl a attendu %DAYS% jours.\n%PAGE%\nPuis %TARGET% est entré dans le wagon %CARRIAGE%, dans un monde que tu ne verras jamais.\n%PAGE%\n%STORY%\n%PAGE%\nEt là, le papier s'arrête.\n%PAGE%\nJe ne sais pas comment ça s'est fini.\nToi non plus.\n%PAGE%\nC'est le marché que tu as passé.",
+    "Bienvenue de retour.\nQu'est-ce que le train ?\nPourquoi es-tu ici ?\nQu'as-tu fait ?\n%PAGE%\nUne seule de ces réponses a changé.\n%PAGE%\n%TARGET% t'a rencontré au wagon %CARRIAGE%.\n%PAGE%\nPas toi.\nLa part de toi qui est restée en arrière.\n%PAGE%\nIl a attendu %DAYS% jours.\nPatiente chose.\nIl avait ton visage.\n%PAGE%\n%STORY%\n%PAGE%\n.\n%PAGE%\nJe te dirais bien qui est reparti.\n%PAGE%\nPersonne ne l'a écrit."
   ]
 }
