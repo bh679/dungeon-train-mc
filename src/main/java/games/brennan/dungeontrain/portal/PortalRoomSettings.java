@@ -245,7 +245,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                 + SEPARATOR + effectiveLock.id();
         }
         if (doorsDiffer()) {
-            // The longest tag this class writes, and the only shape that names the exit door at all.
+            // The longest tag with a default seal, and the shortest that names the exit door at all.
             // "Would change something" here means differs from the ENTRY door rather than from a
             // fixed value, on the same reasoning Exits uses against its mode's default: a room whose
             // two doors agree is saying what the entry segment already says.
