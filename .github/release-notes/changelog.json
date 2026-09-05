@@ -11358,7 +11358,7 @@
       "version": "0.800.0",
       "type": "feat",
       "title": "Dimensional carriage polish",
-      "summary": "A small refinement to how dimensional carriages present themselves while you are inside one. Client-side display only \u2014 nothing about the world, your save or the way the rooms play has changed.",
+      "summary": "A small refinement to dimensional carriages.",
       "highlights": [],
       "date": "2026-09-05",
       "released": false,
