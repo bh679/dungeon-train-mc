@@ -3,11 +3,17 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
+import games.brennan.dungeontrain.net.EditorRosterPacket;
+import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -66,6 +72,47 @@ final class EditorCreatorBuildsTest {
         assertEquals("gui.dungeontrain.builder.profile.status.none",
             EditorCreatorBuilds.reviewKey("something_new"));
         assertEquals("gui.dungeontrain.builder.profile.status.none", EditorCreatorBuilds.reviewKey(null));
+    }
+
+    /** A roster holding one portal room called "house" and one carriage called "standard". */
+    private static EditorRosterIndex roster() {
+        EditorTypeMenusPacket.Variant house = new EditorTypeMenusPacket.Variant(
+            "house", 1, 0, -1, 1, "PORTALS", "portal_room", "house", true, false, List.of(), List.of());
+        EditorTypeMenusPacket.Variant standard = new EditorTypeMenusPacket.Variant(
+            "standard", 1, 0, -1, 1, "CARRIAGES", "standard", "standard", false, false, List.of(), List.of());
+        return new EditorRosterIndex(List.of(
+            new EditorRosterPacket.Group("portals", "Dimensional Carriage", "portal_room",
+                List.of(new EditorRosterPacket.Entry(house, 1))),
+            new EditorRosterPacket.Group("carriages", "Carriages", "",
+                List.of(new EditorRosterPacket.Entry(standard, 1)))),
+            "portals", new EditorRosterPacket.TrainSize(9, 7, 7));
+    }
+
+    @Test
+    @DisplayName("a build whose name the library already holds counts as here")
+    void nameAlreadyInTheLibraryCountsAsHere() {
+        // The editor holds one template per name, so a name in use IS this build as far as the
+        // screen can address it — which is what the download path refuses as ALREADY_HERE. Offering
+        // Load there only earns that refusal a second time.
+        assertNotNull(EditorCreatorBuilds.here(roster(), entry(BuilderRelayKinds.PORTAL_ROOM, "house", "")));
+        assertNotNull(EditorCreatorBuilds.here(roster(), entry(BuilderRelayKinds.CARRIAGE, "standard", "")));
+    }
+
+    @Test
+    @DisplayName("a name held in a different category is a different template")
+    void nameInAnotherCategoryIsNotHere() {
+        // "standard" as a portal room is not the carriage of that name, and walking somebody to the
+        // carriage would be the wrong build entirely.
+        assertNull(EditorCreatorBuilds.here(roster(), entry(BuilderRelayKinds.PORTAL_ROOM, "standard", "")));
+        assertNull(EditorCreatorBuilds.here(roster(), entry(BuilderRelayKinds.CARRIAGE, "house", "")));
+        assertNull(EditorCreatorBuilds.here(roster(), entry(BuilderRelayKinds.CARRIAGE, "terrarium", "")));
+    }
+
+    @Test
+    @DisplayName("a carriage group is never here — the editor has no plot that holds one")
+    void carriageGroupHasNoHome() {
+        assertNull(EditorCreatorBuilds.categoryOf(BuilderRelayKinds.CARRIAGE_GROUP));
+        assertNull(EditorCreatorBuilds.here(roster(), entry(BuilderRelayKinds.CARRIAGE_GROUP, "house", "")));
     }
 
     @Test

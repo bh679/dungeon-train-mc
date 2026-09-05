@@ -8,6 +8,8 @@ import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,9 +36,8 @@ public final class EditorCreatorPane {
 
     public void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
                        EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
-                       String note, boolean asCopy, int mouseX, int mouseY) {
-        EditorCreatorBuilds.Landed landed = entry == null ? null
-            : EditorCreatorBuilds.landedBuild(entry.relayId());
+                       String note, boolean asCopy, EditorCreatorBuilds.Landed landed,
+                       int mouseX, int mouseY) {
 
         drawHeader(g, font, layout.header(), theme, entry, landed, mouseX, mouseY);
 
@@ -70,8 +71,14 @@ public final class EditorCreatorPane {
                 EditorScreenLang.text(EditorScreenLang.CREATOR_READ_ONLY), notes.w() - 4),
             notes.x() + 2, notes.y(), EditorDetailPane.DIM_TEXT, false);
         if (note != null && !note.isEmpty()) {
-            g.drawString(font, font.plainSubstrByWidth(note, notes.w() - 4),
-                notes.x() + 2, notes.y() + LINE_H + 2, 0xFFFFEEBB, false);
+            // Wrapped, not clipped: these say what happened and why, and half a sentence
+            // ("You already have a build by t") is worse than no sentence.
+            int y2 = notes.y() + LINE_H + 2;
+            for (FormattedCharSequence row : font.split(Component.literal(note), notes.w() - 4)) {
+                if (y2 + LINE_H > notes.bottom()) break;
+                g.drawString(font, row, notes.x() + 2, y2, 0xFFFFEEBB, false);
+                y2 += LINE_H;
+            }
         }
 
         drawLoad(g, font, layout.test(), entry, landed, asCopy, mouseX, mouseY);

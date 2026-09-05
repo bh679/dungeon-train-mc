@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -129,6 +130,55 @@ public final class EditorCreatorBuilds {
     /** Where this build landed when it was loaded, or null when it has not been. */
     static Landed landedBuild(int relayId) {
         return LANDED.get(relayId);
+    }
+
+    /**
+     * Where this build already is in the editor, or null when the editor has never seen it.
+     *
+     * <p>Two ways it can be here, and the second is the one that was missing: this session loaded
+     * it, or the library already holds a template of that kind under that name. The second is what
+     * the download path calls {@code ALREADY_HERE} — the editor has room for one template per name,
+     * so a name in use IS the build as far as this screen can address it, whoever authored the file.
+     * Offering Load again there only earns the refusal a second time.</p>
+     */
+    static Landed here(EditorRosterIndex index, BuilderProfilePacket.Entry entry) {
+        if (entry == null) return null;
+        Landed loaded = LANDED.get(entry.relayId());
+        if (loaded != null) return loaded;
+        PlotCategory category = categoryOf(entry.kind());
+        if (category == null || entry.buildName().isEmpty() || index == null) return null;
+        for (EditorRosterIndex.Tile tile : index.allTiles()) {
+            VariantKey key = tile.key();
+            if (key.category() == category && key.displayName().equalsIgnoreCase(entry.buildName())) {
+                return new Landed(photoKindOf(entry), entry.buildName(), entry.subKind());
+            }
+        }
+        return null;
+    }
+
+    /** The editor category a relay kind is edited in, or null when the editor holds no such thing. */
+    static PlotCategory categoryOf(String kind) {
+        return switch (kind) {
+            case BuilderRelayKinds.CARRIAGE -> PlotCategory.CARRIAGES;
+            case BuilderRelayKinds.CONTENTS -> PlotCategory.CONTENTS;
+            case BuilderRelayKinds.PART -> PlotCategory.PARTS;
+            case BuilderRelayKinds.TRACK -> PlotCategory.TRACKS;
+            case BuilderRelayKinds.PORTAL_ROOM -> PlotCategory.PORTALS;
+            // A carriage group is authored in the Train Builder; no editor plot holds one.
+            default -> null;
+        };
+    }
+
+    /** Which store this build's kind belongs to — the same mapping {@link #artOf} looks it up by. */
+    static BuilderPhotoPaths.Kind photoKindOf(BuilderProfilePacket.Entry entry) {
+        return switch (entry.kind()) {
+            case BuilderRelayKinds.CARRIAGE_GROUP -> BuilderPhotoPaths.Kind.CARRIAGE_GROUP;
+            case BuilderRelayKinds.CONTENTS -> BuilderPhotoPaths.Kind.CONTENTS;
+            case BuilderRelayKinds.PART -> BuilderPhotoPaths.Kind.PART;
+            case BuilderRelayKinds.TRACK -> BuilderPhotoPaths.Kind.TRACK;
+            case BuilderRelayKinds.PORTAL_ROOM -> BuilderPhotoPaths.Kind.PORTAL_ROOM;
+            default -> BuilderPhotoPaths.Kind.CARRIAGE;
+        };
     }
 
     /** Everything loaded, narrowed to the tab and the filter box. */

@@ -197,8 +197,9 @@ public final class EditorGuiScreen extends Screen {
         if (EditorCreatorBuilds.active()) {
             // A relay row is not a template: none of the detail pane's controls apply to one, so
             // the pane that has no controls stands in for it rather than eight disabled buttons.
-            creatorPane.render(g, this.font, layout, theme, selectedCreatorBuild(), orbit.yaw(),
-                creatorNote, loadAsCopy, mx, my);
+            BuilderProfilePacket.Entry picked = selectedCreatorBuild();
+            creatorPane.render(g, this.font, layout, theme, picked, orbit.yaw(),
+                creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), mx, my);
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
             TemplateArt art = TemplateArt.of(ctx.selection());
@@ -351,8 +352,7 @@ public final class EditorGuiScreen extends Screen {
      */
     private void goToLoadedBuild() {
         BuilderProfilePacket.Entry entry = selectedCreatorBuild();
-        EditorCreatorBuilds.Landed landed = entry == null ? null
-            : EditorCreatorBuilds.landedBuild(entry.relayId());
+        EditorCreatorBuilds.Landed landed = EditorCreatorBuilds.here(EditorRosterClient.index(), entry);
         if (landed == null) return;
         if (EditorTemplateJumpBridge.go(landed.kind(), landed.id(), landed.subKind())) {
             afterCommand();
