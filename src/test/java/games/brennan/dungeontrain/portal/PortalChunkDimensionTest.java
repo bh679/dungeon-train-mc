@@ -51,37 +51,39 @@ class PortalChunkDimensionTest {
     }
 
     @Test
-    @DisplayName("The shipped variant's tag puts the door on the row the sampler slices the surface onto")
+    @DisplayName("The shipped variant's tag stands its fallback door on the sampled surface row")
     void shippedTag_agreesWithTheSurfaceRow() {
         PortalRoomSettings settings = PortalRoomSettings.parse(SHIPPED_TAG);
 
         assertSame(PortalRoomMode.CHUNK_DIMENSION, settings.mode());
         assertEquals(PortalChunkTerrain.SURFACE_ROW, settings.doorHeightOffset().value(),
-            "the door must stand on the row the slice puts the surface on");
+            "the authored offset is the fallback for a room stamped before its sample lands, and "
+                + "belongs on the row the column is cut around");
         assertSame(PortalRoomContents.DEFAULT, settings.contents(),
             "a chunk of terrain is not furnished from the contents pool");
         assertSame(PortalRoomSky.CYCLE, settings.sky(),
             "the Overworld variant is lit by the world clock — the sky is authored per variant now");
 
-        // And the box can actually spend that offset: a door may sit at most (height - minHeight)
-        // above a room's floor, which in the shipped 16-tall box is exactly the surface row. If a
-        // future geometry change lowers that ceiling, the room would clamp its door DOWN and the
-        // surface would land above the doorway rather than on it.
-        assertEquals(PortalChunkTerrain.SURFACE_ROW,
-            PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, PortalChunkTerrain.SIZE));
+        // Unclamped in the shipped box, which is what the second chunk of height bought: a door may
+        // sit at most (height - minHeight) above a room's floor, and at 32 that is 25 rather than the
+        // 9 a 16-tall box allowed — so the fit is free to put a mouth wherever its ground actually is
+        // instead of pinning it against the ceiling.
+        assertEquals(25, PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, PortalChunkTerrain.HEIGHT));
         assertEquals(PortalChunkTerrain.SURFACE_ROW, PortalRoomLayout.clampDoorHeightOffset(
-            DEFAULT_DIMS, PortalChunkTerrain.SIZE, settings.doorHeightOffset().value()));
+            DEFAULT_DIMS, PortalChunkTerrain.HEIGHT, settings.doorHeightOffset().value()));
     }
 
     @Test
-    @DisplayName("The shipped box clears every size floor a room is validated against")
+    @DisplayName("The shipped box is one chunk of ground under one of sky, and clears every size floor")
     void shippedBox_clearsTheFloors() {
-        int size = PortalChunkTerrain.SIZE;
-        assertTrue(size >= PortalRoomLayout.MIN_LENGTH);
-        assertTrue(size >= PortalRoomLayout.minHeight(DEFAULT_DIMS));
-        assertTrue(size >= PortalRoomLayout.minWidth(DEFAULT_DIMS));
-        assertTrue(size <= PortalRoomLayout.MAX_LENGTH && size <= PortalRoomLayout.MAX_WIDTH
-            && size <= PortalRoomLayout.MAX_HEIGHT);
+        assertEquals(2 * PortalChunkTerrain.SIZE, PortalChunkTerrain.HEIGHT,
+            "the room is two chunk sections tall — ground below, sky above");
+        assertTrue(PortalChunkTerrain.SIZE >= PortalRoomLayout.MIN_LENGTH);
+        assertTrue(PortalChunkTerrain.HEIGHT >= PortalRoomLayout.minHeight(DEFAULT_DIMS));
+        assertTrue(PortalChunkTerrain.SIZE >= PortalRoomLayout.minWidth(DEFAULT_DIMS));
+        assertTrue(PortalChunkTerrain.SIZE <= PortalRoomLayout.MAX_LENGTH
+            && PortalChunkTerrain.SIZE <= PortalRoomLayout.MAX_WIDTH
+            && PortalChunkTerrain.HEIGHT <= PortalRoomLayout.MAX_HEIGHT);
     }
 
     @Test
@@ -115,29 +117,30 @@ class PortalChunkDimensionTest {
     @Test
     @DisplayName("Each doorway stands on the ground under it, and the two ends may differ")
     void doors_standOnTheGround() {
-        // A cube whose ground rises along the walk: 3 blocks deep at the entry end, 7 at the exit.
-        int size = PortalChunkTerrain.SIZE;
+        // A column whose ground rises along the walk: 3 blocks deep at the entry end, 7 at the exit.
+        int width = PortalChunkTerrain.SIZE;
+        int height = PortalChunkTerrain.HEIGHT;
         net.minecraft.world.level.block.state.BlockState stone =
             net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
         net.minecraft.world.level.block.state.BlockState air =
             net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
         net.minecraft.world.level.block.state.BlockState[] states =
-            new net.minecraft.world.level.block.state.BlockState[size * size * size];
-        for (int y = 0; y < size; y++) {
-            for (int z = 0; z < size; z++) {
-                for (int x = 0; x < size; x++) {
-                    int ground = x < size / 2 ? 3 : 7;
-                    states[(y * size + z) * size + x] = y < ground ? stone : air;
+            new net.minecraft.world.level.block.state.BlockState[width * width * height];
+        for (int y = 0; y < height; y++) {
+            for (int z = 0; z < width; z++) {
+                for (int x = 0; x < width; x++) {
+                    int ground = x < width / 2 ? 3 : 7;
+                    states[(y * width + z) * width + x] = y < ground ? stone : air;
                 }
             }
         }
         PortalChunkSlice slice =
-            new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, size, states);
+            new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, width, height, states);
 
         PortalRoomSettings fitted = PortalChunkDoors.fit(
             PortalRoomSettings.parse(SHIPPED_TAG), slice, DEFAULT_DIMS,
             PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.DEFAULT),
-            new net.minecraft.core.Vec3i(size, size, size));
+            new net.minecraft.core.Vec3i(width, height, width));
 
         // The GROUND BLOCK's row, not the air above it: a door offset places the corridor's floor,
         // so ground filling rows 0..2 puts the doorway's floor on row 2 and a player's feet on 3.
@@ -148,43 +151,48 @@ class PortalChunkDimensionTest {
     @Test
     @DisplayName("Ground higher than the room can spend clamps the door rather than moving the box")
     void doors_clampToWhatTheBoxAllows() {
-        int size = PortalChunkTerrain.SIZE;
+        int width = PortalChunkTerrain.SIZE;
+        int height = PortalChunkTerrain.HEIGHT;
         net.minecraft.world.level.block.state.BlockState stone =
             net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
         net.minecraft.world.level.block.state.BlockState[] states =
-            new net.minecraft.world.level.block.state.BlockState[size * size * size];
+            new net.minecraft.world.level.block.state.BlockState[width * width * height];
         java.util.Arrays.fill(states, stone);   // solid to the ceiling, everywhere
         PortalChunkSlice slice =
-            new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, size, states);
+            new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, width, height, states);
 
         PortalRoomSettings fitted = PortalChunkDoors.fit(
             PortalRoomSettings.parse(SHIPPED_TAG), slice, DEFAULT_DIMS,
             PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.DEFAULT),
-            new net.minecraft.core.Vec3i(size, size, size));
+            new net.minecraft.core.Vec3i(width, height, width));
 
-        int max = PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, size);
+        int max = PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, height);
         assertEquals(max, fitted.doorHeightOffset().value());
         assertEquals(max, fitted.exitDoorHeightOffset().value());
     }
 
     @Test
-    @DisplayName("A slice reads room-local and refuses cells outside the cube")
+    @DisplayName("A slice reads room-local and refuses cells outside the column")
     void slice_isRoomLocal() {
-        int size = 4;
+        int width = 4;
+        int height = 8;
         net.minecraft.world.level.block.state.BlockState[] states =
-            new net.minecraft.world.level.block.state.BlockState[size * size * size];
-        PortalChunkSlice slice = new PortalChunkSlice(PortalChunkTerrain.Source.END, size, states);
+            new net.minecraft.world.level.block.state.BlockState[width * width * height];
+        PortalChunkSlice slice =
+            new PortalChunkSlice(PortalChunkTerrain.Source.END, width, height, states);
 
-        assertEquals(size, slice.size());
+        assertEquals(width, slice.width());
+        assertEquals(height, slice.height());
         assertSame(PortalChunkTerrain.Source.END, slice.source());
         assertNull(slice.at(-1, 0, 0));
-        assertNull(slice.at(0, size, 0));
-        assertNull(slice.at(0, 0, size));
+        assertNull(slice.at(0, height, 0));
+        assertNull(slice.at(0, 0, width));
+        // A tall column is not a cube: the row above the footprint is still inside it.
+        assertNull(slice.at(0, width + 1, 0), "empty backing array, but the index is in range");
         // In range: null only because the backing array is empty in this test, not because the cell
-        // was refused — the point is that no index outside the cube reaches the array at all.
-        assertNull(slice.at(size - 1, size - 1, size - 1));
-        states[((size - 1) * size + (size - 1)) * size + (size - 1)] =
+        // was refused — the point is that no index outside the column reaches the array at all.
+        states[((height - 1) * width + (width - 1)) * width + (width - 1)] =
             net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
-        assertNotNull(slice.at(size - 1, size - 1, size - 1));
+        assertNotNull(slice.at(width - 1, height - 1, width - 1));
     }
 }

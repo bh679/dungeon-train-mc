@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Set;
@@ -24,12 +25,13 @@ import java.util.function.IntFunction;
  * its terrain has been sampled, because the doorways are stood on that terrain — see
  * {@link PortalChunkDoors} and {@code PortalCarriageBuilder.planStructure}.</p>
  *
- * <h2>Nothing is taken out of the terrain at the mouths</h2>
+ * <h2>Two blocks are taken out of the terrain at each mouth, and no more</h2>
  * <p>The doorways are stood on the ground the sample landed ({@link PortalChunkDoors}), so there is
  * nothing to cut away to reach them, and cutting anyway is what made a chunk dimension read as a
- * room with two bites taken out of it. The only thing written at a mouth now is the floor row when
- * the sample left <b>air or water</b> there — ground is added under a doorway that would otherwise
- * open onto a drop, and no block the sample placed is ever removed.</p>
+ * room with two bites taken out of it. What remains is the door's own column: one block deep on the
+ * walkway line, two blocks tall, cleared so a tree or a dune that grew in the doorway is not a wall
+ * across it — plus the floor row beneath, written to ground when the sample left air or water
+ * there.</p>
  *
  * <p>Every write skips {@link PortalCorridorMask}, which matters for the deferred path only: an
  * immediate fill runs before {@code stampCorridors} and could not reach a corridor if it tried,
@@ -38,8 +40,11 @@ import java.util.function.IntFunction;
  */
 public final class PortalChunkDimension {
 
-    /** How many columns in from each end the doorway's own floor is answered for. */
-    private static final int DOORWAY_DEPTH = 2;
+    /**
+     * How many cells of each doorway are kept clear — the pair above the floor row, which is a
+     * player's legs and head and nothing else.
+     */
+    private static final int DOOR_HEIGHT = 2;
 
     private PortalChunkDimension() {}
 
@@ -103,8 +108,8 @@ public final class PortalChunkDimension {
         // and a wall of open sky would seal a mouth with nothing. The ±X ends are not walls — they
         // are the door planes — so terrain runs the full length.
         for (int y = 1; y < size.getY() - 1; y++) {
-            for (int z = 1; z < size.getZ() - 1 && z < slice.size(); z++) {
-                for (int x = 0; x < size.getX() && x < slice.size(); x++) {
+            for (int z = 1; z < size.getZ() - 1 && z < slice.width(); z++) {
+                for (int x = 0; x < size.getX() && x < slice.width(); x++) {
                     // Null for a row the cube does not reach — a room stood up taller than 16 by a
                     // world with the space for it. Those rows keep whatever the template put there,
                     // which is a room rather than a hole.
@@ -121,51 +126,59 @@ public final class PortalChunkDimension {
             }
         }
 
-        floorDoorway(level, structure, dims, origin, size, mask, slice, PortalCarriageRole.ENTRY);
-        floorDoorway(level, structure, dims, origin, size, mask, slice, PortalCarriageRole.EXIT);
+        openDoorway(level, structure, dims, layout, origin, size, mask, slice,
+            PortalCarriageRole.ENTRY);
+        openDoorway(level, structure, dims, layout, origin, size, mask, slice,
+            PortalCarriageRole.EXIT);
     }
 
     /**
-     * Lay ground under one doorway wherever the sample left none.
+     * Open one doorway through the terrain: the two cells of the door itself, and solid ground under
+     * them.
      *
-     * <p>Additive only: a cell holding anything solid is the terrain the door was fitted to and is
-     * left exactly as it was sampled. Air is a step out into a hole and a fluid is a doorway that
-     * pours into the corridor, and those two are the whole of what this repairs.</p>
+     * <p><b>Two blocks, and not one more.</b> The doorways are stood on the ground the sample landed
+     * ({@link PortalChunkDoors}), so nothing has to be cut away to reach them — but a doorway is a
+     * hole a player walks through, and a sample is free to have grown a tree trunk or piled a dune
+     * in exactly that hole. What is cleared is the door's own column: one block deep at the room's
+     * end face, on the walkway line, from the floor row up through the two cells
+     * {@code PortalRoomDoorCells} calls a door. Everything either side of it, and everything behind
+     * it, is the terrain as it was sampled.</p>
+     *
+     * <p>The floor row under those two cells is the one thing written rather than cleared: air there
+     * is a step out into a hole and a fluid there pours into the corridor, so either becomes ground.
+     * Solid ground is what the door was fitted to and is left alone.</p>
      */
-    private static void floorDoorway(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                                     BlockPos origin, Vec3i size, PortalCorridorMask mask,
-                                     PortalChunkSlice slice, PortalCarriageRole role) {
+    private static void openDoorway(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                    PortalCarriageLayout layout, BlockPos origin, Vec3i size,
+                                    PortalCorridorMask mask, PortalChunkSlice slice,
+                                    PortalCarriageRole role) {
         boolean entry = role == PortalCarriageRole.ENTRY;
         BlockPos corridor = entry ? structure.origin() : structure.exitOrigin(dims);
 
-        int roomMinX = origin.getX();
-        int roomMaxX = roomMinX + size.getX() - 1;
-        int fromX = entry ? roomMinX : Math.max(roomMinX, roomMaxX - (DOORWAY_DEPTH - 1));
-        int toX = entry ? Math.min(roomMaxX, roomMinX + DOORWAY_DEPTH - 1) : roomMaxX;
-
-        // Exactly the corridor's own cross-section. The ground either side of a doorway is terrain
-        // and none of this is its business.
-        int minZ = Math.max(origin.getZ() + 1, corridor.getZ());
-        int maxZ = Math.min(origin.getZ() + size.getZ() - 2, corridor.getZ() + dims.width() - 1);
-        // The corridor's origin row is its FLOOR, and the door offsets were fitted to the ground
-        // block — so this row is normally already terrain and nothing is written at all.
+        // The room's end face on this side — the column a player steps into off the door plane.
+        int x = entry ? origin.getX() : origin.getX() + size.getX() - 1;
+        // The walkway line of THIS corridor, read off the corridor itself rather than off the room:
+        // a pair's two doorways may sit on different lines, and the corridor is where each one is.
+        int z = corridor.getZ() + layout.doorZ();
+        // The corridor's origin row is its floor, and the door is the two cells above it — the same
+        // pair PortalRoomDoorCells cuts for every other room's doorway.
         int floorY = corridor.getY();
 
-        BlockState ground = slice.source().ground();
+        BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int x = fromX; x <= toX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                cursor.set(x, floorY, z);
-                if (mask.covers(cursor)) continue;
-                // Anything a player would fall through or wade into — air, water, and equally the
-                // grass or flower a decorated sample grew on the row the doorway stands on. Solid
-                // ground is the terrain the door was fitted to and is never touched.
-                BlockState floor = level.getBlockState(cursor);
-                if (!floor.blocksMotion()) {
-                    level.setBlock(cursor, ground, Block.UPDATE_ALL);
-                }
-            }
+        for (int dy = 1; dy <= DOOR_HEIGHT; dy++) {
+            cursor.set(x, floorY + dy, z);
+            if (mask.covers(cursor)) continue;
+            if (!level.getBlockState(cursor).isAir()) level.setBlock(cursor, air, Block.UPDATE_ALL);
+        }
+
+        cursor.set(x, floorY, z);
+        if (mask.covers(cursor)) return;
+        BlockState floor = level.getBlockState(cursor);
+        // Anything a player would fall through or wade into — air, water, and equally the grass or
+        // flower a decorated sample grew on the row the doorway stands on.
+        if (!floor.blocksMotion()) {
+            level.setBlock(cursor, slice.source().ground(), Block.UPDATE_ALL);
         }
     }
-
 }

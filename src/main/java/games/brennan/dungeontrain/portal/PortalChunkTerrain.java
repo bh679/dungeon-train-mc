@@ -72,18 +72,33 @@ public final class PortalChunkTerrain {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Edge length of the sampled cube — one chunk, on every axis. */
+    /** Footprint of the sampled column — one chunk, on both horizontal axes. */
     public static final int SIZE = 16;
 
     /**
-     * Room-local Y the sampled surface is slid onto: the row a player's feet land on when they walk
-     * out of the corridor, which is the room's door line.
+     * How tall the sampled column is — two chunk sections.
      *
-     * <p>Nine, and not by taste: {@link PortalRoomLayout#maxDoorHeightOffset} allows a door to sit
-     * at most {@code height - minHeight} above a room's floor, which in a 16-tall box with a 7-tall
-     * corridor is exactly nine. It is therefore the deepest cross-section of ground this box can put
-     * under a player's feet, and the variant's own door-height offset must agree with it — see
-     * {@code chunk_dimension} in the portal room {@code weights.json}.</p>
+     * <p>The room is one chunk of ground with a second chunk of sky stacked on it. The upper half is
+     * mostly air, and that is the point: a hill that keeps climbing, a tree, or a structure with a
+     * tower on it has somewhere to go, instead of being cut off at a ceiling nine blocks over a
+     * player's head. It also takes the door-height clamp off the doorways —
+     * {@link PortalRoomLayout#maxDoorHeightOffset} is the room's height less the corridor's, so at
+     * sixteen every second room had a mouth pinned against the ceiling.</p>
+     */
+    public static final int HEIGHT = 32;
+
+    /**
+     * Room-local Y the middle column's surface is slid onto — how the column is cut, not where a
+     * doorway goes.
+     *
+     * <p>Nine blocks of ground under it, and the rest of {@link #HEIGHT} above: a cross-section deep
+     * enough to read as ground a player is standing on rather than a floor, and shallow enough that
+     * the room is mostly the sky and the terrain in it.</p>
+     *
+     * <p>The doorways are fitted to whatever the ground actually turns out to be at each mouth
+     * ({@link PortalChunkDoors}), which is a different row from this one wherever the chunk slopes —
+     * and the variant's authored offset is only the fallback for a room stamped before its sample
+     * lands.</p>
      */
     public static final int SURFACE_ROW = 9;
 
@@ -370,7 +385,7 @@ public final class PortalChunkTerrain {
         BoundingBox window() {
             int lo = anchor - SURFACE_ROW;
             return new BoundingBox(pos.getMinBlockX(), lo, pos.getMinBlockZ(),
-                pos.getMaxBlockX(), lo + SIZE - 1, pos.getMaxBlockZ());
+                pos.getMaxBlockX(), lo + HEIGHT - 1, pos.getMaxBlockZ());
         }
     }
 
@@ -528,13 +543,13 @@ public final class PortalChunkTerrain {
         return (x, y, z) -> y < Math.min(-54, seaLevel) ? lava : sea;
     }
 
-    /** Copy the {@link #SIZE} cube around the anchor out of the sampled chunk, room-local. */
+    /** Copy the column around the anchor out of the sampled chunk, room-local. */
     private static PortalChunkSlice readSlice(Source source, ProtoChunk chunk, ChunkPos pos,
                                               int anchor, int minY, int maxY) {
-        BlockState[] states = new BlockState[SIZE * SIZE * SIZE];
+        BlockState[] states = new BlockState[SIZE * SIZE * HEIGHT];
         BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int y = 0; y < SIZE; y++) {
+        for (int y = 0; y < HEIGHT; y++) {
             int worldY = anchor + (y - SURFACE_ROW);
             for (int z = 0; z < SIZE; z++) {
                 for (int x = 0; x < SIZE; x++) {
@@ -547,7 +562,7 @@ public final class PortalChunkTerrain {
                 }
             }
         }
-        return new PortalChunkSlice(source, SIZE, states);
+        return new PortalChunkSlice(source, SIZE, HEIGHT, states);
     }
 
     /** What {@link #standableRow} answers for a column with nowhere to stand. */

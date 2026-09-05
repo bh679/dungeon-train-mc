@@ -92,8 +92,8 @@ public final class PortalChunkDoors {
                                  int max) {
         int count = 0;
         int[] rows = new int[Math.max(1, (xTo - xFrom + 1) * (zTo - zFrom + 1))];
-        for (int x = Math.max(0, xFrom); x <= xTo && x < slice.size(); x++) {
-            for (int z = zFrom; z <= zTo && z < slice.size(); z++) {
+        for (int x = Math.max(0, xFrom); x <= xTo && x < slice.width(); x++) {
+            for (int z = zFrom; z <= zTo && z < slice.width(); z++) {
                 rows[count++] = surfaceOf(slice, x, z, max);
             }
         }
@@ -114,7 +114,7 @@ public final class PortalChunkDoors {
      * to clear.</p>
      */
     private static int surfaceOf(PortalChunkSlice slice, int x, int z, int max) {
-        for (int y = Math.min(max, slice.size() - 1); y > 0; y--) {
+        for (int y = Math.min(max, slice.height() - 1); y > 0; y--) {
             BlockState here = slice.at(x, y, z);
             // What a player can stand on, not merely what is not air. Now that the sample is
             // decorated, "not air" is grass, a flower, a snow layer or a sapling as readily as it is

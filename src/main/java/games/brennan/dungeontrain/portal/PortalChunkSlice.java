@@ -3,9 +3,10 @@ package games.brennan.dungeontrain.portal;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * A cube of sampled world generation, waiting to be stamped into a
- * {@link PortalRoomMode#CHUNK_DIMENSION} room — {@link PortalChunkTerrain#SIZE} blocks on every
- * axis, in room-local coordinates.
+ * A column of sampled world generation, waiting to be stamped into a
+ * {@link PortalRoomMode#CHUNK_DIMENSION} room — one chunk's footprint
+ * ({@link PortalChunkTerrain#SIZE}) by {@link PortalChunkTerrain#HEIGHT} tall, in room-local
+ * coordinates.
  *
  * <p>Immutable once built and shared between threads: {@link PortalChunkTerrain} samples one of
  * these on a worker and hands it to the server thread, which only ever reads it. The states
@@ -19,12 +20,14 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class PortalChunkSlice {
 
     private final PortalChunkTerrain.Source source;
-    private final int size;
+    private final int width;
+    private final int height;
     private final BlockState[] states;
 
-    PortalChunkSlice(PortalChunkTerrain.Source source, int size, BlockState[] states) {
+    PortalChunkSlice(PortalChunkTerrain.Source source, int width, int height, BlockState[] states) {
         this.source = source;
-        this.size = size;
+        this.width = width;
+        this.height = height;
         this.states = states;
     }
 
@@ -33,14 +36,19 @@ public final class PortalChunkSlice {
         return source;
     }
 
-    /** Edge length, in blocks — the same on all three axes. */
-    public int size() {
-        return size;
+    /** Footprint, in blocks — one chunk on both horizontal axes. */
+    public int width() {
+        return width;
     }
 
-    /** The state at a room-local cell, or null when the cell is outside the cube. */
+    /** How tall the column is, in blocks — two chunk sections. */
+    public int height() {
+        return height;
+    }
+
+    /** The state at a room-local cell, or null when the cell is outside the column. */
     public BlockState at(int x, int y, int z) {
-        if (x < 0 || y < 0 || z < 0 || x >= size || y >= size || z >= size) return null;
-        return states[(y * size + z) * size + x];
+        if (x < 0 || y < 0 || z < 0 || x >= width || y >= height || z >= width) return null;
+        return states[(y * width + z) * width + x];
     }
 }
