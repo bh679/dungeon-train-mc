@@ -38,6 +38,18 @@
     "minLevel": 3,
     "mode": "endless_repetition"
   },
+  "chunk_dimension": {
+    "weight": 4,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9"
+  },
+  "chunk_dimension_end": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/end/sealed/0/9"
+  },
+  "chunk_dimension_nether": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/nether/sealed/0/9"
+  },
   "cubes": {
     "weight": 1,
     "mode": "endless_repetition"

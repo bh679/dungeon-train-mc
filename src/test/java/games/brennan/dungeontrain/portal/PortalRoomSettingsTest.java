@@ -518,6 +518,74 @@ class PortalRoomSettingsTest {
             "longest room tag '" + longest + "' is " + longest.length() + " chars, over the packet cap");
     }
 
+    // ---- The seal block ----
+
+    @Test
+    @DisplayName("A sealed room keeps the block its author picked through a round trip")
+    void lockBlockRoundTrips() {
+        String tag = PortalRoomSettings.DEFAULT.withLockBlock("minecraft:obsidian").toTag();
+        PortalRoomSettings back = PortalRoomSettings.parse(tag);
+        assertEquals("minecraft:obsidian", back.lock().blockId());
+        assertEquals(tag, back.toTag());
+        assertTrue(tag.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
+            "tag is " + tag.length() + " chars: " + tag);
+    }
+
+    @Test
+    @DisplayName("Bedrock writes no segment, so every tag ever written is re-written unchanged")
+    void defaultLockAddsNothingToTheTag() {
+        assertEquals("bedrock_lock", PortalRoomSettings.DEFAULT.toTag());
+        assertEquals("bedrock_lock",
+            PortalRoomSettings.DEFAULT.withLockBlock(PortalRoomLock.DEFAULT_BLOCK).toTag());
+        for (String tag : new String[] {
+            "bedrock_lock", "endless_open", "endless_repetition/dynamic",
+            "bedrock_lock/exact/fit", "chunk_dimension"
+        }) {
+            assertEquals(PortalRoomLock.DEFAULT, PortalRoomSettings.parse(tag).lock(), tag);
+            assertEquals(tag, PortalRoomSettings.parse(tag).toTag(), tag);
+        }
+    }
+
+    @Test
+    @DisplayName("Air is stored like any other block — the author asking for no shell")
+    void airLockRoundTrips() {
+        String tag = PortalRoomSettings.DEFAULT.withLockBlock(PortalRoomLock.AIR_BLOCK).toTag();
+        assertTrue(PortalRoomSettings.parse(tag).lock().isAir(), tag);
+    }
+
+    @Test
+    @DisplayName("Both sealing modes read the block; the modes that seal nothing fall back to bedrock")
+    void lockAppliesToTheSealingModesOnly() {
+        for (PortalRoomMode mode : PortalRoomMode.values()) {
+            PortalRoomSettings settings =
+                PortalRoomSettings.DEFAULT.withMode(mode).withLockBlock("minecraft:obsidian");
+            assertEquals(mode.sealsRoomBox(), settings.lockApplies(), mode.id());
+            assertEquals(mode.sealsRoomBox() ? "minecraft:obsidian" : PortalRoomLock.DEFAULT_BLOCK,
+                settings.effectiveLock().blockId(), mode.id());
+            // The raw value survives the trip through a mode that cannot use it, so switching the
+            // walls away and back does not lose the block the author picked.
+            assertEquals("minecraft:obsidian",
+                settings.withMode(PortalRoomMode.BEDROCK_LOCK).effectiveLock().blockId(), mode.id());
+        }
+    }
+
+    @Test
+    @DisplayName("A sealed room carrying every other setting still fits the packet's cap")
+    void longestSealedTagFitsTheModeTagCap() {
+        String tag = new PortalRoomSettings(PortalRoomMode.CHUNK_DIMENSION,
+            new PortalRoomCopies(PortalRoomCopies.Kind.SINGLE,
+                "a".repeat(PortalRoomCopies.BLOCK_ID_MAX)),
+            PortalRoomContents.TILE,
+            new PortalRoomExits(PortalRoomExits.Kind.RANDOM,
+                PortalRoomExits.MAX_EVERY, PortalRoomExits.MOVE_ALWAYS),
+            PortalRoomBooks.DEFAULT, PortalRoomSky.END, PortalRoomDoorWall.REPEATED,
+            new PortalRoomDoorOffset(-PortalRoomLayout.MAX_WIDTH),
+            PortalRoomDoorHeightOffset.DEFAULT, null, null,
+            new PortalRoomLock("m".repeat(PortalRoomLock.BLOCK_ID_MAX))).toTag();
+        assertTrue(tag.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
+            "tag is " + tag.length() + " chars: " + tag);
+    }
+
     // ---- Single, which is Endless Open's alone ----
 
     @Test

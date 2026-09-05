@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.net.PortalTestSessionPacket;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalClear;
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
@@ -151,22 +152,22 @@ public final class PortalTestCommand {
         // repetition every tile inherits it, because the tiler stamps all of them from this one
         // size. This is the call planStructure makes in play, so a test now sizes the room exactly
         // as a player would meet it.
-        Vec3i authored = PortalRoomTemplateStore.sizeOf(overworld, roomName, dims);
-        PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        Vec3i authoredSize = PortalRoomTemplateStore.sizeOf(overworld, roomName, dims);
+        PortalRoomSettings authored = PortalRoomSettings.of(roomName);
 
         // A plot resized but not saved: the test can only stand up what is on disk, so say so rather
         // than stamping the last save and letting the author read it as their new room.
         Vec3i plot = PortalRoomSizes.sizeOf(roomName, dims);
-        if (!plot.equals(authored)) {
+        if (!plot.equals(authoredSize)) {
             source.sendSuccess(() -> Component.literal(
                 "'" + roomName + "' is " + plot.getX() + "x" + plot.getY() + "x" + plot.getZ()
-                    + " in the plot but " + authored.getX() + "x" + authored.getY() + "x"
-                    + authored.getZ() + " on disk — testing what was saved. Save it to test the "
+                    + " in the plot but " + authoredSize.getX() + "x" + authoredSize.getY() + "x"
+                    + authoredSize.getZ() + " on disk — testing what was saved. Save it to test the "
                     + "size you are building."
             ).withStyle(ChatFormatting.YELLOW), false);
         }
         PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
-        Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authored);
+        Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authoredSize);
 
         // The one thing a twin has to do is fit in the space it is stamped into, and this command
         // never asked. In play a pair that does not fit simply goes without a twin
@@ -182,13 +183,32 @@ public final class PortalTestCommand {
                     + ". Make it shorter to test it here.").withStyle(ChatFormatting.RED));
             return 0;
         }
-        if (roomSize.getY() < authored.getY()) {
+        if (roomSize.getY() < authoredSize.getY()) {
             int held = roomSize.getY();
             source.sendSuccess(() -> Component.literal(
-                "'" + roomName + "' is " + authored.getY() + " tall and this world can only stand up "
+                "'" + roomName + "' is " + authoredSize.getY() + " tall and this world can only stand up "
                     + held + " — testing it at that height, which is what a player would walk into."
             ).withStyle(ChatFormatting.YELLOW), false);
         }
+        // A chunk dimension stands its doorways on the ground its sample landed, so there is nothing
+        // to stamp until that sample is in hand. In play the pair simply waits a tick; an author who
+        // asked out loud gets told, and the sampling they just started is finished by the time they
+        // read the message.
+        PortalRoomSettings settings = authored;
+        if (authored.mode().generatesTerrain()) {
+            games.brennan.dungeontrain.portal.PortalChunkSlice slice =
+                games.brennan.dungeontrain.portal.PortalChunkTerrain.slice(
+                    overworld, PortalTestSession.PAIR_KEY, roomName);
+            if (slice == null) {
+                source.sendFailure(Component.literal(
+                    "'" + roomName + "' is still sampling its chunk of world generation — run this "
+                        + "again in a second.").withStyle(ChatFormatting.YELLOW));
+                return 0;
+            }
+            settings = games.brennan.dungeontrain.portal.PortalChunkDoors.fit(authored, slice, dims,
+                PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.DEFAULT), roomSize);
+        }
+
         // Both entry-door offsets, clamped exactly as roomOrigin will clamp them: the raw authored
         // values can sit outside what this room's width and height can spend, and re-deriving either
         // the stamp height or the doorway from an unclamped number lands beside the opening rather

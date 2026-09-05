@@ -85,6 +85,17 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals mode next";
     }
 
+    /**
+     * As {@link #modeCycleCommandFor}, for the block a sealing room's shell is written in.
+     *
+     * <p>Not a cycle: the value is a block out of the whole registry, so the row takes what the
+     * author is holding — an empty hand meaning no shell at all.</p>
+     */
+    public static String lockHeldCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals lock held";
+    }
+
     /** As {@link #modeCycleCommandFor}, for the Copies sub-mode under Endless Repetition. */
     public static String copiesCycleCommandFor(PlotCategory category) {
         if (category == null || !category.hasRoomBox()) return null;
