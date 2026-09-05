@@ -144,6 +144,10 @@
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
   },
+  "suspiciousfurniturestore": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
+  },
   "terrarium": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/off/day/sealed/0/73/0/19"
