@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.relay.BuildCredits;
 import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.TemplateMeta;
@@ -75,6 +76,7 @@ public final class TemplateSidecars {
 
     private static final String K_FILES = "files";
     private static final String K_WEIGHTS = "weights";
+    private static final String K_CREDIT = "credit";
 
     private TemplateSidecars() {}
 
@@ -162,10 +164,15 @@ public final class TemplateSidecars {
             }
         }
         JsonElement weights = weightsEntry(kind, subKind, id);
+        BuildCredits.Credit credit = BuildCredits.get(kind, subKind, id);
 
         JsonObject doc = new JsonObject();
         if (files.size() > 0) doc.add(K_FILES, files);
         if (weights != null) doc.add(K_WEIGHTS, weights);
+        // Whose work this is, when it is not this install's. Carried so attribution survives a
+        // second hop: without it, a build downloaded and re-uploaded by somebody else arrives at a
+        // third player credited to the middle one.
+        if (credit != null) doc.add(K_CREDIT, BuildCredits.encode(credit));
         if (doc.size() == 0) return "";
         String text = doc.toString();
         if (text.length() > MAX_DOC_CHARS) {
@@ -266,6 +273,27 @@ public final class TemplateSidecars {
         }
         applyFiles(kind, subKind, id, root);
         applyWeights(kind, subKind, id, root);
+        applyCredit(kind, subKind, id, root);
+    }
+
+    /**
+     * File the byline the build arrived with — who <b>originally</b> built it.
+     *
+     * <p>Laid down before the download path files the row's owner, and
+     * {@link BuildCredits#put} keeps whichever credit lands first, so this one wins. That ordering
+     * is the whole point: the relay row names whoever uploaded the copy being fetched, which after
+     * one re-upload is no longer the person who built it.</p>
+     */
+    private static void applyCredit(BuilderPhotoPaths.Kind kind, String subKind, String id,
+                                    JsonObject root) {
+        if (!root.has(K_CREDIT)) return;
+        try {
+            BuildCredits.Credit credit = BuildCredits.decode(root.get(K_CREDIT));
+            if (credit != null) BuildCredits.put(kind, subKind, id, credit);
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Template sidecars: '{}' came with a credit that would not "
+                    + "parse: {}", id, e.toString());
+        }
     }
 
     private static void applyFiles(BuilderPhotoPaths.Kind kind, String subKind, String id,
@@ -369,6 +397,24 @@ public final class TemplateSidecars {
                 PortalRoomCopiesVariant.invalidate(id);
             }
             case TRACK, CARRIAGE_GROUP -> { }
+        }
+    }
+
+    /**
+     * Whether {@code doc} carries a byline — a build that already knows who made it.
+     *
+     * <p>Asked by the download path before it clears a credit off one of the player's own builds:
+     * a build of theirs that is itself a copy of somebody else's work arrives carrying that
+     * person's name, and clearing it would erase the one record of it.</p>
+     */
+    public static boolean hasCredit(String doc) {
+        if (doc == null || doc.isBlank()) return false;
+        try {
+            JsonElement root = JsonParser.parseString(doc);
+            return root.isJsonObject() && root.getAsJsonObject().has(K_CREDIT)
+                    && BuildCredits.decode(root.getAsJsonObject().get(K_CREDIT)) != null;
+        } catch (Exception e) {
+            return false;
         }
     }
 
