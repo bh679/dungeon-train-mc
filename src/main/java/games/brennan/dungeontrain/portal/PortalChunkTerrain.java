@@ -29,6 +29,7 @@ import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.blending.Blender;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
 
 import java.util.EnumSet;
@@ -318,6 +319,15 @@ public final class PortalChunkTerrain {
             Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
             Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
         dressSurface(noiseGenerator, level, random, settings, biomes, chunk);
+
+        // Everything after the ground: the carvers, one structure chosen so a room always has one,
+        // and the biome's own features. Best-effort — a sample that cannot be decorated is still a
+        // chunk of terrain. See PortalChunkFeatures.
+        int windowLo = anchor - SURFACE_ROW;
+        PortalChunkFeatures.decorate(noiseGenerator, level, random, chunk,
+            new BoundingBox(pos.getMinBlockX(), windowLo, pos.getMinBlockZ(),
+                pos.getMaxBlockX(), windowLo + SIZE - 1, pos.getMaxBlockZ()),
+            level.getSeed(), pairKey);
 
         return readSlice(source, chunk, pos, anchor, minY, maxY);
     }
