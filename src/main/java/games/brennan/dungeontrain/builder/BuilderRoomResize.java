@@ -94,7 +94,7 @@ public final class BuilderRoomResize {
             case HEIGHT -> new Vec3i(current.getX(), value, current.getZ());
             case WIDTH -> new Vec3i(current.getX(), current.getY(), value);
         };
-        Vec3i clamped = PortalRoomLayout.clampSize(dims, wanted);
+        Vec3i clamped = PortalRoomLayout.clampSize(dims, PortalRoomLayout.heldForAuthoring(current, wanted));
         if (clamped.equals(current)) {
             return clamped;   // already at the limit — nothing to restamp
         }

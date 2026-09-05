@@ -183,6 +183,10 @@ public final class PortalTestCommand {
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
         DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, roomName));
+        // The room's own light. In play PortalCarriageEvents sends this to whoever stands inside a
+        // live pair's room, on the same box; a test session is not a pair, so nothing there sees
+        // it, and a room set to Daylight tested dark — which is precisely what the test is for.
+        sendSky(player, dims, layout, structure);
 
         LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}",
             roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
@@ -192,6 +196,18 @@ public final class PortalTestCommand {
             "You're in the doorway of '" + roomName + "' — a corridor each side, no train attached. "
                 + "Back in the menu returns you to the plot.").withStyle(ChatFormatting.AQUA), false);
         return 1;
+    }
+
+    /** The same lift the live path sends — {@code PortalCarriageEvents.sendSkyFor} — for this one player. */
+    private static void sendSky(ServerPlayer player, CarriageDims dims, PortalCarriageLayout layout,
+                                PortalStructure structure) {
+        games.brennan.dungeontrain.portal.PortalRoomSky sky = structure.settings().sky();
+        if (!sky.lights() || !games.brennan.dungeontrain.config.DungeonTrainConfig.isPortalRoomDaylight()) return;
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.inWorld(
+            structure.tiledMinX(dims, layout), roomOrigin.getY(), structure.tiledMinZ(dims, layout),
+            structure.tiledMaxX(dims, layout), roomOrigin.getY() + structure.roomSize().getY() - 1,
+            structure.tiledMaxZ(dims, layout), sky.ordinal()));
     }
 
     private static int runBack(CommandSourceStack source) {
@@ -221,6 +237,7 @@ public final class PortalTestCommand {
             player.setGameMode(session.previousGameType());
         }
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.none());
 
         // Take the room's fog, daylight and train audio back. The same call the ticker makes, run
         // once more now that the player is standing outside the structure: the send pass finds

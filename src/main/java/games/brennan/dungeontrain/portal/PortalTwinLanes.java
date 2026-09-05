@@ -46,7 +46,7 @@ public final class PortalTwinLanes {
      * the underside, and lane 0 alone ends up with a floor you can break through into open basement
      * and then out of the world. At two, the underside lands.</p>
      *
-     * <p>It costs one block of a basement 80 deep, and {@link #usableLanes} accounts for it, so the
+     * <p>It costs one block of a basement 96 deep, and {@link #usableLanes} accounts for it, so the
      * lane count is unchanged.</p>
      */
     public static final int FLOOR_MARGIN = 2;
@@ -71,7 +71,7 @@ public final class PortalTwinLanes {
      *
      * <p>The bottom lane's floor is {@link #floorY} and the structure has to stay strictly under the
      * bedrock ({@link #fitsUnderWorld}), so the basement's depth less the floor margin and that one
-     * row is the whole of it — 77 in every stock DT preset, which keeps 80 blocks of basement.
+     * row is the whole of it — 93 in every stock DT preset, which keeps 96 blocks of basement.
      * Capped at {@link PortalRoomLayout#MAX_HEIGHT} so a deeper dimension does not exceed what an
      * author can express.</p>
      *

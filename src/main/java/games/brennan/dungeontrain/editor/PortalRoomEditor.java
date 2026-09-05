@@ -582,7 +582,7 @@ public final class PortalRoomEditor {
                                 int value, CarriageDims dims) {
         Vec3i current = plotSize(name, dims);
         Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims,
-            PortalRoomResize.with(current, axis, value)));
+            PortalRoomLayout.heldForAuthoring(current, PortalRoomResize.with(current, axis, value))));
         applySteps(overworld, name, dims, PortalRoomResize.plan(dims, axis, current,
             PortalRoomResize.of(clamped, axis)));
 
@@ -765,7 +765,8 @@ public final class PortalRoomEditor {
      * @return the size actually applied, after clamping to what this world's corridor allows
      */
     public static Vec3i setSize(ServerLevel overworld, String name, Vec3i wanted, CarriageDims dims) {
-        Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims, wanted));
+        Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims,
+            PortalRoomLayout.heldForAuthoring(plotSize(name, dims), wanted)));
         applySteps(overworld, name, dims,
             PortalRoomResize.plan(dims, plotSize(name, dims), clamped));
         LOGGER.info("[DungeonTrain] Portal room '{}' plot restamped at {}x{}x{} (typed {}x{}x{})",
@@ -778,7 +779,7 @@ public final class PortalRoomEditor {
      * {@code size} with its height held to what a plot can actually show.
      *
      * <p>Plots sit in the sky at {@link TrackSidePlots#Y_BASELINE}, which leaves 90 blocks under a
-     * stock DT world's build ceiling — enough for the whole of {@link PortalRoomLayout#MAX_HEIGHT},
+     * stock DT world's build ceiling — exactly {@link PortalRoomLayout#MAX_HEIGHT},
      * so in an ordinary world this holds nothing back. It is not dead code: the plot floor is what
      * sets the room ceiling, and at the floor's old height (250) it was 70. Without it a stepper
      * would report a height the plot cannot hold, the rows above the ceiling would go nowhere, and a
