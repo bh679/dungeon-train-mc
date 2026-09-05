@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.worldgen.ChuncksBand;
+import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -298,7 +300,8 @@ public final class PortalChunkTerrain {
 
                 long decoratingFrom = System.currentTimeMillis();
                 PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
-                    sample.chunk(), sample.window(), sample.level().getSeed(), pairKey);
+                    sample.chunk(), sample.workspace(), sample.window(), sample.level().getSeed(),
+                    pairKey);
                 READY.put(pairKey, sample.read());
                 DECORATED.add(pairKey);
                 // The first number is what a portal carriage waits out before it can cross at all,
@@ -349,13 +352,13 @@ public final class PortalChunkTerrain {
      * to run another pass of generation over it.
      */
     private record Sample(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
-                          ProtoChunk chunk, ChunkPos pos, Source source, int anchor, int minY,
-                          int maxY, int probes) {
+                          ProtoChunk chunk, PortalChunkFeatures.Workspace workspace, ChunkPos pos,
+                          Source source, int anchor, int minY, int maxY, int probes) {
 
         /** The same sample cut around a different row — what carving the ground under it moves. */
         Sample at(int newAnchor) {
-            return new Sample(level, generator, random, chunk, pos, source, newAnchor, minY, maxY,
-                probes);
+            return new Sample(level, generator, random, chunk, workspace, pos, source, newAnchor,
+                minY, maxY, probes);
         }
 
         /** The cube as the chunk currently stands — called once per generation pass. */
@@ -406,9 +409,17 @@ public final class PortalChunkTerrain {
         // cell grid — which is the reason the game generates chunks and not columns, and the reason
         // a portal carriage used to wait ten seconds for its room.
         Sample best = null;
+        int tried = 0;
         for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
-            Sample candidate = groundAt(level, noiseGenerator, random, settings, biomes,
-                siteFor(worldSeed, pairKey, attempt), source, minY, maxY);
+            ChunkPos site = siteFor(worldSeed, pairKey, attempt);
+            // Free, and it saves generating a chunk to find out: DT's own bands void whole stretches
+            // of the overworld, and a sample that lands in one comes back empty however long it is
+            // generated for. Asked before the work rather than after it — this used to be most of
+            // what a candidate cost.
+            if (voidedByBand(level, site)) continue;
+            tried++;
+            Sample candidate = groundAt(level, noiseGenerator, random, settings, biomes, site,
+                source, minY, maxY);
             if (candidate == null) continue;
             if (candidate.probes() >= PROBES_REQUIRED) {
                 best = candidate;
@@ -417,10 +428,11 @@ public final class PortalChunkTerrain {
             if (best == null || candidate.probes() > best.probes()) best = candidate;
         }
         if (best == null) return null;
+        LOGGER.debug("[DungeonTrain] Chunk dimension pair {} took {} generated site(s)", pairKey, tried);
 
         // Only the site that was kept pays for its caves.
-        PortalChunkFeatures.carve(noiseGenerator, level, random, best.chunk(), level.getSeed(),
-            pairKey);
+        PortalChunkFeatures.carve(noiseGenerator, level, random, best.chunk(), best.workspace(),
+            level.getSeed(), pairKey);
         // Re-read after carving: a cavern opened under the middle column moves the row this cube is
         // cut around, and the doorways are fitted to whatever it ends up being.
         int anchor = standableRow(best.chunk(), SIZE / 2, SIZE / 2, minY, maxY);
@@ -452,8 +464,10 @@ public final class PortalChunkTerrain {
         // whatever was built there. The one bound to the sample's own region answers out of the
         // throwaway chunks it is made of, so nothing reaches into the world for a structure start —
         // which is what handing it the level's own manager would have done, a chunk load at a time.
-        ChunkAccess filled = generator.fillFromNoise(Blender.empty(), random,
-            PortalChunkFeatures.structuresFor(level, generator, random, chunk), chunk).join();
+        PortalChunkFeatures.Workspace workspace =
+            PortalChunkFeatures.workspaceFor(level, generator, random, chunk);
+        ChunkAccess filled =
+            generator.fillFromNoise(Blender.empty(), random, workspace.structures(), chunk).join();
         if (!(filled instanceof ProtoChunk ground)) return null;
         Heightmap.primeHeightmaps(ground, EnumSet.of(
             Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
@@ -474,8 +488,8 @@ public final class PortalChunkTerrain {
             int row = standableRow(ground, corner[0], corner[1], minY, maxY);
             if (row != NO_GROUND && Math.abs(row - anchor) <= PROBE_SPREAD) agreeing++;
         }
-        return new Sample(level, generator, random, ground, pos, source, anchor, minY, maxY,
-            agreeing);
+        return new Sample(level, generator, random, ground, workspace, pos, source, anchor, minY,
+            maxY, agreeing);
     }
 
     /**
@@ -570,6 +584,31 @@ public final class PortalChunkTerrain {
             if (clear) return y;
         }
         return NO_GROUND;
+    }
+
+    /**
+     * True when Dungeon Train's own world generation would hand this site back empty.
+     *
+     * <p>The overworld a chunk dimension samples is the one the train is running through, and that
+     * one has bands in it: stretches where {@code NoiseBasedChunkGeneratorMixin} cancels the fill
+     * outright ({@link ChuncksBand#isVoidChunk}) and stretches the disintegration band has eaten
+     * ({@link DisintegrationBand#isChunkFullyEroded}). A site in either generates as air, fails the
+     * ground test, and costs a full chunk of generation to say so. Both questions are pure functions
+     * of the chunk's coordinates, so asking them first is free.</p>
+     *
+     * <p>Only the overworld has them, which is why a Nether sample was always fast and an overworld
+     * one was not.</p>
+     */
+    private static boolean voidedByBand(ServerLevel level, ChunkPos site) {
+        if (!level.dimension().equals(Level.OVERWORLD)) return false;
+        try {
+            return ChuncksBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())
+                || DisintegrationBand.isChunkFullyEroded(level, site.getMinBlockX());
+        } catch (Throwable t) {
+            // The bands are the train's business, not the sample's: if either cannot answer, the
+            // site is judged the ordinary way, by generating it.
+            return false;
+        }
     }
 
     /**

@@ -81,12 +81,11 @@ final class PortalChunkFeatures {
      * a room, rather than failing the pair. Runs on the sampling worker.</p>
      */
     static void carve(NoiseBasedChunkGenerator generator, ServerLevel level, RandomState random,
-                      ProtoChunk chunk, long worldSeed, int pairKey) {
+                      ProtoChunk chunk, Workspace workspace, long worldSeed, int pairKey) {
         try {
-            WorldGenRegion region = regionFor(level, generator, random, chunk);
-            StructureManager structures = level.structureManager().forWorldGenRegion(region);
-            generator.applyCarvers(region, worldSeed, random, biomeManager(generator, random, worldSeed),
-                structures, chunk, GenerationStep.Carving.AIR);
+            generator.applyCarvers(workspace.region(), worldSeed, random,
+                biomeManager(generator, random, worldSeed), workspace.structures(), chunk,
+                GenerationStep.Carving.AIR);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Chunk dimension carving failed for pair {} — the room keeps "
                 + "its uncarved terrain", pairKey, t);
@@ -106,13 +105,12 @@ final class PortalChunkFeatures {
      *               entirely outside them can be rejected in favour of one that does not
      */
     static void decorate(NoiseBasedChunkGenerator generator, ServerLevel level, RandomState random,
-                         ProtoChunk chunk, BoundingBox window, long worldSeed, int pairKey) {
+                         ProtoChunk chunk, Workspace workspace, BoundingBox window, long worldSeed,
+                         int pairKey) {
         try {
-            WorldGenRegion region = regionFor(level, generator, random, chunk);
-            StructureManager structures = level.structureManager().forWorldGenRegion(region);
             plantStructure(level, generator, random, chunk, window, worldSeed, pairKey);
             // Places the structure registered above along with everything else the biome grows.
-            generator.applyBiomeDecoration(region, chunk, structures);
+            generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Chunk dimension decoration failed for pair {} — the room "
                 + "keeps its bare terrain", pairKey, t);
@@ -120,22 +118,22 @@ final class PortalChunkFeatures {
     }
 
     /**
-     * A structure manager bound to a region over the sample's own throwaway chunks.
+     * The region a sample is generated in and the structure manager bound to it — built once per
+     * sample and handed to every pass.
      *
-     * <p>What {@code fillFromNoise} needs to bear terrain down under a structure. Handing it the
-     * level's own manager instead would have it read structure starts out of the world — one chunk
-     * load at a time, on a worker thread, for a chunk sixty thousand chunks from anything.</p>
+     * <p>The manager is what {@code fillFromNoise} needs to bear terrain down under whatever was
+     * built there. Handing it the level's own instead would have it read structure starts out of the
+     * world — one chunk load at a time, on a worker thread, for a chunk sixty thousand chunks from
+     * anything.</p>
      */
-    static StructureManager structuresFor(ServerLevel level, NoiseBasedChunkGenerator generator,
-                                          RandomState random, ProtoChunk chunk) {
-        return level.structureManager().forWorldGenRegion(regionFor(level, generator, random, chunk));
-    }
+    record Workspace(WorldGenRegion region, StructureManager structures) {}
 
-    /** The region every pass works in — see {@link #regionAround}. */
-    private static WorldGenRegion regionFor(ServerLevel level, NoiseBasedChunkGenerator generator,
-                                            RandomState random, ProtoChunk chunk) {
-        return regionAround(level, generator, random, chunk,
+    /** A workspace over {@code chunk} and the ring of throwaway neighbours around it. */
+    static Workspace workspaceFor(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                  RandomState random, ProtoChunk chunk) {
+        WorldGenRegion region = regionAround(level, generator, random, chunk,
             ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES));
+        return new Workspace(region, level.structureManager().forWorldGenRegion(region));
     }
 
     /** A biome manager reading the generator's own biome source rather than any level's chunks. */
@@ -162,10 +160,12 @@ final class PortalChunkFeatures {
             centre.x, centre.z, radius, (x, z) -> {
                 ChunkPos pos = new ChunkPos(x, z);
                 if (pos.equals(centre)) return new SampleHolder(pos, chunk);
-                // Blank, but not so blank that asking it a question throws: a neighbour still has to
-                // answer for its biomes and say it has got as far as the middle one has.
+                // Blank, and deliberately cheap: a neighbour is only here to catch what a feature at
+                // the middle chunk's edge writes past it, and it is thrown away a moment later.
+                // Saying it has reached SURFACE is enough to stop vanilla refusing to answer for it;
+                // sampling its biomes as well cost more than generating the chunk anybody sees, four
+                // hundred climate lookups at a time, eight times over, for every candidate site.
                 ProtoChunk blank = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomeRegistry, null);
-                blank.fillBiomesFromNoise(generator.getBiomeSource(), random.sampler());
                 blank.setPersistedStatus(ChunkStatus.SURFACE);
                 return new SampleHolder(pos, blank);
             });
