@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Per-plot sidecar of {@code localPos → ContainerContentsPool}, parallel to
@@ -92,6 +93,17 @@ public final class ContainerContentsStore {
     /** Session cache keyed by plot key. */
     private static final Map<String, ContainerContentsStore> CACHE = new HashMap<>();
 
+    /**
+     * Plot keys whose document lives somewhere other than the config dir, keyed to that file.
+     *
+     * <p>One caller: the Train Builder, whose plot key is the constant {@code builder:carriage} for
+     * every builder world, and whose document therefore has to live inside the world save (see
+     * {@code BuilderStorePaths}) rather than in one shared config file. Registered rather than
+     * passed so that every existing entry point — {@link #loadFor}, {@link #save},
+     * {@link #invalidate} — keeps working untouched.</p>
+     */
+    private static final Map<String, Path> PATH_OVERRIDES = new HashMap<>();
+
     private final String plotKey;
     private final Map<BlockPos, ContainerContentsPool> pools;
     private final Map<BlockPos, String> links;
@@ -113,7 +125,21 @@ public final class ContainerContentsStore {
      * nothing.</p>
      */
     public static String trackPlotKey(TrackKind kind, String name) {
-        return "track:" + kind.id() + ":" + name;
+        return BlockVariantPlot.trackKey(kind, name);
+    }
+
+    /**
+     * Point {@code plotKey}'s document at {@code file} instead of the config dir, or pass
+     * {@code null} to put it back. Idempotent: re-registering the same file leaves the cached
+     * store alone, so a caller that resolves this on every menu open costs one map lookup.
+     *
+     * <p>An overridden key is also excluded from the dev-mode source write-through in
+     * {@link #save} — an unnamed draft has no bundled resource to keep in lockstep with.</p>
+     */
+    public static synchronized void setPathOverride(String plotKey, @Nullable Path file) {
+        if (plotKey == null) return;
+        Path previous = file == null ? PATH_OVERRIDES.remove(plotKey) : PATH_OVERRIDES.put(plotKey, file);
+        if (!Objects.equals(previous, file)) CACHE.remove(plotKey);
     }
 
     public static synchronized ContainerContentsStore loadFor(String plotKey) {
@@ -333,8 +359,9 @@ public final class ContainerContentsStore {
 
         // Auto-propagate to source tree when in dev mode so menu edits don't
         // drift away from the bundled resource. Failures are logged but
-        // non-fatal — user config is the source of truth.
-        if (EditorDevMode.isEnabled() && sourceTreeAvailable()) {
+        // non-fatal — user config is the source of truth. An overridden key is
+        // an unnamed draft with no bundled resource behind it, so it is skipped.
+        if (EditorDevMode.isEnabled() && !PATH_OVERRIDES.containsKey(plotKey) && sourceTreeAvailable()) {
             try {
                 saveToSource();
             } catch (IOException e) {
@@ -513,6 +540,21 @@ public final class ContainerContentsStore {
     }
 
     private static ContainerContentsStore loadFromDisk(String plotKey) {
+        Path override = PATH_OVERRIDES.get(plotKey);
+        if (override != null) {
+            // No bundled-resource fallback: an overridden key is a draft that belongs to one world,
+            // and there is no shipped document it could sensibly fall back to.
+            if (!Files.isRegularFile(override)) {
+                return new ContainerContentsStore(plotKey, new LinkedHashMap<>(), new LinkedHashMap<>());
+            }
+            try (Reader r = Files.newBufferedReader(override, StandardCharsets.UTF_8)) {
+                return parseFromReader(r, plotKey, override.toString());
+            } catch (IOException e) {
+                LOGGER.error("[DungeonTrain] Failed to read container contents store {}: {}",
+                    override, e.toString());
+                return new ContainerContentsStore(plotKey, new LinkedHashMap<>(), new LinkedHashMap<>());
+            }
+        }
         Path file = UserContentPaths.findFile(SUBDIR, safeFilename(plotKey) + EXT);
         if (file != null) {
             try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
@@ -651,6 +693,8 @@ public final class ContainerContentsStore {
     }
 
     private static Path configPathFor(String plotKey) {
+        Path override = PATH_OVERRIDES.get(plotKey);
+        if (override != null) return override;
         return UserContentPaths.dir(SUBDIR).resolve(safeFilename(plotKey) + EXT);
     }
 

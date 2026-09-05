@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu;
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenuScreen;
 import games.brennan.dungeontrain.net.BlockVariantMenuTogglePacket;
@@ -82,6 +83,19 @@ public final class VariantHotkeyClient {
     }
 
     /**
+     * Where this key does anything: inside an editor plot, or inside a Train Builder world.
+     *
+     * <p>Two questions rather than one because the two authoring worlds report themselves
+     * differently — the editor pushes a status HUD from a per-player sweep gated on plot height,
+     * which is why it stays silent at builder altitude, and the builder pushes its bounds. The
+     * server side needs neither: {@code BlockVariantPlot.resolveAt} has answered for both since the
+     * builder got its own plot.</p>
+     */
+    private static boolean authoring() {
+        return EditorStatusHudOverlay.isActive() || BuilderBoundsState.isInBuilderWorld();
+    }
+
+    /**
      * Forge bus listener — subscribed via the FORGE bus separately so it ticks
      * during the client game loop (not just during mod init).
      */
@@ -94,7 +108,7 @@ public final class VariantHotkeyClient {
             tick++;
             if (Minecraft.getInstance().getConnection() == null
                     || TemplateBlocksHotkeyClient.inSurvival()
-                    || !EditorStatusHudOverlay.isActive()) {
+                    || !authoring()) {
                 if (lastSentHeld) {
                     // Walked out of an editor plot mid-hold — release on the
                     // server so right-click-to-add doesn't stay armed.

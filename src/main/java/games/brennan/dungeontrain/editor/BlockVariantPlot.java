@@ -176,6 +176,30 @@ public interface BlockVariantPlot {
      */
     void restoreJson(String json) throws IOException;
 
+    // ---------- Keys ----------
+
+    /**
+     * The four key formats, stated once. {@link #resolveByKey} parses them and every implementation
+     * below emits one; the Train Builder names a template it is saving to with them as well, which
+     * is what made a second, drifting copy of the string concatenation worth avoiding — see
+     * {@link ContainerContentsStore#trackPlotKey} for the bug the last one caused.
+     */
+    static String carriageKey(String variantId) {
+        return "carriage:" + variantId;
+    }
+
+    static String contentsKey(String contentsId) {
+        return "contents:" + contentsId;
+    }
+
+    static String partKey(CarriagePartKind kind, String name) {
+        return "part:" + kind.id() + ":" + name;
+    }
+
+    static String trackKey(TrackKind kind, String name) {
+        return "track:" + kind.id() + ":" + name;
+    }
+
     // ---------- Resolution ----------
 
     /**
@@ -332,7 +356,7 @@ public interface BlockVariantPlot {
             this.sidecar = CarriageVariantBlocks.loadFor(variant, CarriageEditor.plotDims(variant, dims));
         }
 
-        @Override public String key() { return "carriage:" + variant.id(); }
+        @Override public String key() { return carriageKey(variant.id()); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -389,7 +413,7 @@ public interface BlockVariantPlot {
             this.sidecar = CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
         }
 
-        @Override public String key() { return "contents:" + contents.id(); }
+        @Override public String key() { return contentsKey(contents.id()); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -444,7 +468,7 @@ public interface BlockVariantPlot {
             this.sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
         }
 
-        @Override public String key() { return "part:" + kind.id() + ":" + name; }
+        @Override public String key() { return partKey(kind, name); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -505,7 +529,7 @@ public interface BlockVariantPlot {
             this.sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
         }
 
-        @Override public String key() { return "track:" + kind.name().toLowerCase(java.util.Locale.ROOT) + ":" + name; }
+        @Override public String key() { return trackKey(kind, name); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }

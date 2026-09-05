@@ -1,8 +1,11 @@
 package games.brennan.dungeontrain.builder;
 
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.VariantGroupResolver;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
@@ -11,7 +14,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
+import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,15 +30,27 @@ import java.util.Set;
  * the carriage.</p>
  *
  * <p>Mirror flags read and write {@link DungeonTrainWorldData#builderMirror()} rather than a
- * template sidecar; see {@link BuilderMirrorFlags} for why. The variant-pool entries are inert:
- * the builder has no per-block variant menu yet, and pointing those writes at the template the
- * build was copied from would edit a file the builder never opened. The "V" flag is still stored
- * and carried onto the saved template, so the editor honours it later.</p>
+ * template sidecar; see {@link BuilderMirrorFlags} for why. The "V" flag is still stored and
+ * carried onto the saved template, so the editor honours it later.</p>
+ *
+ * <p>The variant pools behind the Z menu, and the container contents behind the C menu, are held
+ * in this build's <b>own</b> documents inside the world save ({@link BuilderStorePaths}) — not in
+ * the template the build was copied from, which the builder never opened and must not edit.
+ * {@code BuilderWorldSetup} seeds them from that template on open, and {@code BuilderSave} writes
+ * them onto whatever template the build is saved as.</p>
  */
 public final class BuilderCarriagePlot implements BlockVariantPlot {
 
-    private static final VariantGroupResolver EMPTY_GROUP_REFS =
-            new VariantGroupResolver(Map.of(), Map.of());
+    /**
+     * Deliberately not the source variant's id: two builder worlds started from `standard` are
+     * different builds, and a key that said `carriage:standard` would let one authorise edits
+     * against the other's plot.
+     *
+     * <p>It is the same constant in <i>every</i> builder world, which is fine because it is only an
+     * authorisation and dedup token — the documents it names live per-world (see
+     * {@link BuilderStorePaths}), not in a file named after the key.</p>
+     */
+    static final String KEY = "builder:carriage";
 
     private final ServerLevel level;
     private final BlockPos origin;
@@ -65,17 +81,28 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
                 .filter(b -> pos != null && b.isInside(pos))
                 .findFirst()
                 .orElse(volumes.get(0));
+        // The C menu's store is keyed by plot key, and this plot's key is the same constant in
+        // every builder world — so point that key at this world's own file before anyone loads it.
+        // Idempotent, which is what lets it sit on the resolve path every menu open goes through.
+        ContainerContentsStore.setPathOverride(KEY, BuilderStorePaths.contentsFile(level));
         // Size from the box, not from dims: a portal room volume is the author's size and only
         // matches the carriage figures by coincidence.
         return new BuilderCarriagePlot(level, BuilderBounds.originOf(box), BuilderBounds.sizeOf(box));
     }
 
+    /**
+     * This build's variant sidecar, read on first use and cached by {@link BuilderVariantStore}.
+     *
+     * <p>Resolved lazily rather than in the constructor: {@link #of} runs on every plot resolve,
+     * including the ones that only want the origin or the mirror flags.</p>
+     */
+    private TrackVariantBlocks doc() {
+        return BuilderVariantStore.loadFor(level, footprint);
+    }
+
     @Override
     public String key() {
-        // Deliberately not the source variant's id: two builder worlds started from `standard` are
-        // different builds, and a key that said `carriage:standard` would let one authorise edits
-        // against the other's plot.
-        return "builder:carriage";
+        return KEY;
     }
 
     @Override
@@ -128,82 +155,83 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
     }
 
     @Override
-    public void save() {
-        // Already persisted: the setters write world data, which saves with the world. Nothing to
-        // flush, and no sidecar to write until the build is named and saved.
+    public void save() throws IOException {
+        // The mirror flags are already persisted — their setters write world data, which saves with
+        // the world. The variant cells are not: they live in this build's own sidecar file.
+        BuilderVariantStore.save(level, doc(), footprint);
     }
 
-    // ---- sidecar snapshots: nothing to snapshot, and nothing that can ask ----
+    // ---- sidecar snapshots ----
 
-    /**
-     * Empty group view. This plot has no sidecar, so there are no lock groups to resolve and no
-     * references that could go live or dead.
-     */
     @Override
     public VariantGroupResolver groupRefs() {
-        return EMPTY_GROUP_REFS;
+        return doc().groupRefs();
     }
 
     /**
-     * The empty document. Editor undo snapshots a plot's sidecar around each edit, and this plot
-     * has none — the mirror flags it does own live in world data, which saves with the world.
-     *
-     * <p>Unreachable in practice either way: both undo paths reach a plot through
-     * {@link BlockVariantPlot#resolveByKey}, which understands the four editor prefixes and not
-     * this class's {@code builder:carriage} key.</p>
+     * This build's sidecar as text. Editor undo snapshots a plot's sidecar around each edit; the
+     * builder does not reach that history yet ({@link BlockVariantPlot#resolveByKey} understands
+     * the four editor prefixes and not this class's key), but the document is real, so answering
+     * with it is cheaper than explaining why it is empty.
      */
     @Override
     public String snapshotJson() {
-        return "";
+        return doc().asJsonText();
     }
 
-    /** No sidecar file to put back. See {@link #snapshotJson()} for why nothing reaches here. */
     @Override
-    public void restoreJson(String json) {
+    public void restoreJson(String json) throws IOException {
+        BuilderVariantStore.replace(level, json);
     }
 
-    // ---- variant pools: not authored in the builder (yet) ----
+    // ---- variant pools ----
 
     @Override
     public @Nullable List<VariantState> statesAt(BlockPos localPos) {
-        return null;
+        return doc().statesAt(localPos);
     }
 
     @Override
     public void put(BlockPos localPos, List<VariantState> states) {
+        doc().put(localPos, states);
     }
 
     @Override
     public boolean remove(BlockPos localPos) {
-        return false;
+        return doc().remove(localPos);
     }
 
     @Override
     public int lockIdAt(BlockPos localPos) {
-        return 0;
+        return doc().lockIdAt(localPos);
     }
 
     @Override
     public void setLockId(BlockPos localPos, int lockId) {
+        doc().setLockId(localPos, lockId);
     }
 
     @Override
     public Set<BlockPos> positionsWithLockId(int lockId) {
-        return Set.of();
+        return doc().positionsWithLockId(lockId);
     }
 
     @Override
     public Map<BlockPos, Integer> allLockIds() {
-        return Collections.emptyMap();
+        return doc().allLockIds();
     }
 
     @Override
     public Set<BlockPos> allFlaggedPositions() {
-        return Set.of();
+        Set<BlockPos> out = new LinkedHashSet<>();
+        for (CarriageVariantBlocks.Entry e : doc().entries()) {
+            out.add(e.localPos());
+        }
+        return out;
     }
 
     @Override
     public int nextFreeLockId() {
-        return 1;
+        return doc().nextFreeLockId();
     }
 }

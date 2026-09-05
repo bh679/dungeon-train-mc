@@ -253,7 +253,28 @@ public final class VariantOverlayRenderer {
 
         sweepStrays(level, dims, players);
 
+        // A Train Builder world authors at y 4, which is below every gate this loop is built around.
+        // One dimension-type comparison per tick answers it for the whole level, and the builder arm
+        // below is what makes the Z menu's wireframe and lock labels show up down there.
+        boolean builderLevel = level.dimensionTypeRegistration().is(
+            games.brennan.dungeontrain.builder.BuilderWorldLayout.BUILDER_DIMENSION_TYPE);
+
         for (ServerPlayer player : players) {
+            // The two snapshots the block-variant menu draws itself against, and nothing else: the
+            // rest of the cascade below is about editor plots — a plot grid, per-plot labels, type
+            // menus, a plot sky — none of which a builder world has. Both are plot-driven and
+            // self-deduping, so a steady builder tick is two map lookups.
+            if (builderLevel) {
+                pushLockIdSnapshot(player);
+                // Honours the same overlay toggle the editor's wireframe does — one switch for the
+                // one overlay, wherever you are standing when you turn it off.
+                if (isEnabled(player)) {
+                    pushOutlineSnapshot(player);
+                } else {
+                    clearOutlineIfStale(player);
+                }
+                continue;
+            }
             // Editor plots live in the sky at EditorLayout.PLOT_Y; trains run far below. Skip the whole
             // editor-overlay locate cascade for anyone not up at the build area — this is the
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.

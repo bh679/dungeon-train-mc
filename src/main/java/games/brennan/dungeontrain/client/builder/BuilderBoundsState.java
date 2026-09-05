@@ -221,6 +221,18 @@ public final class BuilderBoundsState {
         return modeId;
     }
 
+    /**
+     * Whether the client is in a Train Builder world at all.
+     *
+     * <p>What the authoring hotkeys gate on down here, in place of {@code EditorStatusHudOverlay}'s
+     * "am I standing in an editor plot?" — that status is pushed by the editor's per-player sweep,
+     * which is gated on plot height and so never runs at builder altitude. This is the equivalent
+     * question, answered by the packet the builder does send.</p>
+     */
+    public static boolean isInBuilderWorld() {
+        return !modeId.isEmpty();
+    }
+
     public static List<BoundingBox> volumes() {
         return volumes;
     }
