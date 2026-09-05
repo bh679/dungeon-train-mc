@@ -110,10 +110,14 @@ public final class CarriageContentsStore {
 
     public static synchronized void reload() {
         CACHE.clear();
+        games.brennan.dungeontrain.train.ContentsFlip.clearCache();
     }
 
     public static synchronized void clearCache() {
         CACHE.clear();
+        // The vertical-flip copies are derived from the templates being dropped here — keeping them
+        // would hand a stale flip back for a template that has just been re-authored.
+        games.brennan.dungeontrain.train.ContentsFlip.clearCache();
     }
 
     /**

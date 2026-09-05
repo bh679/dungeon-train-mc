@@ -11120,9 +11120,9 @@
       "title": "Support page tidy-up",
       "summary": "The stats on the support page have been cleaned up, with a little more to see.",
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "shader-pack-atmosphere",
@@ -11138,9 +11138,9 @@
         "Carriages are no longer lit through solid ceilings"
       ],
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "hide-distant-horizons-upside-down",
@@ -11149,9 +11149,9 @@
       "title": "Distant Horizons in the upside-down section",
       "summary": "Distant Horizons now pauses in the upside-down section, instead of drawing the world the right way up around you.",
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "editor-advancements-creative-only",
@@ -11162,9 +11162,9 @@
       "highlights": [],
       "pr": 1291,
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "chest-break-counts-as-open",
@@ -11178,6 +11178,37 @@
       ],
       "pr": 1294,
       "date": "2026-09-04",
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
+    },
+    {
+      "id": "contents-random-flip",
+      "version": "0.794.0",
+      "type": "feat",
+      "title": "Carriage interiors now sometimes mirror left to right",
+      "summary": "The same room no longer looks identical every time you meet it: each carriage decides at random whether to build its interior mirrored, swapping the train's left side with its right. Nothing is added or removed by the flip \u2014 the furniture, loot and mobs are all still there, just on the other side, so a layout you have learned still reads the way you expect while the walk up the train stops feeling copy-pasted.",
+      "highlights": [
+        "Carriage interiors randomly mirror left to right",
+        "Builders can choose which axes each room may flip along, or turn flipping off for it"
+      ],
+      "pr": 1296,
+      "date": "2026-09-04",
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
+    },
+    {
+      "id": "portal-room-lighting-ease",
+      "version": "0.795.0",
+      "type": "fix",
+      "title": "Portal carriage lighting eases in instead of snapping",
+      "summary": "Walking a portal corridor, or arriving in a dimensional carriage, used to brighten the room's dim corners in one hard step. The light now comes up and drops away smoothly, gentlest at the very start of the change rather than harshest.",
+      "highlights": [
+        "The corridor and room lighting fade in and out over about a second instead of jumping",
+        "Most noticeable with a shader pack, which leans on that lighting for its ambient"
+      ],
+      "date": "2026-09-05",
       "released": false,
       "released_in": null,
       "released_at": null

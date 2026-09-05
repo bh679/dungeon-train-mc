@@ -33,6 +33,7 @@ import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.template.FlipOptions;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
@@ -256,6 +257,13 @@ public final class EditorCommand {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
                 builder.suggest(c.id());
             }
+            return builder.buildFuture();
+        };
+
+    /** The four fields of a contents template's {@link FlipOptions}: three axes plus the room scope. */
+    private static final SuggestionProvider<CommandSourceStack> FLIP_FIELD_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (String field : new String[] {"x", "y", "z", "rooms"}) builder.suggest(field);
             return builder.buildFuture();
         };
 
@@ -774,6 +782,19 @@ public final class EditorCommand {
                             .executes(ctx -> runContentsWeightSet(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "contents"),
                                 IntegerArgumentType.getInteger(ctx, "value"))))))
+                // Which axes this contents may be randomly flipped along when it is stamped
+                // (`rooms` is the portal-room scope flag, not an axis). See FlipOptions.
+                .then(Commands.literal("flip")
+                    .then(Commands.argument("contents", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .then(Commands.argument("field", StringArgumentType.word())
+                            .suggests(FLIP_FIELD_SUGGESTIONS)
+                            .then(Commands.literal("on").executes(ctx -> runContentsFlipSet(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "contents"),
+                                StringArgumentType.getString(ctx, "field"), true)))
+                            .then(Commands.literal("off").executes(ctx -> runContentsFlipSet(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "contents"),
+                                StringArgumentType.getString(ctx, "field"), false))))))
                 .then(minLevelSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
                 .then(maxLevelSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
                 .then(phaseSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
@@ -1335,6 +1356,61 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * {@code /dt editor contents flip <id> <x|y|z|rooms> <on|off>} — enable or disable one axis of
+     * the contents template's random flip (or the {@code rooms} scope flag), persisting to
+     * {@code config/dungeontrain/user/contents/weights.json}. Mirrors {@link #runContentsWeightSet}.
+     *
+     * <p>An enabled axis is permission for a flip, not a flip: each stamp rolls the enabled axes
+     * independently, so the template still reads as authored roughly half the time.</p>
+     */
+    private static int runContentsFlipSet(CommandSourceStack source, String rawContents,
+                                          String field, boolean value) {
+        CarriageContents contents = parseContents(source, rawContents);
+        if (contents == null) return 0;
+        if (!FlipOptions.isField(field)) {
+            source.sendFailure(Component.literal(
+                "Unknown flip field '" + field + "' — expected x, y, z or rooms.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        try {
+            FlipOptions next = CarriageContentsWeights.setFlip(contents.id(),
+                CarriageContentsWeights.current().flipFor(contents.id()).with(field, value));
+            source.sendSuccess(() -> Component.literal(
+                "Editor: contents flip " + contents.id() + " " + field.toLowerCase(java.util.Locale.ROOT)
+                    + axisHint(field) + "=" + (value ? "on" : "off")
+                    + " (now x=" + onOff(next.x()) + " y=" + onOff(next.y()) + " z=" + onOff(next.z())
+                    + " rooms=" + onOff(next.rooms()) + ", saved to " + CarriageContentsWeights.configPath()
+                    + "). Existing carriages keep the orientation they were stamped with."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor contents flip set failed for {}", contents.id(), t);
+            source.sendFailure(Component.literal("contents flip failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static String onOff(boolean on) {
+        return on ? "on" : "off";
+    }
+
+    /**
+     * What an axis means in the carriage, appended to the flip command's echo — the letters alone
+     * are easy to mix up, and picking the wrong one silently mirrors the interior the other way.
+     */
+    private static String axisHint(String field) {
+        return switch (field == null ? "" : field.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "x" -> " (front\u2194back)";
+            case "y" -> " (up\u2194down)";
+            case "z" -> " (left\u2194right)";
+            default -> "";
+        };
     }
 
     /** Read-modify-write nudge for contents weight. Bounds clamp via {@link CarriageContentsWeights#set}. */

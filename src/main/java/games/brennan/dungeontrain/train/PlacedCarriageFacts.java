@@ -44,12 +44,21 @@ public final class PlacedCarriageFacts {
      * @param contentsId   the interior contents parent, or {@link #RELAY_BUILD}
      * @param subVariantId the group member the parent resolved to; empty when the draw landed on
      *                     the parent's own contents, or the parent has no group sidecar
+     * @param flip         which axes the interior came out flipped along, as
+     *                     {@link ContentsFlip#label} renders them; empty for an index this session
+     *                     never placed
      */
-    public record Facts(String variantId, String contentsId, String subVariantId) {
+    public record Facts(String variantId, String contentsId, String subVariantId, String flip) {
         public Facts {
             variantId = variantId == null ? "" : variantId;
             contentsId = contentsId == null ? "" : contentsId;
             subVariantId = subVariantId == null ? "" : subVariantId;
+            flip = flip == null ? "" : flip;
+        }
+
+        /** Back-compat form from before the flip was recorded. */
+        public Facts(String variantId, String contentsId, String subVariantId) {
+            this(variantId, contentsId, subVariantId, "");
         }
     }
 
@@ -69,7 +78,8 @@ public final class PlacedCarriageFacts {
      * came through is recovered here rather than at the call site.
      */
     public static synchronized void record(int carriagePIdx, CarriageVariant variant,
-                                           CarriageContents resolvedContents) {
+                                           CarriageContents resolvedContents,
+                                           ContentsFlip.Flip flip) {
         String resolvedId = resolvedContents == null ? "" : resolvedContents.id();
         String parentId = resolvedId.isEmpty()
             ? ""
@@ -78,7 +88,8 @@ public final class PlacedCarriageFacts {
         // at all — either way there is no sub-variant to name.
         String subVariantId = parentId.equals(resolvedId) ? "" : resolvedId;
         BY_PIDX.put(carriagePIdx,
-            new Facts(variant == null ? "" : variant.id(), parentId, subVariantId));
+            new Facts(variant == null ? "" : variant.id(), parentId, subVariantId,
+                ContentsFlip.label(flip)));
     }
 
     /**
@@ -86,8 +97,10 @@ public final class PlacedCarriageFacts {
      * contents pick, so only the variant it was leased against is known.
      */
     public static synchronized void recordRelayBuild(int carriagePIdx, CarriageVariant variant) {
+        // Never flipped: a leased build is stamped verbatim from its relay blob and never reaches
+        // the contents placer, so there is no roll to report rather than an unknown one.
         BY_PIDX.put(carriagePIdx,
-            new Facts(variant == null ? "" : variant.id(), RELAY_BUILD, ""));
+            new Facts(variant == null ? "" : variant.id(), RELAY_BUILD, "", ContentsFlip.LABEL_NONE));
     }
 
     /** What was placed at {@code carriagePIdx}, or null if this session never placed it. */
