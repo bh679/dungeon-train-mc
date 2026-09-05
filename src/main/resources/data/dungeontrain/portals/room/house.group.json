@@ -84,6 +84,10 @@
     {
       "id": "foundation",
       "weight": 1
+    },
+    {
+      "id": "chess",
+      "weight": 1
     }
   ]
 }
