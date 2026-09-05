@@ -30,13 +30,19 @@ public final class PlayerSkyRegions {
 
     private PlayerSkyRegions() {}
 
-    /** Tell {@code player} to light {@code region}, unless that is what they were last told. */
-    public static void send(ServerPlayer player, PortalRoomSkyPacket region) {
-        if (player == null || region == null) return;
+    /**
+     * Tell {@code player} to light {@code region}, unless that is what they were last told.
+     *
+     * @return whether anything actually went out — what a caller logs on, so a per-tick sender's
+     *         diagnostic reports the change rather than the tick
+     */
+    public static boolean send(ServerPlayer player, PortalRoomSkyPacket region) {
+        if (player == null || region == null) return false;
         UUID id = player.getUUID();
-        if (region.equals(LAST.get(id))) return;
+        if (region.equals(LAST.get(id))) return false;
         LAST.put(id, region);
         DungeonTrainNet.sendTo(player, region);
+        return true;
     }
 
     /** Take the light back, if they have any. Answers whether anything was sent. */

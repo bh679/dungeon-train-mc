@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.client.ClientPortalCrossing;
 import games.brennan.dungeontrain.client.ClientPortalRoomSky;
+import games.brennan.dungeontrain.client.ShaderDiagnostics;
 import games.brennan.dungeontrain.portal.PortalRoomSky;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
@@ -130,6 +131,14 @@ public abstract class LightTexturePortalRoomMixin {
         float t = dungeontrain$roomIntensity();
         this.dungeontrain$roomT = t;
         this.dungeontrain$roomSky = t > 0.0F ? ClientPortalRoomSky.sky() : PortalRoomSky.NONE;
+        if (ShaderDiagnostics.recording()) {
+            // The lift the per-cell hook below will apply at this intensity — the number that
+            // decides whether a pack discarding the lightmap is visible at all.
+            float lift = (this.dungeontrain$roomSky == PortalRoomSky.NETHER
+                ? DUNGEONTRAIN_ROOM_NETHER_LIFT
+                : DUNGEONTRAIN_ROOM_LIFT) * t;
+            ShaderDiagnostics.recordRoomSky(this.dungeontrain$roomSky.name(), t, lift);
+        }
         if (t <= 0.0F || !this.dungeontrain$roomSky.pinsDaylight()) return skyDarken;
         float target = this.dungeontrain$roomSky == PortalRoomSky.NETHER
             ? DUNGEONTRAIN_ROOM_NETHER_SKY

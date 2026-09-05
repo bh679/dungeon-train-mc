@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
 import games.brennan.dungeontrain.client.menu.AbandonConfirmScreen;
+import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.shaders.ShaderMenuScreen;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PauseMenuActionButton;
 import games.brennan.dungeontrain.client.version.VersionCheckState;
@@ -77,6 +79,9 @@ public final class PauseMenuLayoutHandler {
     /** The same key the Train Builder's own pause menu uses — one name for one screen. */
     private static final Component MY_BUILDS_LABEL = Component.translatable("gui.dungeontrain.builder.profile");
 
+    private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
+    private static final Component SHADERS_LABEL = Component.translatable("gui.dungeontrain.shaders.button");
+
     private static final int GAP = 4;
 
     private PauseMenuLayoutHandler() {}
@@ -94,6 +99,13 @@ public final class PauseMenuLayoutHandler {
         if (pauseScreen.showsPauseMenu()) {
             VersionCheckState.ensureChecked();
             event.addListener(new VersionStatusButton(4, 4));
+        }
+
+        // Shaders beside Mods, the same pairing the title screen makes: both answer "what else is
+        // installed". Done before the singleplayer gate below so it is there in multiplayer too —
+        // a shader pack is a client-side choice and has nothing to do with whose world this is.
+        if (pauseScreen.showsPauseMenu()) {
+            addShadersBesideMods(event);
         }
 
         if (!Minecraft.getInstance().hasSingleplayerServer()) {
@@ -228,6 +240,30 @@ public final class PauseMenuLayoutHandler {
         InstantRespawnReboard.expectAbandonedRun();
         Minecraft.getInstance().setScreen(null);
         DungeonTrainNet.sendToServer(new AbandonRunPacket());
+    }
+
+    /**
+     * Halve the Mods button's slot and put Shaders in the other half.
+     *
+     * <p>Splitting the slot rather than inserting a row means this does not need to know what else
+     * shares that row or how the rest of the pause menu is laid out — including if another mod has
+     * already rearranged it. If Mods is not there at all, nothing is added: an orphan Shaders button
+     * floating where a row used to be is worse than no button.</p>
+     */
+    private static void addShadersBesideMods(ScreenEvent.Init.Post event) {
+        Button mods = findButton(event, MODS_KEY);
+        if (mods == null) {
+            LOGGER.warn("PauseMenuLayout: could not locate the Mods button; skipping Shaders.");
+            return;
+        }
+        int halfW = (mods.getWidth() - GAP) / 2;
+        int shadersX = mods.getX() + halfW + GAP;
+        mods.setWidth(halfW);
+        event.addListener(new DarkTintedButton(shadersX, mods.getY(), halfW, mods.getHeight(),
+                SHADERS_LABEL, b -> {
+                    UiAnalytics.click(UiAnalytics.SURFACE_PAUSE_MENU, UiAnalytics.TARGET_SHADERS);
+                    Minecraft.getInstance().setScreen(new ShaderMenuScreen(event.getScreen()));
+                }));
     }
 
     private static Button findButton(ScreenEvent.Init.Post event, Component message) {

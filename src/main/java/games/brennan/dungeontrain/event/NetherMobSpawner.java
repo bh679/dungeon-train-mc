@@ -43,11 +43,19 @@ import java.util.List;
  * <p>Regular piglins are deliberately omitted (they zombify in the overworld dimension);
  * zombified piglins, magma cubes and ghasts all behave correctly outside the Nether.</p>
  *
+ * <p><b>Ghasts hold off until the player is properly inside the Nether.</b> Every other band mob
+ * spawns from {@code netherRamp >= 0.5} — halfway through the netherrack crossfade — but a ghast
+ * fireball arriving while the world is still fading out of the mountains reads as unfair. Ghasts
+ * therefore need {@link NetherBand#netherCoreDepthAt} ≥ {@link #GHAST_MIN_CORE_DEPTH} at the spawn
+ * column: {@code -1} through both crossfades (so neither the approach nor the exit carries them)
+ * and 0 at the first full-Nether column. A blocked roll falls through to the ground roster exactly
+ * as a capped-out one does, so the band's overall density on approach is unchanged.</p>
+ *
  * <p>Ghast density <b>escalates per lap</b>. Both the per-attempt odds ({@link #ghastDenomFor}) and the
  * ghast-specific ceiling ({@link #ghastCapFor}) key off {@link NetherBand#netherPassIndex} — the 0-based
  * world-gen cycle repeat, which doubles as the Nether pass index because the Nether band is the first
  * special band of every period. The first Nether reads as an occasional threat; each full lap back
- * around makes it denser, up to a floor of 1-in-2 odds and the top of the {@link #GHAST_NEARBY_CAPS}
+ * around makes it denser, up to a floor of 1-in-4 odds and the top of the {@link #GHAST_NEARBY_CAPS}
  * table. The pass index is positional (derived from world-X), so this needs no saved state and is
  * reproducible across reloads. Ghasts keep their own cap on top of the shared {@link #NEARBY_CAP} so
  * they can't crowd the ground rosters out entirely.</p>
@@ -86,11 +94,18 @@ public final class NetherMobSpawner {
     /** Max nether-band mobs near a player before the spawner backs off. */
     private static final int NEARBY_CAP = 10;
     /** Ghast odds (1-in-N) on the FIRST Nether pass, in the biomes vanilla fills with ghasts. */
-    private static final int GHAST_DENOM_DENSE_BIOMES = 4;
+    private static final int GHAST_DENOM_DENSE_BIOMES = 8;
     /** Ghast odds (1-in-N) on the first pass everywhere else in the core. */
-    private static final int GHAST_DENOM_OTHER_BIOMES = 8;
-    /** Densest the odds ever get, however many laps deep — 1-in-2 is already a coin flip. */
-    private static final int GHAST_DENOM_FLOOR = 2;
+    private static final int GHAST_DENOM_OTHER_BIOMES = 16;
+    /** Densest the odds ever get, however many laps deep — 1-in-4 is already a lot of ghasts. */
+    private static final int GHAST_DENOM_FLOOR = 4;
+    /**
+     * How much denser the odds get per completed lap. Every value in this trio is <b>double</b> the
+     * original tuning (4/8, floor 2, step 1): ghasts were spawning too often, so the whole ramp was
+     * halved in place — the shape (dense biomes twice as ghast-heavy, one step per lap, a hard floor)
+     * is unchanged, every lap simply lands at half the old rate.
+     */
+    private static final int GHAST_DENOM_LAP_STEP = 2;
     /**
      * Max nether-band ghasts near a player, indexed by Nether pass; laps past the end hold the last
      * value. Escalates faster than linearly so late laps feel qualitatively different, not just denser.
@@ -102,6 +117,11 @@ public final class NetherMobSpawner {
      * intended ceiling should {@code NEARBY_CAP} ever rise, not a live difference today.</p>
      */
     private static final int[] GHAST_NEARBY_CAPS = {3, 5, 8, 15, 15};
+    /**
+     * Blocks into the real-Nether core before ghasts may spawn — measured from the first full-Nether
+     * column, so the whole netherrack crossfade (600 blocks by default) is ghast-free too.
+     */
+    private static final int GHAST_MIN_CORE_DEPTH = 100;
     /** Spawn attempts per player per tick. */
     private static final int TRIES = 4;
     /** Vertical search window around the player for a valid floor. */
@@ -167,7 +187,10 @@ public final class NetherMobSpawner {
      */
     static int ghastDenomFor(boolean denseBiome, long pass) {
         int base = denseBiome ? GHAST_DENOM_DENSE_BIOMES : GHAST_DENOM_OTHER_BIOMES;
-        return (int) Math.max(GHAST_DENOM_FLOOR, base - Math.max(0L, pass));
+        // Clamp the lap to `base` BEFORE multiplying: the step turns a huge pass (Long.MAX_VALUE) into
+        // an overflowed negative, which would read as sparser-than-base instead of the floor.
+        long lap = Math.min(Math.max(0L, pass), base);
+        return (int) Math.max(GHAST_DENOM_FLOOR, base - GHAST_DENOM_LAP_STEP * lap);
     }
 
     /**
@@ -181,6 +204,17 @@ public final class NetherMobSpawner {
         // Clamp into the table BEFORE indexing, so a huge or negative pass can't run off either end.
         long lap = Math.min(Math.max(0L, pass), GHAST_NEARBY_CAPS.length - 1L);
         return GHAST_NEARBY_CAPS[(int) lap];
+    }
+
+    /**
+     * Whether ghasts may spawn at a column {@code coreDepth} blocks into the real-Nether core — the
+     * {@link NetherBand#netherCoreDepthAt} reading, whose {@code -1} "not in the core" sentinel
+     * (either crossfade, or outside the band) correctly reads as "no ghasts". Package-private and
+     * param-in, like {@link #ghastDenomFor} / {@link #ghastCapFor}, so it unit-tests without a
+     * NeoForge bootstrap.
+     */
+    static boolean ghastsAllowedAtDepth(long coreDepth) {
+        return coreDepth >= GHAST_MIN_CORE_DEPTH;
     }
 
     @SubscribeEvent
@@ -279,9 +313,13 @@ public final class NetherMobSpawner {
         // Biome at the spawn column drives the roster + ghast frequency (the core cycles all 5 Nether biomes).
         Holder<Biome> biome = level.getBiome(probe);
 
-        // Capped-out ghast rolls fall through to the ground path rather than wasting the attempt,
-        // so the band's overall density is unchanged — only the ghast share drops.
-        boolean ghast = ghastsAllowed && rng.nextInt(ghastChanceDenom(biome, pass)) == 0;
+        // Capped-out and too-shallow ghast rolls fall through to the ground path rather than wasting
+        // the attempt, so the band's overall density is unchanged — only the ghast share drops. Depth
+        // is read at the SPAWN column, not the player's, so a ghast can't be placed back into the
+        // crossfade by a player standing just past the threshold.
+        boolean ghast = ghastsAllowed
+                && ghastsAllowedAtDepth(NetherBand.netherCoreDepthAt(level, wx))
+                && rng.nextInt(ghastChanceDenom(biome, pass)) == 0;
         if (ghast) {
             // A ghast is 4×4×4 — scan up from the (randomised) start height for the first pocket
             // its whole body actually fits in, so it never materialises inside terrain and suffocates.

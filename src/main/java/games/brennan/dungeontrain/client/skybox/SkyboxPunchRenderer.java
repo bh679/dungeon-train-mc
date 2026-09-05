@@ -8,13 +8,15 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexSorting;
 import dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.SkyboxSky;
-import games.brennan.dungeontrain.client.GraphicsCapabilities;
+import games.brennan.dungeontrain.client.ShaderCompat;
+import games.brennan.dungeontrain.client.ShaderDiagnostics;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -78,8 +80,11 @@ import java.util.UUID;
  * <h2>Shader packs</h2>
  * <p>Iris shades a deferred gbuffer. A colour-masked depth write leaves the albedo and normal
  * attachments untouched, so the composite pass would shade those pixels from cleared gbuffer
- * data — black, not sky. Rather than ship a known-wrong image we disable everything under a
- * shader pack, leaving the blocks simply invisible.</p>
+ * data — black, not sky. Under a pack the punch therefore runs stencil-free (no per-variant
+ * sky pass; the pack owns the sky) and a second pass at {@code AFTER_BLOCK_ENTITIES},
+ * {@link SkyboxHoleReopen}, pushes every hole pixel that is still visible back to the far plane
+ * so the pack's deferred and composite passes paint its own sky there. The on/off verdict lives in
+ * {@link ShaderCompat#allows} alongside the other atmosphere systems'.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class SkyboxPunchRenderer {
@@ -92,41 +97,105 @@ public final class SkyboxPunchRenderer {
      */
     private static String lastPaintedReport = "";
 
+    /**
+     * Variants whose holes are on screen this frame, handed from the {@code AFTER_SKY} mask pass to
+     * the post-composite sky pass. Render thread only, and cleared as it is consumed so a frame that
+     * skips the mask cannot inherit the last one's set.
+     */
+    private static EnumSet<SkyboxSky> paintedForPostComposite = EnumSet.noneOf(SkyboxSky.class);
+
+    /**
+     * Everything needed to redraw this frame's cubes once more, so the depth the reopen pass threw
+     * away can be put back before the translucents draw. Set at the reopen, consumed and cleared in
+     * the same frame; never read across frames.
+     */
+    private record ReopenFrame(SkyboxBlockIndex.Snapshot snapshot, Map<UUID, ClientSubLevel> subLevels,
+                               Matrix4f frustumMatrix, Frustum frustum, Vec3 cam, float partialTick) {}
+
+    private static ReopenFrame reopenFrame = null;
+
     private SkyboxPunchRenderer() {}
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
+        RenderLevelStageEvent.Stage stage = event.getStage();
+        boolean afterSky = stage == RenderLevelStageEvent.Stage.AFTER_SKY;
+        boolean reopenStage = stage == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES;
+        boolean postCompositeStage = stage == RenderLevelStageEvent.Stage.AFTER_LEVEL;
+        if (!afterSky && !reopenStage && !postCompositeStage) return;
 
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (level == null) return;
 
+        // Post-composite: the one point in the frame where a pack has finished and a mod's own
+        // draws work again. Needs nothing but the stencil left by the two passes above.
+        if (postCompositeStage) {
+            drawVariantSkiesPostComposite(event);
+            return;
+        }
+
         Camera camera = event.getCamera();
         Vec3 cam = camera.getPosition();
-        // Feed the indexer even when the effect is disabled: it costs nothing and means
-        // re-enabling mid-session has a warm index on the next sweep.
-        SkyboxBlockIndex.reportCamera(cam);
+        boolean shaders = ShaderCompat.active();
+
+        if (afterSky) {
+            // Feed the indexer even when the effect is disabled: it costs nothing and means
+            // re-enabling mid-session has a warm index on the next sweep.
+            SkyboxBlockIndex.reportCamera(cam);
+            if (ShaderDiagnostics.recording()) {
+                ShaderDiagnostics.recordLevelFboStencil(SkyboxStencil.boundFramebufferStencil());
+            }
+        } else if (!shaders || !games.brennan.dungeontrain.client.shader.ShaderBisect.skyboxReopenEnabled()) {
+            // The reopen pass exists only for a deferred pack. Vanilla's sky pixels under the
+            // punch are already the sky, and its per-variant skies were drawn at AFTER_SKY.
+            return;
+        }
 
         // The author's switch, except inside a test: Test the Carriage shows the room as a player
         // meets it, and a sky wall that is not drawn there is the test lying about the build.
         if (!ClientDisplayConfig.areSkyboxBlocksOn()
             && !games.brennan.dungeontrain.client.PortalTestSessionState.active()) return;
         if (!ClientDisplayConfig.isSkyboxPunchEnabled()) return;
-        if (GraphicsCapabilities.shaderPackActive()) return;
 
+        // Read before the shader gate — it is a volatile field read, and taking it here is what
+        // lets the diagnostics panel tell "no skybox blocks near the camera" apart from "blocks
+        // are right here and the pack has the effect switched off".
         SkyboxBlockIndex.Snapshot snapshot = SkyboxBlockIndex.snapshot();
+        if (afterSky && ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordSkybox(countCubes(snapshot), describeVariants(snapshot),
+                SkyboxStencil.isAvailable(), false);
+        }
+
+        if (!ShaderCompat.allows(ShaderCompat.Feature.SKYBOX_BLOCKS)) return;
         if (snapshot.isEmpty()) return;
 
         Matrix4f frustumMatrix = event.getModelViewMatrix();
         Frustum frustum = event.getFrustum();
         float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-
         Map<UUID, ClientSubLevel> subLevels = indexSubLevels(level, snapshot);
+
+        if (reopenStage) {
+            // Under a pack: mark the hole pixels nothing opaque has covered since the punch, and
+            // push them back to the far plane so the pack's deferred and composite passes treat
+            // them as sky. Same meshes, same matrices as the punch — see SkyboxHoleReopen for why
+            // this is a stencil pass and why it runs before the translucents.
+            SkyboxHoleReopen.run(() -> {
+                for (SkyboxSky sky : SkyboxSky.values()) {
+                    MeshData mesh = buildMesh(sky, snapshot, subLevels, frustumMatrix, frustum, cam, partialTick);
+                    if (mesh != null) BufferUploader.drawWithShader(mesh);
+                }
+            });
+            reopenFrame = new ReopenFrame(snapshot, subLevels, frustumMatrix, frustum, cam, partialTick);
+            return;
+        }
+
         EnumSet<SkyboxSky> painted = EnumSet.noneOf(SkyboxSky.class);
 
         // Only variants that draw their own sky need the mask. A view containing nothing but
         // LIVE blocks does no stencil work at all — that variant is satisfied by the punch.
+        // The ids are written under a shader pack too: there the sky pass cannot run here, but the
+        // ids survive to AFTER_LEVEL and are what tells one variant's holes from another's there.
         boolean wantsStencil = snapshot.main().keySet().stream().anyMatch(SkyboxSky::hasOwnSky)
             || snapshot.subLevels().stream().anyMatch(e -> e.byVariant().keySet().stream().anyMatch(SkyboxSky::hasOwnSky));
         boolean stencil = wantsStencil && SkyboxStencil.isAvailable();
@@ -148,8 +217,17 @@ public final class SkyboxPunchRenderer {
             endMaskState();
 
             reportPainted(painted, stencil);
+            if (ShaderDiagnostics.recording()) {
+                ShaderDiagnostics.recordSkybox(countCubes(snapshot), describeVariants(snapshot),
+                    stencil, !painted.isEmpty());
+            }
 
-            if (stencil) {
+            // Under a pack this is far too early: Iris has the depth/colour write lock on any
+            // shader it does not own, and its composite would paint over the result anyway. The
+            // draw moves to AFTER_LEVEL; all this pass leaves behind is the variant ids.
+            paintedForPostComposite = shaders && stencil ? EnumSet.copyOf(painted) : EnumSet.noneOf(SkyboxSky.class);
+
+            if (stencil && !shaders) {
                 SkyboxStencil.beginSkyPass();
                 for (SkyboxSky sky : painted) {
                     if (!sky.hasOwnSky()) continue; // LIVE: the punch already revealed the real sky
@@ -170,6 +248,138 @@ public final class SkyboxPunchRenderer {
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
+    }
+
+    /**
+     * Put the holes' real depth back, after the pack has painted its sky into them and before the
+     * translucents draw.
+     *
+     * <h2>The leak this closes</h2>
+     * <p>The reopen pass pushes every visible hole pixel to the far plane so the pack's deferred
+     * pass treats it as sky. That is the whole point, but it also means those pixels no longer
+     * occlude anything: translucent geometry behind the block draws after the deferred pass, passes
+     * a depth test against 1.0, and shows through. The block reads as an x-ray window. It was only
+     * visible on {@link SkyboxSky#LIVE} and {@link SkyboxSky#SURFACE}, because every other variant
+     * has its own sky painted over the hole afterwards, which hid the leak rather than fixing it.</p>
+     *
+     * <p>Redrawing the cubes here writes their true depth back at exactly the pixels the reopen
+     * touched — the stencil's reserved bit says which those are — so the translucent pass occludes
+     * against the block again. {@code LEQUAL} rather than {@code ALWAYS} so the nearest face wins
+     * with culling off, exactly as in the original punch.</p>
+     *
+     * <p>Called from {@code LevelRendererSkyboxDepthMixin} at the one instruction that sits between
+     * the pack's deferred pass and the translucent draw.</p>
+     */
+    public static void restoreHoleDepth() {
+        ReopenFrame frame = reopenFrame;
+        reopenFrame = null;
+        if (frame == null || !SkyboxStencil.isAvailable()) return;
+
+        boolean depthMaskWas = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+        try {
+            SkyboxStencil.beginSkyPass();
+            RenderSystem.stencilFunc(GL11.GL_EQUAL,
+                SkyboxHoleReopen.STILL_VISIBLE_BIT, SkyboxHoleReopen.STILL_VISIBLE_BIT);
+            RenderSystem.setShader(GameRenderer::getPositionShader);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            RenderSystem.disableBlend();
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            RenderSystem.depthMask(true);
+            RenderSystem.colorMask(false, false, false, false);
+            RenderSystem.disableCull();
+            for (SkyboxSky sky : SkyboxSky.values()) {
+                MeshData mesh = buildMesh(sky, frame.snapshot(), frame.subLevels(),
+                    frame.frustumMatrix(), frame.frustum(), frame.cam(), frame.partialTick());
+                if (mesh != null) BufferUploader.drawWithShader(mesh);
+            }
+        } finally {
+            SkyboxStencil.endStencil();
+            RenderSystem.colorMask(true, true, true, true);
+            RenderSystem.enableCull();
+            RenderSystem.depthFunc(GL11.GL_LEQUAL);
+            RenderSystem.depthMask(depthMaskWas);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        }
+    }
+
+    /**
+     * Draw each variant's own sky into its own holes, after the shader pack has finished the frame.
+     *
+     * <h2>Why here and not with the punch</h2>
+     * <p>Inside {@code renderLevel} a pack owns the sky outright: Iris holds a depth and colour
+     * write lock on any {@code ShaderInstance} it did not create, and its composite would paint
+     * over the result regardless. So every hole came out showing the same thing — whatever sky the
+     * pack was drawing — which is exactly what a skybox block is supposed not to do. After Iris'
+     * final pass that lock is lifted and the frame is finished, so an ordinary vanilla draw lands.</p>
+     *
+     * <p>The stencil is what makes it per-variant. {@code AFTER_SKY} stamped each hole with its
+     * variant id, and the reopen pass marked the survivors with a single reserved bit without
+     * disturbing those ids, so a test on both picks out "this variant's holes, still visible".</p>
+     *
+     * <p>{@link SkyboxSky#SURFACE} is deliberately left out under a pack. Its sky is vanilla's own
+     * {@code renderSky} re-entered, and re-entering that outside {@code renderLevel} would run it
+     * against a pack's render-phase bookkeeping in a state it never expects. That variant keeps the
+     * pack's sky, which above ground is close to what it wants anyway.</p>
+     */
+    private static void drawVariantSkiesPostComposite(RenderLevelStageEvent event) {
+        EnumSet<SkyboxSky> painted = paintedForPostComposite;
+        if (painted.isEmpty()) return;
+        paintedForPostComposite = EnumSet.noneOf(SkyboxSky.class);
+        if (!SkyboxStencil.isAvailable()) return;
+
+        Camera camera = event.getCamera();
+        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        Matrix4f frustumMatrix = event.getModelViewMatrix();
+
+        // The level's own projection: by this point the frame has been through the pack's final
+        // pass, which leaves whatever matrix suited it rather than the one the sky was built for.
+        RenderSystem.backupProjectionMatrix();
+        RenderSystem.setProjectionMatrix(event.getProjectionMatrix(), VertexSorting.DISTANCE_TO_ORIGIN);
+        try {
+            SkyboxStencil.beginSkyPass();
+            for (SkyboxSky sky : painted) {
+                if (!sky.hasOwnSky() || sky == SkyboxSky.SURFACE) continue;
+                SkyboxStencil.variantSkyRef(sky.stencilRef(), SkyboxHoleReopen.STILL_VISIBLE_BIT);
+                SkyboxStencil.drawSky(sky, frustumMatrix, event.getProjectionMatrix(), camera, partialTick);
+            }
+        } finally {
+            SkyboxStencil.endStencil();
+            RenderSystem.restoreProjectionMatrix();
+            RenderSystem.depthMask(true);
+            RenderSystem.enableDepthTest();
+            RenderSystem.disableBlend();
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        }
+    }
+
+    /** Total indexed skybox cubes, main world and carriages — the panel's "is anything here?". */
+    private static int countCubes(SkyboxBlockIndex.Snapshot snapshot) {
+        int n = 0;
+        for (SkyboxBlockIndex.CubeSet cubes : snapshot.main().values()) {
+            n += cubes.positions().length;
+        }
+        for (SkyboxBlockIndex.SubLevelCubes entry : snapshot.subLevels()) {
+            for (SkyboxBlockIndex.CubeSet cubes : entry.byVariant().values()) {
+                n += cubes.positions().length;
+            }
+        }
+        return n;
+    }
+
+    /** The indexed variants, comma-joined, for one line of the diagnostics panel. */
+    private static String describeVariants(SkyboxBlockIndex.Snapshot snapshot) {
+        EnumSet<SkyboxSky> seen = EnumSet.noneOf(SkyboxSky.class);
+        seen.addAll(snapshot.main().keySet());
+        for (SkyboxBlockIndex.SubLevelCubes entry : snapshot.subLevels()) {
+            seen.addAll(entry.byVariant().keySet());
+        }
+        StringBuilder sb = new StringBuilder();
+        for (SkyboxSky sky : seen) {
+            if (sb.length() > 0) sb.append(',');
+            sb.append(sky.name());
+        }
+        return sb.toString();
     }
 
     /**

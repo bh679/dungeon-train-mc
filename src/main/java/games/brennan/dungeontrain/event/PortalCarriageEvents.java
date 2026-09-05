@@ -967,6 +967,11 @@ public final class PortalCarriageEvents {
      */
     private static void tickRoomTiling(ServerLevel level, CarriageDims dims,
                                        List<ServerPlayer> players) {
+        // A `portal test` twin has no carriage behind it: PortalTestTicker sends its occupant the
+        // room's fog, sky and audio every tick, and this pass — seeing no structure of its own —
+        // cleared them every tick, so the client saw a room for one tick in two and never engaged.
+        // The tester's ambience is the ticker's to send and to clear.
+        players = withoutPortalTesters(players);
         if (STRUCTURES.isEmpty()) {
             clearFogFor(players, Set.of());
             clearSkyFor(players, Set.of());
@@ -1194,6 +1199,9 @@ public final class PortalCarriageEvents {
             fogged.add(player.getUUID());
             if (region.equals(LAST_FOG.get(player.getUUID()))) continue;
             LAST_FOG.put(player.getUUID(), region);
+            LOGGER.info("[DungeonTrain] room fog -> {}: x[{}..{}] y[{}..{}] z[{}..{}] r={} min={} pad={}",
+                player.getName().getString(), region.minX(), region.maxX(), region.minY(), region.maxY(),
+                region.minZ(), region.maxZ(), region.radius(), region.minRadius(), region.falloff());
             PacketDistributor.sendToPlayer(player, region);
         }
     }
@@ -1234,7 +1242,13 @@ public final class PortalCarriageEvents {
         for (ServerPlayer player : players) {
             if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
             skied.add(player.getUUID());
-            games.brennan.dungeontrain.portal.PlayerSkyRegions.send(player, region);
+            // Logged when it actually goes out, which the shared memory decides — main added this
+            // line inside the dedup it replaced, so it would otherwise fire every tick.
+            if (games.brennan.dungeontrain.portal.PlayerSkyRegions.send(player, region)) {
+                LOGGER.info("[DungeonTrain] room sky -> {}: {} x[{}..{}] y[{}..{}] z[{}..{}]",
+                    player.getName().getString(), sky, region.minX(), region.maxX(), region.minY(),
+                    region.maxY(), region.minZ(), region.maxZ());
+            }
         }
     }
 
@@ -1272,6 +1286,20 @@ public final class PortalCarriageEvents {
     }
 
     /** Take the daylight back off anyone who was near a daylit room this tick and is not any more. */
+    /** Everyone but the players inside a {@code portal test} twin, whose ambience is not this pass' to touch. */
+    private static List<ServerPlayer> withoutPortalTesters(List<ServerPlayer> players) {
+        boolean any = false;
+        for (ServerPlayer p : players) {
+            if (games.brennan.dungeontrain.portal.PortalTestSession.has(p.getUUID())) { any = true; break; }
+        }
+        if (!any) return players;
+        List<ServerPlayer> out = new java.util.ArrayList<>(players.size());
+        for (ServerPlayer p : players) {
+            if (!games.brennan.dungeontrain.portal.PortalTestSession.has(p.getUUID())) out.add(p);
+        }
+        return out;
+    }
+
     private static void clearSkyFor(List<ServerPlayer> players, Set<UUID> stillSkied) {
         if (games.brennan.dungeontrain.portal.PlayerSkyRegions.isEmpty()) return;
         for (ServerPlayer player : players) {

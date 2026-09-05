@@ -461,17 +461,25 @@ public final class VariantOverlayRenderer {
         String roomMode = roomSize == null ? EditorStatusPacket.NO_MODE
             : games.brennan.dungeontrain.portal.PortalRoomSettings.of(modelName).toTag();
 
+        // Random-flip options — contents only; every other kind's stamp is never flipped, so its
+        // mask stays NO_FLIP and the client renders no Flip row. In the key so a toggle refreshes.
+        int flipMask = l.model() instanceof Template.Contents cm
+            ? EditorStatusPacket.flipMaskOf(
+                games.brennan.dungeontrain.train.CarriageContentsWeights.current().flipFor(cm.contents().id()))
+            : EditorStatusPacket.NO_FLIP;
+
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
             + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey
-            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode;
+            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode
+            + "|f" + flipMask;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
-            roomLength, roomWidth, roomHeight, roomMode));
+            roomLength, roomWidth, roomHeight, roomMode, flipMask));
     }
 
     /**

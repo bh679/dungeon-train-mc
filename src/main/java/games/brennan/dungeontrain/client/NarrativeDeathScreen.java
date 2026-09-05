@@ -9,7 +9,10 @@ import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.support.DevHours;
+import games.brennan.dungeontrain.client.support.DonateCards;
+import games.brennan.dungeontrain.client.support.DonateExperiment;
 import games.brennan.dungeontrain.client.support.FundingGoals;
+import games.brennan.dungeontrain.client.support.LastActive;
 import games.brennan.dungeontrain.client.support.UpdateStats;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Goal;
 import games.brennan.dungeontrain.client.modrec.ModRecPage;
@@ -61,6 +64,7 @@ import com.mojang.logging.LogUtils;
 import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.HashMap;
@@ -69,6 +73,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -350,6 +355,12 @@ public final class NarrativeDeathScreen extends Screen {
     private float donateScroll = 0f;        // current (eased) vertical offset (px) of the supporter list
     private float donateScrollTarget = 0f;  // where the wheel wants it
     private int donateListMaxScroll = 0;    // scroll clamp bound, set during drawDonate
+    // This player's A/B arm for the donation page, resolved on first paint and then held: the
+    // layout must not change under the cursor, and the telemetry must report one arm per visit.
+    private DonateExperiment.Assignment donateAssignment = null;
+    // The card pair actually drawn this visit: the assigned arm's own, or — in the rotating arm —
+    // this death's rung of the cycle. Non-null once resolved, which is also the resolve-once latch.
+    private DonateCards.Arm donatePair = null;
     private Rect donateListViewport;        // supporter-list scroll viewport (hover / scroll hit-test)
     private Rect photosRect;
     // Trash toggle left of the reboard chip: delete the old world's save on reboard?
@@ -1594,34 +1605,23 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         // The ask, and whether the server bill behind it is already paid for this month. Once it is,
-        // the grid re-orders: the new goal's COST leads, the server bill drops to the third slot
-        // and turns blue — a bill that is settled, not one still being asked for.
+        // the ask becomes the next rung's cost and the settled bill turns blue — a bill that is
+        // paid, not one still being asked for.
         Goal activeGoal = FundingGoals.active(s.goals(), s.activeGoalId());
         Goal serverCosts = FundingGoals.byId(s.goals(), FundingGoals.RUNNING_COSTS);
         boolean serverCostsMet = serverCosts != null && serverCosts.complete()
                 && activeGoal != null && !FundingGoals.RUNNING_COSTS.equals(activeGoal.id());
-        // One rung further: that goal is funded too, so there is nothing left to ask against. The
-        // ladder shifts again — the goal drops into the settled slot the server bill held, and the
-        // lead tile goes to the work itself, the hours behind the train. Declined on a build that
-        // could not determine an hour count, which leaves the layout exactly as it is above.
-        boolean hoursLead = DevHours.takesGoalSlot(
-                DevHours.hours(), serverCostsMet, activeGoal != null && activeGoal.complete());
 
-        // The updates card holds the third slot in every state — bottom-left, under the ask. What
-        // it displaces changes: the settled server bill once that bill is paid (a tile whose whole
-        // content is a tick is not worth a quarter of the grid), and the raised-this-month figure
-        // while the bill is still the ask, since the supporter names down the right side already
-        // add up to roughly that number. Absent when neither the relay nor this jar knows a count,
-        // which leaves the layout exactly as it was before the card existed. (The figures behind it
+        // Absent when neither the relay nor this jar knows a count. (The figures behind the card
         // were resolved above — the opening line quotes them too.)
         boolean updatesCard = UpdateStats.hasCount(updates);
 
         // Every funded rung the grid has no slot for, ticked off on one line above it — but the
         // two rungs the page itself is built around are excluded outright, tiled or not. Both the
-        // server bill and the current ask tell their own story more plainly by what the page stops
-        // doing once they're settled (the bill drops off the grid; the hours tile takes the lead),
-        // so a tick line repeating that is a line the page didn't need. With the standard two-rung
-        // ladder this empties the line entirely in every state, and it takes no height at all.
+        // server bill and the current ask tell their own story more plainly through the ask card
+        // itself, which turns blue and ticks when its rung is settled, so a line repeating that is
+        // a line the page didn't need. With the standard two-rung ladder this empties the line
+        // entirely in every state, and it takes no height at all.
         List<String> tiled = new ArrayList<>();
         tiled.add(FundingGoals.RUNNING_COSTS);
         if (activeGoal != null) tiled.add(activeGoal.id());
@@ -1643,71 +1643,66 @@ public final class NarrativeDeathScreen extends Screen {
         int colW = (w - gap) / 2;
         int rightX = left + colW + gap;
 
-        // ---- Left block: 2x2 grid, the first slot leading with whatever is being asked for ----
+        // ---- Left block: 2x2 grid — the ask leads, Contribute closes, an arm deals the middle ----
+        //
+        // Slot 1 is always the ask and slot 4 is always Contribute. An arm that could drop the ask
+        // would produce a page asking for money without saying what for, and a Contribute button
+        // that moved between arms would confound the very click the experiment measures. What
+        // varies is slots 2 and 3: two of five cards, chosen by DonateCards from the arm this
+        // player's uuid buckets into. Every failure path — no relay, no experiment, an unknown arm
+        // — lands on the control arm, which is the page exactly as it shipped.
         int cellGap = 4;
         int cellW = (colW - cellGap) / 2;
         int lc0 = left + cellW / 2;
         int lc1 = left + cellW + cellGap + cellW / 2;
         int ly = y + 30;
         String costValue = s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—";
-        if (hoursLead) {
-            // Slot 1: the hours behind the train. Not a goal — no progress bar, and the neutral
-            // cream rather than cost-orange or goal-blue, because it is neither an ask nor a bill.
-            costTile(g, lc0, y, cellW, DevHours.value(),
-                    "gui.dungeontrain.death.narr.lbl_hours",
-                    "gui.dungeontrain.death.narr.tip_hours", VALUE);
-            // Slot 2: the updates card, or — on a build that knows no count — the goal that was
-            // leading, now settled, which is the layout this page had before the card existed.
-            if (updatesCard) {
-                updatesTile(g, lc1, y, cellW, updates, mouseX, mouseY);
-            } else {
-                checkedCostTile(g, lc1, y, cellW, fmtUsd(activeGoal.targetAud()),
-                        FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), GOAL_MET);
-                drawTileProgress(g, lc1, y, cellW, activeGoal.percent());
-            }
-            // Slot 3: raised.
-            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
-        } else if (serverCostsMet) {
-            // Slot 1: the new goal, as a COST — what the next thing needs per month, not a
-            // percentage. The progress against it reads off the raised figure beside it.
-            costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
-                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), COST);
-            // Slot 2: the updates card. The settled server bill has moved to the ✓ line above —
-            // it is paid, and a tile whose whole content is a tick earns its slot less than the
-            // work the money paid for. Without a count to show, that blue tile is still the
-            // fallback rather than a hole in the grid.
-            if (updatesCard) {
-                updatesTile(g, lc1, y, cellW, updates, mouseX, mouseY);
-            } else {
-                checkedCostTile(g, lc1, y, cellW, costValue,
-                        "gui.dungeontrain.death.narr.lbl_server_cost",
-                        "gui.dungeontrain.death.narr.tip_monthly_cost", GOAL_MET);
-                drawTileProgress(g, lc1, y, cellW, serverCosts.percent());
-            }
-            // Slot 3: raised.
-            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
-            // The ask's own progress along the foot of its tile.
-            drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
-        } else {
-            // Nothing covered yet: the bill leads, with progress toward it beside it — the layout
-            // this page has always had. The percentage is the first rung's when a ladder is served,
-            // else the flat coverage figure from a relay that predates goals.
+
+        // Slot 1 — the ask. One card with three renderings, picked off the ladder: the running cost
+        // in orange while the bill is what is being asked for; the next rung's cost in orange, with
+        // its progress along the foot, once the bill is settled; and the same tile ticked and blue
+        // when that rung is funded too.
+        boolean askSettled = activeGoal != null && activeGoal.complete();
+        if (!serverCostsMet) {
             costTile(g, lc0, y, cellW, costValue,
                     "gui.dungeontrain.death.narr.lbl_running_cost",
                     "gui.dungeontrain.death.narr.tip_monthly_cost", COST);
-            int percent = activeGoal != null ? activeGoal.percent() : s.percentCovered();
-            costTile(g, lc1, y, cellW, percent >= 0 ? percent + "%" : "—",
-                    Component.translatable("gui.dungeontrain.death.narr.lbl_covered"),
-                    "gui.dungeontrain.death.narr.tip_covered", VALUE);
-            // Slot 3: the card, or the month's takings on a build with no count to show.
-            if (updatesCard) {
-                updatesTile(g, lc0, ly, cellW, updates, mouseX, mouseY);
-            } else {
-                costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
+        } else if (askSettled) {
+            checkedCostTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
+                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), GOAL_MET);
+            drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
+        } else {
+            costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
+                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), COST);
+            drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
+        }
+
+        // Slots 2 and 3 — the experiment's. A card whose figure this client does not have leaves
+        // its cell empty rather than being swapped for another: substituting would mean a player
+        // recorded in one arm had actually been shown a different page.
+        int percent = activeGoal != null ? activeGoal.percent() : s.percentCovered();
+        long lastCommitAt = s.activity() == null ? 0L : s.activity().lastCommitAtMs();
+        Instant nowInstant = Instant.now();
+        DonateCards.Availability availability = new DonateCards.Availability(
+                percent >= 0,
+                updatesCard,
+                DevHours.known(DevHours.hours()),
+                LastActive.known(lastCommitAt, nowInstant),
+                true); // the month's takings are always a number, even when that number is zero
+        List<DonateCards.Card> variable = DonateCards.slots(donateArm(s), availability);
+        for (int i = 0; i < variable.size(); i++) {
+            int cx2 = i == 0 ? lc1 : lc0;
+            int cy2 = i == 0 ? y : ly;
+            switch (variable.get(i)) {
+                case COVERED -> costTile(g, cx2, cy2, cellW, percent + "%",
+                        Component.translatable("gui.dungeontrain.death.narr.lbl_covered"),
+                        "gui.dungeontrain.death.narr.tip_covered", VALUE);
+                case UPDATES -> updatesTile(g, cx2, cy2, cellW, updates, mouseX, mouseY);
+                case HOURS -> costTile(g, cx2, cy2, cellW, DevHours.value(),
+                        "gui.dungeontrain.death.narr.lbl_hours",
+                        "gui.dungeontrain.death.narr.tip_hours", VALUE);
+                case LAST_ACTIVE -> lastActiveTile(g, cx2, cy2, cellW, lastCommitAt, nowInstant);
+                case RAISED -> costTile(g, cx2, cy2, cellW, fmtUsd(s.monthlyRaisedUsd()),
                         "gui.dungeontrain.death.narr.lbl_raised_month",
                         "gui.dungeontrain.death.narr.tip_raised", VALUE);
             }
@@ -1771,7 +1766,70 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /**
-     * The updates card: "765 Updates" over "in 1 week". Hovering swaps the span to the longest one
+     * This player's A/B assignment for the donation page, resolved once per screen and cached in
+     * {@link #donateAssignment} so the layout cannot change under the cursor mid-page.
+     *
+     * <p>Assignment is a hash of the relay's salt, the experiment id and this player's own uuid
+     * (see {@link DonateExperiment}) — stable across sessions, and computed here rather than
+     * requested, so the summary fetch stays anonymous.</p>
+     */
+    private DonateCards.Arm donateArm(DonationSummaryClient.Summary s) {
+        resolveDonateAssignment(s);
+        return donatePair;
+    }
+
+    /**
+     * Pick this player's arm — and, in the rotating arm, this death's pair — and label the funnel
+     * with them. Idempotent, and deliberately called from the screen's OPEN path rather than only
+     * from the draw path.
+     *
+     * <p>It used to run on the first paint of the donation page, which was too late by one event:
+     * the page's own {@code open} fires when the player navigates to it, so {@code reached_donate}
+     * — the denominator of every per-arm rate — went out carrying no arm at all. Resolving at open
+     * needs no network of its own, because the summary is normally already in
+     * {@link DonationSummaryCache} from the title-screen prefetch; when it is not, the draw path
+     * still resolves as a fallback and only that first page event goes unlabelled.</p>
+     */
+    private void resolveDonateAssignment(DonationSummaryClient.Summary s) {
+        // Once per screen. The draw path calls this every frame, so a rotation advanced here
+        // without the latch would deal a new pair sixty times a second.
+        if (donatePair != null || s == null) return;
+        UUID uuid = this.minecraft != null && this.minecraft.getUser() != null
+                ? this.minecraft.getUser().getProfileId() : null;
+        donateAssignment = DonateExperiment.resolve(s.experiment(), uuid, DonateCards.knownArms());
+        DonateCards.Arm assigned = DonateCards.armOf(donateAssignment.arm());
+        // A dev override changes what is DRAWN and never what is reported: the telemetry below
+        // keeps the arm this player actually belongs to, so flipping through layouts cannot
+        // write rows claiming clicks for an arm nobody was assigned.
+        DonateCards.Arm forced = DonateArmOverride.get();
+        DonateCards.Arm drawing = forced != null ? forced : assigned;
+        // The rotating arm shows a different one of the five pairs each death. The offset
+        // spreads where players start in that cycle — see DonateCards.pairFor.
+        donatePair = DonateCards.drawnPair(drawing, DonateRotationCounter.next(),
+                uuid == null ? 0 : Math.floorMod(uuid.hashCode(), DonateCards.FIXED.size()));
+        // Label the funnel from here on. Every death-screen event carries the arm, not just the
+        // Contribute click, so a difference can be traced to where in the page it happened. The
+        // pair rides alongside it for the rotating arm, whose arm id alone cannot say what was
+        // on screen.
+        UiAnalytics.setVariant(donateAssignment.experimentId(), donateAssignment.arm(),
+                assigned.rotating() ? donatePair.id() : null);
+    }
+
+    /**
+     * The Last Active card: "3 hours" over "Last Active" — how long ago work last landed on the
+     * project. Drawn only when the relay served a usable timestamp; see {@link LastActive} for why
+     * an old figure is shown as-is while an unknown one is withheld.
+     */
+    private void lastActiveTile(GuiGraphics g, int centerX, int y, int cw, long lastCommitAtMs,
+                                Instant now) {
+        Rect rect = new Rect(centerX - cw / 2, y, cw, 26);
+        drawCell(g, centerX, y, LastActive.value(lastCommitAtMs, now).getString(),
+                LastActive.label(), cw, VALUE);
+        donateTips.add(new TileTip(rect, LastActive.tooltip(lastCommitAtMs, now)));
+    }
+
+    /**
+     * The updates card: "765" over "Updates this week". Hovering swaps the span to the longest one
      * on offer — a year, or the project's own age while it is younger — so the same tile answers
      * both "is this thing alive?" and "how much has it had done to it?". The tooltip says how long
      * ago the newest release went out.
@@ -2479,10 +2537,19 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private void kickDonationFetch() {
         OfficialLinks.ensureFetched();
+        // Settle the A/B arm before any page event goes out: reached_donate is the denominator of
+        // every per-arm rate, and it fires on navigation, well before the page is first drawn.
+        // The cache is normally warm from the title-screen prefetch, so this costs nothing.
+        resolveDonateAssignment(DonationSummaryCache.get());
         Minecraft mc = Minecraft.getInstance();
         String name = mc.getUser() != null ? mc.getUser().getName() : null;
         DonationSummaryClient.fetch(name, summary ->
-                Minecraft.getInstance().execute(() -> DonationSummaryCache.set(summary)));
+                Minecraft.getInstance().execute(() -> {
+                    DonationSummaryCache.set(summary);
+                    // A cold cache — a first death before the prefetch landed. Label what is left
+                    // of this screen's funnel rather than none of it.
+                    resolveDonateAssignment(summary);
+                }));
     }
 
     /** Open the full-screen Contribute window (Revolut / Patreon options), returning here on close. */
@@ -2583,7 +2650,32 @@ public final class NarrativeDeathScreen extends Screen {
         g.fill(x, y, x + cw, y + ch, fade(TILE_BG));
         drawBorder(g, x, y, cw, ch, TILE_BORDER);
         drawCenteredStr(g, value, centerX, y + 4, valueColor);
-        drawCenteredStr(g, label, centerX, y + 4 + this.font.lineHeight + 1, LABEL);
+        drawFittedStr(g, label, centerX, y + 4 + this.font.lineHeight + 1, cw - 2, LABEL);
+    }
+
+    /**
+     * A caption centred in {@code maxW}, shrunk to fit when it would otherwise run past the cell.
+     *
+     * <p>The cells are 85px at the widest the page ever gets, which "Costs Covered" already fills
+     * most of — and the captions are translated into twenty languages, where a phrase that fits in
+     * English routinely does not ("Updates this week" is 94px before anyone translates it). Without
+     * this the overflow lands silently in whichever locales happen to be long, on a page nobody
+     * reviews in twenty languages. Scaling is the same {@code PoseStack} trick
+     * {@link #drawPortraitName} uses for over-long player names.</p>
+     */
+    private void drawFittedStr(GuiGraphics g, Component text, int cx, int y, int maxW, int color) {
+        int tw = this.font.width(text);
+        if (tw <= maxW) {
+            drawCenteredStr(g, text, cx, y, color);
+            return;
+        }
+        float scale = (float) maxW / tw;
+        PoseStack ps = g.pose();
+        ps.pushPose();
+        ps.translate(cx, y, 0.0);
+        ps.scale(scale, scale, 1.0f);
+        g.drawString(this.font, text, -tw / 2, 0, fade(color), false);
+        ps.popPose();
     }
 
     /** The portrait subject's name, centered under the figure and shrunk to fit {@code maxW}. */
