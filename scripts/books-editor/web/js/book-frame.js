@@ -39,13 +39,15 @@ export function createFrame({ onEdit, onNav }) {
   const fwd = node.querySelector('.arrow.fwd');
 
   let timer = null;
+  // The caret goes out with the text: an edit can re-flow the page (or split it in two), and the
+  // caller uses the caret to keep the view on whichever page the author's text ended up on.
   edit.addEventListener('input', () => {
     clearTimeout(timer);
-    timer = setTimeout(() => onEdit(edit.value), DEBOUNCE_MS);
+    timer = setTimeout(() => onEdit(edit.value, edit.selectionStart), DEBOUNCE_MS);
   });
   // Flush a pending edit before the caller acts on anything else (save, page turn, variant switch).
   edit.addEventListener('blur', () => {
-    if (timer) { clearTimeout(timer); timer = null; onEdit(edit.value); }
+    if (timer) { clearTimeout(timer); timer = null; onEdit(edit.value, edit.selectionStart); }
   });
 
   back.addEventListener('click', () => onNav(-1));
@@ -65,10 +67,24 @@ export function createFrame({ onEdit, onNav }) {
    *   view.pageCount   total pages this variant produces
    *   view.readOnly    true in the locale view — translations are not editable here
    *   view.shared      true when this page is part of an oversize chunk (edit rewrites the chunk)
+   *   view.caret       where to put the caret (defaults to holding its current position)
    */
   function update(view) {
     const { source = '', pageIdx = 0, pageCount = 1, readOnly = false, shared = false } = view;
-    if (edit.value !== source) edit.value = source;
+    if (edit.value !== source) {
+      // Assigning `value` collapses the selection to the end, which would fling the caret to the
+      // bottom of the page on every keystroke that reflows the text. Put it back.
+      const focused = document.activeElement === edit;
+      const wanted = Number.isInteger(view.caret) ? view.caret : edit.selectionStart;
+      edit.value = source;
+      if (focused) {
+        const at = Math.max(0, Math.min(source.length, wanted));
+        edit.setSelectionRange(at, at);
+      }
+    } else if (Number.isInteger(view.caret) && document.activeElement === edit) {
+      const at = Math.max(0, Math.min(source.length, view.caret));
+      if (edit.selectionStart !== at) edit.setSelectionRange(at, at);
+    }
     edit.readOnly = readOnly;
     area.classList.toggle('shared', shared);
     book.classList.toggle('read-only', readOnly);
@@ -87,7 +103,7 @@ export function createFrame({ onEdit, onNav }) {
     if (!timer) return null;
     clearTimeout(timer);
     timer = null;
-    return edit.value;
+    return { text: edit.value, caret: edit.selectionStart };
   }
 
   return { node, update, focus, flush };

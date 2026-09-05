@@ -120,21 +120,24 @@ Loader path: `RandomBookCodec.java` → `RandomBookFile` → `StartingBookFactor
 
 ## 3. Newline semantics — DIFFERENT FROM NARRATIVE / RANDOM BOOKS
 
-Starting books use **`paginateExplicit`** instead of the flow paginator. This means **`\n\n` is a hard page break**, fully author-controlled.
+Starting books use **`paginateExplicit`** instead of the flow paginator. This means **`\n\n\n` is a hard page break**, fully author-controlled — and, unlike before 2026-09, a lone blank line (`\n\n`) is just a blank line *inside* the page.
 
 | In JSON | Meaning | In rendered book |
 |---|---|---|
 | `\n` | Single line break | Forces a new line on the current page |
-| `\n\n` | **Hard page break** | Always starts a new page |
-| `\n\n\n\n` (or `\n\n \n\n`) | **Blank page slot** | Two `\n\n` with empty / whitespace between → an empty page between two real pages |
+| `\n\n` | Blank line | An empty line within the current page |
+| `\n\n\n` | **Hard page break** | Always starts a new page |
+| `\n\n\n\n\n\n` (or `\n\n\n \n\n\n`) | **Blank page slot** | Two breaks with empty / whitespace between → an empty page between two real pages |
 
 Practical consequences:
-- **You design the pagination directly.** Every `\n\n` is a page boundary you authored. The paginator does NOT pack short paragraphs together — each chunk between page breaks is its own page, full or sparse.
-- **Blank pages are a tool.** See `blank_pages.json` for the canonical pattern: dense use of `\n\n.\n\n` to create deliberately-dotted "blank" pages between thoughts, as a rhythmic / comic device.
+- **You design the pagination directly.** Every `\n\n\n` is a page boundary you authored. The paginator does NOT pack short paragraphs together — each chunk between page breaks is its own page, full or sparse.
+- **Blank pages are a tool.** See `blank_pages.json` for the canonical pattern: dense use of `\n\n\n.\n\n\n` to create deliberately-dotted "blank" pages between thoughts, as a rhythmic / comic device.
 - **Leading and trailing blanks are auto-trimmed** — opening on a blank page or having dead pages at the end is never useful. Internal blanks are preserved.
-- **Overflow safety:** if a chunk between `\n\n`s exceeds 256 chars it spills into additional pages via the flow paginator. So oversize paragraphs still don't clip, but you lose your hand-placed break.
+- **Overflow safety:** if a chunk between breaks exceeds 256 chars it spills into additional pages via the flow paginator. So oversize paragraphs still don't clip, but you lose your hand-placed break.
 
-> The mental model: **every `\n\n` is a "next page" button press by the author.** Compose deliberately.
+> The mental model: **every `\n\n\n` is a "next page" button press by the author**, and `\n\n` is the return key pressed twice. Compose deliberately.
+
+> The marker was `\n\n` until 2026-09. It moved up one newline so a blank line could exist inside a page; the whole corpus and every translation of it were migrated in the same change, so no shipped book's pagination moved.
 
 ---
 
@@ -188,7 +191,7 @@ Use sparingly. One book per pool with a blank-page conceit is plenty.
 
 ## 6. Rendering proposed content in chat (CRITICAL)
 
-Before any variant goes into JSON, render it in chat **page by page**, exactly as it will appear in the in-game book. **Because `\n\n` is a hard page break, the rendered preview is a 1:1 layout — what you draw is what the player sees.**
+Before any variant goes into JSON, render it in chat **page by page**, exactly as it will appear in the in-game book. **Because `\n\n\n` is a hard page break, the rendered preview is a 1:1 layout — what you draw is what the player sees.**
 
 ### Format
 
@@ -210,7 +213,7 @@ good questions
 
 Rules for the rendered preview:
 - Horizontal rule above and below each page.
-- Each chunk between `\n\n` is one page — render them in order.
+- Each chunk between `\n\n\n` is one page — render them in order.
 - A line break inside a page = `\n` in the JSON string.
 - A blank-page slot (e.g. just `.` alone on a page) gets its own rendered block.
 - Keep visible line widths ≤ ~19 chars where possible. Longer lines are fine, but flag that Minecraft will auto-wrap.
@@ -221,7 +224,7 @@ Rules for the rendered preview:
 Show the JSON string form in a fenced code block:
 
 ```
-"Welcome to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat are you meant to do?\nThese are all good questions\n\nNow go explore"
+"Welcome to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat are you meant to do?\nThese are all good questions\n\n\nNow go explore"
 ```
 
 And a one-line variant-diff note when applicable:
@@ -354,7 +357,7 @@ Then **wait for user confirmation** before proceeding.
 
 For each variant, in order:
 
-1. Render page-by-page using the Section 6 format. **Because `\n\n` is a hard page break, what you render is what the player sees — be precise.**
+1. Render page-by-page using the Section 6 format. **Because `\n\n\n` is a hard page break, what you render is what the player sees — be precise.**
 2. Show the JSON string form in a fenced code block.
 3. Add the one-line variant-diff note when applicable.
 
@@ -388,8 +391,8 @@ Before writing the JSON file:
 - [ ] `generation` ∈ 0..3.
 - [ ] `weight` ≥ 0 (typically `1`).
 - [ ] `variants[]` non-empty.
-- [ ] Every `\n\n` is a deliberate page break — the rendered preview matches the planned layout.
-- [ ] No chunk between `\n\n`s exceeds 256 chars (otherwise spills into surprise pages).
+- [ ] Every `\n\n\n` is a deliberate page break — the rendered preview matches the planned layout.
+- [ ] No chunk between breaks exceeds 256 chars (otherwise spills into surprise pages).
 - [ ] Each variant ≤ 100 pages.
 - [ ] Each variant is substantively distinct from the others.
 
@@ -415,7 +418,7 @@ Avoid these:
 - **Variants that paraphrase each other.** Each variant must be new content.
 - **Generic tutorial voice.** Starting books are a moment with the creator, not a manual.
 - **Skipping the trinity opener without thinking about it.** It's the project's recognisable beat. Drop it deliberately, not absentmindedly.
-- **Long unbroken chunks between `\n\n`.** They spill and you lose your authored layout.
+- **Long unbroken chunks between breaks.** They spill and you lose your authored layout.
 - **Mixing author voices within one book's variants.** All variants of one book should share author and conceit.
 - **Skipping Step 1 or 2** of the workflow. Even when the user pushes for variant drafts, anchor context and conceit first.
 

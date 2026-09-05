@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Escreveste um nome.\nLembras-te?\n\n%TARGET%.\nEscreveste %TARGET%.\n\nResultou.\nNão como pediste.\nComo sempre resulta.\n\nMorreste na carruagem %CARRIAGE%.\nAlgo de ti ficou lá.\n%GEAR%\n\nEsperou %DAYS% dias.\n\nDepois %TARGET% entrou na carruagem %CARRIAGE%, num mundo que nunca verás.\n\n%STORY%\n\nE aí o papel para.\n\nNão sei como acabou.\nTu também não.\n\nFoi esse o acordo que fizeste.",
-    "Bem-vindo de volta.\nO que é o comboio?\nPorque estás aqui?\nO que fizeste?\n\nSó uma dessas mudou.\n\n%TARGET% encontrou-te na carruagem %CARRIAGE%.\n\nNão a ti.\nA parte de ti que ficou para trás.\n\nEsperou %DAYS% dias.\nCoisa paciente.\nTinha a tua cara.\n\n%STORY%\n\n.\n\nDir-te-ia quem se afastou dali.\n\nNinguém o escreveu."
+    "Escreveste um nome.\nLembras-te?\n\n\n%TARGET%.\nEscreveste %TARGET%.\n\n\nResultou.\nNão como pediste.\nComo sempre resulta.\n\n\nMorreste na carruagem %CARRIAGE%.\nAlgo de ti ficou lá.\n%GEAR%\n\n\nEsperou %DAYS% dias.\n\n\nDepois %TARGET% entrou na carruagem %CARRIAGE%, num mundo que nunca verás.\n\n\n%STORY%\n\n\nE aí o papel para.\n\n\nNão sei como acabou.\nTu também não.\n\n\nFoi esse o acordo que fizeste.",
+    "Bem-vindo de volta.\nO que é o comboio?\nPorque estás aqui?\nO que fizeste?\n\n\nSó uma dessas mudou.\n\n\n%TARGET% encontrou-te na carruagem %CARRIAGE%.\n\n\nNão a ti.\nA parte de ti que ficou para trás.\n\n\nEsperou %DAYS% dias.\nCoisa paciente.\nTinha a tua cara.\n\n\n%STORY%\n\n\n.\n\n\nDir-te-ia quem se afastou dali.\n\n\nNinguém o escreveu."
   ]
 }

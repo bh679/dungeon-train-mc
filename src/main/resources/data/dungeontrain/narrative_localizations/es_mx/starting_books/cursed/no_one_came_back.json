@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Escribiste un nombre.\n¿Te acuerdas?\n\n%TARGET%.\nEscribiste %TARGET%.\n\nFuncionó.\nNo como lo pediste.\nComo funciona siempre.\n\nMoriste en el vagón %CARRIAGE%.\nAlgo de ti se quedó ahí.\n%GEAR%\n\nEsperó %DAYS% días.\n\nLuego %TARGET% entró al vagón %CARRIAGE%, en un mundo que nunca vas a ver.\n\n%STORY%\n\nY ahí el papel se acaba.\n\nNo sé cómo terminó.\nTú tampoco.\n\nEse es el trato que hiciste.",
-    "Bienvenido de vuelta.\n¿Qué es el tren?\n¿Por qué estás aquí?\n¿Qué hiciste?\n\nSolo una de esas cambió.\n\n%TARGET% te encontró en el vagón %CARRIAGE%.\n\nA ti no.\nA la parte de ti que se quedó atrás.\n\n%DAYS% días estuvo esperando.\nCosa paciente.\nTenía tu cara.\n\n%STORY%\n\n.\n\nTe diría quién salió caminando.\n\nNadie lo escribió."
+    "Escribiste un nombre.\n¿Te acuerdas?\n\n\n%TARGET%.\nEscribiste %TARGET%.\n\n\nFuncionó.\nNo como lo pediste.\nComo funciona siempre.\n\n\nMoriste en el vagón %CARRIAGE%.\nAlgo de ti se quedó ahí.\n%GEAR%\n\n\nEsperó %DAYS% días.\n\n\nLuego %TARGET% entró al vagón %CARRIAGE%, en un mundo que nunca vas a ver.\n\n\n%STORY%\n\n\nY ahí el papel se acaba.\n\n\nNo sé cómo terminó.\nTú tampoco.\n\n\nEse es el trato que hiciste.",
+    "Bienvenido de vuelta.\n¿Qué es el tren?\n¿Por qué estás aquí?\n¿Qué hiciste?\n\n\nSolo una de esas cambió.\n\n\n%TARGET% te encontró en el vagón %CARRIAGE%.\n\n\nA ti no.\nA la parte de ti que se quedó atrás.\n\n\n%DAYS% días estuvo esperando.\nCosa paciente.\nTenía tu cara.\n\n\n%STORY%\n\n\n.\n\n\nTe diría quién salió caminando.\n\n\nNadie lo escribió."
   ]
 }

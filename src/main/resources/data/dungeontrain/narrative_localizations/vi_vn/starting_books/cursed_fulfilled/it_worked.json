@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Nó ứng nghiệm.\n\n%TARGET% đã chết.\n\nBạn không có ở đó.\nBạn thì đã chết rồi.\n\nToa %CARRIAGE%.\nCon số bạn chết trên đó thành con số họ chết trên đó.\n\nNó chờ %DAYS% ngày để làm điều ấy.\n%GEAR%\n\nChuyện đã diễn ra thế này.\n\n%STORY%\n\nCó thấy lạ không?\nMột thứ mang khuôn mặt bạn,\ntrong một thế giới bạn chưa từng thấy,\nhoàn tất điều bạn đã bắt đầu.\n\nBạn không nhất thiết phải thấy vui vì nó.\nBạn không nhất thiết phải thấy tệ vì nó.\n\nBạn chỉ cần biết.\n\nGiờ bạn biết rồi.",
-    "Chào mừng trở lại Dungeon Train\nCon tàu là gì?\nVì sao bạn ở đây?\nBạn đã viết gì?\nToàn là những câu hỏi hay\n\nBạn đã viết %TARGET%.\n\n%DAYS% ngày sau, ở toa %CARRIAGE%, tờ giấy đã đúng.\n\n%STORY%\n\nGiấy thì thường không đúng.\n\nTôi là giấy.\nTôi hiếm khi đúng.\n\nTờ ấy thì đúng.\n\nNgủ ngon nhé."
+    "Nó ứng nghiệm.\n\n\n%TARGET% đã chết.\n\n\nBạn không có ở đó.\nBạn thì đã chết rồi.\n\n\nToa %CARRIAGE%.\nCon số bạn chết trên đó thành con số họ chết trên đó.\n\n\nNó chờ %DAYS% ngày để làm điều ấy.\n%GEAR%\n\n\nChuyện đã diễn ra thế này.\n\n\n%STORY%\n\n\nCó thấy lạ không?\nMột thứ mang khuôn mặt bạn,\ntrong một thế giới bạn chưa từng thấy,\nhoàn tất điều bạn đã bắt đầu.\n\n\nBạn không nhất thiết phải thấy vui vì nó.\nBạn không nhất thiết phải thấy tệ vì nó.\n\n\nBạn chỉ cần biết.\n\n\nGiờ bạn biết rồi.",
+    "Chào mừng trở lại Dungeon Train\nCon tàu là gì?\nVì sao bạn ở đây?\nBạn đã viết gì?\nToàn là những câu hỏi hay\n\n\nBạn đã viết %TARGET%.\n\n\n%DAYS% ngày sau, ở toa %CARRIAGE%, tờ giấy đã đúng.\n\n\n%STORY%\n\n\nGiấy thì thường không đúng.\n\n\nTôi là giấy.\nTôi hiếm khi đúng.\n\n\nTờ ấy thì đúng.\n\n\nNgủ ngon nhé."
   ]
 }

@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Funcionó.\n\n%TARGET% está muerto.\n\nTú no estabas ahí.\nYa estabas muerto.\n\nVagón %CARRIAGE%.\nEl número en el que moriste se volvió el número en el que murieron.\n\nEsperó %DAYS% días para hacerlo.\n%GEAR%\n\nAsí fue la cosa.\n\n%STORY%\n\n¿No se siente raro?\nAlgo con tu cara,\nen un mundo que nunca viste,\nterminando lo que empezaste.\n\nNo tienes que sentirte bien por eso.\nNo tienes que sentirte mal por eso.\n\nSolo tienes que saberlo.\n\nYa lo sabes.",
-    "Bienvenido de vuelta al Dungeon Train\n¿Qué es el tren?\n¿Por qué estás aquí?\n¿Qué escribiste?\nTodas estas son buenas preguntas\n\nEscribiste %TARGET%.\n\n%DAYS% días después, en el vagón %CARRIAGE%, el papel tenía razón.\n\n%STORY%\n\nEl papel casi nunca la tiene.\n\nYo soy papel.\nRara vez tengo razón.\n\nEsa vez sí.\n\nQue duermas bien."
+    "Funcionó.\n\n\n%TARGET% está muerto.\n\n\nTú no estabas ahí.\nYa estabas muerto.\n\n\nVagón %CARRIAGE%.\nEl número en el que moriste se volvió el número en el que murieron.\n\n\nEsperó %DAYS% días para hacerlo.\n%GEAR%\n\n\nAsí fue la cosa.\n\n\n%STORY%\n\n\n¿No se siente raro?\nAlgo con tu cara,\nen un mundo que nunca viste,\nterminando lo que empezaste.\n\n\nNo tienes que sentirte bien por eso.\nNo tienes que sentirte mal por eso.\n\n\nSolo tienes que saberlo.\n\n\nYa lo sabes.",
+    "Bienvenido de vuelta al Dungeon Train\n¿Qué es el tren?\n¿Por qué estás aquí?\n¿Qué escribiste?\nTodas estas son buenas preguntas\n\n\nEscribiste %TARGET%.\n\n\n%DAYS% días después, en el vagón %CARRIAGE%, el papel tenía razón.\n\n\n%STORY%\n\n\nEl papel casi nunca la tiene.\n\n\nYo soy papel.\nRara vez tengo razón.\n\n\nEsa vez sí.\n\n\nQue duermas bien."
   ]
 }

@@ -16,7 +16,7 @@ import { createLibrary, contextLabel } from './library.js';
 import { createFrame, measurePage, SAFE_LINE_CHARS, SAFE_LINES } from './book-frame.js';
 import {
   paginateSpans, splicePage, pageSource, resolveKeybinds,
-  MAX_CHARS_PER_PAGE, MAX_PAGES, MAX_TITLE_CHARS, EXPLICIT,
+  MAX_CHARS_PER_PAGE, MAX_PAGES, MAX_TITLE_CHARS, EXPLICIT, PAGE_BREAK,
 } from './paginate.js';
 import { TEMPLATE_CONTEXTS, substitute, tokensIn } from './tokens.js';
 
@@ -28,6 +28,7 @@ const state = {
   letterIdx: 0,
   variantIdx: 0,
   pageIdx: 0,
+  caret: null,        // where to put the caret on the next paint (null = leave it alone)
   dirty: false,
   tokensOn: false,
   locale: '',         // '' = the English source; otherwise a read-only translation
@@ -130,7 +131,7 @@ async function openBook(path, { keepPosition = false } = {}) {
 
 async function save() {
   const pending = frame.flush();
-  if (pending !== null) applyEdit(pending, { repaint: false });
+  if (pending !== null) applyEdit(pending.text, pending.caret, { repaint: false });
   if (!state.current) return;
   try {
     const res = await saveBook(state.current.path, state.current.data, state.current.style, state.current.mtime);
@@ -152,19 +153,33 @@ async function save() {
 
 // --- editing -----------------------------------------------------------------
 
-function applyEdit(text, { repaint: doRepaint = true } = {}) {
+/**
+ * Splice the edited text back over the page's source span, then follow the caret. An edit can push
+ * text onto another page — a starting-book page break typed mid-page, or a flow page reflowing past
+ * the char budget — and the view has to go where the author's text went, or their words look lost.
+ */
+function applyEdit(text, caret = null, { repaint: doRepaint = true } = {}) {
   if (!state.current || readOnlyView()) return;
-  const list = pages();
-  const page = currentPage(list);
+  const page = currentPage();
   const next = splicePage(body(), page, text);
   if (next === body()) return;
+  const absolute = Number.isInteger(caret) ? page.start + caret : null;
   setBody(next);
+  if (absolute !== null) {
+    const repaginated = paginateSpans(next, state.current.mode);
+    const idx = repaginated.findIndex((p) => absolute >= p.start && absolute <= p.end);
+    if (idx >= 0) {
+      state.pageIdx = idx;
+      state.caret = absolute - repaginated[idx].start;
+    }
+  }
   if (doRepaint) repaint({ keepFocus: true });
 }
 
 function navigate(delta) {
   const count = pages().length;
   state.pageIdx = Math.max(0, Math.min(count - 1, state.pageIdx + delta));
+  state.caret = 0;
   repaint();
 }
 
@@ -173,8 +188,8 @@ function insertPageAfter(blank = false) {
   const page = currentPage();
   const text = blank ? '' : 'New page';
   const source = body();
-  const sep = state.current.mode === EXPLICIT ? '\n\n' : '\n\n\n';
-  setBody(source.slice(0, page.end) + sep + text + source.slice(page.end));
+  // Both corpora break the page on the same run of newlines now — `\n\n\n`.
+  setBody(source.slice(0, page.end) + PAGE_BREAK + text + source.slice(page.end));
   state.pageIdx += blank ? 1 : 1;
   repaint();
 }
@@ -186,10 +201,14 @@ function deletePage() {
   const source = body();
   let start = page.start;
   let end = page.end;
-  const after = source.slice(end).match(/^\n{2,}/);
-  const before = source.slice(0, start).match(/\n{2,}$/);
-  if (after) end += after[0].length;
-  else if (before) start -= before[0].length;
+  // Explicit mode: take exactly one page break, so a neighbouring blank-page slot survives.
+  // Flow mode: the whole newline run between the two paragraphs is the separator.
+  const runAfter = source.slice(end).match(/^\n{2,}/);
+  const runBefore = source.slice(0, start).match(/\n{2,}$/);
+  const take = (run) => (state.current.mode === EXPLICIT
+    ? Math.min(run[0].length, PAGE_BREAK.length) : run[0].length);
+  if (runAfter) end += take(runAfter);
+  else if (runBefore) start -= take(runBefore);
   setBody(source.slice(0, start) + source.slice(end));
   state.pageIdx = Math.max(0, state.pageIdx - (state.pageIdx >= list.length - 1 ? 1 : 0));
   repaint();
@@ -210,7 +229,7 @@ function movePage(delta) {
   repaint();
 }
 
-/** Flow books only: merge this page's paragraph with the next by softening the break between them. */
+/** Merge this page with the next by softening the break between them into a blank line. */
 function mergeWithNext() {
   const list = pages();
   const page = list[state.pageIdx];
@@ -418,7 +437,9 @@ function renderFrame(keepFocus) {
     pageCount: list.length,
     readOnly: readOnlyView(),
     shared: !page.exclusive,
+    caret: state.caret,
   });
+  state.caret = null;
   if (keepFocus) frame.focus();
 
   const tools = [];
@@ -432,10 +453,8 @@ function renderFrame(keepFocus) {
       tool('+ blank', 'Insert an intentional blank page after this one', () => insertPageAfter(true)),
       tool('␡ page', 'Delete this page', deletePage),
     );
-    if (state.current.mode !== EXPLICIT) {
-      tools.push(tool('merge ▶', 'Soften the break so this page packs with the next',
-        mergeWithNext, state.pageIdx >= list.length - 1));
-    }
+    tools.push(tool('merge ▶', 'Soften the break into a blank line so this page joins the next',
+      mergeWithNext, state.pageIdx >= list.length - 1));
   }
   dom.tools.replaceChildren(...tools);
 }
@@ -463,6 +482,10 @@ function renderSide() {
   }
   if (list.length > MAX_PAGES) {
     notes.push(`${list.length} pages — the game truncates at ${MAX_PAGES}.`);
+  }
+  if (state.current.mode === EXPLICIT && page.text.includes('\n\n')) {
+    notes.push('The blank line(s) on this page stay on the page — in starting books it takes '
+      + 'a doubled blank line (three newlines) to break to a new page.');
   }
   if (!readOnlyView() && pageSource(body(), page).trim() !== page.text) {
     notes.push('The game trims / packs this page, so the render differs slightly from the source.');

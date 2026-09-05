@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Zij wonnen.\n\n%TARGET% heeft je gedood.\nOpnieuw, strikt genomen.\nJe was al weg.\n\nWagon %CARRIAGE%.\n%DAYS% dagen wachten.\n\n%STORY%\n\nZe namen de notitie van het lichaam.\nJouw handschrift.\nJouw naam eronder.\n\nErgens in een wereld die jij nooit zult bezoeken heeft iemand jouw Death Note in een kist liggen.\n\nHoe voelt dat?",
-    "Over die naam die je schreef.\n\n%TARGET%.\n\nAdemt nog.\n\nJouw echo vond diegene bij wagon %CARRIAGE%, %DAYS% dagen te laat, en verloor.\n\n%GEAR%\nHet had jouw gezicht.\nHet vocht zoals jij.\n\n%STORY%\n\nDat laatste is misschien het probleem.\n\n.\n\nVolgend leven beter."
+    "Zij wonnen.\n\n\n%TARGET% heeft je gedood.\nOpnieuw, strikt genomen.\nJe was al weg.\n\n\nWagon %CARRIAGE%.\n%DAYS% dagen wachten.\n\n\n%STORY%\n\n\nZe namen de notitie van het lichaam.\nJouw handschrift.\nJouw naam eronder.\n\n\nErgens in een wereld die jij nooit zult bezoeken heeft iemand jouw Death Note in een kist liggen.\n\n\nHoe voelt dat?",
+    "Over die naam die je schreef.\n\n\n%TARGET%.\n\n\nAdemt nog.\n\n\nJouw echo vond diegene bij wagon %CARRIAGE%, %DAYS% dagen te laat, en verloor.\n\n\n%GEAR%\nHet had jouw gezicht.\nHet vocht zoals jij.\n\n\n%STORY%\n\n\nDat laatste is misschien het probleem.\n\n\n.\n\n\nVolgend leven beter."
   ]
 }

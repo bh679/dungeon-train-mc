@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Nanalo sila.\n\nPinatay ka ni %TARGET%.\nUlit, sa teknikal na paraan.\nWala ka na noon.\n\nBagon %CARRIAGE%.\n%DAYS% araw na paghihintay.\n\n%STORY%\n\nKinuha nila ang tala mula sa katawan.\nSulat-kamay mo.\nPangalan mo roon.\n\nSa isang mundong hindi mo mabibisita kailanman, may humahawak ng iyong Tala ng Patay sa loob ng isang kaban.\n\nKumusta ang pakiramdam niyon?",
-    "Tungkol sa pangalang isinulat mo.\n\n%TARGET%.\n\nHumihinga pa rin.\n\nNatagpuan sila ng alingawngaw mo sa bagon %CARRIAGE%, %DAYS% araw ang huli, at natalo.\n\n%GEAR%\nDala nito ang mukha mo.\nLumaban ito na parang ikaw.\n\n%STORY%\n\nBaka iyon nga ang problema.\n\n.\n\nSana'y mas maswerte sa susunod na buhay."
+    "Nanalo sila.\n\n\nPinatay ka ni %TARGET%.\nUlit, sa teknikal na paraan.\nWala ka na noon.\n\n\nBagon %CARRIAGE%.\n%DAYS% araw na paghihintay.\n\n\n%STORY%\n\n\nKinuha nila ang tala mula sa katawan.\nSulat-kamay mo.\nPangalan mo roon.\n\n\nSa isang mundong hindi mo mabibisita kailanman, may humahawak ng iyong Tala ng Patay sa loob ng isang kaban.\n\n\nKumusta ang pakiramdam niyon?",
+    "Tungkol sa pangalang isinulat mo.\n\n\n%TARGET%.\n\n\nHumihinga pa rin.\n\n\nNatagpuan sila ng alingawngaw mo sa bagon %CARRIAGE%, %DAYS% araw ang huli, at natalo.\n\n\n%GEAR%\nDala nito ang mukha mo.\nLumaban ito na parang ikaw.\n\n\n%STORY%\n\n\nBaka iyon nga ang problema.\n\n\n.\n\n\nSana'y mas maswerte sa susunod na buhay."
   ]
 }

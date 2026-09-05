@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Es hat gewirkt.\n\n%TARGET% ist tot.\n\nDu warst nicht dabei.\nDu warst schon tot.\n\nWaggon %CARRIAGE%.\nDie Nummer, auf der du starbst, wurde die Nummer, auf der sie starben.\n\nEs wartete %DAYS% Tage, um es zu tun.\n%GEAR%\n\nSo ist es gelaufen.\n\n%STORY%\n\nFühlt sich das nicht seltsam an?\nEtwas mit deinem Gesicht,\nin einer Welt, die du nie sahst,\nbringt zu Ende, was du angefangen hast.\n\nDu musst dich deswegen nicht gut fühlen.\nDu musst dich deswegen nicht schlecht fühlen.\n\nDu musst es nur wissen.\n\nJetzt weißt du es.",
-    "Willkommen zurück im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas hast du geschrieben?\nDas sind alles gute Fragen\n\nDu hast %TARGET% geschrieben.\n\n%DAYS% Tage später, in Waggon %CARRIAGE%, hatte das Papier recht.\n\n%STORY%\n\nPapier hat meistens nicht recht.\n\nIch bin Papier.\nIch habe selten recht.\n\nDieses eine Mal schon.\n\nSchlaf gut."
+    "Es hat gewirkt.\n\n\n%TARGET% ist tot.\n\n\nDu warst nicht dabei.\nDu warst schon tot.\n\n\nWaggon %CARRIAGE%.\nDie Nummer, auf der du starbst, wurde die Nummer, auf der sie starben.\n\n\nEs wartete %DAYS% Tage, um es zu tun.\n%GEAR%\n\n\nSo ist es gelaufen.\n\n\n%STORY%\n\n\nFühlt sich das nicht seltsam an?\nEtwas mit deinem Gesicht,\nin einer Welt, die du nie sahst,\nbringt zu Ende, was du angefangen hast.\n\n\nDu musst dich deswegen nicht gut fühlen.\nDu musst dich deswegen nicht schlecht fühlen.\n\n\nDu musst es nur wissen.\n\n\nJetzt weißt du es.",
+    "Willkommen zurück im Dungeon Train\nWas ist der Zug?\nWarum bist du hier?\nWas hast du geschrieben?\nDas sind alles gute Fragen\n\n\nDu hast %TARGET% geschrieben.\n\n\n%DAYS% Tage später, in Waggon %CARRIAGE%, hatte das Papier recht.\n\n\n%STORY%\n\n\nPapier hat meistens nicht recht.\n\n\nIch bin Papier.\nIch habe selten recht.\n\n\nDieses eine Mal schon.\n\n\nSchlaf gut."
   ]
 }

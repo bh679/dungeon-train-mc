@@ -62,22 +62,28 @@ test('paginateExplicit: blank / empty body yields a single blank page', () => {
   assert.deepStrictEqual(paginateExplicit(null), ['']);
 });
 
-test('paginateExplicit: EXACTLY \\n\\n is a hard break; a single \\n stays within the page', () => {
+test('paginateExplicit: EXACTLY \\n\\n\\n is a hard break; a single \\n stays within the page', () => {
   assert.deepStrictEqual(paginateExplicit('Alpha\nBravo'), ['Alpha\nBravo']);
-  assert.deepStrictEqual(paginateExplicit('A\n\nB\n\nC'), ['A', 'B', 'C']);
-  assert.deepStrictEqual(paginateExplicit('Line one\nLine two\n\nSecond page'),
+  assert.deepStrictEqual(paginateExplicit('A\n\n\nB\n\n\nC'), ['A', 'B', 'C']);
+  assert.deepStrictEqual(paginateExplicit('Line one\nLine two\n\n\nSecond page'),
     ['Line one\nLine two', 'Second page']);
 });
 
-test('paginateExplicit: \\n\\n\\n\\n is an intentional blank-page slot; edge blanks are trimmed', () => {
-  assert.deepStrictEqual(paginateExplicit('A\n\n\n\nB'), ['A', '', 'B']);
-  assert.deepStrictEqual(paginateExplicit('A\n\n \n\nB'), ['A', '', 'B']);
-  assert.deepStrictEqual(paginateExplicit('\n\nA\n\nB\n\n'), ['A', 'B']);
+test('paginateExplicit: a blank line is a blank LINE, not a page break', () => {
+  // The whole point of moving the marker up one newline: an author can write a blank line.
+  assert.deepStrictEqual(paginateExplicit('Line one.\n\nLine two.'), ['Line one.\n\nLine two.']);
+  assert.deepStrictEqual(paginateExplicit('A.\n\nB.\n\n\nC.\n\nD.'), ['A.\n\nB.', 'C.\n\nD.']);
+});
+
+test('paginateExplicit: two breaks in a row are an intentional blank-page slot; edge blanks are trimmed', () => {
+  assert.deepStrictEqual(paginateExplicit('A\n\n\n\n\n\nB'), ['A', '', 'B']);
+  assert.deepStrictEqual(paginateExplicit('A\n\n\n \n\n\nB'), ['A', '', 'B']);
+  assert.deepStrictEqual(paginateExplicit('\n\n\nA\n\n\nB\n\n\n'), ['A', 'B']);
 });
 
 test('paginateExplicit: whitespace-only padding trims per page, not per line', () => {
   assert.deepStrictEqual(paginateExplicit('Alpha.\n   \nBeta.'), ['Alpha.\n   \nBeta.']);
-  assert.deepStrictEqual(paginateExplicit('   Padded.   \n\n  Also padded.  '), ['Padded.', 'Also padded.']);
+  assert.deepStrictEqual(paginateExplicit('   Padded.   \n\n\n  Also padded.  '), ['Padded.', 'Also padded.']);
 });
 
 test('paginateExplicit: an oversize chunk falls back to the flow paginator', () => {
@@ -89,16 +95,17 @@ test('paginateExplicit: an oversize chunk falls back to the flow paginator', () 
 // ---- spans + splicing (what makes the preview editable) ---------------------
 
 test('spans: each page reports the source text it was built from', () => {
-  const body = 'Alpha\n\nBravo\n\nCharlie';
+  const body = 'Alpha\n\n\nBravo\n\n\nCharlie';
   const pages = paginateSpans(body, EXPLICIT);
   assert.deepStrictEqual(pages.map((p) => body.slice(p.start, p.end)), ['Alpha', 'Bravo', 'Charlie']);
   assert.ok(pages.every((p) => p.exclusive));
 });
 
 test('spans: splicing one page leaves every other byte of the body untouched', () => {
-  const body = 'Alpha\n\nBravo\n\nCharlie';
+  const body = 'Alpha\n\n\nBravo\n\n\nCharlie';
   const pages = paginateSpans(body, EXPLICIT);
-  assert.strictEqual(splicePage(body, pages[1], 'Bravo\nrewritten'), 'Alpha\n\nBravo\nrewritten\n\nCharlie');
+  assert.strictEqual(splicePage(body, pages[1], 'Bravo\n\nrewritten'),
+    'Alpha\n\n\nBravo\n\nrewritten\n\n\nCharlie');
 });
 
 test('spans: a flow page packing several paragraphs spans all of them', () => {
@@ -118,8 +125,8 @@ test('spans: an oversize chunk spilling across pages marks them NOT exclusive', 
 test('spans: re-splicing every page with its own source text is the identity on the body', () => {
   for (const [body, mode] of [
     ['Alpha\n\nBravo\n\n\nCharlie', FLOW],
-    ['A\n\n\n\nB\n\nC', EXPLICIT],
-    ['   Padded.   \n\nMore.', EXPLICIT],
+    ['A\n\n\n\n\n\nB\n\n\nC', EXPLICIT],
+    ['   Padded.   \n\n\nMore.', EXPLICIT],
   ]) {
     for (const page of paginateSpans(body, mode)) {
       assert.strictEqual(splicePage(body, page, body.slice(page.start, page.end)), body);

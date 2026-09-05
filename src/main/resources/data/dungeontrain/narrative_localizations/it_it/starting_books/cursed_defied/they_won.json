@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Hanno vinto.\n\n%TARGET% ti ha ucciso.\nDi nuovo, tecnicamente.\nEri già andato.\n\nVagone %CARRIAGE%.\n%DAYS% giorni di attesa.\n\n%STORY%\n\nHanno preso la nota dal corpo.\nLa tua calligrafia.\nIl tuo nome sopra.\n\nDa qualche parte, in un mondo che non visiterai mai, qualcuno tiene la tua Nota di Morte in un baule.\n\nCome ti va giù?",
-    "A proposito di quel nome che hai scritto.\n\n%TARGET%.\n\nRespira ancora.\n\nIl tuo eco l'ha trovato al vagone %CARRIAGE%, con %DAYS% giorni di ritardo, e ha perso.\n\n%GEAR%\nAveva la tua faccia.\nCombatteva come te.\n\n%STORY%\n\nForse è proprio quest'ultima parte il problema.\n\n.\n\nPiù fortuna nella prossima vita."
+    "Hanno vinto.\n\n\n%TARGET% ti ha ucciso.\nDi nuovo, tecnicamente.\nEri già andato.\n\n\nVagone %CARRIAGE%.\n%DAYS% giorni di attesa.\n\n\n%STORY%\n\n\nHanno preso la nota dal corpo.\nLa tua calligrafia.\nIl tuo nome sopra.\n\n\nDa qualche parte, in un mondo che non visiterai mai, qualcuno tiene la tua Nota di Morte in un baule.\n\n\nCome ti va giù?",
+    "A proposito di quel nome che hai scritto.\n\n\n%TARGET%.\n\n\nRespira ancora.\n\n\nIl tuo eco l'ha trovato al vagone %CARRIAGE%, con %DAYS% giorni di ritardo, e ha perso.\n\n\n%GEAR%\nAveva la tua faccia.\nCombatteva come te.\n\n\n%STORY%\n\n\nForse è proprio quest'ultima parte il problema.\n\n\n.\n\n\nPiù fortuna nella prossima vita."
   ]
 }

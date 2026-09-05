@@ -272,9 +272,10 @@ public final class StartingBookFactory {
      *
      * <p>No identity stamp — see class javadoc.</p>
      *
-     * <p>Pagination is explicit: every blank line ({@code \n\n}) in the source
-     * starts a new page. Single newlines are preserved as line breaks within
-     * a page. See {@link #paginateExplicit} for the overflow fallback.</p>
+     * <p>Pagination is explicit: every {@code \n\n\n} in the source starts a
+     * new page. Single newlines — and a lone blank line ({@code \n\n}) — are
+     * preserved within a page. See {@link #paginateExplicit} for the overflow
+     * fallback.</p>
      */
     public static ItemStack buildUnstampedBook(RandomBookFile book, String body, int variantIndex) {
         String title = book.title() == null || book.title().isEmpty() || "Untitled".equals(book.title())
@@ -318,17 +319,25 @@ public final class StartingBookFactory {
     }
 
     /**
-     * Pagination strategy specific to starting books: <b>every {@code \n\n}
+     * Pagination strategy specific to starting books: <b>every {@code \n\n\n}
      * in the source is exactly one page break</b>. This gives authors precise
-     * per-page control:
+     * per-page control while still leaving them a blank line to write with:
      * <ul>
-     *   <li>{@code "page A\n\npage B"} → 2 pages.</li>
-     *   <li>{@code "page A\n\n\n\npage B"} → 3 pages (A, blank, B).</li>
-     *   <li>{@code "page A\n\n \n\npage B"} → 3 pages (A, blank, B) —
-     *       a whitespace-only line between two {@code \n\n}s also acts as
-     *       a blank-page slot.</li>
+     *   <li>{@code "page A\n\n\npage B"} → 2 pages.</li>
+     *   <li>{@code "line one\n\nline two"} → 1 page with a blank line in it.</li>
+     *   <li>{@code "page A\n\n\n\n\n\npage B"} → 3 pages (A, blank, B):
+     *       two breaks with an empty chunk between them.</li>
+     *   <li>{@code "page A\n\n\n \n\n\npage B"} → 3 pages (A, blank, B) —
+     *       a whitespace-only chunk between two breaks is a blank-page slot too.</li>
      *   <li>Single {@code \n} stays as a line break within a page.</li>
      * </ul>
+     *
+     * <p>The marker was {@code \n\n} until 2026-09; it moved up one newline so
+     * that a blank line could exist <em>inside</em> a page, which the old rule
+     * made unwritable. The corpus (and every translation of it) was migrated in
+     * the same change, so no book's pagination moved. Ports of this algorithm
+     * live in {@code scripts/books-editor/web/js/paginate.js} and dp-relay's
+     * {@code web/js/book-paginate.js} — change all three together.</p>
      *
      * <p>Trimming:</p>
      * <ul>
@@ -345,10 +354,10 @@ public final class StartingBookFactory {
      */
     static List<String> paginateExplicit(String body) {
         List<String> pages = new ArrayList<>();
-        // Split on EXACTLY two consecutive newlines. The -1 limit keeps
+        // Split on EXACTLY three consecutive newlines. The -1 limit keeps
         // trailing empty chunks so they can become blank pages (or be
         // trimmed off at the end below).
-        String[] chunks = body.split("\\n\\n", -1);
+        String[] chunks = body.split("\\n\\n\\n", -1);
         for (String chunk : chunks) {
             String page = chunk.strip();
             if (page.length() <= BookFactory.MAX_CHARS_PER_PAGE) {

@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "A funcționat.\n\n%TARGET% e mort.\n\nTu nu erai acolo.\nErai deja mort.\n\nVagonul %CARRIAGE%.\nNumărul pe care ai murit tu a devenit numărul pe care a murit el.\n\nA așteptat %DAYS% zile ca s-o facă.\n%GEAR%\n\nUite cum a fost.\n\n%STORY%\n\nNu ți se pare ciudat?\nCeva cu chipul tău,\nîntr-o lume pe care n-ai văzut-o niciodată,\nterminând ce ai început.\n\nNu trebuie să te simți bine în privința asta.\nNu trebuie să te simți rău în privința asta.\n\nTrebuie doar să știi.\n\nAcum știi.",
-    "Bine ai revenit în Dungeon Train\nCe este trenul?\nDe ce ești aici?\nCe ai scris?\nToate astea sunt întrebări bune\n\nAi scris %TARGET%.\n\n%DAYS% zile mai târziu, la vagonul %CARRIAGE%, hârtia avea dreptate.\n\n%STORY%\n\nDe obicei hârtia n-are.\n\nEu sunt hârtie.\nRareori am dreptate.\n\nAtunci am avut.\n\nSomn ușor."
+    "A funcționat.\n\n\n%TARGET% e mort.\n\n\nTu nu erai acolo.\nErai deja mort.\n\n\nVagonul %CARRIAGE%.\nNumărul pe care ai murit tu a devenit numărul pe care a murit el.\n\n\nA așteptat %DAYS% zile ca s-o facă.\n%GEAR%\n\n\nUite cum a fost.\n\n\n%STORY%\n\n\nNu ți se pare ciudat?\nCeva cu chipul tău,\nîntr-o lume pe care n-ai văzut-o niciodată,\nterminând ce ai început.\n\n\nNu trebuie să te simți bine în privința asta.\nNu trebuie să te simți rău în privința asta.\n\n\nTrebuie doar să știi.\n\n\nAcum știi.",
+    "Bine ai revenit în Dungeon Train\nCe este trenul?\nDe ce ești aici?\nCe ai scris?\nToate astea sunt întrebări bune\n\n\nAi scris %TARGET%.\n\n\n%DAYS% zile mai târziu, la vagonul %CARRIAGE%, hârtia avea dreptate.\n\n\n%STORY%\n\n\nDe obicei hârtia n-are.\n\n\nEu sunt hârtie.\nRareori am dreptate.\n\n\nAtunci am avut.\n\n\nSomn ușor."
   ]
 }

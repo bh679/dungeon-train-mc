@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Zapisałeś imię.\nPamiętasz?\n\n%TARGET%.\nNapisałeś %TARGET%.\n\nZadziałało.\nNie tak, jak prosiłeś.\nTak, jak to działa.\n\nZginąłeś przy wagonie %CARRIAGE%.\nCoś z ciebie tam zostało.\n%GEAR%\n\nCzekało %DAYS% dni.\n\nPotem %TARGET% wszedł do wagonu %CARRIAGE%, w świecie, którego nigdy nie zobaczysz.\n\n%STORY%\n\nI tam papier się urywa.\n\nNie wiem, jak się skończyło.\nTy też nie.\n\nTaką zawarłeś umowę.",
-    "Witaj z powrotem.\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo zrobiłeś?\n\nZmieniło się tylko jedno z nich.\n\n%TARGET% spotkał cię przy wagonie %CARRIAGE%.\n\nNie ciebie.\nTę część ciebie, która tam została.\n\nCzekała %DAYS% dni.\nCierpliwa rzecz.\nMiała twoją twarz.\n\n%STORY%\n\n.\n\nPowiedziałbym ci, kto stamtąd odszedł.\n\nNikt tego nie zapisał."
+    "Zapisałeś imię.\nPamiętasz?\n\n\n%TARGET%.\nNapisałeś %TARGET%.\n\n\nZadziałało.\nNie tak, jak prosiłeś.\nTak, jak to działa.\n\n\nZginąłeś przy wagonie %CARRIAGE%.\nCoś z ciebie tam zostało.\n%GEAR%\n\n\nCzekało %DAYS% dni.\n\n\nPotem %TARGET% wszedł do wagonu %CARRIAGE%, w świecie, którego nigdy nie zobaczysz.\n\n\n%STORY%\n\n\nI tam papier się urywa.\n\n\nNie wiem, jak się skończyło.\nTy też nie.\n\n\nTaką zawarłeś umowę.",
+    "Witaj z powrotem.\nCzym jest ten pociąg?\nCzemu tu jesteś?\nCo zrobiłeś?\n\n\nZmieniło się tylko jedno z nich.\n\n\n%TARGET% spotkał cię przy wagonie %CARRIAGE%.\n\n\nNie ciebie.\nTę część ciebie, która tam została.\n\n\nCzekała %DAYS% dni.\nCierpliwa rzecz.\nMiała twoją twarz.\n\n\n%STORY%\n\n\n.\n\n\nPowiedziałbym ci, kto stamtąd odszedł.\n\n\nNikt tego nie zapisał."
   ]
 }

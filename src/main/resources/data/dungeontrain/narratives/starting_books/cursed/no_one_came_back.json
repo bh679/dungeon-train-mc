@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "You wrote a name down.\nDo you remember?\n\n%TARGET%.\nYou wrote %TARGET%.\n\nIt worked.\nNot the way you asked.\nThe way it does.\n\nYou died at carriage %CARRIAGE%.\nSomething of you stayed there.\n%GEAR%\n\nIt waited %DAYS% days.\n\nThen %TARGET% walked into carriage %CARRIAGE%, in a world you will never see.\n\n%STORY%\n\nAnd there the paper stops.\n\nI dont know how it ended.\nNeither do you.\n\nThats the deal you made.",
-    "Welcome back.\nWhat is the train?\nWhy are you here?\nWhat did you do?\n\nOnly one of those changed.\n\n%TARGET% met you at carriage %CARRIAGE%.\n\nNot you.\nThe part of you that stayed behind.\n\n%DAYS% days it waited.\nPatient thing.\nIt had your face.\n\n%STORY%\n\n.\n\nI would tell you who walked away.\n\nNo one wrote it down."
+    "You wrote a name down.\nDo you remember?\n\n\n%TARGET%.\nYou wrote %TARGET%.\n\n\nIt worked.\nNot the way you asked.\nThe way it does.\n\n\nYou died at carriage %CARRIAGE%.\nSomething of you stayed there.\n%GEAR%\n\n\nIt waited %DAYS% days.\n\n\nThen %TARGET% walked into carriage %CARRIAGE%, in a world you will never see.\n\n\n%STORY%\n\n\nAnd there the paper stops.\n\n\nI dont know how it ended.\nNeither do you.\n\n\nThats the deal you made.",
+    "Welcome back.\nWhat is the train?\nWhy are you here?\nWhat did you do?\n\n\nOnly one of those changed.\n\n\n%TARGET% met you at carriage %CARRIAGE%.\n\n\nNot you.\nThe part of you that stayed behind.\n\n\n%DAYS% days it waited.\nPatient thing.\nIt had your face.\n\n\n%STORY%\n\n\n.\n\n\nI would tell you who walked away.\n\n\nNo one wrote it down."
   ]
 }

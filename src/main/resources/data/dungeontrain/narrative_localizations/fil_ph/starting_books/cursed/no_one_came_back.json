@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "May isinulat kang pangalan.\nNaaalala mo ba?\n\n%TARGET%.\nIsinulat mo si %TARGET%.\n\nGumana ito.\nHindi sa paraang hiniling mo.\nSa paraan nitong palagi.\n\nNamatay ka sa bagon %CARRIAGE%.\nMay bahagi mong nanatili roon.\n%GEAR%\n\nNaghintay ito nang %DAYS% araw.\n\nTapos pumasok si %TARGET% sa bagon %CARRIAGE%, sa mundong hindi mo makikita kailanman.\n\n%STORY%\n\nAt doon huminto ang papel.\n\nHindi ko alam kung paano ito natapos.\nIkaw rin.\n\nIyon ang kasunduang ginawa mo.",
-    "Maligayang pagbabalik.\nAno ang tren?\nBakit ka naririto?\nAno ang ginawa mo?\n\nIsa lang doon ang nagbago.\n\nNakasalubong ka ni %TARGET% sa bagon %CARRIAGE%.\n\nHindi ikaw.\nAng bahagi mong naiwan.\n\n%DAYS% araw itong naghintay.\nMatiyagang bagay.\nDala nito ang mukha mo.\n\n%STORY%\n\n.\n\nSasabihin ko sana sa iyo kung sino ang nakalakad palayo.\n\nWalang nagsulat nito."
+    "May isinulat kang pangalan.\nNaaalala mo ba?\n\n\n%TARGET%.\nIsinulat mo si %TARGET%.\n\n\nGumana ito.\nHindi sa paraang hiniling mo.\nSa paraan nitong palagi.\n\n\nNamatay ka sa bagon %CARRIAGE%.\nMay bahagi mong nanatili roon.\n%GEAR%\n\n\nNaghintay ito nang %DAYS% araw.\n\n\nTapos pumasok si %TARGET% sa bagon %CARRIAGE%, sa mundong hindi mo makikita kailanman.\n\n\n%STORY%\n\n\nAt doon huminto ang papel.\n\n\nHindi ko alam kung paano ito natapos.\nIkaw rin.\n\n\nIyon ang kasunduang ginawa mo.",
+    "Maligayang pagbabalik.\nAno ang tren?\nBakit ka naririto?\nAno ang ginawa mo?\n\n\nIsa lang doon ang nagbago.\n\n\nNakasalubong ka ni %TARGET% sa bagon %CARRIAGE%.\n\n\nHindi ikaw.\nAng bahagi mong naiwan.\n\n\n%DAYS% araw itong naghintay.\nMatiyagang bagay.\nDala nito ang mukha mo.\n\n\n%STORY%\n\n\n.\n\n\nSasabihin ko sana sa iyo kung sino ang nakalakad palayo.\n\n\nWalang nagsulat nito."
   ]
 }

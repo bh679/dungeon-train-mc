@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Ganaron.\n\n%TARGET% te mató.\nOtra vez, técnicamente.\nYa te habías ido.\n\nVagón %CARRIAGE%.\n%DAYS% días de espera.\n\n%STORY%\n\nLe quitaron la nota al cuerpo.\nTu letra.\nTu nombre en ella.\n\nEn algún lugar de un mundo que nunca visitarás, alguien tiene tu Nota de Muerte en un cofre.\n\n¿Cómo te sienta eso?",
-    "Sobre aquel nombre que escribiste.\n\n%TARGET%.\n\nSigue respirando.\n\nTu eco lo encontró en el vagón %CARRIAGE%, %DAYS% días tarde, y perdió.\n\n%GEAR%\nTenía tu cara.\nPeleaba como tú.\n\n%STORY%\n\nPuede que esa última parte sea el problema.\n\n.\n\nMás suerte en la próxima vida."
+    "Ganaron.\n\n\n%TARGET% te mató.\nOtra vez, técnicamente.\nYa te habías ido.\n\n\nVagón %CARRIAGE%.\n%DAYS% días de espera.\n\n\n%STORY%\n\n\nLe quitaron la nota al cuerpo.\nTu letra.\nTu nombre en ella.\n\n\nEn algún lugar de un mundo que nunca visitarás, alguien tiene tu Nota de Muerte en un cofre.\n\n\n¿Cómo te sienta eso?",
+    "Sobre aquel nombre que escribiste.\n\n\n%TARGET%.\n\n\nSigue respirando.\n\n\nTu eco lo encontró en el vagón %CARRIAGE%, %DAYS% días tarde, y perdió.\n\n\n%GEAR%\nTenía tu cara.\nPeleaba como tú.\n\n\n%STORY%\n\n\nPuede que esa última parte sea el problema.\n\n\n.\n\n\nMás suerte en la próxima vida."
   ]
 }

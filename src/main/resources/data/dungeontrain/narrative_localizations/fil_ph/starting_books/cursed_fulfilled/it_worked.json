@@ -5,7 +5,7 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Gumana ito.\n\nPatay na si %TARGET%.\n\nWala ka roon.\nPatay ka na noon.\n\nBagon %CARRIAGE%.\nAng bilang na kinamatayan mo ang naging bilang na kinamatayan nila.\n\nNaghintay ito nang %DAYS% araw para gawin ito.\n%GEAR%\n\nGanito ang nangyari.\n\n%STORY%\n\nHindi ba kakaiba ang pakiramdam?\nIsang bagay na may mukha mo,\nsa mundong hindi mo nakita,\ntinatapos ang sinimulan mo.\n\nHindi mo kailangang matuwa rito.\nHindi mo kailangang malungkot dito.\n\nKailangan mo lang malaman.\n\nAlam mo na ngayon.",
-    "Maligayang pagdating sa Dungeon Train\nAno ang tren?\nBakit ka naririto?\nAno ang isinulat mo?\nMabubuting tanong ang mga ito\n\nIsinulat mo si %TARGET%.\n\n%DAYS% araw ang lumipas, sa bagon %CARRIAGE%, tama ang papel.\n\n%STORY%\n\nKaraniwan ay hindi.\n\nPapel ako.\nBihira akong magkatama.\n\nTama ang isang iyon.\n\nMatulog kang mabuti."
+    "Gumana ito.\n\n\nPatay na si %TARGET%.\n\n\nWala ka roon.\nPatay ka na noon.\n\n\nBagon %CARRIAGE%.\nAng bilang na kinamatayan mo ang naging bilang na kinamatayan nila.\n\n\nNaghintay ito nang %DAYS% araw para gawin ito.\n%GEAR%\n\n\nGanito ang nangyari.\n\n\n%STORY%\n\n\nHindi ba kakaiba ang pakiramdam?\nIsang bagay na may mukha mo,\nsa mundong hindi mo nakita,\ntinatapos ang sinimulan mo.\n\n\nHindi mo kailangang matuwa rito.\nHindi mo kailangang malungkot dito.\n\n\nKailangan mo lang malaman.\n\n\nAlam mo na ngayon.",
+    "Maligayang pagdating sa Dungeon Train\nAno ang tren?\nBakit ka naririto?\nAno ang isinulat mo?\nMabubuting tanong ang mga ito\n\n\nIsinulat mo si %TARGET%.\n\n\n%DAYS% araw ang lumipas, sa bagon %CARRIAGE%, tama ang papel.\n\n\n%STORY%\n\n\nKaraniwan ay hindi.\n\n\nPapel ako.\nBihira akong magkatama.\n\n\nTama ang isang iyon.\n\n\nMatulog kang mabuti."
   ]
 }

@@ -5,6 +5,9 @@
  *   - `paginate`         ← BookFactory.paginate            (random books, narrative letters)
  *   - `paginateExplicit` ← StartingBookFactory.paginateExplicit (starting / welcome books)
  *
+ * Starting books break the page on `\n\n\n`. A lone blank line (`\n\n`) is a blank LINE inside the
+ * page — the marker moved up one newline in 2026-09 precisely so that authors could write one.
+ *
  * Ported from dp-relay's `web/js/book-paginate.js`, which is itself the validated port of the Java.
  * Keep all three in lockstep — do not "improve" the algorithm here without changing the mod.
  *
@@ -21,6 +24,9 @@ export const MAX_TITLE_CHARS = 32;     // BookFactory.MAX_TITLE_CHARS
 /** Pagination mode for a corpus. Starting books are author-paginated; everything else flows. */
 export const FLOW = 'flow';
 export const EXPLICIT = 'explicit';
+
+/** The starting-book page break. Exactly this run of newlines, nothing shorter and nothing longer. */
+export const PAGE_BREAK = '\n\n\n';
 
 // --- string API (parity with the mod / the relay) ---------------------------
 
@@ -56,18 +62,18 @@ export function paginateSpans(body, mode = FLOW) {
 const blankPage = () => ({ text: '', start: 0, end: 0, exclusive: true });
 
 /**
- * StartingBookFactory.paginateExplicit — EXACTLY `\n\n` is a hard page break (not `\n{3,}`), no
- * paragraph packing. A chunk inside the budget becomes a page verbatim, including an EMPTY chunk
- * (an intentional blank-page slot, per `blank_pages.json`). Only an oversize chunk falls back to
- * the flow packer. Leading / trailing blank pages are trimmed; internal blanks survive.
+ * StartingBookFactory.paginateExplicit — EXACTLY `\n\n\n` is a hard page break (not `\n{3,}`), no
+ * paragraph packing. A chunk inside the budget becomes a page verbatim — blank lines and all,
+ * including an EMPTY chunk, which is an intentional blank-page slot. Only an oversize chunk falls
+ * back to the flow packer. Leading / trailing blank pages are trimmed; internal blanks survive.
  */
 function explicitPages(body) {
   const pages = [];
   let cursor = 0;
-  for (const chunk of body.split('\n\n')) {
+  for (const chunk of body.split(PAGE_BREAK)) {
     const start = cursor;
     const end = cursor + chunk.length;
-    cursor = end + 2; // past the '\n\n' separator
+    cursor = end + PAGE_BREAK.length;
     const page = chunk.trim();
     if (page.length <= MAX_CHARS_PER_PAGE) {
       pages.push({ text: page, start, end, exclusive: true });
