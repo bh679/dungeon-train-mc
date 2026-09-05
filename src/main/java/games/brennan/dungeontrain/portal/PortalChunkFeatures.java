@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
@@ -8,11 +9,16 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.StaticCache2D;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
@@ -30,6 +36,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Random;
 
@@ -99,6 +106,12 @@ final class PortalChunkFeatures {
      * empty spawn list.</p>
      */
     private static final int MOB_SPAWN_ATTEMPTS = 12;
+
+    /** How many of the biome's monsters a room is given. */
+    private static final int MONSTERS_PER_ROOM = 3;
+
+    /** How many positions are tried to place them — most rooms have plenty, a cave floor fewer. */
+    private static final int MONSTER_ATTEMPTS = 24;
 
     private PortalChunkFeatures() {}
 
