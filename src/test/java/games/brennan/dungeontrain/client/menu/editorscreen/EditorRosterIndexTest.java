@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -96,6 +97,37 @@ final class EditorRosterIndexTest {
     }
 
     @Test
+    @DisplayName("imported content has a chip of its own, and no chip state hides it")
+    void importedIsItsOwnAxis() {
+        EditorRosterIndex idx = sample();
+        List<EditorRosterIndex.Tile> tiles = idx.tiles(PlotCategory.CONTENTS, "Contents");
+        EditorRosterIndex.Tile armor = tiles.get(0);   // BUILTIN parent, IMPORTED member
+
+        // On its own it names exactly the package content — the parent survives on its member's
+        // behalf, the way it does for the other two chips.
+        EditorRosterIndex.Filters imported = EditorRosterIndex.Filters.NONE.withImported(true);
+        assertEquals(List.of("armor"), names(EditorRosterIndex.filter(tiles, imported, "")));
+        assertEquals(List.of("armor5"),
+            names(EditorRosterIndex.subVariants(armor, imported, "")));
+
+        // Paired with Mine it is the union, and the browser's own default carries it: a package you
+        // installed is visible the moment the screen opens, which is what was broken.
+        assertEquals(List.of("armor", "cows"),
+            names(EditorRosterIndex.filter(tiles, imported.withMine(true), "")));
+        assertTrue(EditorRosterIndex.Filters.DEFAULT.imported(),
+            "the default must not hide a package the player installed");
+        assertEquals(List.of("armor", "cows"),
+            names(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filters.DEFAULT, "")));
+
+        // Without the chip — every build that is not in DevMode — Mine carries imported, so there
+        // is no state a player can reach where their package is gone and nothing asks for it back.
+        EditorRosterIndex.Filters chipless = EditorRosterIndex.Filters.NONE.withMineCarryingImported(true);
+        assertTrue(chipless.mine() && chipless.imported());
+        assertEquals(List.of("armor", "cows"), names(EditorRosterIndex.filter(tiles, chipless, "")));
+        assertFalse(chipless.withMineCarryingImported(false).imported(), "off turns both off");
+    }
+
+    @Test
     @DisplayName("the template underfoot sorts to the front, wherever it appears")
     void standingSortsFirst() {
         EditorRosterIndex idx = sample();
@@ -115,6 +147,33 @@ final class EditorRosterIndexTest {
         // Already first is a no-op rather than a shuffle.
         assertEquals(names(tiles), names(EditorRosterIndex.standingFirst(tiles,
             VariantKey.of(PlotCategory.CARRIAGES, "standard", "standard"))));
+    }
+
+    @Test
+    @DisplayName("the template underfoot survives a filter that would have dropped it, faded")
+    void standingSurvivesTheFilter() {
+        EditorRosterIndex idx = sample();
+        List<EditorRosterIndex.Tile> all = idx.allTiles();
+        VariantKey standing = VariantKey.of(PlotCategory.CONTENTS, "cows", "cows");
+
+        // Filtered out: put back at the front, marked as not part of what was asked for.
+        List<EditorRosterIndex.Tile> filtered = all.stream()
+            .filter(t -> !t.variant().name().equals("cows")).toList();
+        EditorRosterIndex.Shown shown = EditorRosterIndex.standingFirst(filtered, all, standing);
+        assertTrue(shown.firstIsGhost());
+        assertEquals("cows", names(shown.tiles()).get(0));
+        assertEquals(filtered.size() + 1, shown.tiles().size(), "nothing else is lost");
+
+        // Still in the filtered list: moved to the front like before, and NOT faded.
+        EditorRosterIndex.Shown kept = EditorRosterIndex.standingFirst(all, all, standing);
+        assertFalse(kept.firstIsGhost());
+        assertEquals("cows", names(kept.tiles()).get(0));
+
+        // Standing in something this page does not hold, or nowhere: nothing is inserted.
+        EditorRosterIndex.Shown elsewhere = EditorRosterIndex.standingFirst(filtered, filtered, standing);
+        assertFalse(elsewhere.firstIsGhost());
+        assertEquals(names(filtered), names(elsewhere.tiles()));
+        assertFalse(EditorRosterIndex.standingFirst(filtered, all, null).firstIsGhost());
     }
 
     private static List<String> names(List<EditorRosterIndex.Tile> tiles) {

@@ -11401,6 +11401,37 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-rooms-september",
+      "version": "0.802.0",
+      "type": "content",
+      "title": "A new room in the house set, and fewer empty ones",
+      "summary": "More to find on the way through the dimensional carriages: a new room joins the house set, the short portal rooms have been reworked, and two rooms that opened as bare generated walls are gone from the mix.",
+      "highlights": [
+        "A new house room, turning up between levels 7 and 17",
+        "The deserter's hall now keeps to the early part of the run",
+        "Reworked short portal rooms",
+        "Two rooms with no build behind them no longer turn up"
+      ],
+      "pr": 1308,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-tooling-september",
+      "version": "0.802.0",
+      "type": "chore",
+      "title": "Editor and review tooling",
+      "summary": "Behind-the-scenes work on the build editor and the tools for reviewing what players upload.",
+      "highlights": [],
+      "pr": 1308,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

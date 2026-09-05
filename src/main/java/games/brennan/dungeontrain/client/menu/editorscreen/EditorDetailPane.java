@@ -80,7 +80,9 @@ public final class EditorDetailPane {
     public void layout(InventoryEditorLayout layout, EditorScreenActions.Ctx ctx, long nowMillis) {
         this.layout = layout;
         this.ctx = ctx;
-        icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer);
+        // The relay row of what is selected, which showVersion has already handed this pane for the
+        // version strip — it is what the Submit icon acts on.
+        icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer, relayId);
         // Read once: the Size line takes the room's own dimensions from these, and the rows below
         // take everything else. Reading them twice could show two different numbers for one axis.
         roomRows = ctx.standingInSelection() && ctx.category() == PlotCategory.PORTALS
@@ -238,6 +240,12 @@ public final class EditorDetailPane {
                 // only status the pane cannot show as a number, so it lives on its own button
                 // rather than on a second one beside it.
                 tint(g, EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis()));
+            } else if ("submit".equals(icon.id()) || "withdraw".equals(icon.id())) {
+                // The same trick, for the other thing a build's state cannot be read off this pane:
+                // whether it has been offered to the train. Pulsing blue while it is only saved,
+                // steady green once submitted — and kept through the hover, like Save, because the
+                // state is the reason to press it.
+                tint(g, SubmitTint.of("withdraw".equals(icon.id()), System.currentTimeMillis()));
             } else if (hov) {
                 tint(g, 0xFF000000);
             }

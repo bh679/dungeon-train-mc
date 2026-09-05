@@ -22,6 +22,8 @@ import java.util.function.Consumer;
 public final class BuilderProfileState {
 
     private static volatile BuilderProfilePacket latest = null;
+    /** The last listing that was about this player — see {@link #ownBuild}. */
+    private static volatile BuilderProfilePacket mineLatest = null;
     private static volatile Consumer<BuilderProfilePacket> listener = null;
     private static volatile Consumer<BuilderProfileDownloadResultPacket> downloadListener = null;
     private static volatile Consumer<BuilderCreatorResultsPacket> creatorListener = null;
@@ -54,8 +56,29 @@ public final class BuilderProfileState {
 
     public static void accept(BuilderProfilePacket packet) {
         latest = packet;
+        // Kept apart from `latest`, which is whatever profile was asked for last — somebody else's,
+        // or the pooled listing that belongs to nobody. Anything asking "where does MY build stand"
+        // has to read an answer about this player, and there is one screen that asks it about a
+        // template while looking at a stranger's profile.
+        if (packet != null && packet.mine()) mineLatest = packet;
         Consumer<BuilderProfilePacket> current = listener;
         if (current != null) current.accept(packet);
+    }
+
+    /**
+     * One of THIS player's builds by relay id, or null when it is not in the last listing of them.
+     *
+     * <p>Null covers three different things on purpose — never uploaded, uploaded by another world,
+     * and no profile listing received yet — because a caller can do nothing different about any of
+     * them: without a row there is nothing to say about where the build stands.</p>
+     */
+    public static BuilderProfilePacket.Entry ownBuild(int relayId) {
+        BuilderProfilePacket packet = mineLatest;
+        if (packet == null || relayId <= 0) return null;
+        for (BuilderProfilePacket.Entry entry : packet.builds()) {
+            if (entry.relayId() == relayId) return entry;
+        }
+        return null;
     }
 
     /** The last profile received, or null when none has arrived this session. */
@@ -165,6 +188,7 @@ public final class BuilderProfileState {
      */
     public static void clearCache() {
         latest = null;
+        mineLatest = null;
         favourites = null;
     }
 
@@ -200,6 +224,7 @@ public final class BuilderProfileState {
      */
     public static void clear() {
         latest = null;
+        mineLatest = null;
         favourites = null;
         listener = null;
         downloadListener = null;

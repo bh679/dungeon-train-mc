@@ -14,6 +14,8 @@ public final class TemplateTilePainter {
     static final int MODEL_BACKDROP = 0xFF14161C;
     static final int SLATE = 0xFF3A4048;
     static final int IDLE_DIM = 0x40000000;
+    /** 30% black over a filtered-out tile, so it reads at about 70% of its neighbours. */
+    static final int GHOST_DIM = 0x4D000000;
     static final int BORDER_IDLE = 0xFF000000;
     static final int BORDER_HOVER = 0xFFFFFFFF;
     static final int BORDER_SELECTED = 0xFFFFCC33;
@@ -25,8 +27,20 @@ public final class TemplateTilePainter {
     /** Share of the cell the model fills: no label strip here, so more than the Open grid. */
     static final float FILL = 0.70F;
 
-    /** What marks a tile carries. */
-    public record Marks(boolean selected, boolean hovered, boolean here, boolean dirty, boolean group) {}
+    /**
+     * What marks a tile carries.
+     *
+     * <p>{@code ghost} is the odd one out: it says the tile is not part of what the filters asked
+     * for and is only here because the author is standing in it, so it is drawn faded rather than
+     * badged — a build you can see through is one you can tell apart from the search results without
+     * reading anything.</p>
+     */
+    public record Marks(boolean selected, boolean hovered, boolean here, boolean dirty, boolean group,
+                        boolean ghost) {
+        public Marks(boolean selected, boolean hovered, boolean here, boolean dirty, boolean group) {
+            this(selected, hovered, here, dirty, group, false);
+        }
+    }
 
     private TemplateTilePainter() {}
 
@@ -61,7 +75,12 @@ public final class TemplateTilePainter {
             g.drawString(font, initials, x + (size - font.width(initials)) / 2,
                 y + (size - font.lineHeight) / 2, 0xFFB0B8C0, false);
         }
-        if (!marks.hovered() && !marks.selected()) {
+        // A ghost is dimmed whether or not it is hovered — the fade IS what says it was filtered
+        // out — and the ordinary idle dim is skipped under it rather than stacked, which would take
+        // it well past the 70% it is meant to read at.
+        if (marks.ghost()) {
+            g.fill(x, y, x + size, y + size, GHOST_DIM);
+        } else if (!marks.hovered() && !marks.selected()) {
             g.fill(x, y, x + size, y + size, IDLE_DIM);
         }
 
