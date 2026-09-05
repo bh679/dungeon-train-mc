@@ -233,11 +233,21 @@ public final class EditorBrowserPane {
             EditorRosterIndex.Tile selTile = index.find(sel);
             EditorRosterIndex.Tile parent = selTile == null ? null
                 : (selTile.key().isSubVariant() ? index.parentOf(selTile.key()) : (selTile.isGroup() ? selTile : null));
-            if (parent != null && page != null && index.groupOf(parent.key()) != null
-                && index.groupOf(parent.key()).typeName().equals(typeName)) {
+            // On All there is no type strip to agree with — every category is in one grid — so a
+            // group opens wherever it is shown. Elsewhere it opens only under its own strip, or a
+            // click would open sub-variants beneath a row that does not hold them.
+            boolean underItsStrip = page == null
+                || (parent != null && index.groupOf(parent.key()) != null
+                    && index.groupOf(parent.key()).typeName().equals(typeName));
+            if (parent != null && underItsStrip) {
                 subParent = parent;
+                // The provenance chips are not applied here. They narrow what you are browsing;
+                // opening a group is asking for what is inside this one, and answering with three
+                // of its eleven rooms — because the rest are built-in and that chip is off — reads
+                // as a group that lost its members. The name filter still applies: it is a search.
                 subTiles = EditorRosterIndex.standingFirst(
-                    EditorRosterIndex.subVariants(parent, EditorScreenState.filters(), EditorScreenState.text()),
+                    EditorRosterIndex.subVariants(parent, EditorRosterIndex.Filters.NONE,
+                        EditorScreenState.text()),
                     EditorScreenState.standingIn());
             }
         }
