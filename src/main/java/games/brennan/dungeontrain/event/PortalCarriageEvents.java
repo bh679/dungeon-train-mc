@@ -593,45 +593,15 @@ public final class PortalCarriageEvents {
         // The trips into test carriages go too: their return positions name a place in the world
         // that is closing, and the structures they describe are not in the next one.
         games.brennan.dungeontrain.portal.PortalTestSession.clear();
-        // The sampled chunks and the fills still queued against them. Pair-keyed like everything
-        // else here, so the next world opened must not inherit either.
+        // The sampled chunks. Pair-keyed like everything else here, so the next world opened must
+        // not inherit them.
         games.brennan.dungeontrain.portal.PortalChunkTerrain.clear();
-        games.brennan.dungeontrain.portal.PortalChunkDimension.clear();
-    }
-
-    /**
-     * The structure a pair is currently standing, or null when it stands none.
-     *
-     * <p>Handed to {@code PortalChunkDimension.drainPending} so a deferred terrain fill can check
-     * that the room it was queued against is still there, and still where it was, before writing a
-     * room's worth of blocks into the basement.</p>
-     */
-    private static PortalStructure liveStructure(int pairKey) {
-        PortalStructure live = STRUCTURES.get(pairKey);
-        if (live != null) return live;
-        // A test room is stamped outside the pair machinery entirely — PortalTestCommand builds the
-        // structure itself and never puts it in STRUCTURES — so a room an author is standing in
-        // would look retired to the drain and never be filled. Its sessions all stand the one pair
-        // key, which is the key a queued fill was filed under.
-        if (pairKey != games.brennan.dungeontrain.portal.PortalTestSession.PAIR_KEY) return null;
-        for (Map.Entry<UUID, games.brennan.dungeontrain.portal.PortalTestSession.Session> entry
-                : games.brennan.dungeontrain.portal.PortalTestSession.entries()) {
-            return entry.getValue().structure();
-        }
-        return null;
     }
 
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-
-        // Rooms whose sampled chunk was still being generated when they were stamped. Above the
-        // early returns below, and deliberately: a test room stood up with the portal lottery off
-        // is exactly the case an author is looking at while they wait for it. Free when nothing is
-        // waiting, which is every tick but the handful after a chunk dimension is built.
-        games.brennan.dungeontrain.portal.PortalChunkDimension.drainPending(
-            level, PortalCarriageEvents::liveStructure);
 
         List<ServerPlayer> players = level.players();
         // Both of these stop the freeze rule being asked at all, so anything it stopped has to be
@@ -1060,7 +1030,7 @@ public final class PortalCarriageEvents {
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
 
             sendFogFor(players, dims, layout, next, fogged);
-            sendSkyFor(players, dims, layout, next, skied, pair.getKey());
+            sendSkyFor(players, dims, layout, next, skied);
             sendTrainAudioFor(players, dims, next, inStructure);
         }
 
@@ -1134,10 +1104,7 @@ public final class PortalCarriageEvents {
         Set<UUID> inStructure = new HashSet<>();
 
         sendFogFor(players, dims, layout, structure, fogged);
-        // Every caller of this is a test room, and a test room is always the one pair key the test
-        // session stands up — see PortalTestSession#PAIR_KEY.
-        sendSkyFor(players, dims, layout, structure, skied,
-            games.brennan.dungeontrain.portal.PortalTestSession.PAIR_KEY);
+        sendSkyFor(players, dims, layout, structure, skied);
         sendTrainAudioFor(players, dims, structure, inStructure);
 
         clearFogFor(players, fogged);
@@ -1259,17 +1226,8 @@ public final class PortalCarriageEvents {
      */
     private static void sendSkyFor(List<ServerPlayer> players, CarriageDims dims,
                                    PortalCarriageLayout layout, PortalStructure structure,
-                                   Set<UUID> skied, int pairKey) {
+                                   Set<UUID> skied) {
         games.brennan.dungeontrain.portal.PortalRoomSky sky = structure.settings().sky();
-        // A chunk dimension's sky is not the author's to set: which dimension the pair sampled is
-        // rolled per pair, and a slice of the Nether lit as an Overworld afternoon reads as neither.
-        // The roll is pure in the seed and the key, so this is the same answer the terrain was
-        // sampled under — see PortalChunkTerrain.Source#sky.
-        if (structure.mode().generatesTerrain()) {
-            if (players.isEmpty()) return;
-            sky = games.brennan.dungeontrain.portal.PortalChunkTerrain.skyFor(
-                players.get(0).serverLevel().getSeed(), pairKey);
-        }
         if (!sky.lights() || !DungeonTrainConfig.isPortalRoomDaylight()) return;
 
         // Y off the ROOM rather than the corridor lane, for the reason sendFogFor gives: a room with
@@ -1944,6 +1902,11 @@ public final class PortalCarriageEvents {
             ? existing.movedTo(wanted)
             : PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey, region,
                 GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()));
+
+        // A pair whose room could not be planned yet — a chunk dimension still sampling its terrain
+        // is the only thing that answers null. It keeps whatever it had (nothing, the first time
+        // round) and is asked again next tick, the same shape as the mirror wait below.
+        if (planned == null) return existing;
 
         // A world too shallow to hold the structure between its floor and the carriage gets no twin,
         // rather than one stamped through the train — or, in a world with a basement, one that would

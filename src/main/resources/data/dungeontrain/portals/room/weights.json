@@ -35,8 +35,16 @@
     "mode": "endless_repetition"
   },
   "chunk_dimension": {
-    "weight": 2,
-    "mode": "chunk_dimension/exact/off/off/off/none/sealed/0/9"
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/cycle/sealed/0/9"
+  },
+  "chunk_dimension_end": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/end/sealed/0/9"
+  },
+  "chunk_dimension_nether": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/nether/sealed/0/9"
   },
   "cubes": {
     "weight": 1,

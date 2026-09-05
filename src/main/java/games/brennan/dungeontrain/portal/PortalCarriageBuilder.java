@@ -782,6 +782,12 @@ public final class PortalCarriageBuilder {
      * A {@code null} {@code gateCtx} skips gating entirely (editor previews / tests). The size is read
      * off the authored template, or the built-in room's when nothing has been authored.</p>
      *
+     * <p><b>Answers {@code null} when the pair cannot be planned yet</b> — only a
+     * {@link PortalRoomMode#CHUNK_DIMENSION} room whose terrain is still being sampled, which this
+     * call has just asked for. The caller leaves the pair without a twin for that tick and asks
+     * again; a portal carriage with no twin is an ordinary-looking carriage that does not cross,
+     * which is already what a pair that does not fit its lane does.</p>
+     *
      * <p>The {@link PortalRoomSettings settings} are read here and then carried on the record rather
      * than looked up per tick, so an author saving a different mode while somebody is standing in the
      * room cannot change the walls around them mid-visit. The pair's
@@ -796,23 +802,29 @@ public final class PortalCarriageBuilder {
         String roomName = TrackVariantRegistry.pickName(
             TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx);
         PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        PortalCorridorKind kind = PortalCarriageSelection.corridorKindFor(level, pairKey);
+        Vec3i size = heldInRegion(region, PortalRoomTemplateStore.sizeOf(level, roomName, dims));
+
+        // A generated room's doorways stand on the ground its own sample landed, so the sample has
+        // to be in hand before the pair is planned at all: the two offsets place the room's box and
+        // both corridor lanes. Sampling runs on a worker and takes tens of milliseconds, so this
+        // asks for it and says no; the caller leaves the pair without a twin and tries again next
+        // tick, by which time it is almost always in hand. See PortalChunkDoors.
+        if (settings.mode().generatesTerrain()) {
+            PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, roomName);
+            if (slice == null) return null;
+            settings = PortalChunkDoors.fit(settings, slice, dims, layoutFor(dims, kind), size);
+        }
+
         // Where this pair stands its exit, decided here with everything else about the pair and then
         // carried on the record — the same promise the mode and the room name make. Re-deciding it
         // per tick, or per re-stamp, would move a player's way out from under them.
-        // Start sampling a chunk dimension's terrain the moment the pair is planned rather than when
-        // it is stamped: sampling runs on a worker and takes tens of milliseconds, and a player has
-        // to walk the length of the train to reach the carriage. By the time they do, the cube is
-        // usually already in hand and the room is filled in the stamp that builds it.
-        if (settings.mode().generatesTerrain()) PortalChunkTerrain.request(level, pairKey);
         PortalRoomTiling.Tile exitTile = PortalExitSites.relocatedExitTile(
             settings.effectiveExits(),
             PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
             PortalRoomTiling.MAX_RADIUS);
-        return new PortalStructure(entryOrigin, roomName,
-            heldInRegion(region, PortalRoomTemplateStore.sizeOf(level, roomName, dims)),
-            settings,
-            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile,
-            PortalCarriageSelection.corridorKindFor(level, pairKey));
+        return new PortalStructure(entryOrigin, roomName, size, settings,
+            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile, kind);
     }
 
     /**

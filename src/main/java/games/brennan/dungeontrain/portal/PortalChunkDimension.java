@@ -8,22 +8,19 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.IntFunction;
-
 /**
  * Writing a sampled chunk of world generation into a {@link PortalRoomMode#CHUNK_DIMENSION} room —
  * the other half of {@link PortalChunkTerrain}, which is where the terrain comes from.
  *
  * <h2>Over the room's own template, never instead of it</h2>
- * <p>The variant is stamped first, exactly as any other room is: it clears the box, lays the side
- * walls, the floor and the ceiling, and leaves a flat stone shelf at the door line. That shelf is
- * what a player walks out onto in the seconds before the sample lands ({@link #fill} answers
- * {@code null} until then) and if a sample ever fails it is what they keep — a plain room rather
- * than a hole in the basement. The terrain is then poured into the box's <b>interior</b>, so the
- * shell the seal ring copies its blocks from stays the shell the author authored.</p>
+ * <p>The variant is stamped first, exactly as any other room is: it clears the box and lays the
+ * shell — the skybox floor, ceiling and side walls a chunk dimension is framed in. That shell is
+ * what a room keeps if a sample ever fails, and it is what the seal ring at each mouth copies its
+ * blocks from, so the terrain is poured into the box's <b>interior</b> and leaves it standing.</p>
+
+ * <p>The cube is always in hand by the time anything is stamped: a pair is not planned at all until
+ * its terrain has been sampled, because the doorways are stood on that terrain — see
+ * {@link PortalChunkDoors} and {@code PortalCarriageBuilder.planStructure}.</p>
  *
  * <h2>The two mouths are carved back open</h2>
  * <p>Terrain does not know about doors. A hillside sampled into the box lands across both corridor
@@ -42,72 +39,20 @@ public final class PortalChunkDimension {
     /** How many columns in from each end the corridor's cross-section is kept clear. */
     private static final int APRON_DEPTH = 3;
 
-    /** How many deferred fills are drained per tick — a fill is a room-sized write. */
-    private static final int DRAIN_PER_TICK = 2;
-
-    /** Rooms whose terrain was not sampled yet when they were stamped, by pair key. */
-    private static final Map<Integer, Pending> PENDING = new ConcurrentHashMap<>();
-
-    private record Pending(PortalStructure structure, CarriageDims dims) {}
-
     private PortalChunkDimension() {}
 
     /**
-     * Fill {@code structure}'s room with its sampled chunk, or queue the fill for a later tick when
-     * the sample is not ready.
+     * Fill {@code structure}'s room with the chunk its pair sampled.
      *
      * <p>Called from {@code stampPairStructure} for a chunk-dimension room, after the room's own
-     * template has been stamped and before the corridors go down.</p>
+     * template has been stamped and before the corridors go down. A missing sample is a no-op rather
+     * than an error: the room then stands as its template, which is a room.</p>
      */
     public static void fill(ServerLevel level, PortalStructure structure, CarriageDims dims,
                             int pairKey) {
-        PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey);
-        if (slice == null) {
-            // Replaces any older entry for the same pair: a structure that has been re-stamped has
-            // moved, and the queued fill has to land where it is now, not where it was.
-            PENDING.put(pairKey, new Pending(structure, dims));
-            return;
-        }
-        PENDING.remove(pairKey);
+        PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, structure.roomName());
+        if (slice == null) return;
         write(level, structure, dims, slice);
-    }
-
-    /**
-     * Complete up to {@link #DRAIN_PER_TICK} rooms whose samples have since landed.
-     *
-     * <p>Capped because a fill is a whole room's worth of block writes and several arriving in the
-     * same tick is a hitch nobody asked for; the rooms are sealed and empty until they are filled,
-     * and a player cannot reach one in the tick it was stamped.</p>
-     */
-    public static void drainPending(ServerLevel level, IntFunction<PortalStructure> live) {
-        if (PENDING.isEmpty()) return;
-        int done = 0;
-        Iterator<Map.Entry<Integer, Pending>> it = PENDING.entrySet().iterator();
-        while (it.hasNext() && done < DRAIN_PER_TICK) {
-            Map.Entry<Integer, Pending> entry = it.next();
-            Pending pending = entry.getValue();
-            // Against the pair's LIVE structure, not the one the fill was queued against. A pair
-            // that drained, or drifted far enough to be re-stamped, in the ticks since is a room
-            // that is no longer standing where this terrain would go — and pouring a hillside into
-            // the basement at an address nothing owns is exactly the litter eraseTwin cannot sweep,
-            // because it sweeps the box the structure says it has. Re-stamping re-queues the fill,
-            // so nothing is lost by dropping it here.
-            PortalStructure current = live.apply(entry.getKey());
-            if (current == null || !current.origin().equals(pending.structure().origin())) {
-                it.remove();
-                continue;
-            }
-            PortalChunkSlice slice = PortalChunkTerrain.slice(level, entry.getKey());
-            if (slice == null) continue;
-            write(level, pending.structure(), pending.dims(), slice);
-            it.remove();
-            done++;
-        }
-    }
-
-    /** Forget every queued fill — the next world's pair keys mean different rooms. */
-    public static void clear() {
-        PENDING.clear();
     }
 
     // ---- writing -------------------------------------------------------------
@@ -119,14 +64,9 @@ public final class PortalChunkDimension {
         Vec3i size = structure.roomSize();
         PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
 
-        // Where the door actually ended up, which is not always where the variant asked for it: a
-        // world too shallow for a 16-tall room holds the box down (PortalCarriageBuilder#heldInRegion)
-        // and the offset clamps with it. The slice is cut with its surface on
-        // PortalChunkTerrain.SURFACE_ROW, so sliding it by the difference is what keeps the ground
-        // under the doorway rather than above or below it.
-        int doorRow = PortalRoomLayout.clampDoorHeightOffset(
-            dims, size.getY(), structure.settings().doorHeightOffset().value());
-        int shift = PortalChunkTerrain.SURFACE_ROW - doorRow;
+        // The cube goes in exactly as it was sampled — no sliding it onto the door. It is the other
+        // way round now: the pair's two doorways were stood on this cube's own ground before the
+        // structure was planned, so moving the terrain here would undo the fit (PortalChunkDoors).
 
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         // The interior only: the ±Z walls, the floor and the ceiling are the template's, because the
@@ -136,10 +76,10 @@ public final class PortalChunkDimension {
         for (int y = 1; y < size.getY() - 1; y++) {
             for (int z = 1; z < size.getZ() - 1 && z < slice.size(); z++) {
                 for (int x = 0; x < size.getX() && x < slice.size(); x++) {
-                    // Null for a row the slice does not reach — a room taller than the cube, or one
-                    // whose door sits low enough to slide the cube off its ceiling. Those rows keep
-                    // whatever the template put there, which is a room rather than a hole.
-                    BlockState state = slice.at(x, y + shift, z);
+                    // Null for a row the cube does not reach — a room stood up taller than 16 by a
+                    // world with the space for it. Those rows keep whatever the template put there,
+                    // which is a room rather than a hole.
+                    BlockState state = slice.at(x, y, z);
                     if (state == null) continue;
                     cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
                     if (mask.covers(cursor)) continue;
@@ -176,7 +116,7 @@ public final class PortalChunkDimension {
         int floorY = corridor.getY();
         int topY = Math.min(origin.getY() + size.getY() - 2, floorY + dims.height() - 1);
 
-        BlockState ground = groundOf(slice);
+        BlockState ground = slice.source().ground();
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int x = fromX; x <= toX; x++) {
@@ -228,12 +168,4 @@ public final class PortalChunkDimension {
         }
     }
 
-    /** The solid block an apron is floored with — the sampled dimension's own bedrock-to-surface fill. */
-    private static BlockState groundOf(PortalChunkSlice slice) {
-        return switch (slice.source()) {
-            case NETHER -> Blocks.NETHERRACK.defaultBlockState();
-            case END -> Blocks.END_STONE.defaultBlockState();
-            default -> Blocks.STONE.defaultBlockState();
-        };
-    }
 }

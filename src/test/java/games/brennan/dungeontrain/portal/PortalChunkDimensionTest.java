@@ -21,8 +21,8 @@ class PortalChunkDimensionTest {
 
     private static final CarriageDims DEFAULT_DIMS = CarriageDims.DEFAULT;   // 9 × 7 × 7
 
-    /** The tag the shipped {@code chunk_dimension} variant carries in the portal room weights. */
-    private static final String SHIPPED_TAG = "chunk_dimension/exact/off/off/off/none/sealed/0/9";
+    /** The tag the shipped {@code chunk_dimension} parent variant carries in the portal room weights. */
+    private static final String SHIPPED_TAG = "chunk_dimension/exact/off/off/off/cycle/sealed/0/9";
 
     @Test
     @DisplayName("The mode seals its box and its corridors, and is the one that generates terrain")
@@ -60,6 +60,8 @@ class PortalChunkDimensionTest {
             "the door must stand on the row the slice puts the surface on");
         assertSame(PortalRoomContents.DEFAULT, settings.contents(),
             "a chunk of terrain is not furnished from the contents pool");
+        assertSame(PortalRoomSky.CYCLE, settings.sky(),
+            "the Overworld variant is lit by the world clock — the sky is authored per variant now");
 
         // And the box can actually spend that offset: a door may sit at most (height - minHeight)
         // above a room's floor, which in the shipped 16-tall box is exactly the surface row. If a
@@ -83,32 +85,84 @@ class PortalChunkDimensionTest {
     }
 
     @Test
-    @DisplayName("A pair's dimension is rolled once and stays rolled, and all three come up")
-    void roll_isStableAndSpreads() {
-        long seed = 0x5EEDL;
+    @DisplayName("Which dimension a room samples is its variant's name, not a roll")
+    void dimension_comesFromTheVariantName() {
+        assertSame(PortalChunkTerrain.Source.OVERWORLD,
+            PortalChunkTerrain.Source.of("chunk_dimension"));
+        assertSame(PortalChunkTerrain.Source.NETHER,
+            PortalChunkTerrain.Source.of("chunk_dimension_nether"));
+        assertSame(PortalChunkTerrain.Source.END,
+            PortalChunkTerrain.Source.of("chunk_dimension_end"));
 
-        // Pure: the same pair asks a hundred times and gets the same answer, which is what lets a
-        // room be re-stamped from a cached cube every time the train drifts.
-        PortalChunkTerrain.Source first = PortalChunkTerrain.rollFor(seed, 7);
-        for (int i = 0; i < 100; i++) assertSame(first, PortalChunkTerrain.rollFor(seed, 7));
-
-        Map<PortalChunkTerrain.Source, Integer> counts = new EnumMap<>(PortalChunkTerrain.Source.class);
-        for (int pairKey = 0; pairKey < 600; pairKey++) {
-            counts.merge(PortalChunkTerrain.rollFor(seed, pairKey), 1, Integer::sum);
-        }
-        for (PortalChunkTerrain.Source source : PortalChunkTerrain.Source.values()) {
-            int seen = counts.getOrDefault(source, 0);
-            assertTrue(seen > 100, source + " came up only " + seen + " times in 600 pairs");
-        }
+        // Total: a hand-edited sidecar naming something this build does not ship stamps a field
+        // rather than failing the pair's stamp.
+        assertSame(PortalChunkTerrain.Source.OVERWORLD, PortalChunkTerrain.Source.of(null));
+        assertSame(PortalChunkTerrain.Source.OVERWORLD, PortalChunkTerrain.Source.of("labrynth"));
+        assertSame(PortalChunkTerrain.Source.NETHER,
+            PortalChunkTerrain.Source.of("  Chunk_Dimension_Nether "));
     }
 
     @Test
-    @DisplayName("Each dimension carries the sky a room sampled from it is lit under")
-    void sky_followsTheRolledDimension() {
-        assertSame(PortalRoomSky.CYCLE, PortalChunkTerrain.Source.OVERWORLD.sky());
-        assertSame(PortalRoomSky.NETHER, PortalChunkTerrain.Source.NETHER.sky());
-        assertSame(PortalRoomSky.END, PortalChunkTerrain.Source.END.sky());
-        assertSame(PortalChunkTerrain.rollFor(1L, 3).sky(), PortalChunkTerrain.skyFor(1L, 3));
+    @DisplayName("The three shipped tags light each room as the dimension it is a slice of")
+    void sky_isAuthoredPerVariant() {
+        assertSame(PortalRoomSky.CYCLE, PortalRoomSettings.parse(SHIPPED_TAG).sky());
+        assertSame(PortalRoomSky.NETHER, PortalRoomSettings.parse(
+            "chunk_dimension/exact/off/off/off/nether/sealed/0/9").sky());
+        assertSame(PortalRoomSky.END, PortalRoomSettings.parse(
+            "chunk_dimension/exact/off/off/off/end/sealed/0/9").sky());
+    }
+
+    @Test
+    @DisplayName("Each doorway stands on the ground under it, and the two ends may differ")
+    void doors_standOnTheGround() {
+        // A cube whose ground rises along the walk: 3 blocks deep at the entry end, 7 at the exit.
+        int size = PortalChunkTerrain.SIZE;
+        net.minecraft.world.level.block.state.BlockState stone =
+            net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState air =
+            net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState[] states =
+            new net.minecraft.world.level.block.state.BlockState[size * size * size];
+        for (int y = 0; y < size; y++) {
+            for (int z = 0; z < size; z++) {
+                for (int x = 0; x < size; x++) {
+                    int ground = x < size / 2 ? 3 : 7;
+                    states[(y * size + z) * size + x] = y < ground ? stone : air;
+                }
+            }
+        }
+        PortalChunkSlice slice =
+            new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, size, states);
+
+        PortalRoomSettings fitted = PortalChunkDoors.fit(
+            PortalRoomSettings.parse(SHIPPED_TAG), slice, DEFAULT_DIMS,
+            PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.DEFAULT),
+            new net.minecraft.core.Vec3i(size, size, size));
+
+        assertEquals(3, fitted.doorHeightOffset().value(), "the entry door stands on the low end");
+        assertEquals(7, fitted.exitDoorHeightOffset().value(), "the exit door stands on the high end");
+    }
+
+    @Test
+    @DisplayName("Ground higher than the room can spend clamps the door rather than moving the box")
+    void doors_clampToWhatTheBoxAllows() {
+        int size = PortalChunkTerrain.SIZE;
+        net.minecraft.world.level.block.state.BlockState stone =
+            net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState[] states =
+            new net.minecraft.world.level.block.state.BlockState[size * size * size];
+        java.util.Arrays.fill(states, stone);   // solid to the ceiling, everywhere
+        PortalChunkSlice slice =
+            new PortalChunkSlice(PortalChunkTerrain.Source.OVERWORLD, size, states);
+
+        PortalRoomSettings fitted = PortalChunkDoors.fit(
+            PortalRoomSettings.parse(SHIPPED_TAG), slice, DEFAULT_DIMS,
+            PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.DEFAULT),
+            new net.minecraft.core.Vec3i(size, size, size));
+
+        int max = PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, size);
+        assertEquals(max, fitted.doorHeightOffset().value());
+        assertEquals(max, fitted.exitDoorHeightOffset().value());
     }
 
     @Test

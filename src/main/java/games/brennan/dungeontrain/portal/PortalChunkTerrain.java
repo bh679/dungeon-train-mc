@@ -4,8 +4,10 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -30,6 +32,7 @@ import net.minecraft.world.level.levelgen.blending.Blender;
 import org.slf4j.Logger;
 
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -94,22 +97,28 @@ public final class PortalChunkTerrain {
     /** Crude bound on the cache: a world with more portal pairs than this drops the oldest wholesale. */
     private static final int MAX_CACHE = 512;
 
-    private static final int ROLL_SALT = 11;
     private static final int SITE_X_SALT = 12;
     private static final int SITE_Z_SALT = 13;
 
-    /** Which dimension's generation a chunk dimension is a slice of. */
+    /**
+     * Which dimension's generation a chunk dimension is a slice of — one per authored sub-variant.
+     *
+     * <p>Named by the variant rather than rolled per pair, which is what makes the frequency of each
+     * an author's decision: the three rooms sit in a group sidecar beside every other portal room,
+     * and the weights file says how often each turns up. The sky is authored on the same variants,
+     * so nothing here has to know what a Nether room is lit like.</p>
+     */
     public enum Source {
-        OVERWORLD(Level.OVERWORLD, PortalRoomSky.CYCLE),
-        NETHER(Level.NETHER, PortalRoomSky.NETHER),
-        END(Level.END, PortalRoomSky.END);
+        OVERWORLD(Level.OVERWORLD, "minecraft:stone"),
+        NETHER(Level.NETHER, "minecraft:netherrack"),
+        END(Level.END, "minecraft:end_stone");
 
         private final ResourceKey<Level> levelKey;
-        private final PortalRoomSky sky;
+        private final String groundId;
 
-        Source(ResourceKey<Level> levelKey, PortalRoomSky sky) {
+        Source(ResourceKey<Level> levelKey, String groundId) {
             this.levelKey = levelKey;
-            this.sky = sky;
+            this.groundId = groundId;
         }
 
         public ResourceKey<Level> levelKey() {
@@ -117,17 +126,36 @@ public final class PortalChunkTerrain {
         }
 
         /**
-         * The sky a room sampled from here stands under — daylight that follows the clock for the
-         * Overworld, and the matching tint for the other two.
-         *
-         * <p>Chosen by the roll rather than by the variant, unlike every other room: the author of a
-         * chunk dimension does not know which dimension a given pair will draw, so the one setting
-         * that has to agree with it cannot be authored.</p>
+         * The solid block a doorway apron is floored with when the sample left air under it — this
+         * dimension's own filler, so the patch reads as the ground it was cut into.
          */
-        public PortalRoomSky sky() {
-            return sky;
+        public BlockState ground() {
+            return BuiltInRegistries.BLOCK
+                .get(ResourceLocation.parse(groundId)).defaultBlockState();
+        }
+
+        /**
+         * The dimension a portal room variant samples: {@link #NETHER} and {@link #END} for the two
+         * named sub-variants, {@link #OVERWORLD} for the parent and for anything unrecognised.
+         *
+         * <p>Total rather than throwing, for the reason every other reader of authored text in this
+         * package is: the name comes off disk, and a room whose sidecar was hand-edited to something
+         * misspelt should stamp a field rather than fail the pair's stamp.</p>
+         */
+        public static Source of(String roomName) {
+            if (roomName == null) return OVERWORLD;
+            String key = roomName.trim().toLowerCase(Locale.ROOT);
+            if (key.endsWith(NETHER_SUFFIX)) return NETHER;
+            if (key.endsWith(END_SUFFIX)) return END;
+            return OVERWORLD;
         }
     }
+
+    /** What a Nether chunk-dimension variant's name ends with. */
+    private static final String NETHER_SUFFIX = "_nether";
+
+    /** What an End one's does. */
+    private static final String END_SUFFIX = "_end";
 
     // Sampled cubes by pair key, and the keys currently being sampled on a worker. Both static, both
     // dropped when the server stops (#clear, called from PortalCarriageEvents.onServerStopped) and
@@ -168,28 +196,13 @@ public final class PortalChunkTerrain {
     private PortalChunkTerrain() {}
 
     /**
-     * Which dimension the pair {@code pairKey} samples — a pure function of the world seed and the
-     * key, so it is the same answer on every re-stamp and needs nothing stored.
-     */
-    public static Source rollFor(long worldSeed, int pairKey) {
-        Source[] all = Source.values();
-        int index = (int) (hash01(worldSeed, pairKey, ROLL_SALT) * all.length);
-        return all[Math.min(index, all.length - 1)];
-    }
-
-    /** The sky a chunk-dimension pair stands under — its rolled dimension's. */
-    public static PortalRoomSky skyFor(long worldSeed, int pairKey) {
-        return rollFor(worldSeed, pairKey).sky();
-    }
-
-    /**
      * This pair's sampled cube, or {@code null} when it is not ready yet — in which case sampling is
      * started on a worker and a later call answers.
      *
      * <p>Never blocks and never generates a chunk. A caller that gets {@code null} stamps the room's
      * own template and asks again next tick; see {@code PortalChunkDimension}.</p>
      */
-    public static PortalChunkSlice slice(ServerLevel level, int pairKey) {
+    public static PortalChunkSlice slice(ServerLevel level, int pairKey, String roomName) {
         long seed = level.getSeed();
         if (seed != cacheSeed) {
             READY.clear();
@@ -198,7 +211,7 @@ public final class PortalChunkTerrain {
         }
         PortalChunkSlice ready = READY.get(pairKey);
         if (ready != null) return ready;
-        request(level, pairKey);
+        request(level, pairKey, roomName);
         return null;
     }
 
@@ -208,13 +221,13 @@ public final class PortalChunkTerrain {
      * <p>Called from {@code planStructure} as well as from the stamp, so the work is usually already
      * done by the time a player has walked far enough down the train to reach the carriage.</p>
      */
-    public static void request(ServerLevel level, int pairKey) {
+    public static void request(ServerLevel level, int pairKey, String roomName) {
         long seed = level.getSeed();
         MinecraftServer server = level.getServer();
         if (server == null) return;
         if (READY.containsKey(pairKey)) return;
         if (!IN_FLIGHT.add(pairKey)) return;
-        Source source = rollFor(seed, pairKey);
+        Source source = Source.of(roomName);
         Util.backgroundExecutor().execute(() -> {
             try {
                 PortalChunkSlice slice = sample(server, source, seed, pairKey);
