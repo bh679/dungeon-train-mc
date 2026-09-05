@@ -943,6 +943,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter, aby zatwierdzić · Esc, aby anulować",
   "gui.dungeontrain.editor_screen.filter.builtin": "Wbudowane",
   "gui.dungeontrain.editor_screen.filter.mine": "Moje budowle",
+  "gui.dungeontrain.editor_screen.filter.imported": "Zaimportowane",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Warianty %s",
   "gui.dungeontrain.editor_screen.tile.new": "Nowy",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "Nowy wariant",

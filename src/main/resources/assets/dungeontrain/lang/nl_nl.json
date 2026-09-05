@@ -918,6 +918,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter om te bevestigen · Esc om te annuleren",
   "gui.dungeontrain.editor_screen.filter.builtin": "Ingebouwd",
   "gui.dungeontrain.editor_screen.filter.mine": "Mijn bouwsels",
+  "gui.dungeontrain.editor_screen.filter.imported": "Geïmporteerd",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Subvarianten van %s",
   "gui.dungeontrain.editor_screen.tile.new": "Nieuw",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "Nieuwe subvariant",

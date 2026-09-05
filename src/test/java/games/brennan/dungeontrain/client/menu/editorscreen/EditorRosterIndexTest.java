@@ -97,6 +97,37 @@ final class EditorRosterIndexTest {
     }
 
     @Test
+    @DisplayName("imported content has a chip of its own, and no chip state hides it")
+    void importedIsItsOwnAxis() {
+        EditorRosterIndex idx = sample();
+        List<EditorRosterIndex.Tile> tiles = idx.tiles(PlotCategory.CONTENTS, "Contents");
+        EditorRosterIndex.Tile armor = tiles.get(0);   // BUILTIN parent, IMPORTED member
+
+        // On its own it names exactly the package content — the parent survives on its member's
+        // behalf, the way it does for the other two chips.
+        EditorRosterIndex.Filters imported = EditorRosterIndex.Filters.NONE.withImported(true);
+        assertEquals(List.of("armor"), names(EditorRosterIndex.filter(tiles, imported, "")));
+        assertEquals(List.of("armor5"),
+            names(EditorRosterIndex.subVariants(armor, imported, "")));
+
+        // Paired with Mine it is the union, and the browser's own default carries it: a package you
+        // installed is visible the moment the screen opens, which is what was broken.
+        assertEquals(List.of("armor", "cows"),
+            names(EditorRosterIndex.filter(tiles, imported.withMine(true), "")));
+        assertTrue(EditorRosterIndex.Filters.DEFAULT.imported(),
+            "the default must not hide a package the player installed");
+        assertEquals(List.of("armor", "cows"),
+            names(EditorRosterIndex.filter(tiles, EditorRosterIndex.Filters.DEFAULT, "")));
+
+        // Without the chip — every build that is not in DevMode — Mine carries imported, so there
+        // is no state a player can reach where their package is gone and nothing asks for it back.
+        EditorRosterIndex.Filters chipless = EditorRosterIndex.Filters.NONE.withMineCarryingImported(true);
+        assertTrue(chipless.mine() && chipless.imported());
+        assertEquals(List.of("armor", "cows"), names(EditorRosterIndex.filter(tiles, chipless, "")));
+        assertFalse(chipless.withMineCarryingImported(false).imported(), "off turns both off");
+    }
+
+    @Test
     @DisplayName("the template underfoot sorts to the front, wherever it appears")
     void standingSortsFirst() {
         EditorRosterIndex idx = sample();

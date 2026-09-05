@@ -28,33 +28,62 @@ public final class EditorRosterIndex {
      * imported" is sayable — it was not before. Neither toggle set means no filtering at all,
      * which is why there is no longer an "All" to pick.</p>
      */
-    public record Filters(boolean mine, boolean builtin) {
-        public static final Filters NONE = new Filters(false, false);
+    /**
+     * The filter row, one flag per {@link Provenance}.
+     *
+     * <p>Three flags rather than two because there are three kinds of template, and the axis that
+     * used to be missing — content from an installed package — was therefore dropped by every state
+     * except "nothing set": turning a chip on to widen the search narrowed it, and a player with a
+     * package could not see any of it under the browser's own default.</p>
+     */
+    public record Filters(boolean mine, boolean builtin, boolean imported) {
+        public static final Filters NONE = new Filters(false, false, false);
 
         /**
-         * What the browser opens on: the author's own builds, without the built-ins.
+         * What the browser opens on: everything the author has, without the built-ins.
          *
          * <p>An editor is opened to work on your own things far more often than to look at what
-         * shipped, and the built-ins outnumber them heavily in every category.</p>
+         * shipped, and the built-ins outnumber them heavily in every category. A package you
+         * installed counts as yours to browse — it is on this machine because you put it there.</p>
          */
-        public static final Filters DEFAULT = new Filters(true, false);
+        public static final Filters DEFAULT = new Filters(true, false, true);
 
         public Filters withMine(boolean on) {
-            return new Filters(on, builtin);
+            return new Filters(on, builtin, imported);
         }
 
         public Filters withBuiltin(boolean on) {
-            return new Filters(mine, on);
+            return new Filters(mine, on, imported);
+        }
+
+        public Filters withImported(boolean on) {
+            return new Filters(mine, builtin, on);
+        }
+
+        /**
+         * Mine, carrying imported with it — for a surface that does not offer the imported chip.
+         *
+         * <p>The chip is a dev-mode affordance, so on every other build there is no way to ask for
+         * package content by name. Slaving it to "mine" there is what keeps it reachable: without
+         * this, turning Mine on would make somebody's installed package disappear with nothing on
+         * screen to bring it back.</p>
+         */
+        public Filters withMineCarryingImported(boolean on) {
+            return new Filters(on, builtin, on);
         }
 
         /** True when nothing is being filtered out. */
         public boolean isEmpty() {
-            return !mine && !builtin;
+            return !mine && !builtin && !imported;
         }
 
         boolean admits(Provenance p) {
-            if (!mine && !builtin) return true;
-            return (mine && p == Provenance.USER) || (builtin && p == Provenance.BUILTIN);
+            if (isEmpty()) return true;
+            return switch (p) {
+                case USER -> mine;
+                case BUILTIN -> builtin;
+                case IMPORTED -> imported;
+            };
         }
     }
 

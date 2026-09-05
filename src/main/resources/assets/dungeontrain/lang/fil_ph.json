@@ -893,6 +893,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter para kumpirmahin · Esc para kanselahin",
   "gui.dungeontrain.editor_screen.filter.builtin": "Built-in",
   "gui.dungeontrain.editor_screen.filter.mine": "Mga Gawa Ko",
+  "gui.dungeontrain.editor_screen.filter.imported": "Na-import",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Mga sub-variant ng %s",
   "gui.dungeontrain.editor_screen.tile.new": "Bago",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "Bagong sub-variant",

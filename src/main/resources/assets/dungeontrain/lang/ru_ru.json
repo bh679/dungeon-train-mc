@@ -948,6 +948,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter — подтвердить · Esc — отмена",
   "gui.dungeontrain.editor_screen.filter.builtin": "Встроенные",
   "gui.dungeontrain.editor_screen.filter.mine": "Мои постройки",
+  "gui.dungeontrain.editor_screen.filter.imported": "Импортированные",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Подварианты %s",
   "gui.dungeontrain.editor_screen.tile.new": "Новый",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "Новый подвариант",

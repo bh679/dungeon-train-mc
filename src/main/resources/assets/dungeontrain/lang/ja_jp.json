@@ -893,6 +893,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter で確定 · Esc で取り消し",
   "gui.dungeontrain.editor_screen.filter.builtin": "内蔵",
   "gui.dungeontrain.editor_screen.filter.mine": "自分の建築",
+  "gui.dungeontrain.editor_screen.filter.imported": "インポート",
   "gui.dungeontrain.editor_screen.sub_variants_of": "%s のサブバリアント",
   "gui.dungeontrain.editor_screen.tile.new": "新規",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "新しいサブバリアント",

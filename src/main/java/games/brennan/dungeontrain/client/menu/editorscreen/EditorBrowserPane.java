@@ -73,7 +73,7 @@ public final class EditorBrowserPane {
      * appear exactly where the two provenance chips do not — a template on this machine has neither a
      * review state nor a star.</p>
      */
-    private enum Kind { MINE, BUILTIN, PLAYER, STATUS, STARRED }
+    private enum Kind { MINE, BUILTIN, IMPORTED, PLAYER, STATUS, STARRED }
 
     /**
      * The review states the status chip cycles, in funnel order: everything → never asked → waiting →
@@ -120,12 +120,29 @@ public final class EditorBrowserPane {
     public EditorRosterIndex.Filters applyChip(int i, EditorRosterIndex.Filters current) {
         if (i < 0 || i >= chips.size()) return current;
         return switch (chips.get(i).kind()) {
-            case MINE -> current.withMine(!current.mine());
+            // Without the imported chip there is no way to ask for package content by name, so
+            // Mine carries it — see Filters.withMineCarryingImported.
+            case MINE -> showImportedChip()
+                ? current.withMine(!current.mine())
+                : current.withMineCarryingImported(!current.mine());
             case BUILTIN -> current.withBuiltin(!current.builtin());
+            case IMPORTED -> current.withImported(!current.imported());
             // Not roster filters: the search opens on one, and the other two narrow relay builds
             // through applyCreatorChip.
             case PLAYER, STATUS, STARRED -> current;
         };
+    }
+
+    /**
+     * Whether the imported chip is offered.
+     *
+     * <p>A dev-mode affordance: DevMode is what an author turns on to write templates back into the
+     * source tree, and telling an installed package's rooms apart from your own is a question that
+     * belongs to the same job. Everywhere else the axis still exists — it rides with Mine — but it
+     * has no chip of its own to spend the filter row's width on.</p>
+     */
+    static boolean showImportedChip() {
+        return EditorStatusHudOverlay.isDevModeOn();
     }
 
     /** True when chip {@code i} is the creator search rather than a filter toggle. */
@@ -232,6 +249,7 @@ public final class EditorBrowserPane {
         if (!EditorCreatorBuilds.active()) {
             out.add(EditorScreenLang.text(EditorScreenLang.FILTER_MINE));
             out.add(EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN));
+            if (showImportedChip()) out.add(EditorScreenLang.text(EditorScreenLang.FILTER_IMPORTED));
         } else {
             // In their place, the two that DO say something about a relay build.
             out.add(statusLabel());
@@ -259,6 +277,11 @@ public final class EditorBrowserPane {
             c.add(chip(Kind.BUILTIN, EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN),
                 filters.builtin(), cx, font));
             cx = last(c).x() + last(c).w() + CHIP_GAP;
+            if (showImportedChip()) {
+                c.add(chip(Kind.IMPORTED, EditorScreenLang.text(EditorScreenLang.FILTER_IMPORTED),
+                    filters.imported(), cx, font));
+                cx = last(c).x() + last(c).w() + CHIP_GAP;
+            }
         } else {
             c.add(chip(Kind.STATUS, statusLabel(),
                 !BuilderProfileFilters.ALL.equals(EditorScreenState.creatorReview()), cx, font));

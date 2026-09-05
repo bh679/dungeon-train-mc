@@ -893,6 +893,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "回车确认 · Esc 取消",
   "gui.dungeontrain.editor_screen.filter.builtin": "内置",
   "gui.dungeontrain.editor_screen.filter.mine": "我的建筑",
+  "gui.dungeontrain.editor_screen.filter.imported": "导入的",
   "gui.dungeontrain.editor_screen.sub_variants_of": "%s 的子变体",
   "gui.dungeontrain.editor_screen.tile.new": "新建",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "新建子变体",

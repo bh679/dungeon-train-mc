@@ -263,6 +263,7 @@
       "gui.dungeontrain.editor_screen.typing.hint",
       "gui.dungeontrain.editor_screen.filter.builtin",
       "gui.dungeontrain.editor_screen.filter.mine",
+      "gui.dungeontrain.editor_screen.filter.imported",
       "gui.dungeontrain.editor_screen.sub_variants_of",
       "gui.dungeontrain.editor_screen.tile.new",
       "gui.dungeontrain.editor_screen.tile.new_sub_variant",

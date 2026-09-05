@@ -893,6 +893,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter เพื่อยืนยัน · Esc เพื่อยกเลิก",
   "gui.dungeontrain.editor_screen.filter.builtin": "ในตัว",
   "gui.dungeontrain.editor_screen.filter.mine": "สิ่งก่อสร้างของฉัน",
+  "gui.dungeontrain.editor_screen.filter.imported": "ที่นำเข้า",
   "gui.dungeontrain.editor_screen.sub_variants_of": "รูปแบบย่อยของ %s",
   "gui.dungeontrain.editor_screen.tile.new": "ใหม่",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "รูปแบบย่อยใหม่",

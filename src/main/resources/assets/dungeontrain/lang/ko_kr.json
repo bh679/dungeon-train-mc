@@ -893,6 +893,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter로 확인 · Esc로 취소",
   "gui.dungeontrain.editor_screen.filter.builtin": "내장",
   "gui.dungeontrain.editor_screen.filter.mine": "내 건축물",
+  "gui.dungeontrain.editor_screen.filter.imported": "가져온 것",
   "gui.dungeontrain.editor_screen.sub_variants_of": "%s의 하위 변형",
   "gui.dungeontrain.editor_screen.tile.new": "새로 만들기",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "새 하위 변형",

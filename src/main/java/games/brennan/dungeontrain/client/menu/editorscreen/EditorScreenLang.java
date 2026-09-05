@@ -23,6 +23,7 @@ public final class EditorScreenLang {
     public static final String TYPING_HINT = PREFIX + "typing.hint";
     public static final String FILTER_BUILTIN = PREFIX + "filter.builtin";
     public static final String FILTER_MINE = PREFIX + "filter.mine";
+    public static final String FILTER_IMPORTED = PREFIX + "filter.imported";
     public static final String FILTER_CREATOR = PREFIX + "filter.creator";
     public static final String FILTER_FIND_CREATOR = PREFIX + "filter.find_creator";
     /**

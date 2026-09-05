@@ -918,6 +918,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Invio per confermare · Esc per annullare",
   "gui.dungeontrain.editor_screen.filter.builtin": "Integrato",
   "gui.dungeontrain.editor_screen.filter.mine": "Le mie costruzioni",
+  "gui.dungeontrain.editor_screen.filter.imported": "Importati",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Sottovarianti di %s",
   "gui.dungeontrain.editor_screen.tile.new": "Nuovo",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "Nuova sottovariante",

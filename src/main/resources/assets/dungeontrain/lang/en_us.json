@@ -1229,6 +1229,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter to confirm · Esc to cancel",
   "gui.dungeontrain.editor_screen.filter.builtin": "Built-in",
   "gui.dungeontrain.editor_screen.filter.mine": "My Builds",
+  "gui.dungeontrain.editor_screen.filter.imported": "Imported",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Sub-variants of %s",
   "gui.dungeontrain.editor_screen.tile.new": "New",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "New sub-variant",

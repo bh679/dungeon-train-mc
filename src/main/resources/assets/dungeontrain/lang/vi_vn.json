@@ -893,6 +893,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter để xác nhận · Esc để hủy",
   "gui.dungeontrain.editor_screen.filter.builtin": "Có sẵn",
   "gui.dungeontrain.editor_screen.filter.mine": "Công trình của tôi",
+  "gui.dungeontrain.editor_screen.filter.imported": "Đã nhập",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Biến thể phụ của %s",
   "gui.dungeontrain.editor_screen.tile.new": "Mới",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "Biến thể phụ mới",

@@ -893,6 +893,7 @@
   "gui.dungeontrain.editor_screen.typing.hint": "Enter untuk konfirmasi · Esc untuk batal",
   "gui.dungeontrain.editor_screen.filter.builtin": "Bawaan",
   "gui.dungeontrain.editor_screen.filter.mine": "Bangunanku",
+  "gui.dungeontrain.editor_screen.filter.imported": "Impor",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Sub-varian dari %s",
   "gui.dungeontrain.editor_screen.tile.new": "Baru",
   "gui.dungeontrain.editor_screen.tile.new_sub_variant": "Sub-varian baru",
