@@ -2,7 +2,12 @@
 #
 # Run the shader-compatibility sweep across every pack in run/shaderpacks/.
 #
-#   scripts/shaders/sweep-all.sh "<world folder name>" [pack.zip ...]
+#   scripts/shaders/sweep-all.sh [--preview] "<world folder name>" [pack.zip ...]
+#
+# --preview captures the Shaders menu's preview frame instead of the diagnostic sites: one shot per
+# pack, the train stopped, no panel, into run/screenshots/preview-<pack>.png. The vanilla control
+# runs here too — it is the "Shaders off" row's own screenshot — and every launch is otherwise
+# identical, which is what makes the frames comparable.
 #
 # One client launch per pack. Each launch points Iris at that pack, opens the world, and lets
 # client/ShaderSweep drive itself round the atmosphere sites, writing run/screenshots/sweep-<pack>-<site>.png
@@ -13,9 +18,15 @@
 # script started, never a broad pattern match — other work on this machine is none of its business.
 set -uo pipefail
 
+PREVIEW=0
+if [ "${1:-}" = "--preview" ]; then
+    PREVIEW=1
+    shift
+fi
+
 WORLD="${1:-}"
 if [ -z "$WORLD" ]; then
-    echo "usage: $0 \"<world folder name>\" [pack.zip ...]" >&2
+    echo "usage: $0 [--preview] \"<world folder name>\" [pack.zip ...]" >&2
     echo "  world folders: $(ls -1 run/saves 2>/dev/null | tr '\n' ' ')" >&2
     exit 2
 fi
@@ -39,6 +50,10 @@ DEADLINE_SECONDS="${SWEEP_DEADLINE_SECONDS:-1500}"
 if [ "$#" -gt 0 ]; then
     PACKS=("$@")
 else
+    # "vanilla" runs in both modes. For the sweep it is the control without which "the pack ate the
+    # sky" and "there was nothing to see there" are the same picture. For the previews it is the
+    # "Shaders off" row's own screenshot — the same scene with no pack, which is what makes the
+    # other nine read as differences rather than as nine unrelated landscapes.
     PACKS=("vanilla")
     while IFS= read -r line; do PACKS+=("$line"); done < <(cd run/shaderpacks && ls -1 ./*.zip 2>/dev/null | sed 's|^\./||')
 fi
@@ -48,7 +63,13 @@ if [ "${#PACKS[@]}" -eq 0 ]; then
     exit 1
 fi
 
-echo "sweeping ${#PACKS[@]} pack(s) over world '$WORLD'"
+if [ "$PREVIEW" -eq 1 ]; then
+    SWEEP_PROP="-PshaderPreview=$WORLD"
+    echo "capturing menu previews for ${#PACKS[@]} pack(s) over world '$WORLD'"
+else
+    SWEEP_PROP="-PshaderSweep=$WORLD"
+    echo "sweeping ${#PACKS[@]} pack(s) over world '$WORLD'"
+fi
 FAILED=()
 
 for pack in "${PACKS[@]}"; do
@@ -59,6 +80,14 @@ for pack in "${PACKS[@]}"; do
     else
         printf 'enableShaders=true\nshaderPack=%s\nmaxShadowRenderDistance=32\n' "$pack" > run/config/iris.properties
     fi
+    # A preview run does NOT restore the save, deliberately.
+    #
+    # The first attempt did, on the reasoning that nine frames must start from the same state. It
+    # cost a cold worldgen join that blew past the harness's ten-minute join deadline and produced
+    # no shot at all. The determinism is bought instead in the site itself: it rides to a band-free
+    # stretch scanned from the origin, so every pack photographs the same place whatever the save
+    # was left holding. SWEEP_FRESH_SAVE=1 still works if a run needs isolating.
+
     # SWEEP_FRESH_SAVE=1 restores a pristine save before every pack.
     #
     # Off by default, and the reason is cost. It does remove "something accumulated in the reused
@@ -73,7 +102,7 @@ for pack in "${PACKS[@]}"; do
     fi
     rm -f "$LOG"
 
-    ./gradlew runClient --no-daemon -PshaderSweep="$WORLD" >"run/logs/sweep-launch.out" 2>&1 &
+    ./gradlew runClient --no-daemon "$SWEEP_PROP" >"run/logs/sweep-launch.out" 2>&1 &
     pid=$!
 
     # Bring the game window to the front and leave it there.
@@ -131,7 +160,14 @@ for pack in "${PACKS[@]}"; do
     fi
 
     if [ "$done_ok" -eq 1 ]; then
-        shots=$(ls -1 run/screenshots/sweep-*.png 2>/dev/null | wc -l | tr -d ' ')
+        # Count the shots this mode actually writes. Counting sweep-*.png during a preview run
+        # reported "0 shot(s)" after a capture that had in fact succeeded, which is the one thing a
+        # progress line must never do.
+        if [ "$PREVIEW" -eq 1 ]; then
+            shots=$(ls -1 run/screenshots/preview-*.png 2>/dev/null | wc -l | tr -d ' ')
+        else
+            shots=$(ls -1 run/screenshots/sweep-*.png 2>/dev/null | wc -l | tr -d ' ')
+        fi
         echo "  done — $shots shot(s) in run/screenshots so far"
     else
         echo "  FAILED — no '$MARKER' in $LOG"

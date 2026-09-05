@@ -3,7 +3,17 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
+import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.BackupConfirmScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -73,11 +83,34 @@ public final class ShaderSweep {
      */
     private static final String SITES_PROPERTY = "dungeontrain.shader_sweep_sites";
 
+    /**
+     * {@code -PshaderPreview=<world folder>} — capture the Shaders menu's preview frame instead of
+     * sweeping the diagnostic sites.
+     *
+     * <p>Same harness, different product. The sweep photographs eight instrumented sites with the
+     * F3+5 panel up, because there the panel is half the measurement; a menu preview is a picture a
+     * player looks at, so the panel is off and there is exactly one site. What the two share is the
+     * thing that makes either worth anything — one launch per pack, an identical world, an identical
+     * camera, an identical hour — which is precisely what makes nine previews comparable rather
+     * than nine unrelated screenshots.</p>
+     */
+    private static final String PREVIEW_PROPERTY = "dungeontrain.shader_preview";
+
     /** The line the shell wrapper watches for to know the run is over. */
     public static final String DONE_MARKER = "[DungeonTrain] SHADER SWEEP COMPLETE";
 
     /** Ticks to let the title screen settle before opening the world. */
     private static final int BOOT_TICKS = 100;
+    /**
+     * Ticks a screen that is not the title screen is given before the harness closes it.
+     *
+     * <p>A prompt on the title screen — a data-recovery offer, a config-deviation notice, a
+     * first-run popup — stops the boot dead, and silently: the wait for {@code TitleScreen} has
+     * nothing to say while it loops. A run that sat at the title screen for an hour with no error
+     * in the log is what this is for. The class is logged the moment it blocks, and after five
+     * seconds it is dismissed rather than waited on.</p>
+     */
+    private static final int BOOT_SCREEN_PATIENCE = 100;
     /**
      * Ticks to wait for the world to finish loading.
      *
@@ -85,8 +118,13 @@ public final class ShaderSweep {
      * server was still reading data packs — the load was healthy, the deadline was wrong. A world
      * with Sable, shaders and a cold chunk cache can take well over a minute, and the cost of
      * waiting too long is a slower sweep while the cost of waiting too little is no sweep at all.</p>
+     *
+     * <p>Raised from ten minutes to thirty after two preview runs gave up on a cold save while
+     * two other dev clients were running on the same machine. Nothing was wrong with either load;
+     * chunk generation simply had a third of the CPU. Ten minutes is plenty on an idle machine and
+     * not enough on a busy one, and a run that returns nothing costs far more than one that waits.</p>
      */
-    private static final int JOIN_TIMEOUT_TICKS = 12000;
+    private static final int JOIN_TIMEOUT_TICKS = 36000;
 
     /** Ticks after the player exists before the first site — chunks, the train, the join popups. */
     private static final int SETTLE_TICKS = 400;
@@ -134,6 +172,53 @@ public final class ShaderSweep {
 
     /** A command of the form {@code wait:<ticks>} pauses the setup instead of being sent. */
     private static final String WAIT_PREFIX = "wait:";
+    /**
+     * {@code frame:} places the preview camera from wherever the train has actually come to rest.
+     *
+     * <p>It cannot be a literal teleport in the command list: the list is built while the train is
+     * still rolling, and the train keeps rolling for the sixty ticks it takes {@code speed 0} to
+     * bring it down. Coordinates computed at build time would frame empty track. Resolved at
+     * dispatch instead, so the shot is always of the stopped train.</p>
+     */
+    private static final String FRAME_PREFIX = "frame:";
+    /**
+     * {@code sky:<ticks>} checks the stopped train is actually under open sky.
+     *
+     * <p>The first preview run photographed the train inside a tunnel: dark, cramped, and useless
+     * for comparing one pack's sky against another's. This does not fix that by itself — the pin
+     * ({@link #PREVIEW_X}) does — but it is what catches the pin going stale in a world where that
+     * stretch has been built over, which would otherwise be nine dark frames nobody questioned.
+     * Sustained sky, not a one-tick gap between two roof sections.</p>
+     */
+    private static final String SKY_PREFIX = "sky:";
+    /** Consecutive ticks of open sky before the train counts as out in the open. */
+    private static final int SKY_STREAK_TICKS = 40;
+
+    /** Where the preview camera stands relative to the stopped train, and what it looks at. */
+    private static final double PREVIEW_BACK = 34.0;
+    private static final double PREVIEW_SIDE = 22.0;
+    private static final double PREVIEW_UP = 9.0;
+    /** Aim slightly ahead of and below the rider, so the shot is of the train, not of the sky. */
+    private static final double PREVIEW_AIM_AHEAD = 6.0;
+    private static final double PREVIEW_AIM_DOWN = 2.0;
+    /** Morning: long shadows and a coloured sky, which is where packs differ most visibly. */
+    private static final int PREVIEW_TIME = 1000;
+    /**
+     * The world X the preview is taken at — a stretch of open, elevated track.
+     *
+     * <p>Riding until the train surfaced was tried first and cannot work: where it stops depends on
+     * where it started, and where it started is whatever the previous pack's run left in the save.
+     * Two packs surfaced 660 blocks apart. The camera offset was identical either way, so both
+     * framed the train the same, but the landscape behind it was not the same landscape — and a set
+     * of previews whose backgrounds differ compares places rather than packs.</p>
+     *
+     * <p>So the train is teleported here and stopped, and the sky check downgrades to a verification
+     * that says so if this stretch is ever covered. This X is on the elevated viaduct: open sky, a
+     * long run of track receding into the distance, and forest below.</p>
+     */
+    private static final int PREVIEW_X = 672;
+    /** How long open sky is waited for on the pin before the shot is taken anyway, with a warning. */
+    private static final int SKY_VERIFY_TICKS = 200;
 
     private enum Phase { BOOT, JOINING, SETTLE, SITE_SETUP, SITE_WAIT, CAPTURE, CAPTURE_WAIT, FINISHED }
 
@@ -147,12 +232,33 @@ public final class ShaderSweep {
     private static int commandIndex = 0;
     private static int setupWait = 0;
     private static boolean worldRequested = false;
+    /** Ticks left to find open sky, and how long it has been open for. */
+    private static int skyDeadline = 0;
+    private static int skyStreak = 0;
+
+    /** Countdown before a screen blocking the boot is closed rather than waited on. */
+    private static int bootScreenWait = BOOT_SCREEN_PATIENCE;
+    /** The screen currently blocking the boot, so it is named once rather than every tick. */
+    private static String bootBlocker = "";
+    /** The screen the join is currently showing, logged on each change rather than every tick. */
+    private static String joinScreen = "";
+    /** Ticks the title screen may reappear during a join before it counts as a failed open. */
+    private static int bounceGrace = 100;
 
     /** Set by the tick loop, consumed by the render hook on the next completed frame. */
     private static volatile String pendingCapture = null;
 
     /** Last screen class dismissed, so a screen that reopens every tick is logged once. */
     private static String lastDismissed = "";
+
+    /**
+     * Says once, on the first client tick, what the harness thinks it was asked for.
+     *
+     * <p>A harness that is off looks exactly like a harness that is on and stuck: in both cases the
+     * log simply has nothing in it. One line resolves that — INFO when it is armed, DEBUG (quiet in
+     * a shipped client, visible in the dev console) when it is not.</p>
+     */
+    private static boolean announced = false;
 
     /**
      * Frames actually rendered, counted by the render hook.
@@ -184,10 +290,19 @@ public final class ShaderSweep {
         return false;
     }
 
-    /** The world folder to open, or {@code null} when the sweep is off. */
+    /** The world folder to open, or {@code null} when both modes are off. */
     public static String world() {
         String raw = System.getProperty(PROPERTY);
+        if (raw == null || raw.isBlank()) {
+            raw = System.getProperty(PREVIEW_PROPERTY);
+        }
         return raw == null || raw.isBlank() ? null : raw;
+    }
+
+    /** True when the run is capturing the Shaders menu's preview rather than the diagnostic sites. */
+    public static boolean previewMode() {
+        String raw = System.getProperty(PREVIEW_PROPERTY);
+        return raw != null && !raw.isBlank();
     }
 
     public static boolean enabled() {
@@ -196,6 +311,14 @@ public final class ShaderSweep {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        if (!announced) {
+            announced = true;
+            if (enabled()) {
+                LOGGER.info("[DungeonTrain] sweep armed: world='{}' preview={}", world(), previewMode());
+            } else {
+                LOGGER.debug("[DungeonTrain] sweep not armed (no -PshaderSweep / -PshaderPreview)");
+            }
+        }
         if (!enabled() || phase == Phase.FINISHED) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc == null) return;
@@ -247,7 +370,18 @@ public final class ShaderSweep {
         }
         if (--timer > 0) return;
         if (!(mc.screen instanceof TitleScreen)) {
-            timer = 20; // not there yet; look again shortly
+            String blocking = mc.screen == null ? "no screen" : mc.screen.getClass().getSimpleName();
+            if (!blocking.equals(bootBlocker)) {
+                LOGGER.warn("[DungeonTrain] sweep: waiting for the title screen — {} is up", blocking);
+                bootBlocker = blocking;
+                bootScreenWait = BOOT_SCREEN_PATIENCE;
+            }
+            if (mc.screen != null && --bootScreenWait <= 0) {
+                LOGGER.warn("[DungeonTrain] sweep: closing {} and taking the title screen", blocking);
+                mc.setScreen(new TitleScreen());
+                bootBlocker = "";
+            }
+            timer = 20; // look again shortly
             return;
         }
         if (worldRequested) return;
@@ -272,9 +406,31 @@ public final class ShaderSweep {
 
     private static void tickJoining(Minecraft mc) {
         if (mc.level == null || mc.player == null) {
+            // Name the screen the join is sitting on. A join in DT paints five screens in a row
+            // (see docs and the join-screen chain), and "timed out after N ticks" with nothing else
+            // is indistinguishable between slow chunk generation, a prompt nobody clicked, and a
+            // cinematic waiting to be skipped — three problems with three different fixes.
+            String screen = mc.screen == null ? "no screen" : mc.screen.getClass().getSimpleName();
+            if (!screen.equals(joinScreen)) {
+                LOGGER.info("[DungeonTrain] sweep: joining — now on {}", screen);
+                joinScreen = screen;
+                answerJoinPrompt(mc);
+            }
+            // Back at the title screen after the load began means the open bounced. Vanilla puts
+            // the reason on a screen and returns, so nothing throws and the failure callback never
+            // fires — the harness would sit out its whole deadline and then report a "join timeout"
+            // that reads like slow chunk generation. The one that caused this: a previous run's
+            // client left alive, still holding the world's session.lock. Give the bounce a few
+            // seconds to be a passing frame, then say what it is.
+            if (mc.screen instanceof TitleScreen && --bounceGrace <= 0) {
+                LOGGER.error("[DungeonTrain] sweep: the world load returned to the title screen — "
+                    + "the open failed. Check the log just above for the reason (a stale "
+                    + "session.lock from an earlier client that is still running is the usual one).");
+                finish("world open bounced");
+            }
             if (--timer <= 0) {
-                LOGGER.error("[DungeonTrain] sweep: timed out waiting to join after {} ticks",
-                    JOIN_TIMEOUT_TICKS);
+                LOGGER.error("[DungeonTrain] sweep: timed out waiting to join after {} ticks, "
+                    + "stuck on {}", JOIN_TIMEOUT_TICKS, screen);
                 finish("join timeout");
             }
             return;
@@ -334,6 +490,35 @@ public final class ShaderSweep {
                 LOGGER.info("[DungeonTrain] sweep[{}]: waiting {} ticks", site.id(), setupWait);
                 return;
             }
+            if (command.startsWith(FRAME_PREFIX)) {
+                frameTrain(mc, site.id());
+                return;
+            }
+            if (command.startsWith(SKY_PREFIX)) {
+                if (skyDeadline == 0) {
+                    skyDeadline = parseTicks(command, SKY_PREFIX);
+                    LOGGER.info("[DungeonTrain] sweep[{}]: checking the train is under open sky "
+                        + "(up to {} ticks)", site.id(), skyDeadline);
+                }
+                skyStreak = openSky(mc) ? skyStreak + 1 : 0;
+                if (skyStreak >= SKY_STREAK_TICKS) {
+                    LOGGER.info("[DungeonTrain] sweep[{}]: open sky confirmed, camera at x={}", site.id(),
+                        mc.player == null ? "?" : String.format(Locale.ROOT, "%.1f", mc.player.getX()));
+                    skyDeadline = 0;
+                    skyStreak = 0;
+                    return;
+                }
+                if (--skyDeadline <= 0) {
+                    LOGGER.warn("[DungeonTrain] sweep[{}]: the train is NOT under open sky at the "
+                        + "preview pin (x={}). The frame will be under cover and is not comparable "
+                        + "with the others — move PREVIEW_X.", site.id(), PREVIEW_X);
+                    skyDeadline = 0;
+                    skyStreak = 0;
+                    return;
+                }
+                commandIndex--; // stay on this pseudo-command until it is satisfied
+                return;
+            }
             LOGGER.info("[DungeonTrain] sweep[{}]: /{}", site.id(), command);
             CommandRunner.run(command);
             return;
@@ -343,10 +528,15 @@ public final class ShaderSweep {
     }
 
     private static int parseWait(String command) {
+        return parseTicks(command, WAIT_PREFIX);
+    }
+
+    /** The tick count on a {@code <prefix><n>} pseudo-command, or none if it will not parse. */
+    private static int parseTicks(String command, String prefix) {
         try {
-            return Math.max(0, Integer.parseInt(command.substring(WAIT_PREFIX.length()).trim()));
+            return Math.max(0, Integer.parseInt(command.substring(prefix.length()).trim()));
         } catch (NumberFormatException e) {
-            LOGGER.warn("[DungeonTrain] sweep: bad wait '{}' — treated as none", command);
+            LOGGER.warn("[DungeonTrain] sweep: bad tick count '{}' — treated as none", command);
             return 0;
         }
     }
@@ -354,14 +544,24 @@ public final class ShaderSweep {
     private static void tickSiteWait(Minecraft mc) {
         unpause(mc);
         dismissScreen(mc);
-        showPanel();
+        // The panel is the sweep's measurement and the preview's blemish — a menu screenshot with a
+        // debug read-out over it is not a picture of a shader pack. Nor is anything else the HUD
+        // draws: the first preview run came back with a spectator overlay icon in the corner.
+        if (previewMode()) {
+            hidePanel();
+            mc.options.hideGui = true;
+        } else {
+            showPanel();
+        }
         if (--timer > 0) return;
         phase = Phase.CAPTURE;
     }
 
     private static void tickCapture(Minecraft mc) {
         Site site = sites.get(siteIndex);
-        pendingCapture = String.format(Locale.ROOT, "sweep-%s-%s.png", ShaderCompat.token(), site.id());
+        pendingCapture = previewMode()
+            ? String.format(Locale.ROOT, "preview-%s.png", ShaderCompat.token())
+            : String.format(Locale.ROOT, "sweep-%s-%s.png", ShaderCompat.token(), site.id());
         logPanel(site);
         phase = Phase.CAPTURE_WAIT;
         timer = CAPTURE_TICKS;
@@ -391,6 +591,11 @@ public final class ShaderSweep {
     private static List<Site> buildSites(Minecraft mc) {
         List<Site> out = new ArrayList<>();
         double here = mc.player == null ? 0.0 : mc.player.getX();
+
+        if (previewMode()) {
+            out.add(buildPreviewSite());
+            return out;
+        }
 
         int plainX = scanForPlain(here);
 
@@ -500,6 +705,161 @@ public final class ShaderSweep {
             ClientUpsideDownBand::upsideDownIntensityAt, CLOUD_DOWN_PITCH);
 
         return out;
+    }
+
+    /**
+     * Click through a prompt that is holding the join, rather than waiting out the deadline on it.
+     *
+     * <p>The one that actually bit: {@code BackupConfirmScreen}. A sweep world written by an older
+     * build asks "this world was last played in a different version — back up and load?", and that
+     * question is only ever asked of a human. The harness sat on it for thirty minutes and reported
+     * a join timeout, which reads exactly like slow chunk generation and is not.</p>
+     *
+     * <p>Skip rather than back up: the sweep world is a disposable test fixture that the harness
+     * rewrites anyway, and copying it before every one of nine launches would cost more than the
+     * whole run. Buttons are matched by their own translation keys, so this does not depend on
+     * where they sit on the screen.</p>
+     */
+    private static void answerJoinPrompt(Minecraft mc) {
+        if (!(mc.screen instanceof BackupConfirmScreen)) {
+            return;
+        }
+        if (pressButton(mc.screen, "selectWorld.backupJoinSkipButton")
+            || pressButton(mc.screen, "selectWorld.backupJoinConfirmButton")) {
+            return;
+        }
+        LOGGER.warn("[DungeonTrain] sweep: BackupConfirmScreen is up but neither of its load "
+            + "buttons was found — the join will time out.");
+    }
+
+    /** Press the button carrying {@code key}, if it is on the screen. */
+    private static boolean pressButton(Screen screen, String key) {
+        Component wanted = Component.translatable(key);
+        for (GuiEventListener child : screen.children()) {
+            if (child instanceof Button button && wanted.equals(button.getMessage())) {
+                LOGGER.info("[DungeonTrain] sweep: pressing '{}' to get past {}",
+                    button.getMessage().getString(), screen.getClass().getSimpleName());
+                button.onPress();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The single site behind {@code -PshaderPreview}: the train stopped, in the morning, from one
+     * camera. Everything a player compares between packs is in this frame, so nothing about it may
+     * vary between runs — the hour is pinned, the daylight cycle is held, and the camera is placed
+     * relative to the train rather than at a coordinate that would be right for one save only.
+     */
+    private static Site buildPreviewSite() {
+        // Ride to a fixed, band-free stretch rather than photographing wherever the save left the
+        // train. Two reasons, and the second is the one that bites: the bands are not what this
+        // shot is for (they have their own sites), and nine packs launched against a reused save
+        // would each start from wherever the last one stopped — nine different places, which is not
+        // a comparison. Scanned from the origin rather than from the player, so it is a property of
+        // the world's cycle config and identical on every launch.
+        List<String> commands = new ArrayList<>();
+        commands.add("gamerule doDaylightCycle false");
+        commands.add("time set " + PREVIEW_TIME);
+        commands.add("gamemode creative");
+        commands.add("dtp " + PREVIEW_X);
+        commands.add(WAIT_PREFIX + "300");
+        // Stop the train on the pin. A moving train is a different picture every launch, and a
+        // nine-pack comparison in which the subject has moved is not a comparison.
+        commands.add("dungeontrain speed 0.0");
+        commands.add(WAIT_PREFIX + "100");
+        commands.add(SKY_PREFIX + SKY_VERIFY_TICKS);
+        commands.add("gamemode spectator");
+        commands.add(FRAME_PREFIX);
+        commands.add(WAIT_PREFIX + "60");
+        return new Site("preview", List.copyOf(commands), SITE_TICKS);
+    }
+
+
+    /**
+     * The world-space centre of the carriage nearest the player, or {@code null} with no train.
+     *
+     * <p>Asks Sable for the carriages rather than using the player's own position as a stand-in.
+     * The two are the same only while the player is riding, and the harness itself breaks that: it
+     * leaves the player in spectator at the camera, the save keeps it, and the next launch reads
+     * that as "the train". A preview run did exactly this — it framed the previous run's camera and
+     * reported a train that never moved, which is not a failure any screenshot would show.</p>
+     */
+    private static Vec3 trainCentre(Minecraft mc) {
+        if (mc.player == null || mc.level == null) {
+            return null;
+        }
+        ClientSubLevelContainer container = SubLevelContainer.getContainer(mc.level);
+        if (container == null) {
+            return null;
+        }
+        Vec3 player = mc.player.position();
+        Vec3 best = null;
+        double bestDistSq = Double.POSITIVE_INFINITY;
+        for (ClientSubLevel sub : container.getAllSubLevels()) {
+            BoundingBox3dc box = sub.boundingBox();
+            if (box == null) {
+                continue;
+            }
+            // Fresh sub-levels report a zero AABB until their first physics tick.
+            if (box.minX() == 0 && box.minY() == 0 && box.minZ() == 0
+                && box.maxX() == 0 && box.maxY() == 0 && box.maxZ() == 0) {
+                continue;
+            }
+            Vec3 centre = new Vec3((box.minX() + box.maxX()) / 2.0,
+                (box.minY() + box.maxY()) / 2.0,
+                (box.minZ() + box.maxZ()) / 2.0);
+            double distSq = centre.distanceToSqr(player);
+            if (distSq < bestDistSq) {
+                bestDistSq = distSq;
+                best = centre;
+            }
+        }
+        return best;
+    }
+
+    /** Whether the train currently has open sky overhead — the test for "out of the tunnel". */
+    private static boolean openSky(Minecraft mc) {
+        Vec3 centre = trainCentre(mc);
+        if (centre == null || mc.level == null) {
+            return false;
+        }
+        return mc.level.canSeeSky(BlockPos.containing(centre).above(6));
+    }
+
+    /**
+     * Force-load the camera's chunk and teleport there, aimed at the train where it has actually
+     * stopped. Two commands rather than one because a teleport into a chunk nothing has asked the
+     * server for answers "that position is not loaded".
+     */
+    private static void frameTrain(Minecraft mc, String siteId) {
+        Vec3 train = trainCentre(mc);
+        if (train == null) {
+            LOGGER.warn("[DungeonTrain] sweep[{}]: no carriage to frame — the shot will be of "
+                + "wherever the camera already is", siteId);
+            return;
+        }
+        double cx = train.x - PREVIEW_BACK;
+        double cy = train.y + PREVIEW_UP;
+        double cz = train.z - PREVIEW_SIDE;
+
+        double dx = (train.x + PREVIEW_AIM_AHEAD) - cx;
+        double dy = (train.y - PREVIEW_AIM_DOWN) - cy;
+        double dz = train.z - cz;
+        double flat = Math.sqrt(dx * dx + dz * dz);
+        float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0);
+        float pitch = (float) -Math.toDegrees(Math.atan2(dy, flat));
+
+        String forceload = String.format(Locale.ROOT, "forceload add %d %d %d %d",
+            (int) cx - 16, (int) cz - 16, (int) cx + 16, (int) cz + 16);
+        String tp = String.format(Locale.ROOT, "tp @s %.2f %.2f %.2f %.1f %.1f",
+            cx, cy, cz, yaw, pitch);
+        LOGGER.info("[DungeonTrain] sweep[{}]: /{}", siteId, forceload);
+        CommandRunner.run(forceload);
+        LOGGER.info("[DungeonTrain] sweep[{}]: /{} (carriage centre {})", siteId, tp,
+            String.format(Locale.ROOT, "%.1f, %.1f, %.1f", train.x, train.y, train.z));
+        CommandRunner.run(tp);
     }
 
     /**
@@ -675,6 +1035,10 @@ public final class ShaderSweep {
     /** Make sure the panel is up — every shot has to carry the ask, or it is only half a record. */
     private static void showPanel() {
         if (!ShaderDiagnostics.visible()) ShaderDiagnostics.toggleVisible();
+    }
+
+    private static void hidePanel() {
+        if (ShaderDiagnostics.visible()) ShaderDiagnostics.toggleVisible();
     }
 
     /**

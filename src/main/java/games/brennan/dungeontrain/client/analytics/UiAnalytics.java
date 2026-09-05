@@ -53,6 +53,10 @@ public final class UiAnalytics {
     // title_screen so the funnel can tell a mid-run tap from a main-menu one — they are very
     // different moments. Same lock-step rule with ui-events.js SURFACES.
     public static final String SURFACE_PAUSE_MENU = "pause_menu";
+    // The Shaders page, reached from the title screen — its own surface so the shader funnel
+    // (opened → picked a pack → downloaded → applied) does not have to be teased back out of the
+    // title screen's traffic.
+    public static final String SURFACE_SHADERS = "shaders";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
@@ -96,6 +100,14 @@ public final class UiAnalytics {
     // Same whitelist caveat as above: until the relay knows "video_tools_reset" this 400s silently,
     // which costs a funnel row and nothing else.
     public static final String TARGET_VIDEO_TOOLS_RESET = "video_tools_reset";
+    // The title-screen Shaders button, and the three things done on the page it opens. Same
+    // whitelist caveat as the two above: until the relay's ui-events.js TARGETS knows these they
+    // 400 silently, which costs a funnel row and nothing else.
+    public static final String TARGET_SHADERS = "shaders";
+    public static final String TARGET_SHADER_DOWNLOAD = "shader_download";
+    public static final String TARGET_SHADER_APPLY = "shader_apply";
+    public static final String TARGET_SHADERS_OFF = "shaders_off";
+    public static final String TARGET_SHADER_SETTINGS = "shader_settings";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
     public static final String TARGET_CONTRIBUTE = "contribute"; // "Contribute" opens the donate-options window
     public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run

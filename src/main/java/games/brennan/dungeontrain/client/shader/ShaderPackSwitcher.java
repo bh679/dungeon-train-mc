@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,9 +23,9 @@ import java.util.stream.Stream;
  * Switching in place makes it seconds, and puts two packs close enough together to actually
  * compare.</p>
  *
- * <p>Iris' public API can only turn shaders on and off, so the pack itself is set the way Iris'
- * own screen does it: write the name into {@code IrisConfig} and call {@code Iris.reload()}. Both
- * are reached reflectively, so Iris stays off the compile classpath and this is inert without it.</p>
+ * <p>Applying the pack is {@link IrisPackControl}'s job — Iris' public API can only turn shaders on
+ * and off, so the pack itself is set the way Iris' own screen does it, reflectively. The player-facing
+ * shader menu applies packs through the same seam.</p>
  *
  * <p>The reload rebuilds every pipeline, so the Nether and End are pre-warmed again straight after —
  * otherwise the first band crossing on a freshly switched pack pays a compile stall that has
@@ -56,13 +55,6 @@ public final class ShaderPackSwitcher {
     private static int index = 0;
     private static long lastStepAt = 0L;
 
-    private static volatile boolean irisResolved = false;
-    private static Method getIrisConfig;
-    private static Method setShaderPackName;
-    private static Method setShadersEnabled;
-    private static Method saveConfig;
-    private static Method reload;
-
     private ShaderPackSwitcher() {}
 
     /** Advance to the next pack and apply it. No-op without a live debug grant or without Iris. */
@@ -72,8 +64,7 @@ public final class ShaderPackSwitcher {
         if (now - lastStepAt < MIN_STEP_MS) return;
         lastStepAt = now;
 
-        resolveIris();
-        if (reload == null) {
+        if (!IrisPackControl.available()) {
             announce("Iris not available");
             return;
         }
@@ -94,26 +85,17 @@ public final class ShaderPackSwitcher {
     }
 
     private static void apply(String pack, int step, int total) {
-        try {
-            Object config = getIrisConfig.invoke(null);
-            if (pack.isEmpty()) {
-                setShadersEnabled.invoke(config, false);
-            } else {
-                setShadersEnabled.invoke(config, true);
-                setShaderPackName.invoke(config, pack);
-            }
-            saveConfig.invoke(config);
-            reload.invoke(null);
-            LOGGER.info("[DungeonTrain] Shader pack switched to {} ({}/{})", label(pack), step + 1, total);
-            // A reload throws away every pipeline, including the Nether and End ones, so warm them
-            // again rather than paying the compile at the next band edge.
-            ShaderWorld.reset();
-            ShaderWorld.prewarm();
-            announce("Shader " + (step + 1) + "/" + total + ": " + label(pack));
-        } catch (Throwable t) {
-            LOGGER.warn("[DungeonTrain] Shader pack switch failed: {}", t.toString());
-            announce("switch failed: " + t.getClass().getSimpleName());
+        boolean ok = pack.isEmpty() ? IrisPackControl.disable() : IrisPackControl.apply(pack);
+        if (!ok) {
+            announce("switch failed — see the log");
+            return;
         }
+        LOGGER.info("[DungeonTrain] Shader pack switched to {} ({}/{})", label(pack), step + 1, total);
+        // A reload throws away every pipeline, including the Nether and End ones, so warm them
+        // again rather than paying the compile at the next band edge.
+        ShaderWorld.reset();
+        ShaderWorld.prewarm();
+        announce("Shader " + (step + 1) + "/" + total + ": " + label(pack));
     }
 
     /** {@code ""} plus every zip in {@code shaderpacks/}, minus the ones known not to compile. */
@@ -146,27 +128,5 @@ public final class ShaderPackSwitcher {
     private static void announce(String text) {
         Minecraft mc = Minecraft.getInstance();
         if (mc != null && mc.gui != null) mc.gui.setOverlayMessage(Component.literal(text), false);
-    }
-
-    private static void resolveIris() {
-        if (irisResolved) return;
-        synchronized (ShaderPackSwitcher.class) {
-            if (irisResolved) return;
-            try {
-                Class<?> iris = Class.forName("net.irisshaders.iris.Iris");
-                Class<?> cfg = Class.forName("net.irisshaders.iris.config.IrisConfig");
-                getIrisConfig = iris.getMethod("getIrisConfig");
-                reload = iris.getMethod("reload");
-                setShaderPackName = cfg.getMethod("setShaderPackName", String.class);
-                setShadersEnabled = cfg.getMethod("setShadersEnabled", boolean.class);
-                saveConfig = cfg.getMethod("save");
-            } catch (ClassNotFoundException absent) {
-                // No Iris; the chord stays inert.
-            } catch (Throwable t) {
-                LOGGER.warn("[DungeonTrain] Iris pack-switch API unavailable: {}", t.toString());
-            } finally {
-                irisResolved = true;
-            }
-        }
     }
 }

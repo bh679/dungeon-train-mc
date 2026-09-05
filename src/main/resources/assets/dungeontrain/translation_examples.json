@@ -3914,5 +3914,10 @@
         "%2$s, %3$s"
       ]
     }
-  }
+  },
+  "gui.dungeontrain.shaders.list.narration": {"1": {"label": "how many shader packs are listed", "examples": ["9"]}},
+  "gui.dungeontrain.shaders.status.missing": {"1": {"label": "the download size of the shader pack", "examples": ["1.1 MB", "534 KB"]}},
+  "gui.dungeontrain.shaders.failed": {"1": {"label": "why the download failed", "examples": ["HTTP 503", "the download did not match its checksum"]}},
+  "gui.dungeontrain.shaders.sort": {"1": {"label": "which order the shader list is in", "examples": ["Most vanilla", "Performance"]}},
+  "gui.dungeontrain.shaders.perf": {"1": {"label": "how demanding the shader pack is", "examples": ["Very light", "Heavy"]}}
 }
