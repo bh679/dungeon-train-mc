@@ -38,8 +38,13 @@ MANIFEST = REPO / "src/main/resources/assets/dungeontrain/shader_menu/packs.json
 # Matches PREVIEW_W/PREVIEW_H in ShaderMenuScreen — the page contain-fits against these.
 WIDTH, HEIGHT = 854, 480
 
-# ShaderCompat.Pack id -> manifest pack id.
+# The vanilla control's asset. It is not in packs.json — it is the "Shaders off" row, which is a
+# state rather than a pack — so it is carried here and checked separately.
+VANILLA_ID = "vanilla"
+
+# ShaderCompat.Pack id -> manifest pack id ("none" is ShaderCompat's id for no pack at all).
 FAMILY_TO_ID = {
+    "none": VANILLA_ID,
     "bsl": "bsl",
     "bliss": "bliss",
     "complementary_reimagined": "complementary-reimagined",
@@ -92,7 +97,7 @@ def main():
         if pack_id is None:
             problems.append(f"{shot.name}: no manifest id for shader family '{family}'")
             continue
-        if pack_id not in known:
+        if pack_id not in known and pack_id != VANILLA_ID:
             problems.append(f"{shot.name}: '{pack_id}' is not in packs.json")
             continue
 
@@ -117,11 +122,12 @@ def main():
         written.append((pack_id, luma, out))
         print(f"{pack_id:26} luma {luma:5.1f}  -> {out.relative_to(REPO)}")
 
-    missing = known - {p for p, _, _ in written}
+    missing = (known | {VANILLA_ID}) - {p for p, _, _ in written}
     if missing:
         problems.append("no preview captured for: " + ", ".join(sorted(missing)))
 
-    print(f"\n{len(written)}/{len(known)} previews {'checked' if args.dry_run else 'written'}")
+    print(f"\n{len(written)}/{len(known) + 1} previews {'checked' if args.dry_run else 'written'} "
+          f"({len(known)} packs + the vanilla control)")
     for problem in problems:
         print(f"  ! {problem}", file=sys.stderr)
     return 1 if problems else 0

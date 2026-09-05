@@ -254,8 +254,12 @@ public final class ShaderMenuScreen extends Screen {
                 h - this.font.lineHeight * 8);
         previewH = Math.max(previewH, 40);
         if (pack == null) {
-            drawPlaceholder(g, x, y, w, previewH,
-                    Component.translatable("gui.dungeontrain.shaders.off.preview"));
+            if (hasTexture("vanilla", ShaderPack.vanillaPreview())) {
+                drawContain(g, ShaderPack.vanillaPreview(), x, y, w, previewH);
+            } else {
+                drawPlaceholder(g, x, y, w, previewH,
+                        Component.translatable("gui.dungeontrain.shaders.off.preview"));
+            }
         } else if (hasPreview(pack)) {
             drawContain(g, pack.preview(), x, y, w, previewH);
         } else {
@@ -360,8 +364,13 @@ public final class ShaderMenuScreen extends Screen {
     }
 
     private boolean hasPreview(ShaderPack pack) {
-        return previewPresent.computeIfAbsent(pack.id(), id ->
-                Minecraft.getInstance().getResourceManager().getResource(pack.preview()).isPresent());
+        return hasTexture(pack.id(), pack.preview());
+    }
+
+    /** Asked once per id, not per frame — the page asks about the selected row on every draw. */
+    private boolean hasTexture(String id, ResourceLocation texture) {
+        return previewPresent.computeIfAbsent(id, ignored ->
+                Minecraft.getInstance().getResourceManager().getResource(texture).isPresent());
     }
 
     @Override

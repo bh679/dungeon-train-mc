@@ -140,7 +140,24 @@ public record ShaderPack(String id, String name, String version, String author, 
 
     /** The preview screenshot: the same scene, camera and time of day for every pack. */
     public ResourceLocation preview() {
-        return ResourceLocation.fromNamespaceAndPath("dungeontrain", "textures/gui/shaders/" + id + ".png");
+        return previewFor(id);
+    }
+
+    /**
+     * The "Shaders off" row's preview — the same scene with no pack at all.
+     *
+     * <p>It is the capture run's vanilla control, which the sweep has always taken and the preview
+     * run originally skipped on the grounds that the row could say "no shaders" in words. It cannot:
+     * without the unshaded frame beside them, the nine shaded ones are nine landscapes rather than
+     * nine treatments of one, and there is nothing to judge them against.</p>
+     */
+    public static ResourceLocation vanillaPreview() {
+        return previewFor("vanilla");
+    }
+
+    private static ResourceLocation previewFor(String id) {
+        return ResourceLocation.fromNamespaceAndPath("dungeontrain",
+                "textures/gui/shaders/" + id + ".png");
     }
 
     /** e.g. {@code "1.1 MB"} — the size next to the download button. */

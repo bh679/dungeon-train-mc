@@ -5,9 +5,9 @@
 #   scripts/shaders/sweep-all.sh [--preview] "<world folder name>" [pack.zip ...]
 #
 # --preview captures the Shaders menu's preview frame instead of the diagnostic sites: one shot per
-# pack, the train stopped, no panel, into run/screenshots/preview-<pack>.png. The control is skipped
-# — the menu's "Shaders off" row is a placeholder, not a photograph — and every other launch is
-# identical to a sweep launch, which is what makes the nine frames comparable.
+# pack, the train stopped, no panel, into run/screenshots/preview-<pack>.png. The vanilla control
+# runs here too — it is the "Shaders off" row's own screenshot — and every launch is otherwise
+# identical, which is what makes the frames comparable.
 #
 # One client launch per pack. Each launch points Iris at that pack, opens the world, and lets
 # client/ShaderSweep drive itself round the atmosphere sites, writing run/screenshots/sweep-<pack>-<site>.png
@@ -50,10 +50,11 @@ DEADLINE_SECONDS="${SWEEP_DEADLINE_SECONDS:-1500}"
 if [ "$#" -gt 0 ]; then
     PACKS=("$@")
 else
-    PACKS=()
-    # The control is a sweep concept. A preview run has nothing to compare against a no-shader
-    # frame — the menu's "Shaders off" row says what it is in words.
-    if [ "$PREVIEW" -eq 0 ]; then PACKS+=("vanilla"); fi
+    # "vanilla" runs in both modes. For the sweep it is the control without which "the pack ate the
+    # sky" and "there was nothing to see there" are the same picture. For the previews it is the
+    # "Shaders off" row's own screenshot — the same scene with no pack, which is what makes the
+    # other nine read as differences rather than as nine unrelated landscapes.
+    PACKS=("vanilla")
     while IFS= read -r line; do PACKS+=("$line"); done < <(cd run/shaderpacks && ls -1 ./*.zip 2>/dev/null | sed 's|^\./||')
 fi
 
