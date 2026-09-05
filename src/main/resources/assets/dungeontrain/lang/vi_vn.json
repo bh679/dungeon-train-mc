@@ -925,6 +925,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Khôi phục bản đã lưu",
   "gui.dungeontrain.editor_screen.icon.clear": "Xóa hết khối",
   "gui.dungeontrain.editor_screen.icon.package": "Gói",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Hãy lưu công trình này trước — chỉ công trình đã tải lên mới gửi duyệt được.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Đứng trong khu đất này để chỉnh sửa (nhấp đúp vào ô để đến đó)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Không thể đổi tên mẫu có sẵn",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Không khả dụng cho mẫu này",

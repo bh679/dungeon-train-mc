@@ -3,15 +3,19 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
+import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
-import games.brennan.dungeontrain.client.menu.PackageListScreen;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
@@ -82,8 +86,19 @@ public final class EditorScreenActions {
     // Icon row
     // ------------------------------------------------------------------
 
-    /** Save · Rename · Remove | Undo · Redo | Reset · Clear | Package, in that order. */
+    /** As below, for a selection with no relay row of its own — see {@link #submitIcon}. */
     public static List<Icon> icons(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket) {
+        return icons(ctx, sendPacket, 0);
+    }
+
+    /**
+     * Save · Rename · Remove | Undo · Redo | Reset · Clear | Submit, in that order.
+     *
+     * <p>{@code relayId} is the selected template's row on the relay, which the pane it is drawn in
+     * already holds for the version strip. Zero means this template has never been uploaded, which is
+     * the one reason the last icon is off.</p>
+     */
+    public static List<Icon> icons(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket, int relayId) {
         List<Icon> out = new ArrayList<>(8);
         boolean here = ctx.standingInSelection();
         PlotCategory cat = ctx.category();
@@ -118,9 +133,33 @@ public final class EditorScreenActions {
             clear != null ? clear : packetAction(ctx, EditorPlotActionPacket.Action.CLEAR, sendPacket),
             EditorScreenLang.DISABLED_STAND_HERE));
 
-        out.add(new Icon("package", EditorScreenLang.ICON_PACKAGE,
-            new CommandMenuEntry.DrillIn("Package", new PackageListScreen()), null));
+        out.add(submitIcon(relayId));
         return out;
+    }
+
+    /**
+     * <b>Submit to the train</b> / <b>Withdraw</b>, where the Packages drill-in used to sit.
+     *
+     * <p>Packages keeps its ways in — the older editor menu and the worldspace type menu both open
+     * it — and this row is where an author decides what happens to the build in front of them, which
+     * is the one thing about it this screen could not do.</p>
+     *
+     * <p>The label is read from THIS player's own listing rather than from the roster: whether a
+     * build is on the train is the relay's answer, and the roster only knows what is on disk. No row
+     * for it means nothing to submit, and the icon says so instead of sending a press the relay would
+     * refuse.</p>
+     */
+    static Icon submitIcon(int relayId) {
+        BuilderProfilePacket.Entry entry = BuilderProfileState.ownBuild(relayId);
+        if (entry == null || !BuilderRelayKinds.canSubmitForReview(entry.kind())) {
+            return new Icon("submit", EditorScreenLang.ICON_SUBMIT, null,
+                EditorScreenLang.DISABLED_NOT_UPLOADED);
+        }
+        boolean published = entry.published();
+        String label = published ? EditorScreenLang.ICON_WITHDRAW : EditorScreenLang.ICON_SUBMIT;
+        return new Icon(published ? "withdraw" : "submit", label,
+            new CommandMenuEntry.ClientAction(label, () -> DungeonTrainNet.sendToServer(
+                new BuilderProfileActionPacket(entry.relayId(), !published))), null);
     }
 
     /**

@@ -950,6 +950,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Repor a guardada",
   "gui.dungeontrain.editor_screen.icon.clear": "Limpar todos os blocos",
   "gui.dungeontrain.editor_screen.icon.package": "Pacotes",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Guarda primeiro esta construção — só uma construção já enviada pode ser submetida.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Fica nesta parcela para a editares (faz duplo clique no bloco para lá ires)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Os modelos originais não podem ser renomeados",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Não disponível para este modelo",

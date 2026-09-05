@@ -1288,6 +1288,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Revino la varianta salvată",
   "gui.dungeontrain.editor_screen.icon.clear": "Golește toate blocurile",
   "gui.dungeontrain.editor_screen.icon.package": "Pachete",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Salvează întâi construcția — doar o construcție încărcată poate fi trimisă.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Stai în această parcelă ca s-o editezi (dă dublu clic pe pătrat ca să ajungi acolo)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Șabloanele native nu pot fi redenumite",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Indisponibil pentru acest șablon",

@@ -1261,6 +1261,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Reset to saved",
   "gui.dungeontrain.editor_screen.icon.clear": "Clear all blocks",
   "gui.dungeontrain.editor_screen.icon.package": "Packages",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Save this build first \u2014 only an uploaded build can be submitted.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Stand in this plot to edit it (double-click the tile to go there)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Built-in templates cannot be renamed",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Not available for this template",

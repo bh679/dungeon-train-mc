@@ -950,6 +950,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Restablecer a lo guardado",
   "gui.dungeontrain.editor_screen.icon.clear": "Borrar todos los bloques",
   "gui.dungeontrain.editor_screen.icon.package": "Paquetes",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Guarda primero esta construcción: solo se puede enviar una construcción ya subida.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Ponte de pie en esta parcela para editarla (doble clic en la casilla para ir ahí)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Las plantillas integradas no se pueden renombrar",
   "gui.dungeontrain.editor_screen.disabled.not_here": "No disponible para esta plantilla",

@@ -925,6 +925,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Setel ulang ke tersimpan",
   "gui.dungeontrain.editor_screen.icon.clear": "Hapus semua balok",
   "gui.dungeontrain.editor_screen.icon.package": "Paket",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Simpan dulu bangunan ini — hanya bangunan yang sudah diunggah bisa diajukan.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Berdirilah di petak ini untuk mengeditnya (klik dua kali ubin untuk pergi ke sana)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Templat bawaan tidak dapat diganti namanya",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Tidak tersedia untuk templat ini",

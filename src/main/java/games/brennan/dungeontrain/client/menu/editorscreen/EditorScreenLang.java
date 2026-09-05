@@ -120,6 +120,10 @@ public final class EditorScreenLang {
     public static final String ICON_RESET = PREFIX + "icon.reset";
     public static final String ICON_CLEAR = PREFIX + "icon.clear";
     public static final String ICON_PACKAGE = PREFIX + "icon.package";
+    /** The submit icon wears My Builds' own two words, so one decision reads the same in both. */
+    public static final String ICON_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
+    public static final String ICON_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
+    public static final String DISABLED_NOT_UPLOADED = PREFIX + "disabled.not_uploaded";
     public static final String DISABLED_STAND_HERE = PREFIX + "disabled.stand_here";
     public static final String DISABLED_BUILTIN = PREFIX + "disabled.builtin";
     public static final String DISABLED_NOT_HERE = PREFIX + "disabled.not_here";

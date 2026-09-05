@@ -980,6 +980,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Сбросить к сохранённому",
   "gui.dungeontrain.editor_screen.icon.clear": "Очистить все блоки",
   "gui.dungeontrain.editor_screen.icon.package": "Пакеты",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Сначала сохраните постройку — отправить можно только загруженную.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Встаньте на этот участок, чтобы редактировать его (дважды щёлкните по плитке, чтобы переместиться туда)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Встроенные шаблоны нельзя переименовать",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Недоступно для этого шаблона",

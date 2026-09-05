@@ -80,7 +80,9 @@ public final class EditorDetailPane {
     public void layout(InventoryEditorLayout layout, EditorScreenActions.Ctx ctx, long nowMillis) {
         this.layout = layout;
         this.ctx = ctx;
-        icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer);
+        // The relay row of what is selected, which showVersion has already handed this pane for the
+        // version strip — it is what the Submit icon acts on.
+        icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer, relayId);
         // Read once: the Size line takes the room's own dimensions from these, and the rows below
         // take everything else. Reading them twice could show two different numbers for one axis.
         roomRows = ctx.standingInSelection() && ctx.category() == PlotCategory.PORTALS

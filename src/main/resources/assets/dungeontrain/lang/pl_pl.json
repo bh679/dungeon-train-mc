@@ -975,6 +975,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Przywróć zapisane",
   "gui.dungeontrain.editor_screen.icon.clear": "Usuń wszystkie bloki",
   "gui.dungeontrain.editor_screen.icon.package": "Pakiety",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Najpierw zapisz tę budowlę — zgłosić można tylko budowlę już wysłaną.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Stań na tej działce, aby ją edytować (kliknij dwukrotnie kafelek, aby tam przejść)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Wbudowanych szablonów nie można zmienić nazwy",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Niedostępne dla tego szablonu",

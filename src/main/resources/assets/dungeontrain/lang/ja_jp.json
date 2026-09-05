@@ -925,6 +925,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "保存済みに戻す",
   "gui.dungeontrain.editor_screen.icon.clear": "すべてのブロックを消去",
   "gui.dungeontrain.editor_screen.icon.package": "パッケージ",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "まずこの建築を保存してください。アップロード済みの建築だけが提出できます。",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "このプロットに立って編集してください（タイルをダブルクリックすると移動できます）",
   "gui.dungeontrain.editor_screen.disabled.builtin": "内蔵テンプレートの名前は変更できません",
   "gui.dungeontrain.editor_screen.disabled.not_here": "このテンプレートでは利用できません",

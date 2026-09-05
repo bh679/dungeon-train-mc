@@ -925,6 +925,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "คืนค่าที่บันทึกไว้",
   "gui.dungeontrain.editor_screen.icon.clear": "ล้างบล็อกทั้งหมด",
   "gui.dungeontrain.editor_screen.icon.package": "แพ็กเกจ",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "บันทึกสิ่งก่อสร้างนี้ก่อน — ส่งได้เฉพาะงานที่อัปโหลดแล้วเท่านั้น",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "ยืนอยู่ในผังนี้เพื่อแก้ไข (ดับเบิลคลิกที่ช่องเพื่อไปที่นั่น)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "แม่แบบในตัวเปลี่ยนชื่อไม่ได้",
   "gui.dungeontrain.editor_screen.disabled.not_here": "ใช้ไม่ได้กับแม่แบบนี้",

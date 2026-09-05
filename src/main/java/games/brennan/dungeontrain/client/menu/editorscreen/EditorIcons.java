@@ -14,6 +14,9 @@ public final class EditorIcons {
     public static final ResourceLocation RESET = mod("icon/reset");
     public static final ResourceLocation CLEAR = mod("icon/clear");
     public static final ResourceLocation PACKAGE = mod("icon/folder");
+    /** Out to the train, and back to your own profile — the two directions of one decision. */
+    public static final ResourceLocation SUBMIT = mod("icon/export");
+    public static final ResourceLocation WITHDRAW = mod("icon/import");
     public static final ResourceLocation PLAY = mod("icon/play");
     public static final ResourceLocation EXIT = mod("icon/exit");
     public static final ResourceLocation GROUP = mod("icon/group");
@@ -36,6 +39,8 @@ public final class EditorIcons {
             case "reset" -> RESET;
             case "clear" -> CLEAR;
             case "package" -> PACKAGE;
+            case "submit" -> SUBMIT;
+            case "withdraw" -> WITHDRAW;
             default -> SAVE;
         };
     }

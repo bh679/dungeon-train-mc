@@ -21,6 +21,7 @@ import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
+import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
@@ -141,6 +142,9 @@ public final class EditorGuiScreen extends Screen {
         addWidget(filterBox);
         filterBox.visible = EditorScreenState.page().isBrowser();
         EditorCreatorBuilds.attach();
+        // The toolbar's Submit icon says whether the selected build is on the train, which only the
+        // player's own listing knows. Asked on the way in so the icon is right before it is pressed.
+        DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket());
         BuilderProfileState.listenForDownloads(this::onDownloadResult);
     }
 

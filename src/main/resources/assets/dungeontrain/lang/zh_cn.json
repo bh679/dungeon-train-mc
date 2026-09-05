@@ -925,6 +925,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "重置为已保存",
   "gui.dungeontrain.editor_screen.icon.clear": "清除所有方块",
   "gui.dungeontrain.editor_screen.icon.package": "包",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "请先保存这个建筑——只有已上传的建筑才能提交。",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "站在这块地块上即可编辑（双击图块可前往该处）",
   "gui.dungeontrain.editor_screen.disabled.builtin": "内置模板无法重命名",
   "gui.dungeontrain.editor_screen.disabled.not_here": "此模板不可用",

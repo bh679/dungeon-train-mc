@@ -950,6 +950,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Revenir à la version enregistrée",
   "gui.dungeontrain.editor_screen.icon.clear": "Effacer tous les blocs",
   "gui.dungeontrain.editor_screen.icon.package": "Paquets",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Enregistre d’abord cette construction : seule une construction envoyée peut être proposée.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Tiens-toi sur cette parcelle pour la modifier (double-clique la tuile pour t'y rendre)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Les modèles intégrés ne peuvent pas être renommés",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Non disponible pour ce modèle",

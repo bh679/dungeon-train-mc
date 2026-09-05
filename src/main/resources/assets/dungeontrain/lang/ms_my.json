@@ -925,6 +925,7 @@
   "gui.dungeontrain.editor_screen.icon.reset": "Tetapkan semula kepada yang disimpan",
   "gui.dungeontrain.editor_screen.icon.clear": "Kosongkan semua blok",
   "gui.dungeontrain.editor_screen.icon.package": "Pakej",
+  "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Simpan binaan ini dahulu — hanya binaan yang dimuat naik boleh dihantar.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Berdiri di plot ini untuk menyuntingnya (dwi-klik jubin untuk pergi ke sana)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Templat terbina dalam tidak boleh dinamakan semula",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Tidak tersedia untuk templat ini",
