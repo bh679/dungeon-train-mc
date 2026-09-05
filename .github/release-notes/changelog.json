@@ -11197,6 +11197,21 @@
       "released": true,
       "released_in": "v0.794.0",
       "released_at": "2026-09-04T18:25:18Z"
+    },
+    {
+      "id": "portal-room-lighting-ease",
+      "version": "0.795.0",
+      "type": "fix",
+      "title": "Portal carriage lighting eases in instead of snapping",
+      "summary": "Walking a portal corridor, or arriving in a dimensional carriage, used to brighten the room's dim corners in one hard step. The light now comes up and drops away smoothly, gentlest at the very start of the change rather than harshest.",
+      "highlights": [
+        "The corridor and room lighting fade in and out over about a second instead of jumping",
+        "Most noticeable with a shader pack, which leans on that lighting for its ambient"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
