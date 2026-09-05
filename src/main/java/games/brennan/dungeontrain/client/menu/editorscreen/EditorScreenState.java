@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.builder.BuilderProfileFilters;
 import games.brennan.dungeontrain.editor.PlotCategory;
 
 /**
@@ -18,6 +19,17 @@ public final class EditorScreenState {
     private static String text = "";
     private static VariantKey selection;
 
+    /**
+     * The two narrowings creator mode adds: where a build stands with a reviewer, and whether it is
+     * starred. Kept beside the roster's own filters and for the same reason — closing the screen mid
+     * review and reopening it should land where the reviewer left off.
+     *
+     * <p>Not applied to the roster: a template on this machine has neither a review state nor a star,
+     * so these two would narrow every local tile away to nothing.</p>
+     */
+    private static String creatorReview = BuilderProfileFilters.ALL;
+    private static boolean creatorStarred;
+
     private EditorScreenState() {}
 
     public static EditorScreenPage page() { return page; }
@@ -25,6 +37,16 @@ public final class EditorScreenState {
     public static EditorRosterIndex.Filters filters() { return filters; }
     public static String text() { return text; }
     public static VariantKey selection() { return selection; }
+    public static String creatorReview() { return creatorReview; }
+    public static boolean creatorStarred() { return creatorStarred; }
+
+    public static void setCreatorReview(String next) {
+        creatorReview = next == null ? BuilderProfileFilters.ALL : next;
+    }
+
+    public static void setCreatorStarred(boolean next) {
+        creatorStarred = next;
+    }
 
     public static void setPage(EditorScreenPage next) {
         if (next == null || next == page) return;

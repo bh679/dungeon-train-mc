@@ -30,12 +30,37 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * is honoured only on a dev build ({@link DungeonTrain#isDevBuild()}), and a release server answers a
  * packet carrying one with the caller's own profile rather than an error — the safe answer is the
  * ordinary one, so nothing a client sends can widen what it may see.</p>
+ *
+ * <p>{@code all} is the third of those affordances and the widest: every builder's builds in one
+ * answer, addressed to {@link #ALL} rather than to a person. It reads the operator's own listing
+ * through the admin URL this machine holds, so a jar without one gets {@code UNAVAILABLE} — the same
+ * "couldn't ask" an unreachable relay gives, which is what it is.</p>
  */
-public record BuilderProfileRequestPacket(String ownerUuid, boolean live) implements CustomPacketPayload {
+public record BuilderProfileRequestPacket(String ownerUuid, boolean live, boolean all)
+        implements CustomPacketPayload {
+
+    /**
+     * The sentinel {@code ownerUuid} an "everybody's builds" answer is addressed to.
+     *
+     * <p>Not a uuid any player can hold, so a screen waiting on the pooled listing can tell that
+     * answer apart from one about a person — which is the same test {@code isForViewed} already makes
+     * for every other profile reply.</p>
+     */
+    public static final String ALL = "*";
 
     /** The ordinary ask: my own builds, on this build's own relay. */
     public BuilderProfileRequestPacket() {
         this("", false);
+    }
+
+    /** One profile, named or own — everything that is not the pooled listing. */
+    public BuilderProfileRequestPacket(String ownerUuid, boolean live) {
+        this(ownerUuid, live, false);
+    }
+
+    /** Every builder's builds, pooled. A dev-build affordance, like naming somebody else's profile. */
+    public static BuilderProfileRequestPacket all(boolean live) {
+        return new BuilderProfileRequestPacket(ALL, live, true);
     }
 
     public static final Type<BuilderProfileRequestPacket> TYPE =
@@ -44,13 +69,22 @@ public record BuilderProfileRequestPacket(String ownerUuid, boolean live) implem
     /** A uuid string is 36 chars; the bound is what a hostile packet may allocate, not a format check. */
     private static final int MAX_UUID = 48;
 
+    /**
+     * How many pooled rows one answer carries. The packet's own cap is 512 and the relay's listing has
+     * no limit of its own, so the trim happens before the wire rather than on it — otherwise the
+     * newest builds would be the ones falling off the end.
+     */
+    private static final int MAX_ALL = 512;
+
     public static final StreamCodec<FriendlyByteBuf, BuilderProfileRequestPacket> STREAM_CODEC =
         StreamCodec.of(
             (buf, packet) -> {
                 buf.writeUtf(packet.ownerUuid, MAX_UUID);
                 buf.writeBoolean(packet.live);
+                buf.writeBoolean(packet.all);
             },
-            buf -> new BuilderProfileRequestPacket(buf.readUtf(MAX_UUID), buf.readBoolean())
+            buf -> new BuilderProfileRequestPacket(buf.readUtf(MAX_UUID), buf.readBoolean(),
+                    buf.readBoolean())
         );
 
     @Override
@@ -77,6 +111,10 @@ public record BuilderProfileRequestPacket(String ownerUuid, boolean live) implem
             BuilderProfilePacket.Status blocked = blockedReason(player);
             if (blocked != null) {
                 DungeonTrainNet.sendTo(player, BuilderProfilePacket.of(blocked, owner, name, mine));
+                return;
+            }
+            if (allRequested(packet.all)) {
+                answerAll(player, liveRequested(packet.live));
                 return;
             }
             SharedCarriageClient.listMine(owner, ownProfile(player), relay).thenAccept(rows -> {
@@ -106,6 +144,37 @@ public record BuilderProfileRequestPacket(String ownerUuid, boolean live) implem
     static String viewedOwner(String own, String requested, boolean devBuild) {
         if (requested == null || requested.isBlank()) return own;
         return devBuild ? requested.trim() : own;
+    }
+
+    /**
+     * Whether this call should pool every builder's builds.
+     *
+     * <p>The same fail-closed shape as {@link #viewedOwner} and {@link #liveRequested}: a release
+     * server answers a packet asking for the pool with the caller's own profile, because the pooled
+     * listing is the operator's view of everybody's work and nothing a client sends can widen what it
+     * may see.</p>
+     */
+    static boolean allRequested(boolean requested) {
+        return requested && DungeonTrain.isDevBuild();
+    }
+
+    /**
+     * Everybody's builds, in one answer addressed to {@link #ALL}.
+     *
+     * <p>Never {@code mine}: the rows span owners, and the one thing the screen must not do with them
+     * is offer the author's own actions on somebody else's build. Each row carries its own owner, so
+     * whoever draws them can still say whose each is.</p>
+     */
+    private static void answerAll(ServerPlayer player, boolean live) {
+        SharedCarriageClient.listAll(live, MAX_ALL).thenAccept(rows -> {
+            if (player.getServer() == null) return;
+            player.getServer().execute(() -> {
+                if (player.hasDisconnected()) return;
+                DungeonTrainNet.sendTo(player, rows == null
+                        ? BuilderProfilePacket.of(BuilderProfilePacket.Status.UNAVAILABLE, ALL, "", false)
+                        : BuilderProfilePacket.of(rows, ALL, "", false));
+            });
+        });
     }
 
     /**

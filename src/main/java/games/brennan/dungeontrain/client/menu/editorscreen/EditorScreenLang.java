@@ -23,6 +23,11 @@ public final class EditorScreenLang {
     public static final String FILTER_MINE = PREFIX + "filter.mine";
     public static final String FILTER_CREATOR = PREFIX + "filter.creator";
     public static final String FILTER_FIND_CREATOR = PREFIX + "filter.find_creator";
+    /**
+     * The starred chip, wearing My Builds' own word for the same narrowing — pointed at that key
+     * rather than given one of its own, for the reason the {@code creators.*} block above is.
+     */
+    public static final String FILTER_STARRED = "gui.dungeontrain.builder.profile.favourite.starred";
 
     /**
      * The in-menu builder search, which speaks the pause menu's own words.
@@ -40,6 +45,7 @@ public final class EditorScreenLang {
     public static final String CREATORS_NONE = "gui.dungeontrain.builder.creators.none";
     public static final String CREATORS_UNAVAILABLE = "gui.dungeontrain.builder.creators.unavailable";
     public static final String CREATORS_MINE = "gui.dungeontrain.builder.profile.back_to_mine";
+    public static final String CREATORS_ALL = PREFIX + "creators.all";
     public static final String CREATOR_EMPTY = "gui.dungeontrain.builder.profile.empty_other";
 
     public static final String CREATOR_LOADING = PREFIX + "creator.loading";
@@ -53,6 +59,11 @@ public final class EditorScreenLang {
     public static final String CREATOR_LOAD = "gui.dungeontrain.builder.profile.load_into_editor";
     public static final String CREATOR_LOAD_COPY = PREFIX + "creator.load_copy";
     public static final String CREATOR_LOADED = PREFIX + "creator.loaded";
+    public static final String CREATOR_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
+    public static final String CREATOR_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
+    public static final String CREATOR_NOT_YOURS = "gui.dungeontrain.builder.profile.not_yours_short";
+    public static final String CREATOR_POOL = PREFIX + "creator.pool";
+    public static final String CREATOR_SUBMITTING = PREFIX + "creator.submitting";
     public static final String LOAD_ALL = PREFIX + "load_all";
     public static final String LOAD_ALL_TIP = PREFIX + "load_all.tip";
     public static final String LOAD_ALL_PROGRESS = PREFIX + "load_all.progress";

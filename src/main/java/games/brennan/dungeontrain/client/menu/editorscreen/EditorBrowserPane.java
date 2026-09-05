@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.builder.BuilderProfileFilters;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTileSpin;
 import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
@@ -33,6 +34,11 @@ public final class EditorBrowserPane {
     static final int SUB_GAP = 6;
     static final int CHIP_PAD = 4;
     static final int CHIP_GAP = 2;
+    /** The star on a relay tile: the square in its top-left corner, and how far in it sits. */
+    static final int STAR_SIZE = 9;
+    static final int STAR_INSET = 1;
+    static final int STAR_ON = 0xFFFFDD55;
+    static final int STAR_OFF = 0xFFB0B8C0;
     /** The magnifier that labels the filter box, and the breathing room either side of it. */
     static final int SEARCH_ICON = 8;
     static final int SEARCH_GAP = 2;
@@ -42,7 +48,7 @@ public final class EditorBrowserPane {
     static final int SUB_HEADER_BG = 0xD0000000;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, CHIP, STRIP, TILE, NEW, SUB_TILE, NEW_SUB, CREATOR_TILE, LOAD_ALL }
+    public enum HitKind { NONE, CHIP, STRIP, TILE, NEW, SUB_TILE, NEW_SUB, CREATOR_TILE, CREATOR_STAR, LOAD_ALL }
 
     /** Where Load all was drawn this frame, or null when the page has nothing to load. */
     private InventoryEditorLayout.Rect loadAllRect;
@@ -60,8 +66,26 @@ public final class EditorBrowserPane {
      */
     private record Chip(Kind kind, String label, boolean on, int x, int w) {}
 
-    /** {@code PLAYER} is not a filter: it opens the creator search. See {@link #isPlayerChip}. */
-    private enum Kind { MINE, BUILTIN, PLAYER }
+    /**
+     * {@code PLAYER} is not a filter: it opens the creator search. See {@link #isPlayerChip}.
+     *
+     * <p>{@code STATUS} and {@code STARRED} narrow the relay builds rather than the roster, so they
+     * appear exactly where the two provenance chips do not — a template on this machine has neither a
+     * review state nor a star.</p>
+     */
+    private enum Kind { MINE, BUILTIN, PLAYER, STATUS, STARRED }
+
+    /**
+     * The review states the status chip cycles, in funnel order: everything → never asked → waiting →
+     * decided. The same order and the same words My Builds' own chip uses, because it is the same
+     * question about the same rows.
+     */
+    private static final List<String[]> STATUS_OPTIONS = List.of(
+        new String[] {BuilderProfileFilters.ALL, "gui.dungeontrain.builder.profile.status.all"},
+        new String[] {BuilderReviewState.NONE, "gui.dungeontrain.builder.profile.status.none"},
+        new String[] {BuilderReviewState.SUBMITTED, "gui.dungeontrain.builder.profile.status.submitted"},
+        new String[] {BuilderReviewState.ACCEPTED, "gui.dungeontrain.builder.profile.status.accepted"},
+        new String[] {BuilderReviewState.DECLINED, "gui.dungeontrain.builder.profile.status.declined"});
 
     /** One cell of the type strip. */
     private record StripCell(EditorRosterIndex.TypeStrip strip, int x, int w) {}
@@ -96,14 +120,55 @@ public final class EditorBrowserPane {
         return switch (chips.get(i).kind()) {
             case MINE -> current.withMine(!current.mine());
             case BUILTIN -> current.withBuiltin(!current.builtin());
-            // Not a filter — the screen opens the search for it.
-            case PLAYER -> current;
+            // Not roster filters: the search opens on one, and the other two narrow relay builds
+            // through applyCreatorChip.
+            case PLAYER, STATUS, STARRED -> current;
         };
     }
 
     /** True when chip {@code i} is the creator search rather than a filter toggle. */
     public boolean isPlayerChip(int i) {
         return i >= 0 && i < chips.size() && chips.get(i).kind() == Kind.PLAYER;
+    }
+
+    /**
+     * Apply a click on one of creator mode's own chips, if that is what it was.
+     *
+     * <p>Separate from {@link #applyChip} because these two narrow relay builds, which
+     * {@link EditorRosterIndex.Filters} knows nothing about — folding them in would give the roster's
+     * filter record two fields it can never use.</p>
+     *
+     * @return true when the click was handled here
+     */
+    public boolean applyCreatorChip(int i) {
+        if (i < 0 || i >= chips.size()) return false;
+        switch (chips.get(i).kind()) {
+            case STATUS -> EditorScreenState.setCreatorReview(nextStatus(EditorScreenState.creatorReview()));
+            case STARRED -> EditorScreenState.setCreatorStarred(!EditorScreenState.creatorStarred());
+            default -> {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** The state after this one, wrapping round — an unknown one starts the cycle over at All. */
+    private static String nextStatus(String current) {
+        for (int i = 0; i < STATUS_OPTIONS.size(); i++) {
+            if (STATUS_OPTIONS.get(i)[0].equals(current)) {
+                return STATUS_OPTIONS.get((i + 1) % STATUS_OPTIONS.size())[0];
+            }
+        }
+        return BuilderProfileFilters.ALL;
+    }
+
+    /** What the status chip says right now. */
+    private static String statusLabel() {
+        String current = EditorScreenState.creatorReview();
+        for (String[] option : STATUS_OPTIONS) {
+            if (option[0].equals(current)) return EditorScreenLang.text(option[1]);
+        }
+        return EditorScreenLang.text(STATUS_OPTIONS.get(0)[1]);
     }
 
     /**
@@ -118,6 +183,9 @@ public final class EditorBrowserPane {
 
     /** The chip's label: whose builds are loaded, or the invitation to go and find someone. */
     static String creatorLabel() {
+        // The pool is loaded but belongs to nobody, so it says what it is rather than whose it is —
+        // "Find creator…" there would read as nothing being loaded at all.
+        if (EditorCreatorBuilds.pooled()) return EditorScreenLang.text(EditorScreenLang.CREATOR_POOL);
         String viewed = EditorCreatorBuilds.viewedName();
         return viewed == null || viewed.isEmpty()
             ? EditorScreenLang.text(EditorScreenLang.FILTER_FIND_CREATOR)
@@ -162,6 +230,10 @@ public final class EditorBrowserPane {
         if (!EditorCreatorBuilds.active()) {
             out.add(EditorScreenLang.text(EditorScreenLang.FILTER_MINE));
             out.add(EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN));
+        } else {
+            // In their place, the two that DO say something about a relay build.
+            out.add(statusLabel());
+            out.add(EditorScreenLang.text(EditorScreenLang.FILTER_STARRED));
         }
         if (showCreatorChip()) out.add(creatorLabel());
         return out;
@@ -184,6 +256,13 @@ public final class EditorBrowserPane {
             cx = last(c).x() + last(c).w() + CHIP_GAP;
             c.add(chip(Kind.BUILTIN, EditorScreenLang.text(EditorScreenLang.FILTER_BUILTIN),
                 filters.builtin(), cx, font));
+            cx = last(c).x() + last(c).w() + CHIP_GAP;
+        } else {
+            c.add(chip(Kind.STATUS, statusLabel(),
+                !BuilderProfileFilters.ALL.equals(EditorScreenState.creatorReview()), cx, font));
+            cx = last(c).x() + last(c).w() + CHIP_GAP;
+            c.add(chip(Kind.STARRED, EditorScreenLang.text(EditorScreenLang.FILTER_STARRED),
+                EditorScreenState.creatorStarred(), cx, font));
             cx = last(c).x() + last(c).w() + CHIP_GAP;
         }
         if (showCreatorChip()) {
@@ -213,7 +292,8 @@ public final class EditorBrowserPane {
         // type strip to sit under and no sub-variants to open, so every other list goes empty for
         // the duration rather than being drawn against a roster this grid is not showing.
         creatorTiles = creatorMode
-            ? EditorCreatorBuilds.forPage(EditorScreenState.page(), EditorScreenState.text())
+            ? EditorCreatorBuilds.forPage(EditorScreenState.page(), EditorScreenState.text(),
+                EditorScreenState.creatorReview(), EditorScreenState.creatorStarred())
             : List.of();
 
         // Tiles of the active strip, filtered.
@@ -369,6 +449,15 @@ public final class EditorBrowserPane {
                 new TemplateTilePainter.Marks(selected, hov, false, false, false), entry.relayId());
             int border = BuilderReviewState.borderColourFor(entry.review());
             if (border != BuilderReviewState.BORDER_NONE) g.renderOutline(x, y, size, size, border);
+            // The star sits in the corner a local tile keeps for its unsaved mark, which a relay
+            // build never has. Drawn last so it is never under the review ring.
+            boolean starred = EditorCreatorBuilds.starred(entry);
+            boolean hovStar = hovered.kind() == HitKind.CREATOR_STAR && hovered.index() == i;
+            String star = starred ? "\u2605" : "\u2606";
+            g.fill(x + STAR_INSET, y + STAR_INSET, x + STAR_INSET + STAR_SIZE,
+                y + STAR_INSET + STAR_SIZE, hovStar ? CELL_HOVER : SUB_HEADER_BG);
+            g.drawString(font, star, x + STAR_INSET + (STAR_SIZE - font.width(star)) / 2 + 1,
+                y + STAR_INSET + 1, hovStar ? 0xFF000000 : starred ? STAR_ON : STAR_OFF, false);
         }
     }
 
@@ -413,13 +502,20 @@ public final class EditorBrowserPane {
             new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup()));
     }
 
+    /** Whether the point is on tile {@code i}'s star rather than the picture behind it. */
+    private boolean overStar(int i, double mx, double my) {
+        int x = mainGrid.xFor(i) + STAR_INSET;
+        int y = mainGrid.yFor(i, scroll) + STAR_INSET;
+        return mx >= x && mx < x + STAR_SIZE && my >= y && my < y + STAR_SIZE;
+    }
+
     /** The tile under the point, for the tooltip; null over nothing. */
     public String tooltipAt(Hit hit) {
         return switch (hit.kind()) {
             case TILE -> hit.index() >= 0 && hit.index() < tiles.size() ? tooltipFor(tiles.get(hit.index()), false) : null;
             case SUB_TILE -> hit.index() == -1 && subParent != null ? tooltipFor(subParent, true)
                 : hit.index() >= 0 && hit.index() < subTiles.size() ? tooltipFor(subTiles.get(hit.index()), false) : null;
-            case CREATOR_TILE -> hit.index() >= 0 && hit.index() < creatorTiles.size()
+            case CREATOR_TILE, CREATOR_STAR -> hit.index() >= 0 && hit.index() < creatorTiles.size()
                 ? tooltipFor(creatorTiles.get(hit.index())) : null;
             case LOAD_ALL -> EditorScreenLang.text(EditorScreenLang.LOAD_ALL_TIP);
             case NEW -> EditorScreenLang.text(EditorScreenLang.TILE_NEW);
@@ -430,9 +526,16 @@ public final class EditorBrowserPane {
 
     /** A builder's upload: what it is called, what kind it is, and where it stands with a reviewer. */
     private static String tooltipFor(BuilderProfilePacket.Entry entry) {
-        return EditorCreatorBuilds.label(entry)
-            + "  ·  " + EditorScreenLang.text(EditorCreatorBuilds.kindKey(entry.kind()))
-            + "  ·  " + EditorScreenLang.text(EditorCreatorBuilds.reviewKey(entry.review()));
+        StringBuilder sb = new StringBuilder(EditorCreatorBuilds.label(entry));
+        // Whose it is, but only where the grid spans owners: on one builder's profile the chip above
+        // already says the name, and repeating it on every tile is noise.
+        if (EditorCreatorBuilds.pooled() && !entry.ownerName().isEmpty()) {
+            sb.append("  ·  ").append(EditorScreenLang.text(EditorScreenLang.CREATOR_BY))
+                .append(' ').append(entry.ownerName());
+        }
+        return sb.append("  ·  ").append(EditorScreenLang.text(EditorCreatorBuilds.kindKey(entry.kind())))
+            .append("  ·  ").append(EditorScreenLang.text(EditorCreatorBuilds.reviewKey(entry.review())))
+            .toString();
     }
 
     private static String tooltipFor(EditorRosterIndex.Tile tile, boolean asSelf) {
@@ -466,7 +569,10 @@ public final class EditorBrowserPane {
         if (gridRect == null || !gridRect.contains(mx, my) || mainGrid == null) return Hit.NONE;
         if (creatorMode) {
             int c = mainGrid.indexAt(mx, my, scroll, creatorTiles.size());
-            return c >= 0 && c < creatorTiles.size() ? new Hit(HitKind.CREATOR_TILE, c) : Hit.NONE;
+            if (c < 0 || c >= creatorTiles.size()) return Hit.NONE;
+            // The star is tested BEFORE the cell it sits inside: the other order means the cell
+            // swallows the click and the star can never be pressed at all.
+            return overStar(c, mx, my) ? new Hit(HitKind.CREATOR_STAR, c) : new Hit(HitKind.CREATOR_TILE, c);
         }
         int mainCount = tiles.size() + 1;
         int m = mainGrid.indexAt(mx, my, scroll, mainCount);

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
+import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
@@ -18,6 +19,7 @@ import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
+import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -56,6 +58,8 @@ public final class EditorGuiScreen extends Screen {
      * the editor. Running out is not a failure to report — it is the screen admitting it cannot
      * tell whether the player got there, and handing the button back so they can try again.</p>
      */
+    /** Long enough for the server to have asked the relay and been answered. */
+    private static final int SUBMIT_REFRESH_TICKS = 20;
     static final int GOING_TIMEOUT_TICKS = 200;
 
     private final EditorBrowserPane browser = new EditorBrowserPane();
@@ -84,6 +88,14 @@ public final class EditorGuiScreen extends Screen {
     /** The build being walked to, while the walk is under way. */
     private EditorCreatorBuilds.Landed goingTo;
     private int goingTicks;
+    /**
+     * Ticks until the listing is asked for again after a submit or a withdraw.
+     *
+     * <p>Not immediate: the press goes to the server, which asks the relay, which answers — a re-read
+     * fired in the same frame comes back with the row exactly as it was and reads as the button
+     * having done nothing.</p>
+     */
+    private int submitTicks;
     /** Which version of the selected build the preview shows: 0 is the build as it is now. */
     private int previewSeq;
     /** The relay row the preview is paging, so a change of selection can reset the paging. */
@@ -149,6 +161,9 @@ public final class EditorGuiScreen extends Screen {
         tickWalk();
         if (refreshTicks > 0 && --refreshTicks == 0) {
             EditorSaveStatus.request();
+        }
+        if (submitTicks > 0 && --submitTicks == 0) {
+            EditorCreatorBuilds.refresh();
         }
     }
 
@@ -234,7 +249,7 @@ public final class EditorGuiScreen extends Screen {
             // the pane that has no controls stands in for it rather than eight disabled buttons.
             BuilderProfilePacket.Entry picked = selectedCreatorBuild();
             trackVersionsOf(picked == null ? 0 : picked.relayId(),
-                EditorCreatorBuilds.viewedUuid());
+                EditorCreatorBuilds.ownerOf(picked));
             creatorPane.render(g, this.font, layout, theme, picked, orbit.yaw(),
                 creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null,
                 previewSeq, mx, my);
@@ -368,12 +383,31 @@ public final class EditorGuiScreen extends Screen {
         BuilderProfilePacket.Entry entry = selectedCreatorBuild();
         if (entry == null) return;
         boolean live = BuilderProfileState.live();
-        String owner = EditorCreatorBuilds.viewedUuid();
+        // The row's own owner, not the builder being viewed: the pooled listing spans them.
+        String owner = EditorCreatorBuilds.ownerOf(entry);
         DungeonTrainNet.sendToServer(loadAsCopy
             ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
                 BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, live, false)
             : new BuilderProfileDownloadPacket(entry.relayId(), owner, live));
         creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
+    }
+
+    /**
+     * Put the selected build on the train, or take it back off.
+     *
+     * <p>The same packet My Builds sends, and authorised the same way — by the owner secret in this
+     * world's saved data, looked up server-side from the id. Nothing is assumed to have worked: the
+     * server re-reads the profile once the relay answers, and the label follows what comes back
+     * rather than what was asked for, because the relay can refuse (a build another world is holding).</p>
+     */
+    private void submitSelectedCreatorBuild() {
+        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
+        if (entry == null || !BuilderRelayKinds.canSubmitForReview(entry.kind())) return;
+        DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), !entry.published()));
+        // The server's own re-read is addressed to the player's OWN profile, so this listing has to
+        // ask again itself — and after a moment, once the relay has actually answered the action.
+        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_SUBMITTING);
+        submitTicks = SUBMIT_REFRESH_TICKS;
     }
 
     /** Drop what the last Load said — it was about a build that is no longer the one on screen. */
@@ -448,7 +482,7 @@ public final class EditorGuiScreen extends Screen {
         previewSeq = next;
         if (next != 0) {
             RelayBuildPreviews.request(previewRelayId,
-                EditorCreatorBuilds.active() ? EditorCreatorBuilds.viewedUuid() : "",
+                EditorCreatorBuilds.active() ? EditorCreatorBuilds.ownerOf(selectedCreatorBuild()) : "",
                 BuilderProfileState.live(), next);
         }
     }
@@ -577,6 +611,11 @@ public final class EditorGuiScreen extends Screen {
                     loadSelectedCreatorBuild();
                     return true;
                 }
+                case SUBMIT -> {
+                    click();
+                    submitSelectedCreatorBuild();
+                    return true;
+                }
                 case GO_HERE -> {
                     click();
                     goToLoadedBuild();
@@ -624,6 +663,12 @@ public final class EditorGuiScreen extends Screen {
                     openCreatorSearch();
                     return;
                 }
+                // Creator mode's own two chips narrow relay builds, which the roster's filter record
+                // knows nothing about — so they are applied first, and on their own terms.
+                if (browser.applyCreatorChip(hit.index())) {
+                    browser.resetScroll();
+                    return;
+                }
                 EditorScreenState.setFilters(browser.applyChip(hit.index(), EditorScreenState.filters()));
                 browser.resetScroll();
             }
@@ -640,6 +685,9 @@ public final class EditorGuiScreen extends Screen {
                 // The note and the copy offer belonged to the build that was selected before.
                 forgetLastLoad();
             }
+            // Starring is not selecting: pressing the corner of a tile you are not looking at should
+            // keep it for later without moving the previewer off whatever you were reading.
+            case CREATOR_STAR -> EditorCreatorBuilds.toggleStar(browser.creatorTiles().get(hit.index()));
             case SUB_TILE -> {
                 if (hit.index() == -1) selectOrEnter(browser.subParent().key());
                 else selectOrEnter(browser.subTiles().get(hit.index()).key());
@@ -676,6 +724,13 @@ public final class EditorGuiScreen extends Screen {
             case PICKED -> {
                 click();
                 EditorCreatorBuilds.show(result.creator().uuid(), result.creator().name());
+                forgetLastLoad();
+                browser.resetScroll();
+                search.close();
+            }
+            case ALL -> {
+                click();
+                EditorCreatorBuilds.showAll();
                 forgetLastLoad();
                 browser.resetScroll();
                 search.close();
