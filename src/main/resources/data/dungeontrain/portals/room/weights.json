@@ -34,6 +34,10 @@
     "minLevel": 3,
     "mode": "endless_repetition"
   },
+  "chunk_dimension": {
+    "weight": 2,
+    "mode": "chunk_dimension/exact/off/off/off/none/sealed/0/9"
+  },
   "cubes": {
     "weight": 1,
     "mode": "endless_repetition"

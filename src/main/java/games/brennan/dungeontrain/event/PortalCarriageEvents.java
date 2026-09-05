@@ -593,6 +593,21 @@ public final class PortalCarriageEvents {
         // The trips into test carriages go too: their return positions name a place in the world
         // that is closing, and the structures they describe are not in the next one.
         games.brennan.dungeontrain.portal.PortalTestSession.clear();
+        // The sampled chunks and the fills still queued against them. Pair-keyed like everything
+        // else here, so the next world opened must not inherit either.
+        games.brennan.dungeontrain.portal.PortalChunkTerrain.clear();
+        games.brennan.dungeontrain.portal.PortalChunkDimension.clear();
+    }
+
+    /**
+     * The structure a pair is currently standing, or null when it stands none.
+     *
+     * <p>Handed to {@code PortalChunkDimension.drainPending} so a deferred terrain fill can check
+     * that the room it was queued against is still there, and still where it was, before writing a
+     * room's worth of blocks into the basement.</p>
+     */
+    private static PortalStructure liveStructure(int pairKey) {
+        return STRUCTURES.get(pairKey);
     }
 
     @SubscribeEvent
@@ -617,6 +632,10 @@ public final class PortalCarriageEvents {
         }
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        // Rooms whose sampled chunk was still being generated when they were stamped. Free when
+        // nothing is waiting, which is every tick but the handful after a chunk dimension is built.
+        games.brennan.dungeontrain.portal.PortalChunkDimension.drainPending(
+            level, PortalCarriageEvents::liveStructure);
         // No tick-wide layout: two pairs on the same train can have drawn different corridor kinds
         // (PortalCarriageSelection.corridorKindFor), and the layout is what the midpoint, the far
         // door and the containment bounds all come from. It is resolved per pair, below.
@@ -1027,7 +1046,7 @@ public final class PortalCarriageEvents {
             if (next != structure) STRUCTURES.put(pair.getKey(), next);
 
             sendFogFor(players, dims, layout, next, fogged);
-            sendSkyFor(players, dims, layout, next, skied);
+            sendSkyFor(players, dims, layout, next, skied, pair.getKey());
             sendTrainAudioFor(players, dims, next, inStructure);
         }
 
@@ -1101,7 +1120,10 @@ public final class PortalCarriageEvents {
         Set<UUID> inStructure = new HashSet<>();
 
         sendFogFor(players, dims, layout, structure, fogged);
-        sendSkyFor(players, dims, layout, structure, skied);
+        // Every caller of this is a test room, and a test room is always the one pair key the test
+        // session stands up — see PortalTestSession#PAIR_KEY.
+        sendSkyFor(players, dims, layout, structure, skied,
+            games.brennan.dungeontrain.portal.PortalTestSession.PAIR_KEY);
         sendTrainAudioFor(players, dims, structure, inStructure);
 
         clearFogFor(players, fogged);
@@ -1223,8 +1245,17 @@ public final class PortalCarriageEvents {
      */
     private static void sendSkyFor(List<ServerPlayer> players, CarriageDims dims,
                                    PortalCarriageLayout layout, PortalStructure structure,
-                                   Set<UUID> skied) {
+                                   Set<UUID> skied, int pairKey) {
         games.brennan.dungeontrain.portal.PortalRoomSky sky = structure.settings().sky();
+        // A chunk dimension's sky is not the author's to set: which dimension the pair sampled is
+        // rolled per pair, and a slice of the Nether lit as an Overworld afternoon reads as neither.
+        // The roll is pure in the seed and the key, so this is the same answer the terrain was
+        // sampled under — see PortalChunkTerrain.Source#sky.
+        if (structure.mode().generatesTerrain()) {
+            if (players.isEmpty()) return;
+            sky = games.brennan.dungeontrain.portal.PortalChunkTerrain.skyFor(
+                players.get(0).serverLevel().getSeed(), pairKey);
+        }
         if (!sky.lights() || !DungeonTrainConfig.isPortalRoomDaylight()) return;
 
         // Y off the ROOM rather than the corridor lane, for the reason sendFogFor gives: a room with

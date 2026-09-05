@@ -799,6 +799,11 @@ public final class PortalCarriageBuilder {
         // Where this pair stands its exit, decided here with everything else about the pair and then
         // carried on the record — the same promise the mode and the room name make. Re-deciding it
         // per tick, or per re-stamp, would move a player's way out from under them.
+        // Start sampling a chunk dimension's terrain the moment the pair is planned rather than when
+        // it is stamped: sampling runs on a worker and takes tens of milliseconds, and a player has
+        // to walk the length of the train to reach the carriage. By the time they do, the cube is
+        // usually already in hand and the room is filled in the stamp that builds it.
+        if (settings.mode().generatesTerrain()) PortalChunkTerrain.request(level, pairKey);
         PortalRoomTiling.Tile exitTile = PortalExitSites.relocatedExitTile(
             settings.effectiveExits(),
             PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
@@ -881,7 +886,14 @@ public final class PortalCarriageBuilder {
         // they are down, which is the other half of the same shell; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
         // out to. Bedrockless writes nothing around the room at all and sweeps the space instead.
-        if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
+        // A generated room fills the box the template just laid before anything is wrapped around
+        // it: the skin is written one column outside the room, so the two never touch, but the order
+        // keeps "what the room turned out to be" true for the mode branch below.
+        if (structure.mode().generatesTerrain()) {
+            PortalChunkDimension.fill(level, structure, dims, pairKey);
+        }
+
+        if (structure.mode().sealsRoomBox()) {
             bedrockSkin(level, roomOrigin, roomSize);
         } else if (structure.mode().clearsSurroundings()) {
             clearVoidAround(level, structure, dims);
