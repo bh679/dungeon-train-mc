@@ -19,6 +19,8 @@ public final class EditorScreenLang {
     public static final String TAB_EXIT = PREFIX + "tab.exit";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
+    /** The two keys that end a name prompt, under the field. */
+    public static final String TYPING_HINT = PREFIX + "typing.hint";
     public static final String FILTER_BUILTIN = PREFIX + "filter.builtin";
     public static final String FILTER_MINE = PREFIX + "filter.mine";
     public static final String FILTER_CREATOR = PREFIX + "filter.creator";

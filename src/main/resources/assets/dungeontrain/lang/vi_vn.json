@@ -890,6 +890,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "Cài đặt",
   "gui.dungeontrain.editor_screen.tab.exit": "Thoát trình chỉnh sửa",
   "gui.dungeontrain.editor_screen.filter.hint": "lọc theo tên…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter để xác nhận · Esc để hủy",
   "gui.dungeontrain.editor_screen.filter.builtin": "Có sẵn",
   "gui.dungeontrain.editor_screen.filter.mine": "Công trình của tôi",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Biến thể phụ của %s",

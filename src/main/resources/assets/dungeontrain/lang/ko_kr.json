@@ -890,6 +890,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "설정",
   "gui.dungeontrain.editor_screen.tab.exit": "편집기 나가기",
   "gui.dungeontrain.editor_screen.filter.hint": "이름으로 필터링…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter로 확인 · Esc로 취소",
   "gui.dungeontrain.editor_screen.filter.builtin": "내장",
   "gui.dungeontrain.editor_screen.filter.mine": "내 건축물",
   "gui.dungeontrain.editor_screen.sub_variants_of": "%s의 하위 변형",

@@ -945,6 +945,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "Настройки",
   "gui.dungeontrain.editor_screen.tab.exit": "Выйти из редактора",
   "gui.dungeontrain.editor_screen.filter.hint": "фильтр по имени…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter — подтвердить · Esc — отмена",
   "gui.dungeontrain.editor_screen.filter.builtin": "Встроенные",
   "gui.dungeontrain.editor_screen.filter.mine": "Мои постройки",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Подварианты %s",

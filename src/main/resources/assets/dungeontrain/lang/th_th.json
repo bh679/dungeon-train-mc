@@ -890,6 +890,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "การตั้งค่า",
   "gui.dungeontrain.editor_screen.tab.exit": "ออกจากตัวแก้ไข",
   "gui.dungeontrain.editor_screen.filter.hint": "กรองตามชื่อ…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter เพื่อยืนยัน · Esc เพื่อยกเลิก",
   "gui.dungeontrain.editor_screen.filter.builtin": "ในตัว",
   "gui.dungeontrain.editor_screen.filter.mine": "สิ่งก่อสร้างของฉัน",
   "gui.dungeontrain.editor_screen.sub_variants_of": "รูปแบบย่อยของ %s",

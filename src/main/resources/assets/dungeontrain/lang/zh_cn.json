@@ -890,6 +890,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "设置",
   "gui.dungeontrain.editor_screen.tab.exit": "退出编辑器",
   "gui.dungeontrain.editor_screen.filter.hint": "按名称筛选…",
+  "gui.dungeontrain.editor_screen.typing.hint": "回车确认 · Esc 取消",
   "gui.dungeontrain.editor_screen.filter.builtin": "内置",
   "gui.dungeontrain.editor_screen.filter.mine": "我的建筑",
   "gui.dungeontrain.editor_screen.sub_variants_of": "%s 的子变体",

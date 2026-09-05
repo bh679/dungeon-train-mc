@@ -890,6 +890,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "Mga Setting",
   "gui.dungeontrain.editor_screen.tab.exit": "Lumabas sa editor",
   "gui.dungeontrain.editor_screen.filter.hint": "maghanap ayon sa pangalan…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter para kumpirmahin · Esc para kanselahin",
   "gui.dungeontrain.editor_screen.filter.builtin": "Built-in",
   "gui.dungeontrain.editor_screen.filter.mine": "Mga Gawa Ko",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Mga sub-variant ng %s",

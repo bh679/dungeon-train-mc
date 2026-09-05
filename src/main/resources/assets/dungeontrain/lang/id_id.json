@@ -890,6 +890,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "Pengaturan",
   "gui.dungeontrain.editor_screen.tab.exit": "Keluar dari editor",
   "gui.dungeontrain.editor_screen.filter.hint": "filter berdasarkan nama…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter untuk konfirmasi · Esc untuk batal",
   "gui.dungeontrain.editor_screen.filter.builtin": "Bawaan",
   "gui.dungeontrain.editor_screen.filter.mine": "Bangunanku",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Sub-varian dari %s",

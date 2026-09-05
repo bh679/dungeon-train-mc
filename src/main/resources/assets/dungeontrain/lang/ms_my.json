@@ -890,6 +890,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "Tetapan",
   "gui.dungeontrain.editor_screen.tab.exit": "Keluar dari penyunting",
   "gui.dungeontrain.editor_screen.filter.hint": "tapis mengikut nama…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter untuk sahkan · Esc untuk batal",
   "gui.dungeontrain.editor_screen.filter.builtin": "Terbina Dalam",
   "gui.dungeontrain.editor_screen.filter.mine": "Binaan Saya",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Sub-varian %s",

@@ -915,6 +915,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "Einstellungen",
   "gui.dungeontrain.editor_screen.tab.exit": "Editor verlassen",
   "gui.dungeontrain.editor_screen.filter.hint": "nach Namen filtern…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter zum Bestätigen · Esc zum Abbrechen",
   "gui.dungeontrain.editor_screen.filter.builtin": "Integriert",
   "gui.dungeontrain.editor_screen.filter.mine": "Meine Bauten",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Untervarianten von %s",

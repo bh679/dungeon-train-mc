@@ -890,6 +890,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "設定",
   "gui.dungeontrain.editor_screen.tab.exit": "エディターを終了",
   "gui.dungeontrain.editor_screen.filter.hint": "名前で絞り込み…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter で確定 · Esc で取り消し",
   "gui.dungeontrain.editor_screen.filter.builtin": "内蔵",
   "gui.dungeontrain.editor_screen.filter.mine": "自分の建築",
   "gui.dungeontrain.editor_screen.sub_variants_of": "%s のサブバリアント",

@@ -1253,6 +1253,7 @@
   "gui.dungeontrain.editor_screen.tab.settings": "Setări",
   "gui.dungeontrain.editor_screen.tab.exit": "Ieși din editor",
   "gui.dungeontrain.editor_screen.filter.hint": "filtrează după nume…",
+  "gui.dungeontrain.editor_screen.typing.hint": "Enter pentru confirmare · Esc pentru anulare",
   "gui.dungeontrain.editor_screen.filter.builtin": "Native",
   "gui.dungeontrain.editor_screen.filter.mine": "Construcțiile mele",
   "gui.dungeontrain.editor_screen.sub_variants_of": "Subvariante ale %s",

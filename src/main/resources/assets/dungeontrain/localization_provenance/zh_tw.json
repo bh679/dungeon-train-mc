@@ -880,6 +880,7 @@
       "gui.dungeontrain.editor_screen.tab.settings",
       "gui.dungeontrain.editor_screen.tab.exit",
       "gui.dungeontrain.editor_screen.filter.hint",
+      "gui.dungeontrain.editor_screen.typing.hint",
       "gui.dungeontrain.editor_screen.filter.builtin",
       "gui.dungeontrain.editor_screen.filter.mine",
       "gui.dungeontrain.editor_screen.sub_variants_of",
