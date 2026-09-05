@@ -1,9 +1,12 @@
 package games.brennan.dungeontrain.portal;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.block.state.BlockState;
+
+import org.slf4j.Logger;
 
 import java.util.Arrays;
 
@@ -27,6 +30,8 @@ import java.util.Arrays;
  * it would move the frame they were standing in.</p>
  */
 public final class PortalChunkDoors {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
      * How many columns in from a mouth the ground is measured — the same two columns the doorway's
@@ -52,6 +57,8 @@ public final class PortalChunkDoors {
         int entry = groundRow(slice, 0, MOUTH_DEPTH - 1, zSpan[0], zSpan[1], max);
         int exit = groundRow(slice, size.getX() - MOUTH_DEPTH, size.getX() - 1, zSpan[0], zSpan[1], max);
 
+        LOGGER.info("[DungeonTrain] Chunk dimension doors: entry row {}, exit row {} (of {} allowed)",
+            entry, exit, max);
         return settings
             .withDoorHeightOffset(new PortalRoomDoorHeightOffset(entry))
             .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(exit));
@@ -97,7 +104,7 @@ public final class PortalChunkDoors {
     }
 
     /**
-     * One column's surface: its highest solid cell, capped at {@code max}.
+     * One column's surface: its highest cell a player would stand on, capped at {@code max}.
      *
      * <p><b>The block, not the air above it.</b> A door-height offset places the corridor's own
      * <i>floor row</i> — {@code PortalTestCommand} puts an arriving player at {@code origin + 1} —
@@ -109,7 +116,11 @@ public final class PortalChunkDoors {
     private static int surfaceOf(PortalChunkSlice slice, int x, int z, int max) {
         for (int y = Math.min(max, slice.size() - 1); y > 0; y--) {
             BlockState here = slice.at(x, y, z);
-            if (here != null && !here.isAir()) return y;
+            // What a player can stand on, not merely what is not air. Now that the sample is
+            // decorated, "not air" is grass, a flower, a snow layer or a sapling as readily as it is
+            // the ground under them — and standing the doorway on a tuft of grass puts its floor one
+            // block above the dirt beside it, which is a step down out of every door it happens to.
+            if (here != null && here.blocksMotion()) return y;
         }
         // A column with nothing solid under the cap at all — open sky down to the room's floor. The
         // floor is the template's own, so the doorway stands on that.

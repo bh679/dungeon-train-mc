@@ -79,7 +79,7 @@ final class PortalChunkFeatures {
                          ProtoChunk chunk, BoundingBox window, long worldSeed, int pairKey) {
         try {
             ChunkStep step = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES);
-            WorldGenRegion region = regionAround(level, chunk, step);
+            WorldGenRegion region = regionAround(level, generator, random, chunk, step);
             StructureManager structures = level.structureManager().forWorldGenRegion(region);
             BiomeManager biomes = new BiomeManager(
                 (x, y, z) -> generator.getBiomeSource().getNoiseBiome(x, y, z, random.sampler()),
@@ -107,17 +107,21 @@ final class PortalChunkFeatures {
      * terrain nobody sees — the room takes the middle chunk and nothing else — and their only job
      * here is to catch what a feature at the edge writes past it.</p>
      */
-    private static WorldGenRegion regionAround(ServerLevel level, ProtoChunk chunk, ChunkStep step) {
+    private static WorldGenRegion regionAround(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                               RandomState random, ProtoChunk chunk, ChunkStep step) {
         ChunkPos centre = chunk.getPos();
         int radius = Math.max(1, step.accumulatedDependencies().getRadius());
         Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
         StaticCache2D<GenerationChunkHolder> cache = StaticCache2D.create(
             centre.x, centre.z, radius, (x, z) -> {
                 ChunkPos pos = new ChunkPos(x, z);
-                ChunkAccess held = pos.equals(centre)
-                    ? chunk
-                    : new ProtoChunk(pos, UpgradeData.EMPTY, level, biomeRegistry, null);
-                return new SampleHolder(pos, held);
+                if (pos.equals(centre)) return new SampleHolder(pos, chunk);
+                // Blank, but not so blank that asking it a question throws: a neighbour still has to
+                // answer for its biomes and say it has got as far as the middle one has.
+                ProtoChunk blank = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomeRegistry, null);
+                blank.fillBiomesFromNoise(generator.getBiomeSource(), random.sampler());
+                blank.setPersistedStatus(ChunkStatus.SURFACE);
+                return new SampleHolder(pos, blank);
             });
         return new WorldGenRegion(level, cache, step, chunk);
     }

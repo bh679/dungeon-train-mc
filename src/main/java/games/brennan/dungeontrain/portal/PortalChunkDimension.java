@@ -123,8 +123,11 @@ public final class PortalChunkDimension {
             for (int z = minZ; z <= maxZ; z++) {
                 cursor.set(x, floorY, z);
                 if (mask.covers(cursor)) continue;
+                // Anything a player would fall through or wade into — air, water, and equally the
+                // grass or flower a decorated sample grew on the row the doorway stands on. Solid
+                // ground is the terrain the door was fitted to and is never touched.
                 BlockState floor = level.getBlockState(cursor);
-                if (floor.isAir() || !floor.getFluidState().isEmpty()) {
+                if (!floor.blocksMotion()) {
                     level.setBlock(cursor, ground, Block.UPDATE_ALL);
                 }
             }

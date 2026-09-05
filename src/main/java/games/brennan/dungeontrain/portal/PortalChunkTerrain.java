@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Aquifer;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.DensityFunctions;
@@ -311,6 +312,13 @@ public final class PortalChunkTerrain {
 
         ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomes, null);
         chunk.fillBiomesFromNoise(noiseGenerator.getBiomeSource(), random.sampler());
+        // A chunk nobody generated is at ChunkStatus.EMPTY, and half of vanilla refuses to answer
+        // questions about one: ProtoChunk.getNoiseBiome throws "Asking for biomes before we have
+        // biomes" below BIOMES, whatever its biome container actually holds. Saying where this
+        // sample has got to is what lets the structure pick and the decoration pass read it — and
+        // SURFACE rather than anything later, because the statuses past it are the ones that would
+        // have this chunk doing lighting work for a world it is not in.
+        chunk.setPersistedStatus(ChunkStatus.SURFACE);
 
         int fillLo = Math.max(minY, anchor - CONTEXT_BELOW);
         int fillHi = Math.min(maxY, anchor + CONTEXT_ABOVE);
