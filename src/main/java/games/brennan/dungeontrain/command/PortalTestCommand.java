@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
+import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
@@ -140,8 +141,30 @@ public final class PortalTestCommand {
         //
         // The basement rather than PortalTwinSpace.regionFor, because the basement is the region this
         // command actually stamps into — originFor stands the lane on the build floor.
-        Vec3i authored = PortalRoomSizes.sizeOf(roomName, dims);
+        //
+        // Read off the TEMPLATE, not off PortalRoomSizes: the box and the blocks put into it have to
+        // be the same size, and only the template can answer for both. PortalRoomSizes is a
+        // process-wide cache with a `pending` override for a plot resize that disk does not have
+        // yet, so it drifts from the template in both directions — and a box that disagrees sends
+        // stampRoomAt down its resize branch, which lays the built-in shell and clips the authored
+        // room to the box. Either way an edge of the room is not the author's. Under endless
+        // repetition every tile inherits it, because the tiler stamps all of them from this one
+        // size. This is the call planStructure makes in play, so a test now sizes the room exactly
+        // as a player would meet it.
+        Vec3i authored = PortalRoomTemplateStore.sizeOf(overworld, roomName, dims);
         PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+
+        // A plot resized but not saved: the test can only stand up what is on disk, so say so rather
+        // than stamping the last save and letting the author read it as their new room.
+        Vec3i plot = PortalRoomSizes.sizeOf(roomName, dims);
+        if (!plot.equals(authored)) {
+            source.sendSuccess(() -> Component.literal(
+                "'" + roomName + "' is " + plot.getX() + "x" + plot.getY() + "x" + plot.getZ()
+                    + " in the plot but " + authored.getX() + "x" + authored.getY() + "x"
+                    + authored.getZ() + " on disk — testing what was saved. Save it to test the "
+                    + "size you are building."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
         PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
         Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authored);
 

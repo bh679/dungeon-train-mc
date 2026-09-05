@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Who owns a portal room's footprint, and for how long.
@@ -85,5 +86,33 @@ final class PortalRoomSizesTest {
         PortalRoomSizes.revert(ROOM);
         PortalRoomSizes.revert(null);
         assertEquals(PortalRoomLayout.builtInSize(DIMS), PortalRoomSizes.sizeOf(ROOM, DIMS));
+    }
+
+    /**
+     * Why {@code /dungeontrain portal test} must not size its stamp box from this class.
+     *
+     * <p>The cache is a plot-layout answer — it exists so {@code TrackSidePlots.locate} can size a
+     * plot with no {@code ServerLevel} to load a template through — and it deliberately drifts from
+     * the template while an author is resizing. A stamp sized from it and then filled from the
+     * template disagrees with itself, and {@code PortalCarriageBuilder.stampRoomAt} resolves that
+     * disagreement by clipping the authored room to the box (or shelling out the difference with the
+     * built-in room). That is how a 13-block room came to be stamped into a 12-block box and lose an
+     * edge, alternating between the two across successive tests as the pending resize came and went.
+     * The stamp box now comes from the template, which is the only source that cannot disagree with
+     * the blocks being stamped.</p>
+     */
+    @Test
+    @DisplayName("The cache drifts from the template in both directions — so a stamp box must not use it")
+    void cacheDriftsFromTheTemplateBothWays() {
+        // Ahead of disk: an in-editor resize the author has not saved.
+        PortalRoomSizes.observe(ROOM, ON_DISK);
+        PortalRoomSizes.pending(ROOM, RESIZED);
+        assertNotEquals(ON_DISK, PortalRoomSizes.sizeOf(ROOM, DIMS),
+                "a pending resize makes the cache bigger than the template on disk");
+
+        // Behind disk: the same session after `portal test back` reverts the override. Nothing about
+        // the template changed, yet the cache now answers with the previous size.
+        PortalRoomSizes.revert(ROOM);
+        assertEquals(ON_DISK, PortalRoomSizes.sizeOf(ROOM, DIMS));
     }
 }

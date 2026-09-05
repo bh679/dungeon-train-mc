@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
 
 /**
@@ -92,6 +93,17 @@ import java.util.Set;
 public final class PortalCarriageBuilder {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
+    /**
+     * Size mismatches already reported, so the editor's size steppers do not fill a log.
+     *
+     * <p>Keyed on the room and both sizes, not on the room alone: a stepper walked from 11 to 13
+     * one click at a time is three distinct mismatches worth seeing once each, while the same click
+     * re-stamping the same plot over and over is one. Never cleared — the set is bounded by the
+     * number of distinct sizes an author steps through in a session, and a mismatch that has been
+     * said once has been said.</p>
+     */
+    private static final Set<String> REPORTED_SIZE_MISMATCHES = ConcurrentHashMap.newKeySet();
 
     /** Corridor shell — walls, floor, ceiling, door planes and baffles. */
     private static final BlockState SHELL = Blocks.STONE_BRICKS.defaultBlockState();
@@ -1807,6 +1819,14 @@ public final class PortalCarriageBuilder {
         // fits, and only genuinely new space comes back as the built-in room. Replacing the whole
         // thing with the built-in room — which is what used to happen — threw the work away on
         // every stepper click.
+        //
+        // Logged because everywhere OUTSIDE the editor's resize this branch is a bug: the caller
+        // sized the box from something other than the template it is about to stamp, and the room a
+        // player walks into loses an edge to the clip (or gains a built-in one). It used to happen
+        // silently — /dungeontrain portal test sized its box off the PortalRoomSizes cache and
+        // stamped the same room at two different sizes minutes apart, which took reading a session
+        // log to spot.
+        warnSizeMismatch(roomName, size, stored.get().getSize());
         stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
         CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
             clipTo(roomOrigin, size, writeMask), relight, boxOf(roomOrigin, size));
@@ -2150,5 +2170,24 @@ public final class PortalCarriageBuilder {
             baseRoomOrigin.getX() + localX,
             y - (roomOrigin.getY() - baseRoomOrigin.getY()),
             z - (roomOrigin.getZ() - baseRoomOrigin.getZ()));
+    }
+
+    /**
+     * Say once that a room was stamped into a box that is not its own size.
+     *
+     * <p>Legitimate on the editor's own plot, where the box follows the size steppers and the
+     * template only catches up on save. Everywhere else it means the caller sized the box from
+     * something other than the template it then stamped — and the room a player walks into loses its
+     * far edges to the clip, or gains a built-in one where it was grown. Under endless repetition
+     * every tile inherits that, since the tiler stamps all of them from one size.</p>
+     */
+    private static void warnSizeMismatch(String roomName, Vec3i box, Vec3i template) {
+        String key = roomName + "|" + box + "|" + template;
+        if (!REPORTED_SIZE_MISMATCHES.add(key)) return;
+        LOGGER.warn("[DungeonTrain] Room '{}' stamped into a {}x{}x{} box but its template is "
+                + "{}x{}x{} — the authored room is clipped or shelled to fit. Expected while the "
+                + "editor's size steppers are ahead of the last save; a bug anywhere else.",
+            roomName, box.getX(), box.getY(), box.getZ(),
+            template.getX(), template.getY(), template.getZ());
     }
 }
