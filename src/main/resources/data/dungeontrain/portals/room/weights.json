@@ -99,6 +99,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "foundation": {
+    "weight": 1,
+    "mode": "endless_repetition/exact/off/on/off/none/repeated/0/30"
+  },
   "house": {
     "weight": 1,
     "mode": "bedrock_lock"
