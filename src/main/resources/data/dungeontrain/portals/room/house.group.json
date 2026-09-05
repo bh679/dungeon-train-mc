@@ -63,6 +63,10 @@
     {
       "id": "deserter",
       "weight": 1
+    },
+    {
+      "id": "terrarium",
+      "weight": 1
     }
   ]
 }
