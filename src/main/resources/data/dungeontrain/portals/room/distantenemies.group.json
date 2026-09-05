@@ -5,6 +5,10 @@
     {
       "id": "zombies",
       "weight": 1
+    },
+    {
+      "id": "ender",
+      "weight": 1
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "abandonedroom": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
   },
   "backrooms": {
     "weight": 1,
@@ -21,6 +21,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "bigger": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/end"
+  },
   "biggerlibrary": {
     "weight": 1,
     "mode": "bedrock_lock"
@@ -30,9 +34,13 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 5,
+    "weight": 2,
     "minLevel": 3,
     "mode": "endless_repetition"
+  },
+  "chess": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_end"
   },
   "chunk_dimension": {
     "weight": 4,
@@ -48,7 +56,7 @@
   },
   "cubes": {
     "weight": 1,
-    "mode": "endless_repetition"
+    "mode": "endless_repetition/exact/off/on/off/end"
   },
   "cvspharmacy": {
     "weight": 1,
@@ -95,12 +103,16 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "foundation": {
+    "weight": 1,
+    "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30"
+  },
   "house": {
     "weight": 1,
     "mode": "bedrock_lock"
   },
   "labrynth": {
-    "weight": 3,
+    "weight": 2,
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
@@ -120,6 +132,14 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "nostalgia": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
+  },
+  "outsidethebox": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone"
+  },
   "parkour": {
     "weight": 3,
     "minLevel": 10,
@@ -133,6 +153,10 @@
     "weight": 1,
     "minLevel": 5,
     "mode": "endless_repetition"
+  },
+  "peateargriffin": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
   },
   "pretty": {
     "weight": 1,
@@ -152,9 +176,18 @@
     "maxLevel": 40,
     "mode": "endless_open"
   },
+  "singlepillar2": {
+    "weight": 1,
+    "mode": "endless_open"
+  },
   "smalllibrary": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
+  },
+  "smallpat": 1,
+  "suspiciousfurniturestore": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
   },
   "terrarium": {
     "weight": 1,
@@ -167,7 +200,7 @@
   },
   "upsidedown": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
   },
   "window": {
     "weight": 2,
