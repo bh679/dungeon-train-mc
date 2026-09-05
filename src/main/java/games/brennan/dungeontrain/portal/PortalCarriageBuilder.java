@@ -1040,7 +1040,8 @@ public final class PortalCarriageBuilder {
         // entry corridor and the near end of an exit one.
         int sealX = PortalCorridorMask.sealPlaneX(corridorOrigin, layout, role);
         sealCorridorMouth(level, sealX, corridorOrigin, dims, roomOrigin, roomSize,
-            sealSource.roomOrigin(dims, layout), role);
+            sealSource.roomOrigin(dims, layout), role,
+            /*wallOnly*/ base.settings().effectiveDoorWall().repeats());
 
         // Dead space behind the door that leads nowhere, at the other end. Unbreakable under Bedrock
         // Lock: the room's own skin stops at its ±X ends, so the plugs are what closes off the two
@@ -2116,14 +2117,23 @@ public final class PortalCarriageBuilder {
      * the same way: what closes a face should be what the player would have seen had the room simply
      * carried on. See {@link #sealFillFor} for the three tiers.</p>
      *
-     * <p><b>The plane still fills the room's whole cross-section and is still solid.</b> It is the
-     * only thing between the room and the basement rock when the next copy is never stamped — the
-     * budget is spent, or the chunks are not loaded — which {@link PortalCorridorMask}'s javadoc
-     * records at length. Only the material changed.</p>
+     * <p><b>Under {@link PortalRoomDoorWall#SEALED} the plane fills the room's whole cross-section
+     * and is solid.</b> It is the only thing between the room and the basement rock when the next
+     * copy is never stamped — the budget is spent, or the chunks are not loaded — which
+     * {@link PortalCorridorMask}'s javadoc records at length.</p>
+     *
+     * <p><b>Under {@link PortalRoomDoorWall#REPEATED} — the default — only the wall is carried on
+     * ({@code wallOnly}).</b> Where the room's own end column has a block, the plane continues it;
+     * where the author drew air, the cell is left as the rock it was cut from. Nothing is invented:
+     * an open-sided room used to get a plane of its own floor block here, which is the wall nobody
+     * drew that Kept exists to keep out. The copy at tile {@code (±1, 0)} lands nearest-first and
+     * stamps its own end column over this plane, air and all, so the rock is what a player sees for
+     * the tick or two before it does.</p>
      */
     private static void sealCorridorMouth(ServerLevel level, int planeX, BlockPos corridorOrigin,
                                           CarriageDims dims, BlockPos roomOrigin, Vec3i roomSize,
-                                          BlockPos baseRoomOrigin, PortalCarriageRole role) {
+                                          BlockPos baseRoomOrigin, PortalCarriageRole role,
+                                          boolean wallOnly) {
         int floorY = roomOrigin.getY();
         int ceilingY = floorY + roomSize.getY() - 1;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -2135,14 +2145,15 @@ public final class PortalCarriageBuilder {
                 // offset, or an exit door placed apart from its entry door, stands its corridor
                 // somewhere else in the box. The old test then bricked the top rows of the doorway
                 // and left the rows beneath it unfilled, which is a hole into the rock at the mouth.
-                // PortalCorridorMask.forCorridor and PortalRoomSealRepair already read it this way.
+                // PortalCorridorMask.forCorridor already reads it this way.
                 boolean coveredByCorridor = z >= corridorOrigin.getZ()
                     && z < corridorOrigin.getZ() + dims.width()
                     && y >= corridorOrigin.getY()
                     && y < corridorOrigin.getY() + dims.height();
                 if (coveredByCorridor) continue;
                 BlockState fill = sealFillFor(level, baseRoomOrigin, roomOrigin, roomSize, role,
-                    y, z, floorY);
+                    y, z, floorY, wallOnly);
+                if (fill == null) continue;
                 level.setBlock(pos.set(planeX, y, z), fill, Block.UPDATE_ALL);
             }
         }
@@ -2169,15 +2180,19 @@ public final class PortalCarriageBuilder {
      * chests along the boundary, and a copied stair or torch keeps the facing it had and leaves a
      * hole besides.</p>
      */
-    // Package-private rather than private: PortalRoomSealRepair fills the cells a room copy's own
-    // stamp left as air in the same plane, and it must do it by the same three-tier rule — a second
-    // implementation is a second chance to leave air in a plane that may not have any.
+    // Package-private rather than private so the tier rule can be exercised from a test.
+    /**
+     * As documented above, or — with {@code wallOnly} — tier 1 alone: the wall carried on where the
+     * room has one, and {@code null} where it does not, which the caller leaves untouched.
+     */
     static BlockState sealFillFor(ServerLevel level, BlockPos baseRoomOrigin,
                                           BlockPos roomOrigin, Vec3i roomSize,
-                                          PortalCarriageRole role, int y, int z, int floorY) {
+                                          PortalCarriageRole role, int y, int z, int floorY,
+                                          boolean wallOnly) {
         BlockPos wall = sealFillSource(baseRoomOrigin, roomOrigin, roomSize, role, y, z);
         BlockState wallState = level.getBlockState(wall);
         if (PortalRoomTiler.usableAsFill(level, wall, wallState)) return wallState;
+        if (wallOnly) return null;
 
         BlockPos floor = wall.atY(baseRoomOrigin.getY());
         BlockState floorState = level.getBlockState(floor);
