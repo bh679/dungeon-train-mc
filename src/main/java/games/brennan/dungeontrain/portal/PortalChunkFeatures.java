@@ -198,7 +198,11 @@ final class PortalChunkFeatures {
                                        RandomState random, ProtoChunk chunk, BoundingBox window,
                                        long worldSeed, int pairKey) {
         List<Structure> candidates = fittingStructures(level, generator, chunk);
-        if (candidates.isEmpty()) return;
+        if (candidates.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] Chunk dimension pair {} has no structure to plant — nothing "
+                + "in the registry admits the biome it sampled", pairKey);
+            return;
+        }
 
         // Deterministic in the seed and the pair, like every other choice a pair makes, so a
         // re-sampled room is the same room.
@@ -215,6 +219,8 @@ final class PortalChunkFeatures {
             if (!start.isValid()) continue;
             if (spanOf(start).intersects(window)) {
                 register(chunk, start);
+                LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {} where it generated",
+                    pairKey, nameOf(level, structure));
                 return;
             }
             if (fallback == null) fallback = start;
@@ -226,11 +232,23 @@ final class PortalChunkFeatures {
         // floor or ledge the sample was anchored on — so the two rarely meet by luck. The structure
         // is moved onto the room's ground instead of being thrown away, which is what makes "always
         // at least one structure" true in all three dimensions rather than mostly true in one.
-        if (fallback == null) return;
+        if (fallback == null) {
+            LOGGER.warn("[DungeonTrain] Chunk dimension pair {} planted nothing — {} candidate(s), "
+                + "none of them generated a valid start", pairKey, STRUCTURE_ATTEMPTS);
+            return;
+        }
         BoundingBox span = spanOf(fallback);
-        fallback.getPieces().forEach(piece ->
-            piece.move(0, window.minY() + PortalChunkTerrain.SURFACE_ROW - span.minY(), 0));
+        int lift = window.minY() + PortalChunkTerrain.SURFACE_ROW - span.minY();
+        fallback.getPieces().forEach(piece -> piece.move(0, lift, 0));
         register(chunk, fallback);
+        LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}, moved {} blocks onto the "
+            + "room's ground", pairKey, nameOf(level, fallback.getStructure()), lift);
+    }
+
+    /** What a structure is called, for the log — its registry id, or its class when unregistered. */
+    private static String nameOf(ServerLevel level, Structure structure) {
+        var id = level.registryAccess().registryOrThrow(Registries.STRUCTURE).getKey(structure);
+        return id == null ? structure.getClass().getSimpleName() : id.toString();
     }
 
     /** Put a start on the chunk, with the reference that makes the decoration pass place it. */
