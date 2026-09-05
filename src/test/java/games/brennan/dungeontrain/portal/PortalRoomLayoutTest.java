@@ -129,7 +129,9 @@ class PortalRoomLayoutTest {
     @Test
     @DisplayName("The authoring ceiling is what a stock world can very nearly stand up")
     void maxHeight_isTheAuthoringCeiling() {
-        assertEquals(80, PortalRoomLayout.MAX_HEIGHT);
+        // What a stock basement can stand up: 80 blocks, less the floor margin and the row under bedrock.
+        assertEquals(77, PortalRoomLayout.MAX_HEIGHT);
+        assertEquals(PortalTwinLanes.maxStructureHeight(-64, 16), PortalRoomLayout.MAX_HEIGHT);
         // What a stock DT preset (basement 80, floor -48, bedrock 32) actually holds. A room asked
         // for taller than this is stamped at this instead — see PortalCarriageBuilder.
         assertEquals(77, PortalTwinLanes.maxStructureHeight(-48, 32));

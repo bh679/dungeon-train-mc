@@ -109,18 +109,22 @@ public final class PortalRoomLayout {
     /**
      * Tallest room an author may ask for — the ceiling on the editor's stepper and on a template.
      *
-     * <p><b>Not on its own a promise that a world can stand one up.</b> A twin structure lives in
-     * the basement between the build floor and the bedrock, and a DT preset keeps 80 blocks of it;
-     * {@link PortalTwinLanes#maxStructureHeight} is what that leaves for a structure in a given
-     * world (77 in every stock preset), and {@code PortalCarriageBuilder.planStructure} clamps to it.
-     * A deeper dimension reaches the whole number.</p>
+     * <p><b>The tallest a stock world can stand up, not merely the tallest the format can hold.</b>
+     * A twin structure lives in the basement between the build floor and the bedrock; a DT preset
+     * keeps 80 blocks of it, the bottom lane's floor sits {@link PortalTwinLanes#FLOOR_MARGIN} above
+     * the build floor, and one row has to stay under the bedrock — 77, which is what
+     * {@link PortalTwinLanes#maxStructureHeight} answers in every stock preset. This was 80, three
+     * taller than any world could stamp: {@code PortalCarriageBuilder.heldInRegion} held such a room
+     * to 77 on the way into the world, so an author who built an 80-block sky room saw its ceiling
+     * and top rows cut off by bedrock the first time they tested it, with nothing in the editor
+     * having said no. The editor's ceiling and the world's are now the same number.</p>
      *
      * <p>This used to be {@code TWIN_LANE_HEIGHT - 1} (11) — the lane spacing was a constant, so the
      * tallest room was whatever fitted under it. The spacing is a function of the room now
      * ({@link PortalTwinLanes#laneHeight}), which turns the trade around: a taller room costs lanes,
      * and lanes are only a collision-avoidance spread, not a correctness requirement.</p>
      */
-    public static final int MAX_HEIGHT = 80;
+    public static final int MAX_HEIGHT = 77;
 
     private PortalRoomLayout() {}
 
