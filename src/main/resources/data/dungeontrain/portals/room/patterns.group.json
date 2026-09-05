@@ -9,6 +9,10 @@
     {
       "id": "blocks",
       "weight": 1
+    },
+    {
+      "id": "bigger",
+      "weight": 1
     }
   ]
 }

@@ -21,6 +21,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "bigger": {
+    "weight": 1,
+    "mode": "endless_open/dynamic"
+  },
   "biggerlibrary": {
     "weight": 1,
     "mode": "bedrock_lock"
