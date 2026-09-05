@@ -607,13 +607,31 @@ public final class PortalCarriageEvents {
      * room's worth of blocks into the basement.</p>
      */
     private static PortalStructure liveStructure(int pairKey) {
-        return STRUCTURES.get(pairKey);
+        PortalStructure live = STRUCTURES.get(pairKey);
+        if (live != null) return live;
+        // A test room is stamped outside the pair machinery entirely — PortalTestCommand builds the
+        // structure itself and never puts it in STRUCTURES — so a room an author is standing in
+        // would look retired to the drain and never be filled. Its sessions all stand the one pair
+        // key, which is the key a queued fill was filed under.
+        if (pairKey != games.brennan.dungeontrain.portal.PortalTestSession.PAIR_KEY) return null;
+        for (Map.Entry<UUID, games.brennan.dungeontrain.portal.PortalTestSession.Session> entry
+                : games.brennan.dungeontrain.portal.PortalTestSession.entries()) {
+            return entry.getValue().structure();
+        }
+        return null;
     }
 
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
+
+        // Rooms whose sampled chunk was still being generated when they were stamped. Above the
+        // early returns below, and deliberately: a test room stood up with the portal lottery off
+        // is exactly the case an author is looking at while they wait for it. Free when nothing is
+        // waiting, which is every tick but the handful after a chunk dimension is built.
+        games.brennan.dungeontrain.portal.PortalChunkDimension.drainPending(
+            level, PortalCarriageEvents::liveStructure);
 
         List<ServerPlayer> players = level.players();
         // Both of these stop the freeze rule being asked at all, so anything it stopped has to be
@@ -632,10 +650,6 @@ public final class PortalCarriageEvents {
         }
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        // Rooms whose sampled chunk was still being generated when they were stamped. Free when
-        // nothing is waiting, which is every tick but the handful after a chunk dimension is built.
-        games.brennan.dungeontrain.portal.PortalChunkDimension.drainPending(
-            level, PortalCarriageEvents::liveStructure);
         // No tick-wide layout: two pairs on the same train can have drawn different corridor kinds
         // (PortalCarriageSelection.corridorKindFor), and the layout is what the midpoint, the far
         // door and the containment bounds all come from. It is resolved per pair, below.
