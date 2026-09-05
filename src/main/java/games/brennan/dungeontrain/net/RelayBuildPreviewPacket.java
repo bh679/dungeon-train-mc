@@ -24,7 +24,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * handler, where a build too heavy to read is a tile that keeps its name plate and nothing
  * else.</p>
  */
-public record RelayBuildPreviewPacket(int relayId, boolean found, byte[] template)
+public record RelayBuildPreviewPacket(int relayId, boolean found, boolean retryable, byte[] template)
         implements CustomPacketPayload {
 
     /** Ceiling on the wire, under NeoForge's own payload limit. The server sends well below it. */
@@ -38,15 +38,21 @@ public record RelayBuildPreviewPacket(int relayId, boolean found, byte[] templat
             (buf, packet) -> {
                 buf.writeVarInt(packet.relayId);
                 buf.writeBoolean(packet.found);
+                buf.writeBoolean(packet.retryable);
                 buf.writeByteArray(packet.template);
             },
-            buf -> new RelayBuildPreviewPacket(buf.readVarInt(), buf.readBoolean(),
+            buf -> new RelayBuildPreviewPacket(buf.readVarInt(), buf.readBoolean(), buf.readBoolean(),
                 buf.readByteArray(MAX_BYTES))
         );
 
-    /** The "there is no picture for this one" answer, which a tile is still owed. */
-    public static RelayBuildPreviewPacket none(int relayId) {
-        return new RelayBuildPreviewPacket(relayId, false, new byte[0]);
+    /**
+     * The "no picture" answer, which a tile is still owed.
+     *
+     * <p>{@code retryable} says whether it was the moment or the build: a relay that did not answer
+     * is worth asking about again, a build too heavy to picture is not.</p>
+     */
+    public static RelayBuildPreviewPacket none(int relayId, boolean retryable) {
+        return new RelayBuildPreviewPacket(relayId, false, retryable, new byte[0]);
     }
 
     @Override
@@ -57,7 +63,7 @@ public record RelayBuildPreviewPacket(int relayId, boolean found, byte[] templat
     public static void handle(RelayBuildPreviewPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             CompoundTag tag = packet.found() ? BuilderRelayPreview.decode(packet.template()) : null;
-            RelayBuildPreviews.accept(packet.relayId(), tag != null, tag);
+            RelayBuildPreviews.accept(packet.relayId(), tag, packet.retryable());
         });
     }
 }

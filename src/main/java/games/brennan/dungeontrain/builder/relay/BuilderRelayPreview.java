@@ -64,37 +64,91 @@ public final class BuilderRelayPreview {
      */
     private static final long MAX_ACCOUNTED_BYTES = 1_500_000L;
 
+    /**
+     * A finished preview attempt: the bytes to send, and whether asking again could do better.
+     *
+     * <p>The distinction is the whole reason this is not just a nullable byte array. A relay that
+     * did not answer is worth another go a moment later; a build too heavy to picture never will be,
+     * and re-fetching it every few seconds would be a relay call per tile per retry for a name plate
+     * that was never going to change.</p>
+     *
+     * @param bytes     the structure NBT to send, or null when there is no picture
+     * @param retryable whether the failure was the moment rather than the build
+     */
+    public record Attempt(byte[] bytes, boolean retryable) {
+        static final Attempt GONE = new Attempt(null, false);
+        static final Attempt LATER = new Attempt(null, true);
+    }
+
     private BuilderRelayPreview() {}
 
-    /** The build's structure NBT, or null when it cannot or should not be pictured. */
-    public static CompletableFuture<CompoundTag> fetch(ServerPlayer player, ServerLevel level,
-                                                       int relayId, String ownerUuid, boolean live) {
-        if (player == null || level == null || level.getServer() == null
-                || !BuilderRelayUpload.canUpload(player)) {
-            return CompletableFuture.completedFuture(null);
+    /** The build's structure NBT, ready to send, or why there is nothing to send. */
+    public static CompletableFuture<Attempt> fetch(ServerPlayer player, ServerLevel level,
+                                                   int relayId, String ownerUuid, boolean live) {
+        if (player == null || level == null || level.getServer() == null) {
+            return CompletableFuture.completedFuture(Attempt.GONE);
+        }
+        if (!BuilderRelayUpload.canUpload(player)) {
+            // Profiles off, or consent not granted. Nothing about this changes while the screen is
+            // open, so the tiles are not going to be asked about again.
+            LOGGER.debug("[DungeonTrain] Builder relay preview: id={} refused — previews need profiles on "
+                    + "and network consent granted", relayId);
+            return CompletableFuture.completedFuture(Attempt.GONE);
         }
         String own = player.getUUID().toString();
         String owner = ownerUuid == null || ownerUuid.isBlank() ? own : ownerUuid.trim();
         return SharedCarriageClient.fetchBuild(relayId, owner, RelayTarget.of(live))
-                .thenCompose(result -> result.status() != SharedCarriageClient.CallStatus.OK
-                        ? CompletableFuture.completedFuture((CompoundTag) null)
-                        // The conversion reads the block registry, so it goes back to the server
-                        // thread — the same hop the install path makes for the same reason.
-                        : level.getServer().submit(() -> toTemplateTag(level, result.build())));
+                .thenCompose(result -> {
+                    if (result.status() != SharedCarriageClient.CallStatus.OK) {
+                        LOGGER.info("[DungeonTrain] Builder relay preview: id={} not fetched — relay said {}",
+                                relayId, result.status());
+                        // A timeout or a 5xx is the moment; FORBIDDEN and UNKNOWN are the build.
+                        return CompletableFuture.completedFuture(
+                                result.status() == SharedCarriageClient.CallStatus.ERROR
+                                        ? Attempt.LATER : Attempt.GONE);
+                    }
+                    // The conversion reads the block registry, so it goes back to the server
+                    // thread — the same hop the install path makes for the same reason.
+                    return level.getServer().submit(() -> convert(level, result.build()));
+                });
     }
 
-    /** Decode, fold and convert — everything the install path does before it starts writing. */
-    private static CompoundTag toTemplateTag(ServerLevel level, SharedCarriageClient.BuildFetch build) {
-        if (build == null) return null;
+    /** Decode, fold, convert and measure — everything the install path does before it writes. */
+    private static Attempt convert(ServerLevel level, SharedCarriageClient.BuildFetch build) {
+        if (build == null) return Attempt.GONE;
+        CompoundTag tag;
         try {
             CompoundTag snapshot = BuilderRelayDownload.fold(CarriageBlockSnapshot.decode(build.blocks()), build);
             HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
             StructureTemplate template = CarriageSnapshotTemplate.toTemplate(snapshot, blocks);
-            return template.save(new CompoundTag());
+            tag = template.save(new CompoundTag());
         } catch (Throwable t) {
-            // A build this version cannot read is a tile that keeps its slate, not a broken screen.
-            LOGGER.debug("[DungeonTrain] Builder relay preview: id={} would not convert: {}", build.id(), t.toString());
-            return null;
+            // A build this version cannot read is a tile that keeps its name plate, not a broken
+            // screen — but it is worth saying which build and why, because "some of them have no
+            // picture" is otherwise a thing that can only be guessed at.
+            LOGGER.info("[DungeonTrain] Builder relay preview: id={} ('{}', {}) would not convert: {}",
+                    build.id(), build.buildName(), build.kind(), t.toString());
+            return Attempt.GONE;
+        }
+        byte[] bytes = encode(tag);
+        if (bytes == null) {
+            LOGGER.info("[DungeonTrain] Builder relay preview: id={} ('{}', {}) has no picture — {} blocks, "
+                            + "{} bytes encoded, over one of the caps ({} blocks / {} bytes / {} accounted)",
+                    build.id(), build.buildName(), build.kind(),
+                    tag.getList("blocks", Tag.TAG_COMPOUND).size(), encodedSize(tag),
+                    MAX_BLOCKS, MAX_WIRE_BYTES, MAX_ACCOUNTED_BYTES);
+            return Attempt.GONE;
+        }
+        return new Attempt(bytes, false);
+    }
+
+    /** The encoded size, for the log line that explains a refusal. */
+    private static int encodedSize(CompoundTag tag) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            NbtIo.write(tag, new DataOutputStream(out));
+            return out.size();
+        } catch (IOException e) {
+            return -1;
         }
     }
 

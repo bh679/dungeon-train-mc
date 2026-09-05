@@ -17,6 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -53,6 +54,9 @@ public final class RelayBuildPreviews {
     /** Bakes allowed per frame. One, like every other tile bake — see {@link BuilderTileMeshCache}. */
     private static final int BAKES_PER_FRAME = 1;
 
+    /** How long a build whose fetch failed is left alone before it is asked about again. */
+    private static final long RETRY_MILLIS = 5_000L;
+
     /** A baked build, or a build that will never have a picture ({@code mesh} null). */
     private record Entry(BuilderTileMesh mesh, TemplateSummary summary) {}
 
@@ -61,6 +65,9 @@ public final class RelayBuildPreviews {
 
     /** Asked for and not yet answered. */
     private static final Set<Integer> IN_FLIGHT = new HashSet<>();
+
+    /** Builds whose ask failed for a reason that may pass, and the moment they may be asked again. */
+    private static final Map<Integer, Long> RETRY_AFTER = new HashMap<>();
 
     /** Answered and waiting for a frame with budget to bake in. */
     private static final Deque<Pending> PENDING = new ArrayDeque<>();
@@ -87,19 +94,33 @@ public final class RelayBuildPreviews {
     public static void request(int relayId, String ownerUuid, boolean live) {
         if (relayId <= 0 || CACHE.containsKey(relayId) || IN_FLIGHT.contains(relayId)) return;
         if (IN_FLIGHT.size() >= MAX_IN_FLIGHT) return;
+        Long notBefore = RETRY_AFTER.get(relayId);
+        if (notBefore != null && System.currentTimeMillis() < notBefore) return;
         IN_FLIGHT.add(relayId);
         DungeonTrainNet.sendToServer(new RelayBuildPreviewRequestPacket(relayId,
             ownerUuid == null ? "" : ownerUuid, live));
     }
 
-    /** An answer arrived: queue it for the next frame's bake, or remember that it has no picture. */
-    public static void accept(int relayId, boolean found, CompoundTag template) {
+    /**
+     * An answer arrived: queue it for the next frame's bake, or remember that it has no picture.
+     *
+     * <p>A {@code retryable} miss is not remembered. A relay that timed out says nothing about the
+     * build, and caching that answer would leave a tile blank for as long as the screen is open
+     * because of one bad moment — it is asked again after {@link #RETRY_MILLIS}, which is long
+     * enough that a relay having a hard time is not hammered by a grid full of tiles.</p>
+     */
+    public static void accept(int relayId, CompoundTag template, boolean retryable) {
         IN_FLIGHT.remove(relayId);
-        if (!found || template == null || template.isEmpty()) {
-            CACHE.put(relayId, new Entry(null, TemplateSummary.NONE));
-            evictDown();
+        if (template == null || template.isEmpty()) {
+            if (retryable) {
+                RETRY_AFTER.put(relayId, System.currentTimeMillis() + RETRY_MILLIS);
+            } else {
+                CACHE.put(relayId, new Entry(null, TemplateSummary.NONE));
+                evictDown();
+            }
             return;
         }
+        RETRY_AFTER.remove(relayId);
         PENDING.add(new Pending(relayId, template));
     }
 
@@ -173,6 +194,7 @@ public final class RelayBuildPreviews {
         CACHE.clear();
         PENDING.clear();
         IN_FLIGHT.clear();
+        RETRY_AFTER.clear();
         bakesLeftThisFrame = 0;
     }
 }

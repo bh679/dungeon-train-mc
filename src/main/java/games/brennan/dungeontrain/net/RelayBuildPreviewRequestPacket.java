@@ -50,14 +50,13 @@ public record RelayBuildPreviewRequestPacket(int relayId, String ownerUuid, bool
             String owner = BuilderProfileRequestPacket.viewedOwner(player, packet.ownerUuid);
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
             BuilderRelayPreview.fetch(player, level, packet.relayId, owner, live)
-                .thenAccept(tag -> player.getServer().execute(() -> {
+                .thenAccept(attempt -> player.getServer().execute(() -> {
                     if (player.hasDisconnected()) return;
                     // An answer always goes back, "nothing to draw" included: the client is holding
                     // a slot open for this build and a silence would hold it forever.
-                    byte[] bytes = BuilderRelayPreview.encode(tag);
-                    DungeonTrainNet.sendTo(player, bytes == null
-                        ? RelayBuildPreviewPacket.none(packet.relayId)
-                        : new RelayBuildPreviewPacket(packet.relayId, true, bytes));
+                    DungeonTrainNet.sendTo(player, attempt.bytes() == null
+                        ? RelayBuildPreviewPacket.none(packet.relayId, attempt.retryable())
+                        : new RelayBuildPreviewPacket(packet.relayId, true, false, attempt.bytes()));
                 }));
         });
     }
