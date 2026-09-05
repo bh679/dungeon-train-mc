@@ -11352,6 +11352,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "afk-pause-train-time",
+      "version": "0.800.0",
+      "type": "feat",
+      "title": "Time on the train stops when you do",
+      "summary": "Time on the train now measures play, not wall-clock. It stops while the pause menu is open, after 30 seconds without mouse movement, after 5 minutes without input, or if you haven't passed 3 carriages in 10 minutes \u2014 and picks up again the moment you do something. Every place the game reports your time \u2014 the death screen, run reports, and the Longest Aboard leaderboards \u2014 now shows time on the train rather than time since you spawned.",
+      "highlights": [
+        "Idle and paused time no longer counts toward your time on the train",
+        "The death screen and both Longest Aboard leaderboards now report time on the train, not time since spawn"
+      ],
+      "pr": 1306,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
