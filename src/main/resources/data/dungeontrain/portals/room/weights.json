@@ -35,8 +35,8 @@
     "mode": "endless_repetition"
   },
   "chunk_dimension": {
-    "weight": 1,
-    "mode": "chunk_dimension/exact/off/off/off/cycle/sealed/0/9"
+    "weight": 4,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9"
   },
   "chunk_dimension_end": {
     "weight": 1,
