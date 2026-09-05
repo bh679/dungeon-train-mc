@@ -35,9 +35,90 @@ import java.util.List;
  * @param sha512    checked after download; a mismatch means the file is discarded
  * @param size      bytes, for the progress bar and the "how big is this" line
  * @param page      the Modrinth project page, offered when a download fails
+ * @param performance what this costs to run — see {@link Performance}
+ * @param vanillaRank 1 = closest to vanilla, 9 = furthest; the two style sort orders read this
+ *                    list from either end
  */
 public record ShaderPack(String id, String name, String version, String author, String filename,
-                         String url, String sha512, long size, String page) {
+                         String url, String sha512, long size, String page,
+                         Performance performance, int vanillaRank) {
+
+    /**
+     * Roughly what a pack costs to run, cheapest first.
+     *
+     * <p><b>Curated, not benchmarked.</b> Measuring it off the capture run does not work — that
+     * client is frame-capped, so all nine packs rendered within 10 frames of each other and the
+     * numbers meant nothing. A real figure needs an uncapped frame-time harness. Until that exists,
+     * a tier a player can act on beats a number that looks measured and is not, and the tiers are
+     * what each pack is openly for: MakeUp is called Ultra Fast because that is its design.</p>
+     */
+    public enum Performance {
+        VERY_LIGHT("very-light"),
+        LIGHT("light"),
+        MODERATE("moderate"),
+        HEAVY("heavy");
+
+        private final String id;
+
+        Performance(String id) {
+            this.id = id;
+        }
+
+        static Performance of(String raw) {
+            for (Performance value : values()) {
+                if (value.id.equals(raw)) {
+                    return value;
+                }
+            }
+            return MODERATE;
+        }
+
+        /** e.g. {@code gui.dungeontrain.shaders.perf.very_light}. */
+        public String key() {
+            return "gui.dungeontrain.shaders.perf." + name().toLowerCase(java.util.Locale.ROOT);
+        }
+    }
+
+    /** How the list may be ordered. The button above it cycles these. */
+    public enum Sort {
+        /** Manifest order — what the page opens on. */
+        DEFAULT("default", null),
+        /** Cheapest to run first. */
+        PERFORMANCE("performance",
+                java.util.Comparator.comparingInt((ShaderPack p) -> p.performance().ordinal())
+                        .thenComparingInt(ShaderPack::vanillaRank)),
+        /** Closest to vanilla first. */
+        VANILLA("vanilla", java.util.Comparator.comparingInt(ShaderPack::vanillaRank)),
+        /** Furthest from vanilla first — the same list read backwards. */
+        FANCY("fancy", java.util.Comparator.comparingInt(ShaderPack::vanillaRank).reversed());
+
+        private final String id;
+        private final java.util.Comparator<ShaderPack> order;
+
+        Sort(String id, java.util.Comparator<ShaderPack> order) {
+            this.id = id;
+            this.order = order;
+        }
+
+        public Sort next() {
+            return values()[(ordinal() + 1) % values().length];
+        }
+
+        /** e.g. {@code gui.dungeontrain.shaders.sort.vanilla}. */
+        public String key() {
+            return "gui.dungeontrain.shaders.sort." + id;
+        }
+
+        /** The packs in this order. {@link #DEFAULT} keeps the manifest's own. */
+        public List<ShaderPack> apply(List<ShaderPack> packs) {
+            if (order == null) {
+                return packs;
+            }
+            List<ShaderPack> sorted = new ArrayList<>(packs);
+            sorted.sort(order);
+            return List.copyOf(sorted);
+        }
+    }
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -116,7 +197,9 @@ public record ShaderPack(String id, String name, String version, String author, 
                     url,
                     o.get("sha512").getAsString(),
                     o.get("size").getAsLong(),
-                    o.get("page").getAsString());
+                    o.get("page").getAsString(),
+                    Performance.of(o.get("performance").getAsString()),
+                    o.get("vanilla_rank").getAsInt());
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] Malformed shader manifest entry: {}", e.toString());
             return null;

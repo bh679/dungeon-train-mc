@@ -62,10 +62,19 @@ public final class ShaderPackDownloader {
         return t;
     });
 
+    /**
+     * Deliberately NOT given {@link #EXECUTOR}.
+     *
+     * <p>The first version handed the client the same single-thread executor the download task runs
+     * on, then called the blocking {@code send()} from that task. The one thread is then parked
+     * inside {@code send()} while the client needs it to drive the connection, so nothing ever
+     * connects and every download fails with {@code HttpConnectTimeoutException} — a timeout that
+     * looks exactly like a network problem and is not one. The client keeps its own default
+     * executor; ours only decides which thread blocks.</p>
+     */
     private static final HttpClient CLIENT = HttpClient.newBuilder()
             .connectTimeout(CONNECT_TIMEOUT)
             .followRedirects(HttpClient.Redirect.NORMAL)
-            .executor(EXECUTOR)
             .build();
 
     /** Bytes received so far, by pack id, while a download is in flight. */

@@ -57,10 +57,20 @@ public final class ShaderPackList extends AbstractWidget {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.shaders.list"));
         this.font = font;
         this.onSelect = onSelect;
+        setSort(ShaderPack.Sort.DEFAULT);
+    }
+
+    /**
+     * Reorder the packs. "Shaders off" stays pinned at the top in every order — it is not a pack,
+     * and a row that moves around while you are looking for it is worse than one that never does.
+     */
+    public void setSort(ShaderPack.Sort sort) {
+        rows.clear();
         rows.add(new Row(null));
-        for (ShaderPack pack : ShaderPack.all()) {
+        for (ShaderPack pack : sort.apply(ShaderPack.all())) {
             rows.add(new Row(pack));
         }
+        scroll = 0;
     }
 
     public List<Row> rows() {

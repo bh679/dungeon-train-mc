@@ -43,6 +43,10 @@ public final class ShaderMenuScreen extends Screen {
     private static final int BOTTOM_ROW_H = 20;
     private static final int LIST_W = 160;
     private static final int BUTTON_H = 20;
+    /** Between the two buttons on the action row. */
+    private static final int ACTION_GAP = 4;
+    /** The narrower of the two action buttons; the primary action takes the rest of the row. */
+    private static final int PAGE_BUTTON_W = 96;
 
     /** The capture script writes every preview at this size; see {@code scripts/shaders/}. */
     private static final int PREVIEW_W = 854;
@@ -62,9 +66,12 @@ public final class ShaderMenuScreen extends Screen {
     private final Map<String, Boolean> previewPresent = new HashMap<>();
 
     private ShaderPackList list;
+    private Button sortButton;
     private Button action;
     private Button packPage;
     private ShaderPackList.Row selected;
+    /** Survives a resize, so re-opening the page or resizing does not silently reorder the list. */
+    private ShaderPack.Sort sort = ShaderPack.Sort.DEFAULT;
 
     public ShaderMenuScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.shaders.title"));
@@ -77,7 +84,16 @@ public final class ShaderMenuScreen extends Screen {
         int paneW = this.width - paneX - MARGIN;
         int contentBottom = this.height - MARGIN - BOTTOM_ROW_H - GAP;
 
-        list = new ShaderPackList(this.font, MARGIN, TOP, LIST_W, contentBottom - TOP, this::onSelect);
+        // The sort control sits above the list it reorders, which is the only place it can mean
+        // anything. It cycles rather than opening a menu: four orders is not enough to be worth a
+        // dropdown, and the button can then say which one is active.
+        sortButton = addRenderableWidget(new DarkTintedButton(
+                MARGIN, TOP, LIST_W, BUTTON_H, CommonComponents.EMPTY, b -> cycleSort()));
+
+        int listTop = TOP + BUTTON_H + 4;
+        list = new ShaderPackList(this.font, MARGIN, listTop, LIST_W, contentBottom - listTop,
+                this::onSelect);
+        list.setSort(sort);
         addRenderableWidget(list);
 
         // Keep the selection across a resize; otherwise start on the running pack, so opening the
@@ -87,13 +103,16 @@ public final class ShaderMenuScreen extends Screen {
         }
         list.select(selected);
 
-        int actionW = Math.min(200, paneW);
+        // Both actions on one row: they are the two things you can do with the selected pack, and
+        // stacking them made the primary one read as the more important of two unrelated buttons.
         int actionY = contentBottom - BUTTON_H;
+        int pageW = Math.min(PAGE_BUTTON_W, paneW / 2);
+        int actionW = paneW - pageW - ACTION_GAP;
         action = addRenderableWidget(new DarkTintedButton(
                 paneX, actionY, actionW, BUTTON_H, CommonComponents.EMPTY, b -> onAction()));
 
         packPage = addRenderableWidget(new DarkTintedButton(
-                paneX, actionY - BUTTON_H - 4, actionW, BUTTON_H,
+                paneX + actionW + ACTION_GAP, actionY, pageW, BUTTON_H,
                 Component.translatable("gui.dungeontrain.shaders.page"), b -> openPackPage(),
                 0.4F, 0.6F, 1.0F));
 
@@ -101,7 +120,20 @@ public final class ShaderMenuScreen extends Screen {
                 .bounds(this.width / 2 - 100, this.height - MARGIN - BOTTOM_ROW_H, 200, BOTTOM_ROW_H)
                 .build());
 
+        refreshSort();
         refreshAction();
+    }
+
+    private void cycleSort() {
+        sort = sort.next();
+        list.setSort(sort);
+        list.select(selected);
+        refreshSort();
+    }
+
+    private void refreshSort() {
+        sortButton.setMessage(Component.translatable("gui.dungeontrain.shaders.sort",
+                Component.translatable(sort.key())));
     }
 
     /** The active pack if it is one of ours, otherwise the "Shaders off" row. */
@@ -218,7 +250,8 @@ public final class ShaderMenuScreen extends Screen {
         g.fill(x, y, x + w, y + h, PANE_BG);
         ShaderPack pack = selected == null ? null : selected.pack();
 
-        int previewH = Math.min(Math.round(w * (float) PREVIEW_H / PREVIEW_W), h - this.font.lineHeight * 5);
+        int previewH = Math.min(Math.round(w * (float) PREVIEW_H / PREVIEW_W),
+                h - this.font.lineHeight * 8);
         previewH = Math.max(previewH, 40);
         if (pack == null) {
             drawPlaceholder(g, x, y, w, previewH,
@@ -244,7 +277,16 @@ public final class ShaderMenuScreen extends Screen {
         g.drawString(this.font, pack.version() + " · " + pack.author() + " · " + pack.sizeLabel(),
                 textX, textY + this.font.lineHeight + 1, SUB_COLOUR);
 
-        int statusY = textY + this.font.lineHeight * 2 + 4;
+        // What it costs to run, immediately above the button that installs it — the question a
+        // player asks before pressing Download, not after.
+        int perfY = textY + this.font.lineHeight * 2 + 4;
+        Component perf = Component.translatable("gui.dungeontrain.shaders.perf",
+                Component.translatable(pack.performance().key()));
+        g.drawString(this.font, perf, textX, perfY, perfColour(pack));
+        drawWrapped(g, Component.translatable(pack.performance().key() + ".detail"),
+                textX, perfY + this.font.lineHeight + 1, textW, SUB_COLOUR);
+
+        int statusY = perfY + this.font.lineHeight * 3 + 2;
         drawWrapped(g, statusLine(pack), textX, statusY, textW, statusColour(pack));
     }
 
@@ -261,6 +303,15 @@ public final class ShaderMenuScreen extends Screen {
             case INSTALLED -> Component.translatable("gui.dungeontrain.shaders.status.installed");
             case DOWNLOADING -> Component.translatable("gui.dungeontrain.shaders.status.downloading");
             default -> Component.translatable("gui.dungeontrain.shaders.status.missing", pack.sizeLabel());
+        };
+    }
+
+    /** Green through amber: the cheaper the pack, the safer it is to just try. */
+    private int perfColour(ShaderPack pack) {
+        return switch (pack.performance()) {
+            case VERY_LIGHT, LIGHT -> OK_COLOUR;
+            case MODERATE -> 0xFFCFC46A;
+            case HEAVY -> WARN_COLOUR;
         };
     }
 

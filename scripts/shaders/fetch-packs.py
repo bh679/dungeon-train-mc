@@ -34,19 +34,37 @@ PACK_DIR = REPO / "run/shaderpacks"
 API = "https://api.modrinth.com/v2"
 UA = "bh679/dungeon-train-mc (shader manifest generator)"
 
-# (id, Modrinth project slug, exact version_number to pin, display name)
-# `id` is ours: it keys the preview texture and the analytics target, and never changes even
-# if the pack renames itself.
+# (id, Modrinth project slug, exact version_number to pin, display name, perf, vanilla_rank)
+#
+# `id` is ours: it keys the preview texture and the analytics target, and never changes even if the
+# pack renames itself.
+#
+# `perf` and `vanilla_rank` are CURATED EDITORIAL JUDGEMENTS, not measurements.
+#
+# Measuring them was tried first and does not work off the capture run: the sweep client is
+# frame-capped, so all nine packs rendered ~1310 frames in the same window and the numbers said
+# nothing. A real figure needs an uncapped frame-time harness, which is worth building separately;
+# until it exists, a tier a player can act on ("this one is for weak machines") beats a number that
+# looks measured and is not. They are ordinary shader-list guidance, sourced from what each pack is
+# for — MakeUp is called Ultra Fast because that is its whole design; Sildur's Enhanced Default is
+# vanilla with lighting; the Complementary pair are the well-optimised middle; Bliss is a Chocapic
+# derivative and Insanity is a stylised heavy pack.
+#
+# perf:         one of PERF_TIERS below, cheapest first.
+# vanilla_rank: 1 = closest to vanilla, 9 = furthest from it. Drives the "Most vanilla" and
+#               "Fanciest" sort orders, which are the same list read from either end.
+PERF_TIERS = ["very-light", "light", "moderate", "heavy"]
+
 PACKS = [
-    ("bsl",                       "bsl-shaders",                      "10.1.3", "BSL"),
-    ("bliss",                     "bliss-shader",                     "2.1.2",  "Bliss"),
-    ("complementary-reimagined",  "complementary-reimagined",         "r5.8.1", "Complementary Reimagined"),
-    ("complementary-unbound",     "complementary-unbound",            "r5.8.1", "Complementary Unbound"),
-    ("hysteria",                  "hysteria-shaders",                 "1.2.1",  "Hysteria"),
-    ("insanity",                  "insanity-shader",                  "1.650",  "Insanity"),
-    ("makeup-ultra-fast",         "makeup-ultra-fast-shaders",        "9.5d",   "MakeUp Ultra Fast"),
-    ("sildurs-enhanced-default",  "sildurs-enhanced-default-shaders", "1.19",   "Sildur's Enhanced Default"),
-    ("spooklementary",            "spooklementary",                   "2.0.4",  "Spooklementary"),
+    ("bsl",                       "bsl-shaders",                      "10.1.3", "BSL",                       "moderate",   4),
+    ("bliss",                     "bliss-shader",                     "2.1.2",  "Bliss",                     "heavy",      8),
+    ("complementary-reimagined",  "complementary-reimagined",         "r5.8.1", "Complementary Reimagined",  "moderate",   3),
+    ("complementary-unbound",     "complementary-unbound",            "r5.8.1", "Complementary Unbound",     "moderate",   5),
+    ("hysteria",                  "hysteria-shaders",                 "1.2.1",  "Hysteria",                  "heavy",      7),
+    ("insanity",                  "insanity-shader",                  "1.650",  "Insanity",                  "heavy",      9),
+    ("makeup-ultra-fast",         "makeup-ultra-fast-shaders",        "9.5d",   "MakeUp Ultra Fast",         "very-light", 2),
+    ("sildurs-enhanced-default",  "sildurs-enhanced-default-shaders", "1.19",   "Sildur's Enhanced Default", "very-light", 1),
+    ("spooklementary",            "spooklementary",                   "2.0.4",  "Spooklementary",            "moderate",   6),
 ]
 
 # Sildur's ships Fancy and Fast under one version number; the compat matrix measured Fancy.
@@ -102,7 +120,14 @@ def main():
     args = ap.parse_args()
 
     entries = []
-    for pack_id, slug, pin, name in PACKS:
+    seen_ranks = set()
+    for pack_id, slug, pin, name, perf, vanilla_rank in PACKS:
+        if perf not in PERF_TIERS:
+            raise SystemExit(f"{pack_id}: unknown performance tier {perf!r}")
+        if vanilla_rank in seen_ranks:
+            raise SystemExit(f"{pack_id}: vanilla_rank {vanilla_rank} is already used — the sort "
+                             "orders need a total order, not a tie")
+        seen_ranks.add(vanilla_rank)
         try:
             version, file = pick_version(slug, pin, pack_id)
         except urllib.error.URLError as err:
@@ -118,6 +143,8 @@ def main():
             "sha512": sha512,
             "size": file["size"],
             "page": f"https://modrinth.com/shader/{slug}",
+            "performance": perf,
+            "vanilla_rank": vanilla_rank,
         })
         print(f"{name:28} {version['version_number']:8} {file['filename']}")
         if args.download:

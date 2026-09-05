@@ -1943,5 +1943,19 @@
   "gui.dungeontrain.shaders.status.downloading": "Downloading from the pack author's page\u2026",
   "gui.dungeontrain.shaders.status.missing": "Not downloaded yet \u2014 %s, straight from the author's page.",
   "gui.dungeontrain.shaders.failed": "Download failed: %s. Try again, or grab it from the pack's own page.",
-  "gui.dungeontrain.shaders.needs_iris": "Shaders need the Iris and Sodium mods. The Dungeon Train modpack ships both."
+  "gui.dungeontrain.shaders.needs_iris": "Shaders need the Iris and Sodium mods. The Dungeon Train modpack ships both.",
+  "gui.dungeontrain.shaders.sort": "Sort: %s",
+  "gui.dungeontrain.shaders.sort.default": "Default",
+  "gui.dungeontrain.shaders.sort.performance": "Performance",
+  "gui.dungeontrain.shaders.sort.vanilla": "Most vanilla",
+  "gui.dungeontrain.shaders.sort.fancy": "Fanciest",
+  "gui.dungeontrain.shaders.perf": "Performance: %s",
+  "gui.dungeontrain.shaders.perf.very_light": "Very light",
+  "gui.dungeontrain.shaders.perf.very_light.detail": "Built for weak machines. Expect to lose little or no frame rate.",
+  "gui.dungeontrain.shaders.perf.light": "Light",
+  "gui.dungeontrain.shaders.perf.light.detail": "Runs comfortably on most machines.",
+  "gui.dungeontrain.shaders.perf.moderate": "Moderate",
+  "gui.dungeontrain.shaders.perf.moderate.detail": "Wants a dedicated graphics card. Fine on most gaming machines; turn down the render distance if the train stutters.",
+  "gui.dungeontrain.shaders.perf.heavy": "Heavy",
+  "gui.dungeontrain.shaders.perf.heavy.detail": "Demanding. Best on a recent graphics card \u2014 a long train in view is the hardest thing you can ask of it."
 }

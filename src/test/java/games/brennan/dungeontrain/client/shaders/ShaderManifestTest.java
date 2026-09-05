@@ -48,6 +48,10 @@ class ShaderManifestTest {
     /** SHA-512 is 128 hex characters. A truncated one fails every download at the last step. */
     private static final int SHA512_HEX_LENGTH = 128;
 
+    /** Matches {@code ShaderPack.Performance} and {@code fetch-packs.py}'s PERF_TIERS. */
+    private static final Set<String> PERF_TIERS =
+            Set.of("very-light", "light", "moderate", "heavy");
+
     private static List<JsonObject> packs() throws IOException {
         Path file = RepoPaths.root().resolve(MANIFEST);
         assertTrue(Files.isRegularFile(file), MANIFEST + " is missing");
@@ -70,7 +74,8 @@ class ShaderManifestTest {
         for (JsonObject pack : packs) {
             String id = pack.get("id").getAsString();
             assertTrue(ids.add(id), "duplicate pack id: " + id);
-            for (String field : List.of("name", "version", "author", "filename", "url", "sha512", "page")) {
+            for (String field : List.of("name", "version", "author", "filename", "url", "sha512",
+                    "page", "performance")) {
                 assertFalse(pack.get(field).getAsString().isBlank(), id + " has a blank " + field);
             }
             assertTrue(pack.get("url").getAsString().startsWith(ALLOWED_PREFIX),
@@ -80,6 +85,26 @@ class ShaderManifestTest {
             assertTrue(pack.get("size").getAsLong() > 0, id + " has no download size");
             assertTrue(pack.get("filename").getAsString().endsWith(".zip"),
                     id + " does not name a zip");
+            assertTrue(PERF_TIERS.contains(pack.get("performance").getAsString()),
+                    id + " has an unknown performance tier — ShaderPack.Performance.of() would "
+                            + "silently fall back to MODERATE");
+        }
+    }
+
+    /**
+     * The two style orders are the same list read from either end, so a tie would make "Most
+     * vanilla" and "Fanciest" disagree about which of the tied packs comes first — the ordering
+     * would look arbitrary rather than wrong.
+     */
+    @Test
+    void theVanillaRankingIsATotalOrder() throws IOException {
+        List<JsonObject> packs = packs();
+        Set<Integer> ranks = new HashSet<>();
+        for (JsonObject pack : packs) {
+            int rank = pack.get("vanilla_rank").getAsInt();
+            assertTrue(rank >= 1 && rank <= packs.size(),
+                    pack.get("id").getAsString() + " has a vanilla_rank outside 1.." + packs.size());
+            assertTrue(ranks.add(rank), "vanilla_rank " + rank + " is used twice");
         }
     }
 
