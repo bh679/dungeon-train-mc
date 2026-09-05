@@ -25,12 +25,14 @@ import java.util.UUID;
  * light it will not ship with is a room authored wrong, and two implementations of the lift would be
  * two answers to what it looks like.</p>
  *
- * <p><b>Its own dedup map, deliberately.</b> {@code PortalCarriageEvents} keeps a {@code LAST_SKY}
- * of its own and sweeps it every overworld tick, taking the daylight back off anyone who is not
- * inside a live structure. Writing plot sends into that map would have the sweep clear them the tick
- * after they went out, forever. The two never describe the same player: editor plots stand in the
- * sky at {@link EditorLayout#PLOT_Y} and live rooms and test sessions are in the basement far below,
- * so two streams into one client cache cannot disagree.</p>
+ * <p><b>One dedup memory, shared.</b> This and {@code PortalCarriageEvents} both describe the
+ * client's single lit region, so both write through
+ * {@link games.brennan.dungeontrain.portal.PlayerSkyRegions}. They were once assumed never to
+ * describe the same player — plots stand in the sky at {@link EditorLayout#PLOT_Y}, live rooms and
+ * test sessions in the basement far below — but the moment between them is real: teleporting into a
+ * {@code /dt portal test} leaves the build area, so this sender took its light back <i>after</i> the
+ * test's had gone out, and the test's own map still read "already sent" and never sent again.
+ * Sharing the memory is what makes the order between them stop mattering.</p>
  *
  * <p><b>Optional, and only here.</b> The packet is flagged {@code editor}, which is what lets
  * {@code ClientDisplayConfig.isEditorPlotLighting} switch the plot's lift off from the editor's
