@@ -37,9 +37,9 @@ public final class EditorCreatorPane {
     public void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
                        EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
                        String note, boolean asCopy, EditorCreatorBuilds.Landed landed,
-                       int mouseX, int mouseY) {
+                       boolean going, int mouseX, int mouseY) {
 
-        drawHeader(g, font, layout.header(), theme, entry, landed, mouseX, mouseY);
+        drawHeader(g, font, layout.header(), theme, entry, landed, going, mouseX, mouseY);
 
         previewRect = layout.preview();
         TemplateArt art = entry == null ? null : EditorCreatorBuilds.artOf(entry);
@@ -92,7 +92,7 @@ public final class EditorCreatorPane {
      */
     private void drawHeader(GuiGraphics g, Font font, InventoryEditorLayout.Rect h, EditorScreenTheme theme,
                             BuilderProfilePacket.Entry entry, EditorCreatorBuilds.Landed landed,
-                            int mouseX, int mouseY) {
+                            boolean going, int mouseX, int mouseY) {
         int ty = h.y() + (h.h() - font.lineHeight) / 2;
         String title = entry == null
             ? EditorScreenLang.text(EditorScreenLang.CREATOR_NOTHING_SELECTED)
@@ -105,15 +105,21 @@ public final class EditorCreatorPane {
             && EditorTemplateJumpBridge.hasHome(landed.kind(), landed.subKind());
         int nameWidth = h.w() - 4;
         if (canGo) {
-            String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
+            // Under way: the same button, greyed and saying so. A walk is a teleport plus a
+            // category restamp and can take a moment, and a button that looks pressable while it
+            // is happening invites a second press that would restamp everything again.
+            String label = EditorScreenLang.text(going
+                ? EditorScreenLang.CREATOR_GOING : EditorScreenLang.GO_HERE);
             int w = font.width(label) + 8;
-            goHereRect = new InventoryEditorLayout.Rect(h.right() - w - 1, h.y() + 1, w, h.h() - 2);
-            nameWidth = Math.max(0, goHereRect.x() - h.x() - 6);
-            boolean hot = goHereRect.contains(mouseX, mouseY);
-            g.fill(goHereRect.x(), goHereRect.y(), goHereRect.right(), goHereRect.bottom(),
-                hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
-            g.drawString(font, label, goHereRect.x() + 4, ty,
-                hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
+            InventoryEditorLayout.Rect rect =
+                new InventoryEditorLayout.Rect(h.right() - w - 1, h.y() + 1, w, h.h() - 2);
+            goHereRect = going ? null : rect;
+            nameWidth = Math.max(0, rect.x() - h.x() - 6);
+            boolean hot = !going && rect.contains(mouseX, mouseY);
+            g.fill(rect.x(), rect.y(), rect.right(), rect.bottom(),
+                going ? EditorDetailPane.DISABLED : hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+            g.drawString(font, label, rect.x() + 4, ty,
+                going ? 0x80FFFFFF : hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
         }
         g.drawString(font, font.plainSubstrByWidth(title, nameWidth), h.x() + 2, ty,
             theme.panelText(), !theme.isLight());

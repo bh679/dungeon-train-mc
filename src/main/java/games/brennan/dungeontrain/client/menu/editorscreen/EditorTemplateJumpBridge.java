@@ -22,6 +22,24 @@ public final class EditorTemplateJumpBridge {
         return EditorTemplateJump.categoryIdFor(kind, subKind) != null;
     }
 
+    /**
+     * Whether the player is now standing in this template.
+     *
+     * <p>What "there" means depends on the kind. Most are a plot of their own, so arriving means
+     * standing in that named plot. A part has no plot — the editor shows parts as a grid inside the
+     * carriages plots — so for those, being in the right category IS the whole journey, which is
+     * the same rule {@link EditorTemplateJump#enterCommandFor} follows when it answers null.</p>
+     */
+    public static boolean arrived(BuilderPhotoPaths.Kind kind, String id, String subKind) {
+        String target = EditorTemplateJump.categoryIdFor(kind, subKind);
+        if (target == null) return false;
+        if (!target.equalsIgnoreCase(EditorStatusHudOverlay.category())) return false;
+        if (EditorTemplateJump.enterCommandFor(kind, id, subKind) == null) return true;
+        String standing = EditorStatusHudOverlay.modelName();
+        if (standing == null || standing.isEmpty()) standing = EditorStatusHudOverlay.modelId();
+        return standing != null && standing.equalsIgnoreCase(id);
+    }
+
     /** Walk there, switching editor category only when it is not the one being stood in. */
     public static boolean go(BuilderPhotoPaths.Kind kind, String id, String subKind) {
         return EditorTemplateJump.go(kind, id, subKind,

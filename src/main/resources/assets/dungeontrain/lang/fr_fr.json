@@ -992,6 +992,7 @@
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Choisir une construction",
   "gui.dungeontrain.editor_screen.creator.load_copy": "Charger en copie",
   "gui.dungeontrain.editor_screen.creator.loaded": "Chargé dans l’éditeur",
+  "gui.dungeontrain.editor_screen.creator.going": "En route…",
   "gui.dungeontrain.options.button": "Options du Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Options du monde",
   "gui.dungeontrain.options.starts_with_train": "Commence avec un train",

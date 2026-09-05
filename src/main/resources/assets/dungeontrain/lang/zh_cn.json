@@ -967,6 +967,7 @@
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "选择一个建筑",
   "gui.dungeontrain.editor_screen.creator.load_copy": "载入为副本",
   "gui.dungeontrain.editor_screen.creator.loaded": "已载入编辑器",
+  "gui.dungeontrain.editor_screen.creator.going": "正在前往…",
   "gui.dungeontrain.options.button": "地牢列车选项…",
   "gui.dungeontrain.options.title": "地牢列车 — 世界选项",
   "gui.dungeontrain.options.starts_with_train": "以列车为起点",

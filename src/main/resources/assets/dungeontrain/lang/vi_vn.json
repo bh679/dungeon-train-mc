@@ -967,6 +967,7 @@
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Chọn một công trình",
   "gui.dungeontrain.editor_screen.creator.load_copy": "Tải dưới dạng bản sao",
   "gui.dungeontrain.editor_screen.creator.loaded": "Đã tải vào trình sửa",
+  "gui.dungeontrain.editor_screen.creator.going": "Đang tới…",
   "gui.dungeontrain.options.button": "Tùy Chọn Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Tùy Chọn Thế Giới",
   "gui.dungeontrain.options.starts_with_train": "Bắt đầu với đoàn tàu",

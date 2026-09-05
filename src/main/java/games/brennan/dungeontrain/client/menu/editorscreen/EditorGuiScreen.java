@@ -49,6 +49,14 @@ public final class EditorGuiScreen extends Screen {
     static final long DOUBLE_CLICK_MS = 300;
     static final float MAX_FRAME_SECONDS = 0.1F;
     static final int REFRESH_DELAY_TICKS = 10;
+    /**
+     * How long a walk is given before the button comes back.
+     *
+     * <p>Generous, because a walk can be a category switch, which clears and restamps every plot in
+     * the editor. Running out is not a failure to report — it is the screen admitting it cannot
+     * tell whether the player got there, and handing the button back so they can try again.</p>
+     */
+    static final int GOING_TIMEOUT_TICKS = 200;
 
     private final EditorBrowserPane browser = new EditorBrowserPane();
     private final EditorDetailPane detail = new EditorDetailPane();
@@ -73,6 +81,9 @@ public final class EditorGuiScreen extends Screen {
     /** Whether the next press should bring the build down under a name this install is not using. */
     private boolean loadAsCopy;
     private List<String> takenNames = List.of();
+    /** The build being walked to, while the walk is under way. */
+    private EditorCreatorBuilds.Landed goingTo;
+    private int goingTicks;
 
     public EditorGuiScreen() {
         super(Component.literal("Dungeon Train Editor"));
@@ -131,9 +142,29 @@ public final class EditorGuiScreen extends Screen {
     public void tick() {
         super.tick();
         search.tick();
+        tickWalk();
         if (refreshTicks > 0 && --refreshTicks == 0) {
             EditorSaveStatus.request();
         }
+    }
+
+    /**
+     * Watch a walk that is under way: close the screen the moment the player is standing in the
+     * build, and hand the button back if they never arrive.
+     *
+     * <p>Closing is the point of pressing Go here — the build is a plot in the world and the menu is
+     * in front of it. Watching where the player actually is, rather than closing on the press,
+     * means the menu stays up when the walk did not happen (no permission, a plot that would not
+     * stamp) instead of leaving them looking at the wrong place with nothing said.</p>
+     */
+    private void tickWalk() {
+        if (goingTo == null) return;
+        if (EditorTemplateJumpBridge.arrived(goingTo.kind(), goingTo.id(), goingTo.subKind())) {
+            goingTo = null;
+            this.onClose();
+            return;
+        }
+        if (--goingTicks <= 0) goingTo = null;
     }
 
     /** A command went out: give the server a moment, then ask what changed. */
@@ -199,7 +230,7 @@ public final class EditorGuiScreen extends Screen {
             // the pane that has no controls stands in for it rather than eight disabled buttons.
             BuilderProfilePacket.Entry picked = selectedCreatorBuild();
             creatorPane.render(g, this.font, layout, theme, picked, orbit.yaw(),
-                creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), mx, my);
+                creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null, mx, my);
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
             TemplateArt art = TemplateArt.of(ctx.selection());
@@ -354,9 +385,10 @@ public final class EditorGuiScreen extends Screen {
         BuilderProfilePacket.Entry entry = selectedCreatorBuild();
         EditorCreatorBuilds.Landed landed = EditorCreatorBuilds.here(EditorRosterClient.index(), entry);
         if (landed == null) return;
-        if (EditorTemplateJumpBridge.go(landed.kind(), landed.id(), landed.subKind())) {
-            afterCommand();
-        }
+        if (!EditorTemplateJumpBridge.go(landed.kind(), landed.id(), landed.subKind())) return;
+        goingTo = landed;
+        goingTicks = GOING_TIMEOUT_TICKS;
+        afterCommand();
     }
 
     /** A download finished: say what happened, and pick up what landed. */
@@ -535,6 +567,7 @@ public final class EditorGuiScreen extends Screen {
             case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
             case CREATOR_TILE -> {
                 EditorCreatorBuilds.select(browser.creatorTiles().get(hit.index()).relayId());
+                goingTo = null;
                 // The note and the copy offer belonged to the build that was selected before.
                 forgetLastLoad();
             }

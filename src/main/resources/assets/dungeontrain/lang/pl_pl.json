@@ -1017,6 +1017,7 @@
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Wybierz budowlę",
   "gui.dungeontrain.editor_screen.creator.load_copy": "Wczytaj jako kopię",
   "gui.dungeontrain.editor_screen.creator.loaded": "Wczytano do edytora",
+  "gui.dungeontrain.editor_screen.creator.going": "W drodze…",
   "gui.dungeontrain.options.button": "Opcje Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Opcje świata",
   "gui.dungeontrain.options.starts_with_train": "Zaczyna z pociągiem",
