@@ -167,8 +167,17 @@ public final class PortalRoomEditor {
         }
     }
 
-    /** Erase + restamp every registered room plot. Idempotent. */
+    /**
+     * Erase + restamp every registered room plot. Idempotent.
+     *
+     * <p>Sizes are primed first, all of them, before the first plot goes down. A plot's position
+     * depends on the sizes of the rooms before it in the row <em>and</em> of its group's members,
+     * which sit later in the alphabet; loading each template only as its own plot came up meant
+     * House was placed while Miniword was still assumed to be built-in sized, and the row shifted
+     * under the plots already stamped.</p>
+     */
     public static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
+        primeSizes(overworld, dims);
         for (String name : names()) {
             stampPlot(overworld, name, dims);
         }
@@ -362,10 +371,30 @@ public final class PortalRoomEditor {
             origin.getZ() + size.getZ() - 1);
     }
 
-    /** Erase every room plot. */
+    /**
+     * Erase every room plot — at the box each one was actually stamped at, not only where the layout
+     * says it should be.
+     *
+     * <p>The two differ whenever a size was learned after a stamp, and erasing the predicted box
+     * then leaves a room standing in the sky with nothing left to clear it. The recorded boxes are
+     * the world's memory of where its plots are; the predicted ones are still swept for a world saved
+     * before boxes were recorded, and for a name whose record was lost.</p>
+     */
     public static void clearAllPlots(ServerLevel overworld, CarriageDims dims) {
+        primeSizes(overworld, dims);
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        Map<String, int[]> recorded = data.portalPlotBoxes();
+        for (Map.Entry<String, int[]> e : recorded.entrySet()) {
+            int[] b = e.getValue();
+            clearBox(overworld, new PlotBox(new BlockPos(b[0], b[1], b[2]), new Vec3i(b[3], b[4], b[5])), e.getKey());
+        }
         for (String name : names()) {
-            clearPlot(overworld, name, dims);
+            PlotBox predicted = new PlotBox(plotOrigin(name, dims), plotSize(name, dims));
+            int[] b = recorded.get(name);
+            if (b != null && predicted.equals(new PlotBox(new BlockPos(b[0], b[1], b[2]), new Vec3i(b[3], b[4], b[5])))) {
+                continue;   // already erased above
+            }
+            clearBox(overworld, predicted, name);
         }
     }
 
@@ -387,6 +416,7 @@ public final class PortalRoomEditor {
         PortalClear.clearBoxRelit(overworld, boxOf(origin, size), PortalCorridorMask.NONE);
         setOutline(overworld, origin, size, air);
         EditorPlotSnapshots.clear(snapshotKey(name));
+        DungeonTrainWorldData.get(overworld).forgetPortalPlotBox(name);
     }
 
     /**
@@ -496,7 +526,7 @@ public final class PortalRoomEditor {
      */
     private static void relayout(ServerLevel overworld, CarriageDims dims, Runnable change,
                                  String resizing, PortalRoomResize.Step step) {
-        Map<String, PlotBox> before = snapshotBoxes(dims);
+        Map<String, PlotBox> before = standingBoxes(overworld, dims);
         // Nothing in `change` touches the world — it moves numbers in PortalRoomSizes — so the plots
         // are still standing untouched after it runs, and which ones actually move is known.
         change.run();
@@ -590,6 +620,23 @@ public final class PortalRoomEditor {
         captureSnapshot(overworld, box.origin(), box.size(), name);
     }
 
+    /**
+     * The boxes the plots are actually standing in: the recorded box where the world has one, the
+     * predicted box otherwise. What a relayout has to erase is where things are, not where the
+     * layout would have put them.
+     */
+    private static Map<String, PlotBox> standingBoxes(ServerLevel overworld, CarriageDims dims) {
+        Map<String, PlotBox> predicted = snapshotBoxes(dims);
+        Map<String, int[]> recorded = DungeonTrainWorldData.get(overworld).portalPlotBoxes();
+        Map<String, PlotBox> out = new java.util.LinkedHashMap<>();
+        for (Map.Entry<String, PlotBox> e : predicted.entrySet()) {
+            int[] b = recorded.get(e.getKey());
+            out.put(e.getKey(), b == null ? e.getValue()
+                : new PlotBox(new BlockPos(b[0], b[1], b[2]), new Vec3i(b[3], b[4], b[5])));
+        }
+        return out;
+    }
+
     private static Map<String, PlotBox> snapshotBoxes(CarriageDims dims) {
         Map<String, PlotBox> out = new java.util.LinkedHashMap<>();
         for (String name : names()) {
@@ -649,6 +696,10 @@ public final class PortalRoomEditor {
     private static void captureSnapshot(ServerLevel overworld, BlockPos origin, Vec3i size, String name) {
         EditorPlotSnapshots.capture(snapshotKey(name), overworld, origin,
             size.getX(), size.getY(), size.getZ());
+        // The world remembers where this plot stands, so a later clear erases what is there rather
+        // than what the layout — with whatever it has learned since — now predicts.
+        DungeonTrainWorldData.get(overworld).recordPortalPlotBox(name,
+            origin.getX(), origin.getY(), origin.getZ(), size.getX(), size.getY(), size.getZ());
     }
 
     /** Snapshot key shared with {@link EditorDirtyCheck}. */
