@@ -156,7 +156,7 @@ public final class ShaderWorld {
 
         // A dimensional carriage on top: its ease runs from whatever the band had settled on.
         World roomWorld = roomWorld(ClientPortalRoomSky.sky());
-        float roomW = roomWorld == null ? 0.0f : clamp(ClientPortalRoomSky.applied());
+        float roomW = easedRoomWeight(roomWorld == null ? 0.0f : clamp(ClientPortalRoomSky.applied()));
 
         // One stabilise per frame, over whichever of the two is actually asking. Doing it once, on
         // the final answer, is what guarantees every Iris query within a frame agrees.
@@ -166,6 +166,43 @@ public final class ShaderWorld {
         World base = held == World.OVERWORLD && bandW >= ENTER_AT ? bandWorld : held;
         if (roomWorld == base) return stabilise(base, base, 1.0f);
         return stabilise(base, roomWorld, roomW);
+    }
+
+    /**
+     * How long a dimensional carriage takes to cross-fade, in seconds. Long enough to read as a
+     * dissolve rather than a cut; the room's own lightmap ease reaches full strength in about a
+     * second, so this deliberately lags it a little.
+     */
+    private static final float ROOM_FADE_SECONDS = 1.5f;
+
+    private static float roomBlend = 0.0f;
+    private static long roomBlendNanos = 0L;
+
+    /**
+     * The carriage cross-fade weight, on its own clock.
+     *
+     * <p>{@code ClientPortalRoomSky.applied()} is paced by the <em>lightmap</em>, which rebuilds on
+     * a tick flag at roughly 20 Hz and moves a tenth of the remaining gap each time. That is right
+     * for a lightmap and wrong for a dissolve: at 60 fps the weight sits still for three or four
+     * frames and then jumps, and because the ease is exponential its largest jump is the very first
+     * one — so the transition was at its sharpest exactly where it should have been gentlest.</p>
+     *
+     * <p>This advances once per frame against real elapsed time, so it is smooth at any frame rate,
+     * and finishes with a smoothstep so both ends ease rather than running at a constant rate. The
+     * delta is clamped: the frame after a pause or a world load must not teleport the blend.</p>
+     */
+    private static float easedRoomWeight(float target) {
+        long now = System.nanoTime();
+        float dt = roomBlendNanos == 0L ? 0.0f : (now - roomBlendNanos) / 1_000_000_000.0f;
+        roomBlendNanos = now;
+        dt = Math.max(0.0f, Math.min(0.1f, dt));
+
+        float step = dt / ROOM_FADE_SECONDS;
+        if (target > roomBlend) roomBlend = Math.min(target, roomBlend + step);
+        else roomBlend = Math.max(target, roomBlend - step);
+
+        float x = clamp(roomBlend);
+        return x * x * (3.0f - 2.0f * x);
     }
 
     /**
@@ -221,6 +258,8 @@ public final class ShaderWorld {
         framesThisWindow = 0;
         swapsLastWindow = 0;
         swapAlarmLogged = false;
+        roomBlend = 0.0f;
+        roomBlendNanos = 0L;
         reporting = null;
     }
 
