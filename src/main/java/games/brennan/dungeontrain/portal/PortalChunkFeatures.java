@@ -107,7 +107,7 @@ final class PortalChunkFeatures {
      */
     private static final int MOB_SPAWN_ATTEMPTS = 12;
 
-    /** How many of the biome's monsters a room is given. */
+    /** How many of the biome's own inhabitants a room is given, where it has any to give. */
     private static final int MONSTERS_PER_ROOM = 3;
 
     /** How many positions are tried to place them — most rooms have plenty, a cave floor fewer. */
@@ -179,7 +179,7 @@ final class PortalChunkFeatures {
                     attempt++) {
                 generator.spawnOriginalMobs(workspace.region());
             }
-            spawnBiomeMonsters(level, workspace.region(), chunk, window, worldSeed, pairKey);
+            spawnBiomeNatives(level, workspace.region(), chunk, window, worldSeed, pairKey);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Chunk dimension decoration failed for pair {} — the room "
                 + "keeps its bare terrain", pairKey, t);
@@ -187,28 +187,31 @@ final class PortalChunkFeatures {
     }
 
     /**
-     * Put a few of the sampled biome's own monsters in the room.
+     * Put a few of the sampled biome's own inhabitants in the room — whatever that biome actually
+     * spawns.
      *
-     * <p><b>Why this is not left to the game.</b> Vanilla seeds a fresh chunk with <i>animals</i> and
-     * nothing else; the zombified piglins, ghasts and endermen a player expects in the Nether or the
-     * End arrive through ongoing spawning, which asks the biome at the position being spawned into.
-     * A chunk dimension's room is in the sealed basement under the train, so the game answers that
-     * question with the plains the train is crossing rather than the crimson forest the room is a
-     * slice of — and the Nether and the End have no creature spawns at all, so those rooms came out
-     * empty of everything.</p>
+     * <p><b>Passive where there is passive, hostile only where there is nothing else.</b> A biome
+     * with a creature list has already been asked for it by {@code spawnOriginalMobs} above, and an
+     * Overworld room should be the sheep and the pigs that live in that meadow plus whoever came
+     * with its structure — not a meadow with three zombies standing in it. So this fires for a
+     * position whose biome has <i>no</i> creature spawns, and takes its monster list instead: which
+     * in practice is the Nether and the End, where the zombified piglins and endermen are what
+     * naturally lives there rather than an intrusion.</p>
      *
-     * <p>So the sample spawns them itself, from the list the sampled biome actually carries, at
-     * generation and once: they live in the room from the moment it is built, they can be killed,
-     * and nothing replaces them. A handful rather than a spawn cap's worth — the room is one chunk,
-     * and this is meant to read as the place being inhabited rather than as an ambush.</p>
+     * <p><b>Why the game cannot be left to do it.</b> Ongoing spawning asks the biome at the position
+     * being spawned into, and a chunk dimension's room sits in the sealed basement under the train —
+     * so the answer is the plains the train is crossing, not the crimson forest the room is a slice
+     * of. The sample spawns them itself, at generation and once: they live in the room from the
+     * moment it is built, they can be killed, and nothing replaces them.</p>
      */
-    private static void spawnBiomeMonsters(ServerLevel level, WorldGenRegion region, ProtoChunk chunk,
-                                           BoundingBox window, long worldSeed, int pairKey) {
+    private static void spawnBiomeNatives(ServerLevel level, WorldGenRegion region, ProtoChunk chunk,
+                                          BoundingBox window, long worldSeed, int pairKey) {
         RandomSource random = RandomSource.create(worldSeed ^ ((long) pairKey * 0xC2B2AE3D27D4EB4FL));
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         int placed = 0;
         int noRoom = 0;
         int noMobs = 0;
+        int hasCreatures = 0;
         for (int attempt = 0; attempt < MONSTER_ATTEMPTS && placed < MONSTERS_PER_ROOM; attempt++) {
             int x = chunk.getPos().getMinBlockX() + random.nextInt(PortalChunkTerrain.SIZE);
             int z = chunk.getPos().getMinBlockZ() + random.nextInt(PortalChunkTerrain.SIZE);
@@ -220,8 +223,14 @@ final class PortalChunkFeatures {
 
             Holder<Biome> biome = chunk.getNoiseBiome(
                 QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z));
+            MobSpawnSettings spawns = biome.value().getMobSettings();
+            // Somewhere with animals is somewhere the creature pass has already spoken for.
+            if (!spawns.getMobs(MobCategory.CREATURE).isEmpty()) {
+                hasCreatures++;
+                continue;
+            }
             Optional<MobSpawnSettings.SpawnerData> pick =
-                biome.value().getMobSettings().getMobs(MobCategory.MONSTER).getRandom(random);
+                spawns.getMobs(MobCategory.MONSTER).getRandom(random);
             if (pick.isEmpty()) {
                 noMobs++;
                 continue;
@@ -235,8 +244,10 @@ final class PortalChunkFeatures {
             region.addFreshEntity(mob);
             placed++;
         }
-        if (placed < MONSTERS_PER_ROOM) {
-            LOGGER.info("[DungeonTrain] Chunk dimension pair {} placed {} of {} monsters — {} "
+        // Silent for an ordinary Overworld room, where every position is left to the creature pass
+        // and placing none of these is the correct answer rather than a shortfall.
+        if (placed < MONSTERS_PER_ROOM && hasCreatures == 0) {
+            LOGGER.info("[DungeonTrain] Chunk dimension pair {} placed {} of {} natives — {} "
                     + "position(s) had nowhere to stand, {} had an empty spawn list",
                 pairKey, placed, MONSTERS_PER_ROOM, noRoom, noMobs);
         }
