@@ -66,7 +66,7 @@
     },
     {
       "id": "terrarium",
-      "weight": 50,
+      "weight": 1,
       "minLevel": 4
     }
   ]
