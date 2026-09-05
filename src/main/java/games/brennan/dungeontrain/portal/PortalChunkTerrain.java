@@ -94,11 +94,32 @@ public final class PortalChunkTerrain {
     /** How far from the origin, in chunks, sample sites are scattered. */
     private static final int SAMPLE_SPREAD = 60_000;
 
+    /**
+     * How many sites a pair may try before it settles for the best one it saw.
+     *
+     * <p>Most rejections are cheap and most sites pass first time in the Overworld. The End is what
+     * this number is really for: its outer islands are specks in a great deal of nothing, so a
+     * chunk-dimension room out there walks through a good few empty sites before it finds land.</p>
+     */
+    private static final int SITE_ATTEMPTS = 24;
+
+    /** Where the four corner probes sit inside the chunk, in blocks from each edge. */
+    private static final int PROBE_INSET = 4;
+
+    /** How many of the five probe columns must have ground for a site to be somewhere worth being. */
+    private static final int PROBES_REQUIRED = 3;
+
+    /** How far a probe's own ground may sit from the centre's and still count as the same ground. */
+    private static final int PROBE_SPREAD = 8;
+
     /** Crude bound on the cache: a world with more portal pairs than this drops the oldest wholesale. */
     private static final int MAX_CACHE = 512;
 
     private static final int SITE_X_SALT = 12;
     private static final int SITE_Z_SALT = 13;
+
+    /** How far apart consecutive attempts' salts sit, so the X and Z streams never collide. */
+    private static final int SALT_STRIDE = 977;
 
     /**
      * Which dimension's generation a chunk dimension is a slice of — one per authored sub-variant.
@@ -270,17 +291,22 @@ public final class PortalChunkTerrain {
         NoiseGeneratorSettings settings = noiseGenerator.generatorSettings().value();
         Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
 
-        ChunkPos pos = siteFor(worldSeed, pairKey);
         int minY = level.getMinBuildHeight();
         // Under the Nether's bedrock roof rather than over it: the logical height is where a
-        // dimension stops being somewhere a player can be, and an anchor above it would slice the
-        // roof rather than a cavern floor.
+        // dimension stops being somewhere a player can be.
         int maxY = Math.min(level.getMaxBuildHeight() - 1,
             minY + level.dimensionType().logicalHeight() - 1);
 
-        NoiseColumn centre = noiseGenerator.getBaseColumn(
-            pos.getMiddleBlockX(), pos.getMiddleBlockZ(), level, random);
-        int anchor = anchorIn(centre, minY, maxY);
+        // Somewhere worth standing in, rather than the first place the hash pointed at. A site is
+        // taken when most of its columns have standable ground at about one height: that one rule
+        // turns away both of the samples a player does not want to walk into — the void, where
+        // nothing is solid at all, and the open ocean, whose seabed has water on top of it rather
+        // than air and so offers no row to stand on. Rivers, lakes, coastlines and cave floors all
+        // still pass, because in each of those a player can stand on the ground and breathe.
+        Site site = pickSite(noiseGenerator, random, level, worldSeed, pairKey);
+        if (site == null) return null;
+        ChunkPos pos = site.pos();
+        int anchor = site.anchor();
 
         ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomes, null);
         chunk.fillBiomesFromNoise(noiseGenerator.getBiomeSource(), random.sampler());
@@ -375,36 +401,106 @@ public final class PortalChunkTerrain {
         return new PortalChunkSlice(source, SIZE, states);
     }
 
+    /** A sample site that was probed: where it is, what row its ground sits on, and how much of it. */
+    private record Site(ChunkPos pos, int anchor, int probes) {}
+
     /**
-     * The row a player's feet go on: the lowest air row with solid ground beneath it and
-     * {@link #ANCHOR_HEADROOM} of clearance above, searched down from the top.
+     * Walk the pair's sequence of candidate sites and take the first that is somewhere worth
+     * standing in, or the best of the ones seen when none of them is.
      *
-     * <p>Not simply {@code getBaseHeight}, which is the open sky above the terrain — right in the
-     * Overworld and wrong in the Nether, where it lands on the bedrock roof and would slice the ceiling
-     * instead of a cavern floor. Searching for a standable row gives the same answer as the heightmap
-     * outdoors and the first real floor under a lid.</p>
+     * <p>"Worth standing in" is {@link #PROBES_REQUIRED} of five columns having standable ground
+     * within {@link #PROBE_SPREAD} of the middle one's. Falling back to the best rejected site
+     * rather than to nothing is deliberate: an End pair whose whole sequence was void still gets a
+     * room, and an island's edge is a better room than the template alone.</p>
      */
-    private static int anchorIn(NoiseColumn column, int minY, int maxY) {
+    private static Site pickSite(NoiseBasedChunkGenerator generator, RandomState random,
+                                 ServerLevel level, long worldSeed, int pairKey) {
+        int minY = level.getMinBuildHeight();
+        int maxY = Math.min(level.getMaxBuildHeight() - 1,
+            minY + level.dimensionType().logicalHeight() - 1);
+        Site best = null;
+        for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
+            ChunkPos pos = siteFor(worldSeed, pairKey, attempt);
+            Site site = probe(generator, random, level, pos, minY, maxY);
+            if (site == null) continue;
+            if (site.probes() >= PROBES_REQUIRED) return site;
+            if (best == null || site.probes() > best.probes()) best = site;
+        }
+        return best;
+    }
+
+    /**
+     * Measure one candidate: the middle column decides the row, the four corners say how much of the
+     * chunk agrees with it. Null when the middle column has nowhere to stand at all — open ocean,
+     * the End's void, or solid rock to the ceiling.
+     */
+    private static Site probe(NoiseBasedChunkGenerator generator, RandomState random,
+                              ServerLevel level, ChunkPos pos, int minY, int maxY) {
+        int anchor = standableRow(
+            generator.getBaseColumn(pos.getMiddleBlockX(), pos.getMiddleBlockZ(), level, random),
+            minY, maxY);
+        if (anchor == NO_GROUND) return null;
+
+        int agreeing = 1;
+        int[][] corners = {
+            {PROBE_INSET, PROBE_INSET},
+            {SIZE - 1 - PROBE_INSET, PROBE_INSET},
+            {PROBE_INSET, SIZE - 1 - PROBE_INSET},
+            {SIZE - 1 - PROBE_INSET, SIZE - 1 - PROBE_INSET},
+        };
+        for (int[] corner : corners) {
+            int row = standableRow(generator.getBaseColumn(
+                pos.getMinBlockX() + corner[0], pos.getMinBlockZ() + corner[1], level, random),
+                minY, maxY);
+            if (row != NO_GROUND && Math.abs(row - anchor) <= PROBE_SPREAD) agreeing++;
+        }
+        return new Site(pos, anchor, agreeing);
+    }
+
+    /** What {@link #standableRow} answers for a column with nowhere to stand. */
+    private static final int NO_GROUND = Integer.MIN_VALUE;
+
+    /**
+     * The row a player's feet would go on in this column: the highest air row with <b>solid</b>
+     * ground beneath it and {@link #ANCHOR_HEADROOM} of clearance above.
+     *
+     * <p>Not {@code getBaseHeight}, which is the open sky above the terrain — right in the Overworld
+     * and wrong in the Nether, where it lands on the bedrock roof and would slice the ceiling
+     * instead of a cavern floor.</p>
+     *
+     * <p><b>Solid means solid, not merely not-air</b>, and that one word is what keeps oceans out.
+     * A sea column has a seabed with seventeen blocks of water on it: treat water as ground and the
+     * row above the waves passes every other test here, and the room comes back a cube of sea. With
+     * fluids refused there is no standable row in open water at all, the site is turned down, and
+     * the pair tries somewhere else — while a lake or a river, which is ground with a puddle on it,
+     * still passes on the columns either side.</p>
+     */
+    private static int standableRow(NoiseColumn column, int minY, int maxY) {
         for (int y = maxY - ANCHOR_HEADROOM; y > minY; y--) {
-            if (column.getBlock(y - 1).isAir()) continue;
+            BlockState below = column.getBlock(y - 1);
+            if (below.isAir() || !below.getFluidState().isEmpty()) continue;
             boolean clear = true;
             for (int h = 0; h < ANCHOR_HEADROOM; h++) {
-                if (!column.getBlock(y + h).isAir()) {
+                BlockState above = column.getBlock(y + h);
+                if (!above.isAir()) {
                     clear = false;
                     break;
                 }
             }
             if (clear) return y;
         }
-        // A column with no standable row at all — solid to the top, or empty to the bottom. Half way
-        // up is as good an answer as any, and the slice is still a legible cross-section of it.
-        return minY + (maxY - minY) / 2;
+        return NO_GROUND;
     }
 
-    /** Where a pair samples from — scattered far from the train, and stable in the seed and key. */
-    private static ChunkPos siteFor(long worldSeed, int pairKey) {
-        int chunkX = (int) ((hash01(worldSeed, pairKey, SITE_X_SALT) - 0.5) * 2 * SAMPLE_SPREAD);
-        int chunkZ = (int) ((hash01(worldSeed, pairKey, SITE_Z_SALT) - 0.5) * 2 * SAMPLE_SPREAD);
+    /**
+     * A pair's {@code attempt}-th candidate site — scattered far from the train, and stable in the
+     * seed, the key and the attempt, so a pair walks the same sequence every time it is sampled.
+     */
+    private static ChunkPos siteFor(long worldSeed, int pairKey, int attempt) {
+        int chunkX = (int) ((hash01(worldSeed, pairKey, SITE_X_SALT + attempt * SALT_STRIDE) - 0.5)
+            * 2 * SAMPLE_SPREAD);
+        int chunkZ = (int) ((hash01(worldSeed, pairKey, SITE_Z_SALT + attempt * SALT_STRIDE) - 0.5)
+            * 2 * SAMPLE_SPREAD);
         return new ChunkPos(chunkX, chunkZ);
     }
 
