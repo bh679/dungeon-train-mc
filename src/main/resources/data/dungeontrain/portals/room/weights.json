@@ -38,6 +38,10 @@
     "minLevel": 3,
     "mode": "endless_repetition"
   },
+  "chess": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_end"
+  },
   "chunk_dimension": {
     "weight": 4,
     "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9"
