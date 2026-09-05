@@ -1936,7 +1936,7 @@
   "gui.dungeontrain.shaders.action.downloading": "Downloading\u2026",
   "gui.dungeontrain.shaders.action.off": "Turn Shaders Off",
   "gui.dungeontrain.shaders.status.active": "This pack is on. Load a world to see it.",
-  "gui.dungeontrain.shaders.status.installed": "Already downloaded \u2014 install to switch to it.",
+  "gui.dungeontrain.shaders.status.installed": "Already downloaded \u2014 activate to switch to it.",
   "gui.dungeontrain.shaders.status.downloading": "Downloading from the pack author's page\u2026",
   "gui.dungeontrain.shaders.status.missing": "Not downloaded yet \u2014 %s, straight from the author's page.",
   "gui.dungeontrain.shaders.failed": "Download failed: %s. Try again, or grab it from the pack's own page.",
