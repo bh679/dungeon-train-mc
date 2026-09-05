@@ -217,13 +217,28 @@ public final class PortalRoomEditor {
      * the plot's current size, the built-in room otherwise.
      */
     public static void stampPlot(ServerLevel overworld, String name, CarriageDims dims) {
-        // Load first: the plot's size comes from the template, and until it has been read once
-        // this session PortalRoomSizes only knows the built-in figure. Without this a room
-        // authored at 21 blocks stamps as an 11-block built-in one after every server restart.
-        PortalRoomTemplateStore.get(overworld, name, dims);
+        // Every size first, not just this room's. Where this plot goes depends on the rooms before
+        // it in the row and on its group's members, and until each template has been read once
+        // this session PortalRoomSizes only knows the built-in figure for it. The category switch
+        // stamps rooms one at a time in alphabetical order, so without this a plot placed early
+        // was positioned against guesses — and once the guesses were replaced, stamped again
+        // somewhere else, with the first copy left standing. Cached after the first read, so this
+        // costs a map lookup per room from then on.
+        primeSizes(overworld, dims);
 
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
+
+        // If this plot is standing somewhere else, erase it there before it goes down here. This
+        // is what stops a plot that moved between two stamps leaving a copy of itself behind.
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        int[] was = data.portalPlotBox(name);
+        if (was != null && !(was[0] == origin.getX() && was[1] == origin.getY() && was[2] == origin.getZ()
+                && was[3] == size.getX() && was[4] == size.getY() && was[5] == size.getZ())) {
+            clearBox(overworld, new PlotBox(new BlockPos(was[0], was[1], was[2]),
+                new Vec3i(was[3], was[4], was[5])), name);
+        }
+
         LOGGER.info("[DungeonTrain] Portal room plot '{}' at {} size {}x{}x{}{}", name, origin.toShortString(),
             size.getX(), size.getY(), size.getZ(),
             TrackVariantGroupStore.findParentOf(TrackKind.PORTAL_ROOM, name)
