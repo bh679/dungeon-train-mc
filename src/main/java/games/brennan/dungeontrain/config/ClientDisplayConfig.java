@@ -133,6 +133,19 @@ public final class ClientDisplayConfig {
     /** Ships unscaled — the curve in {@code TrainEngineSound} is the intended mix. */
     public static final double DEFAULT_TRAIN_ENGINE_VOLUME = 1.0;
 
+    /**
+     * Default approach margin, in blocks, for hiding Distant Horizons around the upside-down band —
+     * see {@link #UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN}. 1024 covers a DH horizon of 64 chunks, which is
+     * already past what most machines run.
+     */
+    public static final int DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN = 1024;
+
+    /** No margin: DH stops drawing exactly at the flipped zone's edge. */
+    public static final int MIN_DISTANT_HORIZONS_HIDE_MARGIN = 0;
+
+    /** Ceiling for the margin — 16k blocks is wider than any DH render distance. */
+    public static final int MAX_DISTANT_HORIZONS_HIDE_MARGIN = 16384;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.DoubleValue ALL_SCALE;
     public static final ModConfigSpec.DoubleValue WORLDSPACE_CHANNEL;
@@ -155,6 +168,21 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_FLUSH_MIN_TPS;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_ON_DISK;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_RESOLUTION;
+    /**
+     * Whether Distant Horizons stops drawing while the camera is in (or approaching) the upside-down
+     * band. DH renders its own LODs and never sees DT's block-model flip, so its horizon shows the band
+     * the right way up while the loaded terrain in front of the player hangs inverted — two contradictory
+     * views of the same world. On by default; set false to see DH's own rendering in-band again.
+     */
+    public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_HIDE_DISTANT_HORIZONS;
+
+    /**
+     * How many blocks before the flipped zone DH stops drawing. The band enters DH's draw distance long
+     * before the camera does, so without a margin you would watch an upright DH copy of the band on the
+     * way in. Raise it if your DH render distance is very large.
+     */
+    public static final ModConfigSpec.IntValue UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN;
+
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
@@ -168,7 +196,13 @@ public final class ClientDisplayConfig {
     /** Whether F3 lies about Y in a dimensional carriage. See {@link #isPortalRoomSurfaceCoordinates()}. */
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_SURFACE_COORDINATES;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
+    /** Whether Skybox Blocks exist for this client at all. See {@link #areSkyboxBlocksOn()}. */
+    public static final ModConfigSpec.BooleanValue SKYBOX_BLOCKS_ON;
     public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
+    /** Whether the corridor lift is also drawn as a screen-space pass under shader packs. See {@link #isShaderCrossingLiftEnabled()}. */
+    public static final ModConfigSpec.BooleanValue SHADER_CROSSING_LIFT;
+    /** Whether shader-world changes render both worlds and blend, or cut. See {@link #isShaderCrossfadeEnabled()}. */
+    public static final ModConfigSpec.BooleanValue SHADER_CROSSFADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
     public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
     public static final ModConfigSpec.BooleanValue CREATIVE_SHIFT_CLICK_TO_HOTBAR;
@@ -230,6 +264,11 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.EnumValue<EditorMenuSpace> CONTAINER_CONTENTS_MENU_SPACE;
     /** Where the Z (block variant) menu draws. See {@link #COMMAND_MENU_SPACE}. */
     public static final ModConfigSpec.EnumValue<EditorMenuSpace> BLOCK_VARIANT_MENU_SPACE;
+
+    /** Shipped look of the inventory-style editor X menu. Light is what it was designed in. */
+    public static final EditorScreenTheme DEFAULT_EDITOR_SCREEN_THEME = EditorScreenTheme.LIGHT;
+    /** How the inventory-style editor X menu is painted. See {@link #DEFAULT_EDITOR_SCREEN_THEME}. */
+    public static final ModConfigSpec.EnumValue<EditorScreenTheme> EDITOR_SCREEN_THEME;
 
     /**
      * Remembered answer to the custom-Train-Editor-content prompt — see
@@ -311,6 +350,8 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_FLUSH_MIN_TPS = pair.getLeft().rideSnapshotFlushMinTps;
         RIDE_SNAPSHOT_MAX_ON_DISK = pair.getLeft().rideSnapshotMaxOnDisk;
         RIDE_SNAPSHOT_MAX_RESOLUTION = pair.getLeft().rideSnapshotMaxResolution;
+        UPSIDE_DOWN_HIDE_DISTANT_HORIZONS = pair.getLeft().upsideDownHideDistantHorizons;
+        UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN = pair.getLeft().upsideDownDistantHorizonsMargin;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
@@ -319,8 +360,11 @@ public final class ClientDisplayConfig {
         MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
         EDITOR_PLOT_LIGHTING = pair.getLeft().editorPlotLighting;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
+        SKYBOX_BLOCKS_ON = pair.getLeft().skyboxBlocksOn;
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         PORTAL_ROOM_SURFACE_COORDINATES = pair.getLeft().portalRoomSurfaceCoordinates;
+        SHADER_CROSSING_LIFT = pair.getLeft().shaderCrossingLift;
+        SHADER_CROSSFADE = pair.getLeft().shaderCrossfade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
@@ -342,6 +386,7 @@ public final class ClientDisplayConfig {
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
         BLOCK_VARIANT_MENU_SPACE = pair.getLeft().blockVariantMenuSpace;
+        EDITOR_SCREEN_THEME = pair.getLeft().editorScreenTheme;
     }
 
     private ClientDisplayConfig() {}
@@ -428,6 +473,16 @@ public final class ClientDisplayConfig {
                 .defineInRange("maxResolution", 0, 0, 4320);
         b.pop();
 
+        b.push("distantHorizons");
+        ModConfigSpec.BooleanValue upsideDownHideDistantHorizons = b
+                .comment("Stop Distant Horizons drawing while you are in, or approaching, the upside-down section of the track. DH renders its own copy of the world from its own data and never sees the flip Dungeon Train applies to the blocks around you, so in-band its horizon stands the right way up under an inverted sky and inverted terrain. Set false to let DH draw in-band anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
+                .define("hideInUpsideDown", true);
+        ModConfigSpec.IntValue upsideDownDistantHorizonsMargin = b
+                .comment("How many blocks ahead of the upside-down section DH stops drawing. The band comes into DH's draw distance well before you reach it, so with no margin you would watch an upright DH copy of it on the way in. Raise this if you run a very large DH render distance; 0 cuts DH out exactly at the band's edge.")
+                .defineInRange("hideMarginBlocks", DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN,
+                        MIN_DISTANT_HORIZONS_HIDE_MARGIN, MAX_DISTANT_HORIZONS_HIDE_MARGIN);
+        b.pop();
+
         b.push("framerateThrottle");
         ModConfigSpec.BooleanValue framerateThrottleEnabled = b
                 .comment("Cap the render framerate while the game is paused, or while its window is unfocused or minimised. Minecraft 1.21.1 does not throttle rendering behind the pause screen (and has no AFK limiter — that arrived in 1.21.2), so an idle game keeps re-rendering an unchanging frame at full speed, spinning up fans for nothing. Set false to render idle frames at full speed.")
@@ -446,6 +501,13 @@ public final class ClientDisplayConfig {
         b.pop();
 
         b.push("skybox");
+        ModConfigSpec.BooleanValue skyboxBlocksOn = b
+                .comment("Whether Skybox Blocks are there at all. On, they show the sky and stop you like any other",
+                         "block. Off, they stop drawing AND stop colliding, so you can walk out through a sky wall -",
+                         "which is how you get behind one to build. An authoring convenience: on a multiplayer server",
+                         "the server still holds the blocks solid, so turn it off there and you will be pushed back.",
+                         "Set in-game from the X menu's Settings tab.")
+                .define("skyboxBlocksOn", true);
         ModConfigSpec.BooleanValue skyboxPunchEnabled = b
                 .comment("Let Skybox Blocks show the real sky through them. The effect writes the block's shape into the depth buffer just after the sky is drawn, so whatever sits behind it is never drawn over the sky. Set false to turn Skybox Blocks into plain invisible solid blocks instead - the escape hatch if the effect misbehaves with your graphics setup. Automatically off while a shader pack is loaded, which needs its own handling.")
                 .define("punchEnabled", true);
@@ -458,6 +520,15 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalRoomSurfaceCoordinates = b
                 .comment("Report a surface Y on the debug screen (F3) while you are inside a dimensional carriage, instead of the depth it is really stamped at. A dimensional carriage is a twin corridor built into the sealed space under the world - or, inside the upside-down band, above its lid - standing in the real carriage's own chunk columns. X and Z therefore already read what the carriage would give you and only Y gives the trick away, by well over a hundred blocks. On, the Y figures are shifted so the corridor floor reads at the train's own height, and the Block, Chunk and Targeted Block lines are moved to agree with it; everything else on the screen, the biome and light levels included, is untouched and true. Set false to see where a portal room really is - which is what you want if you are debugging one rather than riding it. Client-side display only: nothing about the world moves.")
                 .define("roomSurfaceCoordinates", DEFAULT_PORTAL_ROOM_SURFACE_COORDINATES);
+        ModConfigSpec.BooleanValue shaderCrossingLift = b
+                .comment("Under a shader pack, also draw the corridor lift as a screen-space brightening after the pack has finished the frame. Most packs light the world from their own model and never read the lightmap the crossing fade lifts, so without this the transition is invisible under shaders; with it the walk brightens slightly toward the middle of the corridor. Packs that DO read the lightmap already show the lift, and this would double it - hence off by default. No effect without a shader pack.")
+                .define("shaderCrossingLift", false);
+        b.pop();
+
+        b.push("shaders");
+        ModConfigSpec.BooleanValue shaderCrossfade = b
+                .comment("Under a shader pack, Dungeon Train tells the pack to render its own Nether or End while the train is in a Nether/End band or a Nether/End dimensional carriage. A pack renders one world per frame, so the change is a cut - unless this is on, in which case the frame is rendered with BOTH worlds while the band fades and the two are blended. Costs roughly double frame time only during the fade. Set false for a hard cut at the midpoint. No effect without a shader pack.")
+                .define("crossfade", true);
         b.pop();
 
         b.push("scribble");
@@ -524,6 +595,11 @@ public final class ClientDisplayConfig {
                 .comment("Where the Z (block variant) menu draws. See commandMenuSpace. Defaults to",
                          "WORLDSPACE for the same reason as containerContentsMenuSpace.")
                 .defineEnum("blockVariantMenuSpace", DEFAULT_BLOCK_VARIANT_MENU_SPACE);
+        ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme = b
+                .comment("How the X editor menu is painted. LIGHT is the creative-inventory grey; DARK is the",
+                         "translucent black the other Dungeon Train menus use. Set in-game from the X menu's",
+                         "Settings tab.")
+                .defineEnum("editorScreenTheme", DEFAULT_EDITOR_SCREEN_THEME);
         b.pop();
 
         b.push("sharedBooks");
@@ -664,7 +740,8 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, portalRoomSurfaceCoordinates, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
+                upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
@@ -675,6 +752,7 @@ public final class ClientDisplayConfig {
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
+                editorScreenTheme,
                 backupMode,
                 backupsPerVersion,
                 confirmBuildRestore);
@@ -1244,6 +1322,28 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Are Skybox Blocks there at all?
+     *
+     * <p>Off is the authoring escape hatch: they stop drawing and stop colliding together, because
+     * an invisible wall you cannot walk through is worse than either on its own — the reason to hide
+     * them is to get behind them.</p>
+     *
+     * <p>{@code true} pre-load and on a dedicated server, which is what makes turning them off a
+     * client-side convenience rather than a change to the world: the server keeps its own answer,
+     * and in single player that server is this process, so the walk-through is real.</p>
+     */
+    public static boolean areSkyboxBlocksOn() {
+        return !isLoaded() || SKYBOX_BLOCKS_ON.get();
+    }
+
+    /** Persist the Skybox Blocks toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setSkyboxBlocksOn(boolean value) {
+        if (!isLoaded() || SKYBOX_BLOCKS_ON.get() == value) return;
+        SKYBOX_BLOCKS_ON.set(value);
+        SKYBOX_BLOCKS_ON.save();
+    }
+
+    /**
      * Should a portal corridor's lighting fade into a flat hold across its crossing? Defaults to
      * {@code true}, and to {@code true} pre-load as well, on the same rule as the flag above: the
      * effect is what stops the swap from popping, so the safe fallback while the TOML is still
@@ -1254,6 +1354,24 @@ public final class ClientDisplayConfig {
      */
     public static boolean isPortalCrossingFadeEnabled() {
         return !isLoaded() || PORTAL_CROSSING_FADE.get();
+    }
+
+    /**
+     * Under a shader pack, draw the corridor lift as a screen-space pass too? Defaults to
+     * {@code false}: packs that read the lightmap already show the lift, and doubling it is worse
+     * than missing it. Read once per frame by {@code PostFogPass}.
+     */
+    public static boolean isShaderCrossingLiftEnabled() {
+        return isLoaded() && SHADER_CROSSING_LIFT.get();
+    }
+
+    /**
+     * Under a shader pack, render both worlds and blend while a band or carriage fades, rather than
+     * cutting at the midpoint? Defaults to {@code true}, pre-load too — the fade is the intended
+     * look. Read once per frame by {@code ShaderWorldCrossfade}.
+     */
+    public static boolean isShaderCrossfadeEnabled() {
+        return !isLoaded() || SHADER_CROSSFADE.get();
     }
 
     /**
@@ -1579,6 +1697,19 @@ public final class ClientDisplayConfig {
         return isLoaded() ? BLOCK_VARIANT_MENU_SPACE.get() : DEFAULT_BLOCK_VARIANT_MENU_SPACE;
     }
 
+    /** How the inventory-style editor X menu is painted. Pre-load, its shipped default. */
+    public static EditorScreenTheme getEditorScreenTheme() {
+        return isLoaded() ? EDITOR_SCREEN_THEME.get() : DEFAULT_EDITOR_SCREEN_THEME;
+    }
+
+    /** Persist the editor screen's theme. Idempotent: skips the TOML write when unchanged. */
+    public static void setEditorScreenTheme(EditorScreenTheme value) {
+        if (!isLoaded() || value == null) return;
+        if (EDITOR_SCREEN_THEME.get() == value) return;
+        EDITOR_SCREEN_THEME.set(value);
+        EDITOR_SCREEN_THEME.save();
+    }
+
     /** Persist the Z menu's space. Idempotent: skips the TOML write when unchanged. */
     public static void setBlockVariantMenuSpace(EditorMenuSpace value) {
         setMenuSpace(BLOCK_VARIANT_MENU_SPACE, value);
@@ -1629,12 +1760,17 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue rideSnapshotFlushMinTps,
             ModConfigSpec.IntValue rideSnapshotMaxOnDisk,
             ModConfigSpec.IntValue rideSnapshotMaxResolution,
+            ModConfigSpec.BooleanValue upsideDownHideDistantHorizons,
+            ModConfigSpec.IntValue upsideDownDistantHorizonsMargin,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
+            ModConfigSpec.BooleanValue skyboxBlocksOn,
             ModConfigSpec.BooleanValue portalCrossingFade,
             ModConfigSpec.BooleanValue portalRoomSurfaceCoordinates,
+            ModConfigSpec.BooleanValue shaderCrossingLift,
+            ModConfigSpec.BooleanValue shaderCrossfade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue creativeShiftClickToHotbar,
@@ -1657,6 +1793,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
+            ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme,
             ModConfigSpec.EnumValue<BackupMode> backupMode,
             ModConfigSpec.IntValue backupsPerVersion,
             ModConfigSpec.BooleanValue confirmBuildRestore

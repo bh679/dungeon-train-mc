@@ -672,7 +672,10 @@ public final class CarriagePlacer {
             // F3+4 panel reads this back rather than re-rolling, which it cannot do correctly once
             // the train has moved — see PlacedCarriageFacts.
             if (carriageIndex != CarriageContentsPlacer.EDITOR_SENTINEL_PIDX) {
-                PlacedCarriageFacts.record(carriageIndex, variant, contents);
+                // Same helper the stamp itself rolls with — pure in (id, seed, pIdx), so the panel
+                // reports the orientation the player is standing in, not a second opinion.
+                PlacedCarriageFacts.record(carriageIndex, variant, contents,
+                    CarriageContentsPlacer.carriageFlip(contents, config.seed(), carriageIndex));
             }
             // Clear any entities left over from a previous carriage at this
             // shipyard position — the block-only clearBoundingBox in

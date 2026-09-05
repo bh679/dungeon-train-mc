@@ -96,12 +96,6 @@ public final class ContainerContentsMenuController {
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null) {
-            actionBar(player, "Not in an editor plot", ChatFormatting.YELLOW);
-            return;
-        }
-
         // Block raycast first — chest/barrel/etc.
         HitResult blockHit = player.pick(TOGGLE_REACH, 1.0f, false);
         BlockHitResult validBlockHit = null;
@@ -122,16 +116,30 @@ public final class ContainerContentsMenuController {
         double entityDist2 = entityHit == null ? Double.POSITIVE_INFINITY
             : entityHit.getLocation().distanceToSqr(eye);
 
-        if (validBlockHit != null && blockDist2 <= entityDist2) {
+        if (validBlockHit == null && entityHit == null) {
+            actionBar(player, "Look at a chest, barrel, armor stand, or item frame",
+                ChatFormatting.YELLOW);
+            return;
+        }
+
+        // Resolved from what is being looked at, not from where the player is standing: authoring
+        // into a plot from outside it is ordinary — you back off a carriage to see the wall you are
+        // filling — and a menu that refused there was reading the wrong end of the gesture.
+        boolean blockFirst = validBlockHit != null && blockDist2 <= entityDist2;
+        BlockPos target = blockFirst
+            ? validBlockHit.getBlockPos()
+            : BlockPos.containing(entityHit.getLocation());
+        BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, target, dims);
+        if (plot == null) {
+            actionBar(player, "That block isn't in an editor plot", ChatFormatting.YELLOW);
+            return;
+        }
+
+        if (blockFirst) {
             openAtBlock(player, plot, level, validBlockHit);
             return;
         }
-        if (entityHit != null) {
-            openAtEntity(player, plot, level, entityHit);
-            return;
-        }
-        actionBar(player, "Look at a chest, barrel, armor stand, or item frame",
-            ChatFormatting.YELLOW);
+        openAtEntity(player, plot, level, entityHit);
     }
 
     /** Open the menu for a container block hit — the original code path. */
@@ -332,8 +340,8 @@ public final class ContainerContentsMenuController {
         if (!open.localPos().equals(localPos)) return;
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null || !plot.key().equals(plotKey)) return;
+        BlockVariantPlot plot = BlockVariantPlot.resolveByKey(level, plotKey, dims);
+        if (plot == null) return;
         BlockPos worldPos = plot.origin().offset(localPos);
         sendSync(player, plot, localPos, worldPos, open.face(), open.up());
     }
@@ -346,10 +354,19 @@ public final class ContainerContentsMenuController {
         }
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null || !plot.key().equals(packet.plotKey())) {
-            LOGGER.warn("[DungeonTrain] ContainerContentsMenu edit rejected: player {} not in plot for '{}'",
+        // Authorised against the menu the server itself opened for this player, rather than against
+        // where they are standing now — which is both stronger (the key came from the server, not
+        // the packet) and what lets the author step off the plot while the menu is up.
+        OpenMenu open = OPEN.get(player.getUUID());
+        if (open == null || !open.plotKey().equals(packet.plotKey())) {
+            LOGGER.warn("[DungeonTrain] ContainerContentsMenu edit rejected: player {} has no open menu for '{}'",
                 player.getName().getString(), packet.plotKey());
+            return;
+        }
+        BlockVariantPlot plot = BlockVariantPlot.resolveByKey(level, packet.plotKey(), dims);
+        if (plot == null) {
+            LOGGER.warn("[DungeonTrain] ContainerContentsMenu edit rejected: no plot for '{}'",
+                packet.plotKey());
             return;
         }
         BlockPos localPos = packet.localPos();

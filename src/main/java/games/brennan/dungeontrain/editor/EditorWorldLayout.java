@@ -18,13 +18,13 @@ import net.minecraft.world.level.dimension.DimensionType;
  * the <em>vertical</em> shape:</p>
  *
  * <pre>
- *   y=320  build ceiling        — {@link EditorLayout#PLOT_Y} + an 80-tall portal room fits under it
+ *   y=320  build ceiling        — {@link EditorLayout#PLOT_Y} + a 90-tall portal room fits under it
  *   y=230  plots                — {@link EditorLayout#PLOT_Y}
  *   y=0    terrain floor        — a flat generator's {@code getMinY()} is always 0
- *   y=-80  world bottom         — 80 blocks of basement for {@code /dt portal test}, as in every DT preset
+ *   y=-96  world bottom         — 96 blocks of basement for {@code /dt portal test}, as in every DT preset
  * </pre>
  *
- * <p>So {@code dimension_type/editor.json} is {@code min_y: -80, height: 400}. The builder's own
+ * <p>So {@code dimension_type/editor.json} is {@code min_y: -96, height: 416}. The builder's own
  * type ({@code min_y: 0, height: 96}) cannot host the plots and has no basement.</p>
  *
  * <p>Identified by dimension <b>type</b>, not dimension key — the world's only dimension sits in
@@ -48,6 +48,15 @@ public final class EditorWorldLayout {
 
     /** Whether {@code level} is the Train Editor's void world. */
     public static boolean isEditorWorld(ServerLevel level) {
-        return level.dimensionTypeRegistration().is(EDITOR_DIMENSION_TYPE);
+        return isEditorWorld((net.minecraft.world.level.Level) level);
+    }
+
+    /**
+     * The same question asked of any level, so the client can ask it too — the authoring hotkeys
+     * need to know they are in the editor world while the player is standing between plots, where
+     * the server's per-plot status HUD has nothing to say.
+     */
+    public static boolean isEditorWorld(net.minecraft.world.level.Level level) {
+        return level != null && level.dimensionTypeRegistration().is(EDITOR_DIMENSION_TYPE);
     }
 }

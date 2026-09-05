@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL30;
 import org.slf4j.Logger;
 
 /**
@@ -119,6 +120,24 @@ public final class SkyboxStencil {
         return drawingSurfaceSky;
     }
 
+    /**
+     * What the <em>currently bound</em> framebuffer has at its stencil attachment:
+     * {@code "texture"}, {@code "renderbuffer"} or {@code "none"}.
+     *
+     * <p>Distinct from {@link #isAvailable()}, which only asks the main render target. Under Iris
+     * the level renders into Iris' own framebuffers, and whether stencil works there depends on
+     * Iris having attached the main target's combined depth-stencil texture — a fact to be read
+     * off the GL object, not assumed. Must be called on the render thread with the level's
+     * framebuffer bound, i.e. from inside a {@code RenderLevelStageEvent}.</p>
+     */
+    public static String boundFramebufferStencil() {
+        int type = GL30.glGetFramebufferAttachmentParameteri(GL30.GL_FRAMEBUFFER,
+            GL30.GL_STENCIL_ATTACHMENT, GL30.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE);
+        if (type == GL11.GL_TEXTURE) return "texture";
+        if (type == GL30.GL_RENDERBUFFER) return "renderbuffer";
+        return "none";
+    }
+
     /** Clear stencil and configure it for the mask pass. Pair with {@link #endStencil()}. */
     public static void beginMaskPass() {
         RenderSystem.clearStencil(0);
@@ -128,13 +147,44 @@ public final class SkyboxStencil {
         RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_REPLACE);
     }
 
+    /**
+     * Configure the stencil for a pass that stamps a single <em>bit</em>, leaving every other bit
+     * of the buffer alone.
+     *
+     * <p>Unlike {@link #beginMaskPass()} this does not clear. That matters: the variant ids written
+     * at {@code AFTER_SKY} are what the post-composite sky pass reads to tell one hole from another,
+     * and clearing here would erase them halfway through the frame.</p>
+     */
+    public static void beginMarkPass(int bit) {
+        GL11.glEnable(GL11.GL_STENCIL_TEST);
+        RenderSystem.stencilMask(bit);
+        RenderSystem.stencilFunc(GL11.GL_ALWAYS, bit, bit);
+        RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_REPLACE);
+    }
+
+    /**
+     * Restrict drawing to one variant's holes that also survived to the end of the frame — variant
+     * id in the low bits, {@code markBit} set. Read-only: pair with {@link #beginSkyPass()}.
+     */
+    public static void variantSkyRef(int stencilRef, int markBit) {
+        RenderSystem.stencilFunc(GL11.GL_EQUAL, markBit | stencilRef, markBit | 0x0F);
+    }
+
     /** Stamp subsequent draws with this variant's id wherever they pass the depth test. */
     public static void maskRef(int stencilRef) {
         RenderSystem.stencilFunc(GL11.GL_ALWAYS, stencilRef, 0xFF);
     }
 
-    /** Switch to read-only stencil for the sky pass: test, never write. */
+    /**
+     * Switch to read-only stencil for the sky pass: test, never write.
+     *
+     * <p>Enables the test itself rather than assuming a mask pass left it on. In the vanilla flow
+     * one did, but the post-composite pass runs after {@link #endStencil()} has switched it off —
+     * and a sky draw with the test disabled ignores the stencil function entirely and covers the
+     * whole screen instead of one block's hole, which is exactly what it did.</p>
+     */
     public static void beginSkyPass() {
+        GL11.glEnable(GL11.GL_STENCIL_TEST);
         RenderSystem.stencilMask(0x00);
         RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_KEEP);
     }

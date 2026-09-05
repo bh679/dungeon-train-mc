@@ -325,7 +325,6 @@ public final class PortalCarriageEvents {
      * Player → the daylit-room box they were last told about, on the same "only when it changes"
      * rule as {@link #LAST_FOG}.
      */
-    private static final Map<UUID, PortalRoomSkyPacket> LAST_SKY = new HashMap<>();
 
     /**
      * Player → the debug-screen Y disguise they were last told about, on the same "only when it
@@ -570,7 +569,7 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.narrative.PortalLibraryGreeter.clear();
         ACTIVE_PAIRS.clear();
         LAST_FOG.clear();
-        LAST_SKY.clear();
+        games.brennan.dungeontrain.portal.PlayerSkyRegions.clearAll();
         LAST_CROSSING.clear();
         CROSSING_THIS_TICK.clear();
         LAST_TRAIN_AUDIO.clear();
@@ -600,12 +599,42 @@ public final class PortalCarriageEvents {
         // The trips into test carriages go too: their return positions name a place in the world
         // that is closing, and the structures they describe are not in the next one.
         games.brennan.dungeontrain.portal.PortalTestSession.clear();
+        // The sampled chunks. Pair-keyed like everything else here, so the next world opened must
+        // not inherit them.
+        games.brennan.dungeontrain.portal.PortalChunkTerrain.clear();
+        games.brennan.dungeontrain.portal.PortalChunkDimension.clear();
+    }
+
+    /**
+     * The structure a pair is currently standing, or null when it stands none.
+     *
+     * <p>Handed to {@code PortalChunkDimension.applyPendingDecoration} so a room is only rewritten
+     * where one is actually standing, and at the coordinates it is standing at now. A test room is
+     * not in {@link #STRUCTURES} — {@code PortalTestCommand} builds its structure itself — so its
+     * one pair key falls back to the live session's own.</p>
+     */
+    private static PortalStructure liveStructure(int pairKey) {
+        PortalStructure live = STRUCTURES.get(pairKey);
+        if (live != null) return live;
+        if (pairKey != games.brennan.dungeontrain.portal.PortalTestSession.PAIR_KEY) return null;
+        for (Map.Entry<UUID, games.brennan.dungeontrain.portal.PortalTestSession.Session> entry
+                : games.brennan.dungeontrain.portal.PortalTestSession.entries()) {
+            return entry.getValue().structure();
+        }
+        return null;
     }
 
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
+
+        // Rooms whose sampled chunk has since grown its structure and its features — the second
+        // half of a chunk dimension's two-pass sample. Above the early returns below so an author
+        // standing in a test room with the portal lottery off still watches it fill in. Free when
+        // nothing is waiting, which is every tick but the handful after one is built.
+        games.brennan.dungeontrain.portal.PortalChunkDimension.applyPendingDecoration(
+            level, DungeonTrainWorldData.get(level).dims(), PortalCarriageEvents::liveStructure);
 
         List<ServerPlayer> players = level.players();
         // Both of these stop the freeze rule being asked at all, so anything it stopped has to be
@@ -975,6 +1004,11 @@ public final class PortalCarriageEvents {
      */
     private static void tickRoomTiling(ServerLevel level, CarriageDims dims,
                                        List<ServerPlayer> players) {
+        // A `portal test` twin has no carriage behind it: PortalTestTicker sends its occupant the
+        // room's fog, sky and audio every tick, and this pass — seeing no structure of its own —
+        // cleared them every tick, so the client saw a room for one tick in two and never engaged.
+        // The tester's ambience is the ticker's to send and to clear.
+        players = withoutPortalTesters(players);
         if (STRUCTURES.isEmpty()) {
             clearFogFor(players, Set.of());
             clearSkyFor(players, Set.of());
@@ -1095,11 +1129,11 @@ public final class PortalCarriageEvents {
      * that has exactly one structure rather than every live pair.
      *
      * <p><b>Why this exists rather than a second implementation.</b> The four senders below dedupe
-     * against {@link #LAST_FOG}, {@link #LAST_SKY}, {@link #LAST_TRAIN_AUDIO} and
+     * against {@link #LAST_FOG}, {@code PlayerSkyRegions}, {@link #LAST_TRAIN_AUDIO} and
      * {@link #LAST_DEPTH}, so a packet only goes out when the answer changes. A parallel copy in
-     * another class would not merely duplicate them, it would fight them over that state — and a test
-     * room lit differently from a live one is a room inspected wrong. {@code PortalTestTicker} calls
-     * this.</p>
+     * another class would not merely duplicate them, it would fight them over that state — and a
+     * test room lit differently from a live one is a room inspected wrong. {@code PortalTestTicker}
+     * calls this.</p>
      *
      * <p>The live tick keeps its own loop rather than calling this per pair: it accumulates the
      * still-inside sets across every structure and clears once at the end, and clearing per pair
@@ -1266,6 +1300,9 @@ public final class PortalCarriageEvents {
             fogged.add(player.getUUID());
             if (region.equals(LAST_FOG.get(player.getUUID()))) continue;
             LAST_FOG.put(player.getUUID(), region);
+            LOGGER.info("[DungeonTrain] room fog -> {}: x[{}..{}] y[{}..{}] z[{}..{}] r={} min={} pad={}",
+                player.getName().getString(), region.minX(), region.maxX(), region.minY(), region.maxY(),
+                region.minZ(), region.maxZ(), region.radius(), region.minRadius(), region.falloff());
             PacketDistributor.sendToPlayer(player, region);
         }
     }
@@ -1306,9 +1343,13 @@ public final class PortalCarriageEvents {
         for (ServerPlayer player : players) {
             if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
             skied.add(player.getUUID());
-            if (region.equals(LAST_SKY.get(player.getUUID()))) continue;
-            LAST_SKY.put(player.getUUID(), region);
-            PacketDistributor.sendToPlayer(player, region);
+            // Logged when it actually goes out, which the shared memory decides — main added this
+            // line inside the dedup it replaced, so it would otherwise fire every tick.
+            if (games.brennan.dungeontrain.portal.PlayerSkyRegions.send(player, region)) {
+                LOGGER.info("[DungeonTrain] room sky -> {}: {} x[{}..{}] y[{}..{}] z[{}..{}]",
+                    player.getName().getString(), sky, region.minX(), region.maxX(), region.minY(),
+                    region.maxY(), region.minZ(), region.maxZ());
+            }
         }
     }
 
@@ -1346,17 +1387,30 @@ public final class PortalCarriageEvents {
     }
 
     /** Take the daylight back off anyone who was near a daylit room this tick and is not any more. */
+    /** Everyone but the players inside a {@code portal test} twin, whose ambience is not this pass' to touch. */
+    private static List<ServerPlayer> withoutPortalTesters(List<ServerPlayer> players) {
+        boolean any = false;
+        for (ServerPlayer p : players) {
+            if (games.brennan.dungeontrain.portal.PortalTestSession.has(p.getUUID())) { any = true; break; }
+        }
+        if (!any) return players;
+        List<ServerPlayer> out = new java.util.ArrayList<>(players.size());
+        for (ServerPlayer p : players) {
+            if (!games.brennan.dungeontrain.portal.PortalTestSession.has(p.getUUID())) out.add(p);
+        }
+        return out;
+    }
+
     private static void clearSkyFor(List<ServerPlayer> players, Set<UUID> stillSkied) {
-        if (LAST_SKY.isEmpty()) return;
+        if (games.brennan.dungeontrain.portal.PlayerSkyRegions.isEmpty()) return;
         for (ServerPlayer player : players) {
             UUID id = player.getUUID();
-            if (stillSkied.contains(id) || !LAST_SKY.containsKey(id)) continue;
-            LAST_SKY.remove(id);
-            PacketDistributor.sendToPlayer(player, PortalRoomSkyPacket.none());
+            if (stillSkied.contains(id)) continue;
+            games.brennan.dungeontrain.portal.PlayerSkyRegions.clear(player);
         }
         // A player who left the world entirely never gets the message, which is exactly why the
         // client holds a box rather than a flag — it stops applying the moment they are not in it.
-        LAST_SKY.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
+        // Nothing to prune here any more — PlayerSkyRegions forgets a player when they log out.
     }
 
     /** Take the fog back off anyone who was in a room this tick and is not any more. */
@@ -1945,6 +1999,11 @@ public final class PortalCarriageEvents {
             ? existing.movedTo(wanted)
             : PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey, region,
                 GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()));
+
+        // A pair whose room could not be planned yet — a chunk dimension still sampling its terrain
+        // is the only thing that answers null. It keeps whatever it had (nothing, the first time
+        // round) and is asked again next tick, the same shape as the mirror wait below.
+        if (planned == null) return existing;
 
         // A world too shallow to hold the structure between its floor and the carriage gets no twin,
         // rather than one stamped through the train — or, in a world with a basement, one that would

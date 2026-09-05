@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.EditorHistoryPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorStrayBlocksPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
@@ -97,6 +98,9 @@ public final class VariantOverlayRenderer {
      * absent means "last sent was an empty snapshot (or none yet)", so a
      * fresh non-empty plot always pushes on first tick.
      */
+    /** Last undo/redo labels sent, so a steady editor generates no history packets. */
+    private static final Map<UUID, String> LAST_HISTORY_KEY = new HashMap<>();
+
     private static final Map<UUID, String> LAST_LOCK_SNAPSHOT_KEY = new HashMap<>();
 
     /**
@@ -206,6 +210,11 @@ public final class VariantOverlayRenderer {
         if (lastStatus != null) {
             DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
         }
+        // The history stack itself survives leaving the build area, but the menu that reads these
+        // labels is gone with it — so stop describing steps until they come back.
+        if (LAST_HISTORY_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, EditorHistoryPacket.empty());
+        }
         PartPositionMenuController.forget(player);
         // Take the plot's daylight back off — they have left the build area, and the client would
         // otherwise hold a box it can no longer be inside.
@@ -244,7 +253,28 @@ public final class VariantOverlayRenderer {
 
         sweepStrays(level, dims, players);
 
+        // A Train Builder world authors at y 4, which is below every gate this loop is built around.
+        // One dimension-type comparison per tick answers it for the whole level, and the builder arm
+        // below is what makes the Z menu's wireframe and lock labels show up down there.
+        boolean builderLevel = level.dimensionTypeRegistration().is(
+            games.brennan.dungeontrain.builder.BuilderWorldLayout.BUILDER_DIMENSION_TYPE);
+
         for (ServerPlayer player : players) {
+            // The two snapshots the block-variant menu draws itself against, and nothing else: the
+            // rest of the cascade below is about editor plots — a plot grid, per-plot labels, type
+            // menus, a plot sky — none of which a builder world has. Both are plot-driven and
+            // self-deduping, so a steady builder tick is two map lookups.
+            if (builderLevel) {
+                pushLockIdSnapshot(player);
+                // Honours the same overlay toggle the editor's wireframe does — one switch for the
+                // one overlay, wherever you are standing when you turn it off.
+                if (isEnabled(player)) {
+                    pushOutlineSnapshot(player);
+                } else {
+                    clearOutlineIfStale(player);
+                }
+                continue;
+            }
             // Editor plots live in the sky at EditorLayout.PLOT_Y; trains run far below. Skip the whole
             // editor-overlay locate cascade for anyone not up at the build area — this is the
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
@@ -255,6 +285,7 @@ public final class VariantOverlayRenderer {
                 continue;
             }
             updateEditorStatus(player, dims);
+            pushHistorySnapshot(player);
             pushLockIdSnapshot(player);
             pushPlotLabelsSnapshot(player, dims);
             pushTypeMenusSnapshot(player, dims);
@@ -451,17 +482,25 @@ public final class VariantOverlayRenderer {
         String roomMode = roomSize == null ? EditorStatusPacket.NO_MODE
             : games.brennan.dungeontrain.portal.PortalRoomSettings.of(modelName).toTag();
 
+        // Random-flip options — contents only; every other kind's stamp is never flipped, so its
+        // mask stays NO_FLIP and the client renders no Flip row. In the key so a toggle refreshes.
+        int flipMask = l.model() instanceof Template.Contents cm
+            ? EditorStatusPacket.flipMaskOf(
+                games.brennan.dungeontrain.train.CarriageContentsWeights.current().flipFor(cm.contents().id()))
+            : EditorStatusPacket.NO_FLIP;
+
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
             + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey
-            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode;
+            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode
+            + "|f" + flipMask;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
-            roomLength, roomWidth, roomHeight, roomMode));
+            roomLength, roomWidth, roomHeight, roomMode, flipMask));
     }
 
     /**
@@ -841,6 +880,20 @@ public final class VariantOverlayRenderer {
             player.getName().getString());
         DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
             menus, EditorStageSelection.effective(), helpPanelDismissed));
+    }
+
+    /**
+     * Tell the client what Undo and Redo would step through, so the menu's two history buttons can
+     * name it. Deduped like every other snapshot — an editor nobody is editing sends nothing.
+     */
+    private static void pushHistorySnapshot(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        String undo = EditorEditHistory.peekUndoLabel(uuid);
+        String redo = EditorEditHistory.peekRedoLabel(uuid);
+        String key = undo + " " + redo;
+        if (key.equals(LAST_HISTORY_KEY.get(uuid))) return;
+        LAST_HISTORY_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player, new EditorHistoryPacket(undo, redo));
     }
 
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */

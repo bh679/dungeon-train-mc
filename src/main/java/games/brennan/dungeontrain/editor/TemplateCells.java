@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
@@ -57,6 +59,42 @@ public final class TemplateCells {
             }
         }
         return cells;
+    }
+
+    /** What a template's block-entity NBT adds up to: how many blocks carry any, and how many hold items. */
+    public record NbtTally(int blockEntities, int containers) {}
+
+    /**
+     * Tally the block-entity tags of a template's first palette.
+     *
+     * <p>Every block with a tag is a block entity; one whose tag carries an {@code Items} list is
+     * a container. That covers chests, barrels, shulker boxes, hoppers, furnaces and the like
+     * without naming any of them.</p>
+     */
+    public static NbtTally tallyBlockEntities(StructureTemplate template) {
+        if (template == null) return new NbtTally(0, 0);
+        List<StructureTemplate.Palette> palettes = palettesOf(template);
+        if (palettes.isEmpty()) return new NbtTally(0, 0);
+        List<CompoundTag> tags = new java.util.ArrayList<>();
+        for (StructureTemplate.StructureBlockInfo info : palettes.get(0).blocks()) {
+            if (info.nbt() != null) tags.add(info.nbt());
+        }
+        return tallyNbt(tags);
+    }
+
+    /** The pure half of {@link #tallyBlockEntities}: count tags, and tags with an {@code Items} list. */
+    public static NbtTally tallyNbt(List<CompoundTag> tags) {
+        int containers = 0;
+        for (CompoundTag tag : tags) {
+            if (tag != null && tag.contains("Items", Tag.TAG_LIST)) containers++;
+        }
+        return new NbtTally(tags.size(), containers);
+    }
+
+    /** How many entities a raw template tag carries — the {@code entities} list's length. */
+    public static int entityCount(CompoundTag templateTag) {
+        if (templateTag == null || !templateTag.contains("entities", Tag.TAG_LIST)) return 0;
+        return templateTag.getList("entities", Tag.TAG_COMPOUND).size();
     }
 
     @SuppressWarnings("unchecked")

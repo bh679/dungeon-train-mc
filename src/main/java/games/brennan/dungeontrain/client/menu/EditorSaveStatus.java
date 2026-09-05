@@ -55,7 +55,7 @@ public final class EditorSaveStatus {
      * The {@link EditorDirtyCheck.DirtyEntry#modelId()} key for a plot, or null for a category the
      * scan does not cover.
      */
-    static String dirtyKey(PlotCategory category, String modelId, String modelName) {
+    public static String dirtyKey(PlotCategory category, String modelId, String modelName) {
         if (category == null || modelId == null || modelId.isEmpty()) return null;
         return switch (category) {
             case CARRIAGES, CONTENTS -> modelId;
@@ -66,7 +66,7 @@ public final class EditorSaveStatus {
     }
 
     /** True when {@code rows} holds an unsaved (not merely unpromoted) entry for that plot. */
-    static boolean isDirty(List<EditorDirtyCheck.DirtyEntry> rows, String categoryId, String key) {
+    public static boolean isDirty(List<EditorDirtyCheck.DirtyEntry> rows, String categoryId, String key) {
         if (rows == null || key == null || categoryId == null) return false;
         for (EditorDirtyCheck.DirtyEntry row : rows) {
             if (row.isUnsaved() && categoryId.equals(row.categoryId()) && key.equals(row.modelId())) {

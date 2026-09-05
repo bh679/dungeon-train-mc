@@ -33,6 +33,7 @@ import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.template.FlipOptions;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
@@ -256,6 +257,13 @@ public final class EditorCommand {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
                 builder.suggest(c.id());
             }
+            return builder.buildFuture();
+        };
+
+    /** The four fields of a contents template's {@link FlipOptions}: three axes plus the room scope. */
+    private static final SuggestionProvider<CommandSourceStack> FLIP_FIELD_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (String field : new String[] {"x", "y", "z", "rooms"}) builder.suggest(field);
             return builder.buildFuture();
         };
 
@@ -512,6 +520,14 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
                             StringArgumentType.getString(ctx, "copies")))))
+                // Which block a sealing room's shell is written in. Means nothing under a mode that
+                // seals nothing; bedrock unless the author has picked something else.
+                .then(Commands.literal("lock")
+                    .then(Commands.literal("held")
+                        .executes(ctx -> runPortalRoomLockHeld(ctx.getSource())))
+                    .then(Commands.argument("block", StringArgumentType.greedyString())
+                        .executes(ctx -> runPortalRoomLockBlock(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "block")))))
                 // Whether the room is furnished from the ordinary contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.
                 .then(Commands.literal("contents")
@@ -609,6 +625,18 @@ public final class EditorCommand {
                 .then(Commands.argument("new_name", StringArgumentType.word())
                     .executes(ctx -> runSave(ctx.getSource(),
                         StringArgumentType.getString(ctx, "new_name")))))
+            .then(Commands.literal("rename")
+                .then(Commands.argument("id", StringArgumentType.word())
+                    .then(Commands.argument("new_name", StringArgumentType.word())
+                        .executes(ctx -> runRenameCarriageById(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "id"),
+                            StringArgumentType.getString(ctx, "new_name"))))))
+            // The train's own footprint — shared by every carriage, part and track in the world.
+            // Not to be confused with `editor portals size`, which is one room's box.
+            .then(Commands.literal("size")
+                .then(trainSizeNode("length"))
+                .then(trainSizeNode("width"))
+                .then(trainSizeNode("height")))
             .then(Commands.literal("exit").executes(ctx -> runExit(ctx.getSource())))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
             .then(Commands.literal("blocks").executes(ctx -> runBlocks(ctx.getSource())))
@@ -734,6 +762,13 @@ public final class EditorCommand {
                             .executes(ctx -> runContentsEnter(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "contents"),
                                 StringArgumentType.getString(ctx, "shell_variant"))))))
+                .then(Commands.literal("rename")
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .then(Commands.argument("new_name", StringArgumentType.word())
+                            .executes(ctx -> runRenameContentsById(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "id"),
+                                StringArgumentType.getString(ctx, "new_name"))))))
                 .then(Commands.literal("save")
                     .executes(ctx -> runContentsSave(ctx.getSource(), null))
                     .then(Commands.argument("new_name", StringArgumentType.word())
@@ -774,6 +809,19 @@ public final class EditorCommand {
                             .executes(ctx -> runContentsWeightSet(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "contents"),
                                 IntegerArgumentType.getInteger(ctx, "value"))))))
+                // Which axes this contents may be randomly flipped along when it is stamped
+                // (`rooms` is the portal-room scope flag, not an axis). See FlipOptions.
+                .then(Commands.literal("flip")
+                    .then(Commands.argument("contents", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .then(Commands.argument("field", StringArgumentType.word())
+                            .suggests(FLIP_FIELD_SUGGESTIONS)
+                            .then(Commands.literal("on").executes(ctx -> runContentsFlipSet(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "contents"),
+                                StringArgumentType.getString(ctx, "field"), true)))
+                            .then(Commands.literal("off").executes(ctx -> runContentsFlipSet(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "contents"),
+                                StringArgumentType.getString(ctx, "field"), false))))))
                 .then(minLevelSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
                 .then(maxLevelSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
                 .then(phaseSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
@@ -1335,6 +1383,61 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * {@code /dt editor contents flip <id> <x|y|z|rooms> <on|off>} — enable or disable one axis of
+     * the contents template's random flip (or the {@code rooms} scope flag), persisting to
+     * {@code config/dungeontrain/user/contents/weights.json}. Mirrors {@link #runContentsWeightSet}.
+     *
+     * <p>An enabled axis is permission for a flip, not a flip: each stamp rolls the enabled axes
+     * independently, so the template still reads as authored roughly half the time.</p>
+     */
+    private static int runContentsFlipSet(CommandSourceStack source, String rawContents,
+                                          String field, boolean value) {
+        CarriageContents contents = parseContents(source, rawContents);
+        if (contents == null) return 0;
+        if (!FlipOptions.isField(field)) {
+            source.sendFailure(Component.literal(
+                "Unknown flip field '" + field + "' — expected x, y, z or rooms.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        try {
+            FlipOptions next = CarriageContentsWeights.setFlip(contents.id(),
+                CarriageContentsWeights.current().flipFor(contents.id()).with(field, value));
+            source.sendSuccess(() -> Component.literal(
+                "Editor: contents flip " + contents.id() + " " + field.toLowerCase(java.util.Locale.ROOT)
+                    + axisHint(field) + "=" + (value ? "on" : "off")
+                    + " (now x=" + onOff(next.x()) + " y=" + onOff(next.y()) + " z=" + onOff(next.z())
+                    + " rooms=" + onOff(next.rooms()) + ", saved to " + CarriageContentsWeights.configPath()
+                    + "). Existing carriages keep the orientation they were stamped with."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor contents flip set failed for {}", contents.id(), t);
+            source.sendFailure(Component.literal("contents flip failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static String onOff(boolean on) {
+        return on ? "on" : "off";
+    }
+
+    /**
+     * What an axis means in the carriage, appended to the flip command's echo — the letters alone
+     * are easy to mix up, and picking the wrong one silently mirrors the interior the other way.
+     */
+    private static String axisHint(String field) {
+        return switch (field == null ? "" : field.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "x" -> " (front\u2194back)";
+            case "y" -> " (up\u2194down)";
+            case "z" -> " (left\u2194right)";
+            default -> "";
+        };
     }
 
     /** Read-modify-write nudge for contents weight. Bounds clamp via {@link CarriageContentsWeights#set}. */
@@ -3354,6 +3457,152 @@ public final class EditorCommand {
         }
 
         // Rename path.
+        return renameCarriageTo(source, player, current, newName);
+    }
+
+    /**
+     * Rename the named carriage, from anywhere in the carriages editor.
+     *
+     * <p>The X menu renames whatever is selected, which is rarely the plot the author happens to be
+     * standing in. What it may never do is rename a template whose plots are not stamped: the
+     * rename captures blocks from the plot, and a category that is not the stamped one has been
+     * cleared, so the capture would write an empty template over a real one and delete the
+     * original. Hence the guard — refuse, and say why, rather than quietly destroy the build.</p>
+     */
+    private static int runRenameCarriageById(CommandSourceStack source, String id, String newName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        if (!requireStamped(source, EditorCategory.CARRIAGES)) return 0;
+        CarriageVariant current = CarriageVariantRegistry.find(id).orElse(null);
+        if (current == null) {
+            source.sendFailure(Component.literal("Unknown carriage '" + id + "'."));
+            return 0;
+        }
+        return renameCarriageTo(source, player, current, newName);
+    }
+
+    /** {@link #runRenameCarriageById} for a contents template. */
+    private static int runRenameContentsById(CommandSourceStack source, String id, String newName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        if (!requireStamped(source, EditorCategory.CONTENTS)) return 0;
+        CarriageContents current = CarriageContentsRegistry.find(id).orElse(null);
+        if (current == null) {
+            source.sendFailure(Component.literal("Unknown contents '" + id + "'."));
+            return 0;
+        }
+        return renameContentsTo(source, player, current, newName);
+    }
+
+    /**
+     * True when {@code category}'s plots are the ones currently built into the world.
+     *
+     * <p>Every id-addressed edit that reads blocks back out of a plot needs this: the plots of any
+     * other category were wiped by the last category switch.</p>
+     */
+    /**
+     * Resize the train itself: how long, wide and tall every carriage in this world is.
+     *
+     * <p><b>This is a world setting, not a template's.</b> A carriage plot is not sized by the
+     * build standing in it — every carriage, part and track shares one footprint, chosen when the
+     * world was made. Changing it here changes all of them at once, and the plots must be stamped
+     * again at the new size or the editor would keep showing cages that no longer match what is
+     * inside them.</p>
+     *
+     * <p>The cost worth knowing about: every store filters what it loads against the world's
+     * dimensions, so a template authored at the old size stops loading at the new one. It is still
+     * on disk, and setting the size back brings it back — but it will be missing from the roster
+     * meanwhile, which is why this says so rather than letting builds quietly disappear.</p>
+     *
+     * @param arg {@code dec} / {@code inc} to nudge by one, or a number to set outright
+     */
+    /** {@code editor size <axis> <dec|inc|N>} — one axis of the train's footprint. */
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> trainSizeNode(String axis) {
+        return Commands.literal(axis)
+            .then(Commands.argument("amount", StringArgumentType.word())
+                .executes(ctx -> runTrainSize(ctx.getSource(), axis,
+                    StringArgumentType.getString(ctx, "amount"))));
+    }
+
+    private static int runTrainSize(CommandSourceStack source, String axis, String arg) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        CarriageDims dims = data.dims();
+
+        int current = switch (axis) {
+            case "length" -> dims.length();
+            case "width" -> dims.width();
+            default -> dims.height();
+        };
+        int next;
+        if ("dec".equals(arg)) {
+            next = current - 1;
+        } else if ("inc".equals(arg)) {
+            next = current + 1;
+        } else {
+            try {
+                next = Integer.parseInt(arg.trim());
+            } catch (NumberFormatException e) {
+                source.sendFailure(Component.literal("'" + arg + "' is not a number."));
+                return 0;
+            }
+        }
+
+        CarriageDims updated;
+        try {
+            updated = switch (axis) {
+                case "length" -> CarriageDims.clamp(next, dims.width(), dims.height());
+                case "width" -> CarriageDims.clamp(dims.length(), next, dims.height());
+                default -> CarriageDims.clamp(dims.length(), dims.width(), next);
+            };
+        } catch (RuntimeException e) {
+            source.sendFailure(Component.literal(
+                "Train " + axis + " " + next + " is out of range."));
+            return 0;
+        }
+        if (updated.length() == dims.length() && updated.width() == dims.width()
+            && updated.height() == dims.height()) {
+            source.sendFailure(Component.literal(
+                "Train " + axis + " is already " + current + " — it cannot go further that way."));
+            return 0;
+        }
+
+        data.apply(data.getTrainY(), data.startsWithTrain(), updated);
+        source.sendSuccess(() -> Component.literal(
+            "Train is now " + updated.length() + " × " + updated.width() + " × " + updated.height()
+                + " — every carriage, part and track in this world."), true);
+        source.sendSuccess(() -> Component.literal(
+            "Templates authored at the old size will not load until it is set back."
+        ).withStyle(ChatFormatting.YELLOW), false);
+
+        // The cages are still the old size until they are stamped again, and nothing else
+        // re-measures them — so re-enter whichever category the author is in.
+        EditorCategory stamped = EditorStampedCategoryState.current().orElse(null);
+        return stamped == null ? 1 : runEnterCategory(source, stamped);
+    }
+
+    private static boolean requireStamped(CommandSourceStack source, EditorCategory category) {
+        EditorCategory stamped = EditorStampedCategoryState.current().orElse(null);
+        if (stamped == category) return true;
+        source.sendFailure(Component.literal(
+            "Switch to the " + category.displayName() + " editor first — "
+                + category.displayName().toLowerCase(Locale.ROOT)
+                + " plots are not built into the world right now."
+        ));
+        return false;
+    }
+
+    /**
+     * Rename {@code current} to {@code newName}, capturing its plot as it goes.
+     *
+     * <p>Split out of {@link #runSave} so the id-addressed rename can reuse it verbatim rather than
+     * grow a second copy of these checks — the name rules and the reserved-name list are the sort
+     * of thing that drifts the moment there are two of them.</p>
+     */
+    private static int renameCarriageTo(CommandSourceStack source, ServerPlayer player,
+                                        CarriageVariant current, String newName) {
         if (PROTECTED_BUILTINS.contains(current.id())) {
             source.sendFailure(Component.literal(
                 "Cannot rename '" + current.id() + "' — it is a protected built-in."
@@ -4337,6 +4586,12 @@ public final class EditorCommand {
         }
 
         // Rename path.
+        return renameContentsTo(source, player, current, newName);
+    }
+
+    /** {@link #renameCarriageTo} for a contents template — same split, same reason. */
+    private static int renameContentsTo(CommandSourceStack source, ServerPlayer player,
+                                        CarriageContents current, String newName) {
         if (current.isBuiltin()) {
             source.sendFailure(Component.literal(
                 "Cannot rename '" + current.id() + "' — it is a built-in contents variant."
@@ -6256,6 +6511,68 @@ public final class EditorCommand {
         return 0;
     }
 
+    /**
+     * {@code /dt editor portals lock held} — write this room's shell in whatever the author is
+     * holding.
+     *
+     * <p>A picking gesture rather than a typed id, for the reason the Copies rows are: the value is
+     * any block in the registry, the author is already standing in the plot with their palette in
+     * their hotbar, and the menu is opened by a key toggle so their main hand is free.</p>
+     *
+     * <p><b>An empty hand means air</b>, the same as it does on a Copies plane row — and here that
+     * genuinely unseals the room: no skin, no corridor shells, no plugs. It is the author saying the
+     * shell should not be there, which is why it succeeds rather than failing as a mistake.</p>
+     */
+    private static int runPortalRoomLockHeld(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Only a player can pick a block from their hand."));
+            return 0;
+        }
+        ItemStack held = player.getMainHandItem();
+        if (held.isEmpty()) {
+            return applyPortalRoomLock(source, name,
+                games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK);
+        }
+        if (held.getItem() instanceof BlockItem blockItem) {
+            return applyPortalRoomLock(source, name,
+                net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                    .getKey(blockItem.getBlock()).toString());
+        }
+        source.sendFailure(Component.literal(
+            "Hold a block — or nothing at all for no shell — then press this again."));
+        return 0;
+    }
+
+    /** {@code /dt editor portals lock <id>} — set the shell's block by name, for a script. */
+    private static int runPortalRoomLockBlock(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        String id = raw == null ? "" : raw.trim();
+        // Air by name as well as by empty hand: stateFor reports air as "no block" on purpose, so it
+        // cannot answer this one question, and a script should be able to say what the row can.
+        if (!games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK.equalsIgnoreCase(id)
+                && !"air".equalsIgnoreCase(id)
+                && games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.stateFor(id).isEmpty()) {
+            source.sendFailure(Component.literal(
+                "'" + raw + "' is not a block this world knows about."));
+            return 0;
+        }
+        return applyPortalRoomLock(source, name,
+            "air".equalsIgnoreCase(id)
+                ? games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK : id);
+    }
+
+    /** Save {@code blockId} as this room's shell — the one write both lock verbs share. */
+    private static int applyPortalRoomLock(CommandSourceStack source, String name, String blockId) {
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withLockBlock(blockId));
+    }
+
     /** {@code /dt editor portals copies <block|floor|roof> <id>} — set it by name, for a script. */
     private static int runPortalRoomCopiesBlock(
         CommandSourceStack source,
@@ -6512,9 +6829,15 @@ public final class EditorCommand {
         String doorOffset = doorOffsetValue != 0
             ? ", door position: " + (doorOffsetValue > 0 ? "+" + doorOffsetValue : doorOffsetValue)
             : "";
+        // Same rule again: only worth a word when the room seals AND the author has moved off
+        // bedrock, which is what every sealed room was before the block could be chosen.
+        String lock = settings.lockApplies()
+            && !games.brennan.dungeontrain.portal.PortalRoomLock.DEFAULT.equals(settings.lock())
+            ? ", sealed in: " + (settings.lock().isAir() ? "nothing" : settings.lock().blockId())
+            : "";
         source.sendSuccess(() -> Component.literal(
             "Dimensional carriage '" + name + "' walls: " + settings.mode().displayName() + copies + contents
-            + exits + books + sky + doorOffset
+            + exits + books + sky + doorOffset + lock
             + ". Portals already standing keep the settings they were built with — this takes effect "
             + "on the next one the train reaches." + subVariantNote(name)
         ).withStyle(ChatFormatting.GREEN), true);

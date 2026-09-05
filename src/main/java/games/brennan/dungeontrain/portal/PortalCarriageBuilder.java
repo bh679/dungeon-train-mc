@@ -120,6 +120,22 @@ public final class PortalCarriageBuilder {
      * {@link PortalRoomMode#sealsCorridors}.
      */
     private static final BlockState LOCK = Blocks.BEDROCK.defaultBlockState();
+
+    /**
+     * What {@code structure}'s shell is actually written in: the block its author picked, or
+     * {@link #LOCK} where they picked nothing or named something this world does not have.
+     *
+     * <p>Air is the one id that is honoured rather than resolved through
+     * {@link PortalRoomSinglePlanes#stateFor}, which deliberately reports air as "no block": there,
+     * an unresolvable floor would drop a player out of the world, so falling back is the safe answer.
+     * Here air is a value an author can only reach by emptying their hand on the row, and it means
+     * exactly what it says — no shell at all. See {@link PortalRoomLock}.</p>
+     */
+    private static BlockState lockStateFor(PortalStructure structure) {
+        PortalRoomLock lock = structure.lock();
+        if (lock.isAir()) return Blocks.AIR.defaultBlockState();
+        return PortalRoomSinglePlanes.stateFor(lock.blockId()).orElse(LOCK);
+    }
     /** What a liquid found against a room's outside wall is replaced with — the rock it is cut into. */
     private static final BlockState FLUID_PLUG = Blocks.DEEPSLATE.defaultBlockState();
 
@@ -782,6 +798,12 @@ public final class PortalCarriageBuilder {
      * A {@code null} {@code gateCtx} skips gating entirely (editor previews / tests). The size is read
      * off the authored template, or the built-in room's when nothing has been authored.</p>
      *
+     * <p><b>Answers {@code null} when the pair cannot be planned yet</b> — only a
+     * {@link PortalRoomMode#CHUNK_DIMENSION} room whose terrain is still being sampled, which this
+     * call has just asked for. The caller leaves the pair without a twin for that tick and asks
+     * again; a portal carriage with no twin is an ordinary-looking carriage that does not cross,
+     * which is already what a pair that does not fit its lane does.</p>
+     *
      * <p>The {@link PortalRoomSettings settings} are read here and then carried on the record rather
      * than looked up per tick, so an author saving a different mode while somebody is standing in the
      * room cannot change the walls around them mid-visit. The pair's
@@ -796,6 +818,20 @@ public final class PortalCarriageBuilder {
         String roomName = TrackVariantRegistry.pickName(
             TrackKind.PORTAL_ROOM, level.getSeed(), pairKey, gateCtx);
         PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        PortalCorridorKind kind = PortalCarriageSelection.corridorKindFor(level, pairKey);
+        Vec3i size = heldInRegion(region, PortalRoomTemplateStore.sizeOf(level, roomName, dims));
+
+        // A generated room's doorways stand on the ground its own sample landed, so the sample has
+        // to be in hand before the pair is planned at all: the two offsets place the room's box and
+        // both corridor lanes. Sampling runs on a worker and takes tens of milliseconds, so this
+        // asks for it and says no; the caller leaves the pair without a twin and tries again next
+        // tick, by which time it is almost always in hand. See PortalChunkDoors.
+        if (settings.mode().generatesTerrain()) {
+            PortalChunkSlice slice = PortalChunkTerrain.slice(level, pairKey, roomName);
+            if (slice == null) return null;
+            settings = PortalChunkDoors.fit(settings, slice, dims, layoutFor(dims, kind), size);
+        }
+
         // Where this pair stands its exit, decided here with everything else about the pair and then
         // carried on the record — the same promise the mode and the room name make. Re-deciding it
         // per tick, or per re-stamp, would move a player's way out from under them.
@@ -803,11 +839,8 @@ public final class PortalCarriageBuilder {
             settings.effectiveExits(),
             PortalExitSites.seedFor(level.getSeed(), pairKey, roomName),
             PortalRoomTiling.MAX_RADIUS);
-        return new PortalStructure(entryOrigin, roomName,
-            heldInRegion(region, PortalRoomTemplateStore.sizeOf(level, roomName, dims)),
-            settings,
-            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile,
-            PortalCarriageSelection.corridorKindFor(level, pairKey));
+        return new PortalStructure(entryOrigin, roomName, size, settings,
+            PortalRoomTiling.base(), PortalExitCopies.NONE, exitTile, kind);
     }
 
     /**
@@ -881,8 +914,15 @@ public final class PortalCarriageBuilder {
         // they are down, which is the other half of the same shell; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
         // out to. Bedrockless writes nothing around the room at all and sweeps the space instead.
-        if (structure.mode() == PortalRoomMode.BEDROCK_LOCK) {
-            bedrockSkin(level, roomOrigin, roomSize);
+        // A generated room fills the box the template just laid before anything is wrapped around
+        // it: the skin is written one column outside the room, so the two never touch, but the order
+        // keeps "what the room turned out to be" true for the mode branch below.
+        if (structure.mode().generatesTerrain()) {
+            PortalChunkDimension.fill(level, structure, dims, pairKey);
+        }
+
+        if (structure.mode().sealsRoomBox()) {
+            bedrockSkin(level, roomOrigin, roomSize, lockStateFor(structure));
         } else if (structure.mode().clearsSurroundings()) {
             clearVoidAround(level, structure, dims);
         } else if (structure.mode().tiles()) {
@@ -896,10 +936,11 @@ public final class PortalCarriageBuilder {
         // re-stamps that corridor's box on its way past. Writing it first would be writing it into
         // a volume that is about to be swept.
         if (structure.mode().sealsCorridors()) {
+            BlockState lock = lockStateFor(structure);
             bedrockSkinCorridor(level, structure.origin(), dims, layout, PortalCarriageRole.ENTRY,
-                roomOrigin, roomSize);
+                roomOrigin, roomSize, lock);
             bedrockSkinCorridor(level, structure.exitOrigin(dims), dims, layout,
-                PortalCarriageRole.EXIT, roomOrigin, roomSize);
+                PortalCarriageRole.EXIT, roomOrigin, roomSize, lock);
         }
     }
 
@@ -996,7 +1037,8 @@ public final class PortalCarriageBuilder {
         BlockPos plugFrom = entry
             ? corridorOrigin.offset(-PLUG_DEPTH, 0, 0)
             : corridorOrigin.offset(layout.length(), 0, 0);
-        plugBeyond(level, plugFrom, PLUG_DEPTH, dims, base.mode().sealsCorridors() ? LOCK : PLUG);
+        plugBeyond(level, plugFrom, PLUG_DEPTH, dims,
+            base.mode().sealsCorridors() ? lockStateFor(base) : PLUG);
     }
 
     /**
@@ -1073,7 +1115,8 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * Wrap a room in one block of bedrock — {@link PortalRoomMode#BEDROCK_LOCK}.
+     * Wrap a room in one block of {@code lock} — the block its author picked, bedrock unless they
+     * said otherwise ({@link PortalRoomLock}).
      *
      * <p><b>Outside the box, not instead of it.</b> The skin sits one block beyond each face, so an
      * authored room still looks like whatever its author built; the bedrock is only ever met by
@@ -1099,7 +1142,8 @@ public final class PortalCarriageBuilder {
      * room. The corridor's own ring stops one column short of the same plane for the mirror-image
      * reason: bedrock there would frame the doorway.</p>
      */
-    private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size) {
+    private static void bedrockSkin(ServerLevel level, BlockPos roomOrigin, Vec3i size,
+                                    BlockState lock) {
         int x0 = roomOrigin.getX() - 1;
         int x1 = roomOrigin.getX() + size.getX();
         int z0 = roomOrigin.getZ();
@@ -1114,18 +1158,18 @@ public final class PortalCarriageBuilder {
         // Sides, running the full height of the skin so its corners meet the top and bottom planes.
         for (int x = x0; x <= x1; x++) {
             for (int y = belowY; y <= aboveY; y++) {
-                level.setBlock(pos.set(x, y, z0 - 1), LOCK, Block.UPDATE_ALL);
-                level.setBlock(pos.set(x, y, z1 + 1), LOCK, Block.UPDATE_ALL);
+                level.setBlock(pos.set(x, y, z0 - 1), lock, Block.UPDATE_ALL);
+                level.setBlock(pos.set(x, y, z1 + 1), lock, Block.UPDATE_ALL);
             }
         }
 
         // Ceiling and floor, out to the sides so nothing can be tunnelled around a corner.
         for (int x = x0; x <= x1; x++) {
             for (int z = z0 - 1; z <= z1 + 1; z++) {
-                level.setBlock(pos.set(x, aboveY, z), LOCK, Block.UPDATE_ALL);
+                level.setBlock(pos.set(x, aboveY, z), lock, Block.UPDATE_ALL);
                 // Only when there is genuinely a row below the floor to write — in the lowest lane
                 // there is not, and the world's own bedrock is already doing the job.
-                if (belowY < floorY) level.setBlock(pos.set(x, belowY, z), LOCK, Block.UPDATE_ALL);
+                if (belowY < floorY) level.setBlock(pos.set(x, belowY, z), lock, Block.UPDATE_ALL);
             }
         }
     }
@@ -1148,23 +1192,23 @@ public final class PortalCarriageBuilder {
     private static void bedrockSkinCorridor(ServerLevel level, BlockPos corridorOrigin,
                                             CarriageDims dims, PortalCarriageLayout layout,
                                             PortalCarriageRole role, BlockPos roomOrigin,
-                                            Vec3i roomSize) {
+                                            Vec3i roomSize, BlockState lock) {
         int worldMinY = level.getMinBuildHeight();
         int worldMaxY = level.getMaxBuildHeight();
         fill(level, corridorLockBoxes(
-            corridorOrigin, dims, layout.length(), role, worldMinY, worldMaxY));
+            corridorOrigin, dims, layout.length(), role, worldMinY, worldMaxY), lock);
         fill(level, roomEndCapBoxes(
-            corridorOrigin, dims, role, roomOrigin, roomSize, worldMinY, worldMaxY));
+            corridorOrigin, dims, role, roomOrigin, roomSize, worldMinY, worldMaxY), lock);
     }
 
-    /** Write {@link #LOCK} into every cell of every box. */
-    private static void fill(ServerLevel level, List<BoundingBox> boxes) {
+    /** Write {@code lock} into every cell of every box. */
+    private static void fill(ServerLevel level, List<BoundingBox> boxes, BlockState lock) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (BoundingBox box : boxes) {
             for (int x = box.minX(); x <= box.maxX(); x++) {
                 for (int y = box.minY(); y <= box.maxY(); y++) {
                     for (int z = box.minZ(); z <= box.maxZ(); z++) {
-                        level.setBlock(pos.set(x, y, z), LOCK, Block.UPDATE_ALL);
+                        level.setBlock(pos.set(x, y, z), lock, Block.UPDATE_ALL);
                     }
                 }
             }

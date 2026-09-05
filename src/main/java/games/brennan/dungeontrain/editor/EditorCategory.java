@@ -250,10 +250,11 @@ public enum EditorCategory {
         // Nothing is stamped any more, so there is nothing left for a block to be outside of —
         // every ghost would now be pointing at a plot that no longer exists.
         EditorStrayBlocks.clear();
-        // Every plot below is about to be torn down, so every undo step recorded
-        // against one would now write into an empty plot floor. Staleness would
-        // catch that on use; dropping the history here is the honest signal.
-        EditorEditHistory.clearAll();
+        // Every plot below is about to be torn down, so an undo step that placed blocks would now
+        // write into an empty plot floor. Staleness would catch that on use; dropping it here is
+        // the honest signal. Menu changes are kept: a weight or a stage link is a file on disk and
+        // undoes the same whether its template is stamped in the world or not.
+        EditorEditHistory.clearWorldBackedSteps();
         EditorEditRecorder.discardPending();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         if (!data.editorPlotsStamped()) {
