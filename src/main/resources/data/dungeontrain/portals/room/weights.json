@@ -23,7 +23,7 @@
   },
   "bigger": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/on/off/end"
   },
   "biggerlibrary": {
     "weight": 1,
