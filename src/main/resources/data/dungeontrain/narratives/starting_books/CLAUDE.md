@@ -4,6 +4,8 @@ Authoritative instruction set for drafting Dungeon Train **starting books** (the
 
 Follow this guide when writing starting-book content.
 
+> **Previewing while you write:** `python3 scripts/books-editor/serve.py` opens a local editor that renders any book on the vanilla page — same paginator, same 256-char budget, same ~19×14 visible page — and writes your edits straight back to these files. It is the fastest way to see where the page breaks actually land. See `scripts/books-editor/README.md`.
+
 > **What a starting book is:** A one-off written book handed to the player at a defining lifecycle moment — first login, new world, joined world, respawn. Delivered via in-game lightning strike, opened once, then burned on close. The player sees ONE variant of ONE book per fire, picked from a context-specific pool with fallback to the DEFAULT pool. Unlike narrative letters there is no progression; unlike random books there is no chest-loot context. Starting books are the **mod creator speaking directly to the player** at a charged moment.
 
 ---

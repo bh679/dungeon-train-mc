@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dungeon Train — book editor</title>
+<link rel="stylesheet" href="/css/editor.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Book editor</h1>
+    <p class="hint">The page is the editor — type on it. <kbd>alt</kbd>+<kbd>←</kbd>/<kbd>→</kbd> turns the page, <kbd>⌘S</kbd> saves.</p>
+    <span id="dirty" class="dirty" hidden>unsaved</span>
+    <span id="status" class="status"></span>
+    <button id="save" type="button" disabled>Save</button>
+  </header>
+
+  <main>
+    <aside id="library-host"></aside>
+
+    <section class="workspace">
+      <div id="meta" class="meta"></div>
+      <div id="controls" class="controls"></div>
+      <div class="stage-row">
+        <div id="stage" class="stage">
+          <div id="tools" class="tools"></div>
+        </div>
+        <aside id="side" class="side"></aside>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { boot } from '/js/editor.js';
+    boot().catch((err) => {
+      document.getElementById('status').textContent = `Failed to start: ${err.message}`;
+      console.error(err);
+    });
+  </script>
+</body>
+</html>

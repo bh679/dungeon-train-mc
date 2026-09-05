@@ -4,6 +4,8 @@ Authoritative instruction set for drafting Dungeon Train story letters — schem
 
 Follow this guide for writing story content
 
+> **Previewing while you write:** `python3 scripts/books-editor/serve.py` opens a local editor that renders any book on the vanilla page — same paginator, same 256-char budget, same ~19×14 visible page — and writes your edits straight back to these files. It is the fastest way to see where the page breaks actually land. See `scripts/books-editor/README.md`.
+
 ---
 
 ## 1. The JSON shape
