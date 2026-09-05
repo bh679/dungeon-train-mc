@@ -100,8 +100,8 @@ class RunStatSubjectTest {
     @DisplayName("Playtime renders time ABOARD as a duration, not a tick count")
     void playtimeRendersAsDuration() {
         PlayerRunState run = new PlayerRunState();
-        // The subject reads time on the train — what the "Longest Aboard" boards report — not
-        // wall-clock since spawn. Seeding runTicks here would render 0s.
+        // The subject reads time on the train — what the "Longest Aboard" boards report. It is
+        // the only per-life clock the game keeps; there is no wall-clock-since-spawn counter.
         run.addTrainTimeTicks(20L * (2 * 3600 + 14 * 60)); // 2h 14m
         assertEquals("2h 14m", RunStatSubject.PLAYTIME.rendered(RunStatSubject.PLAYTIME.value(run)));
     }

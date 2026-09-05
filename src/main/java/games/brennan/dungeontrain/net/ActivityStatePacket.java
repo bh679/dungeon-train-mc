@@ -9,8 +9,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * Server → client: whether the receiving player's time counters are running, and why not when they
- * are not. Drives the dev-HUD "Time:" read-out — the state is server-authoritative (the idle rules,
+ * Server → client: whether the receiving player's time on the train is running, and why not when it
+ * is not. Drives the dev-HUD "Time:" read-out — the state is server-authoritative (the idle rules,
  * the carriage-progress window and the counters all live there), so the client cannot derive it.
  *
  * <p>{@code reason} is a {@link games.brennan.dungeontrain.event.PlayerActivityTracker.Reason}
@@ -21,9 +21,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * <p>Sent from the tracker's existing 10-tick scan and only when a displayed value changes, so a
  * frozen player generates no traffic at all.</p>
  */
-public record ActivityStatePacket(boolean countingRun, boolean countingTrain, int reason,
+public record ActivityStatePacket(boolean countingTrain, int reason,
                                   int stoppedSeconds, int carriagesInWindow,
-                                  long trainTimeTicks, long runTicks) implements CustomPacketPayload {
+                                  long trainTimeTicks) implements CustomPacketPayload {
 
     public static final Type<ActivityStatePacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "activity_state"));
@@ -32,25 +32,21 @@ public record ActivityStatePacket(boolean countingRun, boolean countingTrain, in
         StreamCodec.of(ActivityStatePacket::encode, ActivityStatePacket::decode);
 
     private static void encode(FriendlyByteBuf buf, ActivityStatePacket p) {
-        buf.writeBoolean(p.countingRun);
         buf.writeBoolean(p.countingTrain);
         buf.writeVarInt(p.reason);
         buf.writeVarInt(Math.max(0, p.stoppedSeconds));
         buf.writeVarInt(Math.max(0, p.carriagesInWindow));
         buf.writeVarLong(Math.max(0L, p.trainTimeTicks));
-        buf.writeVarLong(Math.max(0L, p.runTicks));
     }
 
     private static ActivityStatePacket decode(FriendlyByteBuf buf) {
-        boolean countingRun = buf.readBoolean();
         boolean countingTrain = buf.readBoolean();
         int reason = buf.readVarInt();
         int stoppedSeconds = buf.readVarInt();
         int carriagesInWindow = buf.readVarInt();
         long trainTimeTicks = buf.readVarLong();
-        long runTicks = buf.readVarLong();
-        return new ActivityStatePacket(countingRun, countingTrain, reason, stoppedSeconds,
-            carriagesInWindow, trainTimeTicks, runTicks);
+        return new ActivityStatePacket(countingTrain, reason, stoppedSeconds,
+            carriagesInWindow, trainTimeTicks);
     }
 
     @Override

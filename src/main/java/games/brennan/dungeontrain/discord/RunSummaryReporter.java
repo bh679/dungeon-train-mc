@@ -10,9 +10,9 @@ import org.slf4j.Logger;
 
 /**
  * POSTs a per-LIFE run summary (spawn → death) to the Dungeon Train relay, so the private data
- * explorer (dp-relay) can show a player's <em>single-life</em> playtime — the same run timer the
- * death report prints as {@code H:MM:SS}. A "life" ends at each death ({@code PlayerRunState.runTicks}
- * resets on respawn), so one record is posted per death.
+ * explorer (dp-relay) can show a player's <em>single-life</em> time on the train — the same clock the
+ * death report prints as {@code H:MM:SS}. A "life" ends at each death
+ * ({@code PlayerRunState.trainTimeTicks} resets on respawn), so one record is posted per death.
  *
  * <p>Mirrors {@link DeathEquipmentReporter}: same relay destination, the same
  * {@link DungeonTrainConfig#isWorldInfoToRelay()} gate (reused rather than a new toggle), and the same
@@ -57,8 +57,9 @@ public final class RunSummaryReporter {
 
     /**
      * Pure payload assembly over plain data (no Minecraft types) — package-private so the shape can
-     * be unit-tested without bootstrapping the game. {@code runSec} is the life's elapsed seconds
-     * ({@code runTicks / 20}); {@code carriage} + {@code distanceBlocks} are cheap extras.
+     * be unit-tested without bootstrapping the game. {@code runSec} is the life's time on the train
+     * in seconds ({@code trainTimeTicks / 20}); {@code carriage} + {@code distanceBlocks} are cheap
+     * extras.
      *
      * <p>{@code distanceBlocks} keeps its long-standing meaning — the 3D path-length odometer. The
      * {@link RunPosition} fields are the newer positional metric and are independent of it; both

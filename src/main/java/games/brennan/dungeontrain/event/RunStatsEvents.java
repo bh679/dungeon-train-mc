@@ -55,7 +55,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -74,8 +73,6 @@ import java.util.UUID;
  *       when victim is any {@link LivingEntity} other than the killer. On
  *       the LOW-priority pass, snapshots the dying player's stats and sends
  *       them to that player via {@link DeathStatsPacket}.</li>
- *   <li>{@link PlayerTickEvent.Post} — per-tick {@code runTicks++} on
- *       server players.</li>
  *   <li>{@link BlockEvent.BreakEvent} — counts decorated-pot breaks as
  *       container opens.</li>
  *   <li>{@link PlayerInteractEvent.RightClickItem} — counts held
@@ -559,15 +556,6 @@ public final class RunStatsEvents {
         return List.of(
                 packet.mostUsedWeapon(),
                 packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
-    }
-
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        // Paused / idle time isn't play time — see PlayerActivityTracker. The carriage-progress
-        // rule deliberately does NOT gate this one: it freezes time on the train only.
-        if (!PlayerActivityTracker.isCountingRun(player)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addRunTicks(1L);
     }
 
     @SubscribeEvent

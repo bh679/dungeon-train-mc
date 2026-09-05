@@ -28,21 +28,20 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Is this player actually playing, and are they getting anywhere? Server-side gate for the time
- * counters that should measure play rather than wall-clock presence:
- * {@link games.brennan.dungeontrain.advancement.GlobalPlayerStats#addTrainTicks} and
- * {@link PlayerRunState#addTrainTimeTicks} (both in {@link BoardingProgressEvents}), and
- * {@link PlayerRunState#addRunTicks} (in {@link RunStatsEvents}).
+ * Is this player actually playing, and are they getting anywhere? Server-side gate for the two
+ * time-on-train counters, which should measure play rather than wall-clock presence:
+ * {@link games.brennan.dungeontrain.advancement.GlobalPlayerStats#addTrainTicks} (lifetime) and
+ * {@link PlayerRunState#addTrainTimeTicks} (this life), both in {@link BoardingProgressEvents}.
+ * Train time is the only clock the game keeps — every player-facing "time" figure reads it.
  *
- * <p>Four triggers stop the clock, in two tiers:</p>
- * <table border="1">
- *   <tr><th>Trigger</th><th>Freezes</th></tr>
- *   <tr><td>Mouse has not moved for {@link #LOOK_IDLE_TICKS} (30 s)</td><td>train time + run playtime</td></tr>
- *   <tr><td>No <em>non-look</em> input for {@link #INPUT_IDLE_TICKS} (5 min)</td><td>train time + run playtime</td></tr>
- *   <tr><td>Pause screen open ({@link games.brennan.dungeontrain.net.PlayerPausedPacket})</td><td>train time + run playtime</td></tr>
- *   <tr><td>Fewer than {@link #MIN_CARRIAGES_PER_WINDOW} carriages traversed in the last
- *       {@link #PROGRESS_WINDOW_TICKS} (10 min)</td><td><b>train time only</b></td></tr>
- * </table>
+ * <p>Four triggers stop it:</p>
+ * <ul>
+ *   <li>Mouse has not moved for {@link #LOOK_IDLE_TICKS} (30 s)</li>
+ *   <li>No <em>non-look</em> input for {@link #INPUT_IDLE_TICKS} (5 min)</li>
+ *   <li>Pause screen open ({@link games.brennan.dungeontrain.net.PlayerPausedPacket})</li>
+ *   <li>Fewer than {@link #MIN_CARRIAGES_PER_WINDOW} carriages traversed in the last
+ *       {@link #PROGRESS_WINDOW_TICKS} (10 min) — playing, but not getting anywhere</li>
+ * </ul>
  *
  * <p>Looking around deliberately does <em>not</em> refresh the input clock — otherwise the 5-minute
  * rule could never fire, since the 30-second mouse rule would always bite first. The two clocks
@@ -148,27 +147,15 @@ public final class PlayerActivityTracker {
 
     // ---------------------------------------------------------------- queries
 
-    /**
-     * Should this player's run playtime advance? False while paused, while the mouse has been
-     * still for 30 s, or with no non-look input for 5 minutes.
-     */
-    public static boolean isCountingRun(ServerPlayer player) {
-        return countsRun(reason(player));
-    }
-
-    /** Which reasons leave run playtime running. The carriage rule is train-time-only. */
-    public static boolean countsRun(Reason reason) {
-        return reason == Reason.TRACKING || reason == Reason.NO_PROGRESS;
-    }
-
     /** Which reasons leave time on the train running — only one. */
     public static boolean countsTrain(Reason reason) {
         return reason == Reason.TRACKING;
     }
 
     /**
-     * Should this player's time on the train advance? Everything {@link #isCountingRun} requires,
-     * plus actual forward progress through the train.
+     * Should this player's time on the train advance? Not while paused, not with the mouse still
+     * for 30 s or no non-look input for 5 minutes, and not without forward progress through the
+     * train.
      */
     public static boolean isCountingTrain(ServerPlayer player) {
         return countsTrain(reason(player));
@@ -350,8 +337,8 @@ public final class PlayerActivityTracker {
                 player.getName().getString(), now, reason,
                 reason == Reason.NO_PROGRESS
                     ? " (" + carriageSpan(CARRIAGE_HISTORY.get(uuid)) + "/"
-                        + MIN_CARRIAGES_PER_WINDOW + " carriages; run playtime still counting)"
-                    : " (train time + playtime paused)");
+                        + MIN_CARRIAGES_PER_WINDOW + " carriages)"
+                    : "");
         }
     }
 
@@ -366,13 +353,11 @@ public final class PlayerActivityTracker {
         };
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         ActivityStatePacket packet = new ActivityStatePacket(
-            reason == Reason.TRACKING || reason == Reason.NO_PROGRESS,
             reason == Reason.TRACKING,
             reason.ordinal(),
             (int) Math.min(Integer.MAX_VALUE, stoppedSeconds),
             carriageSpan(CARRIAGE_HISTORY.get(uuid)),
-            run.trainTimeTicks(),
-            run.runTicks());
+            run.trainTimeTicks());
         if (packet.equals(LAST_SENT.get(uuid))) return;
         LAST_SENT.put(uuid, packet);
         PacketDistributor.sendToPlayer(player, packet);

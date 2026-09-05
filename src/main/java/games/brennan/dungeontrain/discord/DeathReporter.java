@@ -62,8 +62,8 @@ public final class DeathReporter {
     /**
      * Pure payload assembly over plain data (no Minecraft types) — package-private so the shape can
      * be unit-tested without bootstrapping the game. {@code cause} is the second-person death message
-     * ({@code packet.deathCause()}); {@code runSec} is the life's elapsed seconds ({@code runTicks /
-     * 20}); {@code carriage} is the carriage reached. {@code player} + {@code cause} are optional,
+     * ({@code packet.deathCause()}); {@code runSec} is the life's time on the train in seconds
+     * ({@code trainTimeTicks / 20}); {@code carriage} is the carriage reached. {@code player} + {@code cause} are optional,
      * as is every {@link RunPosition} field (a life whose origin was never captured sends neither
      * {@code spawnX} nor {@code distanceTravelled} rather than a misleading zero).
      */

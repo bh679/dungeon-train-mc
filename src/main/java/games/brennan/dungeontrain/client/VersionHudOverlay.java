@@ -88,10 +88,8 @@ public final class VersionHudOverlay {
     }
 
     /**
-<<<<<<< HEAD
      * Called from {@code ActivityStatePacket.handle} on the client main thread. Drives the dev-HUD
-     * "Time:" read-out — whether time on the train and run playtime are banking, and what stopped
-     * them.
+     * "Time:" read-out — whether time on the train is banking, and what stopped it.
      */
     public static void setActivityState(ActivityStatePacket state) {
         activityState = state;
@@ -156,7 +154,7 @@ public final class VersionHudOverlay {
             lines += 2; // Diff-Car + Diff-Level
         }
         if (activityState != null) {
-            lines += 1; // Time: banking state + the two clocks
+            lines += 1; // Time: banking state + the train clock
         }
         if (carriagePresent && DebugFlagsState.hudDistance()
                 && CarriageGroupGapState.findByCarriage(carriageIndex) != null) {
@@ -198,10 +196,9 @@ public final class VersionHudOverlay {
             // idle rules and the counters both live there.
             ActivityStatePacket activity = activityState;
             if (activity != null) {
-                String timeText = String.format(Locale.ROOT, "  Time: %s   train %s / run %s",
+                String timeText = String.format(Locale.ROOT, "  Time: %s   train %s",
                     activityLabel(activity),
-                    formatClock(activity.trainTimeTicks()),
-                    formatClock(activity.runTicks()));
+                    formatClock(activity.trainTimeTicks()));
                 HudText.drawScaled(graphics, mc.font, timeText,
                     4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
                     activity.countingTrain() ? 0xFF80FF80 : 0xFFFFC060, true);

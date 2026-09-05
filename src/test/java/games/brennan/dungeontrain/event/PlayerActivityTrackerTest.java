@@ -143,16 +143,6 @@ class PlayerActivityTrackerTest {
     }
 
     @Test
-    @DisplayName("no progress freezes train time only — the player is still playing")
-    void noProgressKeepsRunPlaytime() {
-        assertTrue(PlayerActivityTracker.countsRun(Reason.NO_PROGRESS));
-        assertTrue(PlayerActivityTracker.countsRun(Reason.TRACKING));
-        assertFalse(PlayerActivityTracker.countsRun(Reason.MOUSE_IDLE));
-        assertFalse(PlayerActivityTracker.countsRun(Reason.INPUT_IDLE));
-        assertFalse(PlayerActivityTracker.countsRun(Reason.PAUSED));
-    }
-
-    @Test
     @DisplayName("the HUD reads reasons by ordinal — the wire contract must not drift")
     void reasonOrdinalsMatchTheHudSwitch() {
         assertEquals(0, Reason.TRACKING.ordinal());
