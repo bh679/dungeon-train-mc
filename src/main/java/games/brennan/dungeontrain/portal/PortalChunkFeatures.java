@@ -90,6 +90,16 @@ final class PortalChunkFeatures {
      */
     private static final float FOREIGN_STRUCTURE_CHANCE = 0.10F;
 
+    /**
+     * How many times the biome's own creature pass is rolled before a room settles for having no
+     * animals — see {@link #decorate}.
+     *
+     * <p>A biome with no creature spawns at all, which is both the Nether and the End, comes back
+     * empty from every one of them and costs nothing for trying: the pass returns immediately on an
+     * empty spawn list.</p>
+     */
+    private static final int MOB_SPAWN_ATTEMPTS = 12;
+
     private PortalChunkFeatures() {}
 
     /**
