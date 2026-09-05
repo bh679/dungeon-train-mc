@@ -1957,5 +1957,6 @@
   "gui.dungeontrain.shaders.perf.heavy.detail": "Demanding. Best on a recent graphics card \u2014 a long train in view is the hardest thing you can ask of it.",
   "gui.dungeontrain.shaders.sort.author": "Author Rec",
   "gui.dungeontrain.shaders.details": "Pack details",
-  "gui.dungeontrain.shaders.action.settings": "Shader Settings"
+  "gui.dungeontrain.shaders.action.settings": "Shader Settings",
+  "gui.dungeontrain.menu.options_short": "Options"
 }

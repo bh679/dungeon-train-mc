@@ -67,8 +67,13 @@ public final class TitleScreenLayoutHandler {
      * A quarter row is ~47px, and vanilla's "Quit Game" is wider than that — a label that marquees
      * is a label nobody reads. "Quit" says the same thing and fits, so the vanilla button is
      * relabelled rather than the row being made to hold something it cannot.
+     *
+     * <p>"Options…" loses its ellipsis for the same reason. Vanilla's trailing dots mean "this opens
+     * another screen", which every button in this row now does, so they are three characters of
+     * width spent saying nothing that distinguishes it from its neighbours.</p>
      */
     private static final Component QUIT_SHORT_LABEL = Component.translatable("gui.dungeontrain.menu.quit_short");
+    private static final Component OPTIONS_SHORT_LABEL = Component.translatable("gui.dungeontrain.menu.options_short");
 
     private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
     private static final Component OPTIONS_KEY = Component.translatable("menu.options");
@@ -166,6 +171,7 @@ public final class TitleScreenLayoutHandler {
         options.setX(rowLeft + 2 * (quarterW + GAP));
         options.setY(rowY);
         options.setWidth(quarterW);
+        options.setMessage(OPTIONS_SHORT_LABEL);
 
         quit.setX(rowLeft + 3 * (quarterW + GAP));
         quit.setY(rowY);
