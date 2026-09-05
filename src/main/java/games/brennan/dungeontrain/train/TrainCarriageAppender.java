@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreeze;
+import games.brennan.dungeontrain.ship.sable.SableHoldingIndex;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.ship.sable.WorldgenForceGuard;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -34,6 +35,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -175,6 +178,15 @@ public final class TrainCarriageAppender {
      */
     private static final Map<UUID, UUID> RELOAD_ISSUED_FORWARD = new ConcurrentHashMap<>();
     private static final Map<UUID, UUID> RELOAD_ISSUED_BACKWARD = new ConcurrentHashMap<>();
+    /**
+     * Game tick of the last reload issued for each train's held edge, per direction. Paired with
+     * {@code RELOAD_ISSUED_*} to turn a one-shot claim into a bounded retry — see
+     * {@link #mayReissueReload}.
+     */
+    private static final Map<UUID, Long> RELOAD_LAST_ISSUED_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> RELOAD_LAST_ISSUED_BACKWARD = new ConcurrentHashMap<>();
+    /** How long to wait before re-asking for the same held edge. */
+    static final long RELOAD_RETRY_TICKS = 40L;
     /**
      * Ticks a registry edge may stay unresolved before one WARN fires. 200 ≈
      * 10 s — comfortably past the few-tick {@code findAll} surfacing lag and the
@@ -1625,6 +1637,11 @@ public final class TrainCarriageAppender {
         EDGE_UNRESOLVED_WARNED_BACKWARD.clear();
         RELOAD_ISSUED_FORWARD.clear();
         RELOAD_ISSUED_BACKWARD.clear();
+        RELOAD_LAST_ISSUED_FORWARD.clear();
+        RELOAD_LAST_ISSUED_BACKWARD.clear();
+        DUPE_TRACKS.clear();
+        DUPE_SUPPRESSED.clear();
+        DUPE_AMBIGUOUS_LOGGED.clear();
         // The [bwdgen] trace's per-train state, so a new session doesn't inherit a
         // previous train's blocked-since tick and report a bogus multi-hour stall.
         BackwardGenTrace.clear();
@@ -2119,6 +2136,10 @@ public final class TrainCarriageAppender {
         Set<UUID> seenThisTick = new HashSet<>();
         Set<UUID> trainsTouchedThisTick = new HashSet<>();
         Map<UUID, List<Trains.Carriage>> trainsById = Trains.byTrainId(level);
+        // Before any lane, force-load window or ghost cleanup consumes the train: if an anchor
+        // is carrying two live sub-levels, tear the orphan down and prune it from the list, so
+        // nothing downstream places geometry against a duplicated anchor.
+        sweepDuplicateAnchors(level, players, trainsById);
         boolean anySpawnFired = false;
         for (List<Trains.Carriage> train : trainsById.values()) {
             if (updateTrain(level, train, players, seenThisTick, trainsTouchedThisTick, spawnAllowedThisTick)) {
@@ -2155,6 +2176,11 @@ public final class TrainCarriageAppender {
         EDGE_UNRESOLVED_WARNED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         RELOAD_ISSUED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         RELOAD_ISSUED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        RELOAD_LAST_ISSUED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        RELOAD_LAST_ISSUED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        DUPE_TRACKS.keySet().retainAll(trainsTouchedThisTick);
+        DUPE_SUPPRESSED.keySet().retainAll(trainsTouchedThisTick);
+        DUPE_AMBIGUOUS_LOGGED.keySet().retainAll(trainsTouchedThisTick);
         SPAWN_GEN_WAIT_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         SPAWN_GEN_WAIT_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         clearDropouts(level, seenThisTick);
@@ -3054,6 +3080,7 @@ public final class TrainCarriageAppender {
         // Re-arm the reload-from-holding throttle: once this edge resolves, a later
         // held edge in the same direction (a different sub-level) should issue once.
         (forward ? RELOAD_ISSUED_FORWARD : RELOAD_ISSUED_BACKWARD).remove(trainId);
+        (forward ? RELOAD_LAST_ISSUED_FORWARD : RELOAD_LAST_ISSUED_BACKWARD).remove(trainId);
     }
 
     /**
@@ -3071,6 +3098,31 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * Whether a held edge that has already been asked for once may be asked again: attempts are
+     * spaced {@link #RELOAD_RETRY_TICKS} apart and capped by
+     * {@link SableHoldingIndex#MAX_RECOVERY_ATTEMPTS}.
+     *
+     * <p><b>Why a retry exists at all.</b> {@link #claimReloadIssue} fires once per
+     * {@code (trainId, direction, subLevelId)} and is re-armed only by
+     * {@link #clearEdgeUnresolved}, which runs on the SPAWN and REAP_DEFER branches and never on
+     * RELOAD_DEFER. So a held edge got exactly one reload attempt, and if that attempt failed the
+     * lane sat on RELOAD_DEFER forever. That was survivable only because {@code isHeld} used to go
+     * false by accident when Sable evicted its in-memory holding record — the very bug this change
+     * fixes. Making {@code isHeld} truthful without this would trade a visible duplicate carriage
+     * for an invisible permanent stall of backward generation.</p>
+     *
+     * <p>The cap is what guarantees termination: once the attempts are spent,
+     * {@link SableHoldingIndex} retracts its claim, {@code isHeld} goes false, and the anchor
+     * becomes reapable again — degrading to the old behaviour rather than hanging.</p>
+     *
+     * <p>Pure; package-private for unit tests.</p>
+     */
+    static boolean mayReissueReload(long lastIssuedTick, long now, int attempts) {
+        return attempts < SableHoldingIndex.MAX_RECOVERY_ATTEMPTS
+            && now - lastIssuedTick >= RELOAD_RETRY_TICKS;
+    }
+
+    /**
      * Emit at most one WARN once a registry edge has stayed unresolved past
      * {@link #EDGE_UNRESOLVED_WARN_TICKS}. Diagnostic only — resolution
      * self-heals as the edge surfaces / finishes reloading, so this never
@@ -3085,6 +3137,12 @@ public final class TrainCarriageAppender {
         if (elapsed >= EDGE_UNRESOLVED_WARN_TICKS && warned.putIfAbsent(trainId, Boolean.TRUE) == null) {
             LOGGER.warn("[DungeonTrain] Registry {} edge unresolved for {} ticks ({}) anchor={} subLevelId={} trainId={} — extension paused until it surfaces (no void, no delete)",
                 forward ? "forward" : "backward", elapsed, why, edgeAnchor, uuid, trainId);
+            // Backstop for the reload budget: stuck this long on a held edge means the claim that
+            // the group is recoverable is false, whatever the attempt counter says. Retract it so
+            // the anchor can be reaped and respawned instead of pausing the lane indefinitely.
+            if ("held→reload".equals(why)) {
+                SableHoldingIndex.giveUp(uuid, "backward/forward edge unresolved for " + elapsed + " ticks");
+            }
         }
     }
 
@@ -3722,6 +3780,29 @@ public final class TrainCarriageAppender {
     private static ReapOutcome reapGhostAnchor(ServerLevel level, UUID trainId, int anchor, int captureBudget) {
         ManagedShip ship = Trains.unregisterGroup(trainId, anchor);
         if (ship == null) return new ReapOutcome(false, 0, 0);
+        // Forget any holding claim on the anchor we just gave up on, so a stale on-disk
+        // record can never resurrect a claim for an anchor DT has decided is gone.
+        SableHoldingIndex.forget(ship.subLevelId());
+        return tearDownShip(level, trainId, ship, captureBudget);
+    }
+
+    /**
+     * Tear one sub-level down for good: hand any shared carriages back to the relay (final flush
+     * + lease return, capped at {@code captureBudget} full captures this pass), drop the despawn
+     * snapshot, release any force-load ticket (DT mirror + live Sable ticket together, no leak),
+     * then {@link Shipyard#delete}.
+     *
+     * <p><b>Does NOT touch the {@link Trains} registry.</b> Registry bookkeeping belongs to the
+     * caller, and the two callers need opposite things: {@link #reapGhostAnchor} unregisters the
+     * anchor first because the anchor itself is the ghost, while {@link #sweepDuplicateAnchors}
+     * must NOT, because that anchor is legitimately registered to the surviving twin.</p>
+     *
+     * <p>Known gap, pre-existing: world-space contents entities belonging to the deleted
+     * sub-level are not swept. A duplicated group already spawned duplicate mobs, and deleting
+     * one twin leaves its mobs standing on the survivor — same behaviour as the ghost cleanup
+     * has always had.</p>
+     */
+    private static ReapOutcome tearDownShip(ServerLevel level, UUID trainId, ManagedShip ship, int captureBudget) {
         Shipyard shipyard = Shipyards.of(level);
         UUID shipId = ship.subLevelId();
         int sharedCaptured = 0;
@@ -5762,6 +5843,290 @@ public final class TrainCarriageAppender {
         return !held && !resident;
     }
 
+    // ---- Duplicate anchor guard ------------------------------------------------
+    //
+    // Two live sub-levels can end up at one anchor: DT reaps an anchor it believes is gone
+    // for good and respawns it, and the original later comes back from Sable's holding store
+    // onto the same canonical slot. Because Trains.gateWorldXOrRecord deliberately pins a
+    // respawned anchor's worldgen gate, the two are built identically — the reported "two
+    // trains on top of each other, same seed for each overlapping carriage".
+    //
+    // SableHoldingIndex fixes the cause. This is the net for whatever the cause turns out not
+    // to cover: a mixin that stops applying after a Sable bump, a group culled before the
+    // index existed, or a path nobody has found yet. Deleting a live sub-level is permanent,
+    // so every rule below is biased toward doing nothing.
+
+    /** Consecutive ticks a DELETE verdict must hold before the orphan is actually torn down. */
+    static final int DUPE_CONFIRM_TICKS = 3;
+
+    /** One live sub-level seen at an anchor, reduced to the facts the decision needs. */
+    record LiveGroup(UUID subLevelId, boolean resident, boolean splitPiece) {}
+
+    /** Outcome of {@link #decideDuplicate}. Only DELETE names a victim. */
+    enum DupeVerdict {
+        /** One (or no) live sub-level at this anchor — the overwhelmingly common case. */
+        NONE,
+        /** Exactly one candidate is the registered ship; the rest are orphans. */
+        DELETE,
+        /** A Sable split: the candidates are pieces of one carriage, not copies. Never cut. */
+        AMBIGUOUS_SPLIT,
+        /** No registry entry for the anchor, so there is no basis to choose. */
+        AMBIGUOUS_UNREGISTERED,
+        /** The registry names a ship that is not live here — mid-reload, or just reaped. */
+        AMBIGUOUS_REGISTRY_STALE
+    }
+
+    /** {@code victim} is non-null iff {@code verdict == DELETE}. */
+    record DupeDecision(DupeVerdict verdict, UUID victim) {}
+
+    /**
+     * Which of several live sub-levels at one anchor is the orphan.
+     *
+     * <p>Identity is the sub-level id, and that is what makes this safe: a reload from holding
+     * keeps its UUID while a fresh {@code assemble} gets a new one, so a resurrected original
+     * and a respawned twin are two distinct ids, and the same group seen through two wrappers
+     * is one id and can never be mistaken for a duplicate.</p>
+     *
+     * <p>The registry is the source of truth for which twin survives, so force-load tickets,
+     * shared-carriage leases and contents snapshots keep pointing at the one that lives. Every
+     * case where the registry cannot answer returns an AMBIGUOUS verdict and deletes nothing —
+     * a false positive destroys real player-built content, and there is no undo.</p>
+     *
+     * <p>Pure: no level, no Sable, no registry access. The caller reduces the anchor to ids and
+     * flags first. Deterministic regardless of input order, so a verdict repeated across ticks
+     * names the same victim and {@link #dupeDeleteReady}'s streak can accumulate.</p>
+     *
+     * @param liveAtAnchor         every live sub-level currently carrying this anchor's pIdx
+     * @param registeredSubLevelId what {@code Trains.knownGroups(trainId).get(anchor)} names,
+     *                             or null when the anchor is not registered
+     */
+    static DupeDecision decideDuplicate(List<LiveGroup> liveAtAnchor, @Nullable UUID registeredSubLevelId) {
+        if (liveAtAnchor == null || liveAtAnchor.size() < 2) return new DupeDecision(DupeVerdict.NONE, null);
+        // Sorted + deduped by id: two wrappers onto one sub-level are not a duplicate, and the
+        // victim choice must not depend on the order findAll happened to return things in.
+        Map<UUID, LiveGroup> distinct = new TreeMap<>();
+        for (LiveGroup g : liveAtAnchor) {
+            if (g == null || g.subLevelId() == null || !g.resident()) continue;
+            distinct.putIfAbsent(g.subLevelId(), g);
+        }
+        if (distinct.size() < 2) return new DupeDecision(DupeVerdict.NONE, null);
+        // Split lineage first, and ahead of every other check: two halves of one carriage look
+        // exactly like two copies of it, and cutting either amputates real geometry. This
+        // verdict also means DT's split suppression has stopped working, which is worth knowing.
+        for (LiveGroup g : distinct.values()) {
+            if (g.splitPiece()) return new DupeDecision(DupeVerdict.AMBIGUOUS_SPLIT, null);
+        }
+        if (registeredSubLevelId == null) {
+            return new DupeDecision(DupeVerdict.AMBIGUOUS_UNREGISTERED, null);
+        }
+        if (!distinct.containsKey(registeredSubLevelId)) {
+            return new DupeDecision(DupeVerdict.AMBIGUOUS_REGISTRY_STALE, null);
+        }
+        for (UUID id : distinct.keySet()) {
+            if (!id.equals(registeredSubLevelId)) return new DupeDecision(DupeVerdict.DELETE, id);
+        }
+        return new DupeDecision(DupeVerdict.NONE, null); // unreachable: size >= 2 with one registered
+    }
+
+    /**
+     * Whether a confirmed DELETE verdict may fire this tick: the same victim has been named on
+     * {@link #DUPE_CONFIRM_TICKS} consecutive ticks and no player is standing in it.
+     *
+     * <p>The streak is what makes this safe against the reload / adopt / spawn machinery's
+     * one-tick races, including any not yet enumerated — which is the point of a safety net.
+     * Three ticks of a visible duplicate is a cheap price.</p>
+     */
+    static boolean dupeDeleteReady(int consecutiveTicksSeen, boolean playerInside) {
+        return consecutiveTicksSeen >= DUPE_CONFIRM_TICKS && !playerInside;
+    }
+
+    /** How long a torn-down victim stays suppressed, in case it lingers in findAll for a tick. */
+    private static final long DUPE_SUPPRESS_TICKS = 40L;
+    /** Minimum ticks between repeats of the "deferred, a player is inside" line. */
+    private static final long DUPE_DEFER_LOG_INTERVAL_TICKS = 100L;
+
+    /**
+     * Per-victim confirmation state. Immutable — replaced, never mutated, so a concurrent read
+     * always sees a coherent snapshot.
+     */
+    private record DupeTrack(int streak, long firstSeenTick, boolean observedLogged, long lastDeferLogTick) {}
+
+    /** Confirmation streaks per train, keyed by victim sub-level id. */
+    private static final Map<UUID, Map<UUID, DupeTrack>> DUPE_TRACKS = new ConcurrentHashMap<>();
+    /** Victims already torn down, with the tick it happened, so a lingering wrapper is ignored. */
+    private static final Map<UUID, Map<UUID, Long>> DUPE_SUPPRESSED = new ConcurrentHashMap<>();
+    /** One WARN per (anchor, verdict) episode for the cases the guard refuses to act on. */
+    private static final Map<UUID, Set<String>> DUPE_AMBIGUOUS_LOGGED = new ConcurrentHashMap<>();
+
+    /**
+     * Kill switch for the DELETION half only. Detection and logging stay on regardless, so
+     * turning this off during a suspected false positive still leaves the diagnosis in the log.
+     */
+    private static volatile boolean dupeGuardDeleteEnabled = true;
+
+    private static volatile int dupesObserved;
+    private static volatile int dupesDeleted;
+    private static volatile int dupesAmbiguous;
+
+    public static void setDupeGuardDeleteEnabled(boolean enabled) {
+        dupeGuardDeleteEnabled = enabled;
+    }
+
+    public static boolean isDupeGuardDeleteEnabled() {
+        return dupeGuardDeleteEnabled;
+    }
+
+    /** {@code observed, deleted, ambiguous} counts this session, for the debug readout. */
+    public static int[] dupeGuardCounters() {
+        return new int[] { dupesObserved, dupesDeleted, dupesAmbiguous };
+    }
+
+    /**
+     * Find anchors carrying more than one live sub-level and tear the orphan down.
+     *
+     * <p>Runs before every lane, before the force-load window and before
+     * {@link #cleanupGhostAnchors}, so nothing downstream ever places geometry against a
+     * duplicated anchor. The victim is also pruned from {@code trainsById}'s list in place, so
+     * the rest of this same tick sees the corrected train.</p>
+     *
+     * <p>At most one teardown per train per tick: a three-way stack drains over three ticks
+     * rather than doing several synchronous shared-carriage captures in one.</p>
+     */
+    static void sweepDuplicateAnchors(ServerLevel level, List<ServerPlayer> players,
+                                      Map<UUID, List<Trains.Carriage>> trainsById) {
+        long now = level.getGameTime();
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : trainsById.entrySet()) {
+            UUID trainId = entry.getKey();
+            List<Trains.Carriage> train = entry.getValue();
+            if (train.size() < 2) continue;
+
+            Map<Integer, List<Trains.Carriage>> byAnchor = new HashMap<>();
+            for (Trains.Carriage c : train) {
+                byAnchor.computeIfAbsent(c.provider().getPIdx(), k -> new ArrayList<>()).add(c);
+            }
+
+            Map<UUID, Long> suppressed = DUPE_SUPPRESSED.computeIfAbsent(trainId, k -> new ConcurrentHashMap<>());
+            suppressed.values().removeIf(t -> now - t > DUPE_SUPPRESS_TICKS);
+            Map<UUID, DupeTrack> tracks = DUPE_TRACKS.computeIfAbsent(trainId, k -> new ConcurrentHashMap<>());
+            Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+            Set<UUID> victimsThisTick = new HashSet<>();
+
+            for (Map.Entry<Integer, List<Trains.Carriage>> ae : byAnchor.entrySet()) {
+                List<Trains.Carriage> atAnchor = ae.getValue();
+                if (atAnchor.size() < 2) continue;
+                int anchor = ae.getKey();
+
+                List<LiveGroup> live = new ArrayList<>(atAnchor.size());
+                for (Trains.Carriage c : atAnchor) {
+                    UUID id = c.ship().subLevelId();
+                    if (id == null || suppressed.containsKey(id)) continue;
+                    live.add(new LiveGroup(id, c.ship().isResident(), isSplitPiece(c.ship())));
+                }
+                ManagedShip registeredShip = registry.get(anchor);
+                UUID registeredId = (registeredShip == null) ? null : registeredShip.subLevelId();
+                DupeDecision decision = decideDuplicate(live, registeredId);
+                if (decision.verdict() == DupeVerdict.NONE) continue;
+
+                if (decision.verdict() != DupeVerdict.DELETE) {
+                    logAmbiguousDuplicate(trainId, anchor, decision.verdict(), live);
+                    continue;
+                }
+
+                UUID victimId = decision.victim();
+                victimsThisTick.add(victimId);
+                Trains.Carriage victim = null;
+                Trains.Carriage survivor = null;
+                for (Trains.Carriage c : atAnchor) {
+                    if (victimId.equals(c.ship().subLevelId())) victim = c;
+                    else if (registeredId != null && registeredId.equals(c.ship().subLevelId())) survivor = c;
+                }
+                if (victim == null) continue; // pruned by suppression between the two scans
+
+                DupeTrack prior = tracks.get(victimId);
+                int streak = (prior == null) ? 1 : prior.streak() + 1;
+                long firstSeen = (prior == null) ? now : prior.firstSeenTick();
+                boolean observedLogged = prior != null && prior.observedLogged();
+                long lastDeferLog = (prior == null) ? Long.MIN_VALUE : prior.lastDeferLogTick();
+
+                if (!observedLogged) {
+                    dupesObserved++;
+                    observedLogged = true;
+                    LOGGER.info("[DungeonTrain][dupe] OBSERVED trainId={} anchor={} liveCount={} gameTick={} "
+                            + "registered={} other={} registeredMinX={} otherMinX={} worldXDelta={} verdict=DELETE",
+                        trainId, anchor, live.size(), now, registeredId, victimId,
+                        (survivor == null) ? "?" : String.format("%.2f", survivor.ship().worldAABB().minX()),
+                        String.format("%.2f", victim.ship().worldAABB().minX()),
+                        (survivor == null) ? "?" : String.format("%.2f",
+                            Math.abs(survivor.ship().worldAABB().minX() - victim.ship().worldAABB().minX())));
+                }
+
+                boolean occupied = playerInsideCarriage(players, victim);
+                if (!dupeDeleteReady(streak, occupied) || !dupeGuardDeleteEnabled) {
+                    if (occupied && now - lastDeferLog >= DUPE_DEFER_LOG_INTERVAL_TICKS) {
+                        lastDeferLog = now;
+                        LOGGER.info("[DungeonTrain][dupe] DEFERRED trainId={} anchor={} victim={} reason=OCCUPIED waitedTicks={}",
+                            trainId, anchor, victimId, now - firstSeen);
+                    }
+                    tracks.put(victimId, new DupeTrack(streak, firstSeen, observedLogged, lastDeferLog));
+                    continue;
+                }
+
+                ReapOutcome outcome = tearDownShip(level, trainId, victim.ship(), MAX_SHARED_CAPTURES_PER_CULL);
+                SableHoldingIndex.forget(victimId);
+                suppressed.put(victimId, now);
+                tracks.remove(victimId);
+                victimsThisTick.remove(victimId);
+                final UUID pruneId = victimId;
+                train.removeIf(c -> pruneId.equals(c.ship().subLevelId()));
+                dupesDeleted++;
+                LOGGER.warn("[DungeonTrain][dupe] DELETED trainId={} anchor={} victim={} survivor={} streak={} "
+                        + "sharedCaptured={} sharedDeferred={} totalDeleted={} gameTick={}",
+                    trainId, anchor, victimId, registeredId, streak,
+                    outcome.sharedCaptured(), outcome.sharedDeferred(), dupesDeleted, now);
+                break; // one teardown per train per tick
+            }
+            tracks.keySet().retainAll(victimsThisTick);
+        }
+    }
+
+    /**
+     * Whether {@code ship} is one piece of a Sable split rather than a whole carriage group.
+     * A split's pieces share a pIdx and would otherwise read as a duplicate.
+     */
+    private static boolean isSplitPiece(ManagedShip ship) {
+        return ship instanceof SableManagedShip sable && sable.subLevel().getSplitFromSubLevel() != null;
+    }
+
+    /**
+     * Whether any player stands within {@code carriage}'s padded footprint.
+     *
+     * <p>Deliberately not {@code getTrackingPlayers()}: Sable tracks every sub-level near a
+     * player, so while anyone rides the train that would report every group as occupied and the
+     * guard could never fire. This is the same padded-AABB geometry
+     * {@link CarriageDeck#isOnTrainFootprint} uses to decide a player is on the train.</p>
+     */
+    private static boolean playerInsideCarriage(List<ServerPlayer> players, Trains.Carriage carriage) {
+        List<Trains.Carriage> one = List.of(carriage);
+        for (ServerPlayer player : players) {
+            if (CarriageDeck.isOnTrainFootprint(one, player)) return true;
+        }
+        return false;
+    }
+
+    /** One WARN per (anchor, verdict) episode for a duplicate the guard refuses to resolve. */
+    private static void logAmbiguousDuplicate(UUID trainId, int anchor, DupeVerdict verdict, List<LiveGroup> live) {
+        Set<String> logged = DUPE_AMBIGUOUS_LOGGED.computeIfAbsent(trainId, k -> ConcurrentHashMap.newKeySet());
+        if (!logged.add(anchor + "/" + verdict)) return;
+        dupesAmbiguous++;
+        List<UUID> ids = new ArrayList<>(live.size());
+        for (LiveGroup g : live) ids.add(g.subLevelId());
+        String hint = (verdict == DupeVerdict.AMBIGUOUS_SPLIT)
+            ? " — a Sable split reached the train; check that SubLevelHeatMapSplitMixin still applies"
+            : "";
+        LOGGER.warn("[DungeonTrain][dupe] AMBIGUOUS trainId={} anchor={} verdict={} liveIds={} — not deleting{}",
+            trainId, anchor, verdict, ids, hint);
+    }
+
     /**
      * Whether a fully-culled train may be asked for a group this tick: attempts are spaced
      * {@link #REMOTE_WAKE_INTERVAL_TICKS} apart, and a spent episode pauses for
@@ -6086,7 +6451,16 @@ public final class TrainCarriageAppender {
      * window + findAll, which run regardless.
      */
     private static void issueHeldReload(ServerLevel level, Shipyard shipyard, UUID trainId, boolean forward, int anchor, UUID uuid) {
-        if (!claimReloadIssue(trainId, forward, uuid)) return;
+        long now = level.getGameTime();
+        Map<UUID, Long> lastIssued = forward ? RELOAD_LAST_ISSUED_FORWARD : RELOAD_LAST_ISSUED_BACKWARD;
+        if (!claimReloadIssue(trainId, forward, uuid)) {
+            // Already asked for this edge. Re-ask on a timer rather than never again: the claim is
+            // re-armed only when the edge RESOLVES, so a failed first attempt would otherwise park
+            // the lane forever. See mayReissueReload.
+            Long last = lastIssued.get(trainId);
+            if (last == null || !mayReissueReload(last, now, SableHoldingIndex.failures(uuid))) return;
+        }
+        lastIssued.put(trainId, now);
         if (shipyard.reloadFromHolding(uuid)) {
             adoptReloadedGroup(level, shipyard, trainId, anchor, uuid);
             LOGGER.debug("[DungeonTrain] Reloaded held group anchor={} (subLevelId={}) for trainId={} — {} lane resumes once it surfaces",
@@ -6113,6 +6487,10 @@ public final class TrainCarriageAppender {
             holdGroupResident(level, trainId, ship);
             return ship;
         }
+        // allocateSubLevel adds the new instance to the container synchronously, so findAll()
+        // should already list it. Not surfacing means the load did not actually happen — count it
+        // against the recovery budget so a group that can never come back stops blocking its lane.
+        SableHoldingIndex.recordFailure(uuid);
         LOGGER.debug("[DungeonTrain] Reloaded group anchor={} (subLevelId={}) did not surface synchronously for trainId={}",
             anchor, uuid, trainId);
         return null;

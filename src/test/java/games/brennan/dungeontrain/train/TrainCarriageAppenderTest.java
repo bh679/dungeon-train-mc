@@ -1110,4 +1110,127 @@ final class TrainCarriageAppenderTest {
         assertEquals(games.brennan.dungeontrain.debug.BackwardGenTrace.Reason.EDGE_FROZEN,
             TrainCarriageAppender.backwardBlockReason(true, TrainCarriageAppender.EdgeAction.FROZEN_DEFER));
     }
+
+    // ---- duplicate anchor guard ----
+    //
+    // Ids are explicit so their natural ordering is known: REG < ORPHAN_A < ORPHAN_B. The guard
+    // picks the lowest-ordered non-registered id, so a verdict repeated across ticks names the
+    // same victim and the confirmation streak can accumulate.
+
+    private static final UUID REG = new UUID(0L, 1L);
+    private static final UUID ORPHAN_A = new UUID(0L, 2L);
+    private static final UUID ORPHAN_B = new UUID(0L, 3L);
+
+    private static TrainCarriageAppender.LiveGroup live(UUID id) {
+        return new TrainCarriageAppender.LiveGroup(id, true, false);
+    }
+
+    @Test
+    @DisplayName("decideDuplicate: nothing to do for an empty or single-occupant anchor")
+    void dupe_noneForSingle() {
+        assertEquals(TrainCarriageAppender.DupeVerdict.NONE,
+            TrainCarriageAppender.decideDuplicate(List.of(), REG).verdict());
+        assertEquals(TrainCarriageAppender.DupeVerdict.NONE,
+            TrainCarriageAppender.decideDuplicate(List.of(live(REG)), REG).verdict());
+        // An unregistered lone group is not a duplicate either — nothing to compare it against.
+        assertEquals(TrainCarriageAppender.DupeVerdict.NONE,
+            TrainCarriageAppender.decideDuplicate(List.of(live(ORPHAN_A)), null).verdict());
+        assertEquals(TrainCarriageAppender.DupeVerdict.NONE,
+            TrainCarriageAppender.decideDuplicate(null, REG).verdict());
+    }
+
+    @Test
+    @DisplayName("decideDuplicate: with one registered twin, the other is the victim")
+    void dupe_deletesTheUnregisteredTwin() {
+        TrainCarriageAppender.DupeDecision d =
+            TrainCarriageAppender.decideDuplicate(List.of(live(REG), live(ORPHAN_A)), REG);
+        assertEquals(TrainCarriageAppender.DupeVerdict.DELETE, d.verdict());
+        assertEquals(ORPHAN_A, d.victim());
+    }
+
+    @Test
+    @DisplayName("decideDuplicate: with neither twin registered, refuse to guess")
+    void dupe_bothUnregistered() {
+        TrainCarriageAppender.DupeDecision d =
+            TrainCarriageAppender.decideDuplicate(List.of(live(ORPHAN_A), live(ORPHAN_B)), null);
+        assertEquals(TrainCarriageAppender.DupeVerdict.AMBIGUOUS_UNREGISTERED, d.verdict());
+        assertNull(d.victim());
+    }
+
+    @Test
+    @DisplayName("decideDuplicate: a registry pointing at neither twin is a mid-reload window, not a verdict")
+    void dupe_registryStale() {
+        TrainCarriageAppender.DupeDecision d =
+            TrainCarriageAppender.decideDuplicate(List.of(live(ORPHAN_A), live(ORPHAN_B)), REG);
+        assertEquals(TrainCarriageAppender.DupeVerdict.AMBIGUOUS_REGISTRY_STALE, d.verdict());
+        assertNull(d.victim());
+    }
+
+    @Test
+    @DisplayName("decideDuplicate: split lineage is never cut, even when the registry is clean")
+    void dupe_splitTakesPrecedence() {
+        // Two halves of one carriage share a pIdx. Without this precedence the registered/orphan
+        // rule below would happily delete one of them and amputate real geometry.
+        TrainCarriageAppender.DupeDecision d = TrainCarriageAppender.decideDuplicate(
+            List.of(live(REG), new TrainCarriageAppender.LiveGroup(ORPHAN_A, true, true)), REG);
+        assertEquals(TrainCarriageAppender.DupeVerdict.AMBIGUOUS_SPLIT, d.verdict());
+        assertNull(d.victim());
+    }
+
+    @Test
+    @DisplayName("decideDuplicate: three at one anchor drain one per tick, whatever order they arrive in")
+    void dupe_drainsDeterministically() {
+        List<TrainCarriageAppender.LiveGroup> forward = List.of(live(REG), live(ORPHAN_A), live(ORPHAN_B));
+        List<TrainCarriageAppender.LiveGroup> reversed = List.of(live(ORPHAN_B), live(ORPHAN_A), live(REG));
+        assertEquals(ORPHAN_A, TrainCarriageAppender.decideDuplicate(forward, REG).victim());
+        assertEquals(ORPHAN_A, TrainCarriageAppender.decideDuplicate(reversed, REG).victim(),
+            "input order must not change who dies, or the confirmation streak never accumulates");
+        // With that one gone, the next tick names the next.
+        assertEquals(ORPHAN_B,
+            TrainCarriageAppender.decideDuplicate(List.of(live(REG), live(ORPHAN_B)), REG).victim());
+    }
+
+    @Test
+    @DisplayName("decideDuplicate: one sub-level seen through two wrappers is not a duplicate")
+    void dupe_wrapperChurn() {
+        assertEquals(TrainCarriageAppender.DupeVerdict.NONE,
+            TrainCarriageAppender.decideDuplicate(List.of(live(REG), live(REG)), REG).verdict());
+    }
+
+    @Test
+    @DisplayName("decideDuplicate: a stale non-resident wrapper is not a live twin")
+    void dupe_ignoresNonResident() {
+        assertEquals(TrainCarriageAppender.DupeVerdict.NONE, TrainCarriageAppender.decideDuplicate(
+            List.of(live(REG), new TrainCarriageAppender.LiveGroup(ORPHAN_A, false, false)), REG).verdict());
+    }
+
+    @Test
+    @DisplayName("dupeDeleteReady: only a confirmed verdict on an empty carriage fires")
+    void dupe_deleteReadyTable() {
+        for (int streak = 0; streak < TrainCarriageAppender.DUPE_CONFIRM_TICKS; streak++) {
+            assertFalse(TrainCarriageAppender.dupeDeleteReady(streak, false), "streak " + streak + " is not confirmed");
+            assertFalse(TrainCarriageAppender.dupeDeleteReady(streak, true));
+        }
+        assertTrue(TrainCarriageAppender.dupeDeleteReady(TrainCarriageAppender.DUPE_CONFIRM_TICKS, false));
+        assertTrue(TrainCarriageAppender.dupeDeleteReady(TrainCarriageAppender.DUPE_CONFIRM_TICKS + 5, false));
+        // A player standing in it blocks the teardown however long the verdict has held.
+        assertFalse(TrainCarriageAppender.dupeDeleteReady(TrainCarriageAppender.DUPE_CONFIRM_TICKS, true));
+        assertFalse(TrainCarriageAppender.dupeDeleteReady(1000, true));
+    }
+
+    // ---- held-edge reload retry ----
+
+    @Test
+    @DisplayName("mayReissueReload: spaced retries, capped so a lane can never wait forever")
+    void reissue_spacingAndBudget() {
+        long last = 500L;
+        assertFalse(TrainCarriageAppender.mayReissueReload(last, last, 0));
+        assertFalse(TrainCarriageAppender.mayReissueReload(last, last + TrainCarriageAppender.RELOAD_RETRY_TICKS - 1, 0));
+        assertTrue(TrainCarriageAppender.mayReissueReload(last, last + TrainCarriageAppender.RELOAD_RETRY_TICKS, 0));
+        // The budget is what guarantees the lane eventually gives up and reaps instead of waiting.
+        int max = games.brennan.dungeontrain.ship.sable.SableHoldingIndex.MAX_RECOVERY_ATTEMPTS;
+        assertTrue(TrainCarriageAppender.mayReissueReload(last, last + 10_000L, max - 1));
+        assertFalse(TrainCarriageAppender.mayReissueReload(last, last + 10_000L, max));
+        assertFalse(TrainCarriageAppender.mayReissueReload(last, last + 10_000L, max + 1));
+    }
 }

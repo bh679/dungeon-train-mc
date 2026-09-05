@@ -190,6 +190,16 @@ public final class DebugCommand {
             .then(Commands.literal("seamgap-trace")
                 .then(Commands.literal("on").executes(ctx -> setSeamGapTrace(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setSeamGapTrace(ctx.getSource(), false))))
+            // /dungeontrain debug dupe-guard on|off|status — the duplicate-anchor guard.
+            // Two live sub-levels can land on one anchor (a group reaped as gone and respawned,
+            // then resurrected from Sable's holding store), which reads in-game as two identical
+            // trains stacked on each other. on|off gates the DELETION half only: detection and
+            // its [dupe] logging stay on regardless, so a suspected false positive can be turned
+            // off without losing the diagnosis. status reports the counters and the holding index.
+            .then(Commands.literal("dupe-guard")
+                .then(Commands.literal("on").executes(ctx -> setDupeGuard(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setDupeGuard(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> dupeGuardStatus(ctx.getSource()))))
             // /dungeontrain debug reroll <prefabId> — scan every loaded ship's
             // bounding box for blocks whose state matches the prefab's source
             // block, then re-roll their NBT through the current pool. Fixes
@@ -447,6 +457,32 @@ public final class DebugCommand {
             "[DungeonTrain] Seam-gap trace " + (enabled ? "ON" : "OFF")
                 + (enabled ? " — grep [seamgap]/[bwd-place]/[anchor-div]/[capture-lag] in latest.log" : "")
         ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setDupeGuard(CommandSourceStack source, boolean enabled) {
+        games.brennan.dungeontrain.train.TrainCarriageAppender.setDupeGuardDeleteEnabled(enabled);
+        LOGGER.info("[DungeonTrain] duplicate-anchor guard deletion {}", enabled ? "ENABLED" : "DISABLED");
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Duplicate-anchor guard deletion " + (enabled ? "ON" : "OFF")
+                + " — detection and [dupe] logging stay on either way"
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int dupeGuardStatus(CommandSourceStack source) {
+        int[] c = games.brennan.dungeontrain.train.TrainCarriageAppender.dupeGuardCounters();
+        boolean deleting = games.brennan.dungeontrain.train.TrainCarriageAppender.isDupeGuardDeleteEnabled();
+        boolean indexOn = games.brennan.dungeontrain.ship.sable.SableHoldingIndex.isEnabled();
+        String line = "[DungeonTrain] dupe-guard: deletion=" + (deleting ? "ON" : "OFF")
+            + " observed=" + c[0] + " deleted=" + c[1] + " ambiguous=" + c[2]
+            + " | holding index: " + (indexOn ? "on" : "DISABLED")
+            + " held=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.size()
+            + " filed=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.filedCount()
+            + " gaveUp=" + games.brennan.dungeontrain.ship.sable.SableHoldingIndex.gaveUpCount();
+        LOGGER.info(line);
+        source.sendSuccess(() -> Component.literal(line)
+            .withStyle(c[0] == 0 ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }
 

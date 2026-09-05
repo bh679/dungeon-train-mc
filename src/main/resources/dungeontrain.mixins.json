@@ -45,6 +45,8 @@
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",
     "SableBlockChangeGuardMixin",
+    "SubLevelHoldingChunkFileMixin",
+    "SubLevelHoldingChunkMapLoadMixin",
     "NetherFortressStructureMixin",
     "NetherFossilStructureMixin",
     "JigsawStructureMixin",
