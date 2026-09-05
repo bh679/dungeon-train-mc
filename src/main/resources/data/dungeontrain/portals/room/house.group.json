@@ -62,11 +62,14 @@
     },
     {
       "id": "deserter",
-      "weight": 1
+      "weight": 1,
+      "maxLevel": 10
     },
     {
       "id": "man",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 7,
+      "maxLevel": 17
     },
     {
       "id": "terrarium",
