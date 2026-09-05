@@ -28,8 +28,11 @@ import java.util.Arrays;
  */
 public final class PortalChunkDoors {
 
-    /** How many columns in from a mouth the ground is measured — the depth of the apron. */
-    private static final int MOUTH_DEPTH = 3;
+    /**
+     * How many columns in from a mouth the ground is measured — the same two columns the doorway's
+     * apron keeps clear, so what is measured is what a player steps onto.
+     */
+    private static final int MOUTH_DEPTH = 2;
 
     private PortalChunkDoors() {}
 
@@ -93,11 +96,20 @@ public final class PortalChunkDoors {
         return Math.max(0, Math.min(max, found[count / 2]));
     }
 
-    /** One column's surface: one row above its highest solid cell, capped at {@code max}. */
+    /**
+     * One column's surface: its highest solid cell, capped at {@code max}.
+     *
+     * <p><b>The block, not the air above it.</b> A door-height offset places the corridor's own
+     * <i>floor row</i> — {@code PortalTestCommand} puts an arriving player at {@code origin + 1} —
+     * so answering the row a player's feet occupy stands the whole doorway one block high, which
+     * then has to be dug out of the hillside behind it to be walkable. Reading the ground block
+     * itself lays the corridor floor flush with the terrain, and the apron has almost nothing left
+     * to clear.</p>
+     */
     private static int surfaceOf(PortalChunkSlice slice, int x, int z, int max) {
         for (int y = Math.min(max, slice.size() - 1); y > 0; y--) {
-            BlockState below = slice.at(x, y - 1, z);
-            if (below != null && !below.isAir()) return y;
+            BlockState here = slice.at(x, y, z);
+            if (here != null && !here.isAir()) return y;
         }
         // A column with nothing solid under the cap at all — open sky down to the room's floor. The
         // floor is the template's own, so the doorway stands on that.

@@ -139,8 +139,10 @@ class PortalChunkDimensionTest {
             PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.DEFAULT),
             new net.minecraft.core.Vec3i(size, size, size));
 
-        assertEquals(3, fitted.doorHeightOffset().value(), "the entry door stands on the low end");
-        assertEquals(7, fitted.exitDoorHeightOffset().value(), "the exit door stands on the high end");
+        // The GROUND BLOCK's row, not the air above it: a door offset places the corridor's floor,
+        // so ground filling rows 0..2 puts the doorway's floor on row 2 and a player's feet on 3.
+        assertEquals(2, fitted.doorHeightOffset().value(), "the entry door stands on the low end");
+        assertEquals(6, fitted.exitDoorHeightOffset().value(), "the exit door stands on the high end");
     }
 
     @Test

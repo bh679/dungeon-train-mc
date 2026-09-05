@@ -36,8 +36,17 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class PortalChunkDimension {
 
-    /** How many columns in from each end the corridor's cross-section is kept clear. */
-    private static final int APRON_DEPTH = 3;
+    /**
+     * How many columns in from each end the corridor's cross-section is kept clear — the doorway
+     * column and the one behind it.
+     *
+     * <p>It was three, and one wider in Z, back when the door stood wherever the variant said and the
+     * terrain had to be cut away to reach it. The doorways stand on the ground now
+     * ({@link PortalChunkDoors}), so this is the difference between a hole bitten out of the
+     * hillside and a doorway with the ground running up to it. Kept at two rather than one because a
+     * doorway a player can see daylight through, but not walk into, is worse than a small step.</p>
+     */
+    private static final int APRON_DEPTH = 2;
 
     private PortalChunkDimension() {}
 
@@ -111,8 +120,13 @@ public final class PortalChunkDimension {
         int fromX = entry ? roomMinX : Math.max(roomMinX, roomMaxX - (APRON_DEPTH - 1));
         int toX = entry ? Math.min(roomMaxX, roomMinX + APRON_DEPTH - 1) : roomMaxX;
 
-        int minZ = Math.max(origin.getZ() + 1, corridor.getZ() - 1);
-        int maxZ = Math.min(origin.getZ() + size.getZ() - 2, corridor.getZ() + dims.width());
+        // Exactly the corridor's own cross-section, not a block wider: the walls either side of a
+        // doorway are the terrain, and widening the carve is what turns a doorway into a bite.
+        int minZ = Math.max(origin.getZ() + 1, corridor.getZ());
+        int maxZ = Math.min(origin.getZ() + size.getZ() - 2, corridor.getZ() + dims.width() - 1);
+        // The corridor's origin row is its FLOOR, and the door offsets were fitted to the ground
+        // block — so the floor row is terrain that should stay, and only the space a player walks
+        // through is cleared.
         int floorY = corridor.getY();
         int topY = Math.min(origin.getY() + size.getY() - 2, floorY + dims.height() - 1);
 
@@ -121,19 +135,20 @@ public final class PortalChunkDimension {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int x = fromX; x <= toX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                for (int y = floorY; y <= topY; y++) {
+                for (int y = floorY + 1; y <= topY; y++) {
                     cursor.set(x, y, z);
                     if (mask.covers(cursor)) continue;
-                    if (!level.getBlockState(cursor).isAir()) level.setBlock(cursor, air, Block.UPDATE_ALL);
+                    if (!level.getBlockState(cursor).isAir()) {
+                        level.setBlock(cursor, air, Block.UPDATE_ALL);
+                    }
                 }
-                // The row a player's feet land on. Air there is a hole in the doorway; a fluid there
-                // is worse, and a fluid beside the apron would pour into the space just cleared.
-                int standY = floorY - 1;
-                if (standY < origin.getY() + 1) continue;
-                cursor.set(x, standY, z);
+                // The row the corridor's floor lies on. Air there is a step down out of the doorway
+                // and a fluid there is worse, so either becomes ground; anything solid is the
+                // terrain the door was fitted to and is left exactly as the sample laid it.
+                cursor.set(x, floorY, z);
                 if (mask.covers(cursor)) continue;
-                BlockState below = level.getBlockState(cursor);
-                if (below.isAir() || !below.getFluidState().isEmpty()) {
+                BlockState floor = level.getBlockState(cursor);
+                if (floor.isAir() || !floor.getFluidState().isEmpty()) {
                     level.setBlock(cursor, ground, Block.UPDATE_ALL);
                 }
             }
