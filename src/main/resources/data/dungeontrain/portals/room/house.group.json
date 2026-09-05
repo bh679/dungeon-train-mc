@@ -71,7 +71,9 @@
     },
     {
       "id": "suspiciousfurniturestore",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 66,
+      "maxLevel": 108
     },
     {
       "id": "peateargriffin",
