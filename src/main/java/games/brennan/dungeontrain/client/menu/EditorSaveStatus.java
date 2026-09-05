@@ -81,15 +81,21 @@ public final class EditorSaveStatus {
         return dirty ? scale(DIRTY_TINT, pulse(nowMillis)) : CLEAN_TINT;
     }
 
-    /** Brightness factor of the dirty pulse at {@code millis}, in [{@link #PULSE_MIN}, {@link #PULSE_MAX}]. */
-    static float pulse(long millis) {
+    /**
+     * Brightness factor of the pulse at {@code millis}, in [{@link #PULSE_MIN}, {@link #PULSE_MAX}].
+     *
+     * <p>Public because it is the breathing of this screen rather than of one button: the Submit icon
+     * pulses on the same wave, and two buttons breathing out of step would read as two unrelated
+     * animations rather than one screen asking for attention.</p>
+     */
+    public static float pulse(long millis) {
         double phase = (millis % (long) PULSE_PERIOD_MS) / PULSE_PERIOD_MS;
         double wave = (Math.sin(phase * 2.0 * Math.PI) + 1.0) / 2.0;   // 0..1
         return (float) (PULSE_MIN + (PULSE_MAX - PULSE_MIN) * wave);
     }
 
     /** Scale the RGB channels of an ARGB colour by {@code f}, leaving alpha alone. */
-    static int scale(int argb, float f) {
+    public static int scale(int argb, float f) {
         int a = (argb >>> 24) & 0xFF;
         int r = Math.min(255, Math.round(((argb >> 16) & 0xFF) * f));
         int g = Math.min(255, Math.round(((argb >> 8) & 0xFF) * f));

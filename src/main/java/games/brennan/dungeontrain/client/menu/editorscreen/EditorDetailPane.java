@@ -240,6 +240,12 @@ public final class EditorDetailPane {
                 // only status the pane cannot show as a number, so it lives on its own button
                 // rather than on a second one beside it.
                 tint(g, EditorSaveStatus.tint(ctx.dirty(), System.currentTimeMillis()));
+            } else if ("submit".equals(icon.id()) || "withdraw".equals(icon.id())) {
+                // The same trick, for the other thing a build's state cannot be read off this pane:
+                // whether it has been offered to the train. Pulsing blue while it is only saved,
+                // steady green once submitted — and kept through the hover, like Save, because the
+                // state is the reason to press it.
+                tint(g, SubmitTint.of("withdraw".equals(icon.id()), System.currentTimeMillis()));
             } else if (hov) {
                 tint(g, 0xFF000000);
             }
