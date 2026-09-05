@@ -88,6 +88,10 @@
     {
       "id": "chess",
       "weight": 1
+    },
+    {
+      "id": "nostalgia",
+      "weight": 1
     }
   ]
 }

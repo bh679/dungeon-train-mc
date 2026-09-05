@@ -132,6 +132,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "nostalgia": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
+  },
   "outsidethebox": {
     "weight": 1,
     "mode": "endless_open/single:minecraft:stone"
