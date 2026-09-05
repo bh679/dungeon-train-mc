@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantGroup;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
@@ -27,6 +28,7 @@ class TrackSidePlotsPackingTest {
     void tearDown() {
         PortalRoomSizes.clear();
         TrackVariantRegistry.clear();
+        TrackVariantGroupStore.clearCache();
     }
 
     /** Far edge of {@code name}'s plot along Z. */
@@ -138,5 +140,31 @@ class TrackSidePlotsPackingTest {
         BlockPos second = TrackSidePlots.plotOrigin(TrackKind.TUNNEL_SECTION, names.get(1), DIMS);
         int stride = TrackSidePlots.footprint(TrackKind.TUNNEL_SECTION, DIMS).getZ() + EditorLayout.GAP;
         assertEquals(first.getZ() + stride, second.getZ());
+    }
+
+    /**
+     * A member sits on its parent's Z line, so the row has to reserve the deepest member's depth,
+     * not the parent's. House is eleven deep; one of its rooms was forty-eight.
+     */
+    @Test
+    @DisplayName("A sub-variant deeper than its parent pushes the next row past it")
+    void deepMemberWidensTheParentsSlot() {
+        TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, "house");
+        TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, "miniword");
+        TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, "next");
+        PortalRoomSizes.observe("house", new Vec3i(11, 7, 11));
+        PortalRoomSizes.observe("miniword", new Vec3i(48, 30, 48));
+        TrackVariantGroupStore.injectForTesting(TrackKind.PORTAL_ROOM, "house",
+            TrackVariantGroup.EMPTY.withMember(new TrackVariantGroup.Member("miniword", 1)));
+
+        BlockPos house = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "house", DIMS);
+        BlockPos member = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "miniword", DIMS);
+        BlockPos next = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, "next", DIMS);
+
+        assertEquals(house.getZ(), member.getZ(), "a member shares its parent's Z line");
+        assertTrue(member.getX() > house.getX(), "and sits +X of it");
+        int memberEnd = member.getZ() + TrackSidePlots.footprint(TrackKind.PORTAL_ROOM, "miniword", DIMS).getZ();
+        assertTrue(next.getZ() >= memberEnd + TrackSidePlots.SLOT_MIN_CLEARANCE,
+            "next row starts at " + next.getZ() + " but the member runs to " + memberEnd);
     }
 }
