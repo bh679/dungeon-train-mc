@@ -44,12 +44,18 @@ public final class ShaderPackList extends AbstractWidget {
     private static final int SUB_COLOUR = 0xFF9A9A9A;
     private static final int INSTALLED_COLOUR = 0xFF5B9BFF;
     /**
-     * The running pack is marked by the row itself — a green edge and a green wash — rather than by
-     * a word in the corner. The word had to share the row with the pack's name and, on the longer
-     * names, drew straight over it.
+     * State is marked by the row itself — an edge and a wash — rather than by a word in the corner.
+     * The word had to share the row with the pack's name and, on the longer names, drew straight
+     * over it.
+     *
+     * <p>Green is the pack that is running. Blue is one already downloaded, drawn deliberately
+     * fainter: "you have this" is worth knowing at a glance but must not compete with "this is the
+     * one you are looking at".</p>
      */
     static final int ACTIVE_BORDER = 0xFF5FBF5F;
     private static final int ACTIVE_FILL = 0x335FBF5F;
+    private static final int INSTALLED_BORDER = 0x805B9BFF;
+    private static final int INSTALLED_FILL = 0x1A5B9BFF;
 
     private final Font font;
     private final Consumer<Row> onSelect;
@@ -131,9 +137,13 @@ public final class ShaderPackList extends AbstractWidget {
         } else if ((index & 1) == 1) {
             g.fill(getX(), rowY, right, rowY + rowH, ROW_ALT);
         }
+        boolean installed = !row.isOff() && !active && ShaderPackLibrary.installed(row.pack());
         if (active) {
             g.fill(getX(), rowY, right, rowY + rowH, ACTIVE_FILL);
             drawBorder(g, getX(), rowY, right - getX(), rowH, ACTIVE_BORDER);
+        } else if (installed) {
+            g.fill(getX(), rowY, right, rowY + rowH, INSTALLED_FILL);
+            drawBorder(g, getX(), rowY, right - getX(), rowH, INSTALLED_BORDER);
         }
 
         int textX = getX() + PAD;
@@ -154,15 +164,11 @@ public final class ShaderPackList extends AbstractWidget {
         g.drawString(font, font.plainSubstrByWidth(pack.version() + " · " + pack.author(), textWidth),
                 textX, textY + font.lineHeight, SUB_COLOUR);
 
-        // The tag rides the row's right edge so the column reads as a status list at a glance.
-        // ACTIVE has no tag: the green edge and wash say it without competing for the name's space.
+        // Only a download in flight still needs words: a percentage is a number, and no amount of
+        // border colour can say "42%". ACTIVE and INSTALLED are the edge and the wash.
         String tag = null;
         int colour = SUB_COLOUR;
         switch (ShaderPackLibrary.stateOf(pack)) {
-            case INSTALLED -> {
-                tag = Component.translatable("gui.dungeontrain.shaders.tag.installed").getString();
-                colour = INSTALLED_COLOUR;
-            }
             case DOWNLOADING -> {
                 tag = Math.round(ShaderPackDownloader.progress(pack) * 100) + "%";
                 colour = INSTALLED_COLOUR;

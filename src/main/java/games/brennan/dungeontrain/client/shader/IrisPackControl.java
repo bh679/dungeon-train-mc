@@ -85,15 +85,24 @@ public final class IrisPackControl {
     }
 
     /**
-     * Open Iris' own shader screen — the pack's settings, which are Iris' business and not ours.
+     * Open Iris' settings for the pack that is running — its options, not its pack list.
      *
-     * <p>This is the one thing {@code IrisApi} does offer ({@code openMainIrisScreenObj}), and it
-     * returns the screen rather than showing it. Reflective like the rest, so a future Iris that
-     * drops it degrades to the button not appearing rather than to a crash.</p>
+     * <p>{@code IrisApi.openMainIrisScreenObj} lands on the pack list, which is the wrong place: the
+     * player has already chosen a pack here and pressing a button labelled "Shader Settings" to be
+     * shown a list of packs is a step backwards. Iris keeps both views on one screen behind a
+     * private {@code optionMenuOpen} flag, so the screen is built and the flag set before it is
+     * shown — {@code init()} runs on {@code setScreen} and reads it.</p>
      *
-     * @return false if Iris is absent or the screen could not be opened
+     * <p>Reaching into another mod's private field is a liability, so it fails soft: any problem
+     * falls back to the public API's pack list, which is one click from the options rather than
+     * none. Both paths are reflective, so an Iris without either degrades to a disabled button.</p>
+     *
+     * @return false if Iris is absent or neither screen could be opened
      */
     public static boolean openSettings(Object parentScreen) {
+        if (openPackOptions(parentScreen)) {
+            return true;
+        }
         resolveApi();
         if (openMainScreen == null) {
             return false;
@@ -108,6 +117,29 @@ public final class IrisPackControl {
             return screen == null;
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not open Iris' shader screen: {}", t.toString());
+            return false;
+        }
+    }
+
+    /** Iris' shader screen opened straight onto the running pack's options. */
+    private static boolean openPackOptions(Object parentScreen) {
+        if (!(parentScreen instanceof net.minecraft.client.gui.screens.Screen parent)) {
+            return false;
+        }
+        try {
+            Class<?> screenClass = Class.forName("net.irisshaders.iris.gui.screen.ShaderPackScreen");
+            Object screen = screenClass
+                    .getConstructor(net.minecraft.client.gui.screens.Screen.class)
+                    .newInstance(parent);
+            java.lang.reflect.Field optionMenuOpen = screenClass.getDeclaredField("optionMenuOpen");
+            optionMenuOpen.setAccessible(true);
+            optionMenuOpen.setBoolean(screen, true);
+            net.minecraft.client.Minecraft.getInstance()
+                    .setScreen((net.minecraft.client.gui.screens.Screen) screen);
+            return true;
+        } catch (Throwable t) {
+            LOGGER.info("[DungeonTrain] Iris' pack-options view is not reachable ({}); "
+                    + "falling back to its pack list.", t.getClass().getSimpleName());
             return false;
         }
     }
