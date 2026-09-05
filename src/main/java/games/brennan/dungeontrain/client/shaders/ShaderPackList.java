@@ -42,8 +42,14 @@ public final class ShaderPackList extends AbstractWidget {
     private static final int ROW_ALT = 0x18FFFFFF;
     private static final int NAME_COLOUR = 0xFFFFFFFF;
     private static final int SUB_COLOUR = 0xFF9A9A9A;
-    private static final int ACTIVE_COLOUR = 0xFF7FDD7F;
     private static final int INSTALLED_COLOUR = 0xFF5B9BFF;
+    /**
+     * The running pack is marked by the row itself — a green edge and a green wash — rather than by
+     * a word in the corner. The word had to share the row with the pack's name and, on the longer
+     * names, drew straight over it.
+     */
+    static final int ACTIVE_BORDER = 0xFF5FBF5F;
+    private static final int ACTIVE_FILL = 0x335FBF5F;
 
     private final Font font;
     private final Consumer<Row> onSelect;
@@ -117,12 +123,17 @@ public final class ShaderPackList extends AbstractWidget {
                            int mouseX, int mouseY) {
         int right = getX() + width - ListScrollbar.WIDTH - 1;
         boolean hovered = isMouseOver(mouseX, mouseY) && mouseY >= rowY && mouseY < rowY + rowH;
+        boolean active = row.isOff() ? ShaderPackLibrary.shadersOff() : ShaderPackLibrary.active(row.pack());
         if (row.equals(selected)) {
             g.fill(getX(), rowY, right, rowY + rowH, ROW_SELECTED);
         } else if (hovered) {
             g.fill(getX(), rowY, right, rowY + rowH, ROW_HOVER);
         } else if ((index & 1) == 1) {
             g.fill(getX(), rowY, right, rowY + rowH, ROW_ALT);
+        }
+        if (active) {
+            g.fill(getX(), rowY, right, rowY + rowH, ACTIVE_FILL);
+            drawBorder(g, getX(), rowY, right - getX(), rowH, ACTIVE_BORDER);
         }
 
         int textX = getX() + PAD;
@@ -144,13 +155,10 @@ public final class ShaderPackList extends AbstractWidget {
                 textX, textY + font.lineHeight, SUB_COLOUR);
 
         // The tag rides the row's right edge so the column reads as a status list at a glance.
+        // ACTIVE has no tag: the green edge and wash say it without competing for the name's space.
         String tag = null;
         int colour = SUB_COLOUR;
         switch (ShaderPackLibrary.stateOf(pack)) {
-            case ACTIVE -> {
-                tag = Component.translatable("gui.dungeontrain.shaders.tag.active").getString();
-                colour = ACTIVE_COLOUR;
-            }
             case INSTALLED -> {
                 tag = Component.translatable("gui.dungeontrain.shaders.tag.installed").getString();
                 colour = INSTALLED_COLOUR;
@@ -164,6 +172,14 @@ public final class ShaderPackList extends AbstractWidget {
         if (tag != null) {
             g.drawString(font, tag, right - PAD - font.width(tag), textY, colour);
         }
+    }
+
+    /** A 1px frame, drawn inside the given rect. */
+    static void drawBorder(GuiGraphics g, int x, int y, int w, int h, int colour) {
+        g.fill(x, y, x + w, y + 1, colour);
+        g.fill(x, y + h - 1, x + w, y + h, colour);
+        g.fill(x, y, x + 1, y + h, colour);
+        g.fill(x + w - 1, y, x + w, y + h, colour);
     }
 
     @Override

@@ -11,8 +11,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
-import net.minecraft.Util;
 
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +66,7 @@ public final class ShaderMenuScreen extends Screen {
     private final Map<String, Boolean> previewPresent = new HashMap<>();
 
     private ShaderPackList list;
+    private ShaderDetailPane details;
     private Button sortButton;
     private Button action;
     private Button packPage;
@@ -118,6 +117,14 @@ public final class ShaderMenuScreen extends Screen {
                 Component.translatable("gui.dungeontrain.shaders.page"), b -> openPackPage(),
                 0.4F, 0.6F, 1.0F));
 
+        // The text block below the pack's name is its own scrolling window: version, performance,
+        // what the performance means, and the download status. None of it has a fixed position, so
+        // a long sentence in any language can neither collide with what follows nor be cut off.
+        int previewH = previewHeight(paneW, contentBottom - TOP);
+        int detailsY = TOP + previewH + 6 + this.font.lineHeight + 2;
+        details = addRenderableWidget(new ShaderDetailPane(this.font, paneX, detailsY, paneW,
+                Math.max(this.font.lineHeight, packPage.getY() - GAP - detailsY)));
+
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(this.width / 2 - 100, this.height - MARGIN - BOTTOM_ROW_H, 200, BOTTOM_ROW_H)
                 .build());
@@ -151,6 +158,9 @@ public final class ShaderMenuScreen extends Screen {
 
     private void onSelect(ShaderPackList.Row row) {
         selected = row;
+        if (details != null) {
+            details.resetScroll();
+        }
         refreshAction();
     }
 
@@ -248,13 +258,18 @@ public final class ShaderMenuScreen extends Screen {
         }
     }
 
+    /** The preview's height for a pane this size — shared by {@code init} and the draw. */
+    private int previewHeight(int w, int h) {
+        return Math.max(40, Math.min(Math.round(w * (float) PREVIEW_H / PREVIEW_W),
+                h - this.font.lineHeight * 8));
+    }
+
     private void renderDetail(GuiGraphics g, int x, int y, int w, int h) {
         g.fill(x, y, x + w, y + h, PANE_BG);
         ShaderPack pack = selected == null ? null : selected.pack();
+        boolean active = pack == null ? ShaderPackLibrary.shadersOff() : ShaderPackLibrary.active(pack);
 
-        int previewH = Math.min(Math.round(w * (float) PREVIEW_H / PREVIEW_W),
-                h - this.font.lineHeight * 8);
-        previewH = Math.max(previewH, 40);
+        int previewH = previewHeight(w, h);
         if (pack == null) {
             if (hasTexture("vanilla", ShaderPack.vanillaPreview())) {
                 drawContain(g, ShaderPack.vanillaPreview(), x, y, w, previewH);
@@ -268,38 +283,35 @@ public final class ShaderMenuScreen extends Screen {
             drawPlaceholder(g, x, y, w, previewH,
                     Component.translatable("gui.dungeontrain.shaders.no_preview"));
         }
+        // The same green edge the list gives the running pack, so the two halves of the page agree
+        // at a glance about which one you are actually looking at.
+        if (active) {
+            ShaderPackList.drawBorder(g, x, y, w, previewH, ShaderPackList.ACTIVE_BORDER);
+        }
 
         int textY = y + previewH + 6;
         int textX = x + 6;
-        int textW = w - 12;
+        g.drawString(this.font, pack == null
+                        ? Component.translatable("gui.dungeontrain.shaders.off")
+                        : Component.literal(pack.name()),
+                textX, textY, 0xFFFFFF);
+        details.setLines(detailLines(pack));
+    }
+
+    /** Everything below the name, in reading order. The pane wraps and scrolls it. */
+    private List<ShaderDetailPane.Line> detailLines(ShaderPack pack) {
         if (pack == null) {
-            g.drawString(this.font, Component.translatable("gui.dungeontrain.shaders.off"), textX, textY, 0xFFFFFF);
-            drawWrapped(g, Component.translatable("gui.dungeontrain.shaders.off.body"),
-                    textX, textY + this.font.lineHeight + 2, textW, SUB_COLOUR);
-            return;
+            return List.of(new ShaderDetailPane.Line(
+                    Component.translatable("gui.dungeontrain.shaders.off.body"), SUB_COLOUR));
         }
-
-        g.drawString(this.font, pack.name(), textX, textY, 0xFFFFFF);
-        g.drawString(this.font, pack.version() + " · " + pack.author() + " · " + pack.sizeLabel(),
-                textX, textY + this.font.lineHeight + 1, SUB_COLOUR);
-
-        // What it costs to run, immediately above the button that installs it — the question a
-        // player asks before pressing Download, not after.
-        int perfY = textY + this.font.lineHeight * 2 + 4;
-        Component perf = Component.translatable("gui.dungeontrain.shaders.perf",
-                Component.translatable(pack.performance().key()));
-        g.drawString(this.font, perf, textX, perfY, perfColour(pack));
-
-        // One scrolling line, not a wrapped block. Wrapping made the pane's height depend on the
-        // length of a translated sentence, and the status line under it was positioned for the
-        // short case — so a three-line detail drew straight through it. A single line cannot
-        // collide with anything, and the text that does not fit still gets read.
-        int detailY = perfY + this.font.lineHeight + 1;
-        drawScrolling(g, Component.translatable(pack.performance().key() + ".detail"),
-                textX, detailY, textW, SUB_COLOUR);
-
-        int statusY = detailY + this.font.lineHeight + 4;
-        drawWrapped(g, statusLine(pack), textX, statusY, textW, statusColour(pack));
+        return List.of(
+                new ShaderDetailPane.Line(Component.literal(
+                        pack.version() + " · " + pack.author() + " · " + pack.sizeLabel()), SUB_COLOUR),
+                new ShaderDetailPane.Line(Component.translatable("gui.dungeontrain.shaders.perf",
+                        Component.translatable(pack.performance().key())), perfColour(pack)),
+                new ShaderDetailPane.Line(
+                        Component.translatable(pack.performance().key() + ".detail"), SUB_COLOUR),
+                new ShaderDetailPane.Line(statusLine(pack), statusColour(pack)));
     }
 
     private Component statusLine(ShaderPack pack) {
@@ -337,38 +349,7 @@ public final class ShaderMenuScreen extends Screen {
         return ShaderPackLibrary.active(pack) ? OK_COLOUR : SUB_COLOUR;
     }
 
-    /**
-     * Draw one line, scrolling it back and forth when it is wider than {@code width}.
-     *
-     * <p>Vanilla's own scrolling-label maths, kept local: the cycle is a slow pan to the far end and
-     * back with a pause at each, so a line that does not fit is still legible standing still rather
-     * than only readable mid-sweep.</p>
-     */
-    private void drawScrolling(GuiGraphics g, Component text, int x, int y, int width, int colour) {
-        int textWidth = this.font.width(text);
-        if (textWidth <= width) {
-            g.drawString(this.font, text, x, y, colour);
-            return;
-        }
-        int overflow = textWidth - width;
-        // Seconds of travel scale with how much there is to travel, so long and short lines pan at
-        // the same speed rather than the long one racing.
-        double period = Math.max(3.0, overflow * 0.03);
-        double phase = (Util.getMillis() / 1000.0) % (period * 2.0);
-        double eased = phase < period ? phase / period : (period * 2.0 - phase) / period;
-        // Hold at each end for the first and last fifth of the sweep.
-        double held = Mth.clamp((eased - 0.2) / 0.6, 0.0, 1.0);
-        g.enableScissor(x, y, x + width, y + this.font.lineHeight);
-        g.drawString(this.font, text, x - (int) Math.round(held * overflow), y, colour);
-        g.disableScissor();
-    }
 
-    private void drawWrapped(GuiGraphics g, Component text, int x, int y, int width, int colour) {
-        for (var line : this.font.split(text, width)) {
-            g.drawString(this.font, line, x, y, colour);
-            y += this.font.lineHeight;
-        }
-    }
 
     /** Contain-fit, so a preview is never cropped or stretched — same shape as the ride gallery. */
     private void drawContain(GuiGraphics g, ResourceLocation texture, int cx, int cy, int cw, int ch) {
