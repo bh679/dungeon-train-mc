@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -38,6 +37,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Where a {@link PortalRoomMode#CHUNK_DIMENSION} room's terrain comes from: one chunk of ordinary
@@ -59,7 +60,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * carvers, ores, trees, structures — because a region means chunks, and chunks mean loading.</p>
  *
  * <h2>Off the tick, then cached</h2>
- * <p>Sampling takes tens of milliseconds, so it runs on {@link Util#backgroundExecutor()} and the
+ * <p>Sampling takes tens of milliseconds, so it runs on {@code Util.backgroundExecutor()} and the
  * caller gets {@code null} until it lands ({@link #slice}). A structure is re-stamped every time the
  * train drifts past {@code TWIN_MAX_DRIFT}, so the answer is cached per pair key: a pair's chunk is
  * sampled once and re-stamped from memory for the life of the world, which is also what stops the
@@ -196,6 +197,26 @@ public final class PortalChunkTerrain {
      * a room to put it in. Drained by {@code PortalChunkDimension.applyPendingDecoration}.</p>
      */
     private static final Set<Integer> DECORATED = ConcurrentHashMap.newKeySet();
+
+    /**
+     * The one thread samples run on.
+     *
+     * <p>Not {@code Util.backgroundExecutor()}, and the reason is a deadlock that showed up as
+     * "none of the portal carriages connect". Vanilla's {@code fillFromNoise} schedules its work on
+     * that pool and hands back a future; a sample has to wait on that future; and a sample that is
+     * itself occupying one of that pool's few threads is waiting on a pool that may have no thread
+     * left to run the fill — every other thread being busy generating the train's own chunks, or
+     * waiting exactly as this one is. Nothing ever completes, and no exception is ever thrown to say
+     * so. On a thread of its own the sampler can wait on the pool without being part of it.</p>
+     *
+     * <p>One thread rather than several, so a train that plans a run of chunk dimensions at once
+     * samples them in turn instead of contending with the worldgen pool for every core.</p>
+     */
+    private static final ExecutorService SAMPLER = Executors.newSingleThreadExecutor(task -> {
+        Thread thread = new Thread(task, "DungeonTrain-chunk-dimension-sampler");
+        thread.setDaemon(true);
+        return thread;
+    });
     private static volatile long cacheSeed = Long.MIN_VALUE;
 
     /**
@@ -261,7 +282,7 @@ public final class PortalChunkTerrain {
         if (READY.containsKey(pairKey)) return;
         if (!IN_FLIGHT.add(pairKey)) return;
         Source source = Source.of(roomName);
-        Util.backgroundExecutor().execute(() -> {
+        SAMPLER.execute(() -> {
             try {
                 // Two passes, and the split is what keeps a portal carriage crossable. The first is
                 // the ground — noise, surface rules and the carvers — which the pair cannot be
