@@ -323,6 +323,7 @@ public final class EditorMenuScreen implements MenuScreen {
             "height", "Height", EditorStatusHudOverlay.roomHeight()));
 
         addIfPresent(out, EditorMenuPortalRows.wallsModeRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.lockRowFor(mode));
         addIfPresent(out, EditorMenuPortalRows.copiesRowFor(mode));
         addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
             mode, PortalRoomCopiesVariant.Plane.FLOOR));

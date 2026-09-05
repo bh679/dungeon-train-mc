@@ -11301,6 +11301,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-seal-block",
+      "version": "0.798.0",
+      "type": "feat",
+      "title": "Sealed portal rooms can be walled in any block",
+      "summary": "A dimensional carriage set to Bedrock Lock used to be wrapped in bedrock, always. The block is now the room author's choice: a Lock row in the portal-room editor, sitting right under Walls, that takes whatever block you are holding when you tap it. Bedrock unless you say otherwise, so every room that exists today looks exactly as it did \u2014 but a room can now be sealed in obsidian, deepslate, or a skybox block that makes its edges read as open air. Emptying your hand sets it to nothing at all, which leaves the room genuinely unsealed.",
+      "highlights": [
+        "New Lock row in the dimensional-carriage editor \u2014 tap it with a block in hand to seal the room in that block",
+        "Applies to the whole shell: the skin around the room, both corridors, and the plugs behind their dead outer doors",
+        "Chunk-dimension rooms take the setting too \u2014 they are sealed the same way",
+        "An empty hand means no shell at all, for a room meant to be dug out of"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
