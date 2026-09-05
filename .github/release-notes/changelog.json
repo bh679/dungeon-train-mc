@@ -11352,6 +11352,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-rooms-tile-as-authored",
+      "version": "0.799.0",
+      "type": "feat",
+      "title": "Dimensional carriages tile exactly as their author built them",
+      "summary": "Endless rooms no longer get extra walls added by the game. Copies of a room used to have the wall between them cut open, their outer edges bricked up with mirrored blocks, and the doorway back to the train boxed in with a wall of the room's own floor block \u2014 an open-sided room ended up with walls nobody built. Every room now repeats as drawn: openings stay open, edges stay as they are, and the way back to the train is whatever the room has there. Room authors who want the old merged look can turn it on per room in the editor (Room Walls: Merged). Also fixes the editor's Test the Carriage button stamping a room one block too small on some tries, restores the Book room's floor and walls, and adds a batch of new rooms \u2014 Outside the Box, Foundation and Chess by Firefly_on_ytb, Suspicious Furniture Store and Nostalgia by Lil Detective Crunch, and Peatear Griffin by Dot.",
+      "highlights": [
+        "Built by Firefly_on_ytb (Outside the Box, Foundation, Chess), Lil Detective Crunch (Suspicious Furniture Store, Nostalgia) and Dot (Peatear Griffin)",
+        "Endless rooms repeat exactly as authored \u2014 no invented walls at the doorway, no bricked-up edges, no cut seams (Room Walls now defaults to Kept)",
+        "Test the Carriage always stamps the room at its true size, and says so when the plot has unsaved size changes",
+        "Book room's floor and walls are back",
+        "New house rooms: Suspicious Furniture Store, Peatear Griffin, Foundation, Chess, Nostalgia",
+        "New patterns rooms Bigger and Smallpat, a second Single Pillar, an Ender room among the distant enemies, and Outside the Box",
+        "Abandoned Room, Upside Down, Cubes, Patterns and Deserter rebuilt; Book and Labyrinth appear a little less often"
+      ],
+      "pr": 1305,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -21,6 +21,10 @@
     {
       "id": "defaultweird",
       "weight": 1
+    },
+    {
+      "id": "room",
+      "weight": 1
     }
   ]
 }
