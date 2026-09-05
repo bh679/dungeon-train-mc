@@ -158,7 +158,7 @@ public final class BuilderPauseMenuHandler {
         // What you're working on, over the main column too — the tools panel is suppressed on a
         // narrow window, and that's exactly when you can least afford to lose the one line saying
         // whether this build has been saved. No metrics here: this is identity, not inspection.
-        int mainInfoH = BuilderInfoPanel.heightFor(BuilderInfoPanel.Content.IDENTITY.maxLines());
+        int mainInfoH = BuilderInfoPanel.currentHeight(BuilderInfoPanel.Content.IDENTITY);
         int mainInfoY = firstRowY - BuilderPauseMenuLayout.GAP - mainInfoH;
         if (mainInfoY >= 0) {
             event.addListener(new BuilderInfoPanel(slotX, mainInfoY, slotW, mainInfoH,

@@ -1190,6 +1190,7 @@
   "gui.dungeontrain.builder.info.stage_any": "Orice etapă",
   "gui.dungeontrain.builder.info.size": "%1$s × %2$s × %3$s",
   "gui.dungeontrain.builder.info.weight": "pondere %1$s",
+  "gui.dungeontrain.builder.info.creator": "Construit de %1$s",
   "gui.dungeontrain.builder.new.title": "Nou",
   "gui.dungeontrain.builder.new.name": "Nume",
   "gui.dungeontrain.builder.new.subtype": "Subtip",
