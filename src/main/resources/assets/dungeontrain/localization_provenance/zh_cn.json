@@ -229,6 +229,7 @@
       "gui.dungeontrain.builder.info.stage_any",
       "gui.dungeontrain.builder.info.size",
       "gui.dungeontrain.builder.info.weight",
+      "gui.dungeontrain.builder.info.creator",
       "gui.dungeontrain.builder.new.title",
       "gui.dungeontrain.builder.new.name",
       "gui.dungeontrain.builder.new.subtype",
