@@ -158,12 +158,100 @@ final class PortalChunkFeatures {
                          int pairKey) {
         try {
             plantStructure(level, generator, random, chunk, window, worldSeed, pairKey);
-            // Places the structure registered above along with everything else the biome grows.
+            // Places the structure registered above along with everything else the biome grows —
+            // and, with it, whatever that structure is inhabited by: a village's villagers, an
+            // outpost's pillagers, a bastion's piglins all come through this same region and land in
+            // the same throwaway chunk the room is read out of.
             generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
+
+            // The pass that puts a fresh chunk's animals in it — the herd of sheep on the hillside,
+            // the pigs in the wood.
+            //
+            // Asked repeatedly, and that is deliberate. Vanilla rolls it once against the biome's
+            // creature probability — about one chunk in ten — because a world has millions of chunks
+            // and only needs animals in some of them. A chunk dimension has exactly one chunk, and
+            // the room a player walks into is the whole of what they will see of that biome, so nine
+            // rooms in ten arriving empty is the wrong end of that trade. Each call re-seeds itself,
+            // so this is the same distribution asked more often rather than a different one, and a
+            // biome with no creature spawns — the Nether and the End — returns immediately from
+            // every attempt.
+            for (int attempt = 0; attempt < MOB_SPAWN_ATTEMPTS && chunk.getEntities().isEmpty();
+                    attempt++) {
+                generator.spawnOriginalMobs(workspace.region());
+            }
+            spawnBiomeMonsters(level, workspace.region(), chunk, window, worldSeed, pairKey);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Chunk dimension decoration failed for pair {} — the room "
                 + "keeps its bare terrain", pairKey, t);
         }
+    }
+
+    /**
+     * Put a few of the sampled biome's own monsters in the room.
+     *
+     * <p><b>Why this is not left to the game.</b> Vanilla seeds a fresh chunk with <i>animals</i> and
+     * nothing else; the zombified piglins, ghasts and endermen a player expects in the Nether or the
+     * End arrive through ongoing spawning, which asks the biome at the position being spawned into.
+     * A chunk dimension's room is in the sealed basement under the train, so the game answers that
+     * question with the plains the train is crossing rather than the crimson forest the room is a
+     * slice of — and the Nether and the End have no creature spawns at all, so those rooms came out
+     * empty of everything.</p>
+     *
+     * <p>So the sample spawns them itself, from the list the sampled biome actually carries, at
+     * generation and once: they live in the room from the moment it is built, they can be killed,
+     * and nothing replaces them. A handful rather than a spawn cap's worth — the room is one chunk,
+     * and this is meant to read as the place being inhabited rather than as an ambush.</p>
+     */
+    private static void spawnBiomeMonsters(ServerLevel level, WorldGenRegion region, ProtoChunk chunk,
+                                           BoundingBox window, long worldSeed, int pairKey) {
+        RandomSource random = RandomSource.create(worldSeed ^ ((long) pairKey * 0xC2B2AE3D27D4EB4FL));
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int placed = 0;
+        int noRoom = 0;
+        int noMobs = 0;
+        for (int attempt = 0; attempt < MONSTER_ATTEMPTS && placed < MONSTERS_PER_ROOM; attempt++) {
+            int x = chunk.getPos().getMinBlockX() + random.nextInt(PortalChunkTerrain.SIZE);
+            int z = chunk.getPos().getMinBlockZ() + random.nextInt(PortalChunkTerrain.SIZE);
+            int y = standingRoom(chunk, cursor, x, z, window);
+            if (y == Integer.MIN_VALUE) {
+                noRoom++;
+                continue;
+            }
+
+            Holder<Biome> biome = chunk.getNoiseBiome(
+                QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z));
+            Optional<MobSpawnSettings.SpawnerData> pick =
+                biome.value().getMobSettings().getMobs(MobCategory.MONSTER).getRandom(random);
+            if (pick.isEmpty()) {
+                noMobs++;
+                continue;
+            }
+            if (!(pick.get().type.create(level) instanceof Mob mob)) continue;
+
+            cursor.set(x, y, z);
+            mob.moveTo(x + 0.5, y, z + 0.5, random.nextFloat() * 360.0F, 0.0F);
+            mob.finalizeSpawn(region, level.getCurrentDifficultyAt(cursor),
+                MobSpawnType.CHUNK_GENERATION, null);
+            region.addFreshEntity(mob);
+            placed++;
+        }
+        if (placed < MONSTERS_PER_ROOM) {
+            LOGGER.info("[DungeonTrain] Chunk dimension pair {} placed {} of {} monsters — {} "
+                    + "position(s) had nowhere to stand, {} had an empty spawn list",
+                pairKey, placed, MONSTERS_PER_ROOM, noRoom, noMobs);
+        }
+    }
+
+    /** A row inside the window with ground under it and room to stand, or {@code MIN_VALUE}. */
+    private static int standingRoom(ProtoChunk chunk, BlockPos.MutableBlockPos cursor, int x, int z,
+                                    BoundingBox window) {
+        for (int y = window.maxY() - 1; y > window.minY(); y--) {
+            if (!chunk.getBlockState(cursor.set(x, y - 1, z)).blocksMotion()) continue;
+            if (!chunk.getBlockState(cursor.set(x, y, z)).isAir()) continue;
+            if (!chunk.getBlockState(cursor.set(x, y + 1, z)).isAir()) continue;
+            return y;
+        }
+        return Integer.MIN_VALUE;
     }
 
     /**
