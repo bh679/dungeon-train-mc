@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -22,12 +21,12 @@ import net.minecraft.world.level.block.state.BlockState;
  * its terrain has been sampled, because the doorways are stood on that terrain — see
  * {@link PortalChunkDoors} and {@code PortalCarriageBuilder.planStructure}.</p>
  *
- * <h2>The two mouths are carved back open</h2>
- * <p>Terrain does not know about doors. A hillside sampled into the box lands across both corridor
- * mouths as readily as anywhere else, so {@link #carveApron} takes the corridor's own cross-section
- * back out of it at each end and lays ground under it where the sample left none — three columns
- * deep, which is enough to step out onto and short enough that the ground still reads as the
- * terrain's rather than as a platform.</p>
+ * <h2>Nothing is taken out of the terrain at the mouths</h2>
+ * <p>The doorways are stood on the ground the sample landed ({@link PortalChunkDoors}), so there is
+ * nothing to cut away to reach them, and cutting anyway is what made a chunk dimension read as a
+ * room with two bites taken out of it. The only thing written at a mouth now is the floor row when
+ * the sample left <b>air or water</b> there — ground is added under a doorway that would otherwise
+ * open onto a drop, and no block the sample placed is ever removed.</p>
  *
  * <p>Every write skips {@link PortalCorridorMask}, which matters for the deferred path only: an
  * immediate fill runs before {@code stampCorridors} and could not reach a corridor if it tried,
@@ -36,17 +35,8 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class PortalChunkDimension {
 
-    /**
-     * How many columns in from each end the corridor's cross-section is kept clear — the doorway
-     * column and the one behind it.
-     *
-     * <p>It was three, and one wider in Z, back when the door stood wherever the variant said and the
-     * terrain had to be cut away to reach it. The doorways stand on the ground now
-     * ({@link PortalChunkDoors}), so this is the difference between a hole bitten out of the
-     * hillside and a doorway with the ground running up to it. Kept at two rather than one because a
-     * doorway a player can see daylight through, but not walk into, is worse than a small step.</p>
-     */
-    private static final int APRON_DEPTH = 2;
+    /** How many columns in from each end the doorway's own floor is answered for. */
+    private static final int DOORWAY_DEPTH = 2;
 
     private PortalChunkDimension() {}
 
@@ -97,87 +87,45 @@ public final class PortalChunkDimension {
             }
         }
 
-        carveApron(level, structure, dims, origin, size, mask, slice, PortalCarriageRole.ENTRY);
-        carveApron(level, structure, dims, origin, size, mask, slice, PortalCarriageRole.EXIT);
+        floorDoorway(level, structure, dims, origin, size, mask, slice, PortalCarriageRole.ENTRY);
+        floorDoorway(level, structure, dims, origin, size, mask, slice, PortalCarriageRole.EXIT);
     }
 
     /**
-     * Take the corridor's cross-section back out of the terrain at one mouth, and lay ground under
-     * it wherever the sample left air.
+     * Lay ground under one doorway wherever the sample left none.
      *
-     * <p>One block wider and no taller than the corridor itself: wider so a player is never walking
-     * out into a wall their shoulder clips, and exactly as tall because the corridor's own height is
-     * what the doorway offers — carving above it would open a slot into the room's ceiling.</p>
+     * <p>Additive only: a cell holding anything solid is the terrain the door was fitted to and is
+     * left exactly as it was sampled. Air is a step out into a hole and a fluid is a doorway that
+     * pours into the corridor, and those two are the whole of what this repairs.</p>
      */
-    private static void carveApron(ServerLevel level, PortalStructure structure, CarriageDims dims,
-                                   BlockPos origin, Vec3i size, PortalCorridorMask mask,
-                                   PortalChunkSlice slice, PortalCarriageRole role) {
+    private static void floorDoorway(ServerLevel level, PortalStructure structure, CarriageDims dims,
+                                     BlockPos origin, Vec3i size, PortalCorridorMask mask,
+                                     PortalChunkSlice slice, PortalCarriageRole role) {
         boolean entry = role == PortalCarriageRole.ENTRY;
         BlockPos corridor = entry ? structure.origin() : structure.exitOrigin(dims);
 
         int roomMinX = origin.getX();
         int roomMaxX = roomMinX + size.getX() - 1;
-        int fromX = entry ? roomMinX : Math.max(roomMinX, roomMaxX - (APRON_DEPTH - 1));
-        int toX = entry ? Math.min(roomMaxX, roomMinX + APRON_DEPTH - 1) : roomMaxX;
+        int fromX = entry ? roomMinX : Math.max(roomMinX, roomMaxX - (DOORWAY_DEPTH - 1));
+        int toX = entry ? Math.min(roomMaxX, roomMinX + DOORWAY_DEPTH - 1) : roomMaxX;
 
-        // Exactly the corridor's own cross-section, not a block wider: the walls either side of a
-        // doorway are the terrain, and widening the carve is what turns a doorway into a bite.
+        // Exactly the corridor's own cross-section. The ground either side of a doorway is terrain
+        // and none of this is its business.
         int minZ = Math.max(origin.getZ() + 1, corridor.getZ());
         int maxZ = Math.min(origin.getZ() + size.getZ() - 2, corridor.getZ() + dims.width() - 1);
         // The corridor's origin row is its FLOOR, and the door offsets were fitted to the ground
-        // block — so the floor row is terrain that should stay, and only the space a player walks
-        // through is cleared.
+        // block — so this row is normally already terrain and nothing is written at all.
         int floorY = corridor.getY();
-        int topY = Math.min(origin.getY() + size.getY() - 2, floorY + dims.height() - 1);
 
         BlockState ground = slice.source().ground();
-        BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int x = fromX; x <= toX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                for (int y = floorY + 1; y <= topY; y++) {
-                    cursor.set(x, y, z);
-                    if (mask.covers(cursor)) continue;
-                    if (!level.getBlockState(cursor).isAir()) {
-                        level.setBlock(cursor, air, Block.UPDATE_ALL);
-                    }
-                }
-                // The row the corridor's floor lies on. Air there is a step down out of the doorway
-                // and a fluid there is worse, so either becomes ground; anything solid is the
-                // terrain the door was fitted to and is left exactly as the sample laid it.
                 cursor.set(x, floorY, z);
                 if (mask.covers(cursor)) continue;
                 BlockState floor = level.getBlockState(cursor);
                 if (floor.isAir() || !floor.getFluidState().isEmpty()) {
                     level.setBlock(cursor, ground, Block.UPDATE_ALL);
-                }
-            }
-        }
-        plugApronWalls(level, mask, fromX, toX, minZ, maxZ, floorY, topY, ground);
-    }
-
-    /**
-     * Replace the fluid cells standing against an apron with solid ground.
-     *
-     * <p>A lava lake in a Nether chunk or a pond in an Overworld one is exactly the terrain that was
-     * asked for and stays where it is. What it may not do is drain into the doorway the moment the
-     * apron is cut, which is what the one-block skin around the carve prevents.</p>
-     */
-    private static void plugApronWalls(ServerLevel level, PortalCorridorMask mask,
-                                       int fromX, int toX, int minZ, int maxZ, int floorY, int topY,
-                                       BlockState ground) {
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int x = fromX - 1; x <= toX + 1; x++) {
-            for (int z = minZ - 1; z <= maxZ + 1; z++) {
-                for (int y = floorY - 1; y <= topY + 1; y++) {
-                    boolean inside = x >= fromX && x <= toX && z >= minZ && z <= maxZ
-                        && y >= floorY && y <= topY;
-                    if (inside) continue;
-                    cursor.set(x, y, z);
-                    if (mask.covers(cursor)) continue;
-                    if (!level.getBlockState(cursor).getFluidState().isEmpty()) {
-                        level.setBlock(cursor, ground, Block.UPDATE_ALL);
-                    }
                 }
             }
         }
