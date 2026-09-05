@@ -167,4 +167,39 @@ class TrackSidePlotsPackingTest {
         assertTrue(next.getZ() >= memberEnd + TrackSidePlots.SLOT_MIN_CLEARANCE,
             "next row starts at " + next.getZ() + " but the member runs to " + memberEnd);
     }
+
+    /**
+     * The House group as shipped, at its real sizes: eleven members stacked +X of an eleven-long
+     * parent, from a nine-long room to a forty-eight-long one. Every pair of neighbours has to be
+     * clear of each other along X, cage included.
+     */
+    @Test
+    @DisplayName("The real House group lays its sub-variants out without any two touching")
+    void houseMembersDoNotTouch() {
+        String[][] rooms = {
+            {"house", "11", "7", "11"}, {"evilhouse", "11", "7", "13"}, {"medievalhouse", "30", "11", "23"},
+            {"end", "11", "7", "12"}, {"cvspharmacy", "24", "11", "13"}, {"abandonedroom", "20", "11", "26"},
+            {"sanemaze", "41", "7", "14"}, {"upsidedown", "21", "11", "20"}, {"randomized", "9", "7", "9"},
+            {"miniword", "48", "30", "48"}, {"deserter", "15", "7", "15"}, {"terrarium", "43", "80", "9"}};
+        TrackVariantGroup group = TrackVariantGroup.EMPTY;
+        for (String[] r : rooms) {
+            TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, r[0]);
+            PortalRoomSizes.observe(r[0], new Vec3i(Integer.parseInt(r[1]), Integer.parseInt(r[2]), Integer.parseInt(r[3])));
+            if (!r[0].equals("house")) group = group.withMember(new TrackVariantGroup.Member(r[0], 1));
+        }
+        TrackVariantGroupStore.injectForTesting(TrackKind.PORTAL_ROOM, "house", group);
+
+        int previousEndX = Integer.MIN_VALUE;
+        String previous = null;
+        for (String[] r : rooms) {
+            BlockPos o = TrackSidePlots.plotOrigin(TrackKind.PORTAL_ROOM, r[0], DIMS);
+            Vec3i fp = TrackSidePlots.footprint(TrackKind.PORTAL_ROOM, r[0], DIMS);
+            assertEquals(Integer.parseInt(r[1]), fp.getX(), r[0] + " lays out at its own length");
+            // One block of cage on each side, so two plots need at least two blocks between boxes.
+            assertTrue(o.getX() >= previousEndX + 2,
+                r[0] + " starts at x=" + o.getX() + " but " + previous + " runs to x=" + previousEndX);
+            previousEndX = o.getX() + fp.getX();
+            previous = r[0];
+        }
+    }
 }

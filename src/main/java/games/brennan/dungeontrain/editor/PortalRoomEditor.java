@@ -178,9 +178,38 @@ public final class PortalRoomEditor {
      */
     public static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
         primeSizes(overworld, dims);
-        for (String name : names()) {
+        for (String name : stampOrder()) {
             stampPlot(overworld, name, dims);
         }
+    }
+
+    /**
+     * The order plots go down in: each top-level room, then its sub-variants one at a time, then the
+     * next top-level room.
+     *
+     * <p>This is the dependency order of the layout. A sub-variant's X depends on the sizes of the
+     * members before it; a row's Z depends on the deepest room in every row before it. Stamping in
+     * this order means every size a plot's position rests on belongs to a plot already stamped —
+     * and {@link #stampPlot} reads its own template first — so nothing is placed against a size
+     * that is still a guess, whether or not priming got to it.</p>
+     */
+    static java.util.List<String> stampOrder() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (String parent : TrackVariantGroupStore.topLevelNames(TrackKind.PORTAL_ROOM)) {
+            if (seen.add(parent)) out.add(parent);
+            TrackVariantGroupStore.get(TrackKind.PORTAL_ROOM, parent).ifPresent(group -> {
+                for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m : group.members()) {
+                    if (seen.add(m.id())) out.add(m.id());
+                }
+            });
+        }
+        // A registered name that is in no row and no group — nothing the layout knows how to place
+        // beyond slot 0 — still gets stamped rather than silently dropped.
+        for (String name : names()) {
+            if (seen.add(name)) out.add(name);
+        }
+        return out;
     }
 
     /**
@@ -195,6 +224,10 @@ public final class PortalRoomEditor {
 
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
+        LOGGER.info("[DungeonTrain] Portal room plot '{}' at {} size {}x{}x{}{}", name, origin.toShortString(),
+            size.getX(), size.getY(), size.getZ(),
+            TrackVariantGroupStore.findParentOf(TrackKind.PORTAL_ROOM, name)
+                .map(p -> " (sub-variant of " + p + ")").orElse(""));
 
         stampRoomInto(overworld, origin, size, name, dims, /*outline*/ true);
         captureSnapshot(overworld, origin, size, name);
@@ -395,6 +428,68 @@ public final class PortalRoomEditor {
                 continue;   // already erased above
             }
             clearBox(overworld, predicted, name);
+        }
+        sweepColumn(overworld, dims, recorded);
+    }
+
+    /** Past the furthest plot on each axis, how much further the sweep looks for what earlier layouts left. */
+    private static final int SWEEP_MARGIN_X = 120;
+    private static final int SWEEP_MARGIN_Z = TrackSidePlots.SLOT_STEP * 6;
+
+    /**
+     * Erase whatever is still standing in the portal-room column that no plot accounts for.
+     *
+     * <p>Rooms stamped by a layout this world has since stopped predicting — before boxes were
+     * recorded, before a row reserved its deepest member — have no plot that will ever clear them,
+     * and they sit exactly where the corrected layout now wants to put things. Only the rooms live
+     * in this column: it is the last track-side column and every other category is at a lower Z,
+     * so anything non-air here above the plot floor is either a plot or a leftover, and the plots
+     * were just erased.</p>
+     *
+     * <p>Section by section, and only sections that hold anything: the column is mostly sky, and
+     * asking each chunk section whether it is all air is what keeps a sweep this wide cheap.
+     * Loaded chunks only — a leftover in a chunk nobody has been near is not in anybody's way, and
+     * it is swept the first time a clear runs with that chunk in.</p>
+     */
+    private static void sweepColumn(ServerLevel overworld, CarriageDims dims, Map<String, int[]> recorded) {
+        int minX = TrackSidePlots.X_PORTALS - 1;
+        int minZ = TrackSidePlots.Z_BASELINE - 1;
+        int maxX = minX;
+        int maxZ = minZ;
+        for (String name : names()) {
+            BlockPos o = plotOrigin(name, dims);
+            Vec3i sz = plotSize(name, dims);
+            maxX = Math.max(maxX, o.getX() + sz.getX());
+            maxZ = Math.max(maxZ, o.getZ() + sz.getZ());
+        }
+        for (int[] b : recorded.values()) {
+            maxX = Math.max(maxX, b[0] + b[3]);
+            maxZ = Math.max(maxZ, b[2] + b[5]);
+        }
+        maxX += SWEEP_MARGIN_X;
+        maxZ += SWEEP_MARGIN_Z;
+        int minY = EditorLayout.PLOT_Y - 1;
+        int maxY = EditorLayout.PLOT_Y + games.brennan.dungeontrain.portal.PortalRoomLayout.MAX_HEIGHT + 2;
+
+        int swept = 0;
+        for (int cx = minX >> 4; cx <= maxX >> 4; cx++) {
+            for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
+                net.minecraft.world.level.chunk.LevelChunk chunk = overworld.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) continue;
+                for (int sy = minY >> 4; sy <= maxY >> 4; sy++) {
+                    int index = chunk.getSectionIndex(sy << 4);
+                    if (index < 0 || index >= chunk.getSectionsCount()) continue;
+                    if (chunk.getSection(index).hasOnlyAir()) continue;
+                    BoundingBox box = new BoundingBox(
+                        Math.max(minX, cx << 4), Math.max(minY, sy << 4), Math.max(minZ, cz << 4),
+                        Math.min(maxX, (cx << 4) + 15), Math.min(maxY, (sy << 4) + 15), Math.min(maxZ, (cz << 4) + 15));
+                    if (box.maxX() < box.minX() || box.maxY() < box.minY() || box.maxZ() < box.minZ()) continue;
+                    swept += PortalClear.clearBoxRelit(overworld, box, PortalCorridorMask.NONE);
+                }
+            }
+        }
+        if (swept > 0) {
+            LOGGER.info("[DungeonTrain] Portal room column sweep erased {} leftover blocks outside every plot", swept);
         }
     }
 
