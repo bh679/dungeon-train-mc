@@ -34,7 +34,8 @@ PACK_DIR = REPO / "run/shaderpacks"
 API = "https://api.modrinth.com/v2"
 UA = "bh679/dungeon-train-mc (shader manifest generator)"
 
-# (id, Modrinth project slug, exact version_number to pin, display name, perf, vanilla_rank)
+# (id, Modrinth project slug, exact version_number to pin, display name, perf, vanilla_rank,
+#  mood_rank, author_rank)
 #
 # `id` is ours: it keys the preview texture and the analytics target, and never changes even if the
 # pack renames itself.
@@ -51,20 +52,27 @@ UA = "bh679/dungeon-train-mc (shader manifest generator)"
 # derivative and Insanity is a stylised heavy pack.
 #
 # perf:         one of PERF_TIERS below, cheapest first.
-# vanilla_rank: 1 = closest to vanilla, 9 = furthest from it. Drives the "Most vanilla" and
-#               "Fanciest" sort orders, which are the same list read from either end.
+# vanilla_rank: 1 = closest to vanilla, 9 = furthest from it.
+# mood_rank:    1 = plainest light, 9 = heaviest atmosphere. NOT the inverse of vanilla_rank — a
+#               pack can depart a long way from vanilla while staying bright (MakeUp), and one can
+#               stay close to it while being dim. Sildur's is vanilla with lighting; Spooklementary
+#               is built to be spooky; Insanity is the far end of both.
+# author_rank:  Brennan's own running order, top pick first. The page opens on this.
+#
+# All four are CURATED, not measured — see the note above PERF_TIERS.
 PERF_TIERS = ["very-light", "light", "moderate", "heavy"]
 
 PACKS = [
-    ("bsl",                       "bsl-shaders",                      "10.1.3", "BSL",                       "moderate",   4),
-    ("bliss",                     "bliss-shader",                     "2.1.2",  "Bliss",                     "heavy",      8),
-    ("complementary-reimagined",  "complementary-reimagined",         "r5.8.1", "Complementary Reimagined",  "moderate",   3),
-    ("complementary-unbound",     "complementary-unbound",            "r5.8.1", "Complementary Unbound",     "moderate",   5),
-    ("hysteria",                  "hysteria-shaders",                 "1.2.1",  "Hysteria",                  "heavy",      7),
-    ("insanity",                  "insanity-shader",                  "1.650",  "Insanity",                  "heavy",      9),
-    ("makeup-ultra-fast",         "makeup-ultra-fast-shaders",        "9.5d",   "MakeUp Ultra Fast",         "very-light", 2),
-    ("sildurs-enhanced-default",  "sildurs-enhanced-default-shaders", "1.19",   "Sildur's Enhanced Default", "very-light", 1),
-    ("spooklementary",            "spooklementary",                   "2.0.4",  "Spooklementary",            "moderate",   6),
+    #  id                          slug                                pin       name                         perf         van mood author
+    ("bsl",                       "bsl-shaders",                      "10.1.3", "BSL",                       "moderate",   4,  4,  4),
+    ("bliss",                     "bliss-shader",                     "2.1.2",  "Bliss",                     "heavy",      8,  6,  3),
+    ("complementary-reimagined",  "complementary-reimagined",         "r5.8.1", "Complementary Reimagined",  "moderate",   3,  3,  1),
+    ("complementary-unbound",     "complementary-unbound",            "r5.8.1", "Complementary Unbound",     "moderate",   5,  5,  2),
+    ("hysteria",                  "hysteria-shaders",                 "1.2.1",  "Hysteria",                  "heavy",      7,  7,  5),
+    ("insanity",                  "insanity-shader",                  "1.650",  "Insanity",                  "heavy",      9,  9,  9),
+    ("makeup-ultra-fast",         "makeup-ultra-fast-shaders",        "9.5d",   "MakeUp Ultra Fast",         "very-light", 2,  2,  6),
+    ("sildurs-enhanced-default",  "sildurs-enhanced-default-shaders", "1.19",   "Sildur's Enhanced Default", "very-light", 1,  1,  8),
+    ("spooklementary",            "spooklementary",                   "2.0.4",  "Spooklementary",            "moderate",   6,  8,  7),
 ]
 
 # Sildur's ships Fancy and Fast under one version number; the compat matrix measured Fancy.
@@ -120,14 +128,16 @@ def main():
     args = ap.parse_args()
 
     entries = []
-    seen_ranks = set()
-    for pack_id, slug, pin, name, perf, vanilla_rank in PACKS:
+    seen = {"vanilla_rank": set(), "mood_rank": set(), "author_rank": set()}
+    for pack_id, slug, pin, name, perf, vanilla_rank, mood_rank, author_rank in PACKS:
         if perf not in PERF_TIERS:
             raise SystemExit(f"{pack_id}: unknown performance tier {perf!r}")
-        if vanilla_rank in seen_ranks:
-            raise SystemExit(f"{pack_id}: vanilla_rank {vanilla_rank} is already used — the sort "
-                             "orders need a total order, not a tie")
-        seen_ranks.add(vanilla_rank)
+        for field, value in (("vanilla_rank", vanilla_rank), ("mood_rank", mood_rank),
+                             ("author_rank", author_rank)):
+            if value in seen[field]:
+                raise SystemExit(f"{pack_id}: {field} {value} is already used — each sort order "
+                                 "needs a total order, not a tie")
+            seen[field].add(value)
         try:
             version, file = pick_version(slug, pin, pack_id)
         except urllib.error.URLError as err:
@@ -145,6 +155,8 @@ def main():
             "page": f"https://modrinth.com/shader/{slug}",
             "performance": perf,
             "vanilla_rank": vanilla_rank,
+            "mood_rank": mood_rank,
+            "author_rank": author_rank,
         })
         print(f"{name:28} {version['version_number']:8} {file['filename']}")
         if args.download:

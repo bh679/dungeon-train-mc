@@ -1948,7 +1948,7 @@
   "gui.dungeontrain.shaders.sort.default": "Default",
   "gui.dungeontrain.shaders.sort.performance": "Performance",
   "gui.dungeontrain.shaders.sort.vanilla": "Most vanilla",
-  "gui.dungeontrain.shaders.sort.fancy": "Fanciest",
+  "gui.dungeontrain.shaders.sort.mood": "Mood",
   "gui.dungeontrain.shaders.perf": "Performance: %s",
   "gui.dungeontrain.shaders.perf.very_light": "Very light",
   "gui.dungeontrain.shaders.perf.very_light.detail": "Built for weak machines. Expect to lose little or no frame rate.",
@@ -1957,5 +1957,6 @@
   "gui.dungeontrain.shaders.perf.moderate": "Moderate",
   "gui.dungeontrain.shaders.perf.moderate.detail": "Wants a dedicated graphics card. Fine on most gaming machines; turn down the render distance if the train stutters.",
   "gui.dungeontrain.shaders.perf.heavy": "Heavy",
-  "gui.dungeontrain.shaders.perf.heavy.detail": "Demanding. Best on a recent graphics card \u2014 a long train in view is the hardest thing you can ask of it."
+  "gui.dungeontrain.shaders.perf.heavy.detail": "Demanding. Best on a recent graphics card \u2014 a long train in view is the hardest thing you can ask of it.",
+  "gui.dungeontrain.shaders.sort.author": "Author Rec"
 }

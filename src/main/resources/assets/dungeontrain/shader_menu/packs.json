@@ -11,7 +11,9 @@
       "size": 1127026,
       "page": "https://modrinth.com/shader/bsl-shaders",
       "performance": "moderate",
-      "vanilla_rank": 4
+      "vanilla_rank": 4,
+      "mood_rank": 4,
+      "author_rank": 4
     },
     {
       "id": "bliss",
@@ -24,7 +26,9 @@
       "size": 1791406,
       "page": "https://modrinth.com/shader/bliss-shader",
       "performance": "heavy",
-      "vanilla_rank": 8
+      "vanilla_rank": 8,
+      "mood_rank": 6,
+      "author_rank": 3
     },
     {
       "id": "complementary-reimagined",
@@ -37,7 +41,9 @@
       "size": 546925,
       "page": "https://modrinth.com/shader/complementary-reimagined",
       "performance": "moderate",
-      "vanilla_rank": 3
+      "vanilla_rank": 3,
+      "mood_rank": 3,
+      "author_rank": 1
     },
     {
       "id": "complementary-unbound",
@@ -50,7 +56,9 @@
       "size": 546928,
       "page": "https://modrinth.com/shader/complementary-unbound",
       "performance": "moderate",
-      "vanilla_rank": 5
+      "vanilla_rank": 5,
+      "mood_rank": 5,
+      "author_rank": 2
     },
     {
       "id": "hysteria",
@@ -63,7 +71,9 @@
       "size": 1578052,
       "page": "https://modrinth.com/shader/hysteria-shaders",
       "performance": "heavy",
-      "vanilla_rank": 7
+      "vanilla_rank": 7,
+      "mood_rank": 7,
+      "author_rank": 5
     },
     {
       "id": "insanity",
@@ -76,7 +86,9 @@
       "size": 1037373,
       "page": "https://modrinth.com/shader/insanity-shader",
       "performance": "heavy",
-      "vanilla_rank": 9
+      "vanilla_rank": 9,
+      "mood_rank": 9,
+      "author_rank": 9
     },
     {
       "id": "makeup-ultra-fast",
@@ -89,7 +101,9 @@
       "size": 400386,
       "page": "https://modrinth.com/shader/makeup-ultra-fast-shaders",
       "performance": "very-light",
-      "vanilla_rank": 2
+      "vanilla_rank": 2,
+      "mood_rank": 2,
+      "author_rank": 6
     },
     {
       "id": "sildurs-enhanced-default",
@@ -102,7 +116,9 @@
       "size": 54191,
       "page": "https://modrinth.com/shader/sildurs-enhanced-default-shaders",
       "performance": "very-light",
-      "vanilla_rank": 1
+      "vanilla_rank": 1,
+      "mood_rank": 1,
+      "author_rank": 8
     },
     {
       "id": "spooklementary",
@@ -115,7 +131,9 @@
       "size": 558206,
       "page": "https://modrinth.com/shader/spooklementary",
       "performance": "moderate",
-      "vanilla_rank": 6
+      "vanilla_rank": 6,
+      "mood_rank": 8,
+      "author_rank": 7
     }
   ]
 }

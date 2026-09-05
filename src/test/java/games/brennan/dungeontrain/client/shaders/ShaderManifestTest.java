@@ -92,20 +92,36 @@ class ShaderManifestTest {
     }
 
     /**
-     * The two style orders are the same list read from either end, so a tie would make "Most
-     * vanilla" and "Fanciest" disagree about which of the tied packs comes first — the ordering
-     * would look arbitrary rather than wrong.
+     * Each ranking drives a sort order, and a tie makes that order arbitrary rather than wrong —
+     * two packs swapping places between runs, with nothing on screen to say why.
      */
     @Test
-    void theVanillaRankingIsATotalOrder() throws IOException {
+    void everyRankingIsATotalOrder() throws IOException {
         List<JsonObject> packs = packs();
-        Set<Integer> ranks = new HashSet<>();
-        for (JsonObject pack : packs) {
-            int rank = pack.get("vanilla_rank").getAsInt();
-            assertTrue(rank >= 1 && rank <= packs.size(),
-                    pack.get("id").getAsString() + " has a vanilla_rank outside 1.." + packs.size());
-            assertTrue(ranks.add(rank), "vanilla_rank " + rank + " is used twice");
+        for (String field : List.of("vanilla_rank", "mood_rank", "author_rank")) {
+            Set<Integer> ranks = new HashSet<>();
+            for (JsonObject pack : packs) {
+                int rank = pack.get(field).getAsInt();
+                assertTrue(rank >= 1 && rank <= packs.size(),
+                        pack.get("id").getAsString() + " has a " + field + " outside 1.." + packs.size());
+                assertTrue(ranks.add(rank), field + " " + rank + " is used twice");
+            }
         }
+    }
+
+    /**
+     * The "Shaders off" row's own screenshot. It is not a pack, so nothing in the manifest names it
+     * and only this notices when a capture run leaves it behind — the row would silently fall back
+     * to its text placeholder while the other nine showed photographs.
+     */
+    @Test
+    void theShadersOffRowHasItsControlFrame() throws IOException {
+        Path preview = RepoPaths.root().resolve(PREVIEWS).resolve("vanilla.png");
+        assertTrue(Files.isRegularFile(preview),
+                "no vanilla control preview — run scripts/shaders/sweep-all.sh --preview <world>");
+        int[] size = pngSize(preview);
+        assertEquals(PREVIEW_W, size[0], "the vanilla preview is the wrong width");
+        assertEquals(PREVIEW_H, size[1], "the vanilla preview is the wrong height");
     }
 
     @Test

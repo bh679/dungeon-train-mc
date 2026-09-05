@@ -36,12 +36,14 @@ import java.util.List;
  * @param size      bytes, for the progress bar and the "how big is this" line
  * @param page      the Modrinth project page, offered when a download fails
  * @param performance what this costs to run — see {@link Performance}
- * @param vanillaRank 1 = closest to vanilla, 9 = furthest; the two style sort orders read this
- *                    list from either end
+ * @param vanillaRank 1 = closest to vanilla, 9 = furthest
+ * @param moodRank    1 = plainest light, 9 = heaviest atmosphere. Not the inverse of
+ *                    {@code vanillaRank}: a pack can depart a long way from vanilla and stay bright
+ * @param authorRank  Brennan's own running order, top pick first — what the page opens on
  */
 public record ShaderPack(String id, String name, String version, String author, String filename,
                          String url, String sha512, long size, String page,
-                         Performance performance, int vanillaRank) {
+                         Performance performance, int vanillaRank, int moodRank, int authorRank) {
 
     /**
      * Roughly what a pack costs to run, cheapest first.
@@ -79,18 +81,27 @@ public record ShaderPack(String id, String name, String version, String author, 
         }
     }
 
-    /** How the list may be ordered. The button above it cycles these. */
+    /**
+     * How the list may be ordered. The button above it cycles these, starting at {@link #AUTHOR}.
+     *
+     * <p>{@link #DEFAULT} is alphabetical by display name. It used to be manifest order, which was
+     * alphabetical by our internal id and so nearly but not quite alphabetical on screen — BSL sat
+     * before Bliss, and MakeUp sorted under "makeup-ultra-fast". An order a player cannot predict
+     * is not a default, it is an accident.</p>
+     */
     public enum Sort {
-        /** Manifest order — what the page opens on. */
-        DEFAULT("default", null),
+        /** Brennan's own running order. What the page opens on. */
+        AUTHOR("author", java.util.Comparator.comparingInt(ShaderPack::authorRank)),
+        /** Alphabetical by the name shown on the row. */
+        DEFAULT("default", java.util.Comparator.comparing(ShaderPack::name, String.CASE_INSENSITIVE_ORDER)),
         /** Cheapest to run first. */
         PERFORMANCE("performance",
                 java.util.Comparator.comparingInt((ShaderPack p) -> p.performance().ordinal())
                         .thenComparingInt(ShaderPack::vanillaRank)),
         /** Closest to vanilla first. */
         VANILLA("vanilla", java.util.Comparator.comparingInt(ShaderPack::vanillaRank)),
-        /** Furthest from vanilla first — the same list read backwards. */
-        FANCY("fancy", java.util.Comparator.comparingInt(ShaderPack::vanillaRank).reversed());
+        /** Plainest light first, heaviest atmosphere last. */
+        MOOD("mood", java.util.Comparator.comparingInt(ShaderPack::moodRank));
 
         private final String id;
         private final java.util.Comparator<ShaderPack> order;
@@ -216,7 +227,9 @@ public record ShaderPack(String id, String name, String version, String author, 
                     o.get("size").getAsLong(),
                     o.get("page").getAsString(),
                     Performance.of(o.get("performance").getAsString()),
-                    o.get("vanilla_rank").getAsInt());
+                    o.get("vanilla_rank").getAsInt(),
+                    o.get("mood_rank").getAsInt(),
+                    o.get("author_rank").getAsInt());
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] Malformed shader manifest entry: {}", e.toString());
             return null;

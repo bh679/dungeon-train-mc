@@ -11,6 +11,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.Util;
 
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +73,7 @@ public final class ShaderMenuScreen extends Screen {
     private Button packPage;
     private ShaderPackList.Row selected;
     /** Survives a resize, so re-opening the page or resizing does not silently reorder the list. */
-    private ShaderPack.Sort sort = ShaderPack.Sort.DEFAULT;
+    private ShaderPack.Sort sort = ShaderPack.Sort.AUTHOR;
 
     public ShaderMenuScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.shaders.title"));
@@ -287,10 +289,16 @@ public final class ShaderMenuScreen extends Screen {
         Component perf = Component.translatable("gui.dungeontrain.shaders.perf",
                 Component.translatable(pack.performance().key()));
         g.drawString(this.font, perf, textX, perfY, perfColour(pack));
-        drawWrapped(g, Component.translatable(pack.performance().key() + ".detail"),
-                textX, perfY + this.font.lineHeight + 1, textW, SUB_COLOUR);
 
-        int statusY = perfY + this.font.lineHeight * 3 + 2;
+        // One scrolling line, not a wrapped block. Wrapping made the pane's height depend on the
+        // length of a translated sentence, and the status line under it was positioned for the
+        // short case — so a three-line detail drew straight through it. A single line cannot
+        // collide with anything, and the text that does not fit still gets read.
+        int detailY = perfY + this.font.lineHeight + 1;
+        drawScrolling(g, Component.translatable(pack.performance().key() + ".detail"),
+                textX, detailY, textW, SUB_COLOUR);
+
+        int statusY = detailY + this.font.lineHeight + 4;
         drawWrapped(g, statusLine(pack), textX, statusY, textW, statusColour(pack));
     }
 
@@ -327,6 +335,32 @@ public final class ShaderMenuScreen extends Screen {
             return ERROR_COLOUR;
         }
         return ShaderPackLibrary.active(pack) ? OK_COLOUR : SUB_COLOUR;
+    }
+
+    /**
+     * Draw one line, scrolling it back and forth when it is wider than {@code width}.
+     *
+     * <p>Vanilla's own scrolling-label maths, kept local: the cycle is a slow pan to the far end and
+     * back with a pause at each, so a line that does not fit is still legible standing still rather
+     * than only readable mid-sweep.</p>
+     */
+    private void drawScrolling(GuiGraphics g, Component text, int x, int y, int width, int colour) {
+        int textWidth = this.font.width(text);
+        if (textWidth <= width) {
+            g.drawString(this.font, text, x, y, colour);
+            return;
+        }
+        int overflow = textWidth - width;
+        // Seconds of travel scale with how much there is to travel, so long and short lines pan at
+        // the same speed rather than the long one racing.
+        double period = Math.max(3.0, overflow * 0.03);
+        double phase = (Util.getMillis() / 1000.0) % (period * 2.0);
+        double eased = phase < period ? phase / period : (period * 2.0 - phase) / period;
+        // Hold at each end for the first and last fifth of the sweep.
+        double held = Mth.clamp((eased - 0.2) / 0.6, 0.0, 1.0);
+        g.enableScissor(x, y, x + width, y + this.font.lineHeight);
+        g.drawString(this.font, text, x - (int) Math.round(held * overflow), y, colour);
+        g.disableScissor();
     }
 
     private void drawWrapped(GuiGraphics g, Component text, int x, int y, int width, int colour) {
