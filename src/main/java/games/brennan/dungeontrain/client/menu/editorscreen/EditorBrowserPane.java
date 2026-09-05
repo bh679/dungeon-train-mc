@@ -153,7 +153,7 @@ public final class EditorBrowserPane {
     }
 
     /** The state after this one, wrapping round — an unknown one starts the cycle over at All. */
-    private static String nextStatus(String current) {
+    static String nextStatus(String current) {
         for (int i = 0; i < STATUS_OPTIONS.size(); i++) {
             if (STATUS_OPTIONS.get(i)[0].equals(current)) {
                 return STATUS_OPTIONS.get((i + 1) % STATUS_OPTIONS.size())[0];

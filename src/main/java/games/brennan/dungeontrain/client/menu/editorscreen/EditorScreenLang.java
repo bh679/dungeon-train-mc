@@ -47,6 +47,7 @@ public final class EditorScreenLang {
     public static final String CREATORS_MINE = "gui.dungeontrain.builder.profile.back_to_mine";
     public static final String CREATORS_ALL = PREFIX + "creators.all";
     public static final String CREATOR_EMPTY = "gui.dungeontrain.builder.profile.empty_other";
+    public static final String CREATOR_NO_MATCHES = "gui.dungeontrain.builder.profile.no_matches";
 
     public static final String CREATOR_LOADING = PREFIX + "creator.loading";
     public static final String CREATOR_UNAVAILABLE = PREFIX + "creator.unavailable";

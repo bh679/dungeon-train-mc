@@ -365,6 +365,11 @@ public final class EditorCreatorBuilds {
         return List.copyOf(out);
     }
 
+    /** How many builds are loaded before the chips narrow them — see the empty-grid note. */
+    public static int loadedCount() {
+        return builds.size();
+    }
+
     public static BuilderProfilePacket.Entry byId(int relayId) {
         for (BuilderProfilePacket.Entry entry : builds) {
             if (entry.relayId() == relayId) return entry;

@@ -362,8 +362,13 @@ public final class EditorGuiScreen extends Screen {
             if (!browser.creatorTiles().isEmpty()) return null;
             BuilderProfilePacket.Status status = EditorCreatorBuilds.status();
             if (status == null) return EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING);
-            return EditorScreenLang.text(status == BuilderProfilePacket.Status.OK
-                ? EditorScreenLang.CREATOR_EMPTY : EditorScreenLang.CREATOR_UNAVAILABLE);
+            if (status != BuilderProfilePacket.Status.OK) {
+                return EditorScreenLang.text(EditorScreenLang.CREATOR_UNAVAILABLE);
+            }
+            // A listing that came up dry needs a different chip; one that is genuinely bare needs a
+            // different builder. Saying "nothing uploaded" of a filtered list is simply untrue.
+            return EditorScreenLang.text(EditorCreatorBuilds.loadedCount() > 0
+                ? EditorScreenLang.CREATOR_NO_MATCHES : EditorScreenLang.CREATOR_EMPTY);
         }
         return index.isEmpty() ? EditorScreenLang.text(EditorScreenLang.NO_ROSTER) : null;
     }

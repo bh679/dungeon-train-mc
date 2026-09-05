@@ -66,6 +66,26 @@ final class BuilderCreatorSearchPacketTest {
     }
 
     @Test
+    @DisplayName("the pooled ask carries its own flag, and a release build refuses it")
+    void pooledRequestRoundTrip() {
+        BuilderProfileRequestPacket all = BuilderProfileRequestPacket.all(true);
+        assertTrue(all.all());
+        assertEquals(BuilderProfileRequestPacket.ALL, all.ownerUuid(),
+                "the pool is addressed to the sentinel, not to a person");
+        assertFalse(new BuilderProfileRequestPacket(THEIRS, true).all(), "one profile is not the pool");
+
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        BuilderProfileRequestPacket.STREAM_CODEC.encode(buf, all);
+        assertEquals(all, BuilderProfileRequestPacket.STREAM_CODEC.decode(buf));
+
+        // Same fail-closed shape as the live flag: honoured on a dev build, refused on a release one,
+        // which is the branch every shipped jar takes and nothing in game would reveal had broken.
+        assertEquals(games.brennan.dungeontrain.DungeonTrain.isDevBuild(),
+                BuilderProfileRequestPacket.allRequested(true));
+        assertFalse(BuilderProfileRequestPacket.allRequested(false), "not asked for is never the pool");
+    }
+
+    @Test
     @DisplayName("a profile reply says whose builds it is, so a late answer can be recognised")
     void profileReplyRoundTrip() {
         BuilderProfilePacket original = new BuilderProfilePacket(BuilderProfilePacket.Status.OK,
