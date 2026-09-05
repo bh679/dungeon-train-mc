@@ -199,6 +199,13 @@ public final class SableManagedShip implements ManagedShip {
         } else {
             DRIVERS_BY_UUID.put(id, driver);
         }
+        // Attaching a train driver is the one place DT claims a sub-level as a carriage, so it is
+        // where the rotation lock goes on: from here the carriage's orientation is clamped to
+        // identity on every physics substep, not just on the per-tick teleport below. See
+        // DtRotationLockable.
+        if (subLevel instanceof DtRotationLockable lockable) {
+            lockable.dt$setRotationLocked(TrainRotationLock.locksFor(driver));
+        }
     }
 
     @Override

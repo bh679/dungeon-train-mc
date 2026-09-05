@@ -4,6 +4,7 @@ import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import games.brennan.dungeontrain.ship.sable.DtFreezable;
+import games.brennan.dungeontrain.ship.sable.DtRotationLockable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * mappings.</p>
  */
 @Mixin(value = ServerSubLevel.class, remap = false)
-public abstract class ServerSubLevelFreezeMixin implements DtFreezable {
+public abstract class ServerSubLevelFreezeMixin implements DtFreezable, DtRotationLockable {
 
     @Unique private boolean dungeonTrain$physicsFrozen;
     @Unique private int dungeonTrain$inactiveTicks;
@@ -36,6 +37,7 @@ public abstract class ServerSubLevelFreezeMixin implements DtFreezable {
     @Unique private double dungeonTrain$parkedY;
     @Unique private double dungeonTrain$parkedZ;
     @Unique private long dungeonTrain$parkedGameTick = -1L;
+    @Unique private boolean dungeonTrain$rotationLocked;
 
     @Override
     public boolean dt$isPhysicsFrozen() {
@@ -83,6 +85,16 @@ public abstract class ServerSubLevelFreezeMixin implements DtFreezable {
         this.dungeonTrain$parkedY = y;
         this.dungeonTrain$parkedZ = z;
         this.dungeonTrain$parkedGameTick = gameTick;
+    }
+
+    @Override
+    public boolean dt$isRotationLocked() {
+        return dungeonTrain$rotationLocked;
+    }
+
+    @Override
+    public void dt$setRotationLocked(boolean locked) {
+        this.dungeonTrain$rotationLocked = locked;
     }
 
     @Inject(method = "prePhysicsTick", at = @At("HEAD"), cancellable = true)
