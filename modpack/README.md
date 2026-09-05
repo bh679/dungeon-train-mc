@@ -35,6 +35,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
+| AllTheLeaks | `1091339` | **enabled** | Memory-leak fixer for Minecraft, NeoForge and a list of common mods; each fix is keyed to its target and self-disables once upstream ships its own. No dependencies. ⚠️ **CurseForge-only — not published on Modrinth**, so it is flagged `"curseforge_only": true` and the Modrinth pack does not carry it (see "Modrinth pins" below). **Pinned** (1.1.12). |
 | Sodium | `394468` | **enabled** | Rendering optimiser (FPS). Must be the modern **0.8.x** line — Sable's `neoforge.mods.toml` declares Sodium **incompatible below `0.8.12-alpha.2+mc1.21.1`**; it renders sub-levels through Sodium's modern pipeline. **Pinned** (`0.8.12` stable). |
 | Iris Shaders | `455508` | **enabled** | Shader loader, shipped **on with NO shaderpack** — perf-neutral until a player drops a pack into `shaderpacks/`. **Beta build** (`1.8.14-beta.1`) — the only Iris compatible with Sodium 0.8.x on 1.21.1. Requires **Sodium** (shipped enabled, above). Shaders-on-train ride on Sable's `compatibility.iris.*` mixins. DT-the-mod never bundles/requires Iris — modpack-only, listed as a compatible dependency. **Pinned**; Iris↔Sodium version-locked. |
 | AmbientSounds | `254284` | **enabled** | Immersive ambient / environmental sound engine. Client-side audio only — no render/physics/chunk hooks, safe with Sable. Requires **CreativeCore**. **Pinned**. |
@@ -86,7 +87,8 @@ flag straight into the manifest:
   Persistence** and **Trade Everything**. These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
   the pack outright.
-- **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
+- **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **AllTheLeaks**
+  (memory-leak fixer, CurseForge pack only), **Sodium**
   (rendering perf, works standalone), **Iris** (shader loader, shipped with no shaderpack so it's
   perf-neutral until a player adds one — Iris requires Sodium, which ships enabled above,
   CreativeCore-style; DT never bundles/requires it, modpack-only), AmbientSounds,
@@ -424,9 +426,11 @@ DRY_RUN=1 MODRINTH_MODPACK_PROJECT_ID=bEFyz3ji \
 Modrinth publishes from the **same `modpack.config.json`** but the format differs from CurseForge:
 a `.mrpack` is a zip of `modrinth.index.json` + `overrides/`, and each mod is referenced by its
 **download URL + sha1 + sha512 + fileSize** (not a `project_id`/`file_id`). Those fields are
-resolved at build time from the Modrinth API, from each mod's pinned `modrinth_version`. Because
-every bundled mod — including Sable — is on Modrinth, no *mod jars* are bundled into `overrides/`;
-only config files and companion-localization resourcepacks are (see the `overrides/` rows above).
+resolved at build time from the Modrinth API, from each mod's pinned `modrinth_version`. Every mod
+the Modrinth pack ships — including Sable — is on Modrinth, so no *mod jars* are bundled into
+`overrides/`; only config files and companion-localization resourcepacks are (see the `overrides/`
+rows above). The two packs' mod lists are otherwise identical **except** for entries flagged
+`"curseforge_only": true` (currently just **AllTheLeaks**), which have no Modrinth listing at all.
 
 ```
 release.yml (real release OR auto-release cascade tick)
@@ -452,6 +456,18 @@ their CurseForge slug: **FerriteCore** is `ferrite-core`, **Distant Horizons** i
 CI guards the pins: `build-mrpack.py --check-config` (in the `modpack-checks` job) fails the build
 if any mod is missing its `modrinth_project`/`modrinth_version`, so a new companion can't silently
 drop out of the Modrinth pack.
+
+#### `"curseforge_only": true` — the one legitimate way out
+A handful of mods are simply **not published on Modrinth** (AllTheLeaks is the first here). Such an
+entry carries no `modrinth_project`/`modrinth_version` and instead sets `"curseforge_only": true`,
+which makes `load_config` skip the pin requirement and `resolve_files` leave it out of the index —
+the CurseForge pack ships it, the Modrinth pack does not.
+
+Use it **only** when the mod genuinely has no Modrinth listing (check
+`https://api.modrinth.com/v2/project/<slug>` returns 404 first). It is a deliberate,
+per-entry escape hatch, not a shortcut for "I haven't looked the version id up yet" — a forgotten
+pin without the flag still fails CI, which is the point. Prefer a Modrinth-published alternative
+where one exists, so both packs stay in step.
 
 ### `env` (client / server)
 Modrinth files carry a per-file `env` (`client`/`server` ∈ `required|optional|unsupported`)

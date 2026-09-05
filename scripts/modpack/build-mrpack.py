@@ -18,7 +18,11 @@ project pages get credited), so the pack lists:
   * Sable — an un-bundled runtime dep, *pinned* in ``modpack.config.json`` to the exact
     version DT is built against. Sable is on Modrinth so it is referenced by URL (no bundling,
     so its PolyForm-Shield no-redistribution clause is not engaged).
-  * Each ``optional_mods`` entry — pinned by ``modrinth_version``.
+  * Each ``optional_mods`` entry — pinned by ``modrinth_version``, *except* entries flagged
+    ``"curseforge_only": true``. Those name a mod that is not published on Modrinth at all
+    (AllTheLeaks), so they carry no Modrinth pins and are skipped here: the CurseForge pack
+    ships them, the Modrinth pack does not. The flag is the only way to opt out — an entry
+    that merely *forgets* its pins still fails ``--check-config``.
 
 The Minecraft + NeoForge versions are read from ``gradle.properties`` so they never drift from
 the shipped jar. The only side effect is the rendered index, written to stdout (or ``--output``).
@@ -82,8 +86,13 @@ def load_config(path: Path) -> dict:
             f"{path} sable block is missing Modrinth keys: {', '.join(sable_missing)}"
         )
     for i, opt in enumerate(config.get("optional_mods", [])):
+        if "curseforge_only" in opt and not isinstance(opt["curseforge_only"], bool):
+            raise ValueError(
+                f"{path} optional_mods[{i}] 'curseforge_only' must be a boolean, got "
+                f"{opt['curseforge_only']!r}"
+            )
         opt_missing = [k for k in ("modrinth_project", "modrinth_version") if k not in opt]
-        if opt_missing:
+        if opt_missing and not opt.get("curseforge_only"):
             raise ValueError(
                 f"{path} optional_mods[{i}] ({opt.get('name', '?')}) is missing Modrinth keys: "
                 f"{', '.join(opt_missing)}"
@@ -171,12 +180,15 @@ def resolve_files(config: dict, dt_version_id: str, *, fetch=_http_get_json) -> 
 
     Each descriptor: ``{name, required, filename, url, sha1, sha512, size, client_side,
     server_side}``. DT + Sable are forced ``required=True``; optional mods carry their config flag.
+    ``curseforge_only`` entries are skipped — they are not on Modrinth.
     """
     pins = [
         {"name": config.get("name", "Dungeon Train"), "version": dt_version_id, "required": True},
         {"name": "Sable", "version": config["sable"]["modrinth_version"], "required": True},
     ]
     for opt in config.get("optional_mods", []):
+        if opt.get("curseforge_only"):
+            continue  # not published on Modrinth — CurseForge pack only
         pins.append(
             {
                 "name": opt.get("name", "?"),
@@ -273,8 +285,14 @@ def main(argv: list[str] | None = None) -> int:
     config = load_config(args.config)
 
     if args.check_config:
-        n = len(config.get("optional_mods", []))
+        opts = config.get("optional_mods", [])
+        cf_only = [o for o in opts if o.get("curseforge_only")]
+        n = len(opts) - len(cf_only)
         print(f"OK: sable + all {n} optional_mods carry modrinth_project + modrinth_version.")
+        if cf_only:
+            names = ", ".join(o.get("name", "?") for o in cf_only)
+            plural = "entry" if len(cf_only) == 1 else "entries"
+            print(f"    ({len(cf_only)} CurseForge-only {plural} skipped: {names})")
         return 0
 
     if not args.dt_version or not args.version:

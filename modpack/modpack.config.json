@@ -99,6 +99,14 @@
       "modrinth_version": "KcU1Mn0I"
     },
     {
+      "name": "AllTheLeaks",
+      "slug": "alltheleaks",
+      "project_id": 1091339,
+      "file_id": 8648639,
+      "required": true,
+      "curseforge_only": true
+    },
+    {
       "name": "Sodium",
       "slug": "sodium",
       "project_id": 394468,
