@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -115,6 +116,33 @@ final class EditorRosterIndexTest {
         // Already first is a no-op rather than a shuffle.
         assertEquals(names(tiles), names(EditorRosterIndex.standingFirst(tiles,
             VariantKey.of(PlotCategory.CARRIAGES, "standard", "standard"))));
+    }
+
+    @Test
+    @DisplayName("the template underfoot survives a filter that would have dropped it, faded")
+    void standingSurvivesTheFilter() {
+        EditorRosterIndex idx = sample();
+        List<EditorRosterIndex.Tile> all = idx.allTiles();
+        VariantKey standing = VariantKey.of(PlotCategory.CONTENTS, "cows", "cows");
+
+        // Filtered out: put back at the front, marked as not part of what was asked for.
+        List<EditorRosterIndex.Tile> filtered = all.stream()
+            .filter(t -> !t.variant().name().equals("cows")).toList();
+        EditorRosterIndex.Shown shown = EditorRosterIndex.standingFirst(filtered, all, standing);
+        assertTrue(shown.firstIsGhost());
+        assertEquals("cows", names(shown.tiles()).get(0));
+        assertEquals(filtered.size() + 1, shown.tiles().size(), "nothing else is lost");
+
+        // Still in the filtered list: moved to the front like before, and NOT faded.
+        EditorRosterIndex.Shown kept = EditorRosterIndex.standingFirst(all, all, standing);
+        assertFalse(kept.firstIsGhost());
+        assertEquals("cows", names(kept.tiles()).get(0));
+
+        // Standing in something this page does not hold, or nowhere: nothing is inserted.
+        EditorRosterIndex.Shown elsewhere = EditorRosterIndex.standingFirst(filtered, filtered, standing);
+        assertFalse(elsewhere.firstIsGhost());
+        assertEquals(names(filtered), names(elsewhere.tiles()));
+        assertFalse(EditorRosterIndex.standingFirst(filtered, all, null).firstIsGhost());
     }
 
     private static List<String> names(List<EditorRosterIndex.Tile> tiles) {

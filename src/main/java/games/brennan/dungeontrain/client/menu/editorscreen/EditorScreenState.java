@@ -30,6 +30,16 @@ public final class EditorScreenState {
     private static String creatorReview = BuilderProfileFilters.ALL;
     private static boolean creatorStarred;
 
+    /**
+     * Set on the way into the screen, cleared the first frame the roster can answer it.
+     *
+     * <p>Opening the menu while standing in a plot is a question about that plot far more often than
+     * it is about the last one looked at, so the selection follows the author's feet. Deferred rather
+     * than done at open() because the roster is fetched from the server and is usually not here yet —
+     * and consumed once, so a resize (which re-inits the screen) does not drag the selection back.</p>
+     */
+    private static boolean selectStandingPending;
+
     private EditorScreenState() {}
 
     public static EditorScreenPage page() { return page; }
@@ -76,6 +86,11 @@ public final class EditorScreenState {
             EditorStatusHudOverlay.modelId(), EditorStatusHudOverlay.modelName());
     }
 
+    /** Ask that the next roster the screen sees selects the plot the author is standing in. */
+    public static void requestStandingSelection() {
+        selectStandingPending = true;
+    }
+
     /**
      * Show the plot the player stands in: select it and jump the browser to its page and type
      * strip, clearing the filters so its tile is certainly visible. The Current tab, in effect.
@@ -110,6 +125,22 @@ public final class EditorScreenState {
     /** Drop the selection when the roster no longer knows it (removed, renamed, other world). */
     public static void reconcile(EditorRosterIndex index) {
         if (index.isEmpty()) return;
+        if (selectStandingPending) {
+            // Once the roster is here the question is answerable either way: standing in a template
+            // selects it, standing nowhere leaves whatever was selected before.
+            selectStandingPending = false;
+            VariantKey here = standingIn();
+            if (here != null) {
+                selection = index.find(here) != null ? index.find(here).key() : here;
+                // The page and strip move to it, but the FILTERS stay: the browser now keeps the
+                // standing template at the front of the grid however they are set, so clearing them
+                // would throw away the author's narrowing to solve a problem it no longer has.
+                var group = index.groupOf(selection);
+                EditorScreenPage target = EditorScreenPage.forCategory(selection.category());
+                if (target != null) page = target;
+                typeName = group != null ? group.typeName() : "";
+            }
+        }
         if (selection == null || index.find(selection) == null) {
             VariantKey here = standingIn();
             selection = here != null && index.find(here) != null ? index.find(here).key() : null;

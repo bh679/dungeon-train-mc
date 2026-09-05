@@ -109,6 +109,9 @@ public final class EditorGuiScreen extends Screen {
     /** Ask for what the screen needs and show it. */
     public static void open() {
         EditorRosterClient.request();
+        // Opening it inside a plot is nearly always a question about that plot — see
+        // EditorScreenState.requestStandingSelection.
+        EditorScreenState.requestStandingSelection();
         EditorSaveStatus.request();
         Minecraft.getInstance().setScreen(new EditorGuiScreen());
     }

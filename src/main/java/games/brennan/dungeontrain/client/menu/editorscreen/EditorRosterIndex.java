@@ -153,6 +153,39 @@ public final class EditorRosterIndex {
      * the one already in reach — which is what the old Current tab was for, without spending a tab
      * on it.</p>
      */
+    /**
+     * What the main grid shows, and whether its first tile is only there because the author is
+     * standing in it.
+     *
+     * <p>The plot under their feet is never filtered away. A filter is a way of looking for
+     * something, and the one build a person can act on with every position-resolved control —
+     * Save, Reset, Clear, the room geometry — disappearing from the grid because they typed three
+     * letters is how you end up saving the wrong plot. So it is put back at the front, and drawn
+     * faded ({@code firstIsGhost}) to say it is not part of what was asked for.</p>
+     *
+     * <p>Only ever put back from {@code all}, this page and strip's own tiles: standing in a carriage
+     * does not make it belong on the Tracks page.</p>
+     */
+    public static Shown standingFirst(List<Tile> filtered, List<Tile> all, VariantKey standing) {
+        if (standing == null) return new Shown(filtered, false);
+        for (Tile tile : filtered) {
+            if (tile.key().sameTemplate(standing)) {
+                return new Shown(standingFirst(filtered, standing), false);
+            }
+        }
+        for (Tile tile : all) {
+            if (!tile.key().sameTemplate(standing)) continue;
+            List<Tile> out = new ArrayList<>(filtered.size() + 1);
+            out.add(tile);
+            out.addAll(filtered);
+            return new Shown(List.copyOf(out), true);
+        }
+        return new Shown(filtered, false);
+    }
+
+    /** The tiles a grid draws, and whether the first of them is the faded standing-in one. */
+    public record Shown(List<Tile> tiles, boolean firstIsGhost) {}
+
     public static List<Tile> standingFirst(List<Tile> tiles, VariantKey standing) {
         if (standing == null || tiles.size() < 2) return tiles;
         for (int i = 0; i < tiles.size(); i++) {

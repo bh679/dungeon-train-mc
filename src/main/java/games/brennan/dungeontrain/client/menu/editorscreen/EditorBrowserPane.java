@@ -96,6 +96,8 @@ public final class EditorBrowserPane {
     private List<Chip> chips = List.of();
     private List<StripCell> stripCells = List.of();
     private List<EditorRosterIndex.Tile> tiles = List.of();
+    /** True when {@link #tiles}' first entry survived only because the author stands in it. */
+    private boolean ghostFirst;
     private List<EditorRosterIndex.Tile> subTiles = List.of();
     /** The loaded builder's uploads, drawn in the main grid in place of the roster's tiles. */
     private List<BuilderProfilePacket.Entry> creatorTiles = List.of();
@@ -301,9 +303,12 @@ public final class EditorBrowserPane {
         List<EditorRosterIndex.Tile> all = creatorMode ? List.of() : (page == null
             ? (EditorScreenState.page() == EditorScreenPage.ALL ? index.allTiles() : List.of())
             : index.tiles(page, typeName));
-        tiles = EditorRosterIndex.standingFirst(
+        // The plot under the author's feet is never filtered away — see EditorRosterIndex.standingFirst.
+        EditorRosterIndex.Shown shown = EditorRosterIndex.standingFirst(
             EditorRosterIndex.filter(all, EditorScreenState.filters(), EditorScreenState.text()),
-            EditorScreenState.standingIn());
+            all, EditorScreenState.standingIn());
+        tiles = shown.tiles();
+        ghostFirst = shown.firstIsGhost();
 
         // The sub-variant grid, when the selection is a group or a member of one.
         subParent = null;
@@ -417,14 +422,16 @@ public final class EditorBrowserPane {
             g.disableScissor();
             return;
         }
-        drawTiles(g, font, mainGrid, tiles, selection, standing, seconds, HitKind.TILE, HitKind.NEW, null);
+        drawTiles(g, font, mainGrid, tiles, selection, standing, seconds, HitKind.TILE, HitKind.NEW, null,
+            ghostFirst);
         if (subParent != null) {
             int headerY = gridRect.y() + mainGrid.contentHeight(tiles.size() + 1) + SUB_GAP - scroll;
             g.fill(gridRect.x(), headerY, gridRect.right(), headerY + SUB_HEADER_H, SUB_HEADER_BG);
             String header = EditorScreenLang.text(EditorScreenLang.SUB_VARIANTS_OF, subParent.key().displayName());
             g.drawString(font, font.plainSubstrByWidth(header, gridRect.w() - 6), gridRect.x() + 3,
                 headerY + (SUB_HEADER_H - font.lineHeight) / 2 + 1, MenuRowPainterColours.HEADER, false);
-            drawTiles(g, font, subGrid, subTiles, selection, standing, seconds, HitKind.SUB_TILE, HitKind.NEW_SUB, subParent);
+            drawTiles(g, font, subGrid, subTiles, selection, standing, seconds, HitKind.SUB_TILE,
+                HitKind.NEW_SUB, subParent, false);
         }
         g.disableScissor();
     }
@@ -446,7 +453,7 @@ public final class EditorBrowserPane {
             RelayBuildPreviews.request(entry.relayId(), entry.ownerUuid(), BuilderProfileState.live());
             TemplateTilePainter.draw(g, font, art, EditorCreatorBuilds.label(entry),
                 EditorPlotLabelsPacket.NO_WEIGHT, x, y, size, yaw,
-                new TemplateTilePainter.Marks(selected, hov, false, false, false), entry.relayId());
+                new TemplateTilePainter.Marks(selected, hov, false, false, false, false), entry.relayId());
             int border = BuilderReviewState.borderColourFor(entry.review());
             if (border != BuilderReviewState.BORDER_NONE) g.renderOutline(x, y, size, size, border);
             // The star sits in the corner a local tile keeps for its unsaved mark, which a relay
@@ -464,18 +471,20 @@ public final class EditorBrowserPane {
     /** One grid: a self tile first when it is a sub-variant grid, then the tiles, then "+". */
     private void drawTiles(GuiGraphics g, Font font, TemplateTileGridLayout grid,
                            List<EditorRosterIndex.Tile> list, VariantKey selection, VariantKey standing,
-                           float seconds, HitKind tileKind, HitKind newKind, EditorRosterIndex.Tile self) {
+                           float seconds, HitKind tileKind, HitKind newKind, EditorRosterIndex.Tile self,
+                           boolean firstIsGhost) {
         int offset = self == null ? 0 : 1;
         int count = list.size() + offset;
         if (self != null && grid.isVisible(0, scroll)) {
             drawTile(g, font, self, true, grid.xFor(0), grid.yFor(0, scroll), grid.tile(), selection, standing, seconds,
-                hovered.kind() == tileKind && hovered.index() == -1);
+                hovered.kind() == tileKind && hovered.index() == -1, false);
         }
         for (int i = 0; i < list.size(); i++) {
             int slot = i + offset;
             if (!grid.isVisible(slot, scroll)) continue;
             drawTile(g, font, list.get(i), false, grid.xFor(slot), grid.yFor(slot, scroll), grid.tile(),
-                selection, standing, seconds, hovered.kind() == tileKind && hovered.index() == i);
+                selection, standing, seconds, hovered.kind() == tileKind && hovered.index() == i,
+                firstIsGhost && i == 0);
         }
         if (grid.isVisible(count, scroll)) {
             TemplateTilePainter.drawNew(g, font, grid.xFor(count), grid.yFor(count, scroll), grid.tile(),
@@ -485,7 +494,7 @@ public final class EditorBrowserPane {
 
     private void drawTile(GuiGraphics g, Font font, EditorRosterIndex.Tile tile, boolean asSelf,
                           int x, int y, int size, VariantKey selection, VariantKey standing, float seconds,
-                          boolean hov) {
+                          boolean hov, boolean ghost) {
         EditorTypeMenusPacket.Variant v = tile.variant();
         VariantKey key = tile.key();
         boolean selected = selection != null && selection.equals(key)
@@ -499,7 +508,7 @@ public final class EditorBrowserPane {
         int weight = asSelf ? tile.selfWeight() : v.weight();
         String name = asSelf ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, v.name()) : v.name();
         TemplateTilePainter.draw(g, font, art, name, weight, x, y, size, yaw,
-            new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup()));
+            new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup(), ghost));
     }
 
     /** Whether the point is on tile {@code i}'s star rather than the picture behind it. */
