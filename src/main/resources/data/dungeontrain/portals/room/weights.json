@@ -1,7 +1,7 @@
 {
   "abandonedroom": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
   },
   "backrooms": {
     "weight": 1,
