@@ -66,6 +66,27 @@ public abstract class LightTexturePortalRoomMixin {
     @Unique
     private static final float DUNGEONTRAIN_ROOM_LIFT = 0.25F;
 
+    /**
+     * The Daylight kind's lift — far heavier, because for that kind the lift is the whole of the
+     * effect rather than a floor under it.
+     *
+     * <p>{@link #dungeontrain$pinRoomSky} pins the sky-darken factor to noon, which is what makes a
+     * daylit room daylit — <b>where there is sky light to scale</b>. A portal room is stamped in the
+     * sealed basement under the world's bedrock, where there is none at all: the pin multiplies zero
+     * and the room was left with the {@value #DUNGEONTRAIN_ROOM_LIFT} floor alone, which reads as a
+     * grey wash with the author's own torches standing out of it. The editor plot looked right only
+     * because it stands in the open sky at the build height, where real sky light reaches it — so a
+     * room built under a sky it will never have was tested under one it does not have either.</p>
+     *
+     * <p>At this strength a sealed room reads as an overcast noon: bright, and flat enough that
+     * block light stops being the thing that shapes it — which is what standing outdoors at midday
+     * actually looks like. {@link PortalRoomSky#CYCLE} is deliberately left on the ordinary floor:
+     * its whole point is darkening at dusk, and a constant lift this heavy would be a room that
+     * never does.</p>
+     */
+    @Unique
+    private static final float DUNGEONTRAIN_ROOM_DAY_LIFT = 0.70F;
+
     /** The Nether's heavier lift, so its ember floor reads as a floor rather than a tint. */
     @Unique
     private static final float DUNGEONTRAIN_ROOM_NETHER_LIFT = 0.30F;
@@ -139,9 +160,11 @@ public abstract class LightTexturePortalRoomMixin {
             case END -> DUNGEONTRAIN_ROOM_END_TINT;
             default -> DUNGEONTRAIN_ROOM_DAY_TINT;
         };
-        float lift = sky == PortalRoomSky.NETHER
-            ? DUNGEONTRAIN_ROOM_NETHER_LIFT
-            : DUNGEONTRAIN_ROOM_LIFT;
+        float lift = switch (sky) {
+            case NETHER -> DUNGEONTRAIN_ROOM_NETHER_LIFT;
+            case DAY -> DUNGEONTRAIN_ROOM_DAY_LIFT;
+            default -> DUNGEONTRAIN_ROOM_LIFT;
+        };
         cellColor.lerp(tint, lift * t);
     }
 
