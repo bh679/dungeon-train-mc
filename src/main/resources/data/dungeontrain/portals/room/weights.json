@@ -30,7 +30,7 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 5,
+    "weight": 2,
     "minLevel": 3,
     "mode": "endless_repetition"
   },
@@ -88,7 +88,7 @@
     "mode": "bedrock_lock"
   },
   "labrynth": {
-    "weight": 3,
+    "weight": 2,
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
