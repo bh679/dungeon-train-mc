@@ -1,295 +1,395 @@
 {
-  "echo.dungeontrain.mob_name": {
+  "book.dungeontrain.statbook.open.0": {
     "1": {
-      "label": "the player this echo is a copy of",
+      "label": "the name of the player reading this note",
       "examples": [
-        "Steve",
-        "Alex"
+        "Brennan",
+        "Steve"
       ]
     }
   },
-  "gui.dungeontrain.options.catch_up_burst.auto": {
+  "book.dungeontrain.statbook.open.1": {
     "1": {
-      "label": "the catch-up mode AUTO chose for this machine — one of the Off / Burst 2 / Fill all values of this same setting, already translated",
-      "examples": ["Fill all", "Burst 2"]
-    }
-  },
-  "chat.dungeontrain.book_burns_author": {
-    "1": {
-      "label": "the name of the author credited on the burning book",
+      "label": "the name of the player reading this note",
       "examples": [
-        "Steve",
-        "Edda Marsh"
+        "Brennan",
+        "Steve"
       ]
     }
   },
-  "chat.dungeontrain.free_play.cause.gamemode": {
+  "book.dungeontrain.statbook.open.2": {
     "1": {
-      "label": "the game mode the player switched to",
+      "label": "the name of the player reading this note",
       "examples": [
-        "Creative",
-        "Spectator"
+        "Brennan",
+        "Steve"
       ]
     }
   },
-  "chat.dungeontrain.free_play.cause.command": {
+  "book.dungeontrain.statbook.open.3": {
     "1": {
-      "label": "the command that was run",
+      "label": "the name of the player reading this note",
       "examples": [
-        "/gamemode creative",
-        "/give @s diamond 64"
+        "Brennan",
+        "Steve"
       ]
     }
   },
-  "chat.dungeontrain.free_play.cause.creative_mod": {
+  "book.dungeontrain.statbook.open.4": {
     "1": {
-      "label": "the cheat-mod action that was used",
+      "label": "the name of the player reading this note",
       "examples": [
-        "JEI cheat mode",
-        "an item-spawn button"
+        "Brennan",
+        "Steve"
       ]
     }
   },
-  "chat.dungeontrain.free_play.operators": {
+  "book.dungeontrain.statbook.open.5": {
     "1": {
-      "label": "the players who have cheats enabled, comma-separated",
+      "label": "the name of the player reading this note",
       "examples": [
-        "Steve",
-        "Steve, Alex"
+        "Brennan",
+        "Steve"
       ]
     }
   },
-  "chat.dungeontrain.free_play.cheat_mods": {
+  "book.dungeontrain.statbook.open.6": {
     "1": {
-      "label": "the cheat mods that were found, comma-separated",
+      "label": "the name of the player reading this note",
       "examples": [
-        "JEI (cheat mode)",
-        "JEI, Xaero's Minimap"
+        "Brennan",
+        "Steve"
       ]
     }
   },
-  "container.dungeontrain.enderchest.profile": {
+  "book.dungeontrain.statbook.stat.backwards.one": {
     "1": {
-      "label": "the chest's ordinary title",
+      "label": "carriages the reader has walked back through this run",
       "examples": [
-        "Ender Chest"
-      ]
-    },
-    "2": {
-      "label": "which chest this is — difficulty, game mode, or Free Play",
-      "examples": [
-        "Hard",
-        {
-          "key": "container.dungeontrain.enderchest.free_play",
-          "args": []
-        },
-        "Hard · Creative"
+        "1",
+        "19"
       ]
     }
   },
-  "gui.dungeontrain.difficulty_confirm.title": {
+  "book.dungeontrain.statbook.stat.backwards.other": {
     "1": {
-      "label": "a difficulty name",
+      "label": "carriages the reader has walked back through this run",
       "examples": [
-        "Hard",
-        "Peaceful",
-        "Normal"
+        "1",
+        "19"
       ]
     }
   },
-  "gui.dungeontrain.difficulty_confirm.empty": {
+  "book.dungeontrain.statbook.stat.books_read.one": {
     "1": {
-      "label": "a difficulty name",
+      "label": "books the reader has read this run",
       "examples": [
-        "Hard",
-        "Peaceful",
-        "Normal"
+        "1",
+        "9"
       ]
     }
   },
-  "gui.dungeontrain.difficulty_confirm.kept": {
+  "book.dungeontrain.statbook.stat.books_read.other": {
     "1": {
-      "label": "a difficulty name",
+      "label": "books the reader has read this run",
       "examples": [
-        "Hard",
-        "Peaceful",
-        "Normal"
+        "1",
+        "9"
       ]
     }
   },
-  "chat.dungeontrain.difficulty_profile.swapped": {
+  "book.dungeontrain.statbook.stat.books_written.one": {
     "1": {
-      "label": "the difficulty just switched to",
+      "label": "books the reader has written this run",
       "examples": [
-        "Hard",
-        "Easy"
-      ]
-    },
-    "2": {
-      "label": "the difficulty left behind",
-      "examples": [
-        "Normal",
-        "Hard"
+        "1",
+        "4"
       ]
     }
   },
-  "chat.dungeontrain.free_play.ais_changed": {
+  "book.dungeontrain.statbook.stat.books_written.other": {
     "1": {
-      "label": "the Adventure Item Stats settings that were changed",
+      "label": "books the reader has written this run",
       "examples": [
-        "maxEnchantLevel: 5 -> 100"
+        "1",
+        "4"
       ]
     }
   },
-  "chat.dungeontrain.free_play.dt_config_changed": {
+  "book.dungeontrain.statbook.stat.carriage": {
     "1": {
-      "label": "the Dungeon Train settings that were changed",
+      "label": "the carriage number the reader has reached this run",
       "examples": [
-        "trainSpeed: 1.0 -> 12.0"
+        "14",
+        "137"
       ]
     }
   },
-  "command.dungeontrain.fix_ais.backup": {
+  "book.dungeontrain.statbook.stat.chests.one": {
     "1": {
-      "label": "the backup file's name",
+      "label": "chests and barrels the reader has opened this run",
       "examples": [
-        "adventureitemstats.properties.bak"
+        "1",
+        "62"
       ]
     }
   },
-  "command.dungeontrain.fix_config.backup": {
+  "book.dungeontrain.statbook.stat.chests.other": {
     "1": {
-      "label": "the settings file",
+      "label": "chests and barrels the reader has opened this run",
       "examples": [
-        "dungeontrain-common.toml"
-      ]
-    },
-    "2": {
-      "label": "the name it was kept under",
-      "examples": [
-        "dungeontrain-common.toml.bak"
+        "1",
+        "62"
       ]
     }
   },
-  "command.dungeontrain.fix_config.fail": {
+  "book.dungeontrain.statbook.stat.damage_taken": {
     "1": {
-      "label": "the settings files that could not be moved",
+      "label": "total damage the reader has taken this run, in health points",
       "examples": [
-        "dungeontrain-common.toml, adventureitemstats.properties"
+        "47",
+        "312"
       ]
     }
   },
-  "gui.dungeontrain.free_play.confirm.trigger": {
+  "book.dungeontrain.statbook.stat.death_notes.one": {
     "1": {
-      "label": "what would trip Free Play",
+      "label": "Death Notes the reader has signed this run",
       "examples": [
-        "/gamemode creative",
-        "JEI cheat mode"
+        "1",
+        "3"
       ]
     }
   },
-  "effect.dungeontrain.free_play.trigger.detail": {
+  "book.dungeontrain.statbook.stat.death_notes.other": {
     "1": {
-      "label": "the changed settings or detected mods behind that trigger, comma-separated",
+      "label": "Death Notes the reader has signed this run",
       "examples": [
-        "maxEnchantLevel: 5 -> 100",
-        "Xaero's Minimap, JEI"
+        "1",
+        "3"
       ]
     }
   },
-  "effect.dungeontrain.free_play.trigger.detail_more": {
+  "book.dungeontrain.statbook.stat.distance.one": {
     "1": {
-      "label": "the first few changed settings or detected mods, comma-separated",
+      "label": "blocks the reader has travelled this run",
       "examples": [
-        "maxEnchantLevel: 5 -> 100, mobHealth: 20 -> 2, lootRate: 1 -> 9"
+        "100",
+        "8400"
       ]
-    },
-    "2": {
-      "label": "how many more there are beyond the ones named",
+    }
+  },
+  "book.dungeontrain.statbook.stat.distance.other": {
+    "1": {
+      "label": "blocks the reader has travelled this run",
       "examples": [
-        "2",
+        "100",
+        "8400"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.echoes.one": {
+    "1": {
+      "label": "echoes the reader has put down this run",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.echoes.other": {
+    "1": {
+      "label": "echoes the reader has put down this run",
+      "examples": [
+        "1",
+        "5"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.encounters.one": {
+    "1": {
+      "label": "passengers the reader has come near this run",
+      "examples": [
+        "1",
+        "38"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.encounters.other": {
+    "1": {
+      "label": "passengers the reader has come near this run",
+      "examples": [
+        "1",
+        "38"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.friends.one": {
+    "1": {
+      "label": "passengers who have come to like the reader this run",
+      "examples": [
+        "1",
+        "6"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.friends.other": {
+    "1": {
+      "label": "passengers who have come to like the reader this run",
+      "examples": [
+        "1",
+        "6"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.love_notes.one": {
+    "1": {
+      "label": "Love Notes the reader has signed this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.love_notes.other": {
+    "1": {
+      "label": "Love Notes the reader has signed this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.mob_kills.one": {
+    "1": {
+      "label": "creatures the reader has killed this run",
+      "examples": [
+        "1",
+        "204"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.mob_kills.other": {
+    "1": {
+      "label": "creatures the reader has killed this run",
+      "examples": [
+        "1",
+        "204"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.no_chest.one": {
+    "1": {
+      "label": "the most carriages the reader has passed without opening anything",
+      "examples": [
+        "3",
+        "26"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.no_chest.other": {
+    "1": {
+      "label": "the most carriages the reader has passed without opening anything",
+      "examples": [
+        "3",
+        "26"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.pacifist.one": {
+    "1": {
+      "label": "carriages the reader has come without hurting anyone",
+      "examples": [
+        "3",
+        "44"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.pacifist.other": {
+    "1": {
+      "label": "carriages the reader has come without hurting anyone",
+      "examples": [
+        "3",
+        "44"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.player_kills.one": {
+    "1": {
+      "label": "passengers the reader has killed this run",
+      "examples": [
+        "1",
+        "17"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.player_kills.other": {
+    "1": {
+      "label": "passengers the reader has killed this run",
+      "examples": [
+        "1",
+        "17"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.playtime": {
+    "1": {
+      "label": "how long the reader has been aboard this run, already formatted",
+      "examples": [
+        "2h 14m",
+        "43m"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.tamed.one": {
+    "1": {
+      "label": "animals the reader has tamed this run",
+      "examples": [
+        "1",
         "11"
       ]
     }
   },
-  "gui.dungeontrain.config_deviation.more": {
+  "book.dungeontrain.statbook.stat.tamed.other": {
     "1": {
-      "label": "how many more changed settings there are",
+      "label": "animals the reader has tamed this run",
       "examples": [
-        "3",
-        "12"
-      ]
-    }
-  },
-  "gui.dungeontrain.config_deviation.done.backup": {
-    "1": {
-      "label": "the settings file",
-      "examples": [
-        "dungeontrain-common.toml"
-      ]
-    },
-    "2": {
-      "label": "where it was moved to",
-      "examples": [
-        "dungeontrain-common.toml.bak"
-      ]
-    }
-  },
-  "gui.dungeontrain.dpi_bypass.body": {
-    "1": {
-      "label": "the bypass tool's program name, as it appears in the process list",
-      "examples": [
-        "winws.exe",
-        "goodbyedpi.exe"
-      ]
-    }
-  },
-  "chat.dungeontrain.portal_library.1": {
-    "1": {
-      "label": "the author every book in the room is signed by",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.portal_library.2": {
-    "1": {
-      "label": "the author every book in the room is signed by",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.portal_library.3": {
-    "1": {
-      "label": "the author every book in the room is signed by",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.portal_library.4": {
-    "1": {
-      "label": "the author every book in the room is signed by",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.portal_library.5": {
-    "1": {
-      "label": "the author every book in the room is signed by",
-      "examples": [
-        "Steve",
-        "Alex"
+        "1",
+        "11"
       ]
     }
   },
   "chat.dungeontrain.advancements_hint.1": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.10": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.11": {
+    "1": {
+      "label": "the advancements key, as this player has it bound",
+      "examples": [
+        "L",
+        "F",
+        "Right Ctrl"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancements_hint.12": {
     "1": {
       "label": "the advancements key, as this player has it bound",
       "examples": [
@@ -379,33 +479,113 @@
       ]
     }
   },
-  "chat.dungeontrain.advancements_hint.10": {
+  "chat.dungeontrain.book_burns_author": {
     "1": {
-      "label": "the advancements key, as this player has it bound",
+      "label": "the name of the author credited on the burning book",
       "examples": [
-        "L",
-        "F",
-        "Right Ctrl"
+        "Steve",
+        "Edda Marsh"
       ]
     }
   },
-  "chat.dungeontrain.advancements_hint.11": {
+  "chat.dungeontrain.book_suspended.blocked": {
     "1": {
-      "label": "the advancements key, as this player has it bound",
+      "label": "how long the pause still has to run",
       "examples": [
-        "L",
-        "F",
-        "Right Ctrl"
+        "4m 30s",
+        "45s",
+        "2h"
       ]
     }
   },
-  "chat.dungeontrain.advancements_hint.12": {
+  "chat.dungeontrain.book_suspended.duplicate": {
     "1": {
-      "label": "the advancements key, as this player has it bound",
+      "label": "how long the pause still has to run",
       "examples": [
-        "L",
-        "F",
-        "Right Ctrl"
+        "4m 30s",
+        "45s",
+        "2h"
+      ]
+    }
+  },
+  "chat.dungeontrain.book_suspended.letter": {
+    "1": {
+      "label": "how long the pause still has to run",
+      "examples": [
+        "4m 30s",
+        "45s",
+        "2h"
+      ]
+    }
+  },
+  "chat.dungeontrain.book_suspended.signing": {
+    "1": {
+      "label": "how long the pause still has to run",
+      "examples": [
+        "4m 30s",
+        "45s",
+        "2h"
+      ]
+    }
+  },
+  "chat.dungeontrain.custom_content.now_disabled": {
+    "1": {
+      "label": "the player who turned custom content off",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.custom_content.packages": {
+    "1": {
+      "label": "the custom content packs, comma-separated",
+      "examples": [
+        "Aether Trains",
+        "Aether Trains, Brennan's Extras"
+      ]
+    }
+  },
+  "chat.dungeontrain.deathnote.already": {
+    "1": {
+      "label": "the player already named on a Death Note this life",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.deathnote.taken": {
+    "1": {
+      "label": "the player named on the Death Note",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.dev_message.consent_prompt": {
+    "1": {
+      "label": "the chat tag to type, in this player's own language",
+      "examples": [
+        "@Dev",
+        "@开发者"
+      ]
+    }
+  },
+  "chat.dungeontrain.difficulty_profile.swapped": {
+    "1": {
+      "label": "the difficulty just switched to",
+      "examples": [
+        "Hard",
+        "Easy"
+      ]
+    },
+    "2": {
+      "label": "the difficulty left behind",
+      "examples": [
+        "Normal",
+        "Hard"
       ]
     }
   },
@@ -432,6 +612,160 @@
       "examples": [
         "2",
         "17"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.10": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.11": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the thumbs-up clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.up.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.up.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "3": {
+      "label": "the thumbs-down clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.down.other",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.12": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the thumbs-up clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.up.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.up.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "3": {
+      "label": "the thumbs-down clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.down.other",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.13": {
+    "1": {
+      "label": "how many people have held the book, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.held.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.familiar_book.held.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the short thumbs-up score",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.up.short",
+          "args": [
+            "5"
+          ]
+        }
+      ]
+    },
+    "3": {
+      "label": "the short thumbs-down score",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.familiar_book.down.short",
+          "args": [
+            "2"
+          ]
+        }
       ]
     }
   },
@@ -759,211 +1093,6 @@
       ]
     }
   },
-  "chat.dungeontrain.familiar_book.10": {
-    "1": {
-      "label": "how many people have held the book, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.held.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.familiar_book.held.one",
-          "args": [
-            "1"
-          ]
-        }
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.11": {
-    "1": {
-      "label": "how many people have held the book, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.held.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.familiar_book.held.one",
-          "args": [
-            "1"
-          ]
-        }
-      ]
-    },
-    "2": {
-      "label": "the thumbs-up clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.up.other",
-          "args": [
-            "5"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.familiar_book.up.one",
-          "args": [
-            "1"
-          ]
-        }
-      ]
-    },
-    "3": {
-      "label": "the thumbs-down clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.down.other",
-          "args": [
-            "2"
-          ]
-        }
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.12": {
-    "1": {
-      "label": "how many people have held the book, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.held.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.familiar_book.held.one",
-          "args": [
-            "1"
-          ]
-        }
-      ]
-    },
-    "2": {
-      "label": "the thumbs-up clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.up.other",
-          "args": [
-            "5"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.familiar_book.up.one",
-          "args": [
-            "1"
-          ]
-        }
-      ]
-    },
-    "3": {
-      "label": "the thumbs-down clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.down.other",
-          "args": [
-            "2"
-          ]
-        }
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.13": {
-    "1": {
-      "label": "how many people have held the book, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.held.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.familiar_book.held.one",
-          "args": [
-            "1"
-          ]
-        }
-      ]
-    },
-    "2": {
-      "label": "the short thumbs-up score",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.up.short",
-          "args": [
-            "5"
-          ]
-        }
-      ]
-    },
-    "3": {
-      "label": "the short thumbs-down score",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.familiar_book.down.short",
-          "args": [
-            "2"
-          ]
-        }
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.held.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.held.other": {
-    "1": {
-      "label": "how many people held it",
-      "examples": [
-        "3",
-        "24"
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.times.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.times.other": {
-    "1": {
-      "label": "how many times",
-      "examples": [
-        "2",
-        "17"
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.up.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.up.other": {
-    "1": {
-      "label": "how many readers voted it up",
-      "examples": [
-        "5",
-        "31"
-      ]
-    }
-  },
   "chat.dungeontrain.familiar_book.down.one": {
     "1": {
       "label": "a count of one",
@@ -978,14 +1107,6 @@
       "examples": [
         "2",
         "9"
-      ]
-    }
-  },
-  "chat.dungeontrain.familiar_book.up.short": {
-    "1": {
-      "label": "how many thumbs up",
-      "examples": [
-        "5"
       ]
     }
   },
@@ -1056,21 +1177,139 @@
       ]
     }
   },
-  "chat.dungeontrain.deathnote.already": {
+  "chat.dungeontrain.familiar_book.held.one": {
     "1": {
-      "label": "the player already named on a Death Note this life",
+      "label": "a count of one",
       "examples": [
-        "Steve",
-        "Alex"
+        "1"
       ]
     }
   },
-  "chat.dungeontrain.deathnote.taken": {
+  "chat.dungeontrain.familiar_book.held.other": {
     "1": {
-      "label": "the player named on the Death Note",
+      "label": "how many people held it",
+      "examples": [
+        "3",
+        "24"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.times.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.times.other": {
+    "1": {
+      "label": "how many times",
+      "examples": [
+        "2",
+        "17"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.up.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.up.other": {
+    "1": {
+      "label": "how many readers voted it up",
+      "examples": [
+        "5",
+        "31"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_book.up.short": {
+    "1": {
+      "label": "how many thumbs up",
+      "examples": [
+        "5"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.ais_changed": {
+    "1": {
+      "label": "the Adventure Item Stats settings that were changed",
+      "examples": [
+        "maxEnchantLevel: 5 -> 100"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.command": {
+    "1": {
+      "label": "the command that was run",
+      "examples": [
+        "/gamemode creative",
+        "/give @s diamond 64"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.creative_mod": {
+    "1": {
+      "label": "the cheat-mod action that was used",
+      "examples": [
+        "JEI cheat mode",
+        "an item-spawn button"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cause.gamemode": {
+    "1": {
+      "label": "the game mode the player switched to",
+      "examples": [
+        "Creative",
+        "Spectator"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.cheat_mods": {
+    "1": {
+      "label": "the cheat mods that were found, comma-separated",
+      "examples": [
+        "JEI (cheat mode)",
+        "JEI, Xaero's Minimap"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.dt_config_changed": {
+    "1": {
+      "label": "the Dungeon Train settings that were changed",
+      "examples": [
+        "trainSpeed: 1.0 -> 12.0"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.operators": {
+    "1": {
+      "label": "the players who have cheats enabled, comma-separated",
       "examples": [
         "Steve",
-        "Alex"
+        "Steve, Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.letter.sealed": {
+    "1": {
+      "label": "the letter's title",
+      "examples": [
+        "A Note From The Rails",
+        "For whoever finds this"
+      ]
+    },
+    "2": {
+      "label": "which letter this is in this life",
+      "examples": [
+        "1",
+        "3"
       ]
     }
   },
@@ -1089,6 +1328,483 @@
       "examples": [
         "Steve",
         "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.1": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.2": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.3": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.4": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_library.5": {
+    "1": {
+      "label": "the author every book in the room is signed by",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.presence.last_seen": {
+    "1": {
+      "label": "how long ago, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.minute.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.day.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.presence.was_online": {
+    "1": {
+      "label": "how long ago, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.minute.other",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.day.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.creator.1": {
+    "1": {
+      "label": "the player who built the carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.creator.2": {
+    "1": {
+      "label": "the player who built the carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.creator.3": {
+    "1": {
+      "label": "the player who built the carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.creator.4": {
+    "1": {
+      "label": "the player who built the carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors.1": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors.2": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors.3": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors.4": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors_alone.1": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.editors_alone.2": {
+    "1": {
+      "label": "the players who changed it since, as a list",
+      "examples": [
+        "Alex",
+        "Alex and Mika",
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.more": {
+    "1": {
+      "label": "the players named in full",
+      "examples": [
+        "Alex, Mika"
+      ]
+    },
+    "2": {
+      "label": "how many more there were, as a clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.credit.more.count.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.credit.more.count.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.more.count.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.credit.more.count.other": {
+    "1": {
+      "label": "how many other players",
+      "examples": [
+        "3",
+        "11"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.runs.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.runs.other": {
+    "1": {
+      "label": "how many runs",
+      "examples": [
+        "4",
+        "26"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.times.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.times.other": {
+    "1": {
+      "label": "how many times",
+      "examples": [
+        "6",
+        "40"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.travellers.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.count.travellers.other": {
+    "1": {
+      "label": "how many travellers",
+      "examples": [
+        "3",
+        "18"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.few.1": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the names of the dead",
+      "examples": [
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.few.2": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the names of the dead",
+      "examples": [
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.few.3": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the names of the dead",
+      "examples": [
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.few.4": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "the names of the dead",
+      "examples": [
+        "Alex, Mika and Sam"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.one.1": {
+    "1": {
+      "label": "the player who died here",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.one.2": {
+    "1": {
+      "label": "the player who died here",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.one.3": {
+    "1": {
+      "label": "the player who died here",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.one.4": {
+    "1": {
+      "label": "the player who died here",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.unnamed.1": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.unnamed.2": {
+    "1": {
+      "label": "how many died, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
+          "args": [
+            "4"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.deaths.unnamed.3": {
+    "1": {
+      "label": "how many times it has happened, as a clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.times.other",
+          "args": [
+            "6"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.deaths.count.times.one",
+          "args": [
+            "1"
+          ]
+        }
       ]
     }
   },
@@ -1208,6 +1924,144 @@
     }
   },
   "chat.dungeontrain.shared_carriage.new.6": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.1": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.2": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.3": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.4": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.5": {
+    "1": {
+      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.1",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.2",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.3",
+          "args": []
+        },
+        {
+          "key": "chat.dungeontrain.shared_carriage.noun.4",
+          "args": []
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.shared_carriage.own.6": {
     "1": {
       "label": "the carriage noun for this line, from shared_carriage.noun.*",
       "examples": [
@@ -1368,128 +2222,7 @@
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.credit.creator.1": {
-    "1": {
-      "label": "the player who built the carriage",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.creator.2": {
-    "1": {
-      "label": "the player who built the carriage",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.creator.3": {
-    "1": {
-      "label": "the player who built the carriage",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.creator.4": {
-    "1": {
-      "label": "the player who built the carriage",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.editors.1": {
-    "1": {
-      "label": "the players who changed it since, as a list",
-      "examples": [
-        "Alex",
-        "Alex and Mika",
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.editors.2": {
-    "1": {
-      "label": "the players who changed it since, as a list",
-      "examples": [
-        "Alex",
-        "Alex and Mika",
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.editors.3": {
-    "1": {
-      "label": "the players who changed it since, as a list",
-      "examples": [
-        "Alex",
-        "Alex and Mika",
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.editors.4": {
-    "1": {
-      "label": "the players who changed it since, as a list",
-      "examples": [
-        "Alex",
-        "Alex and Mika",
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.editors_alone.1": {
-    "1": {
-      "label": "the players who changed it since, as a list",
-      "examples": [
-        "Alex",
-        "Alex and Mika",
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.editors_alone.2": {
-    "1": {
-      "label": "the players who changed it since, as a list",
-      "examples": [
-        "Alex",
-        "Alex and Mika",
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.more": {
-    "1": {
-      "label": "the players named in full",
-      "examples": [
-        "Alex, Mika"
-      ]
-    },
-    "2": {
-      "label": "how many more there were, as a clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.credit.more.count.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.credit.more.count.one",
-          "args": [
-            "1"
-          ]
-        }
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.credit.more.count.one": {
+  "chat.dungeontrain.time.day.one": {
     "1": {
       "label": "a count of one",
       "examples": [
@@ -1497,209 +2230,16 @@
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.credit.more.count.other": {
+  "chat.dungeontrain.time.day.other": {
     "1": {
-      "label": "how many other players",
+      "label": "how many days",
       "examples": [
         "3",
-        "11"
+        "21"
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.deaths.one.1": {
-    "1": {
-      "label": "the player who died here",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.one.2": {
-    "1": {
-      "label": "the player who died here",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.one.3": {
-    "1": {
-      "label": "the player who died here",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.one.4": {
-    "1": {
-      "label": "the player who died here",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.few.1": {
-    "1": {
-      "label": "how many died, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
-          "args": [
-            "4"
-          ]
-        }
-      ]
-    },
-    "2": {
-      "label": "the names of the dead",
-      "examples": [
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.few.2": {
-    "1": {
-      "label": "how many died, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
-          "args": [
-            "4"
-          ]
-        }
-      ]
-    },
-    "2": {
-      "label": "the names of the dead",
-      "examples": [
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.few.3": {
-    "1": {
-      "label": "how many died, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
-          "args": [
-            "4"
-          ]
-        }
-      ]
-    },
-    "2": {
-      "label": "the names of the dead",
-      "examples": [
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.few.4": {
-    "1": {
-      "label": "how many died, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
-          "args": [
-            "4"
-          ]
-        }
-      ]
-    },
-    "2": {
-      "label": "the names of the dead",
-      "examples": [
-        "Alex, Mika and Sam"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.unnamed.1": {
-    "1": {
-      "label": "how many died, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
-          "args": [
-            "4"
-          ]
-        }
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.unnamed.2": {
-    "1": {
-      "label": "how many died, as a whole clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.travellers.other",
-          "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.runs.other",
-          "args": [
-            "4"
-          ]
-        }
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.unnamed.3": {
-    "1": {
-      "label": "how many times it has happened, as a clause",
-      "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.times.other",
-          "args": [
-            "6"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.deaths.count.times.one",
-          "args": [
-            "1"
-          ]
-        }
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.count.travellers.one": {
+  "chat.dungeontrain.time.hour.one": {
     "1": {
       "label": "a count of one",
       "examples": [
@@ -1707,16 +2247,16 @@
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.deaths.count.travellers.other": {
+  "chat.dungeontrain.time.hour.other": {
     "1": {
-      "label": "how many travellers",
+      "label": "how many hours",
       "examples": [
-        "3",
-        "18"
+        "2",
+        "13"
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.deaths.count.runs.one": {
+  "chat.dungeontrain.time.minute.one": {
     "1": {
       "label": "a count of one",
       "examples": [
@@ -1724,299 +2264,220 @@
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.deaths.count.runs.other": {
+  "chat.dungeontrain.time.minute.other": {
     "1": {
-      "label": "how many runs",
+      "label": "how many minutes",
       "examples": [
-        "4",
-        "26"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.count.times.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.shared_carriage.deaths.count.times.other": {
-    "1": {
-      "label": "how many times",
-      "examples": [
-        "6",
+        "5",
         "40"
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.own.1": {
+  "chat.dungeontrain.time.month.one": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "a count of one",
       "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.1",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.2",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.3",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.4",
-          "args": []
-        }
+        "1"
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.own.2": {
+  "chat.dungeontrain.time.month.other": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "how many months",
       "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.1",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.2",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.3",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.4",
-          "args": []
-        }
+        "5",
+        "11"
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.own.3": {
+  "chat.dungeontrain.time.second.one": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "a count of one",
       "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.1",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.2",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.3",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.4",
-          "args": []
-        }
+        "1"
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.own.4": {
+  "chat.dungeontrain.time.second.other": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "how many seconds",
       "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.1",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.2",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.3",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.4",
-          "args": []
-        }
+        "45",
+        "12"
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.own.5": {
+  "chat.dungeontrain.time.week.one": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "a count of one",
       "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.1",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.2",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.3",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.4",
-          "args": []
-        }
+        "1"
       ]
     }
   },
-  "chat.dungeontrain.shared_carriage.own.6": {
+  "chat.dungeontrain.time.week.other": {
     "1": {
-      "label": "the carriage noun for this line, from shared_carriage.noun.*",
+      "label": "how many weeks",
       "examples": [
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.1",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.2",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.3",
-          "args": []
-        },
-        {
-          "key": "chat.dungeontrain.shared_carriage.noun.4",
-          "args": []
-        }
-      ]
-    }
-  },
-  "chat.dungeontrain.letter.sealed": {
-    "1": {
-      "label": "the letter's title",
-      "examples": [
-        "A Note From The Rails",
-        "For whoever finds this"
-      ]
-    },
-    "2": {
-      "label": "which letter this is in this life",
-      "examples": [
-        "1",
+        "2",
         "3"
       ]
     }
   },
-  "chat.dungeontrain.book_suspended.duplicate": {
+  "chat.dungeontrain.time.year.one": {
     "1": {
-      "label": "how long the pause still has to run",
+      "label": "a count of one",
       "examples": [
-        "4m 30s",
-        "45s",
-        "2h"
+        "1"
       ]
     }
   },
-  "chat.dungeontrain.book_suspended.blocked": {
+  "chat.dungeontrain.time.year.other": {
     "1": {
-      "label": "how long the pause still has to run",
+      "label": "how many years",
       "examples": [
-        "4m 30s",
-        "45s",
-        "2h"
+        "2",
+        "3"
       ]
     }
   },
-  "chat.dungeontrain.book_suspended.letter": {
+  "command.dungeontrain.backup.fail": {
     "1": {
-      "label": "how long the pause still has to run",
+      "label": "the error that stopped the backup",
       "examples": [
-        "4m 30s",
-        "45s",
-        "2h"
+        "java.nio.file.AccessDeniedException: backups"
       ]
     }
   },
-  "chat.dungeontrain.book_suspended.signing": {
+  "command.dungeontrain.backup.success": {
     "1": {
-      "label": "how long the pause still has to run",
+      "label": "the backup file's name",
       "examples": [
-        "4m 30s",
-        "45s",
-        "2h"
+        "dungeontrain-backup-20260828-014500.zip"
+      ]
+    },
+    "2": {
+      "label": "how many files it holds",
+      "examples": [
+        "142"
       ]
     }
   },
-  "dungeontrain.floor_y.value": {
+  "command.dungeontrain.fix_ais.backup": {
     "1": {
-      "label": "the train's Y level",
+      "label": "the backup file's name",
       "examples": [
-        "64",
-        "-12"
+        "adventureitemstats.properties.bak"
       ]
     }
   },
-  "gui.dungeontrain.version.update": {
+  "command.dungeontrain.fix_config.backup": {
     "1": {
-      "label": "the newest version number",
+      "label": "the settings file",
       "examples": [
-        "0.648.0"
+        "dungeontrain-common.toml"
+      ]
+    },
+    "2": {
+      "label": "the name it was kept under",
+      "examples": [
+        "dungeontrain-common.toml.bak"
       ]
     }
   },
-  "gui.dungeontrain.menu_chat.unread": {
+  "command.dungeontrain.fix_config.fail": {
     "1": {
-      "label": "how many unread messages",
+      "label": "the settings files that could not be moved",
+      "examples": [
+        "dungeontrain-common.toml, adventureitemstats.properties"
+      ]
+    }
+  },
+  "command.dungeontrain.restore.entry": {
+    "1": {
+      "label": "the entry's number, for passing to /dtrestore",
       "examples": [
         "1",
-        "7"
+        "2"
       ]
-    }
-  },
-  "gui.dungeontrain.menu_chat.popup": {
-    "1": {
-      "label": "the message the developer sent",
+    },
+    "2": {
+      "label": "what that entry holds",
       "examples": [
-        "Thanks for playing!"
+        "builds and progress",
+        "builds"
       ]
-    }
-  },
-  "gui.dungeontrain.menu_chat.attachment": {
-    "1": {
-      "label": "the attached file's name",
+    },
+    "3": {
+      "label": "the backup file, or the path to the other Minecraft install",
       "examples": [
-        "train-layout.png"
+        "dungeontrain-backup-20260828-014500.zip"
       ]
     }
   },
-  "gui.dungeontrain.death.narr.photos": {
+  "command.dungeontrain.restore.fail": {
     "1": {
-      "label": "how many photos this ride captured",
+      "label": "the error that stopped the restore",
       "examples": [
-        "7",
-        "23"
+        "java.util.zip.ZipException: invalid entry"
       ]
     }
   },
-  "gui.dungeontrain.death.gallery.subtitle": {
+  "command.dungeontrain.restore.no_such": {
     "1": {
-      "label": "how many photos were captured",
-      "examples": [
-        "7",
-        "23"
-      ]
-    }
-  },
-  "gui.dungeontrain.death.gallery.status_saved": {
-    "1": {
-      "label": "the file it was saved as",
-      "examples": [
-        "dungeontrain-ride-3.png"
-      ]
-    }
-  },
-  "gui.dungeontrain.death.gallery.status_saved_count": {
-    "1": {
-      "label": "how many photos were saved",
+      "label": "the entry number the player asked for",
       "examples": [
         "7"
+      ]
+    }
+  },
+  "command.dungeontrain.restore.success": {
+    "1": {
+      "label": "how many files were put back",
+      "examples": [
+        "142"
+      ]
+    },
+    "2": {
+      "label": "where they came from",
+      "examples": [
+        "dungeontrain-backup-20260828-014500.zip"
+      ]
+    }
+  },
+  "commands.dungeontrain.customcontent.status.off": {
+    "1": {
+      "label": "the packs installed but not loading",
+      "examples": [
+        "Aether Trains"
+      ]
+    }
+  },
+  "commands.dungeontrain.customcontent.status.on": {
+    "1": {
+      "label": "the custom content packs, comma-separated",
+      "examples": [
+        "Aether Trains",
+        "Aether Trains, Brennan's Extras"
+      ]
+    }
+  },
+  "container.dungeontrain.enderchest.profile": {
+    "1": {
+      "label": "the chest's ordinary title",
+      "examples": [
+        "Ender Chest"
+      ]
+    },
+    "2": {
+      "label": "which chest this is — difficulty, game mode, or Free Play",
+      "examples": [
+        "Hard",
+        {
+          "key": "container.dungeontrain.enderchest.free_play",
+          "args": []
+        },
+        "Hard · Creative"
       ]
     }
   },
@@ -2030,24 +2491,6 @@
     }
   },
   "death.attack.dungeontrain.abandoned.player": {
-    "1": {
-      "label": "the player who died",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "death.attack.dungeontrain.stepped_off": {
-    "1": {
-      "label": "the player who died",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "death.attack.dungeontrain.stepped_off.player": {
     "1": {
       "label": "the player who died",
       "examples": [
@@ -2074,6 +2517,24 @@
       ]
     }
   },
+  "death.attack.dungeontrain.stepped_off": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "death.attack.dungeontrain.stepped_off.player": {
+    "1": {
+      "label": "the player who died",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
   "death.attack.dungeontrain.walked_away": {
     "1": {
       "label": "the player who died",
@@ -2092,27 +2553,457 @@
       ]
     }
   },
-  "gui.dungeontrain.support.financial.desc": {
+  "dungeontrain.floor_y.value": {
     "1": {
-      "label": "the server-host affiliate link",
+      "label": "the train's Y level",
       "examples": [
-        "bisecthosting.com/brennan"
+        "64",
+        "-12"
       ]
     }
   },
-  "gui.dungeontrain.support.financial.desc.cn": {
+  "dungeontrain.leaderboard.scope.run": {
     "1": {
-      "label": "the server-host affiliate link",
+      "label": "the board's own question, which this clause narrows to a single life",
       "examples": [
-        "bisecthosting.com/brennan"
+        {
+          "key": "dungeontrain.leaderboard.carriages.header",
+          "args": []
+        },
+        {
+          "key": "dungeontrain.leaderboard.chests.header",
+          "args": []
+        }
       ]
     }
   },
-  "gui.dungeontrain.support.feedback.desc": {
+  "dungeontrain.leaderboard.scope.total": {
     "1": {
-      "label": "the Discord invite link",
+      "label": "the board's own question, which this clause widens to every life",
       "examples": [
-        "discord.gg/dungeontrain"
+        {
+          "key": "dungeontrain.leaderboard.carriages.header",
+          "args": []
+        },
+        {
+          "key": "dungeontrain.leaderboard.playtime.header",
+          "args": []
+        }
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.you": {
+    "1": {
+      "label": "the reader's rank on this board, as a plain number",
+      "examples": [
+        "1",
+        "7",
+        "42"
+      ]
+    },
+    "2": {
+      "label": "the reader's own score, already formatted for this board",
+      "examples": [
+        "1284m",
+        "3h 12m",
+        "$25"
+      ]
+    }
+  },
+  "dungeontrain.leaderboard.you_beyond": {
+    "1": {
+      "label": "the reader's own score, already formatted for this board",
+      "examples": [
+        "96m",
+        "48m",
+        "$5"
+      ]
+    },
+    "2": {
+      "label": "how many ranks the book had room to print",
+      "examples": [
+        "47",
+        "100"
+      ]
+    }
+  },
+  "echo.dungeontrain.mob_name": {
+    "1": {
+      "label": "the player this echo is a copy of",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "effect.dungeontrain.free_play.trigger.detail": {
+    "1": {
+      "label": "the changed settings or detected mods behind that trigger, comma-separated",
+      "examples": [
+        "maxEnchantLevel: 5 -> 100",
+        "Xaero's Minimap, JEI"
+      ]
+    }
+  },
+  "effect.dungeontrain.free_play.trigger.detail_more": {
+    "1": {
+      "label": "the first few changed settings or detected mods, comma-separated",
+      "examples": [
+        "maxEnchantLevel: 5 -> 100, mobHealth: 20 -> 2, lootRate: 1 -> 9"
+      ]
+    },
+    "2": {
+      "label": "how many more there are beyond the ones named",
+      "examples": [
+        "2",
+        "11"
+      ]
+    }
+  },
+  "gui.dungeontrain.ai_policy.used.3": {
+    "1": {
+      "label": "a link to the Discord channel the change logs are posted in",
+      "examples": [
+        "#minor-updates on Discord"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.creators.row": {
+    "1": {
+      "label": "a builder's name, as a row in the search results",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    },
+    "2": {
+      "label": "how many builds that builder has on the relay",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.favourites.tab.builders": {
+    "1": {
+      "label": "how many builders this player has starred, on the tab that shows them",
+      "examples": [
+        "2",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.favourites.tab.builds": {
+    "1": {
+      "label": "how many builds this player has starred, on the tab that shows them",
+      "examples": [
+        "5",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.favourites.tile": {
+    "1": {
+      "label": "the name of a starred build, as the caption under its tile",
+      "examples": [
+        "brick_cabin",
+        "library"
+      ]
+    },
+    "2": {
+      "label": "the player who built it — this list spans builders, so each tile names its own",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.info.size": {
+    "1": {
+      "label": "the build's length in blocks",
+      "examples": [
+        "9",
+        "24"
+      ]
+    },
+    "2": {
+      "label": "the build's height in blocks",
+      "examples": [
+        "5",
+        "12"
+      ]
+    },
+    "3": {
+      "label": "the build's width in blocks",
+      "examples": [
+        "5",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.info.weight": {
+    "1": {
+      "label": "how often the train picks this build, as a spawn weight",
+      "examples": [
+        "10",
+        "2.5"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.new.saved_build": {
+    "1": {
+      "label": "the name of one of the player's own saved builds",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.open_failed": {
+    "1": {
+      "label": "the build that could not be opened",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.collision.rename_existing": {
+    "1": {
+      "label": "the build already on this install, which would be kept under another name",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.collision.replace.title": {
+    "1": {
+      "label": "the build already on this install, which is being replaced",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.collision.title": {
+    "1": {
+      "label": "the build whose name this install already uses",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.full": {
+    "1": {
+      "label": "how many builds a player's profile can hold on the build server",
+      "examples": [
+        "200"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.gone": {
+    "1": {
+      "label": "the build that is no longer on the relay",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.in_use": {
+    "1": {
+      "label": "the build that is currently out on another player's train",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.owner_other": {
+    "1": {
+      "label": "the player whose builds are being looked at",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.saved": {
+    "1": {
+      "label": "the build that was saved and uploaded",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.too_big": {
+    "1": {
+      "label": "the build that is too large for the relay to accept",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.unsaved.title": {
+    "1": {
+      "label": "the build on this install that has unsaved editor edits",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.upload_failed": {
+    "1": {
+      "label": "the build that saved locally but could not be uploaded",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.backups.off": {
+    "1": {
+      "label": "how many further builds exist only inside a backup",
+      "examples": [
+        "2",
+        "9"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.backups.on": {
+    "1": {
+      "label": "how many further builds exist only inside a backup",
+      "examples": [
+        "2",
+        "9"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.body": {
+    "1": {
+      "label": "how many of the player's builds the build server no longer has",
+      "examples": [
+        "3",
+        "17"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.done": {
+    "1": {
+      "label": "how many builds were restored",
+      "examples": [
+        "3",
+        "17"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.partial": {
+    "1": {
+      "label": "how many builds were restored in this run",
+      "examples": [
+        "150"
+      ]
+    },
+    "2": {
+      "label": "how many builds are left for the next run",
+      "examples": [
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.some_failed": {
+    "1": {
+      "label": "how many builds were restored",
+      "examples": [
+        "14"
+      ]
+    },
+    "2": {
+      "label": "how many builds could not be sent",
+      "examples": [
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.started": {
+    "1": {
+      "label": "how many builds are being sent back up to the build server",
+      "examples": [
+        "3",
+        "17"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.reconcile.toast.body": {
+    "1": {
+      "label": "how many builds were sent back to the build server",
+      "examples": [
+        "3",
+        "17"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.room_size.tooltip": {
+    "1": {
+      "label": "which side of the room this button resizes — a translated axis name",
+      "examples": [
+        "Length",
+        "Height"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.save_failed": {
+    "1": {
+      "label": "why the save was refused",
+      "examples": [
+        "no carriage variant",
+        "name already taken"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.saved": {
+    "1": {
+      "label": "the build that was saved",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.unsaved.title": {
+    "1": {
+      "label": "how many carriages have unsaved changes",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.config_deviation.done.backup": {
+    "1": {
+      "label": "the settings file",
+      "examples": [
+        "dungeontrain-common.toml"
+      ]
+    },
+    "2": {
+      "label": "where it was moved to",
+      "examples": [
+        "dungeontrain-common.toml.bak"
+      ]
+    }
+  },
+  "gui.dungeontrain.config_deviation.more": {
+    "1": {
+      "label": "how many more changed settings there are",
+      "examples": [
+        "3",
+        "12"
       ]
     }
   },
@@ -2132,26 +3023,6 @@
       ]
     }
   },
-  "gui.dungeontrain.credits.translations.person_line": {
-    "1": {
-      "label": "the translator's name",
-      "examples": [
-        "Mika"
-      ]
-    },
-    "2": {
-      "label": "the languages they worked on",
-      "examples": [
-        "Polish, Czech"
-      ]
-    }
-  },
-  "gui.dungeontrain.ai_policy.used.3": {
-    "1": {
-      "label": "a link to the Discord channel the change logs are posted in",
-      "examples": ["#minor-updates on Discord"]
-    }
-  },
   "gui.dungeontrain.credits.translations.lang_percent": {
     "1": {
       "label": "the language",
@@ -2168,51 +3039,431 @@
       ]
     }
   },
-  "gui.dungeontrain.video_tools.share.desc": {
+  "gui.dungeontrain.credits.translations.person_line": {
     "1": {
-      "label": "the Discord invite link",
+      "label": "the translator's name",
       "examples": [
-        "discord.gg/dungeontrain"
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "the languages they worked on",
+      "examples": [
+        "Polish, Czech"
       ]
     }
   },
-  "gui.dungeontrain.video_tools.reset.worlds_header": {
+  "gui.dungeontrain.custom_content.packages": {
     "1": {
-      "label": "how many worlds will be deleted",
+      "label": "the custom content packs, comma-separated",
       "examples": [
+        "Aether Trains",
+        "Aether Trains, Brennan's Extras"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.candidate.backup": {
+    "1": {
+      "label": "the backup file's name",
+      "examples": [
+        "dungeontrain-backup-20260828-114927.zip"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.candidate.external": {
+    "1": {
+      "label": "the backup file's name",
+      "examples": [
+        "dungeontrain-backup-20260828-114927.zip"
+      ]
+    },
+    "2": {
+      "label": "the folder outside the Minecraft install where it is kept",
+      "examples": [
+        "/Users/sam/Library/Application Support/DungeonTrain/backups"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.candidate.folder": {
+    "1": {
+      "label": "the folder the backups are kept in",
+      "examples": [
+        "/Users/sam/minecraft/dungeontrain/backups"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.candidate.sibling": {
+    "1": {
+      "label": "what the other install holds",
+      "examples": [
+        "builds and progress",
+        "progress"
+      ]
+    },
+    "2": {
+      "label": "the full path to the other Minecraft install",
+      "examples": [
+        "/Users/sam/curseforge/minecraft/Instances/Dungeon Train"
+      ]
+    }
+  },
+  "gui.dungeontrain.data_recovery.done.body": {
+    "1": {
+      "label": "how many files were put back",
+      "examples": [
+        "142"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.gallery.status_saved": {
+    "1": {
+      "label": "the file it was saved as",
+      "examples": [
+        "dungeontrain-ride-3.png"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.gallery.status_saved_count": {
+    "1": {
+      "label": "how many photos were saved",
+      "examples": [
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.gallery.subtitle": {
+    "1": {
+      "label": "how many photos were captured",
+      "examples": [
+        "7",
+        "23"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.changes_count.one": {
+    "1": {
+      "label": "a count of one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.changes_count.other": {
+    "1": {
+      "label": "how many changes landed in the last week",
+      "examples": [
+        "117",
+        "24"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.donate_intro_updates": {
+    "1": {
+      "label": "how many changes were made this week, as a whole clause - the opening line of the donation pitch",
+      "examples": [
+        {
+          "key": "gui.dungeontrain.death.narr.changes_count.other",
+          "args": [
+            "117"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.lbl_updates_months": {
+    "1": {
+      "label": "the span those updates landed in, as a whole clause - only used while the project is younger than a year",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.month.other",
+          "args": [
+            "5"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.photos": {
+    "1": {
+      "label": "how many photos this ride captured",
+      "examples": [
+        "7",
+        "23"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.tip_last_active": {
+    "1": {
+      "label": "how long ago the creator last committed work, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.day.other",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.death.narr.tip_last_update": {
+    "1": {
+      "label": "how long ago the newest release went out, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.hour.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.day.one",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "gui.dungeontrain.difficulty_confirm.empty": {
+    "1": {
+      "label": "a difficulty name",
+      "examples": [
+        "Hard",
+        "Peaceful",
+        "Normal"
+      ]
+    }
+  },
+  "gui.dungeontrain.difficulty_confirm.kept": {
+    "1": {
+      "label": "a difficulty name",
+      "examples": [
+        "Hard",
+        "Peaceful",
+        "Normal"
+      ]
+    }
+  },
+  "gui.dungeontrain.difficulty_confirm.title": {
+    "1": {
+      "label": "a difficulty name",
+      "examples": [
+        "Hard",
+        "Peaceful",
+        "Normal"
+      ]
+    }
+  },
+  "gui.dungeontrain.dpi_bypass.body": {
+    "1": {
+      "label": "the bypass tool's program name, as it appears in the process list",
+      "examples": [
+        "winws.exe",
+        "goodbyedpi.exe"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.filter.creator": {
+    "1": {
+      "label": "the name of the player whose uploaded builds are being viewed",
+      "examples": [
+        "Steve",
+        "Edda Marsh"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.containers": {
+    "1": {
+      "label": "how many containers (chests, barrels…) the template contains",
+      "examples": [
+        "1",
         "4"
       ]
     }
   },
-  "gui.dungeontrain.video_tools.reset.kept": {
+  "gui.dungeontrain.editor_screen.sheet.entities": {
     "1": {
-      "label": "how many other worlds are left alone",
+      "label": "how many entities (mobs, item frames…) the template contains",
       "examples": [
-        "2"
-      ]
-    }
-  },
-  "gui.dungeontrain.video_tools.reset.prompt": {
-    "1": {
-      "label": "the word that has to be typed to confirm",
-      "examples": [
-        "DELETE"
-      ]
-    }
-  },
-  "gui.dungeontrain.video_tools.reset.done_worlds": {
-    "1": {
-      "label": "how many worlds were deleted",
-      "examples": [
-        "4"
-      ]
-    }
-  },
-  "gui.dungeontrain.video_tools.reset.done_profile": {
-    "1": {
-      "label": "how many profile items were cleared",
-      "examples": [
+        "3",
         "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sheet.share": {
+    "1": {
+      "label": "how many sub-variants share this group's chance to spawn",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stage_linked": {
+    "1": {
+      "label": "the id of the Stage this template is linked to",
+      "examples": [
+        "desert",
+        "nether"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.standing_in": {
+    "1": {
+      "label": "the name of the editor plot the player is currently standing in",
+      "examples": [
+        "armor5",
+        "windowed"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.sub_variants_of": {
+    "1": {
+      "label": "the name of the group template whose sub-variants are listed",
+      "examples": [
+        "armor",
+        "house"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.tile.self": {
+    "1": {
+      "label": "the name of the group template — this tile is the group's own build, as opposed to one of its members",
+      "examples": [
+        "armor",
+        "books"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.version": {
+    "1": {
+      "label": "which recorded version of the build is on screen, counting from the oldest",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "how many versions of the build the relay recorded in total",
+      "examples": [
+        "7",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.weight": {
+    "1": {
+      "label": "the template's spawn weight, 0-100",
+      "examples": [
+        "6",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.weight_read_only": {
+    "1": {
+      "label": "the template's spawn weight, 0-100",
+      "examples": [
+        "6",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.free_play.confirm.trigger": {
+    "1": {
+      "label": "what would trip Free Play",
+      "examples": [
+        "/gamemode creative",
+        "JEI cheat mode"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu_chat.attachment": {
+    "1": {
+      "label": "the attached file's name",
+      "examples": [
+        "train-layout.png"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu_chat.popup": {
+    "1": {
+      "label": "the message the developer sent",
+      "examples": [
+        "Thanks for playing!"
+      ]
+    }
+  },
+  "gui.dungeontrain.menu_chat.unread": {
+    "1": {
+      "label": "how many unread messages",
+      "examples": [
+        "1",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.catch_up_burst.auto": {
+    "1": {
+      "label": "the catch-up mode AUTO chose for this machine — one of the Off / Burst 2 / Fill all values of this same setting, already translated",
+      "examples": [
+        "Fill all",
+        "Burst 2"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups": {
+    "1": {
+      "label": "the total size of the backups on disk",
+      "examples": [
+        "1.2 GB",
+        "512 KB",
+        "0 B"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups.confirm.both": {
+    "1": {
+      "label": "the backups folder inside the Minecraft install",
+      "examples": [
+        "/Users/sam/minecraft/dungeontrain/backups"
+      ]
+    },
+    "2": {
+      "label": "the backups folder outside the Minecraft install",
+      "examples": [
+        "/Users/sam/Library/Application Support/DungeonTrain/backups"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups.confirm.one": {
+    "1": {
+      "label": "the backups folder",
+      "examples": [
+        "/Users/sam/minecraft/dungeontrain/backups"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups.confirm.title": {
+    "1": {
+      "label": "how many backup files will be deleted",
+      "examples": [
+        "14"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.internet": {
+    "1": {
+      "label": "whether it is on",
+      "examples": [
+        "ON",
+        "OFF"
       ]
     }
   },
@@ -2298,6 +3549,22 @@
       ]
     }
   },
+  "gui.dungeontrain.options.value_row": {
+    "1": {
+      "label": "the setting's name",
+      "examples": [
+        "Train Speed",
+        "Carriage Length"
+      ]
+    },
+    "2": {
+      "label": "its value",
+      "examples": [
+        "12",
+        "ON"
+      ]
+    }
+  },
   "gui.dungeontrain.settings.range_hint": {
     "1": {
       "label": "fewest carriages",
@@ -2360,233 +3627,47 @@
       ]
     }
   },
-  "chat.dungeontrain.dev_message.consent_prompt": {
+  "gui.dungeontrain.shaders.failed": {
     "1": {
-      "label": "the chat tag to type, in this player's own language",
+      "label": "why the download failed",
       "examples": [
-        "@Dev",
-        "@开发者"
+        "HTTP 503",
+        "the download did not match its checksum"
       ]
     }
   },
-  "chat.dungeontrain.presence.was_online": {
+  "gui.dungeontrain.shaders.list.narration": {
     "1": {
-      "label": "how long ago, as a whole clause",
+      "label": "how many shader packs are listed",
       "examples": [
-        {
-          "key": "chat.dungeontrain.time.minute.other",
-          "args": [
-            "5"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.time.hour.other",
-          "args": [
-            "2"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.time.day.one",
-          "args": [
-            "1"
-          ]
-        }
+        "9"
       ]
     }
   },
-  "chat.dungeontrain.presence.last_seen": {
+  "gui.dungeontrain.shaders.perf": {
     "1": {
-      "label": "how long ago, as a whole clause",
+      "label": "how demanding the shader pack is",
       "examples": [
-        {
-          "key": "chat.dungeontrain.time.minute.other",
-          "args": [
-            "5"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.time.hour.other",
-          "args": [
-            "2"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.time.day.one",
-          "args": [
-            "1"
-          ]
-        }
+        "Very light",
+        "Heavy"
       ]
     }
   },
-  "chat.dungeontrain.time.second.one": {
+  "gui.dungeontrain.shaders.sort": {
     "1": {
-      "label": "a count of one",
+      "label": "which order the shader list is in",
       "examples": [
-        "1"
+        "Most vanilla",
+        "Performance"
       ]
     }
   },
-  "chat.dungeontrain.time.second.other": {
+  "gui.dungeontrain.shaders.status.missing": {
     "1": {
-      "label": "how many seconds",
+      "label": "the download size of the shader pack",
       "examples": [
-        "45",
-        "12"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.minute.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.minute.other": {
-    "1": {
-      "label": "how many minutes",
-      "examples": [
-        "5",
-        "40"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.hour.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.hour.other": {
-    "1": {
-      "label": "how many hours",
-      "examples": [
-        "2",
-        "13"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.day.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.day.other": {
-    "1": {
-      "label": "how many days",
-      "examples": [
-        "3",
-        "21"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.week.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.week.other": {
-    "1": {
-      "label": "how many weeks",
-      "examples": [
-        "2",
-        "3"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.month.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.month.other": {
-    "1": {
-      "label": "how many months",
-      "examples": [
-        "5",
-        "11"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.year.one": {
-    "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.time.year.other": {
-    "1": {
-      "label": "how many years",
-      "examples": [
-        "2",
-        "3"
-      ]
-    }
-  },
-  "gui.dungeontrain.splash.updates_day": {
-    "1": {
-      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
-      "examples": [
-        {
-          "key": "gui.dungeontrain.splash.new_updates.other",
-          "args": [
-            "9"
-          ]
-        }
-      ]
-    }
-  },
-  "gui.dungeontrain.splash.updates_week": {
-    "1": {
-      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
-      "examples": [
-        {
-          "key": "gui.dungeontrain.splash.new_updates.other",
-          "args": [
-            "122"
-          ]
-        }
-      ]
-    }
-  },
-  "gui.dungeontrain.splash.updates_month": {
-    "1": {
-      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
-      "examples": [
-        {
-          "key": "gui.dungeontrain.splash.new_updates.other",
-          "args": [
-            "249"
-          ]
-        }
-      ]
-    }
-  },
-  "gui.dungeontrain.splash.updates_year": {
-    "1": {
-      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
-      "examples": [
-        {
-          "key": "gui.dungeontrain.splash.new_updates.other",
-          "args": [
-            "770"
-          ]
-        }
+        "1.1 MB",
+        "534 KB"
       ]
     }
   },
@@ -2607,109 +3688,79 @@
       ]
     }
   },
-  "gui.dungeontrain.death.narr.changes_count.one": {
+  "gui.dungeontrain.splash.updates_day": {
     "1": {
-      "label": "a count of one",
-      "examples": [
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.death.narr.changes_count.other": {
-    "1": {
-      "label": "how many changes landed in the last week",
-      "examples": [
-        "117",
-        "24"
-      ]
-    }
-  },
-  "gui.dungeontrain.death.narr.donate_intro_updates": {
-    "1": {
-      "label": "how many changes were made this week, as a whole clause - the opening line of the donation pitch",
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
       "examples": [
         {
-          "key": "gui.dungeontrain.death.narr.changes_count.other",
+          "key": "gui.dungeontrain.splash.new_updates.other",
           "args": [
-            "117"
+            "9"
           ]
         }
       ]
     }
   },
-  "gui.dungeontrain.death.narr.lbl_updates_months": {
+  "gui.dungeontrain.splash.updates_month": {
     "1": {
-      "label": "the span those updates landed in, as a whole clause - only used while the project is younger than a year",
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
       "examples": [
         {
-          "key": "chat.dungeontrain.time.month.other",
+          "key": "gui.dungeontrain.splash.new_updates.other",
           "args": [
-            "5"
+            "249"
           ]
         }
       ]
     }
   },
-  "gui.dungeontrain.death.narr.tip_last_active": {
+  "gui.dungeontrain.splash.updates_week": {
     "1": {
-      "label": "how long ago the creator last committed work, as a whole clause",
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
       "examples": [
         {
-          "key": "chat.dungeontrain.time.hour.other",
+          "key": "gui.dungeontrain.splash.new_updates.other",
           "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.time.day.other",
-          "args": [
-            "2"
+            "122"
           ]
         }
       ]
     }
   },
-  "gui.dungeontrain.death.narr.tip_last_update": {
+  "gui.dungeontrain.splash.updates_year": {
     "1": {
-      "label": "how long ago the newest release went out, as a whole clause",
+      "label": "how many updates were made in this timeframe, as a whole clause - this is a main-menu splash line",
       "examples": [
         {
-          "key": "chat.dungeontrain.time.hour.other",
+          "key": "gui.dungeontrain.splash.new_updates.other",
           "args": [
-            "3"
-          ]
-        },
-        {
-          "key": "chat.dungeontrain.time.day.one",
-          "args": [
-            "1"
+            "770"
           ]
         }
       ]
     }
   },
-  "gui.dungeontrain.options.value_row": {
+  "gui.dungeontrain.support.feedback.desc": {
     "1": {
-      "label": "the setting's name",
+      "label": "the Discord invite link",
       "examples": [
-        "Train Speed",
-        "Carriage Length"
-      ]
-    },
-    "2": {
-      "label": "its value",
-      "examples": [
-        "12",
-        "ON"
+        "discord.gg/dungeontrain"
       ]
     }
   },
-  "gui.dungeontrain.options.internet": {
+  "gui.dungeontrain.support.financial.desc": {
     "1": {
-      "label": "whether it is on",
+      "label": "the server-host affiliate link",
       "examples": [
-        "ON",
-        "OFF"
+        "bisecthosting.com/brennan"
+      ]
+    }
+  },
+  "gui.dungeontrain.support.financial.desc.cn": {
+    "1": {
+      "label": "the server-host affiliate link",
+      "examples": [
+        "bisecthosting.com/brennan"
       ]
     }
   },
@@ -2723,94 +3774,21 @@
       ]
     }
   },
-  "gui.dungeontrain.translate.switch.message": {
+  "gui.dungeontrain.translate.edit.blocked.extra_vars": {
     "1": {
-      "label": "the language picked to translate",
+      "label": "the placeholders this translation has added",
       "examples": [
-        "Polski"
-      ]
-    },
-    "2": {
-      "label": "the language the game is running in",
-      "examples": [
-        "English"
+        "%2$s",
+        "%2$s, %3$s"
       ]
     }
   },
-  "gui.dungeontrain.translate.switch.yes": {
+  "gui.dungeontrain.translate.edit.blocked.missing_vars": {
     "1": {
-      "label": "a language name",
+      "label": "the placeholders this translation has dropped",
       "examples": [
-        "Polski",
-        "日本語",
-        "Deutsch"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.switch.no": {
-    "1": {
-      "label": "a language name",
-      "examples": [
-        "Polski",
-        "日本語",
-        "Deutsch"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.subtitle": {
-    "1": {
-      "label": "the locale being edited",
-      "examples": [
-        "ru_ru",
-        "pl_pl"
-      ]
-    },
-    "2": {
-      "label": "how many strings the list is showing",
-      "examples": [
-        "1422",
-        "37"
-      ]
-    },
-    "3": {
-      "label": "how many this player has edited",
-      "examples": [
-        "12",
-        "0"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.request.count": {
-    "1": {
-      "label": "how many players have asked for it",
-      "examples": [
-        "37",
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.request.sent.count": {
-    "1": {
-      "label": "how many players have asked for it",
-      "examples": [
-        "37",
-        "1"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.list.narration": {
-    "1": {
-      "label": "how many strings are in the list",
-      "examples": [
-        "1422"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.revert_all.detail": {
-    "1": {
-      "label": "how many edits will be thrown away",
-      "examples": [
-        "12"
+        "%1$s",
+        "%1$s, %2$s"
       ]
     }
   },
@@ -2820,14 +3798,6 @@
       "examples": [
         "admin",
         "Brennan"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.replies.detail": {
-    "1": {
-      "label": "how many have a reply",
-      "examples": [
-        "3"
       ]
     }
   },
@@ -2859,386 +3829,6 @@
       ]
     }
   },
-  "gui.dungeontrain.translate.submit.subtitle": {
-    "1": {
-      "label": "the locale being sent",
-      "examples": [
-        "ru_ru"
-      ]
-    },
-    "2": {
-      "label": "how many edits are ready",
-      "examples": [
-        "12"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.submit.queued": {
-    "1": {
-      "label": "how many edits were sent",
-      "examples": [
-        "12"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.submit.pending": {
-    "1": {
-      "label": "how many are still waiting to send",
-      "examples": [
-        "3"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.sent.narration": {
-    "1": {
-      "label": "how many submissions",
-      "examples": [
-        "4"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.sent.units": {
-    "1": {
-      "label": "how many changes it carried",
-      "examples": [
-        "12"
-      ]
-    }
-  },
-  "gui.dungeontrain.translate.sent.partial": {
-    "1": {
-      "label": "how many were accepted",
-      "examples": [
-        "8"
-      ]
-    },
-    "2": {
-      "label": "how many were sent",
-      "examples": [
-        "12"
-      ]
-    }
-  },
-  "chat.dungeontrain.custom_content.packages": {
-    "1": {
-      "label": "the custom content packs, comma-separated",
-      "examples": [
-        "Aether Trains",
-        "Aether Trains, Brennan's Extras"
-      ]
-    }
-  },
-  "chat.dungeontrain.custom_content.now_disabled": {
-    "1": {
-      "label": "the player who turned custom content off",
-      "examples": [
-        "Steve",
-        "Alex"
-      ]
-    }
-  },
-  "gui.dungeontrain.custom_content.packages": {
-    "1": {
-      "label": "the custom content packs, comma-separated",
-      "examples": [
-        "Aether Trains",
-        "Aether Trains, Brennan's Extras"
-      ]
-    }
-  },
-  "commands.dungeontrain.customcontent.status.on": {
-    "1": {
-      "label": "the custom content packs, comma-separated",
-      "examples": [
-        "Aether Trains",
-        "Aether Trains, Brennan's Extras"
-      ]
-    }
-  },
-  "commands.dungeontrain.customcontent.status.off": {
-    "1": {
-      "label": "the packs installed but not loading",
-      "examples": [
-        "Aether Trains"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.full": {
-    "1": {
-      "label": "how many builds a player's profile can hold on the build server",
-      "examples": ["200"]
-    }
-  },
-  "gui.dungeontrain.builder.reconcile.toast.body": {
-    "1": {
-      "label": "how many builds were sent back to the build server",
-      "examples": ["3", "17"]
-    }
-  },
-  "gui.dungeontrain.builder.reconcile.body": {
-    "1": {
-      "label": "how many of the player's builds the build server no longer has",
-      "examples": ["3", "17"]
-    }
-  },
-  "gui.dungeontrain.builder.reconcile.backups.off": {
-    "1": {
-      "label": "how many further builds exist only inside a backup",
-      "examples": ["2", "9"]
-    }
-  },
-  "gui.dungeontrain.builder.reconcile.backups.on": {
-    "1": {
-      "label": "how many further builds exist only inside a backup",
-      "examples": ["2", "9"]
-    }
-  },
-  "gui.dungeontrain.builder.reconcile.started": {
-    "1": {
-      "label": "how many builds are being sent back up to the build server",
-      "examples": ["3", "17"]
-    }
-  },
-  "gui.dungeontrain.builder.reconcile.done": {
-    "1": {
-      "label": "how many builds were restored",
-      "examples": ["3", "17"]
-    }
-  },
-  "gui.dungeontrain.builder.reconcile.partial": {
-    "1": {
-      "label": "how many builds were restored in this run",
-      "examples": ["150"]
-    },
-    "2": {
-      "label": "how many builds are left for the next run",
-      "examples": ["12"]
-    }
-  },
-  "gui.dungeontrain.builder.reconcile.some_failed": {
-    "1": {
-      "label": "how many builds were restored",
-      "examples": ["14"]
-    },
-    "2": {
-      "label": "how many builds could not be sent",
-      "examples": ["2"]
-    }
-  },
-  "gui.dungeontrain.builder.profile.owner_other": {
-    "1": {
-      "label": "the player whose builds are being looked at",
-      "examples": [
-        "Brennan",
-        "Steve"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.favourites.tab.builds": {
-    "1": {
-      "label": "how many builds this player has starred, on the tab that shows them",
-      "examples": ["5", "0"]
-    }
-  },
-  "gui.dungeontrain.builder.favourites.tab.builders": {
-    "1": {
-      "label": "how many builders this player has starred, on the tab that shows them",
-      "examples": ["2", "0"]
-    }
-  },
-  "gui.dungeontrain.builder.favourites.tile": {
-    "1": {
-      "label": "the name of a starred build, as the caption under its tile",
-      "examples": ["brick_cabin", "library"]
-    },
-    "2": {
-      "label": "the player who built it \u2014 this list spans builders, so each tile names its own",
-      "examples": ["Brennan", "Steve"]
-    }
-  },
-  "gui.dungeontrain.builder.creators.row": {
-    "1": {
-      "label": "a builder's name, as a row in the search results",
-      "examples": [
-        "Brennan",
-        "Steve"
-      ]
-    },
-    "2": {
-      "label": "how many builds that builder has on the relay",
-      "examples": [
-        "12",
-        "3"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.unsaved.title": {
-    "1": {
-      "label": "the build on this install that has unsaved editor edits",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.collision.title": {
-    "1": {
-      "label": "the build whose name this install already uses",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.collision.replace.title": {
-    "1": {
-      "label": "the build already on this install, which is being replaced",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.collision.rename_existing": {
-    "1": {
-      "label": "the build already on this install, which would be kept under another name",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.saved": {
-    "1": {
-      "label": "the build that was saved and uploaded",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.upload_failed": {
-    "1": {
-      "label": "the build that saved locally but could not be uploaded",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.too_big": {
-    "1": {
-      "label": "the build that is too large for the relay to accept",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.gone": {
-    "1": {
-      "label": "the build that is no longer on the relay",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.profile.in_use": {
-    "1": {
-      "label": "the build that is currently out on another player's train",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.info.size": {
-    "1": {
-      "label": "the build's length in blocks",
-      "examples": [
-        "9",
-        "24"
-      ]
-    },
-    "2": {
-      "label": "the build's height in blocks",
-      "examples": [
-        "5",
-        "12"
-      ]
-    },
-    "3": {
-      "label": "the build's width in blocks",
-      "examples": [
-        "5",
-        "7"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.info.weight": {
-    "1": {
-      "label": "how often the train picks this build, as a spawn weight",
-      "examples": [
-        "10",
-        "2.5"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.new.saved_build": {
-    "1": {
-      "label": "the name of one of the player's own saved builds",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.room_size.tooltip": {
-    "1": {
-      "label": "which side of the room this button resizes — a translated axis name",
-      "examples": [
-        "Length",
-        "Height"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.saved": {
-    "1": {
-      "label": "the build that was saved",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.save_failed": {
-    "1": {
-      "label": "why the save was refused",
-      "examples": [
-        "no carriage variant",
-        "name already taken"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.open_failed": {
-    "1": {
-      "label": "the build that could not be opened",
-      "examples": [
-        "Brick Carriage",
-        "Long Hall"
-      ]
-    }
-  },
-  "gui.dungeontrain.builder.unsaved.title": {
-    "1": {
-      "label": "how many carriages have unsaved changes",
-      "examples": [
-        "1",
-        "3"
-      ]
-    }
-  },
   "gui.dungeontrain.translate.group.count": {
     "1": {
       "label": "how many variations are in the set",
@@ -3251,6 +3841,15 @@
   "gui.dungeontrain.translate.group.needs": {
     "1": {
       "label": "how many of them still need a human",
+      "examples": [
+        "8",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.group.next.tip": {
+    "1": {
+      "label": "how many of the set still need a human",
       "examples": [
         "8",
         "1"
@@ -3296,628 +3895,219 @@
       ]
     }
   },
-  "gui.dungeontrain.translate.group.next.tip": {
+  "gui.dungeontrain.translate.list.narration": {
     "1": {
-      "label": "how many of the set still need a human",
+      "label": "how many strings are in the list",
       "examples": [
-        "8",
+        "1422"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.replies.detail": {
+    "1": {
+      "label": "how many have a reply",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.translate.request.count": {
+    "1": {
+      "label": "how many players have asked for it",
+      "examples": [
+        "37",
         "1"
       ]
     }
   },
-  "dungeontrain.leaderboard.scope.run": {
+  "gui.dungeontrain.translate.request.sent.count": {
     "1": {
-      "label": "the board's own question, which this clause narrows to a single life",
+      "label": "how many players have asked for it",
       "examples": [
-        {
-          "key": "dungeontrain.leaderboard.carriages.header",
-          "args": []
-        },
-        {
-          "key": "dungeontrain.leaderboard.chests.header",
-          "args": []
-        }
+        "37",
+        "1"
       ]
     }
   },
-  "dungeontrain.leaderboard.scope.total": {
+  "gui.dungeontrain.translate.revert_all.detail": {
     "1": {
-      "label": "the board's own question, which this clause widens to every life",
+      "label": "how many edits will be thrown away",
       "examples": [
-        {
-          "key": "dungeontrain.leaderboard.carriages.header",
-          "args": []
-        },
-        {
-          "key": "dungeontrain.leaderboard.playtime.header",
-          "args": []
-        }
+        "12"
       ]
     }
   },
-  "dungeontrain.leaderboard.you": {
+  "gui.dungeontrain.translate.sent.narration": {
     "1": {
-      "label": "the reader's rank on this board, as a plain number",
+      "label": "how many submissions",
       "examples": [
-        "1",
-        "7",
-        "42"
-      ]
-    },
-    "2": {
-      "label": "the reader's own score, already formatted for this board",
-      "examples": [
-        "1284m",
-        "3h 12m",
-        "$25"
-      ]
-    }
-  },
-  "dungeontrain.leaderboard.you_beyond": {
-    "1": {
-      "label": "the reader's own score, already formatted for this board",
-      "examples": [
-        "96m",
-        "48m",
-        "$5"
-      ]
-    },
-    "2": {
-      "label": "how many ranks the book had room to print",
-      "examples": [
-        "47",
-        "100"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.carriage": {
-    "1": {
-      "label": "the carriage number the reader has reached this run",
-      "examples": [
-        "14",
-        "137"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.playtime": {
-    "1": {
-      "label": "how long the reader has been aboard this run, already formatted",
-      "examples": [
-        "2h 14m",
-        "43m"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.damage_taken": {
-    "1": {
-      "label": "total damage the reader has taken this run, in health points",
-      "examples": [
-        "47",
-        "312"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.chests.one": {
-    "1": {
-      "label": "chests and barrels the reader has opened this run",
-      "examples": [
-        "1",
-        "62"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.chests.other": {
-    "1": {
-      "label": "chests and barrels the reader has opened this run",
-      "examples": [
-        "1",
-        "62"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.mob_kills.one": {
-    "1": {
-      "label": "creatures the reader has killed this run",
-      "examples": [
-        "1",
-        "204"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.mob_kills.other": {
-    "1": {
-      "label": "creatures the reader has killed this run",
-      "examples": [
-        "1",
-        "204"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.distance.one": {
-    "1": {
-      "label": "blocks the reader has travelled this run",
-      "examples": [
-        "100",
-        "8400"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.distance.other": {
-    "1": {
-      "label": "blocks the reader has travelled this run",
-      "examples": [
-        "100",
-        "8400"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.books_read.one": {
-    "1": {
-      "label": "books the reader has read this run",
-      "examples": [
-        "1",
-        "9"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.books_read.other": {
-    "1": {
-      "label": "books the reader has read this run",
-      "examples": [
-        "1",
-        "9"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.books_written.one": {
-    "1": {
-      "label": "books the reader has written this run",
-      "examples": [
-        "1",
         "4"
       ]
     }
   },
-  "book.dungeontrain.statbook.stat.books_written.other": {
+  "gui.dungeontrain.translate.sent.partial": {
     "1": {
-      "label": "books the reader has written this run",
+      "label": "how many were accepted",
       "examples": [
-        "1",
-        "4"
+        "8"
+      ]
+    },
+    "2": {
+      "label": "how many were sent",
+      "examples": [
+        "12"
       ]
     }
   },
-  "book.dungeontrain.statbook.stat.friends.one": {
+  "gui.dungeontrain.translate.sent.units": {
     "1": {
-      "label": "passengers who have come to like the reader this run",
+      "label": "how many changes it carried",
       "examples": [
-        "1",
-        "6"
+        "12"
       ]
     }
   },
-  "book.dungeontrain.statbook.stat.friends.other": {
+  "gui.dungeontrain.translate.submit.pending": {
     "1": {
-      "label": "passengers who have come to like the reader this run",
+      "label": "how many are still waiting to send",
       "examples": [
-        "1",
-        "6"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.encounters.one": {
-    "1": {
-      "label": "passengers the reader has come near this run",
-      "examples": [
-        "1",
-        "38"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.encounters.other": {
-    "1": {
-      "label": "passengers the reader has come near this run",
-      "examples": [
-        "1",
-        "38"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.echoes.one": {
-    "1": {
-      "label": "echoes the reader has put down this run",
-      "examples": [
-        "1",
-        "5"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.echoes.other": {
-    "1": {
-      "label": "echoes the reader has put down this run",
-      "examples": [
-        "1",
-        "5"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.tamed.one": {
-    "1": {
-      "label": "animals the reader has tamed this run",
-      "examples": [
-        "1",
-        "11"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.tamed.other": {
-    "1": {
-      "label": "animals the reader has tamed this run",
-      "examples": [
-        "1",
-        "11"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.player_kills.one": {
-    "1": {
-      "label": "passengers the reader has killed this run",
-      "examples": [
-        "1",
-        "17"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.player_kills.other": {
-    "1": {
-      "label": "passengers the reader has killed this run",
-      "examples": [
-        "1",
-        "17"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.no_chest.one": {
-    "1": {
-      "label": "the most carriages the reader has passed without opening anything",
-      "examples": [
-        "3",
-        "26"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.no_chest.other": {
-    "1": {
-      "label": "the most carriages the reader has passed without opening anything",
-      "examples": [
-        "3",
-        "26"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.backwards.one": {
-    "1": {
-      "label": "carriages the reader has walked back through this run",
-      "examples": [
-        "1",
-        "19"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.backwards.other": {
-    "1": {
-      "label": "carriages the reader has walked back through this run",
-      "examples": [
-        "1",
-        "19"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.pacifist.one": {
-    "1": {
-      "label": "carriages the reader has come without hurting anyone",
-      "examples": [
-        "3",
-        "44"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.pacifist.other": {
-    "1": {
-      "label": "carriages the reader has come without hurting anyone",
-      "examples": [
-        "3",
-        "44"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.open.0": {
-    "1": {
-      "label": "the name of the player reading this note",
-      "examples": [
-        "Brennan",
-        "Steve"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.open.1": {
-    "1": {
-      "label": "the name of the player reading this note",
-      "examples": [
-        "Brennan",
-        "Steve"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.open.2": {
-    "1": {
-      "label": "the name of the player reading this note",
-      "examples": [
-        "Brennan",
-        "Steve"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.open.3": {
-    "1": {
-      "label": "the name of the player reading this note",
-      "examples": [
-        "Brennan",
-        "Steve"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.open.4": {
-    "1": {
-      "label": "the name of the player reading this note",
-      "examples": [
-        "Brennan",
-        "Steve"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.open.5": {
-    "1": {
-      "label": "the name of the player reading this note",
-      "examples": [
-        "Brennan",
-        "Steve"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.open.6": {
-    "1": {
-      "label": "the name of the player reading this note",
-      "examples": [
-        "Brennan",
-        "Steve"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.death_notes.one": {
-    "1": {
-      "label": "Death Notes the reader has signed this run",
-      "examples": [
-        "1",
         "3"
       ]
     }
   },
-  "book.dungeontrain.statbook.stat.death_notes.other": {
+  "gui.dungeontrain.translate.submit.queued": {
     "1": {
-      "label": "Death Notes the reader has signed this run",
+      "label": "how many edits were sent",
       "examples": [
-        "1",
-        "3"
+        "12"
       ]
     }
   },
-  "book.dungeontrain.statbook.stat.love_notes.one": {
+  "gui.dungeontrain.translate.submit.subtitle": {
     "1": {
-      "label": "Love Notes the reader has signed this run",
+      "label": "the locale being sent",
       "examples": [
-        "1",
-        "2"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.love_notes.other": {
-    "1": {
-      "label": "Love Notes the reader has signed this run",
-      "examples": [
-        "1",
-        "2"
-      ]
-    }
-  },
-  "gui.dungeontrain.data_recovery.candidate.backup": {
-    "1": {
-      "label": "the backup file's name",
-      "examples": [
-        "dungeontrain-backup-20260828-114927.zip"
-      ]
-    }
-  },
-  "gui.dungeontrain.data_recovery.candidate.sibling": {
-    "1": {
-      "label": "what the other install holds",
-      "examples": [
-        "builds and progress",
-        "progress"
+        "ru_ru"
       ]
     },
     "2": {
-      "label": "the full path to the other Minecraft install",
+      "label": "how many edits are ready",
       "examples": [
-        "/Users/sam/curseforge/minecraft/Instances/Dungeon Train"
+        "12"
       ]
     }
   },
-  "gui.dungeontrain.data_recovery.done.body": {
+  "gui.dungeontrain.translate.subtitle": {
     "1": {
-      "label": "how many files were put back",
+      "label": "the locale being edited",
       "examples": [
-        "142"
-      ]
-    }
-  },
-  "command.dungeontrain.backup.success": {
-    "1": {
-      "label": "the backup file's name",
-      "examples": [
-        "dungeontrain-backup-20260828-014500.zip"
+        "ru_ru",
+        "pl_pl"
       ]
     },
     "2": {
-      "label": "how many files it holds",
+      "label": "how many strings the list is showing",
       "examples": [
-        "142"
-      ]
-    }
-  },
-  "command.dungeontrain.backup.fail": {
-    "1": {
-      "label": "the error that stopped the backup",
-      "examples": [
-        "java.nio.file.AccessDeniedException: backups"
-      ]
-    }
-  },
-  "command.dungeontrain.restore.entry": {
-    "1": {
-      "label": "the entry's number, for passing to /dtrestore",
-      "examples": [
-        "1",
-        "2"
-      ]
-    },
-    "2": {
-      "label": "what that entry holds",
-      "examples": [
-        "builds and progress",
-        "builds"
+        "1422",
+        "37"
       ]
     },
     "3": {
-      "label": "the backup file, or the path to the other Minecraft install",
+      "label": "how many this player has edited",
       "examples": [
-        "dungeontrain-backup-20260828-014500.zip"
+        "12",
+        "0"
       ]
     }
   },
-  "command.dungeontrain.restore.no_such": {
+  "gui.dungeontrain.translate.switch.message": {
     "1": {
-      "label": "the entry number the player asked for",
+      "label": "the language picked to translate",
       "examples": [
-        "7"
-      ]
-    }
-  },
-  "command.dungeontrain.restore.success": {
-    "1": {
-      "label": "how many files were put back",
-      "examples": [
-        "142"
+        "Polski"
       ]
     },
     "2": {
-      "label": "where they came from",
+      "label": "the language the game is running in",
       "examples": [
-        "dungeontrain-backup-20260828-014500.zip"
+        "English"
       ]
     }
   },
-  "command.dungeontrain.restore.fail": {
+  "gui.dungeontrain.translate.switch.no": {
     "1": {
-      "label": "the error that stopped the restore",
+      "label": "a language name",
       "examples": [
-        "java.util.zip.ZipException: invalid entry"
+        "Polski",
+        "日本語",
+        "Deutsch"
       ]
     }
   },
-  "gui.dungeontrain.data_recovery.candidate.folder": {
+  "gui.dungeontrain.translate.switch.yes": {
     "1": {
-      "label": "the folder the backups are kept in",
+      "label": "a language name",
       "examples": [
-        "/Users/sam/minecraft/dungeontrain/backups"
+        "Polski",
+        "日本語",
+        "Deutsch"
       ]
     }
   },
-  "gui.dungeontrain.data_recovery.candidate.external": {
+  "gui.dungeontrain.version.update": {
     "1": {
-      "label": "the backup file's name",
+      "label": "the newest version number",
       "examples": [
-        "dungeontrain-backup-20260828-114927.zip"
-      ]
-    },
-    "2": {
-      "label": "the folder outside the Minecraft install where it is kept",
-      "examples": [
-        "/Users/sam/Library/Application Support/DungeonTrain/backups"
+        "0.648.0"
       ]
     }
   },
-  "gui.dungeontrain.options.clear_backups": {
+  "gui.dungeontrain.video_tools.reset.done_profile": {
     "1": {
-      "label": "the total size of the backups on disk",
+      "label": "how many profile items were cleared",
       "examples": [
-        "1.2 GB",
-        "512 KB",
-        "0 B"
+        "12"
       ]
     }
   },
-  "gui.dungeontrain.options.clear_backups.confirm.title": {
+  "gui.dungeontrain.video_tools.reset.done_worlds": {
     "1": {
-      "label": "how many backup files will be deleted",
+      "label": "how many worlds were deleted",
       "examples": [
-        "14"
+        "4"
       ]
     }
   },
-  "gui.dungeontrain.options.clear_backups.confirm.both": {
+  "gui.dungeontrain.video_tools.reset.kept": {
     "1": {
-      "label": "the backups folder inside the Minecraft install",
+      "label": "how many other worlds are left alone",
       "examples": [
-        "/Users/sam/minecraft/dungeontrain/backups"
-      ]
-    },
-    "2": {
-      "label": "the backups folder outside the Minecraft install",
-      "examples": [
-        "/Users/sam/Library/Application Support/DungeonTrain/backups"
+        "2"
       ]
     }
   },
-  "gui.dungeontrain.options.clear_backups.confirm.one": {
+  "gui.dungeontrain.video_tools.reset.prompt": {
     "1": {
-      "label": "the backups folder",
+      "label": "the word that has to be typed to confirm",
       "examples": [
-        "/Users/sam/minecraft/dungeontrain/backups"
+        "DELETE"
       ]
     }
   },
-  "gui.dungeontrain.translate.edit.blocked.missing_vars": {
+  "gui.dungeontrain.video_tools.reset.worlds_header": {
     "1": {
-      "label": "the placeholders this translation has dropped",
+      "label": "how many worlds will be deleted",
       "examples": [
-        "%1$s",
-        "%1$s, %2$s"
+        "4"
       ]
     }
   },
-  "gui.dungeontrain.translate.edit.blocked.extra_vars": {
+  "gui.dungeontrain.video_tools.share.desc": {
     "1": {
-      "label": "the placeholders this translation has added",
+      "label": "the Discord invite link",
       "examples": [
-        "%2$s",
-        "%2$s, %3$s"
+        "discord.gg/dungeontrain"
       ]
     }
-  },
-  "gui.dungeontrain.shaders.list.narration": {"1": {"label": "how many shader packs are listed", "examples": ["9"]}},
-  "gui.dungeontrain.shaders.status.missing": {"1": {"label": "the download size of the shader pack", "examples": ["1.1 MB", "534 KB"]}},
-  "gui.dungeontrain.shaders.failed": {"1": {"label": "why the download failed", "examples": ["HTTP 503", "the download did not match its checksum"]}},
-  "gui.dungeontrain.shaders.sort": {"1": {"label": "which order the shader list is in", "examples": ["Most vanilla", "Performance"]}},
-  "gui.dungeontrain.shaders.perf": {"1": {"label": "how demanding the shader pack is", "examples": ["Very light", "Heavy"]}}
+  }
 }

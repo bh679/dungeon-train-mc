@@ -50,7 +50,7 @@ public final class BuilderTileMeshCache {
                        CarriagePartKind partKind, TrackKind trackKind) {}
 
     /** Wrapper so a resolved-to-nothing entry is distinguishable from an absent one. */
-    private record Entry(BuilderTileMesh mesh) {}
+    private record Entry(BuilderTileMesh mesh, TemplateSummary summary) {}
 
     /** Access-ordered, so eviction drops the tile nobody has looked at in the longest. */
     private static final Map<Key, Entry> CACHE = new LinkedHashMap<>(16, 0.75F, true);
@@ -61,7 +61,17 @@ public final class BuilderTileMeshCache {
 
     /** Open the frame's bake budget. Call once per screen render, before drawing any tiles. */
     static void beginFrame() {
-        bakesLeftThisFrame = BAKES_PER_FRAME;
+        beginFrame(BAKES_PER_FRAME);
+    }
+
+    /**
+     * Open the frame's bake budget at an explicit size.
+     *
+     * <p>A grid of small square tiles can afford two: each bake is still tens of milliseconds, so
+     * anything higher is a lurch again.</p>
+     */
+    static void beginFrame(int bakes) {
+        bakesLeftThisFrame = Math.max(0, bakes);
     }
 
     /**
@@ -77,21 +87,44 @@ public final class BuilderTileMeshCache {
         if (kind == null || id == null || id.isEmpty()) {
             return null;
         }
-        Key key = new Key(kind, id, partKind, trackKind);
+        Entry entry = resolve(new Key(kind, id, partKind, trackKind));
+        return entry == null ? null : entry.mesh();
+    }
+
+    /**
+     * This tile's data-sheet numbers, or null while its bake is still queued.
+     *
+     * <p>Shares the bake with {@link #meshFor}: the file is read once and both answers are kept,
+     * so a sheet beside a drawn tile costs a map lookup.</p>
+     */
+    static TemplateSummary summaryFor(BuilderPhotoPaths.Kind kind, String id,
+                                      CarriagePartKind partKind, TrackKind trackKind) {
+        if (kind == null || id == null || id.isEmpty()) {
+            return null;
+        }
+        Entry entry = resolve(new Key(kind, id, partKind, trackKind));
+        return entry == null ? null : entry.summary();
+    }
+
+    /** The cached entry, baking it within this frame's budget, or null when it must wait. */
+    private static Entry resolve(Key key) {
         Entry cached = CACHE.get(key);
         if (cached != null) {
-            return cached.mesh();
+            return cached;
         }
         if (bakesLeftThisFrame <= 0) {
             return null;
         }
         bakesLeftThisFrame--;
 
-        Map<BlockPos, BlockState> cells = BuilderTileTemplates.cells(kind, id, partKind, trackKind);
+        BuilderTileTemplates.Loaded loaded = BuilderTileTemplates.load(
+                key.kind(), key.id(), key.partKind(), key.trackKind());
+        Map<BlockPos, BlockState> cells = loaded.cells();
         BuilderTileMesh mesh = cells.isEmpty() ? null : BuilderTileMesh.bake(cells);
-        CACHE.put(key, new Entry(mesh));
+        Entry entry = new Entry(mesh, loaded.summary());
+        CACHE.put(key, entry);
         evictDown();
-        return mesh;
+        return entry;
     }
 
     /**

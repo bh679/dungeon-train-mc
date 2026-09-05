@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.client.menu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Inventory;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -39,21 +38,14 @@ public final class CommandMenuGuiScreen extends Screen {
     // Colours carried over from the world-space renderer so the menu reads the same.
     private static final int PANEL_BG      = 0xD0000000;
     private static final int SCREEN_DIM    = 0x80101010;
-    private static final int CELL_IDLE     = 0x30FFFFFF;
-    private static final int CELL_HOVER    = 0xB0FFCC33;
-    private static final int TOGGLE_ON     = 0x8040AA40;
-    private static final int TOGGLE_OFF    = 0x40FFFFFF;
-    private static final int SAVED_GREY    = 0x40808080;
-    private static final int HIGHLIGHT     = 0x80FFAA33;
-    private static final int TYPING_BG     = 0xB033FF99;
-    private static final int TEXT_NORMAL   = 0xFFFFFFFF;
-    private static final int TEXT_ON_HOVER = 0xFF000000;
-    private static final int TEXT_HEADER   = 0xFFFFEEBB;
+    private static final int CELL_IDLE     = MenuRowPainter.CELL_IDLE;
+    private static final int CELL_HOVER    = MenuRowPainter.CELL_HOVER;
+    private static final int TEXT_HEADER   = MenuRowPainter.TEXT_HEADER;
     private static final int SCROLLBAR_TRACK = 0x40FFFFFF;
     private static final int SCROLLBAR_THUMB = 0xC0FFEEBB;
 
     /** Horizontal padding inside a cell before its label starts. */
-    private static final int CELL_PAD_X = 2;
+    private static final int CELL_PAD_X = MenuRowPainter.CELL_PAD_X;
 
     /**
      * Distance from the top of the screen to the top of the panel.
@@ -332,6 +324,7 @@ public final class CommandMenuGuiScreen extends Screen {
         gg.fill(x1, thumbY, x2, thumbY + thumbH, SCROLLBAR_THUMB);
     }
 
+    /** One row of a panel, painted by the shared {@link MenuRowPainter}. */
     private void drawRow(
         GuiGraphics gg, CommandMenuEntry entry,
         int px, int py, int pw, int rowIndex, int slot, boolean hovered, int hoveredSub
@@ -339,128 +332,19 @@ public final class CommandMenuGuiScreen extends Screen {
         int top = py + CommandMenuLayout.rowTop(slot);
         int left = px + CommandMenuLayout.PANEL_PAD;
         int right = px + pw - CommandMenuLayout.PANEL_PAD;
-        int usable = right - left;
-
-        double[] bounds = cellBoundaries(entry);
-        CommandMenuEntry[] cells = cellsOf(entry);
-
-        if (cells.length == 1) {
-            drawCell(gg, cells[0], left, top, right, hovered, rowIndex, 0);
-            return;
-        }
-
-        int prev = left;
-        for (int c = 0; c < cells.length; c++) {
-            int edge = (c == cells.length - 1)
-                ? right
-                : left + (int) Math.round(bounds[c] * usable);
-            drawCell(gg, cells[c], prev, top, edge, hovered && hoveredSub == c, rowIndex, c);
-            prev = edge;
-        }
+        MenuRowPainter.drawRow(gg, this.font, entry, left, top, right, CommandMenuLayout.ROW_H,
+            rowIndex, hovered, hoveredSub, typing());
     }
 
-    private void drawCell(
-        GuiGraphics gg, CommandMenuEntry entry,
-        int x1, int top, int x2, boolean hovered, int rowIndex, int subIdx
-    ) {
-        int bottom = top + CommandMenuLayout.ROW_H;
-        boolean isLabel = entry instanceof CommandMenuEntry.Label;
-
-        if (isTypingHere(rowIndex, subIdx)) {
-            gg.fill(x1, top, x2, bottom, TYPING_BG);
-            drawLabel(gg, CommandMenuState.typedBuffer() + "_", (x1 + x2) / 2,
-                top + (CommandMenuLayout.ROW_H - this.font.lineHeight) / 2,
-                TEXT_ON_HOVER, false);
-            return;
-        }
-
-        int tint;
-        if (hovered && !isLabel) {
-            tint = CELL_HOVER;
-        } else {
-            int base = baseTintFor(entry);
-            tint = base != 0 ? base : (isLabel ? 0 : CELL_IDLE);
-        }
-        if (tint != 0) gg.fill(x1, top, x2, bottom, tint);
-
-        boolean dark = hovered && !isLabel;
-        String label = labelFor(entry);
-        int color = dark ? TEXT_ON_HOVER : TEXT_NORMAL;
-        int textY = top + (CommandMenuLayout.ROW_H - this.font.lineHeight) / 2;
-        int avail = (x2 - x1) - CELL_PAD_X * 2;
-        if (avail > 0 && this.font.width(label) > avail) {
-            label = this.font.plainSubstrByWidth(label, avail);
-        }
-        // Shadow only under light text. A black label's shadow is also black, and offset by a
-        // pixel it reads as doubled, smeared text rather than as depth — which is exactly what
-        // the hover state looked like.
-        drawLabel(gg, label, (x1 + x2) / 2, textY, color, !dark);
+    /** The open typing field, for the painter, or null when none is open. */
+    private static MenuRowPainter.Typing typing() {
+        if (!CommandMenuState.typingMode()) return null;
+        return new MenuRowPainter.Typing(CommandMenuState.typingOriginRowIdx(),
+            CommandMenuState.typingOriginSubIdx(), CommandMenuState.typedBuffer());
     }
 
-    /**
-     * Centred text with explicit shadow control.
-     *
-     * <p>{@code GuiGraphics.drawCenteredString} always draws a shadow, which is why this exists.</p>
-     */
     private void drawLabel(GuiGraphics gg, String text, int centerX, int y, int color, boolean shadow) {
-        gg.drawString(this.font, text, centerX - this.font.width(text) / 2, y, color, shadow);
-    }
-
-    private static boolean isTypingHere(int rowIdx, int subIdx) {
-        return CommandMenuState.typingMode()
-            && CommandMenuState.typingOriginRowIdx() == rowIdx
-            && CommandMenuState.typingOriginSubIdx() == subIdx;
-    }
-
-    /** Base tint, matching the world-space renderer so state reads identically. */
-    private static int baseTintFor(CommandMenuEntry entry) {
-        if (entry instanceof CommandMenuEntry.Toggle t)     return t.state() ? TOGGLE_ON : TOGGLE_OFF;
-        if (entry instanceof CommandMenuEntry.SaveAction s) return s.saved() ? SAVED_GREY : TOGGLE_ON;
-        if (entry instanceof CommandMenuEntry.Label)        return 0;
-        if (entry instanceof CommandMenuEntry.Run r     && r.highlighted())  return HIGHLIGHT;
-        if (entry instanceof CommandMenuEntry.Stay s    && s.highlighted())  return HIGHLIGHT;
-        if (entry instanceof CommandMenuEntry.DrillIn d && d.highlighted())  return HIGHLIGHT;
-        if (entry instanceof CommandMenuEntry.ClientAction c && c.highlighted()) return HIGHLIGHT;
-        return 0;
-    }
-
-    private static String labelFor(CommandMenuEntry entry) {
-        if (entry instanceof CommandMenuEntry.Toggle t) {
-            return t.showStateText() ? t.label() + (t.state() ? " [ON]" : " [OFF]") : t.label();
-        }
-        return entry.label();
-    }
-
-    // ------------------------------------------------------------------
-    // Row decomposition — one place that knows how a row splits into cells,
-    // shared by the renderer and the hit-test so they cannot disagree.
-    // ------------------------------------------------------------------
-
-    private static CommandMenuEntry[] cellsOf(CommandMenuEntry entry) {
-        if (entry instanceof CommandMenuEntry.Split s) {
-            return new CommandMenuEntry[] { s.leftEntry(), s.rightEntry() };
-        }
-        if (entry instanceof CommandMenuEntry.Triple t) {
-            return new CommandMenuEntry[] { t.leftEntry(), t.middleEntry(), t.rightEntry() };
-        }
-        if (entry instanceof CommandMenuEntry.Quad q) {
-            return new CommandMenuEntry[] { q.e1(), q.e2(), q.e3(), q.e4() };
-        }
-        return new CommandMenuEntry[] { entry };
-    }
-
-    /** Panel-relative split fractions for a multi-cell row; empty for single-cell rows. */
-    private static double[] cellBoundaries(CommandMenuEntry entry) {
-        if (entry instanceof CommandMenuEntry.Split s) {
-            return new double[] { s.leftFraction() };
-        }
-        if (entry instanceof CommandMenuEntry.Triple t) {
-            return new double[] { t.leftFraction(), t.middleEnd() };
-        }
-        if (entry instanceof CommandMenuEntry.Quad q) {
-            return new double[] { q.boundary1(), q.boundary2(), q.boundary3() };
-        }
-        return new double[0];
+        MenuRowPainter.drawLabel(gg, this.font, text, centerX, y, color, shadow);
     }
 
     // ------------------------------------------------------------------
@@ -526,22 +410,8 @@ public final class CommandMenuGuiScreen extends Screen {
             int i = slot < sticky ? slot : sticky + scroll + (slot - sticky);
             if (i >= entries.size()) return -1;
 
-            CommandMenuEntry row = entries.get(i);
-            if (row instanceof CommandMenuEntry.Label) return -1;
-
-            CommandMenuEntry[] cells = cellsOf(row);
-            double[] bounds = cellBoundaries(row);
-            int usable = right - left;
-
-            int sub = 0;
-            for (int c = 0; c < bounds.length; c++) {
-                if (mouseX >= left + (int) Math.round(bounds[c] * usable)) sub = c + 1;
-            }
-
-            CommandMenuEntry cell = cells[Math.min(sub, cells.length - 1)];
-            if (cell instanceof CommandMenuEntry.Label) return -1;
-            if (cell instanceof CommandMenuEntry.SaveAction sa && sa.saved()) return -1;
-
+            int sub = MenuRowPainter.hitCell(entries.get(i), mouseX, left, right);
+            if (sub < 0) return -1;
             return ((long) i << 32) | (sub & 0xFFFFFFFFL);
         }
         return -1;
@@ -604,10 +474,7 @@ public final class CommandMenuGuiScreen extends Screen {
             return true;
         }
 
-        if (this.minecraft != null && this.minecraft.player != null) {
-            this.minecraft.player.getInventory().swapPaint(scrollY);
-            return true;
-        }
+        if (HotbarPassthrough.scroll(this.minecraft, scrollY)) return true;
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
@@ -641,21 +508,9 @@ public final class CommandMenuGuiScreen extends Screen {
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
 
-        if (hotbarKey(keyCode, scanCode)) return true;
+        if (HotbarPassthrough.key(this.minecraft, keyCode, scanCode)) return true;
 
         return super.keyPressed(keyCode, scanCode, modifiers);
-    }
-
-    /** 1-9 select a hotbar slot, exactly as they would with no screen open. */
-    private boolean hotbarKey(int keyCode, int scanCode) {
-        if (this.minecraft == null || this.minecraft.player == null) return false;
-        for (int i = 0; i < 9; i++) {
-            if (this.minecraft.options.keyHotbarSlots[i].matches(keyCode, scanCode)) {
-                this.minecraft.player.getInventory().selected = i;
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

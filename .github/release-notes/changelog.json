@@ -11232,6 +11232,39 @@
       "released": true,
       "released_in": "v0.795.0",
       "released_at": "2026-09-05T06:48:12Z"
+    },
+    {
+      "id": "x-menu-inventory-screen",
+      "version": "0.796.0",
+      "type": "feat",
+      "title": "The editor's X menu is an inventory screen",
+      "summary": "The Train Editor's X menu is now a full screen laid out like an inventory: tabs across the top, a searchable grid of 3D template previews, and a detail pane where the numbers on the sheet are the things you edit. Dimensional carriages gained the most from it \u2014 a room's sub-variants open under it, Test the Carriage works on whichever room you picked, and a room set to Daylight is lit like one wherever it stands.",
+      "highlights": [
+        "Browse every template in one grid, filter by name, and see each one turning in 3D before you go anywhere near it",
+        "Edit a template's weight, size, level band and stage by clicking the number on its data sheet",
+        "Test the Carriage no longer needs you standing in the room, and a Daylight room is bright in the test as well as on its plot",
+        "Dimensional carriage plots no longer overlap or leave copies of themselves behind",
+        "Rooms can be 90 blocks tall \u2014 every world's basement grew to stand one up \u2014 with new builds capped at 64 per side",
+        "Skybox blocks can be switched off to build behind them, and switch themselves back on for a test"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "terrarium-dimensional-carriage",
+      "version": "0.796.0",
+      "type": "content",
+      "title": "A new dimensional carriage: the Terrarium",
+      "summary": "Firefly_on_ytb built the Terrarium \u2014 a tall glass house of sand, grass and trees, open to the daylight \u2014 and it joins House's rooms, so a dimensional carriage can now drop you into it from level 4 onward.",
+      "highlights": [
+        "Built by Firefly_on_ytb"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

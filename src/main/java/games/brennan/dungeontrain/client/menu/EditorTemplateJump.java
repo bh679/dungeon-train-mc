@@ -24,6 +24,28 @@ public final class EditorTemplateJump {
     private EditorTemplateJump() {}
 
     /**
+     * Take the player to this template's plot, switching editor category first when it is not the
+     * one they are standing in.
+     *
+     * <p>Two commands rather than one, and the order matters: a category switch clears and restamps
+     * every plot, so it is never run when the player is already in the right category. Answers
+     * whether the editor had anywhere to send them — false for a carriage group, which the editor
+     * has no category for, and for a kind it cannot address.</p>
+     */
+    public static boolean go(BuilderPhotoPaths.Kind kind, String id, String subKind, String currentCategory) {
+        String target = categoryIdFor(kind, subKind);
+        if (target == null) return false;
+        String enter = enterCommandFor(kind, id, subKind);
+        if (target.equalsIgnoreCase(currentCategory)) {
+            if (enter != null) CommandRunner.run(enter);
+            return true;
+        }
+        CommandRunner.run("dungeontrain editor " + target);
+        if (enter != null) CommandRunner.run(enter);
+        return true;
+    }
+
+    /**
      * The editor category a template of this kind is edited in, or {@code null} when the editor has
      * no home for it.
      *

@@ -59,13 +59,24 @@ final class BuilderTileTemplates {
      */
     static Map<BlockPos, BlockState> cells(BuilderPhotoPaths.Kind kind, String id,
                                            CarriagePartKind partKind, TrackKind trackKind) {
+        return load(kind, id, partKind, trackKind).cells();
+    }
+
+    /** A template's blocks and the numbers its data sheet shows, read together from one file. */
+    record Loaded(Map<BlockPos, BlockState> cells, TemplateSummary summary) {
+        static final Loaded EMPTY = new Loaded(Map.of(), TemplateSummary.NONE);
+    }
+
+    /** As {@link #cells}, also tallying the template for its data sheet. */
+    static Loaded load(BuilderPhotoPaths.Kind kind, String id,
+                       CarriagePartKind partKind, TrackKind trackKind) {
         Optional<CompoundTag> tag = rawTag(kind, id, partKind, trackKind);
         if (tag.isEmpty()) {
-            return Map.of();
+            return Loaded.EMPTY;
         }
         HolderGetter<Block> blocks = blockRegistry();
         if (blocks == null) {
-            return Map.of();
+            return Loaded.EMPTY;
         }
         StructureTemplate template = new StructureTemplate();
         try {
@@ -73,9 +84,13 @@ final class BuilderTileTemplates {
         } catch (RuntimeException e) {
             // A malformed or future-version template is a tile that shows its photo, not a crash
             // in the middle of a screen render.
-            return Map.of();
+            return Loaded.EMPTY;
         }
-        return TemplateCells.of(template);
+        Map<BlockPos, BlockState> cells = TemplateCells.of(template);
+        TemplateCells.NbtTally tally = TemplateCells.tallyBlockEntities(template);
+        TemplateSummary summary = new TemplateSummary(cells.size(), template.getSize(),
+                tally.blockEntities(), tally.containers(), TemplateCells.entityCount(tag.get()));
+        return new Loaded(cells, summary);
     }
 
     /** The same store-per-kind switch {@link BuilderPhotoPaths#photoFor} makes, for the NBT. */

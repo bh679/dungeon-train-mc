@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.EditorHistoryPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorStrayBlocksPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
@@ -97,6 +98,9 @@ public final class VariantOverlayRenderer {
      * absent means "last sent was an empty snapshot (or none yet)", so a
      * fresh non-empty plot always pushes on first tick.
      */
+    /** Last undo/redo labels sent, so a steady editor generates no history packets. */
+    private static final Map<UUID, String> LAST_HISTORY_KEY = new HashMap<>();
+
     private static final Map<UUID, String> LAST_LOCK_SNAPSHOT_KEY = new HashMap<>();
 
     /**
@@ -206,6 +210,11 @@ public final class VariantOverlayRenderer {
         if (lastStatus != null) {
             DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
         }
+        // The history stack itself survives leaving the build area, but the menu that reads these
+        // labels is gone with it — so stop describing steps until they come back.
+        if (LAST_HISTORY_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, EditorHistoryPacket.empty());
+        }
         PartPositionMenuController.forget(player);
         // Take the plot's daylight back off — they have left the build area, and the client would
         // otherwise hold a box it can no longer be inside.
@@ -255,6 +264,7 @@ public final class VariantOverlayRenderer {
                 continue;
             }
             updateEditorStatus(player, dims);
+            pushHistorySnapshot(player);
             pushLockIdSnapshot(player);
             pushPlotLabelsSnapshot(player, dims);
             pushTypeMenusSnapshot(player, dims);
@@ -849,6 +859,20 @@ public final class VariantOverlayRenderer {
             player.getName().getString());
         DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
             menus, EditorStageSelection.effective(), helpPanelDismissed));
+    }
+
+    /**
+     * Tell the client what Undo and Redo would step through, so the menu's two history buttons can
+     * name it. Deduped like every other snapshot — an editor nobody is editing sends nothing.
+     */
+    private static void pushHistorySnapshot(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        String undo = EditorEditHistory.peekUndoLabel(uuid);
+        String redo = EditorEditHistory.peekRedoLabel(uuid);
+        String key = undo + " " + redo;
+        if (key.equals(LAST_HISTORY_KEY.get(uuid))) return;
+        LAST_HISTORY_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player, new EditorHistoryPacket(undo, redo));
     }
 
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */

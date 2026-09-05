@@ -152,6 +152,10 @@ public final class SkyboxPunchRenderer {
             return;
         }
 
+        // The author's switch, except inside a test: Test the Carriage shows the room as a player
+        // meets it, and a sky wall that is not drawn there is the test lying about the build.
+        if (!ClientDisplayConfig.areSkyboxBlocksOn()
+            && !games.brennan.dungeontrain.client.PortalTestSessionState.active()) return;
         if (!ClientDisplayConfig.isSkyboxPunchEnabled()) return;
 
         // Read before the shader gate — it is a volatile field read, and taking it here is what
