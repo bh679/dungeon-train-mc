@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.GenerationChunkHolder;
@@ -29,6 +30,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Random;
 
 /**
@@ -77,6 +79,16 @@ final class PortalChunkFeatures {
 
     /** How many structures are tried before the sample settles for having none. */
     private static final int STRUCTURE_ATTEMPTS = 12;
+
+    /**
+     * How often a room's structure is drawn from somewhere else entirely — an End city in a meadow,
+     * a desert pyramid in a crimson forest.
+     *
+     * <p>One in ten, which is the point: often enough that a player who rides long enough meets one
+     * and has to work out what they are looking at, rare enough that the other nine read as the
+     * dimension they came from.</p>
+     */
+    private static final float FOREIGN_STRUCTURE_CHANCE = 0.10F;
 
     private PortalChunkFeatures() {}
 
@@ -197,16 +209,27 @@ final class PortalChunkFeatures {
     private static void plantStructure(ServerLevel level, NoiseBasedChunkGenerator generator,
                                        RandomState random, ProtoChunk chunk, BoundingBox window,
                                        long worldSeed, int pairKey) {
-        List<Structure> candidates = fittingStructures(level, generator, chunk);
+        // Deterministic in the seed and the pair, like every other choice a pair makes.
+        Random rng = new Random(worldSeed ^ ((long) pairKey * 0x9E3779B97F4A7C15L));
+        boolean foreign = rng.nextFloat() < FOREIGN_STRUCTURE_CHANCE;
+        List<Structure> candidates = foreign
+            ? foreignStructures(level, chunk, window)
+            : fittingStructures(level, chunk, window);
+        // A dimension whose biomes admit everything in the registry has nothing foreign to offer,
+        // and a sample nothing admits has nothing native to — either way the other list stands in
+        // rather than the room going without.
+        if (candidates.isEmpty()) {
+            candidates = foreign
+                ? fittingStructures(level, chunk, window)
+                : foreignStructures(level, chunk, window);
+            foreign = !foreign;
+        }
         if (candidates.isEmpty()) {
             LOGGER.warn("[DungeonTrain] Chunk dimension pair {} has no structure to plant — nothing "
                 + "in the registry admits the biome it sampled", pairKey);
             return;
         }
 
-        // Deterministic in the seed and the pair, like every other choice a pair makes, so a
-        // re-sampled room is the same room.
-        Random rng = new Random(worldSeed ^ ((long) pairKey * 0x9E3779B97F4A7C15L));
         StructureStart fallback = null;
         for (int attempt = 0; attempt < STRUCTURE_ATTEMPTS && !candidates.isEmpty(); attempt++) {
             Structure structure = candidates.remove(rng.nextInt(candidates.size()));
@@ -219,8 +242,8 @@ final class PortalChunkFeatures {
             if (!start.isValid()) continue;
             if (spanOf(start).intersects(window)) {
                 register(chunk, start);
-                LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {} where it generated",
-                    pairKey, nameOf(level, structure));
+                LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{} where it generated",
+                    pairKey, nameOf(level, structure), foreign ? " (from another dimension)" : "");
                 return;
             }
             if (fallback == null) fallback = start;
@@ -241,8 +264,9 @@ final class PortalChunkFeatures {
         int lift = window.minY() + PortalChunkTerrain.SURFACE_ROW - span.minY();
         fallback.getPieces().forEach(piece -> piece.move(0, lift, 0));
         register(chunk, fallback);
-        LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}, moved {} blocks onto the "
-            + "room's ground", pairKey, nameOf(level, fallback.getStructure()), lift);
+        LOGGER.info("[DungeonTrain] Chunk dimension pair {} planted {}{}, moved {} blocks onto the "
+            + "room's ground", pairKey, nameOf(level, fallback.getStructure()),
+            foreign ? " (from another dimension)" : "", lift);
     }
 
     /** What a structure is called, for the log — its registry id, or its class when unregistered. */
@@ -271,21 +295,64 @@ final class PortalChunkFeatures {
         return span == null ? start.getBoundingBox() : span;
     }
 
-    /** Every structure whose own biome list admits the biome at the sample's surface. */
-    private static List<Structure> fittingStructures(ServerLevel level,
-                                                     NoiseBasedChunkGenerator generator,
-                                                     ProtoChunk chunk) {
-        Holder<Biome> biome = chunk.getNoiseBiome(
-            net.minecraft.core.QuartPos.fromBlock(chunk.getPos().getMiddleBlockX()),
-            net.minecraft.core.QuartPos.fromBlock(
-                chunk.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG,
-                    chunk.getPos().getMiddleBlockX(), chunk.getPos().getMiddleBlockZ())),
-            net.minecraft.core.QuartPos.fromBlock(chunk.getPos().getMiddleBlockZ()));
+    /**
+     * Every structure whose own biome list admits a biome the sample actually contains.
+     *
+     * <p>Read across the chunk rather than off its middle column, which is what starved the End: an
+     * island's edge is {@code the_end} — the void biome, which no structure admits — a few blocks
+     * from the {@code end_highlands} an End city wants, and a single column lands on one or the
+     * other. Sampling the biome container's own grid asks the question the chunk can actually
+     * answer.</p>
+     */
+    private static List<Structure> fittingStructures(ServerLevel level, ProtoChunk chunk,
+                                                     BoundingBox window) {
+        Set<Holder<Biome>> present = biomesIn(chunk, window);
         List<Structure> fitting = new ArrayList<>();
         for (Structure structure : level.registryAccess().registryOrThrow(Registries.STRUCTURE)) {
-            if (structure.biomes().contains(biome)) fitting.add(structure);
+            if (admitsAny(structure, present)) fitting.add(structure);
         }
         return fitting;
+    }
+
+    /**
+     * Every structure that belongs to <b>somewhere else</b> — one the sample's own biomes do not
+     * admit.
+     *
+     * <p>What the one-in-ten roll draws from: an End city standing in a meadow, a desert pyramid in
+     * a crimson forest. It only reads as a mistake if it turns up often, which is what the odds are
+     * for.</p>
+     */
+    private static List<Structure> foreignStructures(ServerLevel level, ProtoChunk chunk,
+                                                     BoundingBox window) {
+        Set<Holder<Biome>> present = biomesIn(chunk, window);
+        List<Structure> foreign = new ArrayList<>();
+        for (Structure structure : level.registryAccess().registryOrThrow(Registries.STRUCTURE)) {
+            if (!admitsAny(structure, present)) foreign.add(structure);
+        }
+        return foreign;
+    }
+
+    private static boolean admitsAny(Structure structure, Set<Holder<Biome>> biomes) {
+        for (Holder<Biome> biome : biomes) {
+            if (structure.biomes().contains(biome)) return true;
+        }
+        return false;
+    }
+
+    /** The biomes the sample holds across the rows the room will show, on the container's own grid. */
+    private static Set<Holder<Biome>> biomesIn(ProtoChunk chunk, BoundingBox window) {
+        Set<Holder<Biome>> present = new java.util.LinkedHashSet<>();
+        int minQuartX = QuartPos.fromBlock(chunk.getPos().getMinBlockX());
+        int minQuartZ = QuartPos.fromBlock(chunk.getPos().getMinBlockZ());
+        for (int qx = 0; qx < 4; qx++) {
+            for (int qz = 0; qz < 4; qz++) {
+                for (int y = window.minY(); y <= window.maxY(); y += 8) {
+                    present.add(chunk.getNoiseBiome(
+                        minQuartX + qx, QuartPos.fromBlock(y), minQuartZ + qz));
+                }
+            }
+        }
+        return present;
     }
 
     /**

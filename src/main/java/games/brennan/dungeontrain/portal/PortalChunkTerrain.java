@@ -323,10 +323,12 @@ public final class PortalChunkTerrain {
                 // The first number is what a portal carriage waits out before it can cross at all,
                 // so it is the one worth watching; the second is only how long the room takes to
                 // grow afterwards.
-                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} at {}: ground in "
-                        + "{} ms, decoration in {} ms",
-                    pairKey, source, sample.pos(), ground,
-                    System.currentTimeMillis() - decoratingFrom);
+                PortalChunkSlice decorated = READY.get(pairKey);
+                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} ({}) at {}: "
+                        + "ground in {} ms, decoration in {} ms, {} mob(s) generated with it",
+                    pairKey, source, sample.level().dimension().location(), sample.pos(), ground,
+                    System.currentTimeMillis() - decoratingFrom,
+                    decorated == null ? 0 : decorated.occupants().size());
             } catch (Throwable t) {
                 // A failed sample is a room that stamps as its plain template — never a crashed
                 // worker, and never a pair that retries the same failure every tick.
