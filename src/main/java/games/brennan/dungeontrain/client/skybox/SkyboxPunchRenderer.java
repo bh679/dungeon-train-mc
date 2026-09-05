@@ -108,7 +108,10 @@ public final class SkyboxPunchRenderer {
         // re-enabling mid-session has a warm index on the next sweep.
         SkyboxBlockIndex.reportCamera(cam);
 
-        if (!ClientDisplayConfig.areSkyboxBlocksOn()) return;
+        // The author's switch, except inside a test: Test the Carriage shows the room as a player
+        // meets it, and a sky wall that is not drawn there is the test lying about the build.
+        if (!ClientDisplayConfig.areSkyboxBlocksOn()
+            && !games.brennan.dungeontrain.client.PortalTestSessionState.active()) return;
         if (!ClientDisplayConfig.isSkyboxPunchEnabled()) return;
         if (GraphicsCapabilities.shaderPackActive()) return;
 

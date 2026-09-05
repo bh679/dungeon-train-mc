@@ -85,6 +85,18 @@ public final class PortalTestSession {
         return SESSIONS.remove(player);
     }
 
+    /**
+     * Whether anybody is inside a test right now.
+     *
+     * <p>For the questions a test's answer changes that are asked without a player to hand — chunk
+     * occlusion, most of all. The editor is a single-player surface, so "somebody is testing" and
+     * "this player is testing" are the same fact there; on a dedicated server this is simply never
+     * true, and nothing that reads it applies.</p>
+     */
+    public static boolean anyActive() {
+        return !SESSIONS.isEmpty();
+    }
+
     public static boolean has(UUID player) {
         return SESSIONS.containsKey(player);
     }
