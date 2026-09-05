@@ -179,7 +179,13 @@ final class PortalChunkFeatures {
                     attempt++) {
                 generator.spawnOriginalMobs(workspace.region());
             }
-            spawnBiomeNatives(level, workspace.region(), chunk, window, worldSeed, pairKey);
+            // Only where the passes above left the room empty. An Overworld chunk keeps its sheep
+            // and its structure's people and gets nothing else; a Nether one, whose animals are
+            // striders that need a lava lake to stand in and rarely find one, falls through to what
+            // else lives there.
+            if (chunk.getEntities().isEmpty()) {
+                spawnBiomeNatives(level, workspace.region(), chunk, window, worldSeed, pairKey);
+            }
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Chunk dimension decoration failed for pair {} — the room "
                 + "keeps its bare terrain", pairKey, t);
@@ -190,13 +196,15 @@ final class PortalChunkFeatures {
      * Put a few of the sampled biome's own inhabitants in the room — whatever that biome actually
      * spawns.
      *
-     * <p><b>Passive where there is passive, hostile only where there is nothing else.</b> A biome
-     * with a creature list has already been asked for it by {@code spawnOriginalMobs} above, and an
+     * <p><b>Passive where there is passive, hostile only where there is nothing else.</b> An
      * Overworld room should be the sheep and the pigs that live in that meadow plus whoever came
-     * with its structure — not a meadow with three zombies standing in it. So this fires for a
-     * position whose biome has <i>no</i> creature spawns, and takes its monster list instead: which
-     * in practice is the Nether and the End, where the zombified piglins and endermen are what
-     * naturally lives there rather than an intrusion.</p>
+     * with its structure — not a meadow with three zombies standing in it — so this runs only when
+     * the passes before it left the room empty.</p>
+     *
+     * <p>Emptiness, and deliberately not "this biome has no animals to offer": the Nether's biomes
+     * <i>do</i> carry a creature list, and it is the strider, which spawns standing in lava and so
+     * almost never places in a sampled chunk. Asked whether animals were available, the Nether says
+     * yes and stays empty. Asked whether any landed, it says no and gets its zombified piglins.</p>
      *
      * <p><b>Why the game cannot be left to do it.</b> Ongoing spawning asks the biome at the position
      * being spawned into, and a chunk dimension's room sits in the sealed basement under the train —
@@ -211,7 +219,6 @@ final class PortalChunkFeatures {
         int placed = 0;
         int noRoom = 0;
         int noMobs = 0;
-        int hasCreatures = 0;
         for (int attempt = 0; attempt < MONSTER_ATTEMPTS && placed < MONSTERS_PER_ROOM; attempt++) {
             int x = chunk.getPos().getMinBlockX() + random.nextInt(PortalChunkTerrain.SIZE);
             int z = chunk.getPos().getMinBlockZ() + random.nextInt(PortalChunkTerrain.SIZE);
@@ -224,11 +231,6 @@ final class PortalChunkFeatures {
             Holder<Biome> biome = chunk.getNoiseBiome(
                 QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z));
             MobSpawnSettings spawns = biome.value().getMobSettings();
-            // Somewhere with animals is somewhere the creature pass has already spoken for.
-            if (!spawns.getMobs(MobCategory.CREATURE).isEmpty()) {
-                hasCreatures++;
-                continue;
-            }
             Optional<MobSpawnSettings.SpawnerData> pick =
                 spawns.getMobs(MobCategory.MONSTER).getRandom(random);
             if (pick.isEmpty()) {
@@ -244,9 +246,7 @@ final class PortalChunkFeatures {
             region.addFreshEntity(mob);
             placed++;
         }
-        // Silent for an ordinary Overworld room, where every position is left to the creature pass
-        // and placing none of these is the correct answer rather than a shortfall.
-        if (placed < MONSTERS_PER_ROOM && hasCreatures == 0) {
+        if (placed < MONSTERS_PER_ROOM) {
             LOGGER.info("[DungeonTrain] Chunk dimension pair {} placed {} of {} natives — {} "
                     + "position(s) had nowhere to stand, {} had an empty spawn list",
                 pairKey, placed, MONSTERS_PER_ROOM, noRoom, noMobs);
