@@ -108,6 +108,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "outsidethebox": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone"
+  },
   "parkour": {
     "weight": 3,
     "minLevel": 10,
@@ -123,8 +127,8 @@
     "mode": "endless_repetition"
   },
   "peateargriffin": {
-    "weight": 2,
-    "mode": "endless_repetition/exact/off/on/off/day"
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
   },
   "pretty": {
     "weight": 1,

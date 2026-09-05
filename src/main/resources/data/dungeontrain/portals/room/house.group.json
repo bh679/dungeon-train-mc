@@ -75,7 +75,9 @@
     },
     {
       "id": "peateargriffin",
-      "weight": 2
+      "weight": 1,
+      "minLevel": 31,
+      "maxLevel": 34
     }
   ]
 }
