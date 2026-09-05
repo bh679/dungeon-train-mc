@@ -312,6 +312,50 @@ public final class SharedCarriageClient {
         return post("/carriages/creators", body).thenApply(SharedCarriageClient::parseCreators);
     }
 
+    /** One reconstructable frame of a build's history: a full snapshot and the deltas since it. */
+    public record HistoryFrame(int seq, int baseSeq, String base, List<String> deltas) {}
+
+    /**
+     * The seqs at which a build's change history was recorded, oldest first — the relay's admin
+     * scrubber index, metadata only. Empty when there is none; null when it could not be asked.
+     *
+     * <p>Admin cap only, like {@link #searchCreators}: the history is the operator's view of how a
+     * build came to be, and a release build has no admin URL to ask with.</p>
+     */
+    public static CompletableFuture<List<Integer>> historyIndex(int id, boolean useLive) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+        String url = admin + "/carriages/" + id + "/history?cap=" + (useLive ? "live" : "dev");
+        return get(url).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("history") || !o.get("history").isJsonArray()) return null;
+            List<Integer> out = new java.util.ArrayList<>();
+            for (JsonElement el : o.getAsJsonArray("history")) {
+                if (el.isJsonObject() && el.getAsJsonObject().has("seq")) {
+                    out.add(el.getAsJsonObject().get("seq").getAsInt());
+                }
+            }
+            return List.copyOf(out);
+        });
+    }
+
+    /** The build as it stood at {@code seq}: newest full snapshot at or before it, and the deltas up to it. */
+    public static CompletableFuture<HistoryFrame> historyFrame(int id, int seq, boolean useLive) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+        String url = admin + "/carriages/" + id + "/history/" + seq + "?cap=" + (useLive ? "live" : "dev");
+        return get(url).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("frame") || !o.get("frame").isJsonObject()) return null;
+            JsonObject f = o.getAsJsonObject("frame");
+            List<String> deltas = new java.util.ArrayList<>();
+            if (f.has("deltas") && f.get("deltas").isJsonArray()) {
+                for (JsonElement el : f.getAsJsonArray("deltas")) deltas.add(el.getAsString());
+            }
+            return new HistoryFrame(intOf(f, "seq"), intOf(f, "baseSeq"), str(f, "base"), List.copyOf(deltas));
+        });
+    }
+
     /** The creator rows in a search answer, or null when there was no usable answer. */
     private static List<Creator> parseCreators(HttpResponse<String> resp) {
         return parseCreatorArray(okJson(resp));

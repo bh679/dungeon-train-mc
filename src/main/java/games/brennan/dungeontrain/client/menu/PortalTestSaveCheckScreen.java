@@ -30,6 +30,11 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
     /** The command the whole screen exists to gate. */
     private static final String TEST_COMMAND = "dungeontrain portal test";
 
+    /** That command for one named room — the author need not be standing in it. */
+    private String testCommand() {
+        return roomName.isEmpty() ? TEST_COMMAND : TEST_COMMAND + " " + roomName;
+    }
+
     /**
      * Position-resolved save, the same one the File tab's Save row runs. The player is standing in
      * the plot by construction — this screen is only reachable from the menu shown inside it — so
@@ -67,7 +72,7 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
             // posts to the chat queue — and the guard keeps it to one dispatch per screen.
             if (!bypassDispatched) {
                 bypassDispatched = true;
-                CommandRunner.run(TEST_COMMAND);
+                CommandRunner.run(testCommand());
                 CommandMenuState.close();
             }
             return List.of(new CommandMenuEntry.Loading("Testing..."));
@@ -76,11 +81,11 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
         return List.of(
             new CommandMenuEntry.ClientAction("Save and test", () -> {
                 CommandRunner.run(SAVE_COMMAND);
-                CommandRunner.run(TEST_COMMAND);
+                CommandRunner.run(testCommand());
                 CommandMenuState.close();
             }, true),
             new CommandMenuEntry.ClientAction("Test without saving", () -> {
-                CommandRunner.run(TEST_COMMAND);
+                CommandRunner.run(testCommand());
                 CommandMenuState.close();
             }),
             new CommandMenuEntry.Back("< Back"));

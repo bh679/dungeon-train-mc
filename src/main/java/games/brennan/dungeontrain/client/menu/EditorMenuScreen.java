@@ -46,8 +46,8 @@ public final class EditorMenuScreen implements MenuScreen {
      * The two save commands, shared by the File-tab Save row and the header icon so the two
      * surfaces cannot drift.
      */
-    static final String SAVE_COMMAND = "dungeontrain save";
-    static final String PART_SAVE_COMMAND = "dungeontrain editor part save";
+    public static final String SAVE_COMMAND = "dungeontrain save";
+    public static final String PART_SAVE_COMMAND = "dungeontrain editor part save";
 
     private static final ResourceLocation SAVE_ICON =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/save");
@@ -308,7 +308,7 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /** The portal-room block, in the order the settings read: box, then walls, then contents. */
-    private static List<CommandMenuEntry> portalRows() {
+    public static List<CommandMenuEntry> portalRows() {
         String mode = EditorStatusHudOverlay.roomMode();
         List<CommandMenuEntry> out = new ArrayList<>();
 
@@ -373,6 +373,11 @@ public final class EditorMenuScreen implements MenuScreen {
     // ------------------------------------------------------------------
     // Settings — editor-wide preferences, outliving any one model
     // ------------------------------------------------------------------
+
+    /** The Settings rows for an explicit category and model name — what the inventory screen's Settings page shows. */
+    public static List<CommandMenuEntry> settingsRows(PlotCategory category, String modelName) {
+        return settingsRows(new Ctx(category, modelName, modelName, modelName, -1));
+    }
 
     private static List<CommandMenuEntry> settingsRows(Ctx ctx) {
         List<CommandMenuEntry> out = new ArrayList<>();
@@ -562,7 +567,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * Extracted as a pure predicate so the unit test can pin behavior without having to mutate
      * {@link VersionInfo}'s static initializer.
      */
-    static boolean shouldShowDevModeToggle(String branch) {
+    public static boolean shouldShowDevModeToggle(String branch) {
         return !"main".equals(branch);
     }
 
@@ -581,7 +586,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>{@code modelId} (not {@code model}) is spliced into commands so track-side models with
      * friendly path strings ({@code "track / track2"}) don't break the parser.</p>
      */
-    static CommandMenuEntry weightTripleFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
+    public static CommandMenuEntry weightTripleFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         boolean named = modelName != null && !modelName.isEmpty();
         String prefix = switch (category) {
@@ -613,7 +618,7 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /** The header Save for a category: parts route through the part-aware subcommand. */
-    static MenuHeaderAction saveHeaderAction(PlotCategory category, boolean dirty, long nowMillis) {
+    public static MenuHeaderAction saveHeaderAction(PlotCategory category, boolean dirty, long nowMillis) {
         return new MenuHeaderAction(SAVE_ICON,
             dirty ? "Save — unsaved changes" : "Save",
             category == PlotCategory.PARTS ? PART_SAVE_COMMAND : SAVE_COMMAND,
@@ -627,7 +632,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * label (caller formats the current value); {@code hint} is the typing-mode placeholder.
      * Command shapes mirror {@link #weightTripleFor}.
      */
-    static CommandMenuEntry levelTripleFor(PlotCategory category, String modelId, String modelName,
+    public static CommandMenuEntry levelTripleFor(PlotCategory category, String modelId, String modelName,
                                            String sub, String label, String hint) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         boolean named = modelName != null && !modelName.isEmpty();
@@ -654,7 +659,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * them to the new plot. Returns null for categories that don't support author-authored new
      * models.
      */
-    static CommandMenuEntry newEntryFor(PlotCategory category, String modelId, String model) {
+    public static CommandMenuEntry newEntryFor(PlotCategory category, String modelId, String model) {
         if (category == null) return null;
         return switch (category) {
             case CARRIAGES -> new CommandMenuEntry.DrillIn(
@@ -694,7 +699,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>{@code modelId} is what gets spliced into the command (must be a single command token);
      * {@code model} is the friendly path used in the confirm prompt label.</p>
      */
-    static CommandMenuEntry removeEntryFor(PlotCategory category, String modelId, String model) {
+    public static CommandMenuEntry removeEntryFor(PlotCategory category, String modelId, String model) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         return switch (category) {
             case CARRIAGES -> new CommandMenuEntry.DrillIn(
@@ -724,7 +729,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * Returns null for categories without a single addressable model id (tracks, pillars, tunnels,
      * architecture).
      */
-    private static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
+    public static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty() || category == null) return null;
         return switch (category) {
             case CARRIAGES, CONTENTS, PARTS, PORTALS -> new CommandMenuEntry.DrillIn(
@@ -744,16 +749,20 @@ public final class EditorMenuScreen implements MenuScreen {
      * author-authored renames.
      */
     private static CommandMenuEntry renameEntryFor(Ctx ctx) {
-        String model = ctx.model();
+        return renameEntryFor(ctx.category(), ctx.model());
+    }
+
+    /** As {@link #renameEntryFor(Ctx)} for an explicit category and friendly model path. */
+    public static CommandMenuEntry renameEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty()) return null;
-        if (ctx.isParts()) {
+        if (category == PlotCategory.PARTS) {
             String[] kindName = partsKindName(model);
             if (kindName == null) return null;
             return new CommandMenuEntry.TypeArg(
                 "Rename", "new_name", "dungeontrain editor part rename", "", kindName[1]);
         }
-        if (ctx.category() == null) return null;
-        return switch (ctx.category()) {
+        if (category == null) return null;
+        return switch (category) {
             case CARRIAGES -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
                 "Rename", "new_name",
                 "dungeontrain editor save",
@@ -768,12 +777,12 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /** Match server-side carriage built-in names so the Rename row hides for them. Mirrors PROTECTED_BUILTINS in EditorCommand. */
-    private static boolean isReservedCarriageBuiltin(String id) {
+    public static boolean isReservedCarriageBuiltin(String id) {
         return "standard".equals(id) || "flatbed".equals(id);
     }
 
     /** Match server-side contents built-in names. Server rejects rename for any builtin via {@code current.isBuiltin()}. */
-    private static boolean isReservedContentsBuiltin(String id) {
+    public static boolean isReservedContentsBuiltin(String id) {
         return "default".equals(id);
     }
 
@@ -794,7 +803,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>The menu is closed first so the profile screen replaces it cleanly rather than stacking on
      * top of it. A null parent means Back returns to the game.</p>
      */
-    static CommandMenuEntry myBuildsEntry() {
+    public static CommandMenuEntry myBuildsEntry() {
         return new CommandMenuEntry.ClientAction(
             Component.translatable("gui.dungeontrain.builder.profile").getString(),
             () -> {

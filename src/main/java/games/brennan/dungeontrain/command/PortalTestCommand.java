@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.command;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
@@ -74,11 +75,26 @@ public final class PortalTestCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("test")
-            .executes(ctx -> runTest(ctx.getSource()))
-            .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())));
+            .executes(ctx -> runTest(ctx.getSource(), null))
+            .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
+            // Naming the room tests one the author is not standing in — what the X menu's button
+            // sends, since a tile can be selected from anywhere in the browser.
+            .then(Commands.argument("room", StringArgumentType.word())
+                .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                    games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
+                        games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM), builder))
+                .executes(ctx -> runTest(ctx.getSource(), StringArgumentType.getString(ctx, "room"))));
     }
 
-    private static int runTest(CommandSourceStack source) {
+    /**
+     * Stand up {@code roomName}, or the room whose plot the player is standing in when it is null.
+     *
+     * <p>Standing in it was once the only way to name one, which made Test the Carriage unreachable
+     * for a tile selected from across the browser — the room is stamped in its own band in the
+     * basement either way, and where the author happens to be standing has never been part of what
+     * it tests.</p>
+     */
+    private static int runTest(CommandSourceStack source, String roomArg) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -96,12 +112,24 @@ public final class PortalTestCommand {
             runBack(source);
         }
 
-        String roomName = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
-        if (roomName == null) {
-            source.sendFailure(Component.literal(
-                "Stand in a dimensional carriage plot first — this tests the room you are in. "
-                    + "Try /dungeontrain editor portals.").withStyle(ChatFormatting.RED));
-            return 0;
+        String roomName;
+        if (roomArg != null && !roomArg.isBlank()) {
+            roomName = games.brennan.dungeontrain.track.variant.TrackVariantRegistry
+                .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, roomArg)
+                .orElse(null);
+            if (roomName == null) {
+                source.sendFailure(Component.literal("Unknown dimensional carriage '" + roomArg + "'.")
+                    .withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        } else {
+            roomName = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+            if (roomName == null) {
+                source.sendFailure(Component.literal(
+                    "Name a dimensional carriage to test, or stand in one's plot — "
+                        + "/dungeontrain portal test <room>.").withStyle(ChatFormatting.RED));
+                return 0;
+            }
         }
 
         // The room as authored, so what is tested is what was built: its own size and its own
@@ -183,6 +211,10 @@ public final class PortalTestCommand {
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
         DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, roomName));
+        // The room's own light. In play PortalCarriageEvents sends this to whoever stands inside a
+        // live pair's room, on the same box; a test session is not a pair, so nothing there sees
+        // it, and a room set to Daylight tested dark — which is precisely what the test is for.
+        sendSky(player, dims, layout, structure);
 
         LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}",
             roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
@@ -192,6 +224,18 @@ public final class PortalTestCommand {
             "You're in the doorway of '" + roomName + "' — a corridor each side, no train attached. "
                 + "Back in the menu returns you to the plot.").withStyle(ChatFormatting.AQUA), false);
         return 1;
+    }
+
+    /** The same lift the live path sends — {@code PortalCarriageEvents.sendSkyFor} — for this one player. */
+    private static void sendSky(ServerPlayer player, CarriageDims dims, PortalCarriageLayout layout,
+                                PortalStructure structure) {
+        games.brennan.dungeontrain.portal.PortalRoomSky sky = structure.settings().sky();
+        if (!sky.lights() || !games.brennan.dungeontrain.config.DungeonTrainConfig.isPortalRoomDaylight()) return;
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.inWorld(
+            structure.tiledMinX(dims, layout), roomOrigin.getY(), structure.tiledMinZ(dims, layout),
+            structure.tiledMaxX(dims, layout), roomOrigin.getY() + structure.roomSize().getY() - 1,
+            structure.tiledMaxZ(dims, layout), sky.ordinal()));
     }
 
     private static int runBack(CommandSourceStack source) {
@@ -221,6 +265,7 @@ public final class PortalTestCommand {
             player.setGameMode(session.previousGameType());
         }
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.none());
 
         // Take the room's fog, daylight and train audio back. The same call the ticker makes, run
         // once more now that the player is standing outside the structure: the send pass finds
