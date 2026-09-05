@@ -119,15 +119,27 @@ public final class PortalChunkDimension {
         Vec3i size = structure.roomSize();
         PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
 
+        // Where the door actually ended up, which is not always where the variant asked for it: a
+        // world too shallow for a 16-tall room holds the box down (PortalCarriageBuilder#heldInRegion)
+        // and the offset clamps with it. The slice is cut with its surface on
+        // PortalChunkTerrain.SURFACE_ROW, so sliding it by the difference is what keeps the ground
+        // under the doorway rather than above or below it.
+        int doorRow = PortalRoomLayout.clampDoorHeightOffset(
+            dims, size.getY(), structure.settings().doorHeightOffset().value());
+        int shift = PortalChunkTerrain.SURFACE_ROW - doorRow;
+
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         // The interior only: the ±Z walls, the floor and the ceiling are the template's, because the
         // seal ring at each mouth is a copy of the room's own wall (PortalCarriageBuilder#sealFillFor)
         // and a wall of open sky would seal a mouth with nothing. The ±X ends are not walls — they
         // are the door planes — so terrain runs the full length.
-        for (int y = 1; y < size.getY() - 1 && y < slice.size(); y++) {
+        for (int y = 1; y < size.getY() - 1; y++) {
             for (int z = 1; z < size.getZ() - 1 && z < slice.size(); z++) {
                 for (int x = 0; x < size.getX() && x < slice.size(); x++) {
-                    BlockState state = slice.at(x, y, z);
+                    // Null for a row the slice does not reach — a room taller than the cube, or one
+                    // whose door sits low enough to slide the cube off its ceiling. Those rows keep
+                    // whatever the template put there, which is a room rather than a hole.
+                    BlockState state = slice.at(x, y + shift, z);
                     if (state == null) continue;
                     cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
                     if (mask.covers(cursor)) continue;
