@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -378,7 +379,7 @@ public final class PortalChunkTerrain {
 
         /** The cube as the chunk currently stands — called once per generation pass. */
         PortalChunkSlice read() {
-            return readSlice(source, chunk, pos, anchor, minY, maxY);
+            return readSlice(level, source, chunk, pos, anchor, minY, maxY);
         }
 
         /** The rows of the chunk the room will show, in world coordinates. */
@@ -544,8 +545,8 @@ public final class PortalChunkTerrain {
     }
 
     /** Copy the column around the anchor out of the sampled chunk, room-local. */
-    private static PortalChunkSlice readSlice(Source source, ProtoChunk chunk, ChunkPos pos,
-                                              int anchor, int minY, int maxY) {
+    private static PortalChunkSlice readSlice(ServerLevel level, Source source, ProtoChunk chunk,
+                                              ChunkPos pos, int anchor, int minY, int maxY) {
         BlockState[] states = new BlockState[SIZE * SIZE * HEIGHT];
         BlockState air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
@@ -562,7 +563,42 @@ public final class PortalChunkTerrain {
                 }
             }
         }
-        return new PortalChunkSlice(source, SIZE, HEIGHT, states);
+        return new PortalChunkSlice(source, SIZE, HEIGHT, states,
+            blockEntitiesIn(level, chunk, pos, anchor));
+    }
+
+    /**
+     * The block entities the sample left inside the window, as saved NBT, keyed by the same index
+     * the states are.
+     *
+     * <p>Both halves of the chunk's bookkeeping, because a freshly generated structure's chests are
+     * in the <b>pending</b> one: they are NBT that has never been promoted to a live block entity,
+     * and asking only for the live map would hand back nothing at all. See
+     * {@code SilentBlockOps.evictBlockEntity} for the same distinction from the other direction.</p>
+     */
+    private static Map<Integer, CompoundTag> blockEntitiesIn(ServerLevel level, ProtoChunk chunk,
+                                                             ChunkPos pos, int anchor) {
+        Map<Integer, CompoundTag> out = new java.util.HashMap<>();
+        chunk.getBlockEntityNbts().forEach((at, nbt) -> {
+            Integer index = windowIndex(at, pos, anchor);
+            if (index != null) out.put(index, nbt.copy());
+        });
+        chunk.getBlockEntities().forEach((at, blockEntity) -> {
+            Integer index = windowIndex(at, pos, anchor);
+            if (index != null) {
+                out.put(index, blockEntity.saveWithFullMetadata(level.registryAccess()));
+            }
+        });
+        return out;
+    }
+
+    /** Where a world position falls in the cut window, or null when it falls outside it. */
+    private static Integer windowIndex(BlockPos at, ChunkPos pos, int anchor) {
+        int x = at.getX() - pos.getMinBlockX();
+        int z = at.getZ() - pos.getMinBlockZ();
+        int y = at.getY() - anchor + SURFACE_ROW;
+        if (x < 0 || z < 0 || y < 0 || x >= SIZE || z >= SIZE || y >= HEIGHT) return null;
+        return (y * SIZE + z) * SIZE + x;
     }
 
     /** What {@link #standableRow} answers for a column with nowhere to stand. */

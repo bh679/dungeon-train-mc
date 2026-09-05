@@ -2,10 +2,12 @@ package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Set;
@@ -30,8 +32,7 @@ import java.util.function.IntFunction;
  * nothing to cut away to reach them, and cutting anyway is what made a chunk dimension read as a
  * room with two bites taken out of it. What remains is the door's own column: one block deep on the
  * walkway line, two blocks tall, cleared so a tree or a dune that grew in the doorway is not a wall
- * across it — plus the floor row beneath, written to ground when the sample left air or water
- * there.</p>
+ * across it. Nothing is added: no floor is bridged in under a doorway the terrain left open.</p>
  *
  * <p>Every write skips {@link PortalCorridorMask}, which matters for the deferred path only: an
  * immediate fill runs before {@code stampCorridors} and could not reach a corridor if it tried,
@@ -98,9 +99,17 @@ public final class PortalChunkDimension {
         Vec3i size = structure.roomSize();
         PortalCorridorMask mask = PortalCarriageBuilder.corridorMask(structure, dims);
 
-        // The cube goes in exactly as it was sampled — no sliding it onto the door. It is the other
-        // way round now: the pair's two doorways were stood on this cube's own ground before the
-        // structure was planned, so moving the terrain here would undo the fit (PortalChunkDoors).
+        // Where the copy sits vertically is read off the DOOR, not off the box's own corner. The
+        // two are the same number in an ordinary room — the doorways were fitted to this column's
+        // ground before the structure was planned, so its ground row already is the door row — and
+        // they come apart exactly when a room cannot spend the offset the fit asked for: a world too
+        // shallow to stand a 32-tall box up holds it down (PortalCarriageBuilder#heldInRegion) and
+        // the offset clamps with it. Aligning on the corner there leaves the doorway hanging in the
+        // air above its own ground, or buried under it. Aligning on the door keeps a player's feet
+        // on the terrain and spends the shortfall at the top of the column, which is sky.
+        int askedFor = structure.settings().doorHeightOffset().value();
+        int standsAt = PortalRoomLayout.clampDoorHeightOffset(dims, size.getY(), askedFor);
+        int shift = askedFor - standsAt;
 
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         // The interior only: the ±Z walls, the floor and the ceiling are the template's, because the
@@ -110,10 +119,9 @@ public final class PortalChunkDimension {
         for (int y = 1; y < size.getY() - 1; y++) {
             for (int z = 1; z < size.getZ() - 1 && z < slice.width(); z++) {
                 for (int x = 0; x < size.getX() && x < slice.width(); x++) {
-                    // Null for a row the cube does not reach — a room stood up taller than 16 by a
-                    // world with the space for it. Those rows keep whatever the template put there,
-                    // which is a room rather than a hole.
-                    BlockState state = slice.at(x, y, z);
+                    // Null for a row the cube does not reach. Those rows keep whatever the template
+                    // put there, which is a room rather than a hole.
+                    BlockState state = slice.at(x, y + shift, z);
                     if (state == null) continue;
                     cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
                     if (mask.covers(cursor)) continue;
@@ -122,19 +130,17 @@ public final class PortalChunkDimension {
                     // handful of these cells are already the block being written.
                     if (level.getBlockState(cursor) == state) continue;
                     level.setBlock(cursor, state, Block.UPDATE_ALL);
+                    applyBlockEntity(level, cursor, slice.blockEntityAt(x, y + shift, z));
                 }
             }
         }
 
-        openDoorway(level, structure, dims, layout, origin, size, mask, slice,
-            PortalCarriageRole.ENTRY);
-        openDoorway(level, structure, dims, layout, origin, size, mask, slice,
-            PortalCarriageRole.EXIT);
+        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.ENTRY);
+        openDoorway(level, structure, dims, layout, origin, size, mask, PortalCarriageRole.EXIT);
     }
 
     /**
-     * Open one doorway through the terrain: the two cells of the door itself, and solid ground under
-     * them.
+     * Open one doorway through the terrain: the two cells of the door itself, and nothing else.
      *
      * <p><b>Two blocks, and not one more.</b> The doorways are stood on the ground the sample landed
      * ({@link PortalChunkDoors}), so nothing has to be cut away to reach them — but a doorway is a
@@ -144,14 +150,15 @@ public final class PortalChunkDimension {
      * {@code PortalRoomDoorCells} calls a door. Everything either side of it, and everything behind
      * it, is the terrain as it was sampled.</p>
      *
-     * <p>The floor row under those two cells is the one thing written rather than cleared: air there
-     * is a step out into a hole and a fluid there pours into the corridor, so either becomes ground.
-     * Solid ground is what the door was fitted to and is left alone.</p>
+     * <p><b>Nothing is added, either.</b> The floor row under those two cells used to be filled in
+     * when the sample left air there, which put a stone block in the mouth of a doorway that opens
+     * onto a slope or a stream — a bridge into the room that the terrain never had. The doorways are
+     * fitted to the ground, so where that row is not ground it is because the sample says so, and
+     * the room is left saying it.</p>
      */
     private static void openDoorway(ServerLevel level, PortalStructure structure, CarriageDims dims,
                                     PortalCarriageLayout layout, BlockPos origin, Vec3i size,
-                                    PortalCorridorMask mask, PortalChunkSlice slice,
-                                    PortalCarriageRole role) {
+                                    PortalCorridorMask mask, PortalCarriageRole role) {
         boolean entry = role == PortalCarriageRole.ENTRY;
         BlockPos corridor = entry ? structure.origin() : structure.exitOrigin(dims);
 
@@ -172,13 +179,20 @@ public final class PortalChunkDimension {
             if (!level.getBlockState(cursor).isAir()) level.setBlock(cursor, air, Block.UPDATE_ALL);
         }
 
-        cursor.set(x, floorY, z);
-        if (mask.covers(cursor)) return;
-        BlockState floor = level.getBlockState(cursor);
-        // Anything a player would fall through or wade into — air, water, and equally the grass or
-        // flower a decorated sample grew on the row the doorway stands on.
-        if (!floor.blocksMotion()) {
-            level.setBlock(cursor, slice.source().ground(), Block.UPDATE_ALL);
-        }
+    }
+
+    /**
+     * Give a freshly written block its sampled block entity, when it had one.
+     *
+     * <p>What makes a chest in a chunk dimension a chest rather than a box: the NBT carries
+     * {@code LootTable} and {@code LootTableSeed}, so the container fills from the same vanilla table
+     * it would have in the world the sample came from, rolled when a player first opens it.</p>
+     */
+    private static void applyBlockEntity(ServerLevel level, BlockPos pos, CompoundTag nbt) {
+        if (nbt == null) return;
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity == null) return;
+        blockEntity.loadWithComponents(nbt, level.registryAccess());
+        blockEntity.setChanged();
     }
 }
