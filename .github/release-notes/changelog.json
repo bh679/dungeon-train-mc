@@ -11248,9 +11248,9 @@
         "Skybox blocks can be switched off to build behind them, and switch themselves back on for a test"
       ],
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "terrarium-dimensional-carriage",
@@ -11262,9 +11262,9 @@
         "Built by Firefly_on_ytb"
       ],
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "mob-xp-scales-with-gear",
@@ -11280,9 +11280,9 @@
       ],
       "pr": 1300,
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "chunk-dimension-carriage",
@@ -11298,9 +11298,9 @@
         "Nether and End chunk dimensions unlock at Diff-Level 4 and 5."
       ],
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "portal-room-seal-block",
@@ -11315,9 +11315,9 @@
         "An empty hand means no shell at all, for a room meant to be dug out of"
       ],
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "builder-variant-and-contents-menus",
@@ -11332,9 +11332,9 @@
         "Both menus open on whatever you are looking at, so authoring a wall from outside the carriage works."
       ],
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "build-creator-credit",
@@ -11349,9 +11349,9 @@
       ],
       "pr": 1303,
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "portal-rooms-tile-as-authored",
@@ -11370,9 +11370,9 @@
       ],
       "pr": 1305,
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "dimensional-carriage-polish",
@@ -11382,9 +11382,9 @@
       "summary": "A small refinement to dimensional carriages.",
       "highlights": [],
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "afk-pause-train-time",
@@ -11398,9 +11398,9 @@
       ],
       "pr": 1306,
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "dimensional-rooms-september",
@@ -11416,9 +11416,9 @@
       ],
       "pr": 1308,
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     },
     {
       "id": "editor-tooling-september",
@@ -11429,9 +11429,9 @@
       "highlights": [],
       "pr": 1308,
       "date": "2026-09-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.802.0",
+      "released_at": "2026-09-05T18:37:17Z"
     }
   ]
 }
