@@ -72,20 +72,42 @@ public final class OptionsScreenDungeonTrainButton {
                 done.getWidth(), done.getHeight()));
     }
 
-    /** Insert the DT button in a fresh row right under the FOV slider, shifting the rows below it down. */
+    /**
+     * Put the DT button in a row under the FOV slider, moving the rows below only as far as needed.
+     *
+     * <p>Vanilla already leaves a gap between the FOV row and the grid beneath it. Pushing
+     * everything down by a whole row regardless spent that gap twice: a band of dead space under the
+     * button, and a screen a row taller than the window was sized for — which is what pushed
+     * <b>Done</b> off the bottom. So the existing gap is measured and only the shortfall is taken.
+     * Where vanilla's gap is already big enough, nothing below moves at all.</p>
+     */
     private static void addUnderFov(ScreenEvent.Init.Post event, OptionsScreen optionsScreen, AbstractWidget fov) {
         int rowH = fov.getHeight();
-        int step = rowH + GAP;
         int fovBottom = fov.getY() + rowH;
-        // Nudge every widget that sits below the FOV slider down by one row to open the gap.
-        for (GuiEventListener listener : event.getListenersList()) {
-            if (listener instanceof AbstractWidget w && w != fov && w.getY() >= fovBottom) {
-                w.setY(w.getY() + step);
+        int rowY = fovBottom + GAP;
+
+        int nextTop = topOfNextRow(event, fov, fovBottom);
+        int shortfall = nextTop == Integer.MAX_VALUE ? 0 : Math.max(0, rowY + rowH + GAP - nextTop);
+        if (shortfall > 0) {
+            for (GuiEventListener listener : event.getListenersList()) {
+                if (listener instanceof AbstractWidget w && w != fov && w.getY() >= fovBottom) {
+                    w.setY(w.getY() + shortfall);
+                }
             }
         }
-        int rowY = fovBottom + GAP;
         event.addListener(dtButton(optionsScreen, fov.getX(), rowY, fov.getWidth(), rowH));
-        pairLoneRowInto(event, fov, rowY, step);
+        pairLoneRowInto(event, fov, rowY);
+    }
+
+    /** The top of the first row below the FOV slider, or {@code MAX_VALUE} if there is nothing. */
+    private static int topOfNextRow(ScreenEvent.Init.Post event, AbstractWidget fov, int fovBottom) {
+        int top = Integer.MAX_VALUE;
+        for (GuiEventListener listener : event.getListenersList()) {
+            if (listener instanceof AbstractWidget w && w != fov && w.getY() >= fovBottom) {
+                top = Math.min(top, w.getY());
+            }
+        }
+        return top;
     }
 
     /**
@@ -95,8 +117,7 @@ public final class OptionsScreenDungeonTrainButton {
      * below the one just opened — so it pairs with whatever is actually there. Everything that sat
      * below the row it vacates comes back up by a row, which is what stops the screen growing.</p>
      */
-    private static void pairLoneRowInto(ScreenEvent.Init.Post event, AbstractWidget fov, int rowY,
-                                        int step) {
+    private static void pairLoneRowInto(ScreenEvent.Init.Post event, AbstractWidget fov, int rowY) {
         AbstractWidget right = rightOf(event, fov);
         if (right == null) {
             return;
@@ -113,13 +134,16 @@ public final class OptionsScreenDungeonTrainButton {
             return;
         }
         int vacated = lone.getY();
+        // Close the row it leaves behind, measured from that row rather than assumed to be the
+        // FOV row's height.
+        int freed = lone.getHeight() + GAP;
         LOGGER.info("OptionsScreenDungeonTrainButton: pairing '{}' into the Dungeon Train row "
                 + "instead of leaving it a row of its own.", lone.getMessage().getString());
         lone.setX(right.getX());
         lone.setY(rowY);
         for (GuiEventListener listener : event.getListenersList()) {
             if (listener instanceof AbstractWidget w && w != lone && w.getY() > vacated) {
-                w.setY(w.getY() - step);
+                w.setY(w.getY() - freed);
             }
         }
     }
