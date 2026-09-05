@@ -108,6 +108,7 @@ public final class SkyboxPunchRenderer {
         // re-enabling mid-session has a warm index on the next sweep.
         SkyboxBlockIndex.reportCamera(cam);
 
+        if (!ClientDisplayConfig.areSkyboxBlocksOn()) return;
         if (!ClientDisplayConfig.isSkyboxPunchEnabled()) return;
         if (GraphicsCapabilities.shaderPackActive()) return;
 

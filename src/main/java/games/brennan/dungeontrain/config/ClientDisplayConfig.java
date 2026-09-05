@@ -155,6 +155,8 @@ public final class ClientDisplayConfig {
     /** Whether a portal room's Sky lights its editor plot. See {@link #isEditorPlotLighting()}. */
     public static final ModConfigSpec.BooleanValue EDITOR_PLOT_LIGHTING;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
+    /** Whether Skybox Blocks exist for this client at all. See {@link #areSkyboxBlocksOn()}. */
+    public static final ModConfigSpec.BooleanValue SKYBOX_BLOCKS_ON;
     public static final ModConfigSpec.BooleanValue PORTAL_CROSSING_FADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
     public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
@@ -311,6 +313,7 @@ public final class ClientDisplayConfig {
         MENU_RENDER_DISTANCE = pair.getLeft().menuRenderDistance;
         EDITOR_PLOT_LIGHTING = pair.getLeft().editorPlotLighting;
         SKYBOX_PUNCH_ENABLED = pair.getLeft().skyboxPunchEnabled;
+        SKYBOX_BLOCKS_ON = pair.getLeft().skyboxBlocksOn;
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
@@ -438,6 +441,13 @@ public final class ClientDisplayConfig {
         b.pop();
 
         b.push("skybox");
+        ModConfigSpec.BooleanValue skyboxBlocksOn = b
+                .comment("Whether Skybox Blocks are there at all. On, they show the sky and stop you like any other",
+                         "block. Off, they stop drawing AND stop colliding, so you can walk out through a sky wall -",
+                         "which is how you get behind one to build. An authoring convenience: on a multiplayer server",
+                         "the server still holds the blocks solid, so turn it off there and you will be pushed back.",
+                         "Set in-game from the X menu's Settings tab.")
+                .define("skyboxBlocksOn", true);
         ModConfigSpec.BooleanValue skyboxPunchEnabled = b
                 .comment("Let Skybox Blocks show the real sky through them. The effect writes the block's shape into the depth buffer just after the sky is drawn, so whatever sits behind it is never drawn over the sky. Set false to turn Skybox Blocks into plain invisible solid blocks instead - the escape hatch if the effect misbehaves with your graphics setup. Automatically off while a shader pack is loaded, which needs its own handling.")
                 .define("punchEnabled", true);
@@ -658,7 +668,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMinFps, rideSnapshotMinTps,
                 rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk,
                 rideSnapshotMaxResolution,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
@@ -1239,6 +1249,28 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Are Skybox Blocks there at all?
+     *
+     * <p>Off is the authoring escape hatch: they stop drawing and stop colliding together, because
+     * an invisible wall you cannot walk through is worse than either on its own — the reason to hide
+     * them is to get behind them.</p>
+     *
+     * <p>{@code true} pre-load and on a dedicated server, which is what makes turning them off a
+     * client-side convenience rather than a change to the world: the server keeps its own answer,
+     * and in single player that server is this process, so the walk-through is real.</p>
+     */
+    public static boolean areSkyboxBlocksOn() {
+        return !isLoaded() || SKYBOX_BLOCKS_ON.get();
+    }
+
+    /** Persist the Skybox Blocks toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setSkyboxBlocksOn(boolean value) {
+        if (!isLoaded() || SKYBOX_BLOCKS_ON.get() == value) return;
+        SKYBOX_BLOCKS_ON.set(value);
+        SKYBOX_BLOCKS_ON.save();
+    }
+
+    /**
      * Should a portal corridor's lighting fade into a flat hold across its crossing? Defaults to
      * {@code true}, and to {@code true} pre-load as well, on the same rule as the flag above: the
      * effect is what stops the swap from popping, so the safe fallback while the TOML is still
@@ -1628,6 +1660,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
+            ModConfigSpec.BooleanValue skyboxBlocksOn,
             ModConfigSpec.BooleanValue portalCrossingFade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,

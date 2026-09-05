@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.block;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
@@ -79,7 +80,8 @@ public class SkyboxBlock extends Block {
      */
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return isCreativePlayer(context) ? Shapes.block() : Shapes.empty();
+        return isCreativePlayer(context) && ClientDisplayConfig.areSkyboxBlocksOn()
+            ? Shapes.block() : Shapes.empty();
     }
 
     /**
@@ -91,7 +93,11 @@ public class SkyboxBlock extends Block {
      */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return Shapes.block();
+        // Switched off, the block is not there: no collision, so an author can walk out through a
+        // sky wall to see it from behind. Client-side, and in single player that IS the server, so
+        // the walk-through is real; a dedicated server answers with its own config and keeps them
+        // solid — see ClientDisplayConfig.areSkyboxBlocksOn().
+        return ClientDisplayConfig.areSkyboxBlocksOn() ? Shapes.block() : Shapes.empty();
     }
 
     /**
@@ -104,7 +110,9 @@ public class SkyboxBlock extends Block {
      */
     @Override
     protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
-        return Shapes.block();
+        // Off, it must not cull its neighbours either: an invisible block that still hides the wall
+        // behind it leaves a hole in the room, which is the opposite of what turning it off is for.
+        return ClientDisplayConfig.areSkyboxBlocksOn() ? Shapes.block() : Shapes.empty();
     }
 
     /**

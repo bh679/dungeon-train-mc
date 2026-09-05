@@ -4,7 +4,9 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
+import net.minecraft.client.Minecraft;
 import games.brennan.dungeontrain.editor.PlotCategory;
 
 import java.util.ArrayList;
@@ -30,9 +32,41 @@ public final class EditorSettingsPage {
                                               EditorScreenTheme theme, Consumer<EditorScreenTheme> setTheme) {
         List<CommandMenuEntry> out = new ArrayList<>();
         out.add(themeRow(theme, setTheme));
+        out.add(skyboxRow());
         if (DungeonTrain.isDevBuild()) out.add(relayRow());
         out.addAll(EditorMenuScreen.settingsRows(standingCategory, standingName));
         return out;
+    }
+
+    /**
+     * Skybox | On | Off — whether Skybox Blocks are there at all.
+     *
+     * <p>Off hides them and lets you walk through them together, because the reason to hide a sky
+     * wall is to get behind it, and an invisible wall that still stops you is worse than either
+     * half. Every loaded chunk is rebuilt on the switch: the blocks cull their neighbours while they
+     * are on, so the meshes around them are wrong the moment the answer changes.</p>
+     */
+    static CommandMenuEntry skyboxRow() {
+        boolean on = ClientDisplayConfig.areSkyboxBlocksOn();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label(EditorScreenLang.text(EditorScreenLang.SKYBOX)),
+            skyboxCell(true, EditorScreenLang.SKYBOX_ON, on),
+            skyboxCell(false, EditorScreenLang.SKYBOX_OFF, on),
+            0.46, 0.73);
+    }
+
+    /** One cell of the Skybox row: highlighted while it is the answer, a switch otherwise. */
+    private static CommandMenuEntry skyboxCell(boolean cellOn, String labelKey, boolean on) {
+        return new CommandMenuEntry.ClientAction(EditorScreenLang.text(labelKey),
+            () -> setSkybox(cellOn), cellOn == on);
+    }
+
+    /** Flip the answer and rebuild what was drawn against the old one. */
+    static void setSkybox(boolean on) {
+        if (on == ClientDisplayConfig.areSkyboxBlocksOn()) return;
+        ClientDisplayConfig.setSkyboxBlocksOn(on);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.levelRenderer != null) mc.levelRenderer.allChanged();
     }
 
     /**

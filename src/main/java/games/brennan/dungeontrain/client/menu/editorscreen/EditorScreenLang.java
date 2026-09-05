@@ -112,6 +112,9 @@ public final class EditorScreenLang {
     public static final String THEME = PREFIX + "theme";
     public static final String THEME_LIGHT = PREFIX + "theme.light";
     public static final String THEME_DARK = PREFIX + "theme.dark";
+    public static final String SKYBOX = PREFIX + "skybox";
+    public static final String SKYBOX_ON = PREFIX + "skybox.on";
+    public static final String SKYBOX_OFF = PREFIX + "skybox.off";
     public static final String RELAY = PREFIX + "relay";
     public static final String RELAY_LIVE = PREFIX + "relay.live";
     public static final String RELAY_DEV = PREFIX + "relay.dev";
