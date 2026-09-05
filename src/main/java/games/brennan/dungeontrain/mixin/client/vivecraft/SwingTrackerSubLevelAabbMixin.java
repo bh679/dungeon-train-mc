@@ -37,9 +37,14 @@ import java.util.List;
  * pass-through in every normal (non-train / non-VR) case and avoids per-tick sub-level lookups on the
  * render thread.</p>
  *
- * <p>Applied only when Vivecraft is present (see {@code VivecraftMixinPlugin}); the class is targeted
- * by string because Vivecraft is not a compile dependency. Scope is deliberately narrow: VR
- * melee-on-train only — no locomotion, ray-casts, GUI or seated play.</p>
+ * <p><b>TEMPORARY.</b> This fix's real home is the standalone Vivecraft Sable Compat addon, which
+ * also fixes VR teleport. DT keeps this copy only so that a VR player who updates DT before
+ * installing the addon does not lose melee. {@code VivecraftMixinPlugin} applies it when Vivecraft
+ * is present and the addon is NOT, so the two never both own the call; delete both once the addon
+ * is live and bundled in the modpack.</p>
+ *
+ * <p>The class is targeted by string because Vivecraft is not a compile dependency. Scope is
+ * deliberately narrow: VR melee-on-train only — no locomotion, ray-casts, GUI or seated play.</p>
  */
 @Mixin(targets = "org.vivecraft.client_vr.gameplay.trackers.SwingTracker", remap = false)
 public abstract class SwingTrackerSubLevelAabbMixin {

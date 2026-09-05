@@ -101,6 +101,9 @@ public final class LocaleOrdinalWords {
             case "nl" -> d + "e";
             case "fr" -> d + "e";
             case "it" -> d + "°";
+            // Romanian wraps the digit in an article + ending, and the article agrees: al 37-lea / a 37-a.
+            // Neuter nouns take the masculine form in the singular, which is the only number reached here.
+            case "ro" -> gender == Gender.FEMININE ? "a " + d + "-a" : "al " + d + "-lea";
             case "es", "pt" -> d + (gender == Gender.FEMININE ? ".ª" : ".º");
             case "ja", "zh" -> "第" + d;
             case "ko" -> d + "번째";

@@ -69,6 +69,16 @@ public final class DungeonTrainConfig {
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
     public static final int DEFAULT_PROGRESSION_LEVEL_DELAY = 1;
     public static final boolean DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP = true;
+    public static final boolean DEFAULT_MOB_EXPERIENCE_SCALING_ENABLED = true;
+    /** Symmetric bounds for the three mob-XP weights — 0 disables that component, 5 makes it dominant. */
+    public static final double MIN_MOB_EXPERIENCE_WEIGHT = 0.0;
+    public static final double MAX_MOB_EXPERIENCE_WEIGHT = 5.0;
+    public static final double DEFAULT_MOB_EXPERIENCE_PER_STAT_POINT = 0.03;
+    public static final double DEFAULT_MOB_EXPERIENCE_PER_ENCHANT_LEVEL = 0.05;
+    public static final double DEFAULT_MOB_EXPERIENCE_PER_EFFECT_POINT = 0.20;
+    public static final double MIN_MOB_EXPERIENCE_MAX_MULTIPLIER = 1.0;
+    public static final double MAX_MOB_EXPERIENCE_MAX_MULTIPLIER = 100.0;
+    public static final double DEFAULT_MOB_EXPERIENCE_MAX_MULTIPLIER = 10.0;
     public static final boolean DEFAULT_VILLAGER_TRADE_SCALING_ENABLED = true;
     public static final int MIN_VILLAGER_TRADE_SCALING_MIN_CARRIAGE = 0;
     public static final int MAX_VILLAGER_TRADE_SCALING_MIN_CARRIAGE = 10_000;
@@ -84,8 +94,17 @@ public final class DungeonTrainConfig {
     // Onboarding stage lengths in carriages of player progress (independent of carriagesPerTier).
     public static final int MIN_ONBOARDING_STAGE_CARRIAGES = 0;
     public static final int MAX_ONBOARDING_STAGE_CARRIAGES = 1000;
-    public static final int DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES = 10;
-    public static final int DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES = 15;
+    public static final int DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES = 5;
+    public static final int DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES = 5;
+    /**
+     * The onboarding lengths shipped before {@link #CURRENT_CONFIG_VERSION} 4 (10 + 15 carriages).
+     * Read by the v3 -> v4 step of {@link #runPendingMigrations()} to tell a stale shipped default
+     * apart from a number an operator chose, and by {@code DtConfigIntegrity} to date the keys.
+     */
+    public static final int LEGACY_FIRST_LEVEL_NO_HOSTILES_CARRIAGES = 10;
+    public static final int LEGACY_FIRST_LEVEL_EASY_MOBS_CARRIAGES = 15;
+    /** Config version that shortened the onboarding stages — see {@link #runPendingMigrations()}. */
+    public static final int ONBOARDING_LENGTHS_CONFIG_VERSION = 4;
 
     /** 1-in-N chance that a book dropped by breaking a bookshelf becomes a narrative Random Book. 0 disables. */
     public static final int MIN_RANDOM_BOOK_ONE_IN = 0;
@@ -142,19 +161,23 @@ public final class DungeonTrainConfig {
      */
     public static final boolean DEFAULT_SHARED_CARRIAGES_ENABLED = true;
     /**
-     * Relay carriages are COLLECTED but not yet SERVED — leasing ships off.
+     * Community carriages are now SERVED as well as collected — leasing ships on.
      *
-     * <p>The shared-carriage feature has two halves, and they are not ready at the same time. A world
-     * uploading its builds costs its players nothing and is what fills the pool; a world <em>placing</em>
-     * someone else's build puts unreviewed geometry into a stranger's run, and the review pipeline that
-     * gates that is not open yet. So the master switch above stays on — saves, submissions and in-play
-     * uploads all keep working — while this one holds the lease side shut until submissions open.</p>
+     * <p>It shipped off while the two halves of the feature were not ready at the same time: uploading
+     * costs a world's players nothing, while placing someone else's build puts unreviewed geometry into
+     * a stranger's run. What has changed is <em>which</em> builds the pool can serve. The relay leases
+     * only rows it recorded as {@code source='play'} — carriages captured off a running train, screened
+     * and {@code approved} — and never a Train Builder build. Builder builds are a separate system the
+     * relay withholds from every lease ({@code LEASE_BUILDER_BUILDS}, off), so opening them later is an
+     * ops switch on the relay rather than another mod release: every version already in players' hands
+     * follows it too. Community builds circulating between runs is the feature; builder builds joining
+     * them is the part still waiting.</p>
      *
-     * <p>No config migration accompanies this: the key is new, so every install picks the shipped
-     * {@code false} up on its next load. Flipping it to {@code true} later WILL need a migration step,
-     * for the reason {@link #runPendingMigrations()} documents.</p>
+     * <p>Paired with a config migration ({@link #runPendingMigrations()} v2→v3): every install that has
+     * launched since this key shipped holds a stored {@code false}, which is the old shipped default
+     * rather than an operator's decision, so flipping the constant alone would reach new installs only.</p>
      */
-    public static final boolean DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED = false;
+    public static final boolean DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED = true;
     /**
      * Train Builder profiles ship ON.
      *
@@ -260,7 +283,7 @@ public final class DungeonTrainConfig {
      *
      * <p>0 = pre-versioning (any file written before this mechanism existed).</p>
      */
-    public static final int CURRENT_CONFIG_VERSION = 2;
+    public static final int CURRENT_CONFIG_VERSION = 4;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -280,6 +303,11 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue PROGRESSION_LEVEL_DELAY;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP;
+    public static final ModConfigSpec.BooleanValue MOB_EXPERIENCE_SCALING_ENABLED;
+    public static final ModConfigSpec.DoubleValue MOB_EXPERIENCE_PER_STAT_POINT;
+    public static final ModConfigSpec.DoubleValue MOB_EXPERIENCE_PER_ENCHANT_LEVEL;
+    public static final ModConfigSpec.DoubleValue MOB_EXPERIENCE_PER_EFFECT_POINT;
+    public static final ModConfigSpec.DoubleValue MOB_EXPERIENCE_MAX_MULTIPLIER;
     public static final ModConfigSpec.BooleanValue VILLAGER_TRADE_SCALING_ENABLED;
     public static final ModConfigSpec.IntValue VILLAGER_TRADE_SCALING_MIN_CARRIAGE;
     public static final ModConfigSpec.IntValue VILLAGER_TRADE_SCALING_TIERS_PER_STEP;
@@ -336,6 +364,11 @@ public final class DungeonTrainConfig {
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         PROGRESSION_LEVEL_DELAY = pair.getLeft().progressionLevelDelay;
         DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP = pair.getLeft().difficultyScaleHostileGearPastCap;
+        MOB_EXPERIENCE_SCALING_ENABLED = pair.getLeft().mobExperienceScalingEnabled;
+        MOB_EXPERIENCE_PER_STAT_POINT = pair.getLeft().mobExperiencePerStatPoint;
+        MOB_EXPERIENCE_PER_ENCHANT_LEVEL = pair.getLeft().mobExperiencePerEnchantLevel;
+        MOB_EXPERIENCE_PER_EFFECT_POINT = pair.getLeft().mobExperiencePerEffectPoint;
+        MOB_EXPERIENCE_MAX_MULTIPLIER = pair.getLeft().mobExperienceMaxMultiplier;
         VILLAGER_TRADE_SCALING_ENABLED = pair.getLeft().villagerTradeScalingEnabled;
         VILLAGER_TRADE_SCALING_MIN_CARRIAGE = pair.getLeft().villagerTradeScalingMinCarriage;
         VILLAGER_TRADE_SCALING_TIERS_PER_STEP = pair.getLeft().villagerTradeScalingTiersPerStep;
@@ -427,6 +460,21 @@ public final class DungeonTrainConfig {
         ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap = b
                 .comment("When true, hostile carriage mobs keep gaining gear strength after their armor/weapon material caps at netherite (difficulty level 50): each rolled equipment piece gets a flat per-tier primary-stat bonus (attack damage on weapons, armor on armor) scaled by how far the tier is past the cap, so difficulty keeps climbing beyond ~level 50 instead of plateauing. Tiers 50 and below are unchanged. Reuses the same AIS stat-scaling PlayerMobs already receive. Default true; set false to restore the original behavior where hostile gear stops improving at netherite.")
                 .define("difficultyScaleHostileGearPastCap", DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP);
+        ModConfigSpec.BooleanValue mobExperienceScalingEnabled = b
+                .comment("When true, a monster drops more experience the more dangerous it actually is: its worn gear and active buffs are scored at death and the drop is multiplied by (1 + weighted score), capped at mobExperienceMaxMultiplier. Rewards exactly what difficulty progression hands out — high-level armor and weapons, deep enchantments, and stacked beneficial potion effects — so late-train kills pay for the fight instead of dropping the same handful of XP as a naked mob. Scored off the live mob, so it also covers a naturally-armoured vanilla mob and survives a progress reset. Set false for vanilla experience drops.")
+                .define("mobExperienceScalingEnabled", DEFAULT_MOB_EXPERIENCE_SCALING_ENABLED);
+        ModConfigSpec.DoubleValue mobExperiencePerStatPoint = b
+                .comment("Experience multiplier added per point of the mob's gear stat total (each equipped item contributes its attack damage, or its armor if it has no attack damage; bows and crossbows count 4). Includes the AIS stat bonuses difficulty scaling applies past the netherite cap, so gear keeps paying out beyond level 50. Default 0.03 — a vanilla full-iron zombie totals 15 points, so x1.45. 0 disables the gear-stat component.")
+                .defineInRange("mobExperiencePerStatPoint", DEFAULT_MOB_EXPERIENCE_PER_STAT_POINT, MIN_MOB_EXPERIENCE_WEIGHT, MAX_MOB_EXPERIENCE_WEIGHT);
+        ModConfigSpec.DoubleValue mobExperiencePerEnchantLevel = b
+                .comment("Experience multiplier added per enchantment level across all of the mob's equipment (Sharpness V + Unbreaking III on one sword = 8 levels). Counts levels past the vanilla cap that enchantLevelCap allows at high tiers. Default 0.05. 0 disables the enchantment component.")
+                .defineInRange("mobExperiencePerEnchantLevel", DEFAULT_MOB_EXPERIENCE_PER_ENCHANT_LEVEL, MIN_MOB_EXPERIENCE_WEIGHT, MAX_MOB_EXPERIENCE_WEIGHT);
+        ModConfigSpec.DoubleValue mobExperiencePerEffectPoint = b
+                .comment("Experience multiplier added per level of each BENEFICIAL potion effect active on the mob (Speed I = 1 point, Strength III = 3). Harmful and neutral effects score nothing, so a mob the player has debuffed with Weakness never pays a bonus. Weighted highest of the three because the tiered buffs from difficulty progression are the hardest part of a late-train fight. Default 0.20. 0 disables the effect component.")
+                .defineInRange("mobExperiencePerEffectPoint", DEFAULT_MOB_EXPERIENCE_PER_EFFECT_POINT, MIN_MOB_EXPERIENCE_WEIGHT, MAX_MOB_EXPERIENCE_WEIGHT);
+        ModConfigSpec.DoubleValue mobExperienceMaxMultiplier = b
+                .comment("Hard ceiling on the mob experience multiplier, however well-geared the monster is. Default 10.0 — a zombie tops out at 50 XP. Bounds the throughput of an XP farm on the late train, and stops a single absurdly-statted item from producing an unbounded drop. 1.0 caps every mob at its vanilla experience.")
+                .defineInRange("mobExperienceMaxMultiplier", DEFAULT_MOB_EXPERIENCE_MAX_MULTIPLIER, MIN_MOB_EXPERIENCE_MAX_MULTIPLIER, MAX_MOB_EXPERIENCE_MAX_MULTIPLIER);
         ModConfigSpec.BooleanValue difficultyIsolatedStash = b
                 .comment("When true, each vanilla difficulty (Peaceful/Easy/Normal/Hard) is its own self-contained profile: it has its own Ender Chest, and — with keepInventory on — its own carried inventory + XP, so gear farmed on an easy run can't be brought to a hard one. Changing difficulty in-game swaps both (the old difficulty's are stored, the new difficulty's are loaded) and tells the player in chat. Normal keeps using the existing un-suffixed storage, so no current stash moves or disappears; the other three difficulties start empty. Companion to the echo partition in PlayerMob (reincarnationDifficultyIsolation), which keeps each difficulty's echoes to itself. Set false to share one stash and one loadout across all difficulties, as builds before this did.")
                 .define("difficultyIsolatedStash", DEFAULT_DIFFICULTY_ISOLATED_STASH);
@@ -443,13 +491,13 @@ public final class DungeonTrainConfig {
                 .comment("First onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors do not spawn at all while the lead player is within the first firstLevelNoHostilesCarriages carriages of progress, for a combat-free opening stretch. Passive/neutral carriage mobs (villagers, traders, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
                 .define("firstLevelNoHostiles", DEFAULT_FIRST_LEVEL_NO_HOSTILES);
         ModConfigSpec.IntValue firstLevelNoHostilesCarriages = b
-                .comment("Length, in carriages of player progress, of the no-hostiles opening stage (see firstLevelNoHostiles). Default 10. Independent of carriagesPerTier; 0 disables the stage.")
+                .comment("Length, in carriages of player progress, of the no-hostiles opening stage (see firstLevelNoHostiles). Default 5. Independent of carriagesPerTier; 0 disables the stage.")
                 .defineInRange("firstLevelNoHostilesCarriages", DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES, MIN_ONBOARDING_STAGE_CARRIAGES, MAX_ONBOARDING_STAGE_CARRIAGES);
         ModConfigSpec.BooleanValue firstLevelEasyMobs = b
                 .comment("Second onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors are replaced with small slimes (or small magma cubes for nether/raider mobs, per the dungeontrain:first_band_magma_mobs entity-type tag; piglins/piglin brutes in dungeontrain:first_band_nether_only_mobs only become magma cubes in the Nether and otherwise spawn as authored; mobs in dungeontrain:first_band_no_substitute_mobs, e.g. zombified piglins, are never substituted) while the lead player is within the slimes stage — the firstLevelEasyMobsCarriages carriages that follow the no-hostiles stage — giving an easy combat intro. Passive/neutral carriage mobs (villagers, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
                 .define("firstLevelEasyMobs", DEFAULT_FIRST_LEVEL_EASY_MOBS);
         ModConfigSpec.IntValue firstLevelEasyMobsCarriages = b
-                .comment("Length, in carriages of player progress, of the slimes stage (see firstLevelEasyMobs), starting after the no-hostiles stage. Default 15. Independent of carriagesPerTier; 0 disables the stage.")
+                .comment("Length, in carriages of player progress, of the slimes stage (see firstLevelEasyMobs), starting after the no-hostiles stage. Default 5. Independent of carriagesPerTier; 0 disables the stage.")
                 .defineInRange("firstLevelEasyMobsCarriages", DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES, MIN_ONBOARDING_STAGE_CARRIAGES, MAX_ONBOARDING_STAGE_CARRIAGES);
         ModConfigSpec.BooleanValue firstLevelStarterLoot = b
                 .comment("When true, carriage-interior chests linked to the rich 'loot' or 'loot_irongold' loot prefabs instead roll the 'starter' prefab while the lead player is still within the gentle opening window (the firstLevelNoHostilesCarriages + firstLevelEasyMobsCarriages carriages spanning both the no-hostiles and slimes stages), so the easy intro hands out starter-tier loot. Other loot prefabs (wood, stone, mining, villager, etc.) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
@@ -564,16 +612,17 @@ public final class DungeonTrainConfig {
                         "first time a player actually changes it — looting a chest or breaking a loot container does NOT count as",
                         "a change. Uploading also requires the player's client to have granted network consent. Default",
                         "true. Set it false to opt a world out entirely: it then neither leases community builds nor",
-                        "uploads its own. NOTE: leasing additionally requires sharedCarriageLeasingEnabled below, which",
-                        "ships false — so by default a world uploads but is never served anyone else's build.")
+                        "uploads its own. NOTE: leasing additionally requires sharedCarriageLeasingEnabled below. Only",
+                        "carriages captured off a running train are served; Train Builder builds are a separate system",
+                        "the relay withholds from every lease, so submitting one puts it in the queue rather than in a run.")
                 .define("sharedCarriagesEnabled", DEFAULT_SHARED_CARRIAGES_ENABLED);
         ModConfigSpec.BooleanValue sharedCarriageLeasingEnabled = b
                 .comment("Whether this world may LEASE community carriages from the relay and place them on its trains.",
                         "Separate from sharedCarriagesEnabled, which governs the other half of the feature: uploading.",
-                        "Default false — builds are collected (players can save them to the server and submit them for",
-                        "review) but nothing from the pool is served into a run yet. Set it true to place community",
-                        "builds; with sharedCarriagesEnabled false it does nothing, since the master switch opts the",
-                        "world out of the feature entirely.")
+                        "Default true — a shared slot may place a carriage another world built, screened and approved by",
+                        "the relay. Set it false to ride only this world's own carriages while still contributing yours.",
+                        "With sharedCarriagesEnabled false it does nothing, since the master switch opts the world out of",
+                        "the feature entirely.")
                 .define("sharedCarriageLeasingEnabled", DEFAULT_SHARED_CARRIAGE_LEASING_ENABLED);
         ModConfigSpec.DoubleValue sharedCarriagePoolChance = b
                 .comment("When a shared-carriage slot spawns, the probability it LEASES an existing build by ANY author from",
@@ -681,6 +730,8 @@ public final class DungeonTrainConfig {
         return new Holder(configVersion, numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
                 difficultyScaleHostileGearPastCap, difficultyIsolatedStash,
+                mobExperienceScalingEnabled, mobExperiencePerStatPoint, mobExperiencePerEnchantLevel,
+                mobExperiencePerEffectPoint, mobExperienceMaxMultiplier,
                 villagerTradeScalingEnabled, villagerTradeScalingMinCarriage, villagerTradeScalingTiersPerStep,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
@@ -721,6 +772,7 @@ public final class DungeonTrainConfig {
     public static boolean isBuilderProfileEnabled() {
         return isLoaded() ? BUILDER_PROFILE_ENABLED.get() : DEFAULT_BUILDER_PROFILE_ENABLED;
     }
+
 
     /** Probability a shared-carriage slot leases a build by any author from the relay pool. */
     public static double getSharedCarriagePoolChance() {
@@ -822,6 +874,27 @@ public final class DungeonTrainConfig {
 
     public static boolean getDifficultyScaleHostileGearPastCap() {
         return isLoaded() ? DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP.get() : DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP;
+    }
+
+    /** When true, a monster's experience drop scales with its gear and active beneficial effects. */
+    public static boolean getMobExperienceScalingEnabled() {
+        return isLoaded() ? MOB_EXPERIENCE_SCALING_ENABLED.get() : DEFAULT_MOB_EXPERIENCE_SCALING_ENABLED;
+    }
+
+    public static double getMobExperiencePerStatPoint() {
+        return isLoaded() ? MOB_EXPERIENCE_PER_STAT_POINT.get() : DEFAULT_MOB_EXPERIENCE_PER_STAT_POINT;
+    }
+
+    public static double getMobExperiencePerEnchantLevel() {
+        return isLoaded() ? MOB_EXPERIENCE_PER_ENCHANT_LEVEL.get() : DEFAULT_MOB_EXPERIENCE_PER_ENCHANT_LEVEL;
+    }
+
+    public static double getMobExperiencePerEffectPoint() {
+        return isLoaded() ? MOB_EXPERIENCE_PER_EFFECT_POINT.get() : DEFAULT_MOB_EXPERIENCE_PER_EFFECT_POINT;
+    }
+
+    public static double getMobExperienceMaxMultiplier() {
+        return isLoaded() ? MOB_EXPERIENCE_MAX_MULTIPLIER.get() : DEFAULT_MOB_EXPERIENCE_MAX_MULTIPLIER;
     }
 
     /** When true, authored hostile carriage mobs do not spawn during the no-hostiles opening stage. */
@@ -1020,6 +1093,35 @@ public final class DungeonTrainConfig {
                     from, CURRENT_CONFIG_VERSION);
         }
 
+        // v2 → v3: adopt the leasing default. The switch shipped off because placing someone else's
+        // build was the half that wasn't ready; what made it ready is the relay serving `source='play'`
+        // rows only, so a run is filled from carriages play made rather than from unreviewed builder
+        // work. A stored `false` here is that shipped default — leasing has never run on any install —
+        // not an operator saying no, and an operator who turns it back off afterwards keeps that choice.
+        if (from < 3 && !SHARED_CARRIAGE_LEASING_ENABLED.get()) {
+            SHARED_CARRIAGE_LEASING_ENABLED.set(true);
+            LOGGER.info("[DungeonTrain] Config migration v{}→v{}: enabled shared carriage leasing.",
+                    from, CURRENT_CONFIG_VERSION);
+        }
+
+        // v3 -> v4: adopt the shortened onboarding stages (10 + 15 carriages -> 5 + 5). Unlike the
+        // three steps above, these keys are GOVERNED by DtConfigIntegrity: a file still holding the
+        // old lengths reads as a deviation and puts the session into Free Play, so without this step
+        // every existing install would be tainted by a default change it never made. Each length moves
+        // only if it still holds the old shipped value — an operator who picked their own number keeps
+        // it, and keeps it permanently, since this step never runs a second time.
+        if (from < 4) {
+            if (FIRST_LEVEL_NO_HOSTILES_CARRIAGES.get() == LEGACY_FIRST_LEVEL_NO_HOSTILES_CARRIAGES) {
+                FIRST_LEVEL_NO_HOSTILES_CARRIAGES.set(DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES);
+            }
+            if (FIRST_LEVEL_EASY_MOBS_CARRIAGES.get() == LEGACY_FIRST_LEVEL_EASY_MOBS_CARRIAGES) {
+                FIRST_LEVEL_EASY_MOBS_CARRIAGES.set(DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES);
+            }
+            LOGGER.info("[DungeonTrain] Config migration v{}->v{}: onboarding stages now {} + {} carriages.",
+                    from, CURRENT_CONFIG_VERSION,
+                    FIRST_LEVEL_NO_HOSTILES_CARRIAGES.get(), FIRST_LEVEL_EASY_MOBS_CARRIAGES.get());
+        }
+
         CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);
         CONFIG_VERSION.save();
     }
@@ -1114,6 +1216,11 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue progressionLevelDelay,
             ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap,
             ModConfigSpec.BooleanValue difficultyIsolatedStash,
+            ModConfigSpec.BooleanValue mobExperienceScalingEnabled,
+            ModConfigSpec.DoubleValue mobExperiencePerStatPoint,
+            ModConfigSpec.DoubleValue mobExperiencePerEnchantLevel,
+            ModConfigSpec.DoubleValue mobExperiencePerEffectPoint,
+            ModConfigSpec.DoubleValue mobExperienceMaxMultiplier,
             ModConfigSpec.BooleanValue villagerTradeScalingEnabled,
             ModConfigSpec.IntValue villagerTradeScalingMinCarriage,
             ModConfigSpec.IntValue villagerTradeScalingTiersPerStep,

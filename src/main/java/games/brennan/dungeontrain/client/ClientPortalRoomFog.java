@@ -11,6 +11,14 @@ import games.brennan.dungeontrain.net.PortalRoomFogPacket;
  * bounds instead means walking out clears the fog with no message at all, and a disconnect drops the
  * cache along with everything else.</p>
  *
+ * <p><b>The corridor is the exception, and it is a value rather than a place.</b> A portal corridor
+ * sits outside the room's stamped bounds, so a box test alone left the fog at vanilla for the whole
+ * walk and then closed it in the instant the camera crossed the room-side door — the one place the
+ * transition should be least visible. So the walk is driven by {@code PortalCrossingLight}'s ramp
+ * instead, the same number the corridor's lightmap lift rides, and by the time the room is visible
+ * through the far doorway it is already at its own fog distance. That value cannot strand anybody
+ * either: {@link ClientPortalCrossing} expires it about a second after the server stops sending.</p>
+ *
  * <p>Pure logic, no rendering imports — {@link PortalRoomFogEvents} is what talks to the renderer.</p>
  */
 public final class ClientPortalRoomFog {
@@ -48,6 +56,14 @@ public final class ClientPortalRoomFog {
         region = packet == null ? PortalRoomFogPacket.none() : packet;
     }
 
+    /** The fog box the server last named, for the diagnostics panel. See the sky cache's twin. */
+    public static String describeRegion() {
+        PortalRoomFogPacket r = region;
+        if (r.minX() == 0 && r.maxX() == 0 && r.minY() == 0 && r.maxY() == 0) return "none";
+        return "[" + r.minX() + ".." + r.maxX() + ", " + r.minY() + ".." + r.maxY()
+            + ", " + r.minZ() + ".." + r.maxZ() + "] r=" + r.radius();
+    }
+
     /** Forget everything. Wired to logging out, so a room never leaks into the next world. */
     public static void reset() {
         region = PortalRoomFogPacket.none();
@@ -68,14 +84,27 @@ public final class ClientPortalRoomFog {
      * back out opens up to vanilla's distance and disengages at the <i>top</i> of the range rather
      * than the bottom.</p>
      *
+     * <p><b>Outside the room, the corridor ramp drives it.</b> {@code crossing} is nothing at the
+     * train-side door plane and everything at the room-side one, so the fog closes in over the walk
+     * and is already at the room's distance when the room comes into view through the doorway.
+     * Continuous across the door: at a ramp of {@code 1} the corridor target <i>is</i> the room's
+     * radius, which is what the inside branch hands back everywhere but a Bedrockless falloff.
+     * Symmetric on the way out, since the ramp is measured from the train end either way.</p>
+     *
      * @param vanillaFar the far plane vanilla had computed for this frame, from the player's own
      *                   render distance and fog setting — the "no room" end of the ease
+     * @param crossing   how far through a portal corridor the camera is, {@code 0}..{@code 1}, or
+     *                   {@code 0} when it is in none — see {@link ClientPortalCrossing#current}
      */
-    public static float fogDistanceAt(double x, double y, double z, float vanillaFar) {
+    public static float fogDistanceAt(double x, double y, double z, float vanillaFar,
+                                      float crossing) {
         if (vanillaFar <= 0.0f) return 0.0f;
 
         boolean inside = contains(x, y, z);
-        float radius = inside ? radiusAt(x, z) : 0.0f;
+        float radius = inside ? radiusAt(x, z) : corridorRadius(crossing, vanillaFar);
+        // Standing in the room and walking toward it along a corridor are one case below: both have
+        // a distance the room is asking for, and the difference is only where it came from.
+        boolean engaged = inside || radius > 0.0f;
         // A room fogging at further than the player can see anyway has nothing to say, and engaging
         // for it would only add a pointless ease in both directions. Disengage outright rather than
         // returning zero with a live value still cached, which would ease out of a stale distance if
@@ -89,18 +118,36 @@ public final class ClientPortalRoomFog {
             applied = 0.0f;
             return 0.0f;
         }
-        if (!inside && applied <= 0.0f) return 0.0f;
+        if (!engaged && applied <= 0.0f) return 0.0f;
 
-        float target = inside ? radius : vanillaFar;
+        float target = engaged ? radius : vanillaFar;
         // Engaging: start level with vanilla so this frame changes nothing, then close in.
         if (applied <= 0.0f) applied = vanillaFar;
         applied += (target - applied) * EASE_PER_FRAME;
         // All the way back out: hand the fog to vanilla outright rather than sitting a hair under it.
-        if (!inside && applied >= vanillaFar - OFF_EPSILON) {
+        if (!engaged && applied >= vanillaFar - OFF_EPSILON) {
             applied = 0.0f;
             return 0.0f;
         }
         return applied;
+    }
+
+    /**
+     * The distance the corridor ramp asks for, or {@code 0} when there is no corridor to ramp.
+     *
+     * <p>A straight lerp from vanilla's own far plane to the room's radius. Clamped to vanilla's
+     * distance at the top because this only ever <i>shrinks</i> what a player can see — a room that
+     * fogs further than they can see anyway has nothing to say, exactly as it has nothing to say
+     * from inside, and easing toward it would only add a pointless engagement in both directions.</p>
+     *
+     * <p>The room's nominal radius rather than {@link #radiusAt}: the falloff ramp measures a walk
+     * out into the void a Bedrockless room swept, and a corridor is at the room, not in that void.</p>
+     */
+    private static float corridorRadius(float crossing, float vanillaFar) {
+        PortalRoomFogPacket r = region;
+        float t = Math.max(0.0f, Math.min(1.0f, crossing));
+        if (t <= 0.0f || r.radius() <= 0.0f || r.radius() >= vanillaFar) return 0.0f;
+        return vanillaFar + (r.radius() - vanillaFar) * t;
     }
 
     /**

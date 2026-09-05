@@ -85,6 +85,50 @@ class PortalRoomDoorCellsTest {
     }
 
     @Test
+    @DisplayName("The door line agrees with an off-centre roomOrigin too, at every legal offset")
+    void doorZ_agreesWithRoomOriginCentring_offCentre() {
+        BlockPos entry = new BlockPos(0, 0, 0);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.LONG);
+
+        // Comfortably wider than the floor, so every offset tried actually has slack to spend.
+        int width = PortalRoomLayout.minWidth(DEFAULT_DIMS) + 10;
+        int max = PortalRoomLayout.maxDoorOffset(DEFAULT_DIMS, width);
+        Vec3i size = new Vec3i(PortalRoomLayout.BUILT_IN_LENGTH, PortalRoomLayout.minHeight(DEFAULT_DIMS), width);
+
+        for (int offset = -max; offset <= max; offset++) {
+            BlockPos room = PortalRoomLayout.roomOrigin(entry, DEFAULT_DIMS, layout, width, offset);
+            assertEquals(entry.getZ() + layout.doorZ(), PortalRoomDoorCells.doorZ(room, size, offset),
+                "offset " + offset + ": the ghosted line must still be the corridor's own fixed line");
+        }
+    }
+
+    @Test
+    @DisplayName("The ghosted door floor agrees with an off-height roomOrigin too, at every legal height offset")
+    void forRoom_agreesWithRoomOriginHeightOffset() {
+        BlockPos entry = new BlockPos(0, 0, 0);
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(DEFAULT_DIMS, PortalCorridorKind.LONG);
+
+        int width = PortalRoomLayout.minWidth(DEFAULT_DIMS);
+        int height = PortalRoomLayout.minHeight(DEFAULT_DIMS) + 8;
+        int maxHeightOffset = PortalRoomLayout.maxDoorHeightOffset(DEFAULT_DIMS, height);
+
+        for (int heightOffset = 0; heightOffset <= maxHeightOffset; heightOffset++) {
+            BlockPos room = PortalRoomLayout.roomOrigin(
+                entry, DEFAULT_DIMS, layout, width, height, 0, heightOffset);
+            Vec3i size = new Vec3i(PortalRoomLayout.BUILT_IN_LENGTH, height, width);
+
+            List<BlockPos> cells = PortalRoomDoorCells.forRoom(room, size, 0, heightOffset);
+            // The corridor's own floor never moves — every ghosted lower cell must be one above
+            // entry.getY(), whatever the room's own floor (room.getY()) sank to.
+            for (int i = 0; i < cells.size(); i += PortalRoomDoorCells.CELLS_PER_DOOR) {
+                assertEquals(entry.getY() + 1, cells.get(i).getY(),
+                    "height offset " + heightOffset + ": the ghosted lower cell must sit on the"
+                        + " corridor's own fixed floor line, not the room's sunk one");
+            }
+        }
+    }
+
+    @Test
     @DisplayName("A door cell is the corridor's own doorway cell, in the room's frame")
     void forRoom_landsOnTheCorridorsDoorwayColumn() {
         BlockPos entry = new BlockPos(-300, 12, 88);
@@ -144,5 +188,44 @@ class PortalRoomDoorCellsTest {
         assertTrue(PortalRoomDoorCells.forRoom(origin, new Vec3i(11, 7, 2)).isEmpty());
         assertTrue(PortalRoomDoorCells.forRoom(origin, null).isEmpty());
         assertTrue(PortalRoomDoorCells.forRoom(null, new Vec3i(11, 7, 13)).isEmpty());
+    }
+    // ---- the room's two doorways, placed apart ----
+
+    @Test
+    @DisplayName("Each end reads its own offsets — the far door does not follow the near one")
+    void forRoom_placesTheTwoDoorsIndependently() {
+        BlockPos origin = new BlockPos(10, 60, -20);
+        Vec3i size = new Vec3i(11, 13, 21);
+
+        List<BlockPos> cells = PortalRoomDoorCells.forRoom(origin, size, 2, 3, -4, 1);
+        assertEquals(PortalRoomDoorCells.CELLS_PER_ROOM, cells.size());
+
+        // Entry end: the near column, on the entry door's own line and floor.
+        assertEquals(origin.getX() - 1, cells.get(0).getX());
+        assertEquals(PortalRoomDoorCells.doorZ(origin, size, 2), cells.get(0).getZ());
+        assertEquals(origin.getY() + 3 + 1, cells.get(0).getY());
+        assertEquals(cells.get(0).above(), cells.get(1));
+
+        // Exit end: the far column, on the exit door's.
+        assertEquals(origin.getX() + size.getX(), cells.get(2).getX());
+        assertEquals(PortalRoomDoorCells.doorZ(origin, size, -4), cells.get(2).getZ());
+        assertEquals(origin.getY() + 1 + 1, cells.get(2).getY());
+        assertEquals(cells.get(2).above(), cells.get(3));
+    }
+
+    @Test
+    @DisplayName("Passing one pair of offsets is the mirrored room the shorter overloads always drew")
+    void forRoom_mirrorsWhenBothEndsAreGivenTheSameOffsets() {
+        BlockPos origin = new BlockPos(-5, 40, 7);
+        Vec3i size = new Vec3i(9, 11, 17);
+        for (int offset = -3; offset <= 3; offset++) {
+            for (int up = 0; up <= 4; up++) {
+                assertEquals(PortalRoomDoorCells.forRoom(origin, size, offset, up),
+                    PortalRoomDoorCells.forRoom(origin, size, offset, up, offset, up),
+                    "offset " + offset + ", up " + up);
+                assertEquals(PortalRoomDoorCells.doorBases(origin, size, offset, up),
+                    PortalRoomDoorCells.doorBases(origin, size, offset, up, offset, up));
+            }
+        }
     }
 }

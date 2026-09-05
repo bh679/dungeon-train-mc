@@ -21,6 +21,11 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  * beyond what they can see anyway changes nothing, which is why a small room does not look fogged
  * until enough copies of it are standing to be worth hiding.</p>
  *
+ * <p><b>The corridor ramps into it.</b> A portal corridor is outside the room's bounds, so the box
+ * test alone left the fog at vanilla for the whole walk and closed it in at the room-side door — all
+ * of the transition in its last step. {@code ClientPortalRoomFog} rides {@code ClientPortalCrossing}
+ * through the corridor instead, which is the same ramp the corridor's own lightmap lift uses.</p>
+ *
  * <p><b>Vanilla's far plane is also an input.</b> It is the far end of the ease the cache runs, so
  * the frame a player arrives in a room looks exactly like the frame before it and the fog closes in
  * from there. Handing only the camera position over and easing up from zero is what made a portal
@@ -52,19 +57,44 @@ public final class PortalRoomFogEvents {
         // so engaging can never hand back a distance shorter than the room asked for. See
         // ClientPortalRoomFog#fogDistanceAt — easing up from zero instead is what used to fill the
         // screen with fog colour for the first frames of a portal swap.
+        // The corridor ramp goes in as well, so a player walking a portal corridor arrives with the
+        // room already at its own fog distance instead of watching it close in at the doorway. Read
+        // rather than advanced: LightTexturePortalCrossingMixin owns that ease.
         float distance = ClientPortalRoomFog.fogDistanceAt(
-            camera.x, camera.y, camera.z, event.getFarPlaneDistance());
-        if (distance <= 0.0f) return;
+            camera.x, camera.y, camera.z, event.getFarPlaneDistance(),
+            ClientPortalCrossing.current());
+        if (distance <= 0.0f) {
+            // No room in range. Recorded as an untouched pass rather than not recorded at all —
+            // on the diagnostics panel "we asked for nothing" has to be distinguishable from "we
+            // asked and the pack threw it away".
+            if (ShaderDiagnostics.recording()) {
+                ShaderDiagnostics.recordFogDistance(event.getFarPlaneDistance(),
+                    event.getFarPlaneDistance(), event.getNearPlaneDistance(), false);
+            }
+            return;
+        }
 
         float far = Math.min(event.getFarPlaneDistance(), distance);
         // The near plane rides in proportionally, so a heavily shrunk fog thickens rather than
         // becoming a hard edge at arm's length.
         float near = Math.min(event.getNearPlaneDistance(), far * 0.25f);
-        if (far >= event.getFarPlaneDistance() && near >= event.getNearPlaneDistance()) return;
+        if (far >= event.getFarPlaneDistance() && near >= event.getNearPlaneDistance()) {
+            if (ShaderDiagnostics.recording()) {
+                ShaderDiagnostics.recordFogDistance(event.getFarPlaneDistance(), far, near, false);
+            }
+            return;
+        }
 
+        float vanillaFar = event.getFarPlaneDistance();
         event.setFarPlaneDistance(far);
         event.setNearPlaneDistance(near);
         event.setCanceled(true);
+        // A shader pack is free to ignore these planes; the post-composite pass is not, and it
+        // draws exactly the planes applied here rather than re-running the ease.
+        games.brennan.dungeontrain.client.shader.PostFogPass.requestFog(near, far);
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordFogDistance(vanillaFar, far, near, true);
+        }
     }
 
     @SubscribeEvent
@@ -83,5 +113,8 @@ public final class PortalRoomFogEvents {
         // The engine-audio region is the same shape of cache with the same failure mode — a stale one
         // would have the train audible in the next world's portal-shaped nowhere — so it goes too.
         ClientPortalTrainAudio.reset();
+        // The twin boxes are a region cache like the first two, and stale ones would have the next
+        // world declining to predict a shulker box in mid-air where a twin used to be.
+        games.brennan.dungeontrain.client.portal.ClientPortalTwinBoxes.reset();
     }
 }

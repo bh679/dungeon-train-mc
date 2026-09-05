@@ -12,6 +12,8 @@ import games.brennan.dungeontrain.discord.DeathDetailReporter;
 import games.brennan.dungeontrain.discord.DeathEquipmentReporter;
 import games.brennan.dungeontrain.discord.DeathInventoryReporter;
 import games.brennan.dungeontrain.discord.DeathReporter;
+import games.brennan.dungeontrain.discord.PortalStatsReporter;
+import games.brennan.dungeontrain.portal.PortalConnectionStats;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.RunSummaryReporter;
 import games.brennan.dungeontrain.discord.DeathManifestFormat;
@@ -131,6 +133,9 @@ public final class RunStatsEvents {
         if (victim instanceof PlayerMobEntity pm) {
             run.incrementPlayerKills();
             run.setKilledAppearance(PlayerMobAppearance.capture(pm));
+            // ...and they stop being a friend you made. The kill still counts on the kill
+            // side; it just can't also count on the friends side.
+            run.recordKilledPlayerMob(pm.getUUID());
         }
         // Attribute the kill to the weapon that actually dealt it. Arrows
         // (from bows/crossbows) and thrown tridents carry the firing weapon
@@ -240,18 +245,24 @@ public final class RunStatsEvents {
                     packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
 
             // This life's run summary (duration + carriage + distance) -> the per-life playtime view.
-            RunSummaryReporter.report(player, packet, pos);
+            // `cheated` rides along so the relay can keep a Free Play run off the public leaderboards
+            // while still storing the record — see RunSummaryReporter.buildPayload.
+            RunSummaryReporter.report(player, packet, pos, cheated);
 
             // A first-class per-death record so the explorer counts EVERY death, not only the ones that
             // post a Discord death report below. Fires independent of isDeathReportToDiscord() (Free
             // Play / short-abandon / report-disabled deaths still count).
             DeathReporter.report(player, packet, pos);
 
+            // How this life's dimensional carriages went — connected vs broke, and why. Sends
+            // nothing for a life that met no portal; the tally is taken either way.
+            PortalStatsReporter.report(player, packet);
+
             // The full paginated narrative + death-screen stats, and the full hotbar/main-inventory +
             // offhand, so the per-death detail view can show everything the death screen did.
             DeathDetailReporter.report(player, packet, new DeathDetailReporter.Feats(
                     run.echoesKilled(), GlobalPlayerStats.totalEchoesKilled(id),
-                    run.maxCarriagesNoChest(), run.pacifistCarriages(), lifeDisplacement));
+                    run.maxCarriagesNoChest(), run.pacifistCarriages(), lifeDisplacement), cheated);
             DeathInventoryReporter.report(player);
         });
 
@@ -414,6 +425,9 @@ public final class RunStatsEvents {
     @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // A life that ends by logging out reports no portal tally; drop it rather than letting it
+        // leak into the next life. Before every gate below — this is bookkeeping, not a report.
+        PortalConnectionStats.forget(player.getUUID());
         if (player.isDeadOrDying()) return;
         // Free Play runs still post the "left the game" summary — only cross-world stat accrual
         // (elsewhere) is frozen in Free Play, not the Discord report.
@@ -647,7 +661,7 @@ public final class RunStatsEvents {
                     if (feeling > FRIEND_FEELING_MIN) {
                         run.recordBefriended(mob.getUUID());
                         if (feeling > run.friendFeeling()) {
-                            run.captureFriendAppearance(PlayerMobAppearance.capture(pm), feeling);
+                            run.captureFriendAppearance(mob.getUUID(), PlayerMobAppearance.capture(pm), feeling);
                         }
                     }
                 }

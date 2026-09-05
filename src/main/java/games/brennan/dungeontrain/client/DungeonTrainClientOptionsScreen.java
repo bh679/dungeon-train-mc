@@ -2,12 +2,20 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
+import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.train.CatchUpBurstAuto;
+import games.brennan.dungeontrain.train.CatchUpBurstMode;
+import games.brennan.dungeontrain.data.PlayerDataBackup;
+import games.brennan.dungeontrain.data.PlayerDataPaths;
+import games.brennan.dungeontrain.data.BackupMode;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
+import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
@@ -16,6 +24,8 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.OptionsList;
+import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
@@ -25,8 +35,12 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -77,6 +91,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     /** Ceiling ladder shared with the X-menu row: 0 = AUTO, then fixed long-edge caps. */
     private static final List<Integer> RESOLUTION_VALUES = List.of(0, 1080, 1440, 2160);
 
+    /** Slider bounds for "Backups per version". Kept in step with the config's own range. */
+    private static final int BACKUPS_PER_VERSION_MIN = 1;
+    private static final int BACKUPS_PER_VERSION_MAX = 20;
+
+
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private final List<OptionsTab> tabs = new ArrayList<>();
     private TabNavigationBar tabNavigationBar;
@@ -95,11 +114,17 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     protected void init() {
         this.translateTarget = TranslationTarget.resolveForClient();
         boolean chinese = PoliticalFilterPrefs.isChineseLocale();
+        // The catch-up row writes ONE global value in the COMMON config, which is loaded from
+        // mod construction — so it is editable with no world open, and the title screen sets the
+        // same value a world does. Hidden only on a multiplayer client, where the value that
+        // counts is the server's and our write would change nothing they can see.
+        Minecraft mc = Minecraft.getInstance();
+        boolean trainSettingsWritable = mc.level == null || mc.hasSingleplayerServer();
 
         this.tabs.clear();
         for (ClientOptionsTab tab : ClientOptionsTab.values()) {
             this.tabs.add(new OptionsTab(tab,
-                    ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty())));
+                    ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(), trainSettingsWritable)));
         }
 
         this.tabNavigationBar = TabNavigationBar.builder(this.tabManager, this.width)
@@ -202,6 +227,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private void pack(OptionsList list, List<ClientOptionsTab.Row> rows) {
         AbstractWidget pending = null;
         for (ClientOptionsTab.Row row : rows) {
+            // A group leader never shares a line with whatever came before it, so the rows that
+            // belong together read as one block instead of being split across pair boundaries.
+            if (ClientOptionsTab.startsGroup(row) && pending != null) {
+                list.addSmall(pending, null);
+                pending = null;
+            }
             if (fitsNarrow(row)) {
                 AbstractWidget narrow = build(row, ROW_W);
                 if (pending == null) {
@@ -230,6 +261,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * pair happily on AUTO and overflow the moment the player cycled it to a longer value.</p>
      */
     private boolean fitsNarrow(ClientOptionsTab.Row row) {
+        // A caption spans the block it introduces; pairing it with a setting would read as a label
+        // for that setting alone.
+        if (ClientOptionsTab.isHeading(row)) {
+            return false;
+        }
         for (Component candidate : labelCandidates(row)) {
             if (this.font.width(candidate) > ROW_W - TEXT_PADDING) {
                 return false;
@@ -248,12 +284,37 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
             case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
+            case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
+            // Every mode, because the row must fit its LONGEST value — the button shows the
+            // caption and the value together, and "Fill all" is not the longest in every locale.
+            // AUTO is the longest of all: it names the mode it resolved to inside its own label.
+            case CATCH_UP_BURST -> Arrays.stream(CatchUpBurstMode.values())
+                    .map(m -> value("gui.dungeontrain.options.catch_up_burst", catchUpBurstLabel(m)))
+                    .toList();
+            case AI_POLICY -> List.of(Component.translatable("gui.dungeontrain.options.ai_policy"));
             case TRANSLATE -> List.of(Component.translatable("gui.dungeontrain.options.translate"));
             case CUSTOM_CONTENT -> {
                 List<Component> out = new ArrayList<>();
                 for (CustomContentPreference pref : List.of(CustomContentPreference.ASK,
                         CustomContentPreference.CONTINUE, CustomContentPreference.DISABLE)) {
                     out.add(value("gui.dungeontrain.options.custom_content", customContentLabel(pref)));
+                }
+                yield out;
+            }
+            case BACKUPS_HEADING -> List.of(
+                    Component.translatable("gui.dungeontrain.options.backups_heading"));
+            case BACKUPS_PER_VERSION -> List.of(backupsPerVersionLabel(
+                    Component.translatable("gui.dungeontrain.options.backups_per_version"),
+                    BACKUPS_PER_VERSION_MAX));
+            case CONFIRM_BUILD_RESTORE -> onOffCandidates("gui.dungeontrain.options.confirm_build_restore");
+            // The size is read at build time, so the candidate has to stand in for the widest it
+            // could ever be rather than whatever it happens to be right now.
+            case CLEAR_BACKUPS -> List.of(Component.translatable(
+                "gui.dungeontrain.options.clear_backups", "000.0 GB"));
+            case BACKUPS -> {
+                List<Component> out = new ArrayList<>();
+                for (BackupMode mode : BackupMode.values()) {
+                    out.add(value("gui.dungeontrain.options.backups", backupModeLabel(mode)));
                 }
                 yield out;
             }
@@ -348,6 +409,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     (btn, on) -> ClientDisplayConfig.setBookAuthorBurnChat(on)),
                     "gui.dungeontrain.options.book_author_chat.tip");
 
+            // How fast the train may re-extend once an end has fallen behind the carriages a nearby
+            // player needs. One global value, not a per-world one — set it here or at the title
+            // screen and every world follows. Applies live to the train already running: the
+            // appender reads it at the moment it decides each spawn, so nothing waits on a reload.
+            case CATCH_UP_BURST -> withTip(
+                    CycleButton.<CatchUpBurstMode>builder(DungeonTrainClientOptionsScreen::catchUpBurstLabel)
+                            .withValues(CatchUpBurstMode.values())
+                            .withInitialValue(DungeonTrainCommonConfig.getCatchUpBurstMode())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.catch_up_burst"),
+                                    (btn, mode) -> DungeonTrainCommonConfig.setCatchUpBurstMode(mode)),
+                    "gui.dungeontrain.options.catch_up_burst.tip");
+
             // The binding itself lives in vanilla Controls (Dungeon Train category); this only decides
             // whether it does anything, so a player who wants the key back for something else can free
             // it without hunting through the keybind list.
@@ -357,6 +431,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     Component.translatable("gui.dungeontrain.options.cinematic_hotkey"),
                                     (btn, on) -> ClientDisplayConfig.setCinematicHotkeyEnabled(on)),
                     "gui.dungeontrain.options.cinematic_hotkey.tip");
+
+            // "Was any of this made by AI?" answered in full. Unconditional, and deliberately a
+            // page rather than a tooltip: the honest answer is longer than a row can carry. Also
+            // reachable from the Credits page — see AiPolicyScreen.
+            case AI_POLICY -> withTip(
+                    Button.builder(Component.translatable("gui.dungeontrain.options.ai_policy"),
+                                    b -> this.minecraft.setScreen(new AiPolicyScreen(this)))
+                            .bounds(0, 0, width, ROW_H).build(),
+                    "gui.dungeontrain.options.ai_policy.tip");
 
             // Shown only when there is a language to edit — on en_us in a release build there is none
             // and the row would be a dead end; a dev build points it at the dev target instead, so the
@@ -387,6 +470,65 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     Component.translatable("gui.dungeontrain.options.custom_content"),
                                     (btn, pref) -> ClientDisplayConfig.setCustomContentPreference(pref)),
                     "gui.dungeontrain.options.custom_content.tip");
+
+            // Where restore points of builds and progress are written. Unlike every other row here
+            // the tooltip is PER VALUE, not per row: "Instanced" means nothing on its own, and the
+            // whole point of the setting is the difference in what each option survives. The
+            // tooltip is therefore re-set on every change as well as seeded with the initial value.
+            case BACKUPS -> {
+                CycleButton<BackupMode> button = CycleButton.<BackupMode>builder(
+                                DungeonTrainClientOptionsScreen::backupModeLabel)
+                        .withValues(List.of(BackupMode.EXTERNAL, BackupMode.INSTANCE, BackupMode.OFF))
+                        .withInitialValue(ClientDisplayConfig.getBackupMode())
+                        .create(0, 0, width, ROW_H,
+                                Component.translatable("gui.dungeontrain.options.backups"),
+                                (btn, mode) -> {
+                                    ClientDisplayConfig.setBackupMode(mode);
+                                    btn.setTooltip(backupModeTip(mode));
+                                });
+                button.setTooltip(backupModeTip(ClientDisplayConfig.getBackupMode()));
+                yield button;
+            }
+
+            // The bundled Edible Backpacks' open/close button on the survival inventory screen.
+            // Reads and writes EB's OWN client config rather than mirroring it into
+            // ClientDisplayConfig: config/ediblebackpacks-client.toml already owns the button
+            // (it also carries the anchor and custom x/y this row deliberately does not expose),
+            // and EB re-reads the value every frame, so the change lands without reopening the
+            // inventory. Turning it off is safe — EB's keybind still opens the panels.
+            case BACKPACK_BUTTON -> withTip(
+                    CycleButton.onOffBuilder(EBClientConfig.buttonEnabled())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.backpack_button"),
+                                    (btn, on) -> setBackpackButtonEnabled(on)),
+                    "gui.dungeontrain.options.backpack_button.tip");
+            // A caption, not a control: left-aligned and unfocusable, so keyboard navigation
+            // steps straight past it to the settings it introduces.
+            case BACKUPS_HEADING -> {
+                StringWidget heading = new StringWidget(width, ROW_H,
+                        Component.translatable("gui.dungeontrain.options.backups_heading"), this.font);
+                heading.alignLeft();
+                yield heading;
+            }
+
+            case BACKUPS_PER_VERSION -> slider(backupsPerVersionOption(), width);
+
+            // Off by default: a restore is the same upload the build's next save would have made, so
+            // there is normally nothing to decide. On, it shows the title-screen card instead.
+            case CONFIRM_BUILD_RESTORE -> withTip(
+                    CycleButton.onOffBuilder(ClientDisplayConfig.isConfirmBuildRestore())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.confirm_build_restore"),
+                                    (btn, on) -> ClientDisplayConfig.setConfirmBuildRestore(on)),
+                    "gui.dungeontrain.options.confirm_build_restore.tip");
+
+            case CLEAR_BACKUPS -> withTip(
+                    Button.builder(
+                            Component.translatable("gui.dungeontrain.options.clear_backups",
+                                PlayerDataBackup.formatBytes(totalBackupBytes())),
+                            b -> confirmClearBackups())
+                            .bounds(0, 0, width, ROW_H).build(),
+                    "gui.dungeontrain.options.clear_backups.tip");
 
             // Snapshot max resolution ceiling (0 = AUTO).
             case SNAPSHOT_MAX_RES -> {
@@ -431,6 +573,22 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         };
     }
 
+    /**
+     * Writes Edible Backpacks' {@code buttonEnabled} through to
+     * {@code config/ediblebackpacks-client.toml}.
+     *
+     * <p>The {@code isLoaded} guard mirrors EB's own readers: this screen is reachable from the
+     * title screen, where the spec may not have loaded yet, and {@code set} on an unloaded spec
+     * throws. Nothing is lost by skipping — the row is showing the default in that case.</p>
+     */
+    private static void setBackpackButtonEnabled(boolean enabled) {
+        if (!EBClientConfig.SPEC.isLoaded()) {
+            return;
+        }
+        EBClientConfig.BUTTON_ENABLED.set(enabled);
+        EBClientConfig.SPEC.save();
+    }
+
     private AbstractWidget slider(OptionInstance<Integer> option, int width) {
         return option.createButton(this.minecraft.options, 0, 0, width);
     }
@@ -452,7 +610,21 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return Component.translatable("gui.dungeontrain.menu_space." + space.name().toLowerCase(Locale.ROOT));
     }
 
-    /** Attaches a word-wrapping hover tooltip from a lang key and hands the widget straight back. */
+    /**
+     * The label for one catch-up mode. AUTO names what it actually resolved to — "Automatic (Fill
+     * all)" — because "Automatic" alone tells a player nothing about what their train will do, and
+     * the resolution is available here: in singleplayer it is this same JVM.
+     */
+    private static Component catchUpBurstLabel(CatchUpBurstMode mode) {
+        if (mode == CatchUpBurstMode.AUTO) {
+            return Component.translatable("gui.dungeontrain.options.catch_up_burst.auto",
+                    Component.translatable("gui.dungeontrain.options.catch_up_burst."
+                            + CatchUpBurstAuto.machineMode().name().toLowerCase(Locale.ROOT)));
+        }
+        return Component.translatable("gui.dungeontrain.options.catch_up_burst."
+                + mode.name().toLowerCase(Locale.ROOT));
+    }
+
     private static <T extends AbstractWidget> T withTip(T widget, String key) {
         widget.setTooltip(Tooltip.create(Component.translatable(key)));
         return widget;
@@ -462,6 +634,89 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return value <= 0
                 ? Component.translatable("gui.dungeontrain.options.snapshot_max_res.auto")
                 : Component.literal(value + "p"); // "1080p" — a unit, not prose
+    }
+
+    /**
+     * The "Backups per version" slider, built like {@code DisplayScaleOption}: the stored value is
+     * read once, at construction, which is right because rows are built in {@code init()}.
+     *
+     * <p>The value commits through {@link ClientDisplayConfig#setBackupsPerVersion} — on release,
+     * and again via {@code applyUnsavedChanges()} when the screen closes, which {@link #onClose()}
+     * already calls for every tab.</p>
+     */
+    private static OptionInstance<Integer> backupsPerVersionOption() {
+        String key = "gui.dungeontrain.options.backups_per_version";
+        return new OptionInstance<>(
+                key,
+                OptionInstance.cachedConstantTooltip(Component.translatable(key + ".tip")),
+                DungeonTrainClientOptionsScreen::backupsPerVersionLabel,
+                new OptionInstance.IntRange(BACKUPS_PER_VERSION_MIN, BACKUPS_PER_VERSION_MAX),
+                Mth.clamp(ClientDisplayConfig.getBackupsPerVersion(),
+                        BACKUPS_PER_VERSION_MIN, BACKUPS_PER_VERSION_MAX),
+                ClientDisplayConfig::setBackupsPerVersion);
+    }
+
+    /** {@code "Backups per version: 5"}, through the shared caption/value pattern. */
+    private static Component backupsPerVersionLabel(Component caption, int perVersion) {
+        return Component.translatable("gui.dungeontrain.options.value_row",
+                caption, Integer.toString(perVersion));
+    }
+
+    /** Bytes held by archives in BOTH roots — the figure the Clear button reports. */
+    private static long totalBackupBytes() {
+        long total = PlayerDataBackup.totalSize(PlayerDataPaths.backupsRoot());
+        return total + PlayerDataPaths.externalBackupsRoot()
+            .map(PlayerDataBackup::totalSize).orElse(0L);
+    }
+
+    /**
+     * Ask before deleting, then delete from both roots.
+     *
+     * <p>The message names the out-of-instance folder explicitly. "Clear all backups" that quietly
+     * spared a folder the player cannot see would be the worse surprise of the two, and this is the
+     * only place that folder is ever surfaced.</p>
+     *
+     * <p>The label carries the size, so it has to be rebuilt afterwards. Returning to this screen is
+     * NOT enough on its own: {@code Screen.init(Minecraft, int, int)} only calls {@code init()} the
+     * first time and merely repositions an already-initialised screen, so the button kept reporting
+     * the space it had just freed. {@link #rebuildWidgets()} is the call that actually re-runs
+     * {@code init()}, and it happens after the screen is current again.</p>
+     */
+    private void confirmClearBackups() {
+        Path inside = PlayerDataPaths.backupsRoot();
+        Optional<Path> outside = PlayerDataPaths.externalBackupsRoot();
+        int count = PlayerDataBackup.listArchives(inside).size()
+            + outside.map(p -> PlayerDataBackup.listArchives(p).size()).orElse(0);
+        Component where = outside
+            .map(p -> (Component) Component.translatable(
+                "gui.dungeontrain.options.clear_backups.confirm.both", inside.toString(), p.toString()))
+            .orElseGet(() -> Component.translatable(
+                "gui.dungeontrain.options.clear_backups.confirm.one", inside.toString()));
+        this.minecraft.setScreen(new ConfirmScreen(
+                proceed -> {
+                    this.minecraft.setScreen(this);
+                    if (!proceed) return;
+                    PlayerDataBackup.clear(inside);
+                    outside.ifPresent(PlayerDataBackup::clear);
+                    // Re-run init() so the button re-reads the (now zero) size on disk.
+                    rebuildWidgets();
+                },
+                Component.translatable("gui.dungeontrain.options.clear_backups.confirm.title", count),
+                where,
+                Component.translatable("gui.dungeontrain.options.clear_backups.confirm.yes"),
+                CommonComponents.GUI_CANCEL));
+    }
+
+    /** On / Instanced / Off, each with its own translated label. */
+    private static Component backupModeLabel(BackupMode mode) {
+        return Component.translatable("gui.dungeontrain.options.backups."
+                + mode.name().toLowerCase(Locale.ROOT));
+    }
+
+    /** What the currently-selected backup mode actually protects against. */
+    private static Tooltip backupModeTip(BackupMode mode) {
+        return Tooltip.create(Component.translatable("gui.dungeontrain.options.backups."
+                + mode.name().toLowerCase(Locale.ROOT) + ".tip"));
     }
 
     /** ASK / CONTINUE / DISABLE, each with its own translated label. */

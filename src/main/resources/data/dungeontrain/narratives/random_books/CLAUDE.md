@@ -31,7 +31,7 @@ Rules:
 - `title` omitted or `"Untitled"` → the basename is used as the title.
 - `author` omitted → defaults to `"Anonymous"`.
 - `generation` — vanilla 0..3 (silently clamped). `0` = original (default), `1` = copy, `2` = copy of copy, `3` = tattered. Use `0` unless the in-world conceit calls for a worn / passed-down book.
-- `weight` — integer ≥ 0 driving the in-pool weighted pick. `1` is baseline. Higher = appears more often. `0` = effectively disabled.
+- `weight` — number ≥ 0 driving the in-pool weighted pick. `1` is baseline. Higher = appears more often, **fractional = rarer** (`0.1` is a tenth of baseline). `0` = effectively disabled.
 - `variants[]` — **required, non-empty**. Each variant is a **complete book body**, not a draft of the same text.
 
 **Read the existing corpus first.** Before drafting anything new, read every `.json` file in this folder ([random_books/](.)) end-to-end. The shipped corpus is the style reference — absorb its narrative voice, page composition, variant patterns, and tone. Treat this as mandatory context, not optional background.
@@ -79,7 +79,7 @@ Resolved by `BookText.toPage` (`src/main/java/games/brennan/dungeontrain/narrati
 | Pages per book | 100 (truncated with warning) | `BookFactory.MAX_PAGES` |
 | Title chars | 32 (silently clamped) | `BookFactory.MAX_TITLE_CHARS` |
 | Generation | 0..3 (silently clamped) | `RandomBookFile:42-44` |
-| Weight | ≥ 0 (negatives rejected) | `RandomBookFile:36-39` |
+| Weight | ≥ 0, fractional allowed (negatives / NaN rejected) | `RandomBookFile:36-39` |
 
 The Minecraft font is proportional. Plan for **~19 chars per line** as the safe width; longer lines auto-wrap and your visual layout drifts. For predictable pages, write short lines or insert `\n` explicitly at the break point you want.
 
@@ -182,6 +182,7 @@ Drives how often this book appears in chest rolls (proportional to total pool we
 | Use weight | When |
 |---|---|
 | `0` | Disabled — won't be picked. Use for variants in progress / blocked. |
+| `0.1` | Meta / promo book — a donation ask, a "message the dev" ask, a book explaining how the book system works. Present, but the pool must not be dominated by the game talking about itself. |
 | `1` | Default. One-off finds, rare fragments. |
 | `2` | Recurring author with multiple files, or a stronger framing voice. |
 | `3` | The core narrator-voice book(s) the player should encounter often. |
@@ -192,6 +193,14 @@ Current corpus weights for reference:
 - `faulthursts_asides_i.json` → 2 (same narrator, supplemental)
 - `passenger_fragments_i.json` → 1 (found object)
 - `quiet_rules.json` → 1 (one-off conceit)
+- `the_creators_burden.json`, `the_second_offering.json`, `all_the_creator_asks.json`,
+  `how_a_book_finds_you.json`, `where_the_writing_goes.json` → 0.1 (meta / promo)
+
+> **Weight lives in the English base file only.** A localized copy under
+> `narrative_localizations/<locale>/random_books/` replaces the base wholesale and carries a
+> `weight` of its own frozen at translation time — `RandomBookRegistry.baseWeighted` puts the base's
+> weight back, so those fields are inert. Retune here and every locale follows; editing a locale
+> copy's weight does nothing.
 
 ### Generation
 
@@ -285,7 +294,7 @@ Before writing the JSON file:
 - [ ] `title` ≤ 32 chars (or accept silent truncation).
 - [ ] `author` set (or deliberately omitted for "Anonymous").
 - [ ] `generation` ∈ 0..3 (will be silently clamped if outside).
-- [ ] `weight` ≥ 0, justified per Section 7.
+- [ ] `weight` ≥ 0 (fractional allowed), justified per Section 7.
 - [ ] `variants[]` non-empty.
 - [ ] No paragraph in any variant exceeds 256 chars (otherwise it spills into a surprise page).
 - [ ] Each variant's longest path ≤ 100 pages.

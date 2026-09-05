@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.EditorDoorGhostsPacket;
 import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
@@ -71,8 +72,10 @@ public final class EditorDoorGhosts {
 
     /**
      * The lower cell of every corridor door at every registered portal room plot, at the current
-     * world dims — two per room. The renderer draws the door's upper half from the block above, so
-     * a base is the whole door.
+     * world dims — two per room, each tagged with which of the room's two mouths it is. The
+     * renderer draws the door's upper half from the block above, so a base is the whole door, and
+     * it draws the entry and exit mouths in different colours, so the tag is what tells them
+     * apart.
      *
      * <p>Absolute positions, like {@link EditorStrayBlocks#snapshot}: the ghosts are drawn in world
      * space, and a door cell sits one column <i>outside</i> its plot, so it has no plot-local
@@ -82,24 +85,56 @@ public final class EditorDoorGhosts {
      * whatever the built-in figure says, which is where the plot is actually standing until the
      * template is read — so the ghosts always agree with the box the author can see.</p>
      */
-    public static List<BlockPos> snapshot(CarriageDims dims) {
+    public static List<EditorDoorGhostsPacket.Door> snapshot(CarriageDims dims) {
         List<String> names = PortalRoomEditor.names();
-        List<BlockPos> out = new ArrayList<>(names.size() * 2);
+        List<EditorDoorGhostsPacket.Door> out = new ArrayList<>(names.size() * 2);
         for (String name : names) {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             if (origin == null) continue;
             Vec3i size = PortalRoomEditor.plotSize(name, dims);
-            out.addAll(PortalRoomDoorCells.doorBases(origin, size));
+            // Clamped to what this room's own width and height can actually spend — the same clamps
+            // PortalRoomLayout.roomOrigin applies when the real corridors are stamped, so a ghost
+            // never shows a door further off centre, or higher, than the room really can build.
+            games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+                games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+            int offset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.doorOffset().value());
+            int heightOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                dims, size.getY(), settings.doorHeightOffset().value());
+            // The exit door on its own clamps, not the entry door's: the two ends may stand apart,
+            // and a ghost that drew the far door on the near door's line would be showing the author
+            // a mouth the builder is not going to cut there.
+            int exitOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.exitDoorOffset().value());
+            int exitHeightOffset =
+                games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                    dims, size.getY(), settings.exitDoorHeightOffset().value());
+            // doorBases returns the entry end first and the exit end second — its own documented
+            // order, which PortalRoomDoorCellsTest pins. Tagged here rather than left to the
+            // client to infer from the flattened list's parity: a room with a degenerate box
+            // contributes no pair at all, and one missing pair would relabel every door after it.
+            List<BlockPos> bases = PortalRoomDoorCells.doorBases(origin, size, offset, heightOffset,
+                exitOffset, exitHeightOffset);
+            for (int i = 0; i < bases.size(); i++) {
+                out.add(new EditorDoorGhostsPacket.Door(bases.get(i), /*entry*/ i == 0));
+            }
         }
         return out;
     }
 
     /**
-     * Dedup key for the per-player push — the plot grid itself, one {@code origin/size} per room.
+     * Dedup key for the per-player push — the plot grid itself, one {@code origin/size/doorOffset}
+     * per room.
      *
      * <p>Keyed on the boxes rather than on the cells because the boxes are what the cells are a
      * function of, and the string stays short as rooms are added. A resize, a new variant or a
      * deletion all move it; nothing else does, so a steady editor sends no traffic.</p>
+     *
+     * <p>Door offset is included alongside the box, not folded into it: a change to it moves the
+     * ghost cells without moving the plot itself, and a dedup key that missed it would leave the
+     * ghosts standing at the old line until something else nudged the box. <b>Both doors', not one
+     * door's</b> — the two ends may stand apart, and moving only the exit door has to move the key
+     * or the far ghost would never be re-sent.</p>
      */
     public static String key(CarriageDims dims) {
         StringBuilder sb = new StringBuilder();
@@ -107,10 +142,23 @@ public final class EditorDoorGhosts {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             if (origin == null) continue;
             Vec3i size = PortalRoomEditor.plotSize(name, dims);
+            games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+                games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+            int offset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.doorOffset().value());
+            int heightOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                dims, size.getY(), settings.doorHeightOffset().value());
+            int exitOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
+                dims, size.getZ(), settings.exitDoorOffset().value());
+            int exitHeightOffset =
+                games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
+                    dims, size.getY(), settings.exitDoorHeightOffset().value());
             sb.append(origin.getX()).append(',').append(origin.getY()).append(',')
               .append(origin.getZ()).append('/')
               .append(size.getX()).append(',').append(size.getY()).append(',')
-              .append(size.getZ()).append(';');
+              .append(size.getZ()).append('/').append(offset).append(',').append(heightOffset)
+              .append(',').append(exitOffset).append(',').append(exitHeightOffset)
+              .append(';');
         }
         return sb.toString();
     }

@@ -123,6 +123,31 @@ final class EditorMenuScreenTest {
         assertNull(EditorMenuScreen.removeEntryFor(PlotCategory.ARCHITECTURE, "x", "x"));
     }
 
+    // ---- Flip quad (contents-only per-template random flip) ----
+
+    @Test
+    @DisplayName("Flip quad dispatches the per-axis contents flip command and reflects current state")
+    void flip_quad_commandsAndState() {
+        List<CommandMenuEntry> rows = EditorMenuScreen.flipRows("maze", true, false, false, true);
+        assertEquals(2, rows.size(), "a Label and the quad");
+        assertInstanceOf(CommandMenuEntry.Label.class, rows.get(0));
+        CommandMenuEntry.Quad quad = assertInstanceOf(CommandMenuEntry.Quad.class, rows.get(1));
+
+        CommandMenuEntry.Toggle x = (CommandMenuEntry.Toggle) quad.e1();
+        assertEquals("X", x.label());
+        assertTrue(x.state(), "X is on by default for every contents template");
+        assertEquals("dungeontrain editor contents flip maze x on", x.cmdToTurnOn());
+        assertEquals("dungeontrain editor contents flip maze x off", x.cmdToTurnOff());
+
+        assertFalse(((CommandMenuEntry.Toggle) quad.e2()).state(), "Y off");
+        assertFalse(((CommandMenuEntry.Toggle) quad.e3()).state(), "Z off");
+
+        CommandMenuEntry.Toggle rooms = (CommandMenuEntry.Toggle) quad.e4();
+        assertEquals("Rooms", rooms.label());
+        assertTrue(rooms.state());
+        assertEquals("dungeontrain editor contents flip maze rooms on", rooms.cmdToTurnOn());
+    }
+
     // ---- New (latent same-bug, would have broken on first track-side click) ----
 
     @Test
@@ -448,8 +473,13 @@ final class EditorMenuScreenTest {
         List<String> carriages = labelsIn(tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.NAV));
         assertEquals(List.of("Enter", "Exit"), carriages);
 
-        List<String> portals = labelsIn(tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), portals);
+        List<CommandMenuEntry> portalNav = tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV);
+        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), labelsIn(portalNav));
+
+        // Test drills into the save prompt rather than dispatching the command — a dirty room has
+        // to be offered a save before it is stamped from its last one.
+        assertInstanceOf(PortalTestSaveCheckScreen.class,
+            assertInstanceOf(CommandMenuEntry.DrillIn.class, portalNav.get(1)).target());
     }
 
     @Test
@@ -521,5 +551,40 @@ final class EditorMenuScreenTest {
 
         // ...and the remembered choice is untouched, so stepping back restores it.
         assertEquals(EditorMenuTab.CURRENT, EditorMenuTab.active());
+    }
+
+    // ---- Header Save icon + panel width ----
+
+    @Test
+    @DisplayName("Header Save mirrors the File-tab Save command for ordinary categories")
+    void headerSave_ordinaryCategoryUsesSave() {
+        MenuHeaderAction a = EditorMenuScreen.saveHeaderAction(PlotCategory.CARRIAGES, false, 0L);
+        assertEquals("Save", a.label());
+        assertEquals(EditorSaveStatus.CLEAN_TINT, a.tint());
+        assertEquals(EditorMenuScreen.SAVE_COMMAND, a.command());
+        assertEquals("dungeontrain save", a.command());
+        assertEquals("dungeontrain", a.icon().getNamespace());
+        assertEquals("icon/save", a.icon().getPath());
+    }
+
+    @Test
+    @DisplayName("Header Save routes parts through the part-aware subcommand")
+    void headerSave_partsUsesPartSave() {
+        MenuHeaderAction a = EditorMenuScreen.saveHeaderAction(PlotCategory.PARTS, false, 0L);
+        assertEquals("dungeontrain editor part save", a.command());
+    }
+
+    @Test
+    @DisplayName("Header Save names the unsaved state in its tooltip and goes green")
+    void headerSave_dirtyIsGreenAndSaysSo() {
+        MenuHeaderAction a = EditorMenuScreen.saveHeaderAction(PlotCategory.CARRIAGES, true, 250L);
+        assertTrue(a.label().contains("unsaved"));
+        assertEquals(EditorSaveStatus.DIRTY_TINT, a.tint(), "at the pulse peak the tint is the full green");
+    }
+
+    @Test
+    @DisplayName("Editor panel keeps the shared default width on every tab (no Current-tab widening)")
+    void panelWidth_isSharedDefault() {
+        assertEquals(CommandMenuLayout.PANEL_WIDTH, new EditorMenuScreen().panelWidth(), 0.0);
     }
 }

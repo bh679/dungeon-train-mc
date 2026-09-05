@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.StageStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -104,7 +105,24 @@ public final class BuilderSave {
         }
     }
 
+    /**
+     * Save the build in this builder world, and — on success — ask for a backup.
+     *
+     * <p>The backup request is the whole reason this wraps {@link #saveInternal}: a build that has
+     * just been written exists nowhere else, and before backups were taken here a carriage authored
+     * mid-session sat in no archive until the next world load. The request returns immediately and
+     * is debounced, so saving repeatedly while iterating costs nothing extra — see
+     * {@link games.brennan.dungeontrain.data.PlayerDataBackupHook}.</p>
+     */
     public static Result save(ServerLevel level) {
+        Result result = saveInternal(level);
+        if (result.saved()) {
+            games.brennan.dungeontrain.data.PlayerDataBackupHook.onTemplateSaved();
+        }
+        return result;
+    }
+
+    private static Result saveInternal(ServerLevel level) {
         if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
             return Result.failed("not a builder world");
         }
@@ -227,12 +245,17 @@ public final class BuilderSave {
             TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
             mirrorTrackBeforeCapture(level, kind, name, origin, footprint, sidecar);
 
-            StructureTemplate template = new StructureTemplate();
             // Tunnels capture against STRUCTURE_VOID, everything else against AIR — the tunnel
             // templates use void to mean "leave whatever the world had here", and capturing one
             // against AIR would bake the builder-world sky into the arch's corner pockets. Same
             // split TunnelEditor.save makes, for the same reason.
-            template.fillFromWorld(level, origin, footprint, false, ignoreBlockFor(kind));
+            //
+            // Through TemplateDecor, not a bare fillFromWorld: the raw call drops every entity, so a
+            // tile saved here lost the pictures and mobs the same tile saved in the Train Editor
+            // keeps. A builder world has natural spawning off (BuilderQuietRules), so what is
+            // standing in the plot is what the builder put there.
+            StructureTemplate template =
+                TemplateDecor.capture(level, origin, footprint, ignoreBlockFor(kind));
             TrackVariantStore.save(kind, name, template);
             if (TrackVariantRegistry.register(kind, name)) {
                 LOGGER.info("[DungeonTrain] Builder save: registered new {} '{}'", kind.id(), name);
@@ -393,8 +416,8 @@ public final class BuilderSave {
         }
         BlockPos partOrigin = origin.offset(placements.get(0).originOffset());
         Vec3i partSize = kind.dims(dims);
-        StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(level, partOrigin, partSize, false, Blocks.AIR);
+        // TemplateDecor rather than a bare fillFromWorld — see saveTrack above for why.
+        StructureTemplate template = TemplateDecor.capture(level, partOrigin, partSize, Blocks.AIR);
         CarriagePartTemplateStore.save(kind, name, template);
         if (CarriagePartRegistry.register(kind, name)) {
             LOGGER.info("[DungeonTrain] Builder save: registered new {} part '{}'", kind.id(), name);
@@ -415,8 +438,9 @@ public final class BuilderSave {
      * {@code PortalRoomSizes.settle}, which makes the written template the authority and spends any
      * pending override the size control had set.</p>
      */
-    private static void savePortalRoom(ServerLevel level, BlockPos origin, Vec3i size, String name)
-            throws IOException {
+    private static void savePortalRoom(
+        ServerLevel level, BlockPos origin, Vec3i size, String name
+    ) throws IOException {
         PortalRoomEditor.saveRoomFrom(level, origin, size, name);
     }
 

@@ -139,6 +139,17 @@ public class DungeonTrain {
         return !"main".equals(VersionInfo.BRANCH);
     }
 
+    /**
+     * The LIVE relay capability, whatever branch this is.
+     *
+     * <p>Everything routed by branch goes through {@link #relayBaseUrl()} instead — this exists for the
+     * one dev-build affordance that deliberately looks at production data (My Builds\' live toggle),
+     * and is a read of the cap that every release jar already carries, not a way around any gate.</p>
+     */
+    public static String liveRelayBaseUrl() {
+        return RELAY_LIVE_BASE_URL;
+    }
+
     /** The relay capability this build reports through: the dev channel for dev builds, live on main. */
     private static String discordRelayBaseUrl() {
         return relayBaseUrlForBranch(VersionInfo.BRANCH);
@@ -274,6 +285,12 @@ public class DungeonTrain {
             if (event.getConfig().getSpec() == DungeonTrainCommonConfig.SPEC) {
                 games.brennan.dungeontrain.worldgen.WorldGenCycle.invalidateCache();
                 games.brennan.dungeontrain.worldgen.ChuncksBand.invalidateCache();
+                // The catch-up pacing may now be a different stored value, or AUTO where it wasn't.
+                games.brennan.dungeontrain.train.CatchUpBurstAuto.invalidate();
+                // Same reasoning as the server-config step below — the common file needs its own
+                // migration pass, and AUTO is the first shipped default that has to reach existing
+                // installs rather than only fresh ones.
+                DungeonTrainCommonConfig.runPendingMigrations();
             }
             // Deliver shipped default changes to installs that already have a server config on disk.
             // NeoForge writes a default only for a MISSING key, so without this a changed DEFAULT_*
@@ -313,8 +330,9 @@ public class DungeonTrain {
         // Suppress ONE spammy Sable log line — the per-call stack-trace-capturing "Aborting entity
         // get for abnormally large AABB" ERROR — without touching Sable's log level. It fires on the
         // render thread ~15×/sec when a Vivecraft (VR) player stands on a sub-level (train carriage),
-        // hitching frames. Root-caused for Vivecraft by SwingTrackerSubLevelAabbMixin; this is the
-        // always-on belt so the storm can't resurface from any other trigger. See SableAabbLogFilter.
+        // hitching frames. Root-caused by the Vivecraft Sable Compat addon, with DT carrying a
+        // temporary copy of the melee half (VivecraftMixinPlugin) for players without it; this is the
+        // always-on belt under both, for any other trigger. See SableAabbLogFilter.
         SableAabbLogFilter.install();
 
         LOGGER.info("Dungeon Train constructor — mod loading");
@@ -531,7 +549,8 @@ public class DungeonTrain {
         }
 
         // Price DT-relevant items in Trade Everything's villager "Trade Anything"
-        // slot (narrative books, ominous banners, edible backpacks). TE is bundled
+        // slot (narrative books, ominous banners, armor trim templates, edible
+        // backpacks). TE is bundled
         // (jarJar), but tolerate a build predating the valuation API: degrade to
         // default valuation.
         if (ModList.get().isLoaded("tradeeverything")) {

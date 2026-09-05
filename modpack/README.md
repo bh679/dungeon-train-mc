@@ -50,6 +50,14 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Punchy! | `1374153` | off (opt-in) | First-person animation overhaul (swing/movement animations, visible hands with held items). Client-only render (`server_side=unsupported`, auto-skipped on dedicated servers), no dependencies. ARR licence, but the author explicitly permits modpack inclusion. **Pinned** (2.7d). |
 | WorldEdit | `225608` | off (opt-in) | In-game map editor (`//set`, `//copy`, brushes, schematics). Powerful and destructive, so opt-in — and its block writes know nothing about Sable sub-levels, so editing a **moving carriage** is unverified; use it on the static world. No dependencies (one multi-loader NeoForge/Fabric jar). **Pinned** (7.3.8 — the newest 1.21.1 build; 7.4.x is MC 26.x only). |
 | Just Enough Items (JEI) | `238222` | off (opt-in) | Recipe / item lookup overlay. Opt-in because it restyles every inventory screen — a change players should choose. No dependencies. 1.21.1 builds are published on the **beta** channel only (JEI ships no release-channel build for this MC line), same as Iris here. **Pinned** (19.39.0.372) — ⚠️ NOT the newest: JEI raised its NeoForge floor to `[21.1.238,)` in 19.42.0.379 (2026-07-27) and DT ships `neo_version=21.1.228`, so anything newer hard-fails at load with "Mod jei requires neoforge 21.1.238 or above". 19.39.0.372 is the last build declaring `[21.0.118-beta,)`. Re-check this pin whenever `neo_version` moves. |
+| TrashSlot | `235577` | **enabled** | Inventory QoL — a draggable trash slot for binning unwanted items. Client + server. Shipped **on**, but with the slot itself **hidden and all of its keys unbound** — see "TrashSlot ships silent" below. Requires **Balm**. **Pinned** (21.1.11). |
+| Balm | `531761` | **enabled** (library) | TrashSlot's required dependency — BlayTheNinth's multi-loader abstraction layer. Inert library with no gameplay of its own; also jarJars the **Kuma** keybind library TrashSlot binds through. **Pinned** (21.0.65). |
+| Enchantment Descriptions | `250419` | **enabled** | Adds a plain-English description of what each enchantment does to item tooltips — DT hands out a lot of randomly-enchanted loot. Client-side tooltip text only, no render/physics/chunk hooks, safe with Sable. Requires **Bookshelf** and **Prickle** (both shipped enabled, below). **Pinned** (21.1.9) — ⚠️ NOT the newest: ED raised its NeoForge floor to `[21.1.233,)` in 21.1.11 (file 8693034) and DT ships `neo_version=21.1.228`, so that build hard-failed at load with "Mod enchdesc requires neoforge 21.1.233 or above" — same failure mode as the JEI floor above. 21.1.9 (file 7039849) is the newest 1.21.1 build still declaring `[21.1.61,)`, which DT clears. Re-check this pin whenever `neo_version` moves. |
+| Bookshelf | `228525` | **enabled** (library) | Enchantment Descriptions' required dependency — Darkhax's shared utility library. Inert, no gameplay of its own; enabled so ED loads on a default install. **Pinned** (21.1.81) — satisfies ED 21.1.9's `bookshelf [21.1, 21.2)`. |
+| Prickle | `1023259` | **enabled** (library) | Enchantment Descriptions' other required dependency — Darkhax's config library. Inert; enabled so ED loads on a default install. **Pinned** (21.1.11) — satisfies ED 21.1.9's `prickle [21.1, 21.2)`. |
+| Durability Tooltip | `511040` | **enabled** | Client-side QoL — draws the remaining durability on an item's tooltip instead of making players read the damage bar. No render/physics/chunk hooks, safe with Sable. Requires **SuperMartijn642's Config Lib**. **Pinned** (1.1.6). |
+| SuperMartijn642's Config Lib | `438332` | **enabled** (library) | Durability Tooltip's required dependency — not jarJar'd. Inert config library with no gameplay of its own; enabled so Durability Tooltip loads on a default install. **Pinned** (1.1.8). |
+| Crash Assistant | `1154099` | **enabled** | Post-crash GUI: analyses the crash report / logs / `hs_err` against ~40 known causes and offers a one-click upload of all of them to mclo.gs plus a ready-to-paste report message. Client-only (`server_side=unsupported` — auto-skipped on dedicated servers), no dependencies. Shipped **on**: a crash reporter is useless unless it is already installed when the crash happens. Configured via `overrides/config/crash_assistant/config.toml` to point players at **#bugs-feedback** on the Dungeon Train Discord — left at its default the help button would send them to the *NeoForge* Discord. **Pinned** (1.11.12). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -86,12 +94,65 @@ flag straight into the manifest:
   (block/item tooltip HUD) paired with **Jade Sable Compat** (the client-only mod that fixes Jade's
   tooltips on the moving train — the reason Jade is no longer opt-in), **Kinetic
   Hosting Integration** (partner banner on the multiplayer menu), plus their inert library deps
-  **CreativeCore** (AmbientSounds) and **Iceberg** (Advancement Plaques). The libraries ship
-  enabled so their dependent loads on a default install (CreativeCore — AmbientSounds is on;
-  Iceberg — AP is on).
+  **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques), **Balm** (TrashSlot) and
+  **Bookshelf** + **Prickle** (Enchantment Descriptions) and **SuperMartijn642's Config Lib**
+  (Durability Tooltip). **Enchantment Descriptions** and **Durability Tooltip** are on this
+  list too — tooltip readability every player benefits from.
+  The libraries ship enabled so their dependent loads on a default install (CreativeCore —
+  AmbientSounds is on; Iceberg — AP is on; Balm — TrashSlot is on; Bookshelf + Prickle — ED is
+  on; Config Lib — Durability Tooltip is on). **TrashSlot** is on this list
+  as an installed-and-loaded mod, but it ships deliberately inert — see "TrashSlot ships silent"
+  below.
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Nemo's Inventory Sorting,
   Distant Horizons, Effortless Building, Punchy!, WorldEdit, Just Enough Items (JEI). Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
+
+## ⚠️ A pack update replaces `config/` — keep player data out of it
+
+Every publish of this pack ships `overrides/config/khi.toml` and
+`overrides/config/smoothswapping.json`, so **every** Dungeon Train pack update writes into the
+player's `config/` folder. Launchers do not merge that folder — they replace it. ATLauncher wipes
+`config/` between pack versions ([ATLauncher#704](https://github.com/ATLauncher/ATLauncher/issues/704))
+and the Modrinth app has repeatedly deleted instance files on update
+([modrinth/code#833](https://github.com/modrinth/code/issues/833),
+[#2294](https://github.com/modrinth/code/issues/2294)).
+
+Dungeon Train used to keep the player's Train Editor builds and their cross-world advancements and
+stats under `config/`. A player who pressed "Update Pack" lost all of it in one click. As of the
+player-data relocation, that data lives at the **instance root** instead —
+`<instance>/dungeontrain/`, alongside `saves/` and `dtpacks/` — and `PlayerDataMigration` moves
+existing installs across at server start. See
+`src/main/java/games/brennan/dungeontrain/data/PlayerDataPaths.java`.
+
+**The invariant this leaves behind:** nothing under `overrides/` may share a directory with player
+data, and no player data may move back under `config/`. Only the integrity-governed engine configs
+belong there — the mod holds those to their shipped defaults, so losing them on update is correct
+(they regenerate) and moving them would break `AisDataIntegrity` / `DtConfigIntegrity`.
+`scripts/modpack/check-overrides.py` enforces the allowlist half of this in CI.
+
+## TrashSlot ships silent — and why two root overrides exist
+
+TrashSlot is installed and enabled, but a fresh install shows **no trash slot anywhere** and the
+`T` toggle does nothing. Two files in `overrides/` (both at the instance root, not `config/`)
+produce that:
+
+| File | Effect |
+|---|---|
+| `TrashSlotSaveState.default.json` | TrashSlot copies this to `TrashSlotSaveState.json` on first run. It seeds `InventoryScreen` + `CraftingScreen` — the only two screens the mod registers as `DEFAULT_ENABLED` — to `isEnabled: false`, and marks the `toggleOn` / `toggledOff` hints as already seen so the game never prompts players to press a key that isn't bound. `slotX: 60` / `slotY: 83` mirror the mod's own computed defaults for a 176×166 screen, so the slot sits in its normal place if it is ever enabled. |
+| `TrashSlotKeybindDefault` (in the mod, **not** an override) | Clears **every** TrashSlot keybinding once (Show/Hide, Lock/Unlock, Delete Item, Delete All), at the first title screen, then writes a marker so a player who binds their own key is never overridden. Delete / Shift+Delete are cleared too — vanilla flags them as conflicting, and the pack ships TrashSlot with no key of its own. Balm's Kuma layer wraps a **real vanilla `KeyMapping`**, so the binding lives in vanilla `options.txt` — and shipping *that* is rejected here (see the companion resourcepack note below), because a launcher copies it wholesale and resets the player's other options. The one-shot touches exactly one mapping instead. Finds TrashSlot by keybind name, so DT has no dependency on it. |
+
+**Two consequences to keep in mind before touching either file:**
+
+1. **There is no in-game settings toggle for the slot.** `TrashSlotConfigData` exposes only
+   `instantDeletion`, `enableDeleteKeysInCreative`, `enableHints`,
+   `allowDeletionWhileTrashSlotIsInvisible` and `deletionDenyList` — visibility is per-screen
+   save-state that *only* the keybind flips. With the key unbound, a player who wants the trash
+   slot must first bind one in Options → Controls → TrashSlot.
+2. **Don't be tempted to do the unbind with a shipped `options.txt`.** It looks like the obvious
+   one-line fix and it is guarded against: `check-overrides.py` rejects the file and
+   `test_options_txt_at_root_fails` pins that behaviour, because launchers copy `options.txt`
+   wholesale and would reset every player's controls, video and audio on each pack update. The
+   one-shot above exists precisely to avoid that.
 
 ## Declared dependencies (CurseForge "Relations")
 
@@ -330,7 +391,7 @@ Keep the two in sync so both packs ship the same build. A stale pin just ships a
 | File | Purpose |
 |---|---|
 | `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin; the five sibling mods additionally carry `dependency_type: required` plus `version` + `gradle_property` for the floor guard), and `curseforge_relations` (sable only). |
-| `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), plus the localization compat packs — see below. The tree is **allowlisted** — `check-overrides.py` fails CI on any file not named in its `ALLOWED` list, so a config the mod holds to its defaults can never be shipped here by accident. |
+| `overrides/` | Config files copied verbatim into the player's instance on install (shared by both packs). Currently ships `config/smoothswapping.json` (tuned Smooth Swapping) and `config/khi.toml` (the Kinetic Hosting affiliate URL + banner text, so every install gets the partner link pre-filled), `config/crash_assistant/config.toml` (Crash Assistant's help link + the #bugs-feedback wording), plus the localization compat packs — see below. The tree is **allowlisted** — `check-overrides.py` fails CI on any file not named in its `ALLOWED` list, so a config the mod holds to its defaults can never be shipped here by accident. |
 | `overrides/resourcepacks/DungeonTrain-zh_cn-compat.zip` | zh_cn translations for the bundled **companion** mods (Jade, Distant Horizons, Controlling, ModernFix, CreativeCore, Sable). The shipped zips also still carry legacy `tectonic` keys from when the pack bundled Tectonic — inert now that it is gone (a lang overlay for an absent mod does nothing), and left in place so the zips stay byte-identical. Dungeon Train's own namespaces (+ AIN/PlayerMob/DiscordPresence) ship their zh_cn `lang/` inside the mod jar, so they're not in here. **Auto-enabled by a client-side one-shot** in the mod (`CompanionResourcePackAutoEnabler`) — it selects this pack the first time it's found and writes a marker so it never fights a player who later disables it. This replaces a shipped `options.txt` (which a launcher would copy wholesale and reset the player's other options); the hook only ever touches the resource-pack selection. |
 | `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
 | `../scripts/modpack/build-mrpack.py` | Modrinth: renders `modrinth.index.json` from this config + `gradle.properties` + the release's DT Modrinth version (resolving each pin's URL/hashes from the Modrinth API). `--check-config` validates pins with no network (CI). |

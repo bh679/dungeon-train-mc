@@ -9,6 +9,7 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
@@ -27,13 +28,15 @@ import java.util.List;
  * rooms walked, climbing for as long as anyone keeps walking.</p>
  *
  * <p>So spawning is only half of it, and this class owns both halves — {@link #spawn} when a copy is
- * stamped, {@link #reapTile} when it retires. Keeping them together is the point: they are one
+ * stamped, {@link #sweepVolume} when it retires. Keeping them together is the point: they are one
  * invariant, and splitting them across two files is how the second one gets forgotten.</p>
  *
- * <p><b>Retiring reaps; relocating carries.</b> {@code PortalClear.isLoose} deliberately spares mobs,
- * because a structure that moves should take its occupants with it. That is a different event from a
- * copy falling out of the window, which should leave nothing behind — hence a separate reap here
- * rather than a widened {@code isLoose}.</p>
+ * <p><b>Retiring sweeps; relocating carries.</b> {@code PortalClear.isLoose} deliberately spares
+ * mobs, because a structure that moves should take its occupants with it — {@link #reapPair} then
+ * takes only what the room itself authored, so the villager or pet a player led in is carried across.
+ * A copy falling out of the window is the other event entirely: its floor is deleted and nothing is
+ * built to replace it, so it should leave nothing behind at all. Hence a separate sweep here rather
+ * than a widened {@code isLoose}, and hence the two having different rules about what they take.</p>
  */
 public final class PortalRoomMobs {
 
@@ -52,7 +55,12 @@ public final class PortalRoomMobs {
 
     /** Which portal pair placed this mob — the pair's entry carriage index. */
     private static final String NBT_PAIR = "DungeonTrainPortalPair";
-    /** Which copy of the room placed it, so a retiring copy reaps its own and no one else's. */
+    /**
+     * Which copy of the room placed it. Provenance rather than a rule — a retiring copy sweeps its
+     * whole volume now ({@link #sweepVolume}) — but the copy that spawned a mob is the first thing
+     * worth knowing when one turns up somewhere it should not have, and it is one {@code /data get
+     * entity} away.
+     */
     private static final String NBT_TILE_X = "DungeonTrainPortalTileX";
     private static final String NBT_TILE_Z = "DungeonTrainPortalTileZ";
 
@@ -111,59 +119,126 @@ public final class PortalRoomMobs {
     }
 
     /**
-     * Claim the item frames and paintings a copy's stamp just hung.
+     * Claim what a copy's stamp just placed — its pictures, and the mobs the room was authored with.
      *
-     * <p>{@link TemplateDecor} spawns a room's decoration as part of the block stamp and hands back
-     * no handle on what it made, so the mark is applied by looking for it — the same shape as
-     * {@link #isUnmarkedRoomMob}, and narrow in the same way: only decoration, only inside this
-     * copy's box, and only what carries no mark already, so a neighbouring copy's frame that this
-     * box happens to touch is never re-claimed.</p>
+     * <p>{@link TemplateDecor} spawns a room's carried entities as part of the block stamp and hands
+     * back no handle on what it made, so the mark is applied by looking for it — the same shape as
+     * {@link #isUnmarkedRoomMob}, and narrow in the same way: only what a template carries, only
+     * inside this copy's box, and only what carries no mark already, so a neighbouring copy's frame
+     * that this box happens to touch is never re-claimed.</p>
      *
      * <p>Without this a room's pictures would be spawned once per copy and taken away never — the
      * reap is scoped by the mark, and an unmarked entity is invisible to it.</p>
      *
+     * <h2>Mobs are capped here; pictures are not</h2>
+     * <p>A room <b>repeats</b>: 121 copies in the window, so a room authored with five mobs is six
+     * hundred persistent mobs, which is the leak this class exists to prevent. Authored mobs are held
+     * to {@link #MAX_LIVE_PER_STRUCTURE} whether a variant cell rolled them ({@link #spawn}) or the
+     * template carried them, so the two paths cannot add up to more than one of them alone would.
+     * Anything over the line is discarded rather than left unmarked — an unmarked mob is one no reap
+     * can ever see again.</p>
+     *
+     * <p>Pictures are exempt on purpose: they are inert, they do not path, and a room's decoration
+     * disappearing at the far edge of the window is a visible hole in somebody's build.</p>
+     *
+     * @param liveCount authored mobs this pair already holds — {@link #liveCount}'s answer
      * @return how many were marked
      */
     public static int markDecor(ServerLevel level, BlockPos origin, Vec3i size, int pairKey,
-                                PortalRoomTiling.Tile tile) {
+                                PortalRoomTiling.Tile tile, int liveCount) {
         AABB box = new AABB(
             origin.getX(), origin.getY(), origin.getZ(),
             origin.getX() + size.getX(), origin.getY() + size.getY(), origin.getZ() + size.getZ());
         int marked = 0;
-        for (Entity entity : level.getEntities((Entity) null, box, TemplateDecor::isDecor)) {
+        int live = liveCount;
+        int refused = 0;
+        for (Entity entity : level.getEntities((Entity) null, box, TemplateDecor::carried)) {
             if (entity.getPersistentData().contains(NBT_PAIR)) continue;
+            if (entity instanceof LivingEntity) {
+                if (!withinCap(live)) {
+                    entity.discard();
+                    refused++;
+                    continue;
+                }
+                live++;
+            }
             mark(entity.getPersistentData(), pairKey, tile);
             marked++;
+        }
+        if (refused > 0) {
+            // Logged for the reason a refused variant-mob spawn is: a room quietly holding fewer mobs
+            // than it was authored with looks exactly like a spawn that has stopped working.
+            LOGGER.info("[DungeonTrain] Portal pair {} copy {},{} already holds {} authored mobs — "
+                    + "{} of the room's own were not kept. Author fewer mobs into the room if it "
+                    + "should be this busy.", pairKey, tile.x(), tile.z(), liveCount, refused);
         }
         return marked;
     }
 
     /**
-     * Take away every mob a retiring copy placed.
+     * Take away everything standing in a volume that is about to stop existing — a retiring room copy
+     * or a retiring extra corridor.
      *
-     * <p>Scoped by the copy's box <b>and</b> by the marks, not by either alone. Box alone would take a
-     * neighbouring copy's mob that had wandered across; marks alone would need a whole-level scan.</p>
+     * <p><b>The whole volume, not just what this copy placed.</b> The reap used to be scoped by the
+     * copy's box <i>and</i> its {@code tile} mark, which left a mob that had walked one copy over
+     * matched by neither: not by its birth tile, whose box it had left, and not by the tile it now
+     * stood in, whose mark it did not carry. Every authored mob is
+     * {@code setPersistenceRequired()}, so each one that slipped through was permanent — it lost its
+     * floor with the copy and fell to the world floor to stand there for the life of the world. The
+     * same held for anything that got in by another route: a mob led in, a minecart, an armour stand.
+     * Retiring a copy deletes its floor either way, so leaving an entity behind only converts it into
+     * a falling one.</p>
      *
+     * <p><b>Position, not overlap.</b> Tile boxes abut, so an entity standing just inside the copy
+     * next door has an AABB that touches this one. The query is by AABB because that is the index the
+     * level offers; membership is then decided on the entity's own position, so a sweep takes only
+     * what is really in the volume that is going.</p>
+     *
+     * <p><b>Players are never swept</b>, nor is anything in a stack a player is part of — the horse
+     * they are riding, the boat they are in. A copy is only retired once nobody is within the tiling
+     * window of it ({@code PortalRoomTiler#tick}), so this should never fire under anyone's feet;
+     * it is the guard that keeps a bug there from being a fatal one.</p>
+     *
+     * @param what a short name for the retiring volume, for the log — the caller knows whether it is
+     *             a room copy or a corridor
      * @return how many were removed
      */
-    public static int reapTile(ServerLevel level, BoundingBox box, int pairKey,
-                               PortalRoomTiling.Tile tile) {
+    public static int sweepVolume(ServerLevel level, BoundingBox box, int pairKey, String what) {
         List<Entity> doomed = level.getEntities((Entity) null, AABB.of(box),
-            e -> belongsTo(e, pairKey, tile));
+            entity -> sweepable(entity, box));
         for (Entity entity : doomed) {
             entity.discard();
         }
         if (!doomed.isEmpty()) {
-            LOGGER.debug("[DungeonTrain] Portal pair {} copy {},{} retired — reaped {} authored mobs",
-                pairKey, tile.x(), tile.z(), doomed.size());
+            LOGGER.debug("[DungeonTrain] Portal pair {} {} retired — swept {} entities",
+                pairKey, what, doomed.size());
         }
         return doomed.size();
+    }
+
+    /** True when a retiring volume should take {@code entity} with it. */
+    private static boolean sweepable(Entity entity, BoundingBox box) {
+        if (entity.getRootVehicle().getSelfAndPassengers().anyMatch(e -> e instanceof Player)) {
+            return false;
+        }
+        return inside(box, entity.getX(), entity.getY(), entity.getZ());
+    }
+
+    /**
+     * True when a position lies in {@code box}.
+     *
+     * <p>Split out and package-private so the seam rule can be tested without a world: two copies of a
+     * room share a wall, and a sweep that took what was standing on the far side of it would empty the
+     * room the player is walking back into.</p>
+     */
+    static boolean inside(BoundingBox box, double x, double y, double z) {
+        return box.isInside(BlockPos.containing(x, y, z));
     }
 
     /**
      * Take away every mob this pair's room placed, in any copy of it.
      *
-     * <p>{@link #reapTile}'s counterpart for a structure that is being <b>relocated</b> rather than
+     * <p>{@link #sweepVolume}'s counterpart for a structure that is being <b>relocated</b> rather than
      * shedding one copy. The whole room is about to be erased and stamped again somewhere else, and
      * the stamp rolls a fresh set of authored mobs — so without this the old set is carried to the
      * new site by {@code carryStructureOccupants}, spared by {@code clearIntruders} for carrying DT's
@@ -193,11 +268,6 @@ public final class PortalRoomMobs {
             e -> markedPair(e) == pairKey).size();
     }
 
-    /** True when {@code entity} was placed by this pair's room, in this copy of it. */
-    private static boolean belongsTo(Entity entity, int pairKey, PortalRoomTiling.Tile tile) {
-        return !(entity instanceof Player) && marks(entity.getPersistentData(), pairKey, tile);
-    }
-
     /** The pair that placed {@code entity}, or {@link Integer#MIN_VALUE} if DT's room did not. */
     private static int markedPair(Entity entity) {
         if (entity instanceof Player) return Integer.MIN_VALUE;
@@ -215,14 +285,6 @@ public final class PortalRoomMobs {
         data.putInt(NBT_PAIR, pairKey);
         data.putInt(NBT_TILE_X, tile.x());
         data.putInt(NBT_TILE_Z, tile.z());
-    }
-
-    /** True when {@code data} was marked by this pair's copy {@code tile} and no other. */
-    static boolean marks(CompoundTag data, int pairKey, PortalRoomTiling.Tile tile) {
-        return data.contains(NBT_PAIR)
-            && data.getInt(NBT_PAIR) == pairKey
-            && data.getInt(NBT_TILE_X) == tile.x()
-            && data.getInt(NBT_TILE_Z) == tile.z();
     }
 
     /** The pair named in {@code data}, or {@link Integer#MIN_VALUE} if it carries no mark. */

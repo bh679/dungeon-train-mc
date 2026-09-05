@@ -88,6 +88,7 @@ public final class VersionHudOverlay {
     }
 
     /**
+<<<<<<< HEAD
      * Called from {@code ActivityStatePacket.handle} on the client main thread. Drives the dev-HUD
      * "Time:" read-out — whether time on the train and run playtime are banking, and what stopped
      * them.
@@ -122,23 +123,53 @@ public final class VersionHudOverlay {
         };
     }
 
+    /**
+     * Whether this HUD is putting anything in the top-left corner right now.
+     *
+     * <p>Shared with the render lambda rather than duplicated, so
+     * {@link TrainDebugHudOverlay} — which stacks itself underneath — can never disagree with what
+     * was actually drawn.</p>
+     */
+    static boolean isDrawing(Minecraft mc) {
+        if (mc.options.hideGui) {
+            return false;
+        }
+        if (mc.player != null && mc.player.isSpectator()) {
+            return false;
+        }
+        // Step aside when the editor status HUD is active — keeps the
+        // top-of-screen area uncluttered while the player is editing.
+        if (EditorStatusHudOverlay.isActive()) {
+            return false;
+        }
+        // Release builds run on `main`; the version/branch suffix is dev-only noise there.
+        return !"main".equals(VersionInfo.BRANCH);
+    }
+
+    /**
+     * How many lines {@link #isDrawing} would draw. Mirrors the render lambda's own branching; both
+     * read the same statics in the same frame, so the count matches what lands on screen.
+     */
+    static int lineCount() {
+        int lines = 1; // the version/carriage title line, always present when drawing
+        if (boardingProgressPresent) {
+            lines += 2; // Diff-Car + Diff-Level
+        }
+        if (activityState != null) {
+            lines += 1; // Time: banking state + the two clocks
+        }
+        if (carriagePresent && DebugFlagsState.hudDistance()
+                && CarriageGroupGapState.findByCarriage(carriageIndex) != null) {
+            lines += 1; // Δx to next group
+        }
+        return lines;
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {
             Minecraft mc = Minecraft.getInstance();
-            if (mc.options.hideGui) {
-                return;
-            }
-            if (mc.player != null && mc.player.isSpectator()) {
-                return;
-            }
-            // Step aside when the editor status HUD is active — keeps the
-            // top-of-screen area uncluttered while the player is editing.
-            if (EditorStatusHudOverlay.isActive()) {
-                return;
-            }
-            // Release builds run on `main`; the version/branch suffix is dev-only noise there.
-            if ("main".equals(VersionInfo.BRANCH)) {
+            if (!isDrawing(mc)) {
                 return;
             }
             String text = carriagePresent

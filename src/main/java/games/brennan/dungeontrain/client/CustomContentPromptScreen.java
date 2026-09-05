@@ -157,24 +157,24 @@ public final class CustomContentPromptScreen extends Screen {
             Component.translatable("gui.dungeontrain.custom_content.info")));
         addRenderableWidget(info);
 
-        // One row, two cards. Left keeps the player's designs and gives up the stats; right plays
-        // the shipped game and keeps them.
+        // One row, two cards. Left plays the shipped game and keeps the stats; right keeps the
+        // player's designs and gives them up.
         int cardW = (innerW - CARD_GAP) / 2;
         int cardY = panelY + cardsRelY;
         addRenderableWidget(new ContentChoiceCard(
             panelX + PADDING, cardY, cardW, cardH,
-            ICON_CUSTOM,
-            Component.translatable("gui.dungeontrain.custom_content.card.custom.name"),
-            Component.translatable("gui.dungeontrain.custom_content.card.custom.tag"),
-            COLOUR_TAG_FREEPLAY,
-            () -> respond(true)));
-        addRenderableWidget(new ContentChoiceCard(
-            panelX + PADDING + cardW + CARD_GAP, cardY, cardW, cardH,
             ICON_DEFAULT,
             Component.translatable("gui.dungeontrain.custom_content.card.default.name"),
             Component.translatable("gui.dungeontrain.custom_content.card.default.tag"),
             COLOUR_TAG_LIVE,
             () -> respond(false)));
+        addRenderableWidget(new ContentChoiceCard(
+            panelX + PADDING + cardW + CARD_GAP, cardY, cardW, cardH,
+            ICON_CUSTOM,
+            Component.translatable("gui.dungeontrain.custom_content.card.custom.name"),
+            Component.translatable("gui.dungeontrain.custom_content.card.custom.tag"),
+            COLOUR_TAG_FREEPLAY,
+            () -> respond(true)));
     }
 
     private void respond(boolean keepContent) {

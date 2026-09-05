@@ -1,7 +1,20 @@
 {
   "Opus 4.8 (Claude)": "ai",
   "Opus 5 (Claude)": "ai",
-  "老本願": { "kind": "human", "url": "https://space.bilibili.com/296088227" },
+  "老本願": {
+    "kind": "human",
+    "url": "https://space.bilibili.com/296088227"
+  },
   "阿世xAsh": "human",
-  "Run_xu": "human"
+  "Run_xu": "human",
+  "Anonymous contributor": "human",
+  "ShadowsVoid_vn": "human",
+  "goblinP": "human",
+  "gogogockj": "human",
+  "helluvaboy": "human",
+  "SandRuin": "human",
+  "WeeKsT": "human",
+  "ecodead": "human",
+  "DyingDol": "human",
+  "Fable 5.1 (Claude)": "ai"
 }

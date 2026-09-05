@@ -27,9 +27,11 @@ import java.util.Map;
  * read / write entries without caring whether the player is standing in
  * a carriage variant, contents, part, or track-side editor plot.
  *
- * <p>Resolution at the player's position cascades through the same four
- * cases as {@link VariantOverlayRenderer#onLevelTick} so the menu's view
- * always matches the overlay HUD the player sees:
+ * <p>Resolution at a world position cascades through the same four cases as
+ * {@link VariantOverlayRenderer#onLevelTick} so the menu's view always matches
+ * the overlay HUD the player sees. {@link #resolveAt} asks it of the player's
+ * own position; {@link #resolveAtPos} asks it of any position, which is what
+ * lets live mirroring key off the edited block instead of the author's feet:
  * <ol>
  *   <li>{@link CarriageEditor#plotContaining} → carriage variant</li>
  *   <li>{@link CarriageContentsEditor#plotContaining} → contents</li>
@@ -249,15 +251,31 @@ public interface BlockVariantPlot {
      * matches {@link VariantOverlayRenderer#onLevelTick} — carriage,
      * then contents, then part, then track-side. Returns {@code null} if
      * the player isn't in any plot.
+     *
+     * <p>For a plot that should be decided by an edited block rather than by
+     * the author's feet — live mirroring, which has to work when you build
+     * into a template from outside it — use {@link #resolveAtPos}.</p>
      */
     static @Nullable BlockVariantPlot resolveAt(ServerPlayer player, CarriageDims dims) {
-        BlockPos pos = player.blockPosition();
+        net.minecraft.server.level.ServerLevel level =
+            player.level() instanceof net.minecraft.server.level.ServerLevel sl ? sl : null;
+        return resolveAtPos(level, player.blockPosition(), dims);
+    }
+
+    /**
+     * Resolve the plot containing an arbitrary world position — the same
+     * cascade as {@link #resolveAt}, decided by {@code pos} instead of by a
+     * player. {@code level} may be {@code null}, which only skips the builder
+     * arm (the plot grid itself is purely positional).
+     */
+    static @Nullable BlockVariantPlot resolveAtPos(@Nullable net.minecraft.server.level.ServerLevel level,
+                                                   BlockPos pos, CarriageDims dims) {
         // A builder world holds one build and has no plot grid, so it answers from world data
-        // instead of from where the player stands — that's what makes mirror work out on the
+        // instead of from the position handed in — that's what makes mirror work out on the
         // platform. Checked first, and it costs ordinary worlds one dimension comparison.
-        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+        if (level != null) {
             games.brennan.dungeontrain.builder.BuilderCarriagePlot builderPlot =
-                games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(serverLevel, pos, dims);
+                games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(level, pos, dims);
             if (builderPlot != null) return builderPlot;
         }
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
@@ -286,7 +304,7 @@ public interface BlockVariantPlot {
             Vec3i partSize = partLoc.kind().dims(dims);
             return new PartPlot(partLoc.kind(), partLoc.name(), origin, partSize);
         }
-        TrackPlotLocator.PlotInfo trackLoc = TrackPlotLocator.locate(player, dims);
+        TrackPlotLocator.PlotInfo trackLoc = TrackSidePlots.locate(pos, dims);
         if (trackLoc != null) {
             return new TrackPlot(trackLoc.kind(), trackLoc.name(), trackLoc.origin(), trackLoc.footprint());
         }

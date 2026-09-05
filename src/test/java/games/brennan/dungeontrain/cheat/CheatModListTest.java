@@ -89,6 +89,19 @@ class CheatModListTest {
         assertTrue(eff.contains("infinityeditor"), "infinityeditor is blacklisted");
         assertTrue(eff.contains("infinity_item_editor_re"),
             "infinity_item_editor_re is blacklisted");
+        assertTrue(eff.contains("cadeditor"), "cadeditor is blacklisted");
+        assertTrue(eff.contains("dine"), "dine is blacklisted");
+        assertTrue(eff.contains("ankinbt"), "ankinbt is blacklisted");
+        assertTrue(eff.contains("nbtedit"), "nbtedit is blacklisted");
+    }
+
+    @Test
+    @DisplayName("mob-stat / spawn-rule rewriters are baked")
+    void mobStatRewritersAreBaked() {
+        // Rewriting mob health, damage, immunities and spawn rules from a GUI reshapes the very
+        // curve a run is measured against — harder or easier, the numbers stop being comparable.
+        assertTrue(CheatModList.effective().contains("visual_mobs_edit"),
+            "visual_mobs_edit is blacklisted");
     }
 
     @Test

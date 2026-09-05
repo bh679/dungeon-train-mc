@@ -19,8 +19,7 @@
           "ref": "adventureitemnames:titles",
           "weight": 2.0
         }
-      ],
-      "label": "称号"
+      ]
     },
     {
       "chance": 1.0,
@@ -87,8 +86,7 @@
           "ref": "adventureitemnames:technology",
           "weight": 2.0
         }
-      ],
-      "label": "所属"
+      ]
     }
   ]
 }

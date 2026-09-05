@@ -16,9 +16,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Pins the tab split {@link ClientOptionsTab} hands to {@link DungeonTrainClientOptionsScreen}.
  *
- * <p>Two of the sixteen rows are conditional — Political Filter on Chinese clients, Help Translate…
- * when a translation target resolves — and the screen packs rows two-across, so either one appearing
- * re-pairs the rows after it in its tab. These tests cover all four combinations, because the failure
+ * <p>Three of the twenty-four rows are conditional — Political Filter on Chinese clients, Help Translate…
+ * when a translation target resolves, Catch-up spawning everywhere but a multiplayer client — and the
+ * screen packs rows two-across, so any one appearing
+ * re-pairs the rows after it in its tab. These tests cover every combination, because the failure
  * mode is silent: a row quietly dropped from the model renders as a perfectly normal-looking tab that
  * is simply missing a setting.</p>
  */
@@ -26,10 +27,10 @@ final class ClientOptionsTabTest {
 
     private static final boolean[] BOOLS = {false, true};
 
-    private static List<ClientOptionsTab.Row> allRows(boolean chinese, boolean translate) {
+    private static List<ClientOptionsTab.Row> allRows(boolean chinese, boolean translate, boolean writable) {
         List<ClientOptionsTab.Row> rows = new ArrayList<>();
         for (ClientOptionsTab tab : ClientOptionsTab.values()) {
-            rows.addAll(ClientOptionsTab.rowsFor(tab, chinese, translate));
+            rows.addAll(ClientOptionsTab.rowsFor(tab, chinese, translate, writable));
         }
         return rows;
     }
@@ -42,7 +43,7 @@ final class ClientOptionsTabTest {
         for (boolean chinese : BOOLS) {
             for (boolean translate : BOOLS) {
                 for (ClientOptionsTab tab : ClientOptionsTab.values()) {
-                    assertFalse(ClientOptionsTab.rowsFor(tab, chinese, translate).isEmpty(),
+                    assertFalse(ClientOptionsTab.rowsFor(tab, chinese, translate, true).isEmpty(),
                             tab + " empty at chinese=" + chinese + " translate=" + translate);
                 }
             }
@@ -54,7 +55,7 @@ final class ClientOptionsTabTest {
     void noDuplicateRows() {
         for (boolean chinese : BOOLS) {
             for (boolean translate : BOOLS) {
-                List<ClientOptionsTab.Row> rows = allRows(chinese, translate);
+                List<ClientOptionsTab.Row> rows = allRows(chinese, translate, true);
                 assertEquals(rows.size(), Set.copyOf(rows).size(),
                         "duplicate at chinese=" + chinese + " translate=" + translate);
             }
@@ -71,47 +72,122 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: fourteen rows, neither conditional row present")
+    @DisplayName("Plain client: twenty-one rows, none of the conditional rows present")
     void plainClient() {
-        List<ClientOptionsTab.Row> rows = allRows(false, false);
+        List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(14, rows.size());
+        assertEquals(21, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
+        assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
+        // Unconditional: the page must be reachable even on the barest client.
+        assertTrue(rows.contains(ClientOptionsTab.Row.AI_POLICY));
     }
 
     @Test
     @DisplayName("Chinese locale adds Political Filter to General, right after Content")
     void chineseLocale_addsPoliticalFilter() {
         List<ClientOptionsTab.Row> general =
-                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, false);
+                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, false, true);
 
         assertEquals(List.of(ClientOptionsTab.Row.CONTENT_MODE,
                         ClientOptionsTab.Row.POLITICAL_FILTER,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
-                        ClientOptionsTab.Row.CINEMATIC_HOTKEY),
+                        ClientOptionsTab.Row.CINEMATIC_HOTKEY,
+                        ClientOptionsTab.Row.BACKPACK_BUTTON,
+                        ClientOptionsTab.Row.AI_POLICY,
+                        ClientOptionsTab.Row.BACKUPS_HEADING,
+                        ClientOptionsTab.Row.BACKUPS,
+                        ClientOptionsTab.Row.BACKUPS_PER_VERSION,
+                        ClientOptionsTab.Row.CLEAR_BACKUPS,
+                        ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
     }
 
     @Test
-    @DisplayName("A translation target adds Help Translate… to the end of General")
+    @DisplayName("Help Translate sits above the backup block, not after it")
+    void translateSitsAboveTheBackupBlock() {
+        List<ClientOptionsTab.Row> general =
+                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, true, true);
+
+        assertTrue(general.indexOf(ClientOptionsTab.Row.TRANSLATE)
+                < general.indexOf(ClientOptionsTab.Row.BACKUPS_HEADING));
+    }
+
+    @Test
+    @DisplayName("A translation target adds Help Translate… after the ungrouped settings")
     void translateTarget_addsTranslateRow() {
         List<ClientOptionsTab.Row> general =
-                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, true);
+                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, true, true);
 
-        assertEquals(ClientOptionsTab.Row.TRANSLATE, general.get(general.size() - 1));
+        // It used to close the tab; the backup block now does, so Translate is the last of the
+        // ungrouped rows rather than the last row outright.
+        assertEquals(ClientOptionsTab.Row.TRANSLATE,
+                general.get(general.indexOf(ClientOptionsTab.Row.BACKUPS_HEADING) - 1));
         assertFalse(general.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
     }
 
     @Test
-    @DisplayName("Both conditions together surface every row the screen knows about")
-    void bothConditions_surfaceEveryRow() {
-        List<ClientOptionsTab.Row> rows = allRows(true, true);
+    @DisplayName("AI Policy is present in every combination, always ahead of Help Translate")
+    void aiPolicyIsUnconditional() {
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                List<ClientOptionsTab.Row> general =
+                        ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, chinese, translate, true);
+                int policy = general.indexOf(ClientOptionsTab.Row.AI_POLICY);
+                assertTrue(policy >= 0,
+                        "AI Policy missing at chinese=" + chinese + " translate=" + translate);
+                if (translate) {
+                    // It leads the pair, so it must come first for them to pack onto one line.
+                    assertEquals(policy + 1, general.indexOf(ClientOptionsTab.Row.TRANSLATE));
+                }
+            }
+        }
+    }
 
-        assertEquals(16, rows.size());
+    @Test
+    @DisplayName("All three conditions together surface every row the screen knows about")
+    void allConditions_surfaceEveryRow() {
+        List<ClientOptionsTab.Row> rows = allRows(true, true, true);
+
+        assertEquals(24, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
-                "every Row constant must appear in some tab when both conditions hold");
+                "every Row constant must appear in some tab when all conditions hold");
+    }
+
+    @Test
+    @DisplayName("The backup rows lead a group so they are not split across a pair boundary")
+    void backupRowsStartTheirOwnGroup() {
+        // Rows pack two-across in list order. Without a group leader, BACKUPS pairs with whatever
+        // row precedes it and the three backup rows stop reading as one block.
+        assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS_HEADING));
+        assertTrue(ClientOptionsTab.isHeading(ClientOptionsTab.Row.BACKUPS_HEADING));
+        // The rest of the group pairs among themselves, so they must NOT be leaders.
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS));
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS_PER_VERSION));
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.CLEAR_BACKUPS));
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE));
+        // AI Policy leads the page-opening pair above the backup block. It, not Translate, is
+        // the leader: Translate is conditional, so leading with it would break the pair apart on
+        // every client where it is absent.
+        assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.AI_POLICY));
+        assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.TRANSLATE));
+    }
+
+    @Test
+    @DisplayName("The backup rows stay adjacent, in order")
+    void backupRowsAreAdjacent() {
+        List<ClientOptionsTab.Row> general =
+                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true);
+        int first = general.indexOf(ClientOptionsTab.Row.BACKUPS_HEADING);
+
+        assertEquals(ClientOptionsTab.Row.BACKUPS, general.get(first + 1));
+        assertEquals(ClientOptionsTab.Row.BACKUPS_PER_VERSION, general.get(first + 2));
+        assertEquals(ClientOptionsTab.Row.CLEAR_BACKUPS, general.get(first + 3));
+        // Restores read builds out of these same archives, so the question about them belongs here.
+        assertEquals(ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE, general.get(first + 4));
+        assertEquals(general.size() - 1, first + 4, "the backup block ends the tab");
     }
 
     // ---- Fixed tabs are unaffected by the conditional flags ----
@@ -123,7 +199,8 @@ final class ClientOptionsTabTest {
         List<ClientOptionsTab.Row> train = List.of(ClientOptionsTab.Row.TRAIN_VOLUME,
                 ClientOptionsTab.Row.SNAPSHOT_CHAT_LOG,
                 ClientOptionsTab.Row.CUSTOM_CONTENT,
-                ClientOptionsTab.Row.SNAPSHOT_MAX_RES);
+                ClientOptionsTab.Row.SNAPSHOT_MAX_RES,
+                ClientOptionsTab.Row.CATCH_UP_BURST);
         List<ClientOptionsTab.Row> editor = List.of(ClientOptionsTab.Row.SCALE_ALL,
                 ClientOptionsTab.Row.SCALE_WORLDSPACE,
                 ClientOptionsTab.Row.SCALE_HUD,
@@ -134,8 +211,55 @@ final class ClientOptionsTabTest {
 
         for (boolean chinese : BOOLS) {
             for (boolean translate : BOOLS) {
-                assertEquals(train, ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, chinese, translate));
-                assertEquals(editor, ClientOptionsTab.rowsFor(ClientOptionsTab.EDITOR, chinese, translate));
+                assertEquals(train, ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, chinese, translate, true));
+                assertEquals(editor, ClientOptionsTab.rowsFor(ClientOptionsTab.EDITOR, chinese, translate, true));
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Catch-up spawning is absent on a multiplayer client, where the value is the server's")
+    void catchUpBurst_absentWhenNotWritable() {
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                List<ClientOptionsTab.Row> train =
+                        ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, chinese, translate, false);
+                assertFalse(train.contains(ClientOptionsTab.Row.CATCH_UP_BURST),
+                        "a control that cannot write the value the player would see must not be "
+                                + "shown at all");
+                assertFalse(train.isEmpty(), "the tab must still open onto something");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Catch-up spawning closes the Train tab, so it can't re-pair anything")
+    void catchUpBurst_isLastInTheTab() {
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                List<ClientOptionsTab.Row> train =
+                        ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, chinese, translate, true);
+                assertEquals(ClientOptionsTab.Row.CATCH_UP_BURST, train.get(train.size() - 1),
+                        "a conditional row re-pairs everything after it — so nothing may follow it");
+                // The rows before it are exactly the unconditional tab.
+                assertEquals(ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, chinese, translate, false),
+                        train.subList(0, train.size() - 1));
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("No tab is empty in any of the eight visibility combinations")
+    void noTabIsEmpty_withWritabilityFlag() {
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                for (boolean writable : BOOLS) {
+                    for (ClientOptionsTab tab : ClientOptionsTab.values()) {
+                        assertFalse(ClientOptionsTab.rowsFor(tab, chinese, translate, writable).isEmpty(),
+                                tab + " empty at chinese=" + chinese + " translate=" + translate
+                                        + " writable=" + writable);
+                    }
+                }
             }
         }
     }
@@ -169,7 +293,7 @@ final class ClientOptionsTabTest {
     @Test
     @DisplayName("A tab's row list is defensively copied, not a live reference")
     void rows_areImmutable() {
-        List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, true, true);
+        List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, true, true, true);
         assertThrows(UnsupportedOperationException.class,
                 () -> rows.add(ClientOptionsTab.Row.SCALE_HUD));
     }

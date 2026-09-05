@@ -444,16 +444,32 @@ public final class SaveCommand {
         };
     }
 
-    /** Source-tree write success line, kind-specific noun preserved. */
+    /**
+     * Source-tree write success line, kind-specific noun preserved.
+     *
+     * <p>The trailing clause is the point of the message, not decoration. A source-tree write edits
+     * the template that <b>ships to every player</b>, and the line used to report that as neutrally
+     * as it reported the config-dir write beside it — so a camel posed in the {@code default}
+     * dimensional carriage went into the mod's own shipped room, and the author had been told, in a
+     * sentence that did not sound like it mattered.</p>
+     */
     private static String bundledWriteMessage(Template model) {
+        return bundledNoun(model) + SHIPS_TO_EVERYONE;
+    }
+
+    /** What a source-tree write actually means, appended to every kind's line. */
+    private static final String SHIPS_TO_EVERYONE =
+        " — this is the copy that SHIPS TO EVERY PLAYER, not just your library.";
+
+    private static String bundledNoun(Template model) {
         return switch (model.kind()) {
-            case CONTENTS -> "Editor: also wrote bundled contents copy to source tree (devmode ON).";
-            case PILLAR   -> "Editor: also wrote bundled pillar copy to source tree (devmode ON).";
-            case STAIRS   -> "Editor: also wrote bundled adjunct copy to source tree (devmode ON).";
-            case TUNNEL   -> "Editor: also wrote bundled tunnel copy to source tree (devmode ON).";
-            case PORTAL_ROOM -> "Editor: also wrote bundled dimensional carriage copy to source tree (devmode ON).";
-            case TRACK    -> "Editor: also wrote bundled track copy to source tree (devmode ON).";
-            default       -> "Editor: also wrote bundled copy to source tree (devmode ON).";
+            case CONTENTS -> "Editor: also wrote bundled contents copy to source tree (devmode ON)";
+            case PILLAR   -> "Editor: also wrote bundled pillar copy to source tree (devmode ON)";
+            case STAIRS   -> "Editor: also wrote bundled adjunct copy to source tree (devmode ON)";
+            case TUNNEL   -> "Editor: also wrote bundled tunnel copy to source tree (devmode ON)";
+            case PORTAL_ROOM -> "Editor: also wrote bundled dimensional carriage copy to source tree (devmode ON)";
+            case TRACK    -> "Editor: also wrote bundled track copy to source tree (devmode ON)";
+            default       -> "Editor: also wrote bundled copy to source tree (devmode ON)";
         };
     }
 

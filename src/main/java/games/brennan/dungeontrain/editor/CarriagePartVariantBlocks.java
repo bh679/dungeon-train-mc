@@ -59,7 +59,7 @@ public final class CarriagePartVariantBlocks {
     public static final int MIN_STATES_PER_ENTRY = CarriageVariantBlocks.MIN_STATES_PER_ENTRY;
 
     static final String SUBDIR_BASE = "parts";
-    private static final String EXT = ".variants.json";
+    static final String EXT = ".variants.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/parts/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/parts";
 

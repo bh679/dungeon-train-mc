@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorMenusModeState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
@@ -7,12 +8,12 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import games.brennan.dungeontrain.editor.EditorMenusMode;
-import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -42,23 +43,14 @@ import java.util.Map;
 public final class EditorMenuScreen implements MenuScreen {
 
     /**
-     * Panel width while the Walls row is showing, in world units.
-     *
-     * <p>Sized for the longest mode label, "Walls: Endless Repetition", at
-     * {@link CommandMenuLayout#TEXT_SCALE} — the shared default fits about fifteen characters and
-     * that is twenty-five. A constant rather than a measurement because the row builders have no
-     * {@code Font} to hand, and the set of modes is fixed and small.</p>
+     * The two save commands, shared by the File-tab Save row and the header icon so the two
+     * surfaces cannot drift.
      */
-    private static final double WALLS_ROW_PANEL_WIDTH = 2.6;
+    public static final String SAVE_COMMAND = "dungeontrain save";
+    public static final String PART_SAVE_COMMAND = "dungeontrain editor part save";
 
-    /**
-     * Panel width while the Copies Block row is showing.
-     *
-     * <p>The same width the Walls row asks for. The row named a block id when it was added, which
-     * needed more than forty characters; it names the gesture now — {@code Blocks: + held} — and the
-     * palette itself is shown as icons on the plot panel, so there is nothing here to size for.</p>
-     */
-    private static final double COPIES_BLOCK_ROW_PANEL_WIDTH = WALLS_ROW_PANEL_WIDTH;
+    private static final ResourceLocation SAVE_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/save");
 
     @Override public String title() { return "Editor"; }
 
@@ -205,7 +197,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // which doesn't see part plots.
         out.add(new CommandMenuEntry.Split(
             new CommandMenuEntry.Run("Save",
-                ctx.isParts() ? "dungeontrain editor part save" : "dungeontrain save"),
+                ctx.isParts() ? PART_SAVE_COMMAND : SAVE_COMMAND),
             new CommandMenuEntry.Run("All",
                 ctx.isParts() ? "dungeontrain editor part save all" : "dungeontrain save all"),
             0.80));
@@ -281,11 +273,42 @@ public final class EditorMenuScreen implements MenuScreen {
         // Stage chip shows; to change the gate the player edits the Stage or picks Custom.
         if (weightRow != null) out.addAll(spawnGateRows(ctx));
 
+        // Random flip — contents only. Which axes this template MAY be flipped along when it is
+        // stamped into a carriage (each enabled axis is rolled per carriage), plus "Rooms": whether
+        // that roll also applies when the template furnishes a portal room.
+        if (ctx.category() == PlotCategory.CONTENTS && notEmpty(ctx.modelId())) {
+            out.addAll(flipRows(ctx.modelId(),
+                EditorStatusHudOverlay.flipX(), EditorStatusHudOverlay.flipY(),
+                EditorStatusHudOverlay.flipZ(), EditorStatusHudOverlay.flipRooms()));
+        }
+
+        return out;
+    }
+
+    /**
+     * The Flip label + X / Y / Z / Rooms quad for a contents template, shaped like the Settings
+     * tab's Mirror quad ({@link #addMirrorToggles}) — the two read alike because they mean related
+     * things, but this one is per-template spawn behaviour, not an editor authoring aid.
+     */
+    static List<CommandMenuEntry> flipRows(String modelId, boolean x, boolean y, boolean z, boolean rooms) {
+        String prefix = "dungeontrain editor contents flip " + modelId + " ";
+        List<CommandMenuEntry> out = new ArrayList<>();
+        out.add(new CommandMenuEntry.Label("Flip"));
+        // showStateText=false → state shown by the green (on) / grey (off) tint only, as on Mirror.
+        CommandMenuEntry xCell = new CommandMenuEntry.Toggle("X", x,
+            prefix + "x on", prefix + "x off", false);
+        CommandMenuEntry yCell = new CommandMenuEntry.Toggle("Y", y,
+            prefix + "y on", prefix + "y off", false);
+        CommandMenuEntry zCell = new CommandMenuEntry.Toggle("Z", z,
+            prefix + "z on", prefix + "z off", false);
+        CommandMenuEntry roomsCell = new CommandMenuEntry.Toggle("Rooms", rooms,
+            prefix + "rooms on", prefix + "rooms off", false);
+        out.add(new CommandMenuEntry.Quad(xCell, yCell, zCell, roomsCell, 0.25, 0.50, 0.75));
         return out;
     }
 
     /** The portal-room block, in the order the settings read: box, then walls, then contents. */
-    private static List<CommandMenuEntry> portalRows() {
+    public static List<CommandMenuEntry> portalRows() {
         String mode = EditorStatusHudOverlay.roomMode();
         List<CommandMenuEntry> out = new ArrayList<>();
 
@@ -300,6 +323,7 @@ public final class EditorMenuScreen implements MenuScreen {
             "height", "Height", EditorStatusHudOverlay.roomHeight()));
 
         addIfPresent(out, EditorMenuPortalRows.wallsModeRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.lockRowFor(mode));
         addIfPresent(out, EditorMenuPortalRows.copiesRowFor(mode));
         addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
             mode, PortalRoomCopiesVariant.Plane.FLOOR));
@@ -350,6 +374,11 @@ public final class EditorMenuScreen implements MenuScreen {
     // ------------------------------------------------------------------
     // Settings — editor-wide preferences, outliving any one model
     // ------------------------------------------------------------------
+
+    /** The Settings rows for an explicit category and model name — what the inventory screen's Settings page shows. */
+    public static List<CommandMenuEntry> settingsRows(PlotCategory category, String modelName) {
+        return settingsRows(new Ctx(category, modelName, modelName, modelName, -1));
+    }
 
     private static List<CommandMenuEntry> settingsRows(Ctx ctx) {
         List<CommandMenuEntry> out = new ArrayList<>();
@@ -411,10 +440,14 @@ public final class EditorMenuScreen implements MenuScreen {
 
         // Go and stand in one. Portals only, because that is the only category where "the carriage"
         // names something you can walk into. It stamps the room the player is standing in — under
-        // the world, corridor each side, no train — so there is nothing to pick and no save prompt
-        // to answer.
+        // the world, corridor each side, no train — so there is nothing to pick.
+        //
+        // It stamps it from the SAVED template, though, so an unsaved edit would be silently absent
+        // from what the author walked in to look at. PortalTestSaveCheckScreen asks first when this
+        // room is dirty, and dispatches straight through when it isn't.
         if (ctx.isPortals()) {
-            out.add(new CommandMenuEntry.Run("Test the Carriage", "dungeontrain portal test"));
+            out.add(new CommandMenuEntry.DrillIn("Test the Carriage",
+                new PortalTestSaveCheckScreen(ctx.modelName())));
         }
 
         // Exit unwinds the active editor session, clears the editor plots, and teleports the player
@@ -535,7 +568,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * Extracted as a pure predicate so the unit test can pin behavior without having to mutate
      * {@link VersionInfo}'s static initializer.
      */
-    static boolean shouldShowDevModeToggle(String branch) {
+    public static boolean shouldShowDevModeToggle(String branch) {
         return !"main".equals(branch);
     }
 
@@ -554,7 +587,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>{@code modelId} (not {@code model}) is spliced into commands so track-side models with
      * friendly path strings ({@code "track / track2"}) don't break the parser.</p>
      */
-    static CommandMenuEntry weightTripleFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
+    public static CommandMenuEntry weightTripleFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         boolean named = modelName != null && !modelName.isEmpty();
         String prefix = switch (category) {
@@ -573,26 +606,24 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * Wider than the shared default while a Walls row is showing.
+     * The Save icon at the right of the breadcrumb band — one tap from any tab, where the
+     * File-tab row is two. Same command as that row, so what the icon saves is what Save saves.
      *
-     * <p>{@link CommandMenuLayout#PANEL_WIDTH} fits about fifteen characters, which covered every
-     * row this menu had until "Walls: Endless Repetition" — twenty-five — ran off both edges. The
-     * wide rows only exist in Current, so the panel widens only while that tab is the one showing;
-     * every other tab, and every other menu in the game, keeps the width it was tuned at.</p>
+     * <p>Its colour is its status: steady blue while the plot matches disk, breathing green while
+     * there is something to save — see {@link EditorSaveStatus}.</p>
      */
     @Override
-    public double panelWidth() {
-        if (EditorMenuTab.active() != EditorMenuTab.CURRENT) {
-            return CommandMenuLayout.PANEL_WIDTH;
-        }
-        String mode = EditorStatusHudOverlay.roomMode();
-        if (mode == null || EditorStatusPacket.NO_MODE.equals(mode)) {
-            return CommandMenuLayout.PANEL_WIDTH;
-        }
-        double widest = EditorPlotLabelsRenderer.hasCopiesBlockRowFor(mode)
-            ? Math.max(WALLS_ROW_PANEL_WIDTH, COPIES_BLOCK_ROW_PANEL_WIDTH)
-            : WALLS_ROW_PANEL_WIDTH;
-        return Math.max(CommandMenuLayout.PANEL_WIDTH, widest);
+    public MenuHeaderAction headerAction() {
+        return saveHeaderAction(Ctx.read().category(),
+            EditorSaveStatus.currentPlotDirty(), System.currentTimeMillis());
+    }
+
+    /** The header Save for a category: parts route through the part-aware subcommand. */
+    public static MenuHeaderAction saveHeaderAction(PlotCategory category, boolean dirty, long nowMillis) {
+        return new MenuHeaderAction(SAVE_ICON,
+            dirty ? "Save — unsaved changes" : "Save",
+            category == PlotCategory.PARTS ? PART_SAVE_COMMAND : SAVE_COMMAND,
+            EditorSaveStatus.tint(dirty, nowMillis));
     }
 
     /**
@@ -602,7 +633,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * label (caller formats the current value); {@code hint} is the typing-mode placeholder.
      * Command shapes mirror {@link #weightTripleFor}.
      */
-    static CommandMenuEntry levelTripleFor(PlotCategory category, String modelId, String modelName,
+    public static CommandMenuEntry levelTripleFor(PlotCategory category, String modelId, String modelName,
                                            String sub, String label, String hint) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         boolean named = modelName != null && !modelName.isEmpty();
@@ -629,7 +660,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * them to the new plot. Returns null for categories that don't support author-authored new
      * models.
      */
-    static CommandMenuEntry newEntryFor(PlotCategory category, String modelId, String model) {
+    public static CommandMenuEntry newEntryFor(PlotCategory category, String modelId, String model) {
         if (category == null) return null;
         return switch (category) {
             case CARRIAGES -> new CommandMenuEntry.DrillIn(
@@ -669,7 +700,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>{@code modelId} is what gets spliced into the command (must be a single command token);
      * {@code model} is the friendly path used in the confirm prompt label.</p>
      */
-    static CommandMenuEntry removeEntryFor(PlotCategory category, String modelId, String model) {
+    public static CommandMenuEntry removeEntryFor(PlotCategory category, String modelId, String model) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         return switch (category) {
             case CARRIAGES -> new CommandMenuEntry.DrillIn(
@@ -699,7 +730,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * Returns null for categories without a single addressable model id (tracks, pillars, tunnels,
      * architecture).
      */
-    private static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
+    public static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty() || category == null) return null;
         return switch (category) {
             case CARRIAGES, CONTENTS, PARTS, PORTALS -> new CommandMenuEntry.DrillIn(
@@ -719,16 +750,20 @@ public final class EditorMenuScreen implements MenuScreen {
      * author-authored renames.
      */
     private static CommandMenuEntry renameEntryFor(Ctx ctx) {
-        String model = ctx.model();
+        return renameEntryFor(ctx.category(), ctx.model());
+    }
+
+    /** As {@link #renameEntryFor(Ctx)} for an explicit category and friendly model path. */
+    public static CommandMenuEntry renameEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty()) return null;
-        if (ctx.isParts()) {
+        if (category == PlotCategory.PARTS) {
             String[] kindName = partsKindName(model);
             if (kindName == null) return null;
             return new CommandMenuEntry.TypeArg(
                 "Rename", "new_name", "dungeontrain editor part rename", "", kindName[1]);
         }
-        if (ctx.category() == null) return null;
-        return switch (ctx.category()) {
+        if (category == null) return null;
+        return switch (category) {
             case CARRIAGES -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
                 "Rename", "new_name",
                 "dungeontrain editor save",
@@ -743,12 +778,12 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /** Match server-side carriage built-in names so the Rename row hides for them. Mirrors PROTECTED_BUILTINS in EditorCommand. */
-    private static boolean isReservedCarriageBuiltin(String id) {
+    public static boolean isReservedCarriageBuiltin(String id) {
         return "standard".equals(id) || "flatbed".equals(id);
     }
 
     /** Match server-side contents built-in names. Server rejects rename for any builtin via {@code current.isBuiltin()}. */
-    private static boolean isReservedContentsBuiltin(String id) {
+    public static boolean isReservedContentsBuiltin(String id) {
         return "default".equals(id);
     }
 
@@ -769,7 +804,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>The menu is closed first so the profile screen replaces it cleanly rather than stacking on
      * top of it. A null parent means Back returns to the game.</p>
      */
-    static CommandMenuEntry myBuildsEntry() {
+    public static CommandMenuEntry myBuildsEntry() {
         return new CommandMenuEntry.ClientAction(
             Component.translatable("gui.dungeontrain.builder.profile").getString(),
             () -> {

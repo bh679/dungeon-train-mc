@@ -115,4 +115,26 @@ public final class PortalCorridorSize {
                                     PortalCorridorKind kind) {
         return role == PortalCarriageRole.EXIT ? -overrun(dims, kind) : 0;
     }
+
+    /**
+     * Where one carriage's corridor starts, in world X, given its group's minimum corner.
+     *
+     * <p>Group layout: {@code [BACK pad | carriage 0 | carriage 1 | … ]}. Exact doubles, so the
+     * mapping neither lurches on a block boundary nor fights the group's jitter.</p>
+     *
+     * <p>The corridor is longer than its slot and the EXIT one is pulled back into the cart, so its
+     * frame origin is NOT its slot's — see {@link #originOffsetX}. This has to match where
+     * {@code CarriagePlacer} actually stamped the blocks, or the swap plane would sit a few blocks
+     * off the corridor the player is walking down. Lives here rather than in the tick handler so the
+     * two corridors' origins can be related in a test: the exit's is the entry's plus two carriage
+     * lengths, less the overrun.</p>
+     *
+     * @param groupMinX the group's world AABB minimum X
+     * @param padLen    the half-flatbed pad in front of carriage 0 ({@code CarriagePlacer.halfPadLen})
+     * @param slot      the carriage's slot within its group
+     */
+    public static double corridorOriginX(double groupMinX, int padLen, int slot, CarriageDims dims,
+                                         PortalCarriageRole role, PortalCorridorKind kind) {
+        return groupMinX + padLen + (double) slot * dims.length() + originOffsetX(role, dims, kind);
+    }
 }

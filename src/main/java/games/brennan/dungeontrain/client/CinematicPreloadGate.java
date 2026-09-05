@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.CinematicIntroPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
+import net.minecraft.client.gui.screens.ReceivingLevelScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.phys.Vec3;
@@ -188,17 +189,23 @@ public final class CinematicPreloadGate {
     }
 
     /**
-     * Catches the vanilla {@link LevelLoadingScreen} closing to no screen
-     * (world considered "ready" from vanilla's perspective) and substitutes
+     * Catches a vanilla loading screen closing to no screen (world considered
+     * "ready" from vanilla's perspective) and substitutes
      * {@link CinematicLoadingScreen} in the same synchronous call — same
      * substitution trick as {@code DeathScreenLayoutHandler}. Without this,
      * the swap only happened on the next {@link #onClientTick}, up to a
      * client-tick's worth of raw, unrendered world showing through first.
+     *
+     * <p>Both join screens count: {@link LevelLoadingScreen} (world load) and
+     * {@link ReceivingLevelScreen} (vanilla's "Downloading terrain", themed by
+     * {@code ReceivingLevelScreenThemeMixin}), which is the one actually up when
+     * the gate arms.</p>
      */
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
         if (phase == Phase.IDLE) return;
-        if (!(event.getCurrentScreen() instanceof LevelLoadingScreen)) return;
+        if (!(event.getCurrentScreen() instanceof LevelLoadingScreen)
+            && !(event.getCurrentScreen() instanceof ReceivingLevelScreen)) return;
         if (event.getNewScreen() instanceof CinematicLoadingScreen) return;
         event.setNewScreen(new CinematicLoadingScreen());
     }
@@ -296,6 +303,11 @@ public final class CinematicPreloadGate {
                 loadingReady = true;
                 loadingReadyReason = settled ? "chunks ready" : "cap reached";
                 localFraction = 1.0; // reads as "done" while we hold for the story
+                // The screen now fades to a dim over the live world — park the camera at the
+                // shot's opening pose so what shows through is the composed cinematic frame.
+                CinematicCameraController.beginPreview(
+                    new Vec3(pending.camX(), pending.camY(), pending.camZ()),
+                    pending.startYaw(), pending.startPitch());
             }
         }
 
@@ -345,6 +357,9 @@ public final class CinematicPreloadGate {
     }
 
     private static void reset() {
+        // Before anything else: hand the HUD back, so a following start() saves the player's
+        // real hideGui setting rather than the preview's forced true.
+        CinematicCameraController.endPreview();
         phase = Phase.IDLE;
         pending = null;
         freezePos = null;
@@ -355,8 +370,21 @@ public final class CinematicPreloadGate {
         loadingReadyReason = null;
     }
 
+    /**
+     * Tears the loading sequence down when the player actually leaves a world.
+     *
+     * <p><b>Only when there is a player.</b> {@code Minecraft.doWorldLoad} — the method that opens
+     * a world — begins with {@code this.disconnect()}, and NeoForge's {@code firePlayerLogout}
+     * posts this event unconditionally, null player and all. So every world <em>open</em> fires a
+     * "logout" roughly a second after {@link WorldOpenScreenSwap} started the join, and an
+     * unguarded reset here wiped {@link LoadingSequenceProgress#beginJoin()}'s flag before the
+     * screens that read it ever rendered — which is exactly why the {@code ProgressScreen} that
+     * same {@code disconnect()} puts on screen stayed un-themed. A real logout always has a
+     * player; a null one is that pre-open teardown and must leave the new join alone.</p>
+     */
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        if (event.getPlayer() == null) return;
         reset();
         LoadingStories.reset();
         LoadingSequenceProgress.reset();

@@ -31,7 +31,7 @@ import java.util.Optional;
  * appears later is picked up without a restart.</p>
  */
 @OnlyIn(Dist.CLIENT)
-final class BuilderTileArt {
+public final class BuilderTileArt {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -81,7 +81,7 @@ final class BuilderTileArt {
      * is sampled, so the image keeps its proportions and the overflow is cropped off the long axis
      * rather than compressed into the short one.</p>
      */
-    static void renderCover(GuiGraphics g, ResourceLocation texture, int texW, int texH,
+    public static void renderCover(GuiGraphics g, ResourceLocation texture, int texW, int texH,
                             int x, int y, int w, int h, float alpha) {
         if (texW <= 0 || texH <= 0 || w <= 0 || h <= 0) {
             return;

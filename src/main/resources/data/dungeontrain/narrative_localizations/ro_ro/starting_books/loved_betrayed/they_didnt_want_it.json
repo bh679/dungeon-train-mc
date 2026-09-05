@@ -1,0 +1,11 @@
+{
+  "id": "they_didnt_want_it",
+  "title": "N-au vrut să fie iubiți",
+  "author": "Brennan Hatton",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "I-a găsit.\nL-au ucis.\n\n\nAsta e varianta scurtă.\n\nUite-o și pe cea lungă.\n\n%STORY%\n\n\nVagonul %CARRIAGE%.\n\n%DAYS% zile de așteptare pentru vreun minut de greșeală.\n\n\nLa început nu s-a apărat.\nNu o face, la început.\n%GEAR%\n\n\nPoate că nu au știut.\n\nCeva mort se apropie purtând o față și îți întinde ceva.\n\nCei mai mulți lovesc.\n\n\nMi-ar plăcea să-ți spun că au știut și au făcut-o oricum.\n\nAsta e mai rău, și nu știu dacă e adevărat.\n\n\n%TARGET% are scrisul tău într-un cufăr, undeva.\n\nCrede că e un trofeu.",
+    "%TARGET% l-a ucis.\n\n\nAr trebui să știi că a fost rapid.\n\n%DAYS% zile de așteptare, și apoi mai nimic.\n\n\n%STORY%\n\n\nMă tot gândesc la clipa de dinainte.\n\nAvea ceva în mâini pentru el.\n%GEAR%\n\nÎncă îl ținea.\n\n\nOamenii din trenul ăsta nu prea primesc daruri.\n\nPrimesc ambuscade.\n\nÎnvață care e care ghicind.\n\n\nAu ghicit greșit.\n\n\nTu i-ai ierta.\n\nAsta e chestia enervantă la tine."
+  ]
+}

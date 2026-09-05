@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import net.minecraft.network.FriendlyByteBuf;
@@ -22,8 +23,16 @@ import java.util.List;
  *
  * <p>{@code status} distinguishes an empty profile from a relay that couldn't be reached, which the
  * screen must not conflate: one says "you haven't uploaded anything", the other says "we don't know".</p>
+ *
+ * <p>{@code ownerUuid} says WHOSE profile this is. On a dev build the screen can be showing somebody
+ * else's builds, and two asks can be in flight at once — so the screen matches this against the
+ * profile it is displaying and drops anything else, rather than drawing one player's builds under
+ * another's name. {@code mine} answers the same question for the ordinary case without the screen
+ * having to know its own uuid, and {@code ownerName} names the player for their own profile; a
+ * foreign one is named by the creator row the screen picked.</p>
  */
-public record BuilderProfilePacket(Status status, List<Entry> builds) implements CustomPacketPayload {
+public record BuilderProfilePacket(Status status, List<Entry> builds, String ownerUuid,
+                                   String ownerName, boolean mine) implements CustomPacketPayload {
 
     /** Why the list is what it is. */
     public enum Status {
@@ -57,11 +66,21 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
      * @param buildName  the template name, which is also how the client finds the local file to draw
      * @param published  whether it is on the train
      * @param flag       the moderation verdict, so a withheld build can say why it isn't appearing
+     * @param review     where it stands in the submission queue ({@link BuilderReviewState}). Distinct
+     *                   from {@code published}, which is only the author's own intent: a submitted
+     *                   build is published AND waiting, and the screen has to say which
      * @param stage      the stage it was authored in, or empty
      * @param changes    how many recorded changes it has — a rough "how much work is in this"
+     * @param favourite  whether the VIEWER has starred it — not the owner, which is the same player
+     *                   on every path but the dev one, where the builds are somebody else's and the
+     *                   stars on them are still your own
+     * @param ownerUuid  who built it, and @param ownerName what to call them. Redundant on a profile
+     *                   listing, where every build has the same author; load-bearing on a favourites
+     *                   listing, which spans owners and captions each tile with whose work it is
      */
     public record Entry(int relayId, String kind, String subKind, String buildName, boolean published,
-                        String flag, String stage, int changes) {}
+                        String flag, String review, String stage, int changes,
+                        boolean favourite, String ownerUuid, String ownerName) {}
 
     public static final Type<BuilderProfilePacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "builder_profile"));
@@ -74,46 +93,90 @@ public record BuilderProfilePacket(Status status, List<Entry> builds) implements
         StreamCodec.of(
             (buf, packet) -> {
                 buf.writeEnum(packet.status);
-                int n = Math.min(packet.builds.size(), MAX_ENTRIES);
-                buf.writeVarInt(n);
-                for (int i = 0; i < n; i++) {
-                    Entry e = packet.builds.get(i);
-                    buf.writeVarInt(e.relayId());
-                    buf.writeUtf(e.kind(), MAX_STRING);
-                    buf.writeUtf(e.subKind(), MAX_STRING);
-                    buf.writeUtf(e.buildName(), MAX_STRING);
-                    buf.writeBoolean(e.published());
-                    buf.writeUtf(e.flag(), MAX_STRING);
-                    buf.writeUtf(e.stage(), MAX_STRING);
-                    buf.writeVarInt(e.changes());
-                }
+                buf.writeUtf(packet.ownerUuid, MAX_STRING);
+                buf.writeUtf(packet.ownerName, MAX_STRING);
+                buf.writeBoolean(packet.mine);
+                writeEntries(buf, packet.builds);
             },
             buf -> {
                 Status status = buf.readEnum(Status.class);
-                int n = Math.min(buf.readVarInt(), MAX_ENTRIES);
-                List<Entry> out = new ArrayList<>(n);
-                for (int i = 0; i < n; i++) {
-                    out.add(new Entry(buf.readVarInt(), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING),
-                            buf.readUtf(MAX_STRING), buf.readBoolean(), buf.readUtf(MAX_STRING),
-                            buf.readUtf(MAX_STRING), buf.readVarInt()));
-                }
-                return new BuilderProfilePacket(status, List.copyOf(out));
+                String ownerUuid = buf.readUtf(MAX_STRING);
+                String ownerName = buf.readUtf(MAX_STRING);
+                boolean mine = buf.readBoolean();
+                return new BuilderProfilePacket(status, readEntries(buf), ownerUuid, ownerName, mine);
             }
         );
 
-    public static BuilderProfilePacket of(Status status) {
-        return new BuilderProfilePacket(status, List.of());
+    /**
+     * The entry list, on the wire.
+     *
+     * <p>Shared with {@link BuilderFavouritesPacket}, which carries the same rows for a different
+     * question — so the two cannot drift into writing an {@code Entry} differently, which in a
+     * hand-written positional codec means reading one wrong.</p>
+     *
+     * <p>New fields go at the END, for the same reason: the order here IS the format.</p>
+     */
+    static void writeEntries(FriendlyByteBuf buf, List<Entry> entries) {
+        int n = Math.min(entries.size(), MAX_ENTRIES);
+        buf.writeVarInt(n);
+        for (int i = 0; i < n; i++) {
+            Entry e = entries.get(i);
+            buf.writeVarInt(e.relayId());
+            buf.writeUtf(e.kind(), MAX_STRING);
+            buf.writeUtf(e.subKind(), MAX_STRING);
+            buf.writeUtf(e.buildName(), MAX_STRING);
+            buf.writeBoolean(e.published());
+            buf.writeUtf(e.flag(), MAX_STRING);
+            buf.writeUtf(e.review(), MAX_STRING);
+            buf.writeUtf(e.stage(), MAX_STRING);
+            buf.writeVarInt(e.changes());
+            buf.writeBoolean(e.favourite());
+            buf.writeUtf(e.ownerUuid(), MAX_STRING);
+            buf.writeUtf(e.ownerName(), MAX_STRING);
+        }
+    }
+
+    /** The other half of {@link #writeEntries}. */
+    static List<Entry> readEntries(FriendlyByteBuf buf) {
+        int n = Math.min(buf.readVarInt(), MAX_ENTRIES);
+        List<Entry> out = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            out.add(new Entry(buf.readVarInt(), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING),
+                    buf.readUtf(MAX_STRING), buf.readBoolean(), buf.readUtf(MAX_STRING),
+                    buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING), buf.readVarInt(),
+                    buf.readBoolean(), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING)));
+        }
+        return List.copyOf(out);
+    }
+
+    public static BuilderProfilePacket of(Status status, String ownerUuid, String ownerName, boolean mine) {
+        return new BuilderProfilePacket(status, List.of(), ownerUuid, ownerName, mine);
     }
 
     /** Reduce the relay's rows to what the screen draws. */
-    public static BuilderProfilePacket of(List<SharedCarriageClient.ProfileBuild> rows) {
+    public static BuilderProfilePacket of(List<SharedCarriageClient.ProfileBuild> rows,
+                                          String ownerUuid, String ownerName, boolean mine) {
         List<Entry> out = new ArrayList<>(Math.min(rows.size(), MAX_ENTRIES));
         for (SharedCarriageClient.ProfileBuild r : rows) {
             if (out.size() >= MAX_ENTRIES) break;
-            out.add(new Entry(r.id(), r.kind(), r.subKind(), r.buildName(),
-                    "published".equals(r.visibility()), r.flag(), r.stage(), r.changeCount()));
+            out.add(entryOf(r));
         }
-        return new BuilderProfilePacket(Status.OK, List.copyOf(out));
+        return new BuilderProfilePacket(Status.OK, List.copyOf(out), ownerUuid, ownerName, mine);
+    }
+
+    /**
+     * One relay row as the screen's entry. Shared with {@link BuilderFavouritesPacket} so a build
+     * described one way in My Builds is described the same way in Favourites.
+     */
+    static Entry entryOf(SharedCarriageClient.ProfileBuild r) {
+        return new Entry(r.id(), r.kind(), r.subKind(), r.buildName(),
+                "published".equals(r.visibility()), r.flag(), BuilderReviewState.of(r.review()),
+                r.stage(), r.changeCount(), r.favourite(), r.ownerUuid(), r.ownerName());
+    }
+
+    /** How many entries a listing packet will carry — shared with {@link BuilderFavouritesPacket}. */
+    static int maxEntries() {
+        return MAX_ENTRIES;
     }
 
     @Override

@@ -76,8 +76,8 @@ public enum LeaderboardCategory {
     // chests and books do, so they carry Scope.TOTAL. Alone they say nothing about it (see
     // labelsSpan), but the scope is what makes a one-life half of any of them expressible at all.
     DEATHNOTES_WRITTEN("deathnotes_written", "deathnotes_written", "Most Death Notes", Scope.TOTAL, Format.COUNT),
-    DEATHNOTES_FOUGHT("deathnotes_fought", "deathnotes_fought", "Most Curses Survived", Scope.TOTAL, Format.COUNT),
-    DEATHNOTES_PEOPLE("deathnotes_people", "deathnotes_people", "Most People Cursed", Scope.TOTAL, Format.COUNT),
+    DEATHNOTES_FOUGHT("deathnotes_fought", "deathnotes_fought", "Most Death Notes Survived", Scope.TOTAL, Format.COUNT),
+    DEATHNOTES_PEOPLE("deathnotes_people", "deathnotes_people", "Most People Named", Scope.TOTAL, Format.COUNT),
     LOVENOTES_WRITTEN("lovenotes_written", "lovenotes_written", "Most Love Notes Written", Scope.TOTAL, Format.COUNT),
     LOVENOTES_RECEIVED("lovenotes_received", "lovenotes_received", "Most Love Notes Received", Scope.TOTAL, Format.COUNT),
     LOVENOTES_PEOPLE("lovenotes_people", "lovenotes_people", "Most Lovers", Scope.TOTAL, Format.COUNT),
@@ -87,7 +87,12 @@ public enum LeaderboardCategory {
     // All-time given, and the biggest one gift. Two subjects rather than a scoped pair: the span
     // vocabulary is a LIFE, and a payment is not one - "Kindest Benefactors, One Life" is nonsense.
     DONATIONS("donations", "donations", "Kindest Benefactors", Scope.NONE, Format.MONEY),
-    DONATIONS_SINGLE("donations_single", "donations_single", "Biggest Single Gift", Scope.NONE, Format.MONEY);
+    DONATIONS_SINGLE("donations_single", "donations_single", "Biggest Single Gift", Scope.NONE, Format.MONEY),
+    // The two builder boards. Scope.NONE for the same reason the two above have it: the span
+    // vocabulary here is a LIFE, and neither building nor shipping a build happens inside one —
+    // time in the Train Builder is not measured from a spawn and does not reset at a death.
+    BUILDER_TIME("builder_time", "builder_time", "Longest Building", Scope.NONE, Format.DURATION),
+    BUILDS_APPROVED("builds_approved", "builds_approved", "Most Builds Approved", Scope.NONE, Format.COUNT);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject

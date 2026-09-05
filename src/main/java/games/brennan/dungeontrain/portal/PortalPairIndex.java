@@ -1,10 +1,14 @@
 package games.brennan.dungeontrain.portal;
 
+import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 
@@ -88,16 +92,30 @@ public final class PortalPairIndex {
 
         /** The shipyard position of a local cell, via the ship's transform rather than an assumed axis. */
         public BlockPos plotPosOf(int[] local) {
-            Vector3d ship3 = ship.worldToShip(new Vector3d(
-                carriageWorld.x + local[0] + 0.5,
-                carriageWorld.y + local[1] + 0.5,
-                carriageWorld.z + local[2] + 0.5));
-            return BlockPos.containing(ship3.x, ship3.y, ship3.z);
+            return PortalPairIndex.plotPosOf(ship, carriageWorld, local);
         }
 
         public BlockPos twinPosOf(int[] local) {
             return twinOrigin.offset(local[0], local[1], local[2]);
         }
+    }
+
+    /**
+     * The shipyard position of a corridor-local cell, for a corridor whose origin in world space is
+     * {@code carriageWorld} and whose blocks live in {@code ship}'s plot.
+     *
+     * <p>The static form of {@link Entry#plotPosOf}, for a caller that has no published entry to
+     * hand — a corridor whose swap was refused before a pairing ever existed still has a plate to
+     * open ({@code PortalSever.openCentreWall}). Not bounds-checked, deliberately: the centre-wall
+     * cells it is asked about sit outside the corridor's own box (see
+     * {@link PortalCentreWall#doorwayCellsFromCorridor}).</p>
+     */
+    public static BlockPos plotPosOf(ManagedShip ship, Vec3 carriageWorld, int[] local) {
+        Vector3d ship3 = ship.worldToShip(new Vector3d(
+            carriageWorld.x + local[0] + 0.5,
+            carriageWorld.y + local[1] + 0.5,
+            carriageWorld.z + local[2] + 0.5));
+        return BlockPos.containing(ship3.x, ship3.y, ship3.z);
     }
 
     /** Carriage index → its live pairing. Written on the server thread, read from the Sable hook. */
@@ -141,5 +159,31 @@ public final class PortalPairIndex {
             if (entry.localOfTwin(pos) != null) return entry;
         }
         return null;
+    }
+
+    /**
+     * Is this position a cell of a live corridor — either copy?
+     *
+     * <p>The two lookups above each know one coordinate space; this asks both from a single
+     * {@link BlockPos}, which is what an event handler has. A carriage's blocks are at shipyard
+     * coordinates <i>within this same level</i>, so the position alone cannot say which space it is
+     * in: the plot is resolved from the position's chunk the way {@code SableBlockChangeGuardMixin}
+     * does, and a null plot means an ordinary world chunk, which is the twin's case.</p>
+     *
+     * <p>Callers sit on block-placement paths, so the empty check comes first: a world with no live
+     * portal pays one field read.</p>
+     */
+    public static boolean isCorridorCell(ServerLevel level, BlockPos pos) {
+        if (ENTRIES.isEmpty()) return false;
+        if (findByTwinPos(pos) != null) return true;
+
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return false;
+        ChunkPos cpos = new ChunkPos(pos);
+        if (container.getChunkHolder(cpos) == null) return false;
+        LevelPlot plot = container.getPlot(cpos);
+        if (plot == null) return false;
+
+        return findByPlotPos(plot, pos.getX(), pos.getY(), pos.getZ()) != null;
     }
 }

@@ -49,8 +49,7 @@
       "chance": 1.0,
       "connection": "?",
       "newline": false,
-      "refs": [],
-      "label": null
+      "refs": []
     }
   ]
 }

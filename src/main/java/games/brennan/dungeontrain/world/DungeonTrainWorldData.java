@@ -76,10 +76,32 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
     private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
+    private static final String TAG_DEBUG_GRANTS = "DebugGrants";
+    private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
+    private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
 
     private int trainY;
     private boolean startsWithTrain;
     private CarriageDims dims;
+
+    /**
+     * Whether the sky editor has ever stamped a plot in this world. {@code EditorCategory.clearAllPlots}
+     * erases every plot of every category — several hundred chunk columns at the plot height — and
+     * on a world where nothing was ever stamped that is several hundred chunks generated for nothing.
+     * Defaults to {@code true} (and loads as {@code true} when the tag is absent) so every save made
+     * before the flag existed keeps the full clear; only {@link #createDefault()} starts it false.
+     */
+    private boolean editorPlotsStamped = true;
+    /**
+     * Where each portal-room plot was last stamped, by room name: {@code [x, y, z, sx, sy, sz]}.
+     *
+     * <p>The layout predicts where a plot <em>should</em> be from the sizes it knows; this records
+     * where one <em>is</em>. The two disagree whenever a size is learned after a stamp — a template
+     * read for the first time this session, a sub-variant deeper than its parent — and a clear that
+     * erases the predicted box leaves the real one standing in the sky. Persisted, because the
+     * blocks are.</p>
+     */
+    private final java.util.Map<String, int[]> editorPortalPlotBoxes = new java.util.LinkedHashMap<>();
     private long generationSeed;
     private StartingDimension startingDimension;
     /** Per-world override of the PlayerMob 1-in-N spawn rate; null = use the global COMMON default. */
@@ -274,6 +296,15 @@ public final class DungeonTrainWorldData extends SavedData {
     private final games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds builderRelayBuilds =
             new games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds();
 
+    /**
+     * Who may open the F3+4 debug panel, and until when — the server's cache of what the relay last
+     * said. Saved so a grant survives a restart and a relay outage; see
+     * {@link games.brennan.dungeontrain.debug.DebugAccessGrants}. Empty in every world nobody has
+     * been granted access in, which is nearly all of them.
+     */
+    private final games.brennan.dungeontrain.debug.DebugAccessGrants debugGrants =
+            new games.brennan.dungeontrain.debug.DebugAccessGrants();
+
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
         this.startsWithTrain = startsWithTrain;
@@ -356,13 +387,16 @@ public final class DungeonTrainWorldData extends SavedData {
     }
 
     static DungeonTrainWorldData createDefault() {
-        return new DungeonTrainWorldData(
+        DungeonTrainWorldData data = new DungeonTrainWorldData(
                 DungeonTrainConfig.getTrainY(),
                 true,
                 CarriageDims.DEFAULT,
                 0L,
                 StartingDimension.OVERWORLD
         );
+        // A brand-new world has no plots to clear — the only case the flag may honestly be false.
+        data.editorPlotsStamped = false;
+        return data;
     }
 
     static DungeonTrainWorldData load(CompoundTag tag) {
@@ -397,6 +431,10 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE)) {
             data.breakBlocksOnContactOverride = tag.getBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE);
         }
+        // Absent on worlds saved before the flag existed → true → plots are cleared as they always were.
+        if (tag.contains(TAG_EDITOR_PLOTS_STAMPED)) {
+            data.editorPlotsStamped = tag.getBoolean(TAG_EDITOR_PLOTS_STAMPED);
+        }
         // Absent on legacy worlds → false → the join-info report fires once on the next join.
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
             data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
@@ -422,6 +460,19 @@ public final class DungeonTrainWorldData extends SavedData {
         // Absent in every world that has never uploaded a build, which is every non-builder world.
         data.builderRelayBuilds.loadFrom(
                 tag.getList(TAG_BUILDER_RELAY_BUILDS, net.minecraft.nbt.Tag.TAG_COMPOUND));
+        // Absent in every world nobody has been granted debug-panel access in. Lapsed entries are
+        // dropped by loadFrom, so a save that outlived its grants comes back granting nothing.
+        data.debugGrants.loadFrom(
+                tag.getList(TAG_DEBUG_GRANTS, net.minecraft.nbt.Tag.TAG_COMPOUND));
+        // Absent on every world saved before plot boxes were recorded; those clear at the predicted
+        // layout, as they always did, until their next stamp records where things really are.
+        if (tag.contains(TAG_EDITOR_PORTAL_PLOT_BOXES, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag boxes = tag.getCompound(TAG_EDITOR_PORTAL_PLOT_BOXES);
+            for (String name : boxes.getAllKeys()) {
+                int[] box = boxes.getIntArray(name);
+                if (box.length == 6) data.editorPortalPlotBoxes.put(name, box);
+            }
+        }
         // Absent in every non-builder world (and in builder worlds saved before the stamp ran).
         if (tag.contains(TAG_BUILDER_MODE)) {
             data.builderMode = tag.getString(TAG_BUILDER_MODE);
@@ -501,6 +552,7 @@ public final class DungeonTrainWorldData extends SavedData {
             tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
+        tag.putBoolean(TAG_EDITOR_PLOTS_STAMPED, editorPlotsStamped);
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
@@ -508,6 +560,16 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
         if (!builderRelayBuilds.isEmpty()) {
             tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
+        }
+        if (!debugGrants.isEmpty()) {
+            tag.put(TAG_DEBUG_GRANTS, debugGrants.toTag());
+        }
+        if (!editorPortalPlotBoxes.isEmpty()) {
+            CompoundTag boxes = new CompoundTag();
+            for (java.util.Map.Entry<String, int[]> e : editorPortalPlotBoxes.entrySet()) {
+                boxes.putIntArray(e.getKey(), e.getValue());
+            }
+            tag.put(TAG_EDITOR_PORTAL_PLOT_BOXES, boxes);
         }
         if (builderMode != null) {
             tag.putString(TAG_BUILDER_MODE, builderMode);
@@ -699,6 +761,46 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public boolean startsWithTrain() {
         return startsWithTrain;
+    }
+
+    /** Whether any editor plot has ever been stamped here — false only on a world made since the flag existed and never edited. */
+    public boolean editorPlotsStamped() {
+        return editorPlotsStamped;
+    }
+
+    /** Where {@code name}'s portal-room plot was last stamped, or null when nothing records one. */
+    public int[] portalPlotBox(String name) {
+        int[] box = editorPortalPlotBoxes.get(name);
+        return box == null ? null : box.clone();
+    }
+
+    /** Every recorded portal-room plot box, by name. A copy — write through the methods below. */
+    public java.util.Map<String, int[]> portalPlotBoxes() {
+        java.util.Map<String, int[]> out = new java.util.LinkedHashMap<>();
+        for (java.util.Map.Entry<String, int[]> e : editorPortalPlotBoxes.entrySet()) {
+            out.put(e.getKey(), e.getValue().clone());
+        }
+        return out;
+    }
+
+    /** {@code name}'s plot now stands at this box. */
+    public void recordPortalPlotBox(String name, int x, int y, int z, int sx, int sy, int sz) {
+        if (name == null || name.isEmpty()) return;
+        int[] box = {x, y, z, sx, sy, sz};
+        int[] was = editorPortalPlotBoxes.put(name, box);
+        if (was == null || !java.util.Arrays.equals(was, box)) setDirty();
+    }
+
+    /** {@code name}'s plot has been erased — or was never there. */
+    public void forgetPortalPlotBox(String name) {
+        if (name != null && editorPortalPlotBoxes.remove(name) != null) setDirty();
+    }
+
+    /** Record that plots may now hold blocks; from here on every clear has to actually erase them. */
+    public void markEditorPlotsStamped() {
+        if (editorPlotsStamped) return;
+        editorPlotsStamped = true;
+        setDirty();
     }
 
     public CarriageDims dims() {
@@ -928,6 +1030,20 @@ public final class DungeonTrainWorldData extends SavedData {
 
     /** Persist a change made through {@link #builderRelayBuilds()}. */
     public void markBuilderRelayBuildsDirty() {
+        setDirty();
+    }
+
+    /**
+     * The debug-panel access grants cached for this world. Handed out live, like
+     * {@link #builderRelayBuilds()} — callers that change it must
+     * {@link #markDebugGrantsDirty()} afterwards.
+     */
+    public games.brennan.dungeontrain.debug.DebugAccessGrants debugGrants() {
+        return debugGrants;
+    }
+
+    /** Persist a change made through {@link #debugGrants()}. */
+    public void markDebugGrantsDirty() {
         setDirty();
     }
 

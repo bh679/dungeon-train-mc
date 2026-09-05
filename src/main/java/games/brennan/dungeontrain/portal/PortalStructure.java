@@ -126,6 +126,11 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return settings.effectiveExits();
     }
 
+    /** What this room's shell is written in — the setting as its walls can actually use it. */
+    public PortalRoomLock lock() {
+        return settings.effectiveLock();
+    }
+
     /** What this room's appended tiles are made of — the setting as its walls can actually use it. */
     public PortalRoomCopies copies() {
         return settings.effectiveCopies();
@@ -199,10 +204,30 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * that is about shifting it per tick, as the tiling grows. This offset is fixed for the life of
      * the structure and survives a relocation ({@link #movedTo}), so every reader still agrees with
      * every other, which is the property that warning is really protecting.</p>
+     *
+     * <h2>Y and Z: the room's two doorways, placed apart</h2>
+     * <p>{@link #roomOrigin} spends this room's width and height slack to put the <b>box</b> where the
+     * <i>entry</i> door asks for it. The exit door is then a displacement of this corridor within that
+     * box — {@link PortalRoomLayout#exitDoorDeltaZ} and {@link PortalRoomLayout#exitDoorDeltaY}, each
+     * zero for the mirrored rooms that are nearly all of them, so nothing an existing world is
+     * standing in moves.</p>
+     *
+     * <p><b>Why this does not disturb the swap.</b> {@code PortalFrames} maps a carriage corridor to
+     * <i>its own</i> twin — an entry carriage to the entry twin, an exit carriage to the exit twin —
+     * and never one twin to the other. So it carries a corridor-local offset between two frames whose
+     * origins it is told, and moving this one is a change to an origin it already reads from here.
+     * The two corridors' <i>interiors</i> stay identical, which is the property the illusion actually
+     * rests on: nothing here touches {@link PortalCarriageLayout}, whose {@code doorZ}/{@code floorY}
+     * must keep describing every corridor in the world alike — the carriages on the train share a
+     * walkway line and cannot bend off it.</p>
      */
     public BlockPos exitOrigin(CarriageDims dims) {
         return origin.offset(
-            exitTwinOffsetX(dims) + exitTile.x() * roomLength(), 0, exitTile.z() * roomWidth());
+            exitTwinOffsetX(dims) + exitTile.x() * roomLength(),
+            PortalRoomLayout.exitDoorDeltaY(dims, roomSize.getY(),
+                settings.doorHeightOffset().value(), settings.exitDoorHeightOffset().value()),
+            exitTile.z() * roomWidth() + PortalRoomLayout.exitDoorDeltaZ(dims, roomSize.getZ(),
+                settings.doorOffset().value(), settings.exitDoorOffset().value()));
     }
 
     /**
@@ -223,8 +248,12 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
     /** Minimum corner of the room box, centred on the corridor's doorway line. */
     public BlockPos roomOrigin(CarriageDims dims, PortalCarriageLayout layout) {
         // Centred on this pair's OWN room width, not the world minimum — a wider authored room
-        // still has to line its interior centre up with the corridor's doorway.
-        return PortalRoomLayout.roomOrigin(origin, dims, layout, roomSize.getZ());
+        // still has to line its interior centre up with the corridor's doorway, offset by whatever
+        // slack the author has spent moving the door off that centre — and, on Y, however far below
+        // the corridor's own fixed floor line the author has spent the room's height instead.
+        return PortalRoomLayout.roomOrigin(
+            origin, dims, layout, roomSize.getZ(), roomSize.getY(),
+            settings.doorOffset().value(), settings.doorHeightOffset().value());
     }
 
     /**

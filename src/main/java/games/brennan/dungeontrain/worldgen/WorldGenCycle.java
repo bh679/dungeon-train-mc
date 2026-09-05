@@ -307,6 +307,27 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * How many blocks past the leading edge of the real-Nether <b>core</b> {@code worldX} sits:
+     * {@code 0} at the first full-Nether column (where the netherrack crossfade finishes), growing to
+     * {@code coreHold - 1} at the last one, and {@code -1} anywhere else — both crossfades, the
+     * mountain rise/plateau, and outside the nether segment entirely.
+     *
+     * <p>The layout offsets mirror {@link NetherTransition#netherRamp}: the crossfade-in runs
+     * {@code [riseLen + megaHold, +coreFade)} and the core {@code [+coreFade, +coreHold)} after it. A
+     * depth is what {@link #netherRamp} alone cannot give: the ramp reads {@code 1.0} across the whole
+     * core, so it can say "in the Nether" but not "how far in". {@code NetherMobSpawner} uses this to
+     * hold ghasts back until the player is properly inside the Nether rather than still crossfading
+     * into it.</p>
+     */
+    public long netherCoreDepth(int worldX) {
+        long ln = netherOffset(worldX);
+        if (ln < 0L) return -1L;
+        long coreStart = (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade);
+        long d = ln - coreStart;
+        return (d < 0L || d >= Math.max(0, coreHold)) ? -1L : d;
+    }
+
+    /**
      * Heightmap multiplier at a world-X: 1 outside the nether segment, {@code 1} across
      * stage 1, ramping {@code 1→stage2Mult} across stage 2, {@code stage2Mult→stage3Mult}
      * across stage 3, then held at {@code stage3Mult} across the mega plateau + core, and
@@ -732,6 +753,25 @@ public record WorldGenCycle(long startX, int owGap,
      */
     public boolean isInChuncksBand(int worldX) {
         return chuncksOffset(worldX) >= 0L;
+    }
+
+    /**
+     * True if {@code worldX} lies anywhere in the run-up to the chuncks band or the band core itself —
+     * the whole stretch from the end of the upside-down exit crossfade ({@code udExitGap}, the chuncks
+     * {@code leadGap}, the entry fade, then the core). The intervening gaps read as plain overworld to
+     * {@link DisintegrationBand#zoneAt}, but the world has not settled back yet: the chunks are still to
+     * come. Used by the {@code reached_overworld_again} advancement gate ({@code ZoneProgressEvents}) so
+     * "Re-Over-World" waits for the overworld that follows the band, not the one leading into it.
+     *
+     * <p>False when the chuncks band is disabled ({@code chuncksLen == 0}) — with no band there is
+     * nothing to wait for, and the pre-chuncks gating is preserved exactly.</p>
+     */
+    public boolean isInChuncksApproachOrBand(int worldX) {
+        if (chuncksLen() <= 0L) return false;
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long approachStart = udExitFadeStart() + udExitFadeLen();
+        return o >= approachStart && o < chuncksStart() + chuncksLen();
     }
 
     /**

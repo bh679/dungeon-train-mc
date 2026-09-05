@@ -1,11 +1,14 @@
 package games.brennan.dungeontrain.builder.relay;
 
+import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -28,6 +31,37 @@ final class BuilderRelayKindsTest {
     }
 
     @Test
+    @DisplayName("every relay kind maps back to the store it came from")
+    void kindsRoundTrip() {
+        for (BuilderPhotoPaths.Kind kind : BuilderPhotoPaths.Kind.values()) {
+            assertEquals(kind, BuilderRelayKinds.kindOf(BuilderRelayKinds.idOf(kind)),
+                    "a build downloaded as " + kind + " must be filed back in the store it was saved from");
+        }
+    }
+
+    @Test
+    @DisplayName("a kind this build of the mod doesn't know is refused, never guessed at")
+    void unknownKindIsNull() {
+        assertNull(BuilderRelayKinds.kindOf("statue"));
+        assertNull(BuilderRelayKinds.kindOf(""));
+        assertNull(BuilderRelayKinds.kindOf(null));
+    }
+
+    @Test
+    @DisplayName("every kind names the builder mode it is edited in")
+    void everyKindHasAMode() {
+        assertEquals(BuilderMode.TRAIN_OUTSIDE, BuilderRelayKinds.modeFor(BuilderPhotoPaths.Kind.CARRIAGE));
+        assertEquals(BuilderMode.TRAIN_OUTSIDE, BuilderRelayKinds.modeFor(BuilderPhotoPaths.Kind.CARRIAGE_GROUP));
+        assertEquals(BuilderMode.INSIDE_CARRIAGE, BuilderRelayKinds.modeFor(BuilderPhotoPaths.Kind.CONTENTS));
+        assertEquals(BuilderMode.INSIDE_CARRIAGE, BuilderRelayKinds.modeFor(BuilderPhotoPaths.Kind.PART));
+        assertEquals(BuilderMode.TRACKS_TUNNELS, BuilderRelayKinds.modeFor(BuilderPhotoPaths.Kind.TRACK));
+        assertEquals(BuilderMode.TRAIN_DIMENSIONS, BuilderRelayKinds.modeFor(BuilderPhotoPaths.Kind.PORTAL_ROOM));
+        for (BuilderPhotoPaths.Kind kind : BuilderPhotoPaths.Kind.values()) {
+            assertNotNull(BuilderRelayKinds.modeFor(kind), kind + " has nowhere to be opened");
+        }
+    }
+
+    @Test
     @DisplayName("a missing kind is a carriage, matching the relay column's default")
     void nullIsACarriage() {
         assertEquals("carriage", BuilderRelayKinds.idOf(null));
@@ -42,6 +76,25 @@ final class BuilderRelayKindsTest {
             assertFalse(BuilderRelayKinds.canJoinTheTrain(kind),
                     kind + " is a piece of something, not a thing a train slot can hold");
         }
+    }
+
+    @Test
+    @DisplayName("every kind the builder authors may be offered to the operator")
+    void everyKindIsSubmittable() {
+        for (BuilderPhotoPaths.Kind kind : BuilderPhotoPaths.Kind.values()) {
+            assertTrue(BuilderRelayKinds.canSubmitForReview(kind),
+                    kind + " is a build a person can look at and accept");
+            assertTrue(BuilderRelayKinds.canSubmitForReview(BuilderRelayKinds.idOf(kind)),
+                    kind + " must be submittable from the relay's own name for it too");
+        }
+    }
+
+    @Test
+    @DisplayName("a kind this version has never heard of is not submittable")
+    void unknownKindIsNotSubmittable() {
+        assertFalse(BuilderRelayKinds.canSubmitForReview("something_new"));
+        assertFalse(BuilderRelayKinds.canSubmitForReview((String) null));
+        assertFalse(BuilderRelayKinds.canSubmitForReview((BuilderPhotoPaths.Kind) null));
     }
 
     @Test

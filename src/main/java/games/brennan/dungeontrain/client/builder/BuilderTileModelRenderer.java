@@ -42,8 +42,17 @@ final class BuilderTileModelRenderer {
      */
     private static final float FILL = 0.62F;
 
-    /** Pushed towards the viewer so the model sits above whatever the tile drew underneath it. */
-    private static final float Z_OFFSET = 100.0F;
+    /**
+     * The least the model is pushed towards the viewer, so it sits above whatever the tile drew
+     * underneath it.
+     *
+     * <p>A floor, not the offset itself. The model spans about half its scaled diagonal either side
+     * of the pivot, and at preview size — six to eleven pixels a block — a room's far corners reach
+     * past a fixed hundred and are clipped behind the backdrop. {@link #applyTransform} pushes
+     * further whenever the scaled model needs it; there are thousands of units of headroom towards
+     * the viewer in the GUI's projection.</p>
+     */
+    private static final float MIN_Z_OFFSET = 100.0F;
 
     private BuilderTileModelRenderer() {}
 
@@ -55,6 +64,16 @@ final class BuilderTileModelRenderer {
      */
     static void render(GuiGraphics g, BuilderTileMesh mesh, int x, int y, int width, int height,
                        float yaw) {
+        render(g, mesh, x, y, width, height, yaw, FILL);
+    }
+
+    /**
+     * As {@link #render(GuiGraphics, BuilderTileMesh, int, int, int, int, float)} with an explicit
+     * share of the cell for the model to fill — the preview pane has no border to saw through and
+     * can afford more than a grid tile.
+     */
+    static void render(GuiGraphics g, BuilderTileMesh mesh, int x, int y, int width, int height,
+                       float yaw, float fill) {
         // Everything queued so far must land before the 3D pass, or it would be flushed on top of
         // the model afterwards.
         g.flush();
@@ -62,7 +81,7 @@ final class BuilderTileModelRenderer {
 
         PoseStack pose = g.pose();
         pose.pushPose();
-        applyTransform(pose, mesh.size(), mesh.min(), x, y, width, height, yaw);
+        applyTransform(pose, mesh.size(), mesh.min(), x, y, width, height, yaw, fill);
 
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(true);
@@ -94,7 +113,7 @@ final class BuilderTileModelRenderer {
      * long carriage and a squat room both stay inside the cell through a full rotation.</p>
      */
     private static void applyTransform(PoseStack pose, Vec3i size, Vec3i min, int x, int y,
-                                       int width, int height, float yaw) {
+                                       int width, int height, float yaw, float fill) {
         float centreX = x + width / 2.0F;
         float centreY = y + height / 2.0F;
 
@@ -106,10 +125,10 @@ final class BuilderTileModelRenderer {
         float pitchRadians = (float) Math.toRadians(PITCH);
         float occupiedY = tall * (float) Math.cos(pitchRadians)
                 + diagonal * (float) Math.sin(pitchRadians);
-        float scale = Math.min(width * FILL / Math.max(diagonal, 1.0F),
-                height * FILL / Math.max(occupiedY, 1.0F));
+        float scale = Math.min(width * fill / Math.max(diagonal, 1.0F),
+                height * fill / Math.max(occupiedY, 1.0F));
 
-        pose.translate(centreX, centreY, Z_OFFSET);
+        pose.translate(centreX, centreY, zOffsetFor(scale, diagonal, tall));
         pose.scale(scale, -scale, scale);
         pose.mulPose(new Quaternionf().rotateX(pitchRadians));
         pose.mulPose(new Quaternionf().rotateY((float) Math.toRadians(yaw)));
@@ -118,5 +137,10 @@ final class BuilderTileModelRenderer {
         pose.translate(-(min.getX() + size.getX() / 2.0F),
                 -(min.getY() + size.getY() / 2.0F),
                 -(min.getZ() + size.getZ() / 2.0F));
+    }
+
+    /** How far towards the viewer a model this size must sit so no corner falls behind z = 0. */
+    static float zOffsetFor(float scale, float diagonal, float tall) {
+        return Math.max(MIN_Z_OFFSET, scale * (diagonal + tall) / 2.0F + 1.0F);
     }
 }

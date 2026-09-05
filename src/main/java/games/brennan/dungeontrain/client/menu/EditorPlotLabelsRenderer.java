@@ -90,6 +90,8 @@ public final class EditorPlotLabelsRenderer {
         HEIGHT_TYPE,
         /** The whole mode row — one button, clicking it steps to the next mode. */
         MODE_CYCLE,
+        /** The seal row — only shown while the mode seals. Takes the block from the hand. */
+        LOCK_HELD,
         /** The sub-mode row — only shown while the mode makes copies. */
         COPIES_CYCLE,
         /** The floor row under it — sets the floor palette from the hand. */
@@ -130,8 +132,9 @@ public final class EditorPlotLabelsRenderer {
      * {@link #rows} now, so the three cannot drift.</p>
      */
     public enum RowKind {
-        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
-        ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER, ACTION, CONTENTS
+        NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
+        DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
+        ACTION, CONTENTS
     }
 
     /**
@@ -153,12 +156,14 @@ public final class EditorPlotLabelsRenderer {
             buf[n++] = RowKind.HEIGHT;
         }
         if (hasModeRow(entry)) buf[n++] = RowKind.MODE;
+        if (hasLockRow(entry)) buf[n++] = RowKind.LOCK;
         if (hasCopiesRow(entry)) buf[n++] = RowKind.COPIES;
         if (hasCopiesBlockRow(entry)) {
             buf[n++] = RowKind.COPIES_FLOOR;
             buf[n++] = RowKind.COPIES_ROOF;
         }
         if (hasDoorWallRow(entry)) buf[n++] = RowKind.DOOR_WALL;
+        if (hasDoorOffsetRow(entry)) buf[n++] = RowKind.DOOR_OFFSET;
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
@@ -213,6 +218,47 @@ public final class EditorPlotLabelsRenderer {
             case HEIGHT -> "height";
             default -> "";
         };
+    }
+
+    /**
+     * Whether the Lock row shows: only when the walls seal, since a shell is the one thing the
+     * block describes.
+     *
+     * <p>Both sealing modes — Bedrock Lock and Chunk Dimension — because both write the same skin;
+     * see {@code PortalRoomSettings.lockApplies}. Hidden rather than dimmed elsewhere, the same way
+     * the Copies row is absent under walls that make no copies.</p>
+     */
+    public static boolean hasLockRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry) && hasLockRowFor(entry.roomMode());
+    }
+
+    /** The same question asked of a mode tag alone — what the command menu has to hand. */
+    public static boolean hasLockRowFor(String modeTag) {
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).lockApplies();
+    }
+
+    /** The block this room's shell is written in, as a namespaced id. */
+    public static String lockBlockId(String modeTag) {
+        return games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
+            .effectiveLock().blockId();
+    }
+
+    /**
+     * What the Lock row reads where it cannot draw an icon — the command menu, which is text-only.
+     *
+     * <p>Names the block, unlike the Copies rows: this value is a plain id in the mode tag rather
+     * than a variant list living server-side, so there is a single honest answer to print. The path
+     * is dropped ({@code minecraft:obsidian} → {@code obsidian}) because the namespace is noise at
+     * this width, and air reads as "nothing", the word the Block Variant menu already uses for
+     * it.</p>
+     */
+    public static String lockLabel(String modeTag) {
+        String id = lockBlockId(modeTag);
+        if (games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK.equals(id)) {
+            return "Lock: nothing";
+        }
+        int colon = id.indexOf(':');
+        return "Lock: " + (colon < 0 ? id : id.substring(colon + 1));
     }
 
     /**
@@ -379,6 +425,38 @@ public final class EditorPlotLabelsRenderer {
     public static String doorWallLabel(String modeTag) {
         return "Room Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .effectiveDoorWall().displayName();
+    }
+
+    /**
+     * Whether the Door Position row shows: any portal room, in its plot — the same reach as the
+     * dimension rows, since this is a property of the room's own box rather than of its walls.
+     *
+     * <p>Read-only: unlike every other row here, there is no control behind it. The value is
+     * whatever {@code PortalRoomDoorPointer} last set from a right-click with a door in hand, on the
+     * doorway's own surface — the same surface {@link EditorDoorGhosts} ghosts. This row exists
+     * purely so that value is visible without counting blocks by eye.</p>
+     */
+    public static boolean hasDoorOffsetRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /**
+     * What the Door Position row reads, e.g. {@code "Door Position: Centred, at the floor"} or
+     * {@code "Door Position: +2, 3 blocks up"}.
+     *
+     * <p>Signed for the across component: {@link games.brennan.dungeontrain.portal.PortalRoomLayout}
+     * treats that offset as a direction along {@code Z}, and "off to one side" reads better as a sign
+     * than as an unlabelled magnitude an author has to remember the meaning of. The height component
+     * is unsigned — it only ever moves up from the room's own floor.</p>
+     */
+    public static String doorOffsetLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        int value = settings.doorOffset().value();
+        int height = settings.doorHeightOffset().value();
+        String across = value == 0 ? "Centred" : (value > 0 ? "+" + value : Integer.toString(value));
+        String up = height == 0 ? "at the floor" : height + " block" + (height == 1 ? "" : "s") + " up";
+        return "Door Position: " + across + ", " + up;
     }
 
     /**
@@ -653,6 +731,10 @@ public final class EditorPlotLabelsRenderer {
         if (hasModeRow(entry)) {
             w = Math.max(w, measure.applyAsInt(modeLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
+        if (hasLockRow(entry)) {
+            // Label and one icon — no Edit button, so it is the Copies plane row minus a third.
+            w = Math.max(w, measure.applyAsInt("Lock:") * TEXT_SCALE + 3 * PAD_X + COPIES_ICON_SLOT);
+        }
         if (hasCopiesRow(entry)) {
             w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
@@ -786,12 +868,18 @@ public final class EditorPlotLabelsRenderer {
             // One button rather than a stepper: there are three modes, and naming the one you want
             // costs no more clicks than aiming at an arrow for it.
             case MODE -> CellKind.MODE_CYCLE;
+            // One cell, no Edit half: the value is a block id, and turning it into a variant would
+            // mean a shell of mixed blocks, which is not what a seal is for.
+            case LOCK -> CellKind.LOCK_HELD;
             case COPIES -> CellKind.COPIES_CYCLE;
             case COPIES_FLOOR -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_FLOOR_EDIT : CellKind.COPIES_FLOOR_HELD;
             case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
             case DOOR_WALL -> CellKind.DOOR_WALL_CYCLE;
+            // Read-only — there is nothing to click. The door offset is detected from a placed door,
+            // not dialled in here; see PortalRoomDoorDetection.
+            case DOOR_OFFSET -> CellKind.NONE;
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
@@ -987,6 +1075,23 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, modeLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
+                // Lock — the block this room's shell is written in, present only while it seals.
+                // Clicking takes what the author is holding; an empty hand means no shell at all.
+                case LOCK -> {
+                    int bg = hovered == CellKind.LOCK_HELD ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawLeftText(ps, buffer, font, "Lock:", -halfW + PAD_X, rCY, WEIGHT_COLOR);
+                    String lockBlock = lockBlockId(entry.roomMode());
+                    if (games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK.equals(lockBlock)) {
+                        // No shell at all. Drawing air would be an empty slot the author could not
+                        // tell from an unset one, so it says so in the word the Copies rows use.
+                        drawLeftText(ps, buffer, font, "nothing", copiesIconCentre(halfW) - PAD_X,
+                            rCY, WEIGHT_COLOR);
+                    } else {
+                        MenuBlockIcons.drawBlockIcon(ps, buffer, lockBlock, copiesIconCentre(halfW),
+                            rCY, COPIES_ICON_SIZE);
+                    }
+                }
                 // Copies — the sub-mode under Walls, present only while the walls repeat the room.
                 case COPIES -> {
                     int bg = hovered == CellKind.COPIES_CYCLE ? HOVER_COLOR : BUTTON_BG;
@@ -1036,6 +1141,11 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, doorWallLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
+                // Door Position — read-only. Detected from a door the author placed one column
+                // outside the room box, on the doorway's own surface (PortalRoomDoorDetection), not
+                // set here — so there is nothing to draw but the text.
+                case DOOR_OFFSET ->
+                    drawCenteredText(ps, buffer, font, doorOffsetLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 // Sky — whether this room is lit as though it stood outdoors, and under which sky.
                 // Off by default, which is every room lit only by whatever its own build gives it.
                 case ROOM_SKY -> {

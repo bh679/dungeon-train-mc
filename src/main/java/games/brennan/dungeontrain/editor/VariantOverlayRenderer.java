@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.EditorHistoryPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorStrayBlocksPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
@@ -97,6 +98,9 @@ public final class VariantOverlayRenderer {
      * absent means "last sent was an empty snapshot (or none yet)", so a
      * fresh non-empty plot always pushes on first tick.
      */
+    /** Last undo/redo labels sent, so a steady editor generates no history packets. */
+    private static final Map<UUID, String> LAST_HISTORY_KEY = new HashMap<>();
+
     private static final Map<UUID, String> LAST_LOCK_SNAPSHOT_KEY = new HashMap<>();
 
     /**
@@ -206,6 +210,11 @@ public final class VariantOverlayRenderer {
         if (lastStatus != null) {
             DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
         }
+        // The history stack itself survives leaving the build area, but the menu that reads these
+        // labels is gone with it — so stop describing steps until they come back.
+        if (LAST_HISTORY_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, EditorHistoryPacket.empty());
+        }
         PartPositionMenuController.forget(player);
         // Take the plot's daylight back off — they have left the build area, and the client would
         // otherwise hold a box it can no longer be inside.
@@ -224,22 +233,12 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Minimum player Y for the editor overlay to do any work. Every editor plot
-     * sits in the sky at {@link EditorLayout#PLOT_Y}; gameplay and trains run far
-     * below. A player under this line can't be at a plot, so the per-player
-     * {@code plotContaining} locate cascade is skipped entirely for them.
-     * That cascade used to run every tick for every player even during normal play
-     * with the editor closed (~9ms/tick on a long train — the profiler's "overlay"
-     * cost). A few blocks below the floor for standing-on-the-plot-floor margin —
-     * derived rather than written out, because a gate left ABOVE the plot floor
-     * would silently disable labels and menus for a player standing on their plot.
-     */
-    private static final int EDITOR_Y_MIN = EditorLayout.PLOT_Y - 5;
-
-    /**
      * Call once per server level tick. Cheap when no players are up at the editor
-     * build area ({@code y >= EDITOR_Y_MIN}): every player below that is
-     * short-circuited before any {@code plotContaining} scan runs.
+     * build area ({@link EditorLayout#isAtPlotHeight}): every player below that line
+     * can't be at a plot, so the per-player {@code plotContaining} locate cascade is
+     * skipped entirely for them. That cascade used to run every tick for every player
+     * even during normal play with the editor closed (~9ms/tick on a long train — the
+     * profiler's "overlay" cost).
      */
     public static void onLevelTick(ServerLevel level) {
         List<ServerPlayer> players = level.players();
@@ -260,11 +259,12 @@ public final class VariantOverlayRenderer {
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
             // forget() clears any lingering editor HUD once on the way out, then no-ops (cheap
             // map checks), so a player descending from the build area doesn't keep stale overlay.
-            if (player.getBlockY() < EDITOR_Y_MIN) {
+            if (!EditorLayout.isAtPlotHeight(player.getBlockY())) {
                 forget(player);
                 continue;
             }
             updateEditorStatus(player, dims);
+            pushHistorySnapshot(player);
             pushLockIdSnapshot(player);
             pushPlotLabelsSnapshot(player, dims);
             pushTypeMenusSnapshot(player, dims);
@@ -461,17 +461,25 @@ public final class VariantOverlayRenderer {
         String roomMode = roomSize == null ? EditorStatusPacket.NO_MODE
             : games.brennan.dungeontrain.portal.PortalRoomSettings.of(modelName).toTag();
 
+        // Random-flip options — contents only; every other kind's stamp is never flipped, so its
+        // mask stays NO_FLIP and the client renders no Flip row. In the key so a toggle refreshes.
+        int flipMask = l.model() instanceof Template.Contents cm
+            ? EditorStatusPacket.flipMaskOf(
+                games.brennan.dungeontrain.train.CarriageContentsWeights.current().flipFor(cm.contents().id()))
+            : EditorStatusPacket.NO_FLIP;
+
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
             + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey
-            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode;
+            + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode
+            + "|f" + flipMask;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
-            roomLength, roomWidth, roomHeight, roomMode));
+            roomLength, roomWidth, roomHeight, roomMode, flipMask));
     }
 
     /**
@@ -853,6 +861,20 @@ public final class VariantOverlayRenderer {
             menus, EditorStageSelection.effective(), helpPanelDismissed));
     }
 
+    /**
+     * Tell the client what Undo and Redo would step through, so the menu's two history buttons can
+     * name it. Deduped like every other snapshot — an editor nobody is editing sends nothing.
+     */
+    private static void pushHistorySnapshot(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        String undo = EditorEditHistory.peekUndoLabel(uuid);
+        String redo = EditorEditHistory.peekRedoLabel(uuid);
+        String key = undo + " " + redo;
+        if (key.equals(LAST_HISTORY_KEY.get(uuid))) return;
+        LAST_HISTORY_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player, new EditorHistoryPacket(undo, redo));
+    }
+
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */
     private static void clearTypeMenusIfStale(ServerPlayer player) {
         if (LAST_TYPE_MENUS_KEY.remove(player.getUUID()) != null) {
@@ -947,7 +969,7 @@ public final class VariantOverlayRenderer {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
         if (EditorStampedCategoryState.current().isEmpty()) return;
         for (ServerPlayer player : players) {
-            if (player.getBlockY() >= EDITOR_Y_MIN) {
+            if (EditorLayout.isAtPlotHeight(player.getBlockY())) {
                 EditorStrayBlocks.sweepStep(level, dims);
                 return;
             }
@@ -1010,14 +1032,15 @@ public final class VariantOverlayRenderer {
         String key = EditorDoorGhosts.key(dims);
         if (key.equals(LAST_DOOR_GHOSTS_KEY.get(uuid))) return;
 
-        List<BlockPos> cells = EditorDoorGhosts.snapshot(dims);
-        if (cells.isEmpty()) {
+        List<games.brennan.dungeontrain.net.EditorDoorGhostsPacket.Door> doors =
+            EditorDoorGhosts.snapshot(dims);
+        if (doors.isEmpty()) {
             clearDoorGhostsIfStale(player);
             return;
         }
         LAST_DOOR_GHOSTS_KEY.put(uuid, key);
         DungeonTrainNet.sendTo(player,
-            new games.brennan.dungeontrain.net.EditorDoorGhostsPacket(cells));
+            new games.brennan.dungeontrain.net.EditorDoorGhostsPacket(doors));
     }
 
     /** Send the empty door-ghost packet if the player previously had a non-empty snapshot. */

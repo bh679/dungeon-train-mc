@@ -10,9 +10,14 @@ import games.brennan.dungeontrain.train.CarriageGenerationMode;
  * {@link games.brennan.dungeontrain.world.DungeonTrainWorldData}, then cleared.
  *
  * Lifetime is intentionally tiny: from sub-screen "Done" until the integrated
- * server starts (a few hundred milliseconds). Cleared on
- * {@code CreateWorldScreen} close (cancel path) and on logout to avoid stale
- * values polluting subsequent world creations.
+ * server starts (a few hundred milliseconds). The only {@link #clear()} is the
+ * one {@code WorldLifecycleEvents} makes after committing the values, so a
+ * launch that is armed and then abandoned before its world loads leaves them
+ * standing for the next world creation.
+ *
+ * <p>Also armed by the title screen's quick-world launchers
+ * ({@code DevQuickWorldHandler.launchEditorWorld} / {@code launchBuilderWorld}),
+ * which use it to create their worlds with {@code startsWithTrain = false}.</p>
  *
  * Client-only — never referenced from a class loaded on a dedicated server.
  */

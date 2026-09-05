@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.FloatTag;
@@ -89,15 +90,52 @@ public final class CarriageEntitySnapshot {
      */
     public static Captured capture(SableManagedShip ship, ServerLevel level, BlockPos origin,
                                    CarriageDims dims, int maxEntities) {
+        return captureFrom(candidates(level, ship),
+                entity -> footprintOffset(ship, origin, dims, entity), origin, maxEntities);
+    }
+
+    /**
+     * The same capture for a build that has no ship — the Train Builder's and the Train Editor's plots,
+     * which hold their blocks at ordinary world coordinates. The sibling of
+     * {@link CarriageBlockSnapshot#captureLevel}, and its counterpart in every way that matters: the
+     * exclusion list, the UUID stripping, the per-entity size cap and the moderation text scrape are
+     * the shared {@link #captureFrom} rather than a second copy, so a build uploaded from an editor
+     * carries exactly what one captured off a moving train does.
+     *
+     * <p>{@code size} rather than {@link CarriageDims} for the reason {@code captureLevel} takes one:
+     * the editors author things that are not carriage-shaped.</p>
+     *
+     * @param origin      the volume's minimum corner in world space
+     * @param maxEntities hard cap; anything past it is dropped with a warning rather than uploaded
+     */
+    public static Captured captureLevel(ServerLevel level, BlockPos origin, Vec3i size, int maxEntities) {
+        if (level == null || origin == null || size == null) return new Captured(new ListTag(), "");
+        return captureFrom(levelCandidates(level, origin, size),
+                entity -> levelOffset(origin, size, entity), origin, maxEntities);
+    }
+
+    /**
+     * The capture itself, over whatever entities were swept and whatever frame their offsets are in.
+     *
+     * <p>The two public captures differ in exactly two things — which entities are candidates, and how
+     * a world position becomes an offset from the build's origin. Everything else is a rule about what
+     * may be uploaded at all, and those rules must not fork: an exclusion that held for a leased
+     * carriage but not for a builder upload would be a hole in the same fence.</p>
+     *
+     * @param offsetOf the entity's offset from the build's origin, or null when it is outside it
+     */
+    private static Captured captureFrom(List<Entity> candidates,
+                                        java.util.function.Function<Entity, double[]> offsetOf,
+                                        BlockPos origin, int maxEntities) {
         ListTag out = new ListTag();
         StringBuilder text = new StringBuilder();
         if (maxEntities <= 0) return new Captured(out, "");
 
         int skippedForCap = 0;
-        for (Entity entity : candidates(level, ship)) {
+        for (Entity entity : candidates) {
             if (!isCapturable(entity)) continue;
-            double[] offset = footprintOffset(ship, origin, dims, entity);
-            if (offset == null) continue; // in the group's box, but not in THIS carriage
+            double[] offset = offsetOf.apply(entity);
+            if (offset == null) continue; // in the swept box, but not in THIS build
             if (out.size() >= maxEntities) { skippedForCap++; continue; }
             CompoundTag entry = encodeEntity(entity, offset);
             if (entry == null) continue;
@@ -117,6 +155,14 @@ public final class CarriageEntitySnapshot {
         AABB box = new AABB(
                 b.minX() - 1, b.minY() - 1, b.minZ() - 1,
                 b.maxX() + 1, b.maxY() + 2, b.maxZ() + 1);
+        return level.getEntities((Entity) null, box, Entity::isAlive);
+    }
+
+    /** Entities standing in a world-space volume — the no-ship twin of {@link #candidates}. */
+    private static List<Entity> levelCandidates(ServerLevel level, BlockPos origin, Vec3i size) {
+        AABB box = new AABB(
+                origin.getX() - 1, origin.getY() - 1, origin.getZ() - 1,
+                origin.getX() + size.getX() + 1, origin.getY() + size.getY() + 2, origin.getZ() + size.getZ() + 1);
         return level.getEntities((Entity) null, box, Entity::isAlive);
     }
 
@@ -148,6 +194,20 @@ public final class CarriageEntitySnapshot {
         double dy = ship_.y - origin.getY();
         double dz = ship_.z - origin.getZ();
         if (outside(dx, dims.length()) || outside(dy, dims.height()) || outside(dz, dims.width())) return null;
+        return new double[]{dx, dy, dz};
+    }
+
+    /**
+     * The world-space twin of {@link #footprintOffset} — plain subtraction, because a build in an
+     * editor plot is already in the frame its blocks are stored in and there is no ship to convert
+     * through. Same {@link #FOOTPRINT_MARGIN} on the way out, so an armour stand in a doorway counts
+     * as inside here exactly as it does aboard a train.
+     */
+    private static double[] levelOffset(BlockPos origin, Vec3i size, Entity entity) {
+        double dx = entity.getX() - origin.getX();
+        double dy = entity.getY() - origin.getY();
+        double dz = entity.getZ() - origin.getZ();
+        if (outside(dx, size.getX()) || outside(dy, size.getY()) || outside(dz, size.getZ())) return null;
         return new double[]{dx, dy, dz};
     }
 
@@ -335,9 +395,14 @@ public final class CarriageEntitySnapshot {
                                             CarriageDims dims) {
         long h = SEED;
         for (Entity entity : candidates(level, ship)) {
-            if (!isCapturable(entity)) continue;
+            if (entity == null) continue;
+            // Type first, capturability second — the two are AND-ed either way, so the fingerprint is
+            // unchanged. The box is full of contents mobs and dropped items on a lived-in carriage, and
+            // isCapturable walks each one's passenger list; only the handful of decor entities ever
+            // needed that work done.
             String id = typeId(entity);
             if (!DECOR_TYPES.contains(id)) continue;
+            if (!isCapturable(entity)) continue;
             double[] offset = footprintOffset(ship, origin, dims, entity);
             if (offset == null) continue;
             String name = entity.getCustomName() == null ? "" : entity.getCustomName().getString();

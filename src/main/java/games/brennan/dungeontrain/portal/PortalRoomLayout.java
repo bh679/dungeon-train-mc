@@ -101,26 +101,50 @@ public final class PortalRoomLayout {
      * but a room longer than this walks further than the crossing reads as, and every block of it
      * is re-stamped each time the train drifts {@code TWIN_MAX_DRIFT}.
      */
-    public static final int MAX_LENGTH = 48;
+    public static final int MAX_LENGTH = 64;
 
     /** Widest room, on the same reasoning as {@link #MAX_LENGTH}. */
-    public static final int MAX_WIDTH = 48;
+    public static final int MAX_WIDTH = 64;
 
     /**
-     * Tallest room an author may ask for — the ceiling on the editor's stepper and on a template.
+     * Tallest room a template may hold and a world will stand up.
      *
-     * <p><b>Not on its own a promise that a world can stand one up.</b> A twin structure lives in
-     * the basement between the build floor and the bedrock, and a DT preset keeps 80 blocks of it;
-     * {@link PortalTwinLanes#maxStructureHeight} is what that leaves for a structure in a given
-     * world (77 in every stock preset), and {@code PortalCarriageBuilder.planStructure} clamps to it.
-     * A deeper dimension reaches the whole number.</p>
+     * <p>The world's number as much as the format's: a twin structure lives in the basement between
+     * the build floor and the bedrock, every DT preset keeps 96 blocks of it, the bottom lane's floor
+     * sits {@link PortalTwinLanes#FLOOR_MARGIN} above the build floor and one row stays under the
+     * bedrock — so {@link PortalTwinLanes#maxStructureHeight} answers 93, and 90 fits with room to
+     * spare. The basement used to be 80 (and this 80), which stood up 77: an author's eighty-block
+     * sky room lost its ceiling to bedrock the first time it was tested. The basement was deepened
+     * rather than the room shortened, because rooms already built to this height are the reason
+     * the number exists.</p>
      *
-     * <p>This used to be {@code TWIN_LANE_HEIGHT - 1} (11) — the lane spacing was a constant, so the
-     * tallest room was whatever fitted under it. The spacing is a function of the room now
-     * ({@link PortalTwinLanes#laneHeight}), which turns the trade around: a taller room costs lanes,
-     * and lanes are only a collision-avoidance spread, not a correctness requirement.</p>
+     * <p>What a template already is, not what an author may grow one to — see {@link #AUTHOR_MAX}.</p>
      */
-    public static final int MAX_HEIGHT = 80;
+    public static final int MAX_HEIGHT = 90;
+
+    /**
+     * The tallest, longest and widest an author may <em>grow</em> a room to, on any axis.
+     *
+     * <p>Lower than {@link #MAX_HEIGHT}, {@link #MAX_LENGTH} and {@link #MAX_WIDTH}, which say what a
+     * template may hold: a room built past this before the ceiling existed keeps every block it has,
+     * and simply cannot be made bigger. {@link #heldForAuthoring} is the rule.</p>
+     */
+    public static final int AUTHOR_MAX = 64;
+
+    /**
+     * {@code wanted} with each axis held to the most an author may grow {@code current} to.
+     *
+     * <p>Per axis, the ceiling is {@link #AUTHOR_MAX} or the room's present size, whichever is
+     * larger: a room already past the ceiling on some axis is never shrunk by asking for more, and
+     * never grown on that axis either. Shrinking is always allowed — down to whatever
+     * {@link #clampSize} permits, which the caller applies.</p>
+     */
+    public static Vec3i heldForAuthoring(Vec3i current, Vec3i wanted) {
+        return new Vec3i(
+            Math.min(wanted.getX(), Math.max(AUTHOR_MAX, current.getX())),
+            Math.min(wanted.getY(), Math.max(AUTHOR_MAX, current.getY())),
+            Math.min(wanted.getZ(), Math.max(AUTHOR_MAX, current.getZ())));
+    }
 
     private PortalRoomLayout() {}
 
@@ -242,14 +266,135 @@ public final class PortalRoomLayout {
      */
     public static BlockPos roomOrigin(BlockPos entryOrigin, CarriageDims dims,
                                       PortalCarriageLayout layout, int width) {
+        return roomOrigin(entryOrigin, dims, layout, width, 0);
+    }
+
+    /**
+     * As {@link #roomOrigin(BlockPos, CarriageDims, PortalCarriageLayout, int)}, with the doorway
+     * line shifted {@code doorOffset} blocks off dead centre within the room's own width.
+     *
+     * <p>The corridor itself never moves — its cross-section is fixed by {@code dims} and shared by
+     * every carriage in the world, so {@code zCentre} below is exactly what the undisplaced overload
+     * uses. What moves is how the room's width is <b>split</b> either side of that fixed line: an
+     * author who has built wider than {@link #minWidth} has slack to spend
+     * ({@code width - minWidth(dims)}), and {@code doorOffset} spends it unevenly instead of the
+     * default 50/50 split — which is what makes the door read as off-centre from inside the room
+     * the author actually built, even though the corridor beyond it never bends.</p>
+     *
+     * <p>Clamped rather than rejected, via {@link #clampDoorOffset}, for the same reason every other
+     * numeric portal-room setting is: a room saved wide and later trimmed narrower just eases back
+     * toward centre instead of becoming invalid.</p>
+     */
+    public static BlockPos roomOrigin(BlockPos entryOrigin, CarriageDims dims,
+                                      PortalCarriageLayout layout, int width, int doorOffset) {
         int interiorWidth = width - 2;
         int zCentre = entryOrigin.getZ() + layout.doorZ();
-        int interiorMinZ = zCentre - interiorWidth / 2;
+        int interiorMinZ = zCentre - interiorWidth / 2 - clampDoorOffset(dims, width, doorOffset);
         // One CORRIDOR along, not one carriage — a corridor is the longer of the two
         // (PortalCorridorSize), and the room has to start where the corridor actually ends.
         return new BlockPos(
             entryOrigin.getX() + layout.length(),
             entryOrigin.getY(),
             interiorMinZ - 1);
+    }
+
+    /**
+     * How far {@link #roomOrigin}'s door-offset may run to one side of centre, for a room of
+     * {@code width} in a world of {@code dims} — half the room's slack over {@link #minWidth}.
+     *
+     * <p>Zero at {@link #minWidth} itself: a room built at the geometric floor has no spare width to
+     * give the door either way, so it stays dead centre regardless of what was authored. The wider a
+     * room is built, the more room there is to slide the door toward either end.</p>
+     */
+    public static int maxDoorOffset(CarriageDims dims, int width) {
+        int slack = width - minWidth(dims);
+        return Math.max(0, slack) / 2;
+    }
+
+    /** {@code doorOffset} held inside {@code -}{@link #maxDoorOffset}..{@code +}{@link #maxDoorOffset}. */
+    public static int clampDoorOffset(CarriageDims dims, int width, int doorOffset) {
+        int max = maxDoorOffset(dims, width);
+        return Math.max(-max, Math.min(max, doorOffset));
+    }
+
+    /**
+     * As {@link #roomOrigin(BlockPos, CarriageDims, PortalCarriageLayout, int, int)}, additionally
+     * shifting the corridor's fixed floor line {@code doorHeightOffset} blocks up from the room's own
+     * bottom edge.
+     *
+     * <p>Unlike the Z split, this is not a centring — every room's corridor sits at the room's own
+     * floor by default (offset 0), because that is the only Y a room built before this existed ever
+     * used, and there is nothing below a floor to give the offset the other way. A room taller than
+     * {@link #minHeight} has an attic above the corridor to spend; {@code doorHeightOffset} spends it
+     * as a basement below the corridor instead, one block at a time, up to the full slack — see
+     * {@link #maxDoorHeightOffset}.</p>
+     *
+     * <p>The corridor's own Y is exactly as fixed as its Z: {@code entryOrigin.getY()} is where
+     * {@link PortalTwinLanes} placed this pair's lane, shared by nothing else, so it never moves —
+     * what moves is how far below it the room's own floor sits.</p>
+     */
+    public static BlockPos roomOrigin(BlockPos entryOrigin, CarriageDims dims,
+                                      PortalCarriageLayout layout, int width, int height,
+                                      int doorOffset, int doorHeightOffset) {
+        BlockPos flat = roomOrigin(entryOrigin, dims, layout, width, doorOffset);
+        int clampedHeightOffset = clampDoorHeightOffset(dims, height, doorHeightOffset);
+        return flat.atY(flat.getY() - clampedHeightOffset);
+    }
+
+    /**
+     * How far {@link #roomOrigin}'s door-height-offset may run above the room's own floor, for a room
+     * of {@code height} in a world of {@code dims} — the room's whole slack over {@link #minHeight},
+     * unhalved because it only ever spends in one direction.
+     *
+     * <p>Zero at {@link #minHeight} itself, for the same reason {@link #maxDoorOffset} is zero at
+     * {@link #minWidth}: no spare height to give the corridor a basement, so it stays at the floor
+     * regardless of what was authored.</p>
+     */
+    public static int maxDoorHeightOffset(CarriageDims dims, int height) {
+        int slack = height - minHeight(dims);
+        return Math.max(0, slack);
+    }
+
+    /** {@code doorHeightOffset} held inside {@code 0}..{@link #maxDoorHeightOffset}. */
+    public static int clampDoorHeightOffset(CarriageDims dims, int height, int doorHeightOffset) {
+        int max = maxDoorHeightOffset(dims, height);
+        return Math.max(0, Math.min(max, doorHeightOffset));
+    }
+
+    /**
+     * How far the <b>exit</b> corridor stands off the entry corridor's line in {@code Z}, in blocks —
+     * the whole of what makes a room's two doorways independent.
+     *
+     * <p><b>Why a delta and not a second centring.</b> {@link #roomOrigin} spends a room's width slack
+     * to place the box, and it can only be placed once: a box has one position, not two. So the
+     * <i>entry</i> door is what positions it, exactly as it always did, and the exit door is expressed
+     * as a displacement of its own corridor <i>within</i> that box. Same two degrees of freedom,
+     * redistributed — and a room whose two doors agree gets a delta of zero, which is why nothing an
+     * existing world is standing in moves by so much as a block.</p>
+     *
+     * <p>Both offsets go through {@link #clampDoorOffset} <b>before</b> subtracting, never after: the
+     * clamp is what guarantees each corridor's cross-section stays inside the room, and clamping their
+     * difference instead would let a pair of individually-legal doors produce a corridor outside the
+     * box that {@code sealCorridorMouth} then cannot seal.</p>
+     */
+    public static int exitDoorDeltaZ(CarriageDims dims, int width, int doorOffset,
+                                     int exitDoorOffset) {
+        return clampDoorOffset(dims, width, exitDoorOffset)
+            - clampDoorOffset(dims, width, doorOffset);
+    }
+
+    /**
+     * The vertical twin of {@link #exitDoorDeltaZ} — how far the exit corridor sits above or below the
+     * entry corridor's floor lane, in blocks.
+     *
+     * <p>Signed, unlike {@link PortalRoomDoorHeightOffset} itself: each door is unsigned against the
+     * room's own floor, but an exit door lower than the entry door displaces its corridor downward,
+     * and that difference is a direction. Clamped per door first, for the reason
+     * {@link #exitDoorDeltaZ} gives.</p>
+     */
+    public static int exitDoorDeltaY(CarriageDims dims, int height, int doorHeightOffset,
+                                     int exitDoorHeightOffset) {
+        return clampDoorHeightOffset(dims, height, exitDoorHeightOffset)
+            - clampDoorHeightOffset(dims, height, doorHeightOffset);
     }
 }

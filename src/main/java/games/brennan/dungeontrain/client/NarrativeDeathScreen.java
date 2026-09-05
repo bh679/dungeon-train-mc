@@ -9,7 +9,11 @@ import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.support.DevHours;
+import games.brennan.dungeontrain.client.support.DonateCards;
+import games.brennan.dungeontrain.client.support.DonateExperiment;
 import games.brennan.dungeontrain.client.support.FundingGoals;
+import games.brennan.dungeontrain.client.support.LastActive;
+import games.brennan.dungeontrain.client.support.UpdateStats;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Goal;
 import games.brennan.dungeontrain.client.modrec.ModRecPage;
 import games.brennan.dungeontrain.client.modrec.ModRecState;
@@ -60,6 +64,7 @@ import com.mojang.logging.LogUtils;
 import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.HashMap;
@@ -68,6 +73,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -223,6 +229,23 @@ public final class NarrativeDeathScreen extends Screen {
     // by the on-demand /bug + /feedback survey).
     private static final String BUG_REPORT_ID = BugLogReporter.BUG_REPORT_ID;
 
+    // The mod-recommendation page's form id. It has no survey question behind it, so it needs its
+    // own id to sit alongside the real question ids in the answered / muted sets. Namespaced, so it
+    // can never collide with a Discord Presence question id.
+    private static final String MODREC_FORM_ID = "dungeontrain:modrec";
+
+    // Which death-screen forms this player has answered before, and which they have asked not to be
+    // shown again. Read ONCE, at construction: buildPages() and the opt-out checkbox both consult
+    // these, and init() re-runs on every rebuildWidgets(), so reading the live config instead would
+    // make the current page vanish under the player the moment they tick the box — and would pop the
+    // checkbox onto a form the moment it was answered, in the same death that first asked it.
+    private final Set<String> answeredForms = ClientDisplayConfig.answeredDeathForms();
+    // What was muted when this screen opened. buildPages() reads THIS one, so ticking the box
+    // never pulls the page out from under the player mid-death.
+    private final Set<String> deckMutedForms = ClientDisplayConfig.mutedDeathForms();
+    // Live tick state for the checkbox, seeded from the same snapshot and toggled by clicks.
+    private final Set<String> mutedForms = new HashSet<>(deckMutedForms);
+
     private final Map<String, Integer> scores = new HashMap<>();
     private final Map<String, String> comments = new HashMap<>();
     private final Set<String> submitted = new HashSet<>();
@@ -303,6 +326,10 @@ public final class NarrativeDeathScreen extends Screen {
     // keeps the ledger reachable on the deaths where donateInFlow gated the page out of the
     // normal flow.
     private Rect dollarRect;
+    // Top-bar envelope chip — final (platform) page only, jumps to the first feedback question.
+    // The way back in for someone who muted a form: the muted page still draws its (ticked)
+    // "Don't ask me this again" row, so reaching it is also how it gets un-muted.
+    private Rect envelopeRect;
     // Ticks since the screen opened, for the respawn hold-off (see runEndReady).
     private int ticksOpen;
     /** Vanilla's death-screen button delay — one second before an exit control may fire. */
@@ -310,19 +337,36 @@ public final class NarrativeDeathScreen extends Screen {
     // Whether the donation page appears in the normal Next-Screen flow this death (the gate). When
     // false it's skipped in-flow but still reachable via the top-bar "$" chip.
     private boolean donateInFlow;
-    // When the donation page was opened via the "$" chip, the page index to return to (-1 = none).
-    private int donateReturnPage = -1;
-    private record TileTip(Rect rect, String tipKey) {}
+    // When a page was opened via a top-bar chip ("$" or the envelope), the page index to return
+    // to on Next Screen / back (-1 = none).
+    private int chipReturnPage = -1;
+    // True while the player is walking every survey question via the envelope chip (X/10, bugs,
+    // suggestions — muted ones included). Not reset in init() for the same reason as
+    // chipReturnPage: init() re-runs on every page swap.
+    private boolean surveyTour;
+    /**
+     * A tile's hover region and the tooltip it shows. The tip is a resolved {@link Component}
+     * rather than a key because some of them quote a figure ("244 updates in the last 30 days").
+     */
+    private record TileTip(Rect rect, Component tip) {}
     private final List<TileTip> donateTips = new ArrayList<>();
     // Smooth scroll: the wheel nudges donateScrollTarget; the drawn offset (donateScroll) eases
     // toward it each frame so the list glides rather than jumping a row per notch.
     private float donateScroll = 0f;        // current (eased) vertical offset (px) of the supporter list
     private float donateScrollTarget = 0f;  // where the wheel wants it
     private int donateListMaxScroll = 0;    // scroll clamp bound, set during drawDonate
+    // This player's A/B arm for the donation page, resolved on first paint and then held: the
+    // layout must not change under the cursor, and the telemetry must report one arm per visit.
+    private DonateExperiment.Assignment donateAssignment = null;
+    // The card pair actually drawn this visit: the assigned arm's own, or — in the rotating arm —
+    // this death's rung of the cycle. Non-null once resolved, which is also the resolve-once latch.
+    private DonateCards.Arm donatePair = null;
     private Rect donateListViewport;        // supporter-list scroll viewport (hover / scroll hit-test)
     private Rect photosRect;
     // Trash toggle left of the reboard chip: delete the old world's save on reboard?
     private Rect deleteWorldRect;
+    /** The "Don't ask me this again" checkbox on an already-answered form page; null when absent. */
+    private Rect dontShowRect;
     // Red "Submit Bug" shortcut (start page only); null when absent or shown as the
     // non-clickable green "Bug Submitted" status.
     private Rect bugReportRect;
@@ -357,6 +401,9 @@ public final class NarrativeDeathScreen extends Screen {
         list.add(Page.of(Kind.GEAR));
         list.add(Page.of(Kind.LIVES));
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
+            // A muted form stays in the deck but sits out of the normal Next-Screen flow (see
+            // outOfFlow), exactly like the gated-out donation page — that keeps it reachable
+            // through the envelope chip, which is where it gets un-muted.
             list.add(Page.survey(e));
         }
         // "Support the line" — the donation ledger. Always in the list (so the "$" chip can always
@@ -371,6 +418,42 @@ public final class NarrativeDeathScreen extends Screen {
         }
         list.add(Page.of(Kind.PLATFORM));
         return list;
+    }
+
+    /** The form id a page carries, or null for the pages that aren't forms. */
+    private String formId(Page p) {
+        if (p.kind() == Kind.MODREC) return MODREC_FORM_ID;
+        return p.survey() != null ? p.survey().id() : null;
+    }
+
+    /**
+     * Whether a page is skipped by the normal Next-Screen / back walk this death: the donation
+     * page on the deaths its gate keeps it out of, and any form the player has muted. Both stay
+     * in the deck and stay reachable through their top-bar chip. PLATFORM is never out of flow,
+     * so paging forward always terminates.
+     */
+    private boolean outOfFlow(Page p) {
+        if (p.kind() == Kind.DONATE) return !donateInFlow;
+        String id = formId(p);
+        return id != null && deckMutedForms.contains(id);
+    }
+
+    /** Index of the first feedback-survey page, or -1 when the survey sent no questions. */
+    private int firstSurveyPageIndex() {
+        for (int i = 0; i < pages.size(); i++) if (pages.get(i).kind() == Kind.SURVEY) return i;
+        return -1;
+    }
+
+    /**
+     * The next SURVEY page from {@code from} walking by {@code step} (+1 forward, -1 back), or -1
+     * when there is none that way. Deliberately ignores {@link #outOfFlow}: the envelope's walk is
+     * where a muted question is revisited (and un-muted).
+     */
+    private int nextSurveyPage(int from, int step) {
+        for (int i = from + step; i >= 0 && i < pages.size(); i += step) {
+            if (pages.get(i).kind() == Kind.SURVEY) return i;
+        }
+        return -1;
     }
 
     private int donatePageIndex() {
@@ -414,7 +497,10 @@ public final class NarrativeDeathScreen extends Screen {
         }
         pages = buildPages();
         donateInFlow = shouldShowDonate();
-        donateReturnPage = -1;
+        // chipReturnPage is deliberately NOT reset here: init() re-runs on every page swap, so
+        // clearing it would wipe the return index between a chip click and the page landing —
+        // Next Screen then paged forward instead of going back where the chip was pressed. A new
+        // death is a new screen instance, which is what the field initializer covers.
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
@@ -644,9 +730,11 @@ public final class NarrativeDeathScreen extends Screen {
         platformLeaveRect = null;
         donateRect = null;
         dollarRect = null;
+        envelopeRect = null;
         donateTips.clear();
         donateListViewport = null;
         deleteWorldRect = null;
+        dontShowRect = null;
         continueRect = null;
         backRect = null;
         bugReportRect = null;
@@ -684,7 +772,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
                 case MODREC -> y = drawModRec(g, left, contentW, cx, y, mouseX, mouseY);
-                case DONATE -> y = drawDonate(g, left, contentW, cx, y);
+                case DONATE -> y = drawDonate(g, left, contentW, cx, y, mouseX, mouseY);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
             }
 
@@ -709,8 +797,7 @@ public final class NarrativeDeathScreen extends Screen {
                 for (TileTip t : donateTips) {
                     if (t.rect().has(mouseX, mouseY)) {
                         int maxW = (int) (this.width * 0.6);
-                        g.renderTooltip(this.font, this.font.split(Component.translatable(t.tipKey()), maxW),
-                                mouseX, mouseY);
+                        g.renderTooltip(this.font, this.font.split(t.tip(), maxW), mouseX, mouseY);
                         break;
                     }
                 }
@@ -728,6 +815,11 @@ public final class NarrativeDeathScreen extends Screen {
             if (settled() && dollarRect != null && dollarRect.has(mouseX, mouseY)) {
                 g.renderTooltip(this.font,
                         Component.translatable("gui.dungeontrain.death.narr.donate_chip_tip"), mouseX, mouseY);
+            }
+            // Envelope chip hover — what it does.
+            if (settled() && envelopeRect != null && envelopeRect.has(mouseX, mouseY)) {
+                g.renderTooltip(this.font,
+                        Component.translatable("gui.dungeontrain.death.narr.feedback_chip_tip"), mouseX, mouseY);
             }
         }
     }
@@ -1410,6 +1502,11 @@ public final class NarrativeDeathScreen extends Screen {
                 y = drawCentered(g, Component.translatable(noticeKey), cx, w, y, SUBLINE);
                 y += 4;
             }
+            // Only from the second time this question is put in front of someone who already
+            // answered it — a first ask has nothing to opt out of yet.
+            if (answeredForms.contains(e.id())) {
+                y = drawDontShowAgain(g, e.id(), cx, y);
+            }
         }
         return y;
     }
@@ -1444,6 +1541,11 @@ public final class NarrativeDeathScreen extends Screen {
         // would swallow tile clicks.
         placeBox(modNameBox, modRecPage.commentBoxX(), modRecPage.nameBoxY(), modRecPage.commentBoxW());
         placeBox(modCommentBox, modRecPage.commentBoxX(), modRecPage.commentBoxY(), modRecPage.commentBoxW());
+        // Same opt-out as the survey forms, once the player has recommended something before. The
+        // grid can run long, so the row is clamped to sit clear of the button footer.
+        if (answeredForms.contains(MODREC_FORM_ID)) {
+            below = drawDontShowAgain(g, MODREC_FORM_ID, cx, Math.min(below, this.height - 28 - DONT_SHOW_H));
+        }
         return below;
     }
 
@@ -1474,15 +1576,24 @@ public final class NarrativeDeathScreen extends Screen {
         box.setWidth(w);
     }
 
-    private int drawDonate(GuiGraphics g, int left, int w, int cx, int y) {
+    private int drawDonate(GuiGraphics g, int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_donate");
         y += 14;
         drawTrain(g, left, w, y, currentPage);
         y += 46;
-        y = drawNarration(g, Component.translatable("gui.dungeontrain.death.narr.donate_intro").getString(), cx, w, y);
-        y += 8;
 
         DonationSummaryClient.Summary s = DonationSummaryCache.get();
+        // Resolved before the narration, not with the tiles below, because the pitch itself quotes
+        // the week's work. The summary may still be loading — the figures fall back to the numbers
+        // baked into this jar, which are known before any fetch starts, so the opening line does
+        // not have to wait on the network to say something true.
+        UpdateStats.Figures updates = UpdateStats.current(s == null ? null : s.updates());
+
+        // The pitch names the week when the week is worth naming; below that threshold it opens
+        // with the plain line, which is the sentence this page has always had.
+        y = drawNarration(g, donateIntro(updates), cx, w, y);
+        y += 8;
+
         if (s == null) {
             y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.donate_loading"), cx, w, y, SUBLINE);
             y += 10;
@@ -1494,28 +1605,27 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         // The ask, and whether the server bill behind it is already paid for this month. Once it is,
-        // the grid re-orders: the new goal's COST leads, the server bill drops to the third slot
-        // and turns blue — a bill that is settled, not one still being asked for.
+        // the ask becomes the next rung's cost and the settled bill turns blue — a bill that is
+        // paid, not one still being asked for.
         Goal activeGoal = FundingGoals.active(s.goals(), s.activeGoalId());
         Goal serverCosts = FundingGoals.byId(s.goals(), FundingGoals.RUNNING_COSTS);
         boolean serverCostsMet = serverCosts != null && serverCosts.complete()
                 && activeGoal != null && !FundingGoals.RUNNING_COSTS.equals(activeGoal.id());
-        // One rung further: that goal is funded too, so there is nothing left to ask against. The
-        // ladder shifts again — the goal drops into the settled slot the server bill held, and the
-        // lead tile goes to the work itself, the hours behind the train. Declined on a build that
-        // could not determine an hour count, which leaves the layout exactly as it is above.
-        boolean hoursLead = DevHours.takesGoalSlot(
-                DevHours.hours(), serverCostsMet, activeGoal != null && activeGoal.complete());
 
-        // Any OTHER goal already funded — one the grid has no slot for — ticked off on one line
-        // above it. Usually empty: with the standard two-rung ladder the blue server-costs tile is
-        // the completion marker, and no line is drawn (nor vertical space taken).
-        // Once the hours tile leads, the server bill has no tile of its own — it joins this line
-        // instead of vanishing from the page.
-        List<Goal> done = hoursLead
-                ? FundingGoals.completed(s.goals(), List.of(activeGoal.id()))
-                : FundingGoals.completed(s.goals(),
-                        List.of(activeGoal == null ? "" : activeGoal.id(), FundingGoals.RUNNING_COSTS));
+        // Absent when neither the relay nor this jar knows a count. (The figures behind the card
+        // were resolved above — the opening line quotes them too.)
+        boolean updatesCard = UpdateStats.hasCount(updates);
+
+        // Every funded rung the grid has no slot for, ticked off on one line above it — but the
+        // two rungs the page itself is built around are excluded outright, tiled or not. Both the
+        // server bill and the current ask tell their own story more plainly through the ask card
+        // itself, which turns blue and ticks when its rung is settled, so a line repeating that is
+        // a line the page didn't need. With the standard two-rung ladder this empties the line
+        // entirely in every state, and it takes no height at all.
+        List<String> tiled = new ArrayList<>();
+        tiled.add(FundingGoals.RUNNING_COSTS);
+        if (activeGoal != null) tiled.add(activeGoal.id());
+        List<Goal> done = FundingGoals.completed(s.goals(), tiled);
         if (!done.isEmpty()) {
             MutableComponent line = Component.empty();
             for (int i = 0; i < done.size(); i++) {
@@ -1533,58 +1643,69 @@ public final class NarrativeDeathScreen extends Screen {
         int colW = (w - gap) / 2;
         int rightX = left + colW + gap;
 
-        // ---- Left block: 2x2 grid, the first slot leading with whatever is being asked for ----
+        // ---- Left block: 2x2 grid — the ask leads, Contribute closes, an arm deals the middle ----
+        //
+        // Slot 1 is always the ask and slot 4 is always Contribute. An arm that could drop the ask
+        // would produce a page asking for money without saying what for, and a Contribute button
+        // that moved between arms would confound the very click the experiment measures. What
+        // varies is slots 2 and 3: two of five cards, chosen by DonateCards from the arm this
+        // player's uuid buckets into. Every failure path — no relay, no experiment, an unknown arm
+        // — lands on the control arm, which is the page exactly as it shipped.
         int cellGap = 4;
         int cellW = (colW - cellGap) / 2;
         int lc0 = left + cellW / 2;
         int lc1 = left + cellW + cellGap + cellW / 2;
         int ly = y + 30;
         String costValue = s.monthlyCostUsd() >= 0 ? fmtUsd(s.monthlyCostUsd()) : "—";
-        if (hoursLead) {
-            // Slot 1: the hours behind the train. Not a goal — no progress bar, and the neutral
-            // cream rather than cost-orange or goal-blue, because it is neither an ask nor a bill.
-            costTile(g, lc0, y, cellW, DevHours.value(),
-                    "gui.dungeontrain.death.narr.lbl_hours",
-                    "gui.dungeontrain.death.narr.tip_hours", VALUE);
-            costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
-            // Slot 3: the goal that was leading, now settled — the same treatment the server bill
-            // got when IT was paid off, so the shift reads as the ladder moving, not a new layout.
-            checkedCostTile(g, lc0, ly, cellW, fmtUsd(activeGoal.targetAud()),
-                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), GOAL_MET);
-            drawTileProgress(g, lc0, ly, cellW, activeGoal.percent());
-        } else if (serverCostsMet) {
-            // Slot 1: the new goal, as a COST — what the next thing needs per month, not a
-            // percentage. The progress against it reads off the raised figure beside it.
-            costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
-                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), COST);
-            // Slot 2: raised. Slot 3: the settled server bill, blue and renamed — it is no longer
-            // the ask, it is the thing this month's support already paid off.
-            costTile(g, lc1, y, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
-            checkedCostTile(g, lc0, ly, cellW, costValue,
-                    "gui.dungeontrain.death.narr.lbl_server_cost",
-                    "gui.dungeontrain.death.narr.tip_monthly_cost", GOAL_MET);
-            // Each rung's progress along the foot of its own tile: the new goal part-filled, the
-            // server bill full — the same bar in both, so one reads as the continuation of the other.
-            drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
-            drawTileProgress(g, lc0, ly, cellW, serverCosts.percent());
-        } else {
-            // Nothing covered yet: the bill leads, with progress toward it beside it — the layout
-            // this page has always had. The percentage is the first rung's when a ladder is served,
-            // else the flat coverage figure from a relay that predates goals.
+
+        // Slot 1 — the ask. One card with three renderings, picked off the ladder: the running cost
+        // in orange while the bill is what is being asked for; the next rung's cost in orange, with
+        // its progress along the foot, once the bill is settled; and the same tile ticked and blue
+        // when that rung is funded too.
+        boolean askSettled = activeGoal != null && activeGoal.complete();
+        if (!serverCostsMet) {
             costTile(g, lc0, y, cellW, costValue,
                     "gui.dungeontrain.death.narr.lbl_running_cost",
                     "gui.dungeontrain.death.narr.tip_monthly_cost", COST);
-            int percent = activeGoal != null ? activeGoal.percent() : s.percentCovered();
-            costTile(g, lc1, y, cellW, percent >= 0 ? percent + "%" : "—",
-                    Component.translatable("gui.dungeontrain.death.narr.lbl_covered"),
-                    "gui.dungeontrain.death.narr.tip_covered", VALUE);
-            costTile(g, lc0, ly, cellW, fmtUsd(s.monthlyRaisedUsd()),
-                    "gui.dungeontrain.death.narr.lbl_raised_month",
-                    "gui.dungeontrain.death.narr.tip_raised", VALUE);
+        } else if (askSettled) {
+            checkedCostTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
+                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), GOAL_MET);
+            drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
+        } else {
+            costTile(g, lc0, y, cellW, fmtUsd(activeGoal.targetAud()),
+                    FundingGoals.label(activeGoal), FundingGoals.tipKey(activeGoal), COST);
+            drawTileProgress(g, lc0, y, cellW, activeGoal.percent());
+        }
+
+        // Slots 2 and 3 — the experiment's. A card whose figure this client does not have leaves
+        // its cell empty rather than being swapped for another: substituting would mean a player
+        // recorded in one arm had actually been shown a different page.
+        int percent = activeGoal != null ? activeGoal.percent() : s.percentCovered();
+        long lastCommitAt = s.activity() == null ? 0L : s.activity().lastCommitAtMs();
+        Instant nowInstant = Instant.now();
+        DonateCards.Availability availability = new DonateCards.Availability(
+                percent >= 0,
+                updatesCard,
+                DevHours.known(DevHours.hours()),
+                LastActive.known(lastCommitAt, nowInstant),
+                true); // the month's takings are always a number, even when that number is zero
+        List<DonateCards.Card> variable = DonateCards.slots(donateArm(s), availability);
+        for (int i = 0; i < variable.size(); i++) {
+            int cx2 = i == 0 ? lc1 : lc0;
+            int cy2 = i == 0 ? y : ly;
+            switch (variable.get(i)) {
+                case COVERED -> costTile(g, cx2, cy2, cellW, percent + "%",
+                        Component.translatable("gui.dungeontrain.death.narr.lbl_covered"),
+                        "gui.dungeontrain.death.narr.tip_covered", VALUE);
+                case UPDATES -> updatesTile(g, cx2, cy2, cellW, updates, mouseX, mouseY);
+                case HOURS -> costTile(g, cx2, cy2, cellW, DevHours.value(),
+                        "gui.dungeontrain.death.narr.lbl_hours",
+                        "gui.dungeontrain.death.narr.tip_hours", VALUE);
+                case LAST_ACTIVE -> lastActiveTile(g, cx2, cy2, cellW, lastCommitAt, nowInstant);
+                case RAISED -> costTile(g, cx2, cy2, cellW, fmtUsd(s.monthlyRaisedUsd()),
+                        "gui.dungeontrain.death.narr.lbl_raised_month",
+                        "gui.dungeontrain.death.narr.tip_raised", VALUE);
+            }
         }
         // Contribute button in place of the old "your total" tile.
         donateRect = drawBevel(g, lc1 - cellW / 2, ly, cellW, 26,
@@ -1625,6 +1746,107 @@ public final class NarrativeDeathScreen extends Screen {
         return Math.max(leftBottom, listTop + listH) + 10;
     }
 
+    /**
+     * The engine room's opening pitch. When the week is worth naming it leads with the work — "The
+     * rails do not lay themselves. 117 changes were laid this week alone." — and otherwise it is the
+     * plain line this page has always opened with.
+     *
+     * <p>The figure is wrapped in the narration's number sentinels so {@link #styled} renders the
+     * digits white against the muted prose, the same treatment every other number in this screen's
+     * narration gets. The word beside it stays muted: the sentinels close before it.</p>
+     */
+    private String donateIntro(UpdateStats.Figures updates) {
+        if (!UpdateStats.hasWeekPitch(updates)) {
+            return Component.translatable("gui.dungeontrain.death.narr.donate_intro").getString();
+        }
+        String figure = NUM_START + UpdateStats.groupedWeek(updates) + NUM_END;
+        Component clause = UpdateStats.changesClause(updates, ClientLanguage.selected(), figure);
+        return Component.translatable("gui.dungeontrain.death.narr.donate_intro_updates", clause)
+                .getString();
+    }
+
+    /**
+     * This player's A/B assignment for the donation page, resolved once per screen and cached in
+     * {@link #donateAssignment} so the layout cannot change under the cursor mid-page.
+     *
+     * <p>Assignment is a hash of the relay's salt, the experiment id and this player's own uuid
+     * (see {@link DonateExperiment}) — stable across sessions, and computed here rather than
+     * requested, so the summary fetch stays anonymous.</p>
+     */
+    private DonateCards.Arm donateArm(DonationSummaryClient.Summary s) {
+        resolveDonateAssignment(s);
+        return donatePair;
+    }
+
+    /**
+     * Pick this player's arm — and, in the rotating arm, this death's pair — and label the funnel
+     * with them. Idempotent, and deliberately called from the screen's OPEN path rather than only
+     * from the draw path.
+     *
+     * <p>It used to run on the first paint of the donation page, which was too late by one event:
+     * the page's own {@code open} fires when the player navigates to it, so {@code reached_donate}
+     * — the denominator of every per-arm rate — went out carrying no arm at all. Resolving at open
+     * needs no network of its own, because the summary is normally already in
+     * {@link DonationSummaryCache} from the title-screen prefetch; when it is not, the draw path
+     * still resolves as a fallback and only that first page event goes unlabelled.</p>
+     */
+    private void resolveDonateAssignment(DonationSummaryClient.Summary s) {
+        // Once per screen. The draw path calls this every frame, so a rotation advanced here
+        // without the latch would deal a new pair sixty times a second.
+        if (donatePair != null || s == null) return;
+        UUID uuid = this.minecraft != null && this.minecraft.getUser() != null
+                ? this.minecraft.getUser().getProfileId() : null;
+        donateAssignment = DonateExperiment.resolve(s.experiment(), uuid, DonateCards.knownArms());
+        DonateCards.Arm assigned = DonateCards.armOf(donateAssignment.arm());
+        // A dev override changes what is DRAWN and never what is reported: the telemetry below
+        // keeps the arm this player actually belongs to, so flipping through layouts cannot
+        // write rows claiming clicks for an arm nobody was assigned.
+        DonateCards.Arm forced = DonateArmOverride.get();
+        DonateCards.Arm drawing = forced != null ? forced : assigned;
+        // The rotating arm shows a different one of the five pairs each death. The offset
+        // spreads where players start in that cycle — see DonateCards.pairFor.
+        donatePair = DonateCards.drawnPair(drawing, DonateRotationCounter.next(),
+                uuid == null ? 0 : Math.floorMod(uuid.hashCode(), DonateCards.FIXED.size()));
+        // Label the funnel from here on. Every death-screen event carries the arm, not just the
+        // Contribute click, so a difference can be traced to where in the page it happened. The
+        // pair rides alongside it for the rotating arm, whose arm id alone cannot say what was
+        // on screen.
+        UiAnalytics.setVariant(donateAssignment.experimentId(), donateAssignment.arm(),
+                assigned.rotating() ? donatePair.id() : null);
+    }
+
+    /**
+     * The Last Active card: "3 hours" over "Last Active" — how long ago work last landed on the
+     * project. Drawn only when the relay served a usable timestamp; see {@link LastActive} for why
+     * an old figure is shown as-is while an unknown one is withheld.
+     */
+    private void lastActiveTile(GuiGraphics g, int centerX, int y, int cw, long lastCommitAtMs,
+                                Instant now) {
+        Rect rect = new Rect(centerX - cw / 2, y, cw, 26);
+        drawCell(g, centerX, y, LastActive.value(lastCommitAtMs, now).getString(),
+                LastActive.label(), cw, VALUE);
+        donateTips.add(new TileTip(rect, LastActive.tooltip(lastCommitAtMs, now)));
+    }
+
+    /**
+     * The updates card: "765" over "Updates this week". Hovering swaps the span to the longest one
+     * on offer — a year, or the project's own age while it is younger — so the same tile answers
+     * both "is this thing alive?" and "how much has it had done to it?". The tooltip says how long
+     * ago the newest release went out.
+     *
+     * <p>The hover is read here rather than in the tooltip pass because it changes what is DRAWN,
+     * not just what is explained; it honours {@link #settled()} for the same reason the tooltips
+     * do — nothing on this page reacts to the cursor while it is still fading in.</p>
+     */
+    private void updatesTile(GuiGraphics g, int centerX, int y, int cw,
+                             UpdateStats.Figures f, int mouseX, int mouseY) {
+        Rect rect = new Rect(centerX - cw / 2, y, cw, 26);
+        boolean hovered = settled() && rect.has(mouseX, mouseY);
+        drawCell(g, centerX, y, UpdateStats.value(f, hovered).getString(),
+                UpdateStats.label(f, hovered), cw, VALUE);
+        donateTips.add(new TileTip(rect, UpdateStats.tooltip(f, java.time.Instant.now())));
+    }
+
     /** A cost/stat tile plus its hover-tooltip region (rendered when the page is settled). */
     private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
                           String labelKey, String tipKey, int valueColor) {
@@ -1637,8 +1859,14 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
                           Component label, String tipKey, int valueColor) {
+        costTile(g, centerX, y, cw, value, label, Component.translatable(tipKey), valueColor);
+    }
+
+    /** As above, for a tooltip that had to be built rather than looked up. */
+    private void costTile(GuiGraphics g, int centerX, int y, int cw, String value,
+                          Component label, Component tip, int valueColor) {
         drawCell(g, centerX, y, value, label, cw, valueColor);
-        donateTips.add(new TileTip(new Rect(centerX - cw / 2, y, cw, 26), tipKey));
+        donateTips.add(new TileTip(new Rect(centerX - cw / 2, y, cw, 26), tip));
     }
 
     /**
@@ -1666,7 +1894,7 @@ public final class NarrativeDeathScreen extends Screen {
         int ly = y + 4 + this.font.lineHeight + 1;
         drawCheckGlyph(g, startX, ly + 1);
         g.drawString(this.font, label, startX + CHECK_W, ly, fade(LABEL), false);
-        donateTips.add(new TileTip(new Rect(x, y, cw, ch), tipKey));
+        donateTips.add(new TileTip(new Rect(x, y, cw, ch), Component.translatable(tipKey)));
     }
 
     /** Advance of {@link #drawCheckGlyph}: the 8px mark plus the gap before the label. */
@@ -1804,7 +2032,63 @@ public final class NarrativeDeathScreen extends Screen {
             Component dollar = Component.literal("$");
             int dollarW = this.font.width(dollar) + 16;
             dollarRect = drawChip(g, anchorX - 6 - dollarW, 8, dollar, CHIP_PH_BORDER, CHIP_PH_TEXT);
+            // Envelope → the feedback forms, immediately left of "$". Absent when the survey sent
+            // no questions (disabled / no webhook / no consent), so it is never a dead control.
+            if (firstSurveyPageIndex() >= 0) {
+                envelopeRect = drawEnvelopeChip(g, dollarRect.x() - 6 - 14, 8);
+            }
         }
+    }
+
+    /** Height of the opt-out row, including the gap below it. */
+    private static final int DONT_SHOW_H = 14;
+
+    /**
+     * The "Don't ask me this again" opt-out for a form the player has already answered once: a
+     * centered tick box plus its label, hit-tested through {@link #dontShowRect} like the rest of
+     * this screen's chrome (a vanilla {@code Checkbox} widget can't take the page fade).
+     *
+     * @return the y below the row
+     */
+    private int drawDontShowAgain(GuiGraphics g, String formId, int cx, int y) {
+        boolean on = mutedForms.contains(formId);
+        Component label = Component.translatable("gui.dungeontrain.death.narr.dont_show");
+        int box = 9;
+        int gap = 5;
+        int rowW = box + gap + this.font.width(label);
+        int x = cx - rowW / 2;
+        g.fill(x, y, x + box, y + box, fade(0x66000000));
+        drawBorder(g, x, y, box, box, on ? BTN_PRI_LIGHT : SCORE_BORDER);
+        if (on) {
+            g.fill(x + 2, y + 2, x + box - 2, y + box - 2, fade(BTN_PRI_LIGHT));
+        }
+        g.drawString(this.font, label, x + box + gap, y + 1, fade(on ? VALUE : SUBLINE), false);
+        dontShowRect = new Rect(x, y, rowW, box);
+        return y + DONT_SHOW_H;
+    }
+
+    /**
+     * Square 14×14 chip with a pixel-art envelope — the way back to the feedback forms, including
+     * any the player has muted. Drawn in {@code fill}s rather than a glyph: the default font has
+     * no ✉, and fills honour the {@link #fade} alpha where a sprite can't.
+     */
+    private Rect drawEnvelopeChip(GuiGraphics g, int x, int y) {
+        int w = 14, h = 14;
+        g.fill(x, y, x + w, y + h, fade(0x66000000));
+        drawBorder(g, x, y, w, h, CHIP_PH_BORDER);
+        int c = fade(CHIP_PH_TEXT);
+        // Body: a 10x7 outlined rectangle inset in the chip.
+        int bx = x + 2, by = y + 4, bw = 10, bh = 7;
+        g.fill(bx, by, bx + bw, by + 1, c);                  // top
+        g.fill(bx, by + bh - 1, bx + bw, by + bh, c);        // bottom
+        g.fill(bx, by, bx + 1, by + bh, c);                  // left
+        g.fill(bx + bw - 1, by, bx + bw, by + bh, c);        // right
+        // Flap: two diagonals meeting in the middle, one pixel per step.
+        for (int i = 1; i <= 4; i++) {
+            g.fill(bx + i, by + i, bx + i + 1, by + i + 1, c);
+            g.fill(bx + bw - 1 - i, by + i, bx + bw - i, by + i + 1, c);
+        }
+        return new Rect(x, y, w, h);
     }
 
     /**
@@ -1922,8 +2206,34 @@ public final class NarrativeDeathScreen extends Screen {
                 // Jump to the donation page from anywhere; Next/back there return to this page.
                 if (!pages.isEmpty() && pages.get(currentPage).kind() != Kind.DONATE) {
                     UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
-                    donateReturnPage = currentPage;
+                    chipReturnPage = currentPage;
                     startTransition(donatePageIndex());
+                }
+                return true;
+            }
+            if (envelopeRect != null && envelopeRect.has(mx, my)) {
+                // Jump to the feedback forms; Next/back there return to this page. Muted forms are
+                // reachable this way — and their ticked checkbox is how they get un-muted.
+                int dest = firstSurveyPageIndex();
+                if (dest >= 0 && dest != currentPage) {
+                    UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, UiAnalytics.TARGET_CHIP);
+                    chipReturnPage = currentPage;
+                    surveyTour = true;
+                    startTransition(dest);
+                }
+                return true;
+            }
+            if (dontShowRect != null && dontShowRect.has(mx, my)) {
+                Page p = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+                String formId = p.kind() == Kind.MODREC ? MODREC_FORM_ID
+                        : (p.survey() != null ? p.survey().id() : null);
+                if (formId != null) {
+                    // Written through immediately, so ticking the box and quitting straight from the
+                    // death screen still counts. Only the live tick state moves — the deck was built
+                    // from deckMutedForms, so this page stays put until the next death.
+                    boolean muted = !mutedForms.contains(formId);
+                    if (muted) mutedForms.add(formId); else mutedForms.remove(formId);
+                    ClientDisplayConfig.setDeathFormMuted(formId, muted);
                 }
                 return true;
             }
@@ -2035,10 +2345,20 @@ public final class NarrativeDeathScreen extends Screen {
                 && page.kind() == Kind.SURVEY && page.survey() != null
                 && BUG_REPORT_ID.equals(page.survey().id());
         returnToStartAfterBug = false;
-        // Donation page opened via the "$" chip: Next returns to where it was opened from.
-        if (page.kind() == Kind.DONATE && donateReturnPage >= 0) {
-            int dest = donateReturnPage;
-            donateReturnPage = -1;
+        // Walking the survey via the envelope chip: Next Screen steps to the following question
+        // (muted ones included) and only hands back once they have all been offered.
+        if (surveyTour && page.kind() == Kind.SURVEY) {
+            int next = nextSurveyPage(currentPage, +1);
+            if (next >= 0) {
+                startTransition(next);
+                return;
+            }
+            surveyTour = false; // out of questions — fall through to the chip return below
+        }
+        // Page opened via a top-bar chip ("$" / envelope): Next returns to where it was opened from.
+        if (chipReturnPage >= 0) {
+            int dest = chipReturnPage;
+            chipReturnPage = -1;
             startTransition(Math.min(dest, pages.size() - 1));
             return;
         }
@@ -2046,8 +2366,9 @@ public final class NarrativeDeathScreen extends Screen {
             startTransition(0);
         } else if (currentPage < pages.size() - 1) {
             int next = currentPage + 1;
-            // Skip the gated-out donation page in the normal forward flow (PLATFORM follows it).
-            if (pages.get(next).kind() == Kind.DONATE && !donateInFlow) next++;
+            // Step over every out-of-flow page (the gated-out donation page, muted forms) — there
+            // can be a run of them, so this is a loop rather than a single skip.
+            while (next < pages.size() && outOfFlow(pages.get(next))) next++;
             if (next < pages.size()) startTransition(next);
         }
     }
@@ -2055,17 +2376,26 @@ public final class NarrativeDeathScreen extends Screen {
     private void back() {
         if (uiBusy) return;
         returnToStartAfterBug = false;
-        // Donation page opened via the "$" chip: back returns to where it was opened from too.
-        if (pages.get(currentPage).kind() == Kind.DONATE && donateReturnPage >= 0) {
-            int dest = donateReturnPage;
-            donateReturnPage = -1;
+        // Same walk in reverse; from the first question, back leaves the tour and returns.
+        if (surveyTour && !pages.isEmpty() && pages.get(currentPage).kind() == Kind.SURVEY) {
+            int prev = nextSurveyPage(currentPage, -1);
+            if (prev >= 0) {
+                startTransition(prev);
+                return;
+            }
+            surveyTour = false;
+        }
+        // Page opened via a top-bar chip: back returns to where it was opened from too.
+        if (chipReturnPage >= 0) {
+            int dest = chipReturnPage;
+            chipReturnPage = -1;
             startTransition(Math.min(dest, pages.size() - 1));
             return;
         }
         if (currentPage > 0) {
             int prev = currentPage - 1;
-            // Skip the gated-out donation page when stepping back past it.
-            if (pages.get(prev).kind() == Kind.DONATE && !donateInFlow) prev--;
+            // Same, stepping back.
+            while (prev >= 0 && outOfFlow(pages.get(prev))) prev--;
             if (prev >= 0) startTransition(prev);
         }
     }
@@ -2089,6 +2419,8 @@ public final class NarrativeDeathScreen extends Screen {
         }
         DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
+        // Answered at least once — from the next death this form offers its opt-out checkbox.
+        ClientDisplayConfig.markDeathFormAnswered(e.id());
         // Funnel: record the chosen rating for scale questions (the score drives the death-screen
         // survey-response distribution). Text-only questions have no meaningful score, so they're
         // left out — never the free-text comment either way.
@@ -2192,6 +2524,7 @@ public final class NarrativeDeathScreen extends Screen {
         UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN,
                 hack ? UiAnalytics.TARGET_MOD_HACK_REPORT : UiAnalytics.TARGET_MOD_RECOMMEND);
         modRec.markSent();
+        ClientDisplayConfig.markDeathFormAnswered(MODREC_FORM_ID);
         if (modCommentBox != null) modCommentBox.setValue("");
         if (modNameBox != null) modNameBox.setValue("");
         this.setFocused(null);
@@ -2204,10 +2537,19 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private void kickDonationFetch() {
         OfficialLinks.ensureFetched();
+        // Settle the A/B arm before any page event goes out: reached_donate is the denominator of
+        // every per-arm rate, and it fires on navigation, well before the page is first drawn.
+        // The cache is normally warm from the title-screen prefetch, so this costs nothing.
+        resolveDonateAssignment(DonationSummaryCache.get());
         Minecraft mc = Minecraft.getInstance();
         String name = mc.getUser() != null ? mc.getUser().getName() : null;
         DonationSummaryClient.fetch(name, summary ->
-                Minecraft.getInstance().execute(() -> DonationSummaryCache.set(summary)));
+                Minecraft.getInstance().execute(() -> {
+                    DonationSummaryCache.set(summary);
+                    // A cold cache — a first death before the prefetch landed. Label what is left
+                    // of this screen's funnel rather than none of it.
+                    resolveDonateAssignment(summary);
+                }));
     }
 
     /** Open the full-screen Contribute window (Revolut / Patreon options), returning here on close. */
@@ -2308,7 +2650,32 @@ public final class NarrativeDeathScreen extends Screen {
         g.fill(x, y, x + cw, y + ch, fade(TILE_BG));
         drawBorder(g, x, y, cw, ch, TILE_BORDER);
         drawCenteredStr(g, value, centerX, y + 4, valueColor);
-        drawCenteredStr(g, label, centerX, y + 4 + this.font.lineHeight + 1, LABEL);
+        drawFittedStr(g, label, centerX, y + 4 + this.font.lineHeight + 1, cw - 2, LABEL);
+    }
+
+    /**
+     * A caption centred in {@code maxW}, shrunk to fit when it would otherwise run past the cell.
+     *
+     * <p>The cells are 85px at the widest the page ever gets, which "Costs Covered" already fills
+     * most of — and the captions are translated into twenty languages, where a phrase that fits in
+     * English routinely does not ("Updates this week" is 94px before anyone translates it). Without
+     * this the overflow lands silently in whichever locales happen to be long, on a page nobody
+     * reviews in twenty languages. Scaling is the same {@code PoseStack} trick
+     * {@link #drawPortraitName} uses for over-long player names.</p>
+     */
+    private void drawFittedStr(GuiGraphics g, Component text, int cx, int y, int maxW, int color) {
+        int tw = this.font.width(text);
+        if (tw <= maxW) {
+            drawCenteredStr(g, text, cx, y, color);
+            return;
+        }
+        float scale = (float) maxW / tw;
+        PoseStack ps = g.pose();
+        ps.pushPose();
+        ps.translate(cx, y, 0.0);
+        ps.scale(scale, scale, 1.0f);
+        g.drawString(this.font, text, -tw / 2, 0, fade(color), false);
+        ps.popPose();
     }
 
     /** The portrait subject's name, centered under the figure and shrunk to fit {@code maxW}. */

@@ -241,6 +241,15 @@ Three refusals are the point of the script:
 - **Nothing is reformatted.** Every write is a text-level edit of one value, so the blank-line
   grouping, the CRLF files and the untouched lines all survive.
 
+**It also runs on its own.** `.github/workflows/import-approved-translations.yml` does the same
+import every Monday (and on `workflow_dispatch`, with `dry_run` / `locale` inputs), reading the
+admin base from the `RELAY_ADMIN_BASE` repo secret, and **opens a PR** rather than pushing —
+player-written text going into the jar gets a human read, and a bot commit on main would re-anchor
+the auto-release cascade. It runs without `--register-new` on purpose: an unregistered translator
+fails the run, so somebody adds them with their profile URL instead of a bot flattening them to a
+bare name. Note that `build.yml` doesn't fire on a PR opened by the default token, so the job runs
+`check-provenance.py`, `check-narrative-provenance.py` and `validate-locale.py` itself first.
+
 An approval whose submitter unticked "credit me" arrives with no name; those lines are stamped to
 a registered **`Anonymous contributor`** rather than left reading as machine translation. A book
 whose every editable field an import replaced takes the translator as its author; one where they

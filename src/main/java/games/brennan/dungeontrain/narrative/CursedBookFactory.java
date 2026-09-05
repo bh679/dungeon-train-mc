@@ -197,10 +197,10 @@ public final class CursedBookFactory {
      * to the first leaf rather than returning nothing — a story must still get told.
      */
     private static Leaf pickWeighted(List<Leaf> leaves, long seed) {
-        long total = 0L;
+        double total = 0;
         for (Leaf leaf : leaves) total += Math.max(0, leaf.book().weight());
         if (total <= 0) return leaves.get(0);
-        long target = (seed & 0x7FFFFFFFFFFFFFFFL) % total;
+        double target = WeightedPick.target(seed, total);
         for (Leaf leaf : leaves) {
             target -= Math.max(0, leaf.book().weight());
             if (target < 0) return leaf;

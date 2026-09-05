@@ -232,11 +232,32 @@ public final class SharedCarriageRegistry {
          * fingerprint on purpose — see {@code CarriageEntitySnapshot.decorFingerprint}.
          */
         private volatile long entitySig;
-        private volatile long lastEntityScanMs;
+
+        /**
+         * Whether {@link #entitySig} holds a real baseline yet, as opposed to the {@code 0} a field
+         * starts life at. It cannot be inferred from the value: {@code decorFingerprint} mixes from a
+         * non-zero seed, so even an empty carriage fingerprints to something and a bare {@code 0}
+         * always read as "everything has changed". A leased carriage is registered with no upload of
+         * its own behind it, so without this every one of them sent a delta encoding no edit.
+         */
+        private volatile boolean entitySigSeeded;
+
+        /**
+         * Stamped at construction, not left at {@code 0} — an epoch-zero default makes the first
+         * {@link #dueForEntityScan} call true however recently the carriage spawned, which put the
+         * live-entity walk on the flusher's very next half-second pass for every carriage.
+         */
+        private volatile long lastEntityScanMs = System.currentTimeMillis();
 
         public long entitySig() { return entitySig; }
 
-        public void setEntitySig(long sig) { this.entitySig = sig; }
+        /** Whether this carriage has a decor baseline to compare a live fingerprint against. */
+        public boolean hasEntitySigBaseline() { return entitySigSeeded; }
+
+        public void setEntitySig(long sig) {
+            this.entitySig = sig;
+            this.entitySigSeeded = true;
+        }
 
         /**
          * True at most once per {@code intervalMs} — the scan walks live entities, so it must not run on

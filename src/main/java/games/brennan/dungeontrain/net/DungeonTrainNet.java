@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "56";
+    public static final String PROTOCOL_VERSION = "63";
 
     private DungeonTrainNet() {}
 
@@ -58,6 +58,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(EditorTypeMenusPacket.TYPE, EditorTypeMenusPacket.STREAM_CODEC, EditorTypeMenusPacket::handle);
         registrar.playToClient(EditorMenusModePacket.TYPE, EditorMenusModePacket.STREAM_CODEC, EditorMenusModePacket::handle);
         registrar.playToClient(CarriageGroupGapPacket.TYPE, CarriageGroupGapPacket.STREAM_CODEC, CarriageGroupGapPacket::handle);
+        registrar.playToClient(PortalTwinBoxesPacket.TYPE, PortalTwinBoxesPacket.STREAM_CODEC, PortalTwinBoxesPacket::handle);
         registrar.playToClient(CarriageNextSpawnPacket.TYPE, CarriageNextSpawnPacket.STREAM_CODEC, CarriageNextSpawnPacket::handle);
         registrar.playToClient(CarriageSpawnCollisionPacket.TYPE, CarriageSpawnCollisionPacket.STREAM_CODEC, CarriageSpawnCollisionPacket::handle);
         registrar.playToServer(ManualSpawnRequestPacket.TYPE, ManualSpawnRequestPacket.STREAM_CODEC, ManualSpawnRequestPacket::handle);
@@ -100,6 +101,9 @@ public final class DungeonTrainNet {
         registrar.playToServer(SaveBlockVariantPrefabPacket.TYPE, SaveBlockVariantPrefabPacket.STREAM_CODEC, SaveBlockVariantPrefabPacket::handle);
         registrar.playToServer(SaveLootPrefabPacket.TYPE, SaveLootPrefabPacket.STREAM_CODEC, SaveLootPrefabPacket::handle);
         registrar.playToServer(EditorUnsavedRequestPacket.TYPE, EditorUnsavedRequestPacket.STREAM_CODEC, EditorUnsavedRequestPacket::handle);
+        registrar.playToServer(EditorRosterRequestPacket.TYPE, EditorRosterRequestPacket.STREAM_CODEC, EditorRosterRequestPacket::handle);
+        registrar.playToClient(EditorRosterPacket.TYPE, EditorRosterPacket.STREAM_CODEC, EditorRosterPacket::handle);
+        registrar.playToClient(EditorHistoryPacket.TYPE, EditorHistoryPacket.STREAM_CODEC, EditorHistoryPacket::handle);
         registrar.playToClient(EditorUnsavedListPacket.TYPE, EditorUnsavedListPacket.STREAM_CODEC, EditorUnsavedListPacket::handle);
         registrar.playToServer(EditorChangesRequestPacket.TYPE, EditorChangesRequestPacket.STREAM_CODEC, EditorChangesRequestPacket::handle);
         registrar.playToClient(EditorChangesListPacket.TYPE, EditorChangesListPacket.STREAM_CODEC, EditorChangesListPacket::handle);
@@ -214,6 +218,26 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileRequestPacket.TYPE, BuilderProfileRequestPacket.STREAM_CODEC, BuilderProfileRequestPacket::handle);
         registrar.playToClient(BuilderProfilePacket.TYPE, BuilderProfilePacket.STREAM_CODEC, BuilderProfilePacket::handle);
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
+        registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
+        registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
+        // Blocks for a tile-sized picture of somebody's relay build — a read, where the download
+        // above is a write. See RelayBuildPreviewRequestPacket.
+        registrar.playToServer(RelayBuildPreviewRequestPacket.TYPE, RelayBuildPreviewRequestPacket.STREAM_CODEC, RelayBuildPreviewRequestPacket::handle);
+        registrar.playToClient(RelayBuildPreviewPacket.TYPE, RelayBuildPreviewPacket.STREAM_CODEC, RelayBuildPreviewPacket::handle);
+        // Builds the relay has lost, asked for from in-world (/dtrebuild). The title-screen card
+        // does the same work client-side, where there is no server to ask.
+        registrar.playToServer(BuilderReconcileStartPacket.TYPE, BuilderReconcileStartPacket.STREAM_CODEC, BuilderReconcileStartPacket::handle);
+        // Dev builds only: find another player by name, so their profile can be listed and one of
+        // their builds pulled into this install. Refused server-side on a release build, and refused
+        // again by the relay, which answers this search on the dev cap alone.
+        registrar.playToServer(BuilderCreatorSearchPacket.TYPE, BuilderCreatorSearchPacket.STREAM_CODEC, BuilderCreatorSearchPacket::handle);
+        registrar.playToClient(BuilderCreatorResultsPacket.TYPE, BuilderCreatorResultsPacket.STREAM_CODEC, BuilderCreatorResultsPacket::handle);
+        // Favourites: a private per-player list of builds and builders worth coming back to. The star
+        // is fire-and-forget — the screen flips it and this follows — and the request/reply pair is
+        // what re-reads the truth. Nothing here is counted or shown to anyone else.
+        registrar.playToServer(BuilderFavouritePacket.TYPE, BuilderFavouritePacket.STREAM_CODEC, BuilderFavouritePacket::handle);
+        registrar.playToServer(BuilderFavouritesRequestPacket.TYPE, BuilderFavouritesRequestPacket.STREAM_CODEC, BuilderFavouritesRequestPacket::handle);
+        registrar.playToClient(BuilderFavouritesPacket.TYPE, BuilderFavouritesPacket.STREAM_CODEC, BuilderFavouritesPacket::handle);
 
         // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
@@ -261,6 +285,8 @@ public final class DungeonTrainNet {
         // Why this run is in Free Play, server → client, pushed whenever the badge goes on or off.
         // Feeds the effect's hover tooltip — see FreePlayCausePacket.
         registrar.playToClient(FreePlayCausePacket.TYPE, FreePlayCausePacket.STREAM_CODEC, FreePlayCausePacket::handle);
+        registrar.playToClient(TrainDebugSyncPacket.TYPE, TrainDebugSyncPacket.STREAM_CODEC, TrainDebugSyncPacket::handle);
+        registrar.playToClient(TrainDebugCarriagePacket.TYPE, TrainDebugCarriagePacket.STREAM_CODEC, TrainDebugCarriagePacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

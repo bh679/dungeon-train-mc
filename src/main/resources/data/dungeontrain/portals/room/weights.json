@@ -30,9 +30,21 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 4,
+    "weight": 5,
     "minLevel": 3,
     "mode": "endless_repetition"
+  },
+  "chunk_dimension": {
+    "weight": 4,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9"
+  },
+  "chunk_dimension_end": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/end/sealed/0/9"
+  },
+  "chunk_dimension_nether": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/nether/sealed/0/9"
   },
   "cubes": {
     "weight": 1,
@@ -109,7 +121,7 @@
     "mode": "bedrockless"
   },
   "parkour": {
-    "weight": 1,
+    "weight": 3,
     "minLevel": 10,
     "mode": "bedrockless"
   },
@@ -143,6 +155,10 @@
   "smalllibrary": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
+  },
+  "terrarium": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day/sealed/0/73/0/19"
   },
   "trap": {
     "weight": 1,

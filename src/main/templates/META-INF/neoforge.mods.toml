@@ -121,10 +121,21 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# vivecraft (VR). Optional, player-installed — NOT bundled, NOT a compile dep. Dungeon Train
-# ships a CLIENT-side compat mixin (dungeontrain.vivecraft.mixins.json, gated by VivecraftMixinPlugin)
-# so VR melee works while standing on a Sable sub-level (train carriage). Metadata only; the mixin
-# no-ops cleanly when Vivecraft is absent. Client-only, so side="CLIENT".
+# vivecraft (VR). Optional, player-installed — NOT bundled, NOT a compile dep. Metadata only.
+#
+# Vivecraft breaks in two ways on a Sable sub-level — VR melee hits nothing, and VR teleport drops
+# the player into the void. Neither is DT specific, so both fixes live in the standalone
+# "Vivecraft Sable Compat" mod (vivecraft-sable-compat), which VR players install alongside DT.
+#
+# DT keeps a TEMPORARY copy of the melee half only (dungeontrain.vivecraft.mixins.json, gated by
+# VivecraftMixinPlugin). It applies only when Vivecraft is installed AND the compat mod is NOT, so
+# the two never both own the call — see that plugin for the full matrix and for when to delete it.
+# Removing DT's copy outright (#1261) left VR players who update DT without the addon with broken
+# melee; this closes that window until the addon is live and bundled in the modpack.
+#
+# This entry would stay regardless: DT also reacts to Vivecraft at runtime (VrCompat suppresses
+# FramerateThrottle on VR installs). Client-only, so side=CLIENT.
+
 [[dependencies.${mod_id}]]
     modId="vivecraft"
     type="optional"
@@ -162,6 +173,8 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.mixins.json"
 
+# TEMPORARY — remove together with VivecraftMixinPlugin once Vivecraft Sable Compat is live and
+# bundled in the modpack. Self-gating: no-ops unless Vivecraft is present and the addon is not.
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"
 
@@ -170,3 +183,17 @@ logoFile="logo.png"
 
 [[mixins]]
     config="${mod_id}.betteradvancements.mixins.json"
+
+# Sodium replaces chunk meshing wholesale, so the upside-down band's per-block flip needs a second
+# copy of itself on Sodium's pipeline (dungeontrain.sodium.mixins.json, gated by SodiumMixinPlugin).
+# Every Iris install has Sodium under it, and the modpack ships both. No dependency is declared here:
+# Sable already pins the compatible Sodium range, and the mixin no-ops when Sodium is absent.
+[[mixins]]
+    config="${mod_id}.sodium.mixins.json"
+
+# Iris picks a shader pack's per-dimension program set from Iris.getCurrentDimension() every frame.
+# dungeontrain.iris.mixins.json (gated by IrisMixinPlugin) lets Dungeon Train report the Nether or
+# the End while the train is in a Nether/End band or a dimensional carriage, so the pack renders its
+# own Nether/End atmosphere, fog and lighting there. No-ops without Iris; no dependency declared.
+[[mixins]]
+    config="${mod_id}.iris.mixins.json"

@@ -15,13 +15,13 @@
       "name": "Adventure Item Names",
       "slug": "adventure-item-names",
       "project_id": 1546573,
-      "file_id": 8698408,
+      "file_id": 8760632,
       "required": true,
       "dependency_type": "required",
-      "version": "0.49.0",
+      "version": "0.52.0",
       "gradle_property": "adventureitemnames_min_version",
       "modrinth_project": "adventureitemnames",
-      "modrinth_version": "2K5LtX6C"
+      "modrinth_version": "l1CNqiqZ"
     },
     {
       "name": "Adventure Item Stats",
@@ -39,13 +39,13 @@
       "name": "Interactive Player Mobs",
       "slug": "interactive-player-mobs",
       "project_id": 1559379,
-      "file_id": 8736081,
+      "file_id": 8762749,
       "required": true,
       "dependency_type": "required",
-      "version": "0.94.0",
+      "version": "0.97.0",
       "gradle_property": "playermob_min_version",
       "modrinth_project": "interactive-player-mobs",
-      "modrinth_version": "s0uLmHrV"
+      "modrinth_version": "rOjOs77z"
     },
     {
       "name": "Ender Chest Persistence",
@@ -349,6 +349,78 @@
       "required": true,
       "modrinth_project": "shulkerboxtooltip",
       "modrinth_version": "IuqNIoAi"
+    },
+    {
+      "name": "TrashSlot",
+      "slug": "trashslot",
+      "project_id": 235577,
+      "file_id": 8163135,
+      "required": true,
+      "modrinth_project": "trashslot",
+      "modrinth_version": "HY8Ybozd"
+    },
+    {
+      "name": "Enchantment Descriptions",
+      "slug": "enchantment-descriptions",
+      "project_id": 250419,
+      "file_id": 7039849,
+      "required": true,
+      "modrinth_project": "enchantment-descriptions",
+      "modrinth_version": "zfAkJn0r"
+    },
+    {
+      "name": "Bookshelf",
+      "slug": "bookshelf",
+      "project_id": 228525,
+      "file_id": 7606240,
+      "required": true,
+      "modrinth_project": "bookshelf-lib",
+      "modrinth_version": "1sdJl7J1"
+    },
+    {
+      "name": "Prickle",
+      "slug": "prickle",
+      "project_id": 1023259,
+      "file_id": 6961457,
+      "required": true,
+      "modrinth_project": "prickle",
+      "modrinth_version": "EE1FHDyD"
+    },
+    {
+      "name": "Balm",
+      "slug": "balm",
+      "project_id": 531761,
+      "file_id": 8645517,
+      "required": true,
+      "modrinth_project": "balm",
+      "modrinth_version": "KgypwTqX"
+    },
+    {
+      "name": "Durability Tooltip",
+      "slug": "durability-tooltip",
+      "project_id": 511040,
+      "file_id": 6833316,
+      "required": true,
+      "modrinth_project": "durability-tooltip",
+      "modrinth_version": "mmYe9e5V"
+    },
+    {
+      "name": "SuperMartijn642's Config Lib",
+      "slug": "supermartijn642s-config-lib",
+      "project_id": 438332,
+      "file_id": 5546996,
+      "required": true,
+      "modrinth_project": "supermartijn642s-config-lib",
+      "modrinth_version": "qKL9jM75"
+    },
+    {
+      "name": "Crash Assistant",
+      "slug": "crash-assistant",
+      "project_id": 1154099,
+      "file_id": 8636685,
+      "required": true,
+      "modrinth_project": "crash-assistant",
+      "modrinth_version": "18SR4EJw"
     }
   ],
   "curseforge_relations": [

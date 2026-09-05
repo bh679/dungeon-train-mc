@@ -37,9 +37,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * behind a 300s edge cache, so the refresh interval here is deliberately unhurried: a leaderboard
  * that is five minutes stale is not wrong in any way a reader could notice.</p>
  *
- * <p>Per-player ranks are fetched once, at login, from {@code /leaderboard/me} and cached by uuid.
+ * <p>Per-player ranks are fetched from {@code /leaderboard/me} and cached by uuid: once at login,
+ * and again shortly after each death, which is the moment a player's own position actually moves.
  * That is what lets a book's closing "where you stand" line cost nothing at the moment the book is
- * opened — by then the answer is already here.</p>
+ * opened — by then the answer is already here. A per-player cooldown
+ * ({@link #RANK_ATTEMPT_COOLDOWN_MS}) keeps a run of quick deaths down to one request.</p>
  *
  * <p>Never throws and never blocks. A failed, slow or empty response leaves the previous snapshot in
  * place, and a player with no network simply finds an ordinary random book instead.</p>
@@ -59,6 +61,30 @@ public final class LeaderboardPool {
 
     /** A board older than this is refetched the next time its category is wanted. */
     private static final long BOARD_TTL_MS = 300_000L;
+
+    /**
+     * How long a category that answered with nothing is left alone before being asked again.
+     *
+     * <p>{@link #BOARD_TTL_MS} can only throttle a category that produced rows, because a {@link Board}
+     * is the only thing carrying a timestamp. A category the relay has no rows for — one nobody has
+     * scored on yet, or an id this relay build does not serve and answers {@code bad_cat} — never
+     * reaches {@link #BOARDS} at all, so without this it was re-requested on every call. That is not
+     * hypothetical: {@link #warmAll()} runs from a stat room's per-tick stocking pass, so a single
+     * unservable category became one request per tick for the rest of the session.</p>
+     *
+     * <p>Shorter than the board TTL, so a board that starts being served still appears promptly.</p>
+     */
+    private static final long EMPTY_ATTEMPT_COOLDOWN_MS = 60_000L;
+
+    /**
+     * Shortest gap between two rank fetches for the SAME player.
+     *
+     * <p>{@code /leaderboard/me} is the one leaderboard call that touches SQLite — an indexed count
+     * per board, fifteen of them in a single request — so it is the one that must not be reachable in
+     * a loop. Login asks once; a death asks again. A player dying every few seconds in lava would
+     * otherwise ask every few seconds, and their rank does not meaningfully move in that time.</p>
+     */
+    static final long RANK_ATTEMPT_COOLDOWN_MS = 60_000L;
 
     /** Ceilings mirroring the relay's own, so an out-of-date or wrong relay can't push junk into a book. */
     static final int MAX_ROWS = 200;
@@ -94,7 +120,22 @@ public final class LeaderboardPool {
 
     private static final Map<LeaderboardCategory, Board> BOARDS = new ConcurrentHashMap<>();
     private static final Map<LeaderboardCategory, Boolean> IN_FLIGHT = new ConcurrentHashMap<>();
+
+    /**
+     * When each category was last asked, whatever the answer turned out to be — the brake for every
+     * outcome that leaves no {@link Board} behind: empty rows, a {@code bad_cat} 4xx, a transport
+     * error. Stamped before dispatch rather than on completion, so a request that never answers
+     * cannot spin either. See {@link #EMPTY_ATTEMPT_COOLDOWN_MS}.
+     */
+    private static final Map<LeaderboardCategory, Long> LAST_ATTEMPT_MS = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<LeaderboardCategory, Standing>> RANKS = new ConcurrentHashMap<>();
+
+    /**
+     * When each player's ranks were last asked for, whatever the answer was — the brake described on
+     * {@link #RANK_ATTEMPT_COOLDOWN_MS}. Stamped before dispatch, like {@link #LAST_ATTEMPT_MS}, so a
+     * request that never answers cannot open the door for the next one.
+     */
+    private static final Map<UUID, Long> RANK_ATTEMPT_MS = new ConcurrentHashMap<>();
 
     /**
      * Set once a leaderboard book actually exists somewhere in the world. Until then this pool makes
@@ -170,17 +211,37 @@ public final class LeaderboardPool {
     /** Drop a player's cached ranks — call on logout so the map doesn't grow with the session. */
     public static void forget(UUID player) {
         RANKS.remove(player);
+        RANK_ATTEMPT_MS.remove(player);
+    }
+
+    /**
+     * Whether a category is worth asking the relay about right now — over plain values, so the two
+     * brakes can be tested without a relay.
+     *
+     * <p>Two separate throttles, because they cover different outcomes. A board that produced rows
+     * carries its own {@code fetchedAt} and is good for {@link #BOARD_TTL_MS}. Everything else —
+     * empty rows, {@code bad_cat}, a transport error — leaves no board at all, and is held off by
+     * {@code lastAttempt} for {@link #EMPTY_ATTEMPT_COOLDOWN_MS} instead. Without the second one, a
+     * category the relay cannot serve was asked again on every single call.</p>
+     *
+     * @param cached      the board held for this category, or null if none has ever landed
+     * @param lastAttempt when it was last asked, or null if it never has been
+     */
+    static boolean dueForRequest(Board cached, Long lastAttempt, long now) {
+        if (cached != null && now - cached.fetchedAt() < BOARD_TTL_MS) return false;
+        return lastAttempt == null || now - lastAttempt >= EMPTY_ATTEMPT_COOLDOWN_MS;
     }
 
     /**
      * Fetch {@code category}'s board if it is missing or stale. Safe to call every tick: a fresh
-     * board and an in-flight one both return immediately without a request.
+     * board, one asked for too recently, and an in-flight one all return without a request.
      */
     public static void refresh(LeaderboardCategory category) {
         if (category == null) return;
-        Board cached = BOARDS.get(category);
-        if (cached != null && System.currentTimeMillis() - cached.fetchedAt() < BOARD_TTL_MS) return;
+        long now = System.currentTimeMillis();
+        if (!dueForRequest(BOARDS.get(category), LAST_ATTEMPT_MS.get(category), now)) return;
         if (Boolean.TRUE.equals(IN_FLIGHT.putIfAbsent(category, Boolean.TRUE))) return;
+        LAST_ATTEMPT_MS.put(category, now);
         try {
             String url = DungeonTrain.relayBaseUrl() + "/leaderboard?cat=" + enc(category.id())
                     + "&limit=" + FETCH_LIMIT;
@@ -193,11 +254,45 @@ public final class LeaderboardPool {
     }
 
     /**
-     * Fetch one player's standings across every board, once. Called at login; the result is what the
-     * closing line of every leaderboard book they find is written from.
+     * Whether this player's ranks are worth asking the relay for right now — over plain values, so
+     * the cooldown can be tested without a relay. See {@link #RANK_ATTEMPT_COOLDOWN_MS}.
+     *
+     * @param lastAttempt when they were last asked for, or null if they never have been
+     */
+    static boolean dueForRankRequest(Long lastAttempt, long now) {
+        return rankRequestWaitMs(lastAttempt, now) == 0L;
+    }
+
+    /**
+     * How long until this player may be asked about again — 0 when they may be asked now.
+     *
+     * <p>Callers that are acting on a DEATH use this rather than the boolean, so a refetch inside the
+     * cooldown is deferred to the moment it expires instead of dropped. Dropping it loses the death
+     * outright: a player who dies half a minute after joining would carry their pre-death standing
+     * until some later death happened to fall outside a window. Rate-limited is not the same as
+     * discarded.</p>
+     */
+    static long rankRequestWaitMs(Long lastAttempt, long now) {
+        if (lastAttempt == null) return 0L;
+        long elapsed = now - lastAttempt;
+        return elapsed >= RANK_ATTEMPT_COOLDOWN_MS ? 0L : RANK_ATTEMPT_COOLDOWN_MS - elapsed;
+    }
+
+    /** As {@link #rankRequestWaitMs(Long, long)}, for the live cooldown of one player. */
+    public static long rankRefreshWaitMs(UUID player, long now) {
+        return player == null ? 0L : rankRequestWaitMs(RANK_ATTEMPT_MS.get(player), now);
+    }
+
+    /**
+     * Fetch one player's standings across every board. Called at login and again a few seconds after
+     * each of their deaths; the result is what the closing line of every leaderboard book they find is
+     * written from. Held off by {@link #RANK_ATTEMPT_COOLDOWN_MS} when asked again too soon.
      */
     public static void refreshRanks(UUID player, String name) {
         if (player == null) return;
+        long now = System.currentTimeMillis();
+        if (!dueForRankRequest(RANK_ATTEMPT_MS.get(player), now)) return;
+        RANK_ATTEMPT_MS.put(player, now);
         try {
             String url = DungeonTrain.relayBaseUrl() + "/leaderboard/me?uuid=" + enc(player.toString())
                     + (name == null || name.isBlank() ? "" : "&name=" + enc(name));
@@ -271,6 +366,10 @@ public final class LeaderboardPool {
         Map<LeaderboardCategory, Standing> parsed = parseRanks(body);
         if (parsed.isEmpty()) return;
         RANKS.put(player, Map.copyOf(parsed));
+        // The one line that says a refresh actually landed. Every other outcome here is already
+        // logged (a failed fetch, a bad status), so without this a rank refresh — the login one and
+        // the post-death one alike — is invisible even at debug, and "did it fire?" is unanswerable.
+        LOGGER.debug("[DungeonTrain] leaderboard ranks refreshed for {}: {} boards", player, parsed.size());
     }
 
     static Map<LeaderboardCategory, Standing> parseRanks(String body) {
@@ -321,7 +420,9 @@ public final class LeaderboardPool {
     static void clear() {
         BOARDS.clear();
         IN_FLIGHT.clear();
+        LAST_ATTEMPT_MS.clear();
         RANKS.clear();
+        RANK_ATTEMPT_MS.clear();
         wanted = false;
         warmCursor = 0;
     }

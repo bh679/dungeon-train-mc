@@ -13,16 +13,17 @@ import java.util.List;
  *
  * <ul>
  *   <li>{@link #GENERAL} — the client and the player: content rating, chat lines, the hotkey,
- *       translation.</li>
+ *       backups, the backpack button, translation.</li>
  *   <li>{@link #TRAIN} — the ride itself: engine volume, whether custom train content loads, and
  *       the ride-photo settings.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
  *       render at, plus where each of the four editor menus (X/V/C/Z) draws itself.</li>
  * </ul>
  *
- * <p>Kept free of Minecraft types on purpose. Two rows are conditional — {@link Row#POLITICAL_FILTER}
- * on Chinese clients, {@link Row#TRANSLATE} when a translation target resolves — and the screen packs
- * rows two-across, so either one appearing re-pairs everything after it in its tab. That pairing is
+ * <p>Kept free of Minecraft types on purpose. Three rows are conditional — {@link Row#POLITICAL_FILTER}
+ * on Chinese clients, {@link Row#TRANSLATE} when a translation target resolves, and
+ * {@link Row#CATCH_UP_BURST} except on a multiplayer client — and the screen packs
+ * rows two-across, so any one appearing re-pairs everything after it in its tab. That pairing is
  * the part most likely to break silently and the part a headless test can actually reach, which it
  * cannot do through live widgets.</p>
  */
@@ -70,6 +71,20 @@ public enum ClientOptionsTab {
         POLITICAL_FILTER,
         BOOK_AUTHOR_CHAT,
         CINEMATIC_HOTKEY,
+        /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
+        BACKPACK_BUTTON,
+        /** Non-interactive caption introducing the backup rows below it. */
+        BACKUPS_HEADING,
+        /** Where restore points of builds and progress are written. */
+        BACKUPS,
+        /** How many archives to keep per Dungeon Train version. */
+        BACKUPS_PER_VERSION,
+        /** Deletes every archive, in the instance and outside it. Shows the size on disk. */
+        CLEAR_BACKUPS,
+        /** Whether to be asked before builds the build server has lost are sent back up. */
+        CONFIRM_BUILD_RESTORE,
+        /** Opens the AI Policy page. Unconditional — every client can reach it. */
+        AI_POLICY,
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
         TRANSLATE,
 
@@ -78,6 +93,14 @@ public enum ClientOptionsTab {
         CUSTOM_CONTENT,
         SNAPSHOT_MAX_RES,
         SNAPSHOT_CHAT_LOG,
+        /**
+         * How fast an end of the train may extend once it has fallen behind. One global value
+         * in the COMMON config, so it is present at the title screen as well as in a world, and
+         * setting it in either place sets it for every world. Absent only on a multiplayer
+         * client, where the value belongs to the server and our write would change nothing the
+         * player can see — the row is absent rather than a control that lies about what it did.
+         */
+        CATCH_UP_BURST,
 
         // --- Editor ---
         SCALE_ALL,
@@ -95,7 +118,34 @@ public enum ClientOptionsTab {
      * <p>Every tab is non-empty in all four combinations — no combination of flags can produce a tab
      * that opens onto nothing.</p>
      */
-    public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget) {
+    /**
+     * Rows that must begin a fresh line rather than pairing with whatever precedes them.
+     *
+     * <p>Rows are packed two-across in list order, so without this the first row of a group lands
+     * beside the last row of the previous one and the group stops reading as a group. Only the
+     * LEADER is named — the rest of the group pairs among themselves as usual.</p>
+     */
+    private static final java.util.Set<Row> GROUP_LEADERS =
+            java.util.EnumSet.of(Row.BACKUPS_HEADING, Row.AI_POLICY);
+
+    /**
+     * Rows that are captions rather than settings: no widget to operate, and always a line to
+     * themselves.
+     */
+    private static final java.util.Set<Row> HEADINGS = java.util.EnumSet.of(Row.BACKUPS_HEADING);
+
+    /** Whether {@code row} is a caption rather than a setting. */
+    public static boolean isHeading(Row row) {
+        return HEADINGS.contains(row);
+    }
+
+    /** Whether {@code row} begins a visual group. See {@link #GROUP_LEADERS}. */
+    public static boolean startsGroup(Row row) {
+        return GROUP_LEADERS.contains(row);
+    }
+
+    public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget,
+                                    boolean trainSettingsWritable) {
         List<Row> rows = new ArrayList<>();
         switch (tab) {
             case GENERAL -> {
@@ -105,9 +155,25 @@ public enum ClientOptionsTab {
                 }
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.CINEMATIC_HOTKEY);
+                rows.add(Row.BACKPACK_BUTTON);
+                // The two rows that open a page rather than change a setting, led by the
+                // unconditional one so they pair on a line of their own — put TRANSLATE in the
+                // lead and the pair breaks apart on the release en_us clients where it is absent.
+                rows.add(Row.AI_POLICY);
                 if (hasTranslateTarget) {
                     rows.add(Row.TRANSLATE);
                 }
+                // The backup block goes last, behind its own heading — it is the only group here
+                // with enough rows to need one, and the heading is what separates it from the
+                // ungrouped settings above.
+                rows.add(Row.BACKUPS_HEADING);
+                rows.add(Row.BACKUPS);
+                // Adjacent so the width packer pairs the two short backup rows on one line.
+                rows.add(Row.BACKUPS_PER_VERSION);
+                rows.add(Row.CLEAR_BACKUPS);
+                // Beside the backups because that is where its second tier comes from: the card this
+                // turns on is the only place a backup-only build can be kept out of a restore.
+                rows.add(Row.CONFIRM_BUILD_RESTORE);
             }
             case TRAIN -> {
                 // The two short-captioned rows lead so they pair on one line; the two whose captions
@@ -117,6 +183,12 @@ public enum ClientOptionsTab {
                 rows.add(Row.SNAPSHOT_CHAT_LOG);
                 rows.add(Row.CUSTOM_CONTENT);
                 rows.add(Row.SNAPSHOT_MAX_RES);
+                // Conditional (absent on a multiplayer client), so it goes LAST: a row that
+                // appears and disappears re-pairs everything after it in the tab (see the class
+                // javadoc), and nothing follows it here.
+                if (trainSettingsWritable) {
+                    rows.add(Row.CATCH_UP_BURST);
+                }
             }
             case EDITOR -> {
                 rows.add(Row.SCALE_ALL);

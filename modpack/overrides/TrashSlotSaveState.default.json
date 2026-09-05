@@ -1,0 +1,24 @@
+{
+  "hintsSeen": [
+    "toggleOn",
+    "toggledOff"
+  ],
+  "cachedSettings": {
+    "net/minecraft/client/gui/screens/inventory/InventoryScreen": {
+      "slotX": 60,
+      "slotY": 83,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "isEnabled": false,
+      "isLocked": false
+    },
+    "net/minecraft/client/gui/screens/inventory/CraftingScreen": {
+      "slotX": 60,
+      "slotY": 83,
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "isEnabled": false,
+      "isLocked": false
+    }
+  }
+}

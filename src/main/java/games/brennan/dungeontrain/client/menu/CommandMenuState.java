@@ -82,6 +82,14 @@ public final class CommandMenuState {
     private static int typingOriginRowIdx = -1;
     private static int typingOriginSubIdx = 0;
 
+    /**
+     * Ticks until the dirty list is asked for again, or 0 when nothing is pending. Armed by the
+     * commands that can change a plot while the menu stays open — the delay gives the server a
+     * moment to run them before it is asked what changed.
+     */
+    private static int saveStatusRefreshTicks = 0;
+    private static final int SAVE_STATUS_REFRESH_DELAY = 10;
+
     public static boolean isOpen() { return open; }
 
     /** Where the currently-open menu draws. See {@link #space}. */
@@ -167,6 +175,13 @@ public final class CommandMenuState {
      * screen based on whether the player is in an editor plot.
      */
     public static void open() {
+        // Inside a plot with the X menu in screen space, the inventory-style editor screen takes
+        // the whole surface; it is a Screen of its own and never touches this stack. World-space,
+        // and screen-space outside a plot, keep the row-list panel.
+        if (EditorStatusHudOverlay.isActive() && ClientDisplayConfig.getCommandMenuSpace().isScreenspace()) {
+            games.brennan.dungeontrain.client.menu.editorscreen.EditorGuiScreen.open();
+            return;
+        }
         if (EditorStatusHudOverlay.isActive()) {
             openInternal(List.of(new MainMenuScreen(), new EditorMenuScreen()));
         } else {
@@ -239,6 +254,13 @@ public final class CommandMenuState {
             );
         }
 
+        // The editor's header Save icon colours itself by the server's dirty scan; ask once per
+        // open so it is right on the first frame that matters.
+        if (initialStack.stream().anyMatch(s -> s instanceof EditorMenuScreen)) {
+            EditorSaveStatus.request();
+        }
+        saveStatusRefreshTicks = 0;
+
         // Entries first: in screen-space the screen renders from them on its very first frame.
         rebuildEntries();
         if (space.isScreenspace()) {
@@ -248,6 +270,11 @@ public final class CommandMenuState {
     }
 
     public static void close() {
+        // Dismiss first, and outside the open-check. The inventory-style editor screen is not this
+        // menu's stack — it never sets {@code open} — but it hosts the same shared screens, and
+        // several of them ("Save and test", the unsaved-check's Continue) end by calling this.
+        // Returning early on !open left those running their command with the menu still up.
+        dismissMenuScreen();
         if (!open) return;
         open = false;
         typingMode = false;
@@ -293,6 +320,26 @@ public final class CommandMenuState {
         rebuildEntries();
     }
 
+    /**
+     * Run a {@link MenuHeaderAction} — the icon at the right of the breadcrumb band.
+     *
+     * <p>Unlike a {@code Run} row this leaves the menu open: it is a toolbar button, and an author
+     * who saves from it is mid-edit and expects the panel to still be there. The next rebuild
+     * picks up whatever the server reports back.</p>
+     */
+    static void activateHeader(MenuHeaderAction action) {
+        if (action == null) return;
+        LOGGER.info("Menu header action command={}", action.command());
+        playClickSound();
+        CommandRunner.run(action.command());
+        armSaveStatusRefresh();
+    }
+
+    /** Re-ask for the dirty list shortly, once the command just sent has had a chance to run. */
+    private static void armSaveStatusRefresh() {
+        saveStatusRefreshTicks = SAVE_STATUS_REFRESH_DELAY;
+    }
+
     public static void activate(int idx, int subIdx) {
         if (idx < 0 || idx >= entries.size()) return;
         CommandMenuEntry entry = entries.get(idx);
@@ -307,70 +354,40 @@ public final class CommandMenuState {
         dispatchEntry(entry, subIdx);
     }
 
-    /** Dispatch a single entry's action. Split rows recurse into the selected half. */
+    /** Dispatch a single entry's action through the shared {@link MenuEntryDispatcher}. */
     private static void dispatchEntry(CommandMenuEntry entry, int subIdx) {
-        if (entry instanceof CommandMenuEntry.Run run) {
-            CommandRunner.run(run.command());
-            close();
-        } else if (entry instanceof CommandMenuEntry.Stay stay) {
-            CommandRunner.run(stay.command());
-            // Stay open so the player can click again. The next tick's
-            // rebuild picks up any label change driven by server state.
-        } else if (entry instanceof CommandMenuEntry.SaveAction save) {
-            // Already-saved rows are no-ops — the cell is rendered greyed
-            // and the raycast filters them out, but defensive double-check.
-            if (save.saved()) return;
-            save.onClick().run();
-            // Stay open so the user can save other rows or click Continue.
-            // The screen's onClick closure mutates its own local saved set
-            // so the next tick's rebuild greys out the row.
-        } else if (entry instanceof CommandMenuEntry.Label) {
-            // Non-clickable. Reaching here means the raycast let a click
-            // through somehow — silently ignore.
-        } else if (entry instanceof CommandMenuEntry.ClientAction ca) {
-            ca.action().run();
-            // Same UX as Stay — keep the menu open so the player sees the
-            // value tick up, but skip the slash-command round-trip for
-            // pure client-side state.
-        } else if (entry instanceof CommandMenuEntry.DrillIn drill) {
-            drillIn(drill.target());
-        } else if (entry instanceof CommandMenuEntry.Back) {
-            goBack();
-        } else if (entry instanceof CommandMenuEntry.TypeArg type) {
-            beginTyping(type.argName(), type.commandPrefix(), type.commandSuffix(), type.initialBuffer());
-        } else if (entry instanceof CommandMenuEntry.Toggle toggle) {
-            String cmd;
-            if (toggle.cmdToToggleOthers() != null && net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
-                // Shift-click a dimension toggle = "toggle all but that one" — the shared others
-                // action, identical to the world-space dimension menus.
-                cmd = toggle.cmdToToggleOthers();
-            } else {
-                cmd = toggle.state() ? toggle.cmdToTurnOff() : toggle.cmdToTurnOn();
-            }
-            CommandRunner.run(cmd);
-            // Stay open so the user can see the state flip. The next tick's
-            // rebuild will pick up the server-acked devmode value.
-        } else if (entry instanceof CommandMenuEntry.Split split) {
-            CommandMenuEntry target = subIdx == 1 ? split.rightEntry() : split.leftEntry();
-            dispatchEntry(target, 0);
-        } else if (entry instanceof CommandMenuEntry.Triple triple) {
-            CommandMenuEntry target = switch (subIdx) {
-                case 1 -> triple.middleEntry();
-                case 2 -> triple.rightEntry();
-                default -> triple.leftEntry();
-            };
-            dispatchEntry(target, 0);
-        } else if (entry instanceof CommandMenuEntry.Quad quad) {
-            CommandMenuEntry target = switch (subIdx) {
-                case 1 -> quad.e2();
-                case 2 -> quad.e3();
-                case 3 -> quad.e4();
-                default -> quad.e1();
-            };
-            dispatchEntry(target, 0);
-        }
-        // Loading — no-op.
+        MenuEntryDispatcher.dispatch(entry, subIdx, HOST,
+            net.minecraft.client.gui.screens.Screen.hasShiftDown());
     }
+
+    /**
+     * What this menu does when a row acts. Run closes; Stay and Toggle keep the panel open so the
+     * player can click again — the next tick's rebuild picks up any label change driven by server
+     * state — and arm the dirty-list refresh, since they are the commands that can change a plot.
+     */
+    private static final MenuEntryDispatcher.Host HOST = new MenuEntryDispatcher.Host() {
+        @Override public void runAndClose(String command) {
+            CommandRunner.run(command);
+            close();
+        }
+
+        @Override public void runAndStay(String command) {
+            CommandRunner.run(command);
+            armSaveStatusRefresh();
+        }
+
+        @Override public void drillIn(MenuScreen target) {
+            CommandMenuState.drillIn(target);
+        }
+
+        @Override public void goBack() {
+            CommandMenuState.goBack();
+        }
+
+        @Override public void beginTyping(String argName, String prefix, String suffix, String initialBuffer) {
+            CommandMenuState.beginTyping(argName, prefix, suffix, initialBuffer);
+        }
+    };
 
     /** Typing-mode activator that also captures a command suffix (e.g. the
      *  {@code [source]} after the typed name in {@code editor new <name> <source>}).
@@ -441,7 +458,11 @@ public final class CommandMenuState {
      */
     private static void dismissMenuScreen() {
         Minecraft mc = Minecraft.getInstance();
-        if (!(mc.screen instanceof CommandMenuGuiScreen) && !(mc.screen instanceof MenuTypingScreen)) return;
+        if (!(mc.screen instanceof CommandMenuGuiScreen)
+            && !(mc.screen instanceof MenuTypingScreen)
+            && !(mc.screen instanceof games.brennan.dungeontrain.client.menu.editorscreen.EditorGuiScreen)) {
+            return;
+        }
         try {
             mc.setScreen(null);
         } catch (IllegalStateException disconnectRace) {
@@ -476,6 +497,9 @@ public final class CommandMenuState {
             LOGGER.info("Command menu auto-closed (player wandered out of range)");
             close();
             return;
+        }
+        if (saveStatusRefreshTicks > 0 && --saveStatusRefreshTicks == 0) {
+            EditorSaveStatus.request();
         }
         rebuildEntries();
     }

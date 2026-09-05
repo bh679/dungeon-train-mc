@@ -101,16 +101,37 @@ public final class EditorLayout {
      * Shared plot floor for every editor — the Y every plot's origin sits at.
      *
      * <p>Set by the tallest thing a plot has to stand up, which is a portal room at
-     * {@link games.brennan.dungeontrain.portal.PortalRoomLayout#MAX_HEIGHT} (80): a plot floor plus
+     * {@link games.brennan.dungeontrain.portal.PortalRoomLayout#MAX_HEIGHT} (90): a plot floor plus
      * that has to stay under the build ceiling (320 in every DT preset), and 230 leaves ten blocks
      * of margin. It was 250, which capped an authored room at 70 — a ceiling nothing about rooms
      * asked for, and one an author hit with no way to see why.</p>
      *
      * <p>Low enough for the sky, still far above anything gameplay does: trains run at y=78 by
-     * default. {@code VariantOverlayRenderer.EDITOR_Y_MIN} derives its "is this player up at the
-     * editor" short-circuit from this, so the two cannot drift apart.</p>
+     * default. {@link #isAtPlotHeight} is the "is this player up at the editor" test derived from
+     * it, so no caller writes the number out again.</p>
      */
     public static final int PLOT_Y = 230;
+
+    /**
+     * Margin below {@link #PLOT_Y} that still counts as "up at the editor" — a player standing on
+     * their plot floor is a few blocks below the origin, and a gate left ABOVE the floor silently
+     * disables everything that keys off this.
+     */
+    private static final int PLOT_HEIGHT_MARGIN = 5;
+
+    /**
+     * Whether a player at this Y is up at the editor build area rather than down where the train
+     * runs (y=78 by default).
+     *
+     * <p>Derived from {@link #PLOT_Y} and shared rather than repeated: it is the short-circuit that
+     * keeps the per-player {@code plotContaining} cascade off the tick during ordinary play
+     * ({@code VariantOverlayRenderer}), and it is what decides whether a player's seconds count as
+     * editor time ({@code BuildingTimeEvents}). Two copies of the number would eventually disagree
+     * about where the editor starts.</p>
+     */
+    public static boolean isAtPlotHeight(int y) {
+        return y >= PLOT_Y - PLOT_HEIGHT_MARGIN;
+    }
 
     private EditorLayout() {}
 }
