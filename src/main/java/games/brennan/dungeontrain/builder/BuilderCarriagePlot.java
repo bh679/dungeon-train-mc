@@ -50,7 +50,7 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
      * authorisation and dedup token — the documents it names live per-world (see
      * {@link BuilderStorePaths}), not in a file named after the key.</p>
      */
-    static final String KEY = "builder:carriage";
+    public static final String KEY = "builder:carriage";
 
     private final ServerLevel level;
     private final BlockPos origin;

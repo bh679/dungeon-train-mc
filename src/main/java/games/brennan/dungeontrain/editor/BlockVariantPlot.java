@@ -211,6 +211,25 @@ public interface BlockVariantPlot {
      * <p>Returns {@code null} if the key doesn't parse, the registered
      * template no longer exists, or the plot's origin can't be resolved.</p>
      */
+    /**
+     * Resolve by key in a world that may be a Train Builder one.
+     *
+     * <p>The key-only form below asks the template registries where a plot is, and the builder's
+     * build is not in them — its key names a build, not a template. So that arm is answered here,
+     * from the level, and everything else falls through unchanged.</p>
+     *
+     * <p>This is the form the menus use once they are open: a menu is anchored to a plot, so what it
+     * re-syncs and edits should follow that anchor rather than the author's feet — which is what
+     * lets you stand off a plot, or outside the carriage you are building, and keep working on it.</p>
+     */
+    static @Nullable BlockVariantPlot resolveByKey(@Nullable net.minecraft.server.level.ServerLevel level,
+                                                   String key, CarriageDims dims) {
+        if (level != null && games.brennan.dungeontrain.builder.BuilderCarriagePlot.KEY.equals(key)) {
+            return games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(level, null, dims);
+        }
+        return resolveByKey(key, dims);
+    }
+
     static @Nullable BlockVariantPlot resolveByKey(String key, CarriageDims dims) {
         if (key == null) return null;
         if (key.startsWith("carriage:")) {

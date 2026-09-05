@@ -77,7 +77,15 @@ public final class ContainerHotkeyClient {
      * builder got its own plot.</p>
      */
     private static boolean authoring() {
-        return EditorStatusHudOverlay.isActive() || BuilderBoundsState.isInBuilderWorld();
+        if (EditorStatusHudOverlay.isActive() || BuilderBoundsState.isInBuilderWorld()) return true;
+        // Standing between plots in the editor world, or above the plot grid in a world that has one
+        // stamped into it: the menus resolve from the block being looked at, so being off a plot is
+        // no longer a reason not to send the press. The server still refuses if what you are looking
+        // at isn't in one.
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null
+            && (games.brennan.dungeontrain.editor.EditorWorldLayout.isEditorWorld(mc.level)
+                || games.brennan.dungeontrain.editor.EditorLayout.isAtPlotHeight(mc.player.getBlockY()));
     }
 
     /**
