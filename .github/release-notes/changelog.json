@@ -11212,6 +11212,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "shader-menu",
+      "version": "0.795.0",
+      "type": "feat",
+      "title": "Shaders, from the menu",
+      "summary": "Nine shader packs are now supported, and there is a Shaders page to pick one from \u2014 on the title screen between Mods and Options, and in the Esc menu beside Mods. Each pack shows a screenshot of the same stretch of track at the same time of day, so you can see what it actually does before you commit to it, with the unshaded shot there to compare against. One click downloads it from the author's own page and turns it on; if you already have it, one click turns it on. Sort the list by our pick, by how demanding a pack is, by how close it stays to vanilla, or by mood.",
+      "highlights": [
+        "A Shaders page on the title screen and in the Esc menu",
+        "Nine supported packs, each shown as the same scene so they can be compared",
+        "Download and turn a pack on in one click, straight from its author's page",
+        "Sort by our pick, performance cost, closeness to vanilla, or mood",
+        "Shader Settings opens the running pack's own options",
+        "Fixed: the Options screen could push its Done button off the bottom of the screen"
+      ],
+      "pr": 1298,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
