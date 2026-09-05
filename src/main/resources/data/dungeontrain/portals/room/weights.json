@@ -105,7 +105,7 @@
   },
   "foundation": {
     "weight": 1,
-    "mode": "endless_repetition/exact/off/on/off/none/repeated/0/30"
+    "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30"
   },
   "house": {
     "weight": 1,
