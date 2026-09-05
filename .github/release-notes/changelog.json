@@ -11357,10 +11357,10 @@
       "id": "afk-pause-train-time",
       "version": "0.800.0",
       "type": "feat",
-      "title": "Time on the train stops when you do",
-      "summary": "Time on the train now measures play, not wall-clock. It stops while the pause menu is open, after 30 seconds without mouse movement, after 5 minutes without input, or if you haven't passed 3 carriages in 10 minutes \u2014 and picks up again the moment you do something. Every place the game reports your time \u2014 the death screen, run reports, and the Longest Aboard leaderboards \u2014 now shows time on the train rather than time since you spawned.",
+      "title": "Your clock pauses when you stop playing",
+      "summary": "Time on the train is now a measure of play rather than of the game being left open. The clock pauses while the pause menu is open, after 30 seconds without mouse movement, after 5 minutes without input, or if you haven't passed 3 carriages in 10 minutes \u2014 and starts again the moment you move. Nothing else about your run changes: you don't die, nothing resets, and you can stand still as long as you like. Those minutes simply aren't added to your time. Every place the game reports that time \u2014 the death screen, run reports, and the Longest Aboard leaderboards \u2014 now shows time on the train instead of time since you spawned.",
       "highlights": [
-        "Idle and paused time no longer counts toward your time on the train",
+        "Idle and paused minutes no longer count toward your time on the train \u2014 your run keeps going, only the clock stops",
         "The death screen and both Longest Aboard leaderboards now report time on the train, not time since spawn"
       ],
       "pr": 1306,
