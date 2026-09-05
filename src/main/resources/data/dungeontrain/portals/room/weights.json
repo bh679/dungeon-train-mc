@@ -108,6 +108,10 @@
     "minLevel": 5,
     "mode": "endless_repetition/dynamic/off/on/off/none/repeated"
   },
+  "man": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/end"
+  },
   "midlibrary": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/mix:3:1:1:1:24:120"
