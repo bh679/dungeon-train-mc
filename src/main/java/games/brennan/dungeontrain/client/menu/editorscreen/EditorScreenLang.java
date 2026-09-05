@@ -53,6 +53,11 @@ public final class EditorScreenLang {
     public static final String CREATOR_LOAD = "gui.dungeontrain.builder.profile.load_into_editor";
     public static final String CREATOR_LOAD_COPY = PREFIX + "creator.load_copy";
     public static final String CREATOR_LOADED = PREFIX + "creator.loaded";
+    public static final String LOAD_ALL = PREFIX + "load_all";
+    public static final String LOAD_ALL_TIP = PREFIX + "load_all.tip";
+    public static final String LOAD_ALL_PROGRESS = PREFIX + "load_all.progress";
+    public static final String VERSION = PREFIX + "version";
+    public static final String VERSION_CURRENT = PREFIX + "version.current";
     public static final String CREATOR_GOING = PREFIX + "creator.going";
     public static final String CREATOR_LOADING_BUILD = "gui.dungeontrain.builder.profile.downloading";
 

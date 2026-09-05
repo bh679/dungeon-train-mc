@@ -42,7 +42,7 @@ public record EditorRosterRequestPacket() implements CustomPacketPayload {
             if (!player.hasPermissions(PERMISSION_LEVEL)) return;
             String stamped = EditorStampedCategoryState.current().map(EditorCategory::id).orElse("");
             CarriageDims dims = DungeonTrainWorldData.get(player.server.overworld()).dims();
-            DungeonTrainNet.sendTo(player, new EditorRosterPacket(EditorRoster.all(), stamped,
+            DungeonTrainNet.sendTo(player, new EditorRosterPacket(EditorRoster.all(player.serverLevel().getServer().overworld()), stamped,
                 new EditorRosterPacket.TrainSize(dims.length(), dims.width(), dims.height())));
         });
     }

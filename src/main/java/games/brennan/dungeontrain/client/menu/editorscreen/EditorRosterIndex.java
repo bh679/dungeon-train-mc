@@ -62,7 +62,11 @@ public final class EditorRosterIndex {
     public record TypeStrip(String typeName, String modelId, PlotCategory category, int count) {}
 
     /** A tile: the row, its key, and the group's self weight when it is a parent. */
-    public record Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight) {
+    public record Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight, int relayId) {
+        /** A tile the relay has no row for — every sub-variant, and any template never uploaded. */
+        public Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight) {
+            this(variant, key, selfWeight, 0);
+        }
         public boolean isGroup() {
             return !variant.subVariants().isEmpty();
         }
@@ -118,7 +122,7 @@ public final class EditorRosterIndex {
             if (!onPage) continue;
             List<Tile> out = new ArrayList<>(g.entries().size());
             for (EditorRosterPacket.Entry e : g.entries()) {
-                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight()));
+                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight(), e.relayId()));
             }
             return out;
         }
@@ -136,7 +140,7 @@ public final class EditorRosterIndex {
         List<Tile> out = new ArrayList<>();
         for (EditorRosterPacket.Group g : groups) {
             for (EditorRosterPacket.Entry e : g.entries()) {
-                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight()));
+                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight(), e.relayId()));
             }
         }
         return out;
@@ -229,7 +233,7 @@ public final class EditorRosterIndex {
                 EditorTypeMenusPacket.Variant v = e.variant();
                 VariantKey top = VariantKey.of(v, "");
                 if (top.sameTemplate(key)) {
-                    return new Tile(v, top, e.selfWeight());
+                    return new Tile(v, top, e.selfWeight(), e.relayId());
                 }
                 for (EditorTypeMenusPacket.Variant sv : v.subVariants()) {
                     VariantKey member = VariantKey.of(sv, top.displayName());
@@ -264,7 +268,7 @@ public final class EditorRosterIndex {
             for (EditorRosterPacket.Entry e : g.entries()) {
                 VariantKey top = VariantKey.of(e.variant(), "");
                 if (top.category() == key.category() && top.displayName().equals(key.parentId())) {
-                    return new Tile(e.variant(), top, e.selfWeight());
+                    return new Tile(e.variant(), top, e.selfWeight(), e.relayId());
                 }
             }
         }

@@ -35,7 +35,18 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, PREVIEW, SHEET, GO_HERE }
+    public enum HitKind { NONE, ICON, ROW, TEST, PREVIEW, SHEET, GO_HERE, OLDER, NEWER }
+
+    private final VersionStrip versions = new VersionStrip();
+    /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
+    private int relayId;
+    private int seq;
+
+    /** Which version of the selection the preview shows. Set by the screen before each render. */
+    public void showVersion(int relayId, int seq) {
+        this.relayId = relayId;
+        this.seq = seq;
+    }
 
     public record Hit(HitKind kind, int index, int sub) {
         public static final Hit NONE = new Hit(HitKind.NONE, -1, 0);
@@ -165,7 +176,8 @@ public final class EditorDetailPane {
         hovered = hitTest(mouseX, mouseY);
         drawHeader(g, font, theme);
         String name = tile == null ? "" : tile.variant().name();
-        PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme);
+        PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
+        versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
         sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
             tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
             ctx.selection(), roomRows);
@@ -279,6 +291,11 @@ public final class EditorDetailPane {
 
     public Hit hitTest(double mx, double my) {
         if (layout == null) return Hit.NONE;
+        switch (versions.hit(mx, my)) {
+            case OLDER -> { return new Hit(HitKind.OLDER, 0, 0); }
+            case NEWER -> { return new Hit(HitKind.NEWER, 0, 0); }
+            case NONE -> { }
+        }
         if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
         if (layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
         int sheetCell = TemplateDataSheet.hit(sheetCells, mx, my);

@@ -48,7 +48,16 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
     }
 
     /** One template row plus its group's self weight ({@code NO_WEIGHT} when it is no group). */
-    public record Entry(EditorTypeMenusPacket.Variant variant, int selfWeight) {}
+    /**
+     * One template, with the weight its own tile carries inside a group and — when this install has
+     * uploaded it — the relay row it lives in, so the previewer can page through the versions the
+     * relay recorded. {@code relayId} is 0 for a template the relay has never seen.
+     */
+    public record Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId) {
+        public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight) {
+            this(variant, selfWeight, 0);
+        }
+    }
 
     public static final Type<EditorRosterPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_roster"));
@@ -81,6 +90,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             for (Entry e : g.entries()) {
                 EditorTypeMenusPacket.encodeVariant(buf, e.variant());
                 buf.writeVarInt(e.selfWeight());
+                buf.writeVarInt(e.relayId());
             }
         }
     }
@@ -98,7 +108,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             List<Entry> entries = new ArrayList<>(en);
             for (int j = 0; j < en; j++) {
                 EditorTypeMenusPacket.Variant v = EditorTypeMenusPacket.decodeVariant(buf);
-                entries.add(new Entry(v, buf.readVarInt()));
+                entries.add(new Entry(v, buf.readVarInt(), buf.readVarInt()));
             }
             groups.add(new Group(categoryId, typeName, modelId, entries));
         }

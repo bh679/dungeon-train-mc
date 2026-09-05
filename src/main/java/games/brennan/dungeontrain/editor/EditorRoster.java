@@ -35,13 +35,70 @@ public final class EditorRoster {
 
     /** Every group of every category, in the order the screen's tabs and type strips show them. */
     public static List<EditorRosterPacket.Group> all() {
-        List<EditorRosterPacket.Group> out = new ArrayList<>();
-        addCarriages(out);
-        addParts(out);
-        addContents(out);
-        addTracks(out);
-        addPortals(out);
-        return out;
+        return all(null);
+    }
+
+    /**
+     * The roster, with each template's relay row attached where {@code overworld}'s world data
+     * records one — what lets the previewer page through the versions the relay kept of it. Null
+     * attaches none.
+     */
+    public static List<EditorRosterPacket.Group> all(net.minecraft.server.level.ServerLevel overworld) {
+        RELAY_ROWS.set(overworld == null ? null
+            : games.brennan.dungeontrain.world.DungeonTrainWorldData.get(overworld).builderRelayBuilds());
+        try {
+            List<EditorRosterPacket.Group> out = new ArrayList<>();
+            addCarriages(out);
+            addParts(out);
+            addContents(out);
+            addTracks(out);
+            addPortals(out);
+            return out;
+        } finally {
+            RELAY_ROWS.set(null);
+        }
+    }
+
+    /** The world's relay rows for the roster being built, on this thread; null when not attaching. */
+    private static final ThreadLocal<games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds> RELAY_ROWS =
+        new ThreadLocal<>();
+
+    /**
+     * The relay row a template lives in, or 0.
+     *
+     * <p>Keyed the way an upload keys it — relay kind, sub-kind, id — from what a roster row knows:
+     * a carriage or contents template is named by its model id, a part or track-side template by
+     * its name under its kind. A portal room has been filed under both its own kind and as a track
+     * kind over time, so both are asked.</p>
+     */
+    private static int relayIdFor(String categoryId, String groupModelId, EditorTypeMenusPacket.Variant v) {
+        games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds rows = RELAY_ROWS.get();
+        if (rows == null) return 0;
+        java.util.List<String> keys = new ArrayList<>(2);
+        String K = null;
+        if (EditorCategory.CARRIAGES.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE, "", v.modelId()));
+        } else if (PlotCategory.PARTS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PART, groupModelId, v.modelName()));
+        } else if (EditorCategory.CONTENTS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CONTENTS, "", v.modelId()));
+        } else if (EditorCategory.TRACKS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, groupModelId, v.modelName()));
+        } else if (EditorCategory.PORTALS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PORTAL_ROOM, "", v.modelName()));
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, TrackKind.PORTAL_ROOM.id(), v.modelName()));
+        }
+        for (String key : keys) {
+            games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.Entry row = rows.get(key);
+            if (row != null && row.relayId() > 0) return row.relayId();
+        }
+        return 0;
     }
 
     private static void addCarriages(List<EditorRosterPacket.Group> out) {
@@ -92,7 +149,7 @@ public final class EditorRoster {
         List<EditorRosterPacket.Entry> entries = new ArrayList<>(rows.size());
         for (EditorTypeMenusPacket.Variant v : rows) {
             int self = selfWeight == null ? EditorPlotLabelsPacket.NO_WEIGHT : selfWeight.of(v);
-            entries.add(new EditorRosterPacket.Entry(v, self));
+            entries.add(new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v)));
         }
         return new EditorRosterPacket.Group(categoryId, typeName, modelId, entries);
     }

@@ -42,7 +42,10 @@ public final class EditorBrowserPane {
     static final int SUB_HEADER_BG = 0xD0000000;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, CHIP, STRIP, TILE, NEW, SUB_TILE, NEW_SUB, CREATOR_TILE }
+    public enum HitKind { NONE, CHIP, STRIP, TILE, NEW, SUB_TILE, NEW_SUB, CREATOR_TILE, LOAD_ALL }
+
+    /** Where Load all was drawn this frame, or null when the page has nothing to load. */
+    private InventoryEditorLayout.Rect loadAllRect;
 
     public record Hit(HitKind kind, int index) {
         public static final Hit NONE = new Hit(HitKind.NONE, -1);
@@ -195,10 +198,12 @@ public final class EditorBrowserPane {
             ? List.of() : index.typeStrips(page);
         List<StripCell> sc = new ArrayList<>();
         if (!strips.isEmpty()) {
-            int cellW = stripRect.w() / strips.size();
+            int reserve = page == null ? 0
+                : font.width(EditorScreenLang.text(EditorScreenLang.LOAD_ALL)) + CHIP_PAD * 2 + CHIP_GAP;
+            int cellW = Math.max(1, (stripRect.w() - reserve) / strips.size());
             for (int i = 0; i < strips.size(); i++) {
                 int x = stripRect.x() + i * cellW;
-                int w = i == strips.size() - 1 ? stripRect.right() - x : cellW - 1;
+                int w = i == strips.size() - 1 ? stripRect.right() - reserve - x : cellW - 1;
                 sc.add(new StripCell(strips.get(i), x, w));
             }
         }
@@ -283,6 +288,20 @@ public final class EditorBrowserPane {
                 hov ? CELL_HOVER : (on ? CELL_ON : CELL_IDLE));
             g.drawString(font, chip.label(), chip.x() + CHIP_PAD,
                 filterRect.y() + (filterRect.h() - font.lineHeight) / 2 + 1, hov ? 0xFF000000 : 0xFFFFFFFF, false);
+        }
+
+        // Load all — at the right end of the strip row, which a builder's uploads leave empty and a
+        // category page can spare the end of. The whole page into the world, plots cleared first.
+        loadAllRect = null;
+        if (!creatorMode && EditorScreenState.page().category() != null) {
+            String label = EditorScreenLang.text(EditorScreenLang.LOAD_ALL);
+            int w = font.width(label) + CHIP_PAD * 2;
+            loadAllRect = new InventoryEditorLayout.Rect(stripRect.right() - w, stripRect.y(), w, stripRect.h());
+            boolean hov = hovered.kind() == HitKind.LOAD_ALL;
+            g.fill(loadAllRect.x(), loadAllRect.y(), loadAllRect.right(), loadAllRect.bottom(),
+                hov ? CELL_HOVER : CELL_ON);
+            g.drawString(font, label, loadAllRect.x() + CHIP_PAD,
+                stripRect.y() + (stripRect.h() - font.lineHeight) / 2 + 1, hov ? 0xFF000000 : 0xFFFFFFFF, false);
         }
 
         // Type strip.
@@ -392,6 +411,7 @@ public final class EditorBrowserPane {
                 : hit.index() >= 0 && hit.index() < subTiles.size() ? tooltipFor(subTiles.get(hit.index()), false) : null;
             case CREATOR_TILE -> hit.index() >= 0 && hit.index() < creatorTiles.size()
                 ? tooltipFor(creatorTiles.get(hit.index())) : null;
+            case LOAD_ALL -> EditorScreenLang.text(EditorScreenLang.LOAD_ALL_TIP);
             case NEW -> EditorScreenLang.text(EditorScreenLang.TILE_NEW);
             case NEW_SUB -> EditorScreenLang.text(EditorScreenLang.TILE_NEW_SUB_VARIANT);
             default -> null;
@@ -425,6 +445,7 @@ public final class EditorBrowserPane {
             }
             return Hit.NONE;
         }
+        if (loadAllRect != null && loadAllRect.contains(mx, my)) return new Hit(HitKind.LOAD_ALL, 0);
         if (stripRect != null && stripRect.contains(mx, my)) {
             for (int i = 0; i < stripCells.size(); i++) {
                 StripCell c = stripCells.get(i);

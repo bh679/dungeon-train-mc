@@ -84,6 +84,10 @@ public final class EditorGuiScreen extends Screen {
     /** The build being walked to, while the walk is under way. */
     private EditorCreatorBuilds.Landed goingTo;
     private int goingTicks;
+    /** Which version of the selected build the preview shows: 0 is the build as it is now. */
+    private int previewSeq;
+    /** The relay row the preview is paging, so a change of selection can reset the paging. */
+    private int previewRelayId;
 
     public EditorGuiScreen() {
         super(Component.literal("Dungeon Train Editor"));
@@ -229,12 +233,17 @@ public final class EditorGuiScreen extends Screen {
             // A relay row is not a template: none of the detail pane's controls apply to one, so
             // the pane that has no controls stands in for it rather than eight disabled buttons.
             BuilderProfilePacket.Entry picked = selectedCreatorBuild();
+            trackVersionsOf(picked == null ? 0 : picked.relayId(),
+                EditorCreatorBuilds.viewedUuid());
             creatorPane.render(g, this.font, layout, theme, picked, orbit.yaw(),
-                creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null, mx, my);
+                creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null,
+                previewSeq, mx, my);
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
             TemplateArt art = TemplateArt.of(ctx.selection());
             TemplateSummary summary = art == null ? null : art.summary();
+            trackVersionsOf(tile == null ? 0 : tile.relayId(), "");
+            detail.showVersion(tile == null ? 0 : tile.relayId(), previewSeq);
             detail.layout(layout, ctx, System.currentTimeMillis());
             detail.render(g, this.font, theme, art, summary, tile,
                 EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
@@ -410,6 +419,55 @@ public final class EditorGuiScreen extends Screen {
         }
     }
 
+    /**
+     * Keep the previewer's paging pointed at the selected build, and ask the relay what versions it
+     * has of it.
+     *
+     * <p>A change of selection resets to the build as it is now, because a seq belongs to one relay
+     * row and means nothing in another's history. The index ask goes out once per build — the cache
+     * remembers the answer, including "no versions", so this costs a map lookup a frame after
+     * that.</p>
+     */
+    private void trackVersionsOf(int relayId, String ownerUuid) {
+        if (relayId != previewRelayId) {
+            previewRelayId = relayId;
+            previewSeq = 0;
+        }
+        if (relayId > 0 && RelayBuildPreviews.versions(relayId) == null) {
+            // -1: the newest recorded frame, and the index of every seq with it.
+            RelayBuildPreviews.request(relayId, ownerUuid, BuilderProfileState.live(), -1);
+        }
+    }
+
+    /** Step the preview one version older or newer, and fetch it if it is not here yet. */
+    private void pageVersion(boolean older) {
+        int[] seqs = RelayBuildPreviews.versions(previewRelayId);
+        if (seqs == null || seqs.length == 0) return;
+        int next = older ? VersionStrip.older(seqs, previewSeq) : VersionStrip.newer(seqs, previewSeq);
+        if (next == previewSeq) return;
+        previewSeq = next;
+        if (next != 0) {
+            RelayBuildPreviews.request(previewRelayId,
+                EditorCreatorBuilds.active() ? EditorCreatorBuilds.viewedUuid() : "",
+                BuilderProfileState.live(), next);
+        }
+    }
+
+    /**
+     * Load all: every template on this page into the world, the plots cleared first.
+     *
+     * <p>The category switch is exactly that — it tears down every plot of every category and
+     * stamps this one's models — so this is the button for it rather than a second way to do the
+     * same writes. Only on a category page: the All page is four categories at once, which the
+     * editor stamps one of, and a builder's uploads are not this world's to stamp.</p>
+     */
+    private void loadAllOnThisPage() {
+        PlotCategory category = EditorScreenState.page().category();
+        if (category == null) return;
+        CommandRunner.run("dungeontrain editor " + category.owner().id());
+        afterCommand();
+    }
+
     /** The builder's upload the browser has selected, or null. */
     private static BuilderProfilePacket.Entry selectedCreatorBuild() {
         return EditorCreatorBuilds.byId(EditorCreatorBuilds.selectedId());
@@ -504,6 +562,16 @@ public final class EditorGuiScreen extends Screen {
         }
         if (EditorCreatorBuilds.active()) {
             switch (creatorPane.hitTest(mouseX, mouseY)) {
+                case OLDER -> {
+                    click();
+                    pageVersion(true);
+                    return true;
+                }
+                case NEWER -> {
+                    click();
+                    pageVersion(false);
+                    return true;
+                }
                 case LOAD -> {
                     click();
                     loadSelectedCreatorBuild();
@@ -565,6 +633,7 @@ public final class EditorGuiScreen extends Screen {
                 browser.resetScroll();
             }
             case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
+            case LOAD_ALL -> loadAllOnThisPage();
             case CREATOR_TILE -> {
                 EditorCreatorBuilds.select(browser.creatorTiles().get(hit.index()).relayId());
                 goingTo = null;
@@ -669,6 +738,14 @@ public final class EditorGuiScreen extends Screen {
             case GO_HERE -> {
                 if (detail.goHereEntry() == null) return false;
                 dispatch(detail.goHereEntry());
+                return true;
+            }
+            case OLDER -> {
+                pageVersion(true);
+                return true;
+            }
+            case NEWER -> {
+                pageVersion(false);
                 return true;
             }
             default -> { return false; }

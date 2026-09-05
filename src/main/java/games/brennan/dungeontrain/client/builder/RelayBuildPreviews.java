@@ -60,19 +60,25 @@ public final class RelayBuildPreviews {
     /** A baked build, or a build that will never have a picture ({@code mesh} null). */
     private record Entry(BuilderTileMesh mesh, TemplateSummary summary) {}
 
+    /** A build at a version: {@code seq} 0 is the build as it is now. */
+    private record Key(int relayId, int seq) {}
+
     /** Access-ordered, so eviction drops whatever nobody has looked at in the longest. */
-    private static final Map<Integer, Entry> CACHE = new LinkedHashMap<>(16, 0.75F, true);
+    private static final Map<Key, Entry> CACHE = new LinkedHashMap<>(16, 0.75F, true);
 
     /** Asked for and not yet answered. */
-    private static final Set<Integer> IN_FLIGHT = new HashSet<>();
+    private static final Set<Key> IN_FLIGHT = new HashSet<>();
 
     /** Builds whose ask failed for a reason that may pass, and the moment they may be asked again. */
-    private static final Map<Integer, Long> RETRY_AFTER = new HashMap<>();
+    private static final Map<Key, Long> RETRY_AFTER = new HashMap<>();
+
+    /** Every seq a build's history holds, oldest first, once an ask for a version has answered. */
+    private static final Map<Integer, int[]> VERSIONS = new HashMap<>();
 
     /** Answered and waiting for a frame with budget to bake in. */
     private static final Deque<Pending> PENDING = new ArrayDeque<>();
 
-    private record Pending(int relayId, CompoundTag template) {}
+    private record Pending(Key key, CompoundTag template) {}
 
     private static int bakesLeftThisFrame;
 
@@ -92,13 +98,30 @@ public final class RelayBuildPreviews {
      * full for this frame. Cheap to call for every visible tile, every frame — that is the point.
      */
     public static void request(int relayId, String ownerUuid, boolean live) {
-        if (relayId <= 0 || CACHE.containsKey(relayId) || IN_FLIGHT.contains(relayId)) return;
+        request(relayId, ownerUuid, live, 0);
+    }
+
+    /**
+     * Ask for this build at {@code seq} of its relay history — 0 for the build as it is now, a seq
+     * the index names for that version, or {@code -1} for the newest recorded version along with
+     * the index itself, which is how the previewer learns there is anything to page through.
+     */
+    public static void request(int relayId, String ownerUuid, boolean live, int seq) {
+        if (relayId <= 0) return;
+        Key key = new Key(relayId, seq);
+        if (CACHE.containsKey(key) || IN_FLIGHT.contains(key)) return;
         if (IN_FLIGHT.size() >= MAX_IN_FLIGHT) return;
-        Long notBefore = RETRY_AFTER.get(relayId);
+        Long notBefore = RETRY_AFTER.get(key);
         if (notBefore != null && System.currentTimeMillis() < notBefore) return;
-        IN_FLIGHT.add(relayId);
+        IN_FLIGHT.add(key);
         DungeonTrainNet.sendToServer(new RelayBuildPreviewRequestPacket(relayId,
-            ownerUuid == null ? "" : ownerUuid, live));
+            ownerUuid == null ? "" : ownerUuid, live, seq));
+    }
+
+    /** The seqs this build's history holds, oldest first, or null until a version ask has answered. */
+    public static int[] versions(int relayId) {
+        int[] v = VERSIONS.get(relayId);
+        return v == null ? null : v.clone();
     }
 
     /**
@@ -109,25 +132,37 @@ public final class RelayBuildPreviews {
      * because of one bad moment — it is asked again after {@link #RETRY_MILLIS}, which is long
      * enough that a relay having a hard time is not hammered by a grid full of tiles.</p>
      */
-    public static void accept(int relayId, CompoundTag template, boolean retryable) {
-        IN_FLIGHT.remove(relayId);
+    public static void accept(int relayId, int seq, int[] seqs, CompoundTag template, boolean retryable) {
+        // A version ask was sent as -1 and answered with the seq it resolved to; both keys are
+        // released so neither the ask nor its answer stays "in flight" forever.
+        IN_FLIGHT.remove(new Key(relayId, -1));
+        Key key = new Key(relayId, seq);
+        IN_FLIGHT.remove(key);
+        if (seqs != null && seqs.length > 0) VERSIONS.put(relayId, seqs.clone());
+        else if (seq != 0 && !VERSIONS.containsKey(relayId)) VERSIONS.put(relayId, new int[0]);
         if (template == null || template.isEmpty()) {
             if (retryable) {
-                RETRY_AFTER.put(relayId, System.currentTimeMillis() + RETRY_MILLIS);
+                RETRY_AFTER.put(key, System.currentTimeMillis() + RETRY_MILLIS);
             } else {
-                CACHE.put(relayId, new Entry(null, TemplateSummary.NONE));
+                CACHE.put(key, new Entry(null, TemplateSummary.NONE));
                 evictDown();
             }
             return;
         }
-        RETRY_AFTER.remove(relayId);
-        PENDING.add(new Pending(relayId, template));
+        RETRY_AFTER.remove(key);
+        PENDING.add(new Pending(key, template));
     }
 
     /** Draw this build, or answer false while it is still coming — the caller draws its slate. */
     public static boolean draw(GuiGraphics g, int relayId, int x, int y, int w, int h,
                                float yaw, float fill) {
-        Entry entry = CACHE.get(relayId);
+        return draw(g, relayId, 0, x, y, w, h, yaw, fill);
+    }
+
+    /** As above at a version of the build; {@code seq} 0 is the build as it is now. */
+    public static boolean draw(GuiGraphics g, int relayId, int seq, int x, int y, int w, int h,
+                               float yaw, float fill) {
+        Entry entry = CACHE.get(new Key(relayId, seq));
         if (entry == null || entry.mesh() == null) return false;
         BuilderTileModelRenderer.render(g, entry.mesh(), x, y, w, h, yaw, fill);
         return true;
@@ -135,13 +170,17 @@ public final class RelayBuildPreviews {
 
     /** This build's data-sheet numbers, or null until it has been baked. */
     public static TemplateSummary summary(int relayId) {
-        Entry entry = CACHE.get(relayId);
+        return summary(relayId, 0);
+    }
+
+    public static TemplateSummary summary(int relayId, int seq) {
+        Entry entry = CACHE.get(new Key(relayId, seq));
         return entry == null || entry.summary() == TemplateSummary.NONE ? null : entry.summary();
     }
 
     /** Whether an answer for this build is still out — what a tile draws "loading" for. */
     public static boolean waitingOn(int relayId) {
-        return !CACHE.containsKey(relayId);
+        return !CACHE.containsKey(new Key(relayId, 0));
     }
 
     /** Turn the structure NBT into a mesh. Render thread, inside the frame's budget. */
@@ -163,7 +202,7 @@ public final class RelayBuildPreviews {
                 entry = new Entry(null, TemplateSummary.NONE);
             }
         }
-        CACHE.put(pending.relayId(), entry);
+        CACHE.put(pending.key(), entry);
         evictDown();
     }
 
@@ -173,9 +212,9 @@ public final class RelayBuildPreviews {
     }
 
     private static void evictDown() {
-        Iterator<Map.Entry<Integer, Entry>> it = CACHE.entrySet().iterator();
+        Iterator<Map.Entry<Key, Entry>> it = CACHE.entrySet().iterator();
         while (CACHE.size() > CAPACITY && it.hasNext()) {
-            Map.Entry<Integer, Entry> oldest = it.next();
+            Map.Entry<Key, Entry> oldest = it.next();
             if (oldest.getValue().mesh() != null) oldest.getValue().mesh().close();
             it.remove();
         }
@@ -195,6 +234,7 @@ public final class RelayBuildPreviews {
         PENDING.clear();
         IN_FLIGHT.clear();
         RETRY_AFTER.clear();
+        VERSIONS.clear();
         bakesLeftThisFrame = 0;
     }
 }

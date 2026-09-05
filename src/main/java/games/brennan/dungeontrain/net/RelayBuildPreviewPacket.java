@@ -24,8 +24,14 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * handler, where a build too heavy to read is a tile that keeps its name plate and nothing
  * else.</p>
  */
-public record RelayBuildPreviewPacket(int relayId, boolean found, boolean retryable, byte[] template)
+public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, boolean found, boolean retryable,
+                                      byte[] template)
         implements CustomPacketPayload {
+
+    /** The build as it is now — no version, no index. */
+    public RelayBuildPreviewPacket(int relayId, boolean found, boolean retryable, byte[] template) {
+        this(relayId, 0, new int[0], found, retryable, template);
+    }
 
     /** Ceiling on the wire, under NeoForge's own payload limit. The server sends well below it. */
     public static final int MAX_BYTES = 900 * 1024;
@@ -37,12 +43,14 @@ public record RelayBuildPreviewPacket(int relayId, boolean found, boolean retrya
         StreamCodec.of(
             (buf, packet) -> {
                 buf.writeVarInt(packet.relayId);
+                buf.writeVarInt(packet.seq);
+                buf.writeVarIntArray(packet.seqs);
                 buf.writeBoolean(packet.found);
                 buf.writeBoolean(packet.retryable);
                 buf.writeByteArray(packet.template);
             },
-            buf -> new RelayBuildPreviewPacket(buf.readVarInt(), buf.readBoolean(), buf.readBoolean(),
-                buf.readByteArray(MAX_BYTES))
+            buf -> new RelayBuildPreviewPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarIntArray(4096),
+                buf.readBoolean(), buf.readBoolean(), buf.readByteArray(MAX_BYTES))
         );
 
     /**
@@ -63,7 +71,7 @@ public record RelayBuildPreviewPacket(int relayId, boolean found, boolean retrya
     public static void handle(RelayBuildPreviewPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             CompoundTag tag = packet.found() ? BuilderRelayPreview.decode(packet.template()) : null;
-            RelayBuildPreviews.accept(packet.relayId(), tag, packet.retryable());
+            RelayBuildPreviews.accept(packet.relayId(), packet.seq(), packet.seqs(), tag, packet.retryable());
         });
     }
 }

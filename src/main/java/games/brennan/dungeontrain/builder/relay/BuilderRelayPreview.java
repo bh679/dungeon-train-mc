@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -111,6 +112,57 @@ public final class BuilderRelayPreview {
                     // thread — the same hop the install path makes for the same reason.
                     return level.getServer().submit(() -> convert(level, result.build()));
                 });
+    }
+
+    /**
+     * The build as it stood at {@code seq} of its relay history, ready to send, with the seqs the
+     * history holds — the previewer's back and forward.
+     *
+     * <p>Admin cap only, so a release build answers {@link Attempt#GONE} without asking. The frame
+     * is a full snapshot plus the deltas recorded since it, folded exactly as a fetched build's
+     * pending deltas are; a seq the relay does not hold is a build with no picture at that
+     * version, not a retry.</p>
+     */
+    public static CompletableFuture<Versioned> fetchVersion(ServerPlayer player, ServerLevel level,
+                                                            int relayId, boolean live, int seq) {
+        if (player == null || level == null || level.getServer() == null
+                || !BuilderRelayUpload.canUpload(player)) {
+            return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, List.of()));
+        }
+        return SharedCarriageClient.historyIndex(relayId, live).thenCompose(seqs -> {
+            if (seqs == null || seqs.isEmpty()) {
+                return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, List.of()));
+            }
+            int want = seq > 0 ? seq : seqs.get(seqs.size() - 1);
+            return SharedCarriageClient.historyFrame(relayId, want, live).thenCompose(frame -> {
+                if (frame == null) {
+                    return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, seqs));
+                }
+                return level.getServer().submit(() -> new Versioned(convertFrame(level, relayId, frame), seqs));
+            });
+        });
+    }
+
+    /** A versioned preview: the attempt at the seq asked for, and every seq the history holds. */
+    public record Versioned(Attempt attempt, List<Integer> seqs) {}
+
+    /** Decode and fold one history frame, then convert and measure it like a live build. */
+    private static Attempt convertFrame(ServerLevel level, int relayId, SharedCarriageClient.HistoryFrame frame) {
+        CompoundTag tag;
+        try {
+            CompoundTag folded = CarriageBlockSnapshot.decode(frame.base());
+            for (String cells : frame.deltas()) {
+                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(cells));
+            }
+            HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
+            tag = CarriageSnapshotTemplate.toTemplate(folded, blocks).save(new CompoundTag());
+        } catch (Throwable t) {
+            LOGGER.info("[DungeonTrain] Builder relay preview: id={} seq={} would not convert: {}",
+                relayId, frame.seq(), t.toString());
+            return Attempt.GONE;
+        }
+        byte[] bytes = encode(tag);
+        return bytes == null ? Attempt.GONE : new Attempt(bytes, false);
     }
 
     /** Decode, fold, convert and measure — everything the install path does before it writes. */

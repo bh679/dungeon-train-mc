@@ -28,7 +28,9 @@ public final class EditorCreatorPane {
     static final int LOADED_TEXT = 0xFF88DD88;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, LOAD, GO_HERE, PREVIEW }
+    public enum HitKind { NONE, LOAD, GO_HERE, PREVIEW, OLDER, NEWER }
+
+    private final VersionStrip versions = new VersionStrip();
 
     private InventoryEditorLayout.Rect loadRect;
     private InventoryEditorLayout.Rect goHereRect;
@@ -37,14 +39,15 @@ public final class EditorCreatorPane {
     public void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
                        EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
                        String note, boolean asCopy, EditorCreatorBuilds.Landed landed,
-                       boolean going, int mouseX, int mouseY) {
+                       boolean going, int seq, int mouseX, int mouseY) {
 
         drawHeader(g, font, layout.header(), theme, entry, landed, going, mouseX, mouseY);
 
         previewRect = layout.preview();
         TemplateArt art = entry == null ? null : EditorCreatorBuilds.artOf(entry);
         PreviewPane.draw(g, font, previewRect, art, entry == null ? "" : EditorCreatorBuilds.label(entry),
-            yaw, theme, entry == null ? 0 : entry.relayId());
+            yaw, theme, entry == null ? 0 : entry.relayId(), seq);
+        versions.draw(g, font, previewRect, entry == null ? 0 : entry.relayId(), seq, mouseX, mouseY);
         // The review colour rings the picture rather than sitting in the sheet as a fourth word:
         // it is the one fact a reviewer scans for, and My Builds already teaches the colours.
         if (entry != null) {
@@ -56,7 +59,7 @@ public final class EditorCreatorPane {
 
         InventoryEditorLayout.Rect s = layout.sheet();
         int y = s.y();
-        for (String[] line : lines(entry)) {
+        for (String[] line : lines(entry, seq)) {
             if (y + LINE_H > s.bottom()) break;
             g.drawString(font, line[0], s.x() + 2, y, MenuRowPainter.TEXT_HEADER, false);
             g.drawString(font, font.plainSubstrByWidth(line[1], s.w() - LABEL_W - 6),
@@ -161,6 +164,11 @@ public final class EditorCreatorPane {
 
     /** What a click at this point means. Reads back the geometry of the last frame. */
     public HitKind hitTest(double mx, double my) {
+        switch (versions.hit(mx, my)) {
+            case OLDER -> { return HitKind.OLDER; }
+            case NEWER -> { return HitKind.NEWER; }
+            case NONE -> { }
+        }
         if (goHereRect != null && goHereRect.contains(mx, my)) return HitKind.GO_HERE;
         if (loadRect != null && loadRect.contains(mx, my)) return HitKind.LOAD;
         if (previewRect != null && previewRect.contains(mx, my)) return HitKind.PREVIEW;
@@ -169,6 +177,10 @@ public final class EditorCreatorPane {
 
     /** The sheet: who made it, what it is, and what has happened to it. */
     static List<String[]> lines(BuilderProfilePacket.Entry entry) {
+        return lines(entry, 0);
+    }
+
+    static List<String[]> lines(BuilderProfilePacket.Entry entry, int seq) {
         List<String[]> out = new ArrayList<>();
         if (entry == null) return out;
         out.add(new String[] {EditorScreenLang.text(EditorScreenLang.CREATOR_BY),
@@ -180,7 +192,7 @@ public final class EditorCreatorPane {
         }
         // The numbers come from the blocks the relay sent for the picture, so they appear with it
         // rather than being asked for separately.
-        TemplateSummary summary = RelayBuildPreviews.summary(entry.relayId());
+        TemplateSummary summary = RelayBuildPreviews.summary(entry.relayId(), seq);
         if (summary != null) {
             out.add(new String[] {EditorScreenLang.text(EditorScreenLang.SHEET_SIZE),
                 summary.declaredSize().getX() + " × " + summary.declaredSize().getY()

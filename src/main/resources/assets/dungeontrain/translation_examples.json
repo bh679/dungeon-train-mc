@@ -4059,5 +4059,21 @@
         "Edda Marsh"
       ]
     }
+  },
+  "gui.dungeontrain.editor_screen.version": {
+    "1": {
+      "label": "which recorded version of the build is on screen, counting from the oldest",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "how many versions of the build the relay recorded in total",
+      "examples": [
+        "7",
+        "12"
+      ]
+    }
   }
 }
