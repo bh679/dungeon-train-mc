@@ -342,7 +342,10 @@ public final class EditorBrowserPane {
         // No "+" cell in creator mode: there is nothing here this editor can add to.
         int mainCount = creatorMode ? creatorTiles.size() : tiles.size() + 1;
         int subTop = gridRect.y() + mainGrid.contentHeight(mainCount) + SUB_GAP + SUB_HEADER_H + 2;
-        subGrid = TemplateTileGridLayout.of(gridRect.x(), subTop, gridRect.w(), gridRect.h(), tile, TILE_GAP);
+        // Laid out from subTop, seen through the panel: a member scrolled up past subTop is still
+        // on screen, and before this it stopped being drawn and stopped answering clicks there.
+        subGrid = TemplateTileGridLayout.of(gridRect.x(), subTop, gridRect.w(), gridRect.h(), tile, TILE_GAP)
+            .withViewport(gridRect.y(), gridRect.h());
         contentHeight = subParent == null
             ? mainGrid.contentHeight(mainCount)
             : (subTop - gridRect.y()) + subGrid.contentHeight(subTiles.size() + 2);

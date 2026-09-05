@@ -47,6 +47,40 @@ final class TemplateTileGridLayoutTest {
         assertEquals(0, GRID.clampScroll(-5, 11));
     }
 
+    /**
+     * The sub-variant grid's shape: content laid out below the panel it scrolls inside — 200px down
+     * from a viewport that starts at 20 and is 100 tall, which is roughly where a full main grid
+     * leaves it.
+     */
+    private static final TemplateTileGridLayout BELOW =
+        TemplateTileGridLayout.of(10, 220, 300, 100, 52, 3).withViewport(20, 100);
+
+    @Test
+    @DisplayName("a grid starting below its viewport is seen and clicked through the viewport")
+    void contentBelowTheViewport() {
+        // Unscrolled it rests off the bottom, as the sub grid does before the main one is scrolled.
+        assertFalse(BELOW.isVisible(0, 0));
+
+        // Scrolled far enough to sit against the top of the panel: on screen, and clickable there.
+        // This is the case that was broken — the old window started at the content's own y, so a
+        // tile that had risen past 220 was called invisible while it was still inside the panel.
+        int scroll = 220 - 30;
+        int top = BELOW.yFor(0, scroll);
+        assertEquals(30, top, "the row now rests inside the panel");
+        assertTrue(BELOW.isVisible(0, scroll));
+        assertEquals(0, BELOW.indexAt(BELOW.xFor(0) + 1, top + 1, scroll, 6));
+
+        // Off the top of the panel is still off: the window moved, it did not disappear.
+        int past = 220;
+        assertFalse(BELOW.isVisible(0, past + 52));
+        assertEquals(TemplateTileGridLayout.NONE,
+            BELOW.indexAt(BELOW.xFor(0) + 1, BELOW.yFor(0, past + 52) + 1, past + 52, 6));
+
+        // Positions are untouched by the viewport — only what counts as seen.
+        assertEquals(TemplateTileGridLayout.of(10, 220, 300, 100, 52, 3).yFor(3, scroll),
+            BELOW.yFor(3, scroll));
+    }
+
     @Test
     @DisplayName("visibility follows the scroll")
     void visibility() {
