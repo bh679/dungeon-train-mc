@@ -1931,7 +1931,6 @@
   "gui.dungeontrain.shaders.off.body": "The game as it ships. Shader packs cost frames, so this is the fastest the train will ever run.",
   "gui.dungeontrain.shaders.no_preview": "No preview",
   "gui.dungeontrain.shaders.page": "Open pack page",
-  "gui.dungeontrain.shaders.tag.active": "Active",
   "gui.dungeontrain.shaders.tag.installed": "Installed",
   "gui.dungeontrain.shaders.action.download": "Download & Install",
   "gui.dungeontrain.shaders.action.install": "Install",
