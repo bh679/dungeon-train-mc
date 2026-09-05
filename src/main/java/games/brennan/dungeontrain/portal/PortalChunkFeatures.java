@@ -325,21 +325,45 @@ final class PortalChunkFeatures {
     }
 
     /**
-     * Every structure that belongs to <b>somewhere else</b> — one the sample's own biomes do not
-     * admit.
+     * Every structure that belongs to <b>another dimension</b>: one admitted by the biomes of a
+     * dimension this sample did not come from, and not by its own.
      *
-     * <p>What the one-in-ten roll draws from: an End city standing in a meadow, a desert pyramid in
-     * a crimson forest. It only reads as a mistake if it turns up often, which is what the odds are
-     * for.</p>
+     * <p>What the one-in-ten roll draws from — an End city standing in a meadow, a bastion in a
+     * birch forest, a village in the crimson. Asked of the other dimensions' biome sources rather
+     * than of "anything this chunk does not admit", which is a different and much duller question:
+     * a swamp's ruined portal is not admitted by a mountain either, and a room that borrowed one
+     * would have borrowed nothing a player could notice.</p>
+     *
+     * <p>Both halves matter. A structure has to belong somewhere else, and it has to not belong
+     * here — Dungeon Train hands Nether structures to its own overworld Nether band, so a fortress
+     * is native to a good deal of this world's surface and would otherwise be counted as a
+     * traveller in the one place it lives.</p>
      */
     private static List<Structure> foreignStructures(ServerLevel level, ProtoChunk chunk,
                                                      BoundingBox window) {
         Set<Holder<Biome>> present = biomesIn(chunk, window);
+        Set<Holder<Biome>> elsewhere = otherDimensionBiomes(level);
+        if (elsewhere.isEmpty()) return List.of();
         List<Structure> foreign = new ArrayList<>();
         for (Structure structure : level.registryAccess().registryOrThrow(Registries.STRUCTURE)) {
-            if (!admitsAny(structure, present)) foreign.add(structure);
+            if (admitsAny(structure, elsewhere) && !admitsAny(structure, present)) {
+                foreign.add(structure);
+            }
         }
         return foreign;
+    }
+
+    /** Every biome the <b>other</b> dimensions can generate, read off their own biome sources. */
+    private static Set<Holder<Biome>> otherDimensionBiomes(ServerLevel level) {
+        Set<Holder<Biome>> out = new java.util.LinkedHashSet<>();
+        if (level.getServer() == null) return out;
+        for (PortalChunkTerrain.Source source : PortalChunkTerrain.Source.values()) {
+            if (source.levelKey().equals(level.dimension())) continue;
+            ServerLevel other = level.getServer().getLevel(source.levelKey());
+            if (other == null) continue;
+            out.addAll(other.getChunkSource().getGenerator().getBiomeSource().possibleBiomes());
+        }
+        return out;
     }
 
     private static boolean admitsAny(Structure structure, Set<Holder<Biome>> biomes) {
