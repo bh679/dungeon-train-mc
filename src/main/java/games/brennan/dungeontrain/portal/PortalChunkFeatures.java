@@ -67,10 +67,40 @@ final class PortalChunkFeatures {
     private PortalChunkFeatures() {}
 
     /**
-     * Carve, place a structure into, and decorate {@code chunk} in place.
+     * Cut the caves into {@code chunk} in place — the half of the remaining generation that changes
+     * the <b>shape</b> of the ground.
      *
-     * <p>Best-effort: anything that throws leaves the sample as the bare terrain it already was,
-     * which is a room, rather than failing the pair. Runs on the sampling worker.</p>
+     * <p>Split from {@link #decorate} because of what each costs and what each moves. A room's two
+     * doorways are stood on the ground the sample landed, and a carver can take that ground away, so
+     * carving has to happen before the doors are fitted — which means before the pair can be planned
+     * at all, and therefore in the handful of milliseconds a portal carriage can wait without
+     * refusing to cross. Structures and features add to a room without moving its floor, and they
+     * are the expensive ones, so they follow afterwards.</p>
+     *
+     * <p>Best-effort: anything that throws leaves the sample as the terrain it already was, which is
+     * a room, rather than failing the pair. Runs on the sampling worker.</p>
+     */
+    static void carve(NoiseBasedChunkGenerator generator, ServerLevel level, RandomState random,
+                      ProtoChunk chunk, long worldSeed, int pairKey) {
+        try {
+            WorldGenRegion region = regionFor(level, generator, random, chunk);
+            StructureManager structures = level.structureManager().forWorldGenRegion(region);
+            generator.applyCarvers(region, worldSeed, random, biomeManager(generator, random, worldSeed),
+                structures, chunk, GenerationStep.Carving.AIR);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Chunk dimension carving failed for pair {} — the room keeps "
+                + "its uncarved terrain", pairKey, t);
+        }
+    }
+
+    /**
+     * Place a structure into {@code chunk} and decorate it in place — everything that grows on the
+     * ground rather than shaping it.
+     *
+     * <p>Runs after the room is already standing, and is written into it as a second pass, because
+     * this is seconds of work and a portal carriage that has not finished it is a carriage that will
+     * not cross. Nothing here moves a doorway, so a room gaining its trees a moment after a player
+     * walks in is a room growing, not a room changing under them.</p>
      *
      * @param window the rows of {@code chunk} the room will actually show, so a structure that lands
      *               entirely outside them can be rejected in favour of one that does not
@@ -78,26 +108,30 @@ final class PortalChunkFeatures {
     static void decorate(NoiseBasedChunkGenerator generator, ServerLevel level, RandomState random,
                          ProtoChunk chunk, BoundingBox window, long worldSeed, int pairKey) {
         try {
-            ChunkStep step = ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES);
-            WorldGenRegion region = regionAround(level, generator, random, chunk, step);
+            WorldGenRegion region = regionFor(level, generator, random, chunk);
             StructureManager structures = level.structureManager().forWorldGenRegion(region);
-            BiomeManager biomes = new BiomeManager(
-                (x, y, z) -> generator.getBiomeSource().getNoiseBiome(x, y, z, random.sampler()),
-                BiomeManager.obfuscateSeed(worldSeed));
-
-            // Caves first, as vanilla does: a feature decorating a hole the carvers had not dug yet
-            // would be furnishing a wall.
-            generator.applyCarvers(region, worldSeed, random, biomes, structures, chunk,
-                GenerationStep.Carving.AIR);
-
             plantStructure(level, generator, random, chunk, window, worldSeed, pairKey);
-
             // Places the structure registered above along with everything else the biome grows.
             generator.applyBiomeDecoration(region, chunk, structures);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Chunk dimension decoration failed for pair {} — the room "
                 + "keeps its bare terrain", pairKey, t);
         }
+    }
+
+    /** The region both passes work in — see {@link #regionAround}. */
+    private static WorldGenRegion regionFor(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                            RandomState random, ProtoChunk chunk) {
+        return regionAround(level, generator, random, chunk,
+            ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES));
+    }
+
+    /** A biome manager reading the generator's own biome source rather than any level's chunks. */
+    private static BiomeManager biomeManager(NoiseBasedChunkGenerator generator, RandomState random,
+                                             long worldSeed) {
+        return new BiomeManager(
+            (x, y, z) -> generator.getBiomeSource().getNoiseBiome(x, y, z, random.sampler()),
+            BiomeManager.obfuscateSeed(worldSeed));
     }
 
     /**

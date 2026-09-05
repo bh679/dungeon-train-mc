@@ -7,6 +7,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.Set;
+import java.util.function.IntFunction;
+
 /**
  * Writing a sampled chunk of world generation into a {@link PortalRoomMode#CHUNK_DIMENSION} room —
  * the other half of {@link PortalChunkTerrain}, which is where the terrain comes from.
@@ -39,6 +42,33 @@ public final class PortalChunkDimension {
     private static final int DOORWAY_DEPTH = 2;
 
     private PortalChunkDimension() {}
+
+    /**
+     * Rewrite the rooms whose cube has since grown its structure and its features.
+     *
+     * <p>The second half of the two-pass sample ({@link PortalChunkTerrain}): a room is built from
+     * the ground alone so its pair can cross immediately, and this puts the trees, the grass and the
+     * structure into it a second or two later. Nothing here moves a doorway or a wall, so a player
+     * already inside sees a room growing rather than a room changing.</p>
+     */
+    public static void applyPendingDecoration(ServerLevel level, CarriageDims dims,
+                                              IntFunction<PortalStructure> live) {
+        Set<Integer> pending = PortalChunkTerrain.decorated();
+        if (pending.isEmpty()) return;
+        for (int pairKey : pending) {
+            PortalStructure structure = live.apply(pairKey);
+            // Not stamped yet — normal, since a cube is usually decorated before the pair that asked
+            // for it has been planned. It stays pending and is written when the room exists.
+            if (structure == null) continue;
+            PortalChunkSlice slice = PortalChunkTerrain.peek(pairKey);
+            if (slice == null) {
+                PortalChunkTerrain.decorationApplied(pairKey);
+                continue;
+            }
+            write(level, structure, dims, slice);
+            PortalChunkTerrain.decorationApplied(pairKey);
+        }
+    }
 
     /**
      * Fill {@code structure}'s room with the chunk its pair sampled.
@@ -82,6 +112,10 @@ public final class PortalChunkDimension {
                     if (state == null) continue;
                     cursor.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
                     if (mask.covers(cursor)) continue;
+                    // Cheap, and it is what makes the decoration pass affordable: the second write
+                    // of a room differs from the first only where something grew, so all but a
+                    // handful of these cells are already the block being written.
+                    if (level.getBlockState(cursor) == state) continue;
                     level.setBlock(cursor, state, Block.UPDATE_ALL);
                 }
             }

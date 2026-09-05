@@ -598,10 +598,36 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.PortalChunkTerrain.clear();
     }
 
+    /**
+     * The structure a pair is currently standing, or null when it stands none.
+     *
+     * <p>Handed to {@code PortalChunkDimension.applyPendingDecoration} so a room is only rewritten
+     * where one is actually standing, and at the coordinates it is standing at now. A test room is
+     * not in {@link #STRUCTURES} — {@code PortalTestCommand} builds its structure itself — so its
+     * one pair key falls back to the live session's own.</p>
+     */
+    private static PortalStructure liveStructure(int pairKey) {
+        PortalStructure live = STRUCTURES.get(pairKey);
+        if (live != null) return live;
+        if (pairKey != games.brennan.dungeontrain.portal.PortalTestSession.PAIR_KEY) return null;
+        for (Map.Entry<UUID, games.brennan.dungeontrain.portal.PortalTestSession.Session> entry
+                : games.brennan.dungeontrain.portal.PortalTestSession.entries()) {
+            return entry.getValue().structure();
+        }
+        return null;
+    }
+
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
+
+        // Rooms whose sampled chunk has since grown its structure and its features — the second
+        // half of a chunk dimension's two-pass sample. Above the early returns below so an author
+        // standing in a test room with the portal lottery off still watches it fill in. Free when
+        // nothing is waiting, which is every tick but the handful after one is built.
+        games.brennan.dungeontrain.portal.PortalChunkDimension.applyPendingDecoration(
+            level, DungeonTrainWorldData.get(level).dims(), PortalCarriageEvents::liveStructure);
 
         List<ServerPlayer> players = level.players();
         // Both of these stop the freeze rule being asked at all, so anything it stopped has to be

@@ -186,6 +186,16 @@ public final class PortalChunkTerrain {
     // the next world's pair 12 is a different room in a different place.
     private static final Map<Integer, PortalChunkSlice> READY = new ConcurrentHashMap<>();
     private static final Set<Integer> IN_FLIGHT = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Pairs whose cube has since grown its structure and its features, and whose room is therefore a
+     * pass behind what has been sampled for it.
+     *
+     * <p>Held until the room is actually rewritten rather than handed over once: a pair is normally
+     * stamped a tick or two after its terrain lands, so the decoration is often ready before there is
+     * a room to put it in. Drained by {@code PortalChunkDimension.applyPendingDecoration}.</p>
+     */
+    private static final Set<Integer> DECORATED = ConcurrentHashMap.newKeySet();
     private static volatile long cacheSeed = Long.MIN_VALUE;
 
     /**
@@ -253,11 +263,30 @@ public final class PortalChunkTerrain {
         Source source = Source.of(roomName);
         Util.backgroundExecutor().execute(() -> {
             try {
-                PortalChunkSlice slice = sample(server, source, seed, pairKey);
-                if (slice != null) {
-                    if (READY.size() >= MAX_CACHE) READY.clear();
-                    READY.put(pairKey, slice);
-                }
+                // Two passes, and the split is what keeps a portal carriage crossable. The first is
+                // the ground — noise, surface rules and the carvers — which the pair cannot be
+                // planned without, because its doorways stand on it. The second is everything that
+                // grows on that ground, which costs seconds and moves nothing, so the room is built
+                // from the first and rewritten when the second lands.
+                long startedAt = System.currentTimeMillis();
+                Sample sample = sampleTerrain(server, source, seed, pairKey);
+                if (sample == null) return;
+                if (READY.size() >= MAX_CACHE) READY.clear();
+                READY.put(pairKey, sample.read());
+                long ground = System.currentTimeMillis() - startedAt;
+
+                long decoratingFrom = System.currentTimeMillis();
+                PortalChunkFeatures.decorate(sample.generator(), sample.level(), sample.random(),
+                    sample.chunk(), sample.window(), sample.level().getSeed(), pairKey);
+                READY.put(pairKey, sample.read());
+                DECORATED.add(pairKey);
+                // The first number is what a portal carriage waits out before it can cross at all,
+                // so it is the one worth watching; the second is only how long the room takes to
+                // grow afterwards.
+                LOGGER.info("[DungeonTrain] Chunk dimension pair {} sampled from {} at {}: ground in "
+                        + "{} ms, decoration in {} ms",
+                    pairKey, source, sample.pos(), ground,
+                    System.currentTimeMillis() - decoratingFrom);
             } catch (Throwable t) {
                 // A failed sample is a room that stamps as its plain template — never a crashed
                 // worker, and never a pair that retries the same failure every tick.
@@ -273,17 +302,55 @@ public final class PortalChunkTerrain {
     public static void clear() {
         READY.clear();
         IN_FLIGHT.clear();
+        DECORATED.clear();
         cacheSeed = Long.MIN_VALUE;
+    }
+
+    /** This pair's cube if one has been sampled, without asking for one that has not. */
+    static PortalChunkSlice peek(int pairKey) {
+        return READY.get(pairKey);
+    }
+
+    /** The pairs whose rooms are a decoration pass behind their cube, as a snapshot. */
+    static Set<Integer> decorated() {
+        return Set.copyOf(DECORATED);
+    }
+
+    /** Say that {@code pairKey}'s room has been rewritten with its decorated cube. */
+    static void decorationApplied(int pairKey) {
+        DECORATED.remove(pairKey);
     }
 
     // ---- sampling ------------------------------------------------------------
 
     /**
-     * Sample one cube. Runs on a worker thread and touches nothing but the generator, its random
-     * state and a {@link ProtoChunk} of its own.
+     * One sample, mid-flight: the throwaway chunk and everything needed to read a cube out of it or
+     * to run another pass of generation over it.
      */
-    private static PortalChunkSlice sample(MinecraftServer server, Source source, long worldSeed,
-                                           int pairKey) {
+    private record Sample(ServerLevel level, NoiseBasedChunkGenerator generator, RandomState random,
+                          ProtoChunk chunk, ChunkPos pos, Source source, int anchor, int minY,
+                          int maxY) {
+
+        /** The cube as the chunk currently stands — called once per generation pass. */
+        PortalChunkSlice read() {
+            return readSlice(source, chunk, pos, anchor, minY, maxY);
+        }
+
+        /** The rows of the chunk the room will show, in world coordinates. */
+        BoundingBox window() {
+            int lo = anchor - SURFACE_ROW;
+            return new BoundingBox(pos.getMinBlockX(), lo, pos.getMinBlockZ(),
+                pos.getMaxBlockX(), lo + SIZE - 1, pos.getMaxBlockZ());
+        }
+    }
+
+    /**
+     * Sample one cube's ground: pick a site, pour the generator's columns into a throwaway chunk,
+     * run the surface rules over it and cut its caves. Runs on a worker thread and touches nothing
+     * but the generator, its random state and a {@link ProtoChunk} of its own.
+     */
+    private static Sample sampleTerrain(MinecraftServer server, Source source, long worldSeed,
+                                        int pairKey) {
         ServerLevel level = server.getLevel(source.levelKey());
         if (level == null) level = server.overworld();
         if (level == null) return null;
@@ -327,17 +394,10 @@ public final class PortalChunkTerrain {
             Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
             Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES));
         dressSurface(noiseGenerator, level, random, settings, biomes, chunk);
+        // Before the doors are fitted to this ground, because a carver can take the ground away.
+        PortalChunkFeatures.carve(noiseGenerator, level, random, chunk, level.getSeed(), pairKey);
 
-        // Everything after the ground: the carvers, one structure chosen so a room always has one,
-        // and the biome's own features. Best-effort — a sample that cannot be decorated is still a
-        // chunk of terrain. See PortalChunkFeatures.
-        int windowLo = anchor - SURFACE_ROW;
-        PortalChunkFeatures.decorate(noiseGenerator, level, random, chunk,
-            new BoundingBox(pos.getMinBlockX(), windowLo, pos.getMinBlockZ(),
-                pos.getMaxBlockX(), windowLo + SIZE - 1, pos.getMaxBlockZ()),
-            level.getSeed(), pairKey);
-
-        return readSlice(source, chunk, pos, anchor, minY, maxY);
+        return new Sample(level, noiseGenerator, random, chunk, pos, source, anchor, minY, maxY);
     }
 
     /** Pour the generator's own columns into the throwaway chunk, over the window that matters. */
