@@ -11401,6 +11401,41 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "builder-browser-review-tools",
+      "version": "0.802.0",
+      "type": "feat",
+      "title": "Browse every builder's work, and act on it from one screen",
+      "summary": "The editor's build browser can now show everybody's uploads at once instead of one person at a time, narrow them by review status or by the builds you have starred, and submit or withdraw a build without leaving the screen. A build you download from another player stays credited to them however much you edit it.",
+      "highlights": [
+        "All builders \u2014 one grid of every uploaded build, rather than searching for a name first",
+        "Star a build from its tile, and filter down to the starred ones",
+        "Filter by where a build stands with the reviewers: waiting, accepted, declined, or never submitted",
+        "Submit to the train, or withdraw, from the previewer and from the toolbar \u2014 the button pulses blue while a saved build is waiting and settles green once it is in",
+        "The X menu opens on the plot you are standing in, and never filters that tile away",
+        "Imported content has its own filter, and a downloaded build is no longer mistaken for your own"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-browser-fixes-sept",
+      "version": "0.802.0",
+      "type": "fix",
+      "title": "Editor browser: naming prompts, missing sub-variants, and two dead rooms",
+      "summary": "Three things in the editor that looked broken, or quietly were.",
+      "highlights": [
+        "New on Tracks and Dimensions, and Rename anywhere, opened a name prompt nothing drew \u2014 the button looked dead while the keyboard was captured",
+        "Opening a group only listed the sub-variants that happened to fit; the rest vanished as you scrolled toward them",
+        "Two portal-room sub-variants that never had a room behind them are gone, so the pool no longer spends picks on empty geometry"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
