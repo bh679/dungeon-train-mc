@@ -57,6 +57,8 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
  * @param exitDoorOffset the same, for the room's <b>exit</b> doorway — null means "not said", which
  *                       resolves to {@code doorOffset} so the two doors mirror as they always did
  * @param exitDoorHeightOffset the vertical twin of {@code exitDoorOffset}, null meaning the same
+ * @param lock which block a sealing room's shell is written in — bedrock unless the author said
+ *             otherwise, and read only under a mode that seals at all
  */
 public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                                  PortalRoomContents contents, PortalRoomExits exits,
@@ -64,7 +66,8 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                                  PortalRoomDoorWall doorWall, PortalRoomDoorOffset doorOffset,
                                  PortalRoomDoorHeightOffset doorHeightOffset,
                                  PortalRoomDoorOffset exitDoorOffset,
-                                 PortalRoomDoorHeightOffset exitDoorHeightOffset) {
+                                 PortalRoomDoorHeightOffset exitDoorHeightOffset,
+                                 PortalRoomLock lock) {
 
     /** Separates the mode from the settings that follow it in the stored tag. */
     private static final String SEPARATOR = "/";
@@ -91,6 +94,19 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         // and what that resolves to is the entry door, which is what mirroring is.
         if (exitDoorOffset == null) exitDoorOffset = doorOffset;
         if (exitDoorHeightOffset == null) exitDoorHeightOffset = doorHeightOffset;
+        if (lock == null) lock = PortalRoomLock.DEFAULT;
+    }
+
+    /** The eleven settings this record carried before the seal's block could be chosen. */
+    public PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
+                              PortalRoomContents contents, PortalRoomExits exits,
+                              PortalRoomBooks books, PortalRoomSky sky, PortalRoomDoorWall doorWall,
+                              PortalRoomDoorOffset doorOffset,
+                              PortalRoomDoorHeightOffset doorHeightOffset,
+                              PortalRoomDoorOffset exitDoorOffset,
+                              PortalRoomDoorHeightOffset exitDoorHeightOffset) {
+        this(mode, copies, contents, exits, books, sky, doorWall, doorOffset, doorHeightOffset,
+            exitDoorOffset, exitDoorHeightOffset, PortalRoomLock.DEFAULT);
     }
 
     /** The nine settings this record carried before the two doors could differ — both mirrored. */
@@ -181,7 +197,8 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
             // Null rather than the centred default when absent: an unsaid exit door mirrors the
             // entry door, and only the constructor knows what that is.
             segment(parts, 9) == null ? null : PortalRoomDoorOffset.parse(segment(parts, 9)),
-            segment(parts, 10) == null ? null : PortalRoomDoorHeightOffset.parse(segment(parts, 10)));
+            segment(parts, 10) == null ? null : PortalRoomDoorHeightOffset.parse(segment(parts, 10)),
+            PortalRoomLock.parse(segment(parts, 11)));
     }
 
     /** Segment {@code index} of a split tag, or null when the tag is shorter than that. */
@@ -213,6 +230,20 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         PortalRoomCopies effectiveCopies = effectiveCopies();
         PortalRoomExits effectiveExits = effectiveExits();
         PortalRoomDoorWall effectiveDoorWall = effectiveDoorWall();
+        PortalRoomLock effectiveLock = effectiveLock();
+        if (!PortalRoomLock.DEFAULT.equals(effectiveLock)) {
+            // The longest tag this class writes. Effective and not the raw value, so a room still
+            // carrying a seal block from before its walls were changed to an endless mode does not
+            // grow a segment for a shell nothing writes — the same reasoning every other effective
+            // read here uses. Both door segments go out as placeholders when the two doors agree,
+            // which parse reads back as the mirroring it always was.
+            return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
+                + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
+                + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id()
+                + SEPARATOR + doorHeightOffset.id()
+                + SEPARATOR + exitDoorOffset.id() + SEPARATOR + exitDoorHeightOffset.id()
+                + SEPARATOR + effectiveLock.id();
+        }
         if (doorsDiffer()) {
             // The longest tag this class writes, and the only shape that names the exit door at all.
             // "Would change something" here means differs from the ENTRY door rather than from a
@@ -337,6 +368,40 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
         return withCopies(copies.withBlock(blockId));
     }
 
+    /**
+     * True when the seal block applies at all — either mode that wraps the room in a shell.
+     *
+     * <p>{@link PortalRoomMode#sealsRoomBox}, which is the writer's own question rather than the
+     * name of a mode: {@link PortalRoomMode#CHUNK_DIMENSION} seals for a reason of its own, and a
+     * setting gated on {@link PortalRoomMode#BEDROCK_LOCK} alone would leave one mode whose shell
+     * ignored the author.</p>
+     */
+    public boolean lockApplies() {
+        return mode.sealsRoomBox();
+    }
+
+    /**
+     * What this room's shell is actually made of: {@link #lock} where the control applies, and
+     * {@link PortalRoomLock#DEFAULT} where it does not.
+     *
+     * <p>Read this rather than {@link #lock} anywhere the answer drives block writes, for the same
+     * reason {@link #effectiveCopies} and {@link #effectiveExits} exist — a room carries whatever
+     * setting it was last given, and an endless room has no shell for one to describe.</p>
+     */
+    public PortalRoomLock effectiveLock() {
+        return lockApplies() ? lock : PortalRoomLock.DEFAULT;
+    }
+
+    /** The same settings with the seal written in {@code blockId}. */
+    public PortalRoomSettings withLockBlock(String blockId) {
+        return withLock(lock.withBlock(blockId));
+    }
+
+    public PortalRoomSettings withLock(PortalRoomLock newLock) {
+        return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, newLock);
+    }
+
     /** True when the Exits control applies at all — only an endless room has anywhere to put one. */
     public boolean exitsApply() {
         return mode.exitsApply();
@@ -367,37 +432,37 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
     public PortalRoomSettings withMode(PortalRoomMode newMode) {
         boolean inherited = exits.equals(mode.defaultExits());
         return new PortalRoomSettings(newMode, copies, contents, inherited ? null : exits, books, sky,
-            doorWall, doorOffset, doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
+            doorWall, doorOffset, doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     public PortalRoomSettings withCopies(PortalRoomCopies newCopies) {
         return new PortalRoomSettings(mode, newCopies, contents, exits, books, sky, doorWall, doorOffset,
-            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     public PortalRoomSettings withContents(PortalRoomContents newContents) {
         return new PortalRoomSettings(mode, copies, newContents, exits, books, sky, doorWall, doorOffset,
-            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     public PortalRoomSettings withExits(PortalRoomExits newExits) {
         return new PortalRoomSettings(mode, copies, contents, newExits, books, sky, doorWall, doorOffset,
-            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     public PortalRoomSettings withBooks(PortalRoomBooks newBooks) {
         return new PortalRoomSettings(mode, copies, contents, exits, newBooks, sky, doorWall, doorOffset,
-            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     public PortalRoomSettings withSky(PortalRoomSky newSky) {
         return new PortalRoomSettings(mode, copies, contents, exits, books, newSky, doorWall, doorOffset,
-            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     public PortalRoomSettings withDoorWall(PortalRoomDoorWall newDoorWall) {
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, newDoorWall, doorOffset,
-            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     /** The same settings at the next Door Wall value — what the editor's one cycling button steps to. */
@@ -421,7 +486,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      */
     public PortalRoomSettings withDoorOffset(PortalRoomDoorOffset newDoorOffset) {
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, newDoorOffset,
-            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
+            doorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     /**
@@ -431,7 +496,7 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      */
     public PortalRoomSettings withDoorHeightOffset(PortalRoomDoorHeightOffset newDoorHeightOffset) {
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
-            newDoorHeightOffset, exitDoorOffset, exitDoorHeightOffset);
+            newDoorHeightOffset, exitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     /**
@@ -440,14 +505,14 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
      */
     public PortalRoomSettings withExitDoorOffset(PortalRoomDoorOffset newExitDoorOffset) {
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
-            doorHeightOffset, newExitDoorOffset, exitDoorHeightOffset);
+            doorHeightOffset, newExitDoorOffset, exitDoorHeightOffset, lock);
     }
 
     /** The vertical twin of {@link #withExitDoorOffset}, likewise unclamped. */
     public PortalRoomSettings withExitDoorHeightOffset(
         PortalRoomDoorHeightOffset newExitDoorHeightOffset) {
         return new PortalRoomSettings(mode, copies, contents, exits, books, sky, doorWall, doorOffset,
-            doorHeightOffset, exitDoorOffset, newExitDoorHeightOffset);
+            doorHeightOffset, exitDoorOffset, newExitDoorHeightOffset, lock);
     }
 
     /**
