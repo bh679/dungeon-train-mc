@@ -1021,6 +1021,7 @@
   "gui.dungeontrain.editor_screen.creator.read_only": "На сервере — не в библиотеке этого редактора.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Выберите постройку",
   "gui.dungeontrain.editor_screen.creator.load_copy": "Загрузить копией",
+  "gui.dungeontrain.editor_screen.creator.loaded": "Загружено в редактор",
   "gui.dungeontrain.options.button": "Настройки Dungeon Train…",
   "gui.dungeontrain.options.title": "Настройки мира Dungeon Train",
   "gui.dungeontrain.options.starts_with_train": "Начинать с поездом",

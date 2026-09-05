@@ -595,19 +595,11 @@ public final class BuilderProfileScreen extends Screen {
      * download from restamping the world around someone who only wanted the file.</p>
      */
     private void openInEditor(BuilderPhotoPaths.Kind kind, BuilderProfileDownloadResultPacket packet) {
-        String target = EditorTemplateJump.categoryIdFor(kind, packet.subKind());
         // Nothing in the editor holds a carriage group, and a player without the editor's commands
         // can't be sent anywhere — either way the build is installed and the menu is done.
-        if (target == null || !canRunEditorCommands()) return;
-        String enter = EditorTemplateJump.enterCommandFor(kind, packet.id(), packet.subKind());
-
-        String current = EditorStatusHudOverlay.category().toLowerCase(java.util.Locale.ROOT);
-        if (target.equals(current)) {
-            if (enter != null) CommandRunner.run(enter);
-            return;
-        }
-        CommandRunner.run("dungeontrain editor " + target);
-        if (enter != null) CommandRunner.run(enter);
+        if (!canRunEditorCommands()) return;
+        EditorTemplateJump.go(kind, packet.id(), packet.subKind(),
+                EditorStatusHudOverlay.category().toLowerCase(java.util.Locale.ROOT));
     }
 
     /**

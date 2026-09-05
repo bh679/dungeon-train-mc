@@ -537,6 +537,7 @@
       "gui.dungeontrain.editor_screen.creator.read_only",
       "gui.dungeontrain.editor_screen.creator.nothing_selected",
       "gui.dungeontrain.editor_screen.creator.load_copy",
+      "gui.dungeontrain.editor_screen.creator.loaded",
       "gui.dungeontrain.options.button",
       "gui.dungeontrain.options.starts_with_train",
       "gui.dungeontrain.options.train_y",

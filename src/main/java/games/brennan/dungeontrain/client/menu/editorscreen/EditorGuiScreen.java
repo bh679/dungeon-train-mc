@@ -52,6 +52,7 @@ public final class EditorGuiScreen extends Screen {
 
     private final EditorBrowserPane browser = new EditorBrowserPane();
     private final EditorDetailPane detail = new EditorDetailPane();
+    private final EditorCreatorPane creatorPane = new EditorCreatorPane();
     private final OrbitState orbit = new OrbitState();
     private final InlineEdit inlineEdit = new InlineEdit();
     private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
@@ -196,8 +197,8 @@ public final class EditorGuiScreen extends Screen {
         if (EditorCreatorBuilds.active()) {
             // A relay row is not a template: none of the detail pane's controls apply to one, so
             // the pane that has no controls stands in for it rather than eight disabled buttons.
-            EditorCreatorPane.render(g, this.font, layout, theme, selectedCreatorBuild(), orbit.yaw(),
-                creatorNote, loadAsCopy, layout.test().contains(mouseX, mouseY) && !covered);
+            creatorPane.render(g, this.font, layout, theme, selectedCreatorBuild(), orbit.yaw(),
+                creatorNote, loadAsCopy, mx, my);
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
             TemplateArt art = TemplateArt.of(ctx.selection());
@@ -341,6 +342,23 @@ public final class EditorGuiScreen extends Screen {
         takenNames = List.of();
     }
 
+    /**
+     * Walk to the plot the selected build was loaded onto.
+     *
+     * <p>The header's answer to "it is here now": a category switch when it is not the one being
+     * stood in, then the enter command for the template — the same walk My Builds makes after a
+     * download, through the same helper.</p>
+     */
+    private void goToLoadedBuild() {
+        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
+        EditorCreatorBuilds.Landed landed = entry == null ? null
+            : EditorCreatorBuilds.landedBuild(entry.relayId());
+        if (landed == null) return;
+        if (EditorTemplateJumpBridge.go(landed.kind(), landed.id(), landed.subKind())) {
+            afterCommand();
+        }
+    }
+
     /** A download finished: say what happened, and pick up what landed. */
     private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
         creatorNote = EditorScreenLang.text(BuilderProfileScreen.noteKeyFor(packet.outcome()));
@@ -349,6 +367,12 @@ public final class EditorGuiScreen extends Screen {
         takenNames = nameInUse ? List.copyOf(packet.takenNames()) : List.of();
         loadAsCopy = nameInUse;
         if (packet.outcome() == BuilderRelayDownload.Outcome.INSTALLED) {
+            // Remembered against the build that was asked for: the pane stops offering to load it
+            // and offers the walk to it instead.
+            BuilderProfilePacket.Entry entry = selectedCreatorBuild();
+            if (entry != null) {
+                EditorCreatorBuilds.landed(entry.relayId(), packet.kindId(), packet.id(), packet.subKind());
+            }
             // It is a template now, so the roster has to be asked again before it will show one.
             afterCommand();
         }
@@ -447,14 +471,22 @@ public final class EditorGuiScreen extends Screen {
             return true;
         }
         if (EditorCreatorBuilds.active()) {
-            if (layout.test().contains(mouseX, mouseY)) {
-                click();
-                loadSelectedCreatorBuild();
-                return true;
-            }
-            if (layout.preview().contains(mouseX, mouseY)) {
-                orbit.beginDrag();
-                return true;
+            switch (creatorPane.hitTest(mouseX, mouseY)) {
+                case LOAD -> {
+                    click();
+                    loadSelectedCreatorBuild();
+                    return true;
+                }
+                case GO_HERE -> {
+                    click();
+                    goToLoadedBuild();
+                    return true;
+                }
+                case PREVIEW -> {
+                    orbit.beginDrag();
+                    return true;
+                }
+                case NONE -> { }
             }
             setFocused(null);
             return super.mouseClicked(mouseX, mouseY, button);

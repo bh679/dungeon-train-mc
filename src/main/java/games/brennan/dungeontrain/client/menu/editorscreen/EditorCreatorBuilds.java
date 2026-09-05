@@ -12,8 +12,10 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * The builds of the player the editor screen is looking at, and the browser's second mode.
@@ -33,6 +35,18 @@ public final class EditorCreatorBuilds {
     private static List<BuilderProfilePacket.Entry> builds = List.of();
     private static BuilderProfilePacket.Status status;
     private static int selectedId = -1;
+
+    /**
+     * Builds this session has brought down, and where each one landed.
+     *
+     * <p>Kept past a change of builder, because the template it wrote is still on disk: coming back
+     * to a profile should still say which of its builds are already here rather than offering to
+     * load them a second time.</p>
+     */
+    private static final Map<Integer, Landed> LANDED = new HashMap<>();
+
+    /** Where a downloaded build ended up — enough to send the player to it. */
+    public record Landed(BuilderPhotoPaths.Kind kind, String id, String subKind) {}
 
     private EditorCreatorBuilds() {}
 
@@ -103,6 +117,18 @@ public final class EditorCreatorBuilds {
         status = packet.status();
         if (name.isEmpty()) name = packet.ownerName();
         if (builds.stream().noneMatch(e -> e.relayId() == selectedId)) selectedId = -1;
+    }
+
+    /** Remember that this build is now a template here, and where. */
+    static void landed(int relayId, String kindId, String id, String subKind) {
+        BuilderPhotoPaths.Kind kind = BuilderPhotoPaths.Kind.fromId(kindId).orElse(null);
+        if (kind == null || relayId <= 0) return;
+        LANDED.put(relayId, new Landed(kind, id, subKind == null ? "" : subKind));
+    }
+
+    /** Where this build landed when it was loaded, or null when it has not been. */
+    static Landed landedBuild(int relayId) {
+        return LANDED.get(relayId);
     }
 
     /** Everything loaded, narrowed to the tab and the filter box. */

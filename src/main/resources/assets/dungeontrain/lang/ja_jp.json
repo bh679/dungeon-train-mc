@@ -966,6 +966,7 @@
   "gui.dungeontrain.editor_screen.creator.read_only": "リレー上 — このエディターのライブラリにはありません。",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "ビルドを選択",
   "gui.dungeontrain.editor_screen.creator.load_copy": "複製として読み込む",
+  "gui.dungeontrain.editor_screen.creator.loaded": "エディターに読み込み済み",
   "gui.dungeontrain.options.button": "Dungeon Train オプション…",
   "gui.dungeontrain.options.title": "Dungeon Train — ワールドオプション",
   "gui.dungeontrain.options.starts_with_train": "列車付きで開始",

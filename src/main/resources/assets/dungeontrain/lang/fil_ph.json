@@ -966,6 +966,7 @@
   "gui.dungeontrain.editor_screen.creator.read_only": "Nasa relay — wala sa library ng editor na ito.",
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Pumili ng build",
   "gui.dungeontrain.editor_screen.creator.load_copy": "I-load bilang kopya",
+  "gui.dungeontrain.editor_screen.creator.loaded": "Na-load sa editor",
   "gui.dungeontrain.options.button": "Mga Opsyon ng Dungeon Train…",
   "gui.dungeontrain.options.title": "Dungeon Train — Mga Opsyon ng Mundo",
   "gui.dungeontrain.options.starts_with_train": "Nagsisimula na may tren",

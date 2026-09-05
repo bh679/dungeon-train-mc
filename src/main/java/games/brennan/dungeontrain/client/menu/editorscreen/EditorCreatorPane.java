@@ -15,38 +15,42 @@ import java.util.List;
 /**
  * The right pane while the browser is showing somebody else's uploads.
  *
- * <p>The same shape as {@link EditorDetailPane} — a name, a picture, a short sheet — with none of
- * its controls, because none of them apply: a relay row cannot be saved, renamed, stood in or
- * tested. What it can be is read, so this says who made it, what kind it is, and where it stands
- * with a reviewer.</p>
+ * <p>The same shape as {@link EditorDetailPane} — a name, a picture, a short sheet — with two
+ * controls rather than its toolbar, because two is all that applies to a row on the relay: bring the
+ * build down, and once it is down, go and stand in it. Everything else here is read.</p>
  */
 public final class EditorCreatorPane {
 
     static final int LINE_H = 10;
     static final int LABEL_W = 52;
+    static final int LOADED_TEXT = 0xFF88DD88;
 
-    private EditorCreatorPane() {}
+    /** What a click landed on. */
+    public enum HitKind { NONE, LOAD, GO_HERE, PREVIEW }
 
-    public static void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
-                              EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
-                              String note, boolean asCopy, boolean loadHovered) {
-        InventoryEditorLayout.Rect h = layout.header();
-        int ty = h.y() + (h.h() - font.lineHeight) / 2;
-        String title = entry == null
-            ? EditorScreenLang.text(EditorScreenLang.CREATOR_NOTHING_SELECTED)
-            : EditorCreatorBuilds.label(entry);
-        g.drawString(font, font.plainSubstrByWidth(title, h.w() - 4), h.x() + 2, ty,
-            theme.panelText(), !theme.isLight());
+    private InventoryEditorLayout.Rect loadRect;
+    private InventoryEditorLayout.Rect goHereRect;
+    private InventoryEditorLayout.Rect previewRect;
 
-        InventoryEditorLayout.Rect p = layout.preview();
+    public void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
+                       EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
+                       String note, boolean asCopy, int mouseX, int mouseY) {
+        EditorCreatorBuilds.Landed landed = entry == null ? null
+            : EditorCreatorBuilds.landedBuild(entry.relayId());
+
+        drawHeader(g, font, layout.header(), theme, entry, landed, mouseX, mouseY);
+
+        previewRect = layout.preview();
         TemplateArt art = entry == null ? null : EditorCreatorBuilds.artOf(entry);
-        PreviewPane.draw(g, font, p, art, entry == null ? "" : EditorCreatorBuilds.label(entry), yaw, theme,
-            entry == null ? 0 : entry.relayId());
+        PreviewPane.draw(g, font, previewRect, art, entry == null ? "" : EditorCreatorBuilds.label(entry),
+            yaw, theme, entry == null ? 0 : entry.relayId());
         // The review colour rings the picture rather than sitting in the sheet as a fourth word:
         // it is the one fact a reviewer scans for, and My Builds already teaches the colours.
         if (entry != null) {
             int border = BuilderReviewState.borderColourFor(entry.review());
-            if (border != BuilderReviewState.BORDER_NONE) g.renderOutline(p.x(), p.y(), p.w(), p.h(), border);
+            if (border != BuilderReviewState.BORDER_NONE) {
+                g.renderOutline(previewRect.x(), previewRect.y(), previewRect.w(), previewRect.h(), border);
+            }
         }
 
         InventoryEditorLayout.Rect s = layout.sheet();
@@ -61,30 +65,78 @@ public final class EditorCreatorPane {
 
         // Why the toolbar is missing, said once rather than as eight disabled buttons — and, under
         // it, whatever the last press of Load came back with.
-        InventoryEditorLayout.Rect lines = layout.settings();
+        InventoryEditorLayout.Rect notes = layout.settings();
         g.drawString(font, font.plainSubstrByWidth(
-                EditorScreenLang.text(EditorScreenLang.CREATOR_READ_ONLY), lines.w() - 4),
-            lines.x() + 2, lines.y(), EditorDetailPane.DIM_TEXT, false);
+                EditorScreenLang.text(EditorScreenLang.CREATOR_READ_ONLY), notes.w() - 4),
+            notes.x() + 2, notes.y(), EditorDetailPane.DIM_TEXT, false);
         if (note != null && !note.isEmpty()) {
-            g.drawString(font, font.plainSubstrByWidth(note, lines.w() - 4),
-                lines.x() + 2, lines.y() + LINE_H + 2, 0xFFFFEEBB, false);
+            g.drawString(font, font.plainSubstrByWidth(note, notes.w() - 4),
+                notes.x() + 2, notes.y() + LINE_H + 2, 0xFFFFEEBB, false);
         }
 
-        drawLoad(g, font, layout.test(), entry != null, asCopy, loadHovered);
+        drawLoad(g, font, layout.test(), entry, landed, asCopy, mouseX, mouseY);
     }
 
     /**
-     * <b>Load into editor</b>, where a template has <b>Test the Carriage</b>.
+     * The header: what the build is called, and — once it is here — the way to go and stand in it.
      *
-     * <p>The one thing this pane does rather than reports, and the point of the whole detour: a
-     * build that is only a picture cannot be walked through. Loading writes it into this install's
-     * library, after which it is an ordinary template — it appears in the roster, can be stood in
-     * and tested like anything else. Once a name here is already taken the button offers the copy
-     * instead, because that is the only answer left that does not overwrite somebody's work.</p>
+     * <p>The button appears where a template's own "you are here" line does, because it answers the
+     * same question in the same place: the build is somewhere, and this is how you get to it.</p>
      */
-    static void drawLoad(GuiGraphics g, Font font, InventoryEditorLayout.Rect r, boolean enabled,
-                         boolean asCopy, boolean hovered) {
-        boolean hot = enabled && hovered;
+    private void drawHeader(GuiGraphics g, Font font, InventoryEditorLayout.Rect h, EditorScreenTheme theme,
+                            BuilderProfilePacket.Entry entry, EditorCreatorBuilds.Landed landed,
+                            int mouseX, int mouseY) {
+        int ty = h.y() + (h.h() - font.lineHeight) / 2;
+        String title = entry == null
+            ? EditorScreenLang.text(EditorScreenLang.CREATOR_NOTHING_SELECTED)
+            : EditorCreatorBuilds.label(entry);
+
+        goHereRect = null;
+        // Only a build the editor has a home for: a carriage group is authored in the Train Builder
+        // and there is nowhere in here to send anybody.
+        boolean canGo = landed != null
+            && EditorTemplateJumpBridge.hasHome(landed.kind(), landed.subKind());
+        int nameWidth = h.w() - 4;
+        if (canGo) {
+            String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
+            int w = font.width(label) + 8;
+            goHereRect = new InventoryEditorLayout.Rect(h.right() - w - 1, h.y() + 1, w, h.h() - 2);
+            nameWidth = Math.max(0, goHereRect.x() - h.x() - 6);
+            boolean hot = goHereRect.contains(mouseX, mouseY);
+            g.fill(goHereRect.x(), goHereRect.y(), goHereRect.right(), goHereRect.bottom(),
+                hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+            g.drawString(font, label, goHereRect.x() + 4, ty,
+                hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
+        }
+        g.drawString(font, font.plainSubstrByWidth(title, nameWidth), h.x() + 2, ty,
+            theme.panelText(), !theme.isLight());
+    }
+
+    /**
+     * <b>Load into editor</b>, where a template has <b>Test the Carriage</b> — until it has been
+     * loaded, after which the slot says so instead of offering it again.
+     *
+     * <p>Loading writes the build into this install's library, after which it is an ordinary
+     * template: it appears in the roster, and the header's <b>Go here</b> walks the player to it. A
+     * name already taken here turns the button into the copy, because that is the only answer left
+     * that does not overwrite somebody's work.</p>
+     */
+    private void drawLoad(GuiGraphics g, Font font, InventoryEditorLayout.Rect r,
+                          BuilderProfilePacket.Entry entry, EditorCreatorBuilds.Landed landed,
+                          boolean asCopy, int mouseX, int mouseY) {
+        loadRect = null;
+        if (landed != null) {
+            // Done, and not a button: pressing it again would fetch the same build and be told the
+            // name is taken — by the copy it just made.
+            String done = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADED);
+            g.drawString(font, font.plainSubstrByWidth(done, r.w() - 4),
+                r.x() + (r.w() - font.width(done)) / 2, r.y() + (r.h() - font.lineHeight) / 2 + 1,
+                LOADED_TEXT, false);
+            return;
+        }
+        boolean enabled = entry != null;
+        loadRect = enabled ? r : null;
+        boolean hot = enabled && r.contains(mouseX, mouseY);
         g.fill(r.x(), r.y(), r.right(), r.bottom(), !enabled ? EditorDetailPane.DISABLED
             : hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
         String label = EditorScreenLang.text(asCopy
@@ -92,6 +144,14 @@ public final class EditorCreatorPane {
         g.drawString(font, font.plainSubstrByWidth(label, r.w() - 6),
             r.x() + (r.w() - font.width(label)) / 2, r.y() + (r.h() - font.lineHeight) / 2 + 1,
             !enabled ? 0x80FFFFFF : hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
+    }
+
+    /** What a click at this point means. Reads back the geometry of the last frame. */
+    public HitKind hitTest(double mx, double my) {
+        if (goHereRect != null && goHereRect.contains(mx, my)) return HitKind.GO_HERE;
+        if (loadRect != null && loadRect.contains(mx, my)) return HitKind.LOAD;
+        if (previewRect != null && previewRect.contains(mx, my)) return HitKind.PREVIEW;
+        return HitKind.NONE;
     }
 
     /** The sheet: who made it, what it is, and what has happened to it. */
