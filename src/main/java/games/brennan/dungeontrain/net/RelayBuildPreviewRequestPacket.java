@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayPreview;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -53,10 +52,12 @@ public record RelayBuildPreviewRequestPacket(int relayId, String ownerUuid, bool
             BuilderRelayPreview.fetch(player, level, packet.relayId, owner, live)
                 .thenAccept(tag -> player.getServer().execute(() -> {
                     if (player.hasDisconnected()) return;
-                    // An answer always goes back, empty tag and all: the client is holding a slot
-                    // open for this build and a silence would hold it forever.
-                    DungeonTrainNet.sendTo(player, new RelayBuildPreviewPacket(packet.relayId,
-                        tag != null, tag == null ? new CompoundTag() : tag));
+                    // An answer always goes back, "nothing to draw" included: the client is holding
+                    // a slot open for this build and a silence would hold it forever.
+                    byte[] bytes = BuilderRelayPreview.encode(tag);
+                    DungeonTrainNet.sendTo(player, bytes == null
+                        ? RelayBuildPreviewPacket.none(packet.relayId)
+                        : new RelayBuildPreviewPacket(packet.relayId, true, bytes));
                 }));
         });
     }

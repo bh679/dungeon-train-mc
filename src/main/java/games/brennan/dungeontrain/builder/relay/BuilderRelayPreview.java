@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
@@ -16,9 +17,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -46,16 +49,20 @@ public final class BuilderRelayPreview {
      */
     private static final int MAX_BLOCKS = 12_000;
 
-    /**
-     * Bytes of encoded NBT past which a preview is dropped.
-     *
-     * <p>The counted size, because guessing by block count is what put a 2 MB tag on the wire and
-     * dropped the player out of their world: the client reads a payload's NBT through an accounter
-     * capped at 2 MiB, which charges per-tag overhead on top of the bytes, and a decode that trips
-     * it is a {@code DecoderException} — which is to say a disconnect, not a missing picture. Half a
-     * megabyte leaves that accounting room to breathe.</p>
-     */
+    /** Bytes of encoded NBT past which a preview is dropped — the cheap size check. */
     private static final int MAX_WIRE_BYTES = 512 * 1024;
+
+    /**
+     * What the client's NBT accounter is allowed to charge for a preview.
+     *
+     * <p>The number that actually matters, and not the same number as the byte count: the accounter
+     * bills per-tag overhead on top of the payload, so half a megabyte of small block entries can
+     * account past two megabytes. Measured by re-reading the encoded bytes through an accounter of
+     * this size — the client's own arithmetic, run here where refusing costs a name plate rather
+     * than a connection. Below the 2 MiB the client allows, so the margin absorbs whatever the
+     * payload wrapper adds.</p>
+     */
+    private static final long MAX_ACCOUNTED_BYTES = 1_500_000L;
 
     private BuilderRelayPreview() {}
 
@@ -83,8 +90,7 @@ public final class BuilderRelayPreview {
             CompoundTag snapshot = BuilderRelayDownload.fold(CarriageBlockSnapshot.decode(build.blocks()), build);
             HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
             StructureTemplate template = CarriageSnapshotTemplate.toTemplate(snapshot, blocks);
-            CompoundTag tag = template.save(new CompoundTag());
-            return oversized(tag) ? null : tag;
+            return template.save(new CompoundTag());
         } catch (Throwable t) {
             // A build this version cannot read is a tile that keeps its slate, not a broken screen.
             LOGGER.debug("[DungeonTrain] Builder relay preview: id={} would not convert: {}", build.id(), t.toString());
@@ -92,40 +98,41 @@ public final class BuilderRelayPreview {
         }
     }
 
-    /** Whether this structure is past what a tile-sized picture is worth, or past what will send. */
-    static boolean oversized(CompoundTag tag) {
-        if (tag.getList("blocks", Tag.TAG_COMPOUND).size() > MAX_BLOCKS) return true;
-        return encodedSize(tag) > MAX_WIRE_BYTES;
+    /**
+     * This structure as the bytes the packet carries, or null when it should not be sent.
+     *
+     * <p>Three gates, cheapest first: too many blocks to be worth a tile, too many bytes for the
+     * wire, and — the one that matters — more than the client's NBT accounter will spend reading
+     * it. The last is checked by reading the bytes back through an accounter of that size, so the
+     * question asked here is the same question the client will ask, rather than an estimate of
+     * it.</p>
+     */
+    public static byte[] encode(CompoundTag tag) {
+        if (tag == null || tag.getList("blocks", Tag.TAG_COMPOUND).size() > MAX_BLOCKS) return null;
+        byte[] bytes;
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            NbtIo.write(tag, new DataOutputStream(out));
+            bytes = out.toByteArray();
+        } catch (IOException e) {
+            return null;
+        }
+        if (bytes.length > MAX_WIRE_BYTES || decode(bytes) == null) return null;
+        return bytes;
     }
 
     /**
-     * How many bytes this tag becomes on the wire, counted rather than estimated.
+     * The tag those bytes hold, or null when there is no reading them within the accounter's budget.
      *
-     * <p>Encoding it twice — once to measure, once to send — is the cost of never sending one that
-     * cannot be read. A tag that will not even encode counts as infinite, which drops it.</p>
+     * <p>Used on both sides, which is the point: the server asks it to find out whether the client
+     * could read what it is about to send, and the client asks it instead of letting the payload
+     * decoder do it — down here a refusal is a missing picture, up there it is a disconnect.</p>
      */
-    static int encodedSize(CompoundTag tag) {
-        ByteCounter counter = new ByteCounter();
-        try (DataOutputStream out = new DataOutputStream(counter)) {
-            NbtIo.write(tag, out);
-        } catch (IOException e) {
-            return Integer.MAX_VALUE;
-        }
-        return counter.count;
-    }
-
-    /** Counts bytes and keeps none of them. */
-    private static final class ByteCounter extends OutputStream {
-        private int count;
-
-        @Override
-        public void write(int b) {
-            count++;
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) {
-            count += len;
+    public static CompoundTag decode(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) return null;
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes))) {
+            return NbtIo.read(in, NbtAccounter.create(MAX_ACCOUNTED_BYTES));
+        } catch (Exception e) {
+            return null;
         }
     }
 }

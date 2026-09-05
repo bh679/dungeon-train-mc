@@ -5,8 +5,8 @@ import net.minecraft.nbt.ListTag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * The size gate on a preview.
@@ -28,33 +28,42 @@ final class BuilderRelayPreviewTest {
     }
 
     @Test
-    @DisplayName("an ordinary build is small enough to send")
+    @DisplayName("an ordinary build encodes and reads back")
     void ordinaryBuildFits() {
         // A 9x7x7 carriage is a few hundred blocks; even a dense one is nowhere near the cap.
-        assertFalse(BuilderRelayPreview.oversized(structureWith(441)));
+        byte[] bytes = BuilderRelayPreview.encode(structureWith(441));
+        assertNotNull(bytes);
+        assertNotNull(BuilderRelayPreview.decode(bytes));
     }
 
     @Test
     @DisplayName("a build past the block cap is not sent at all")
     void hugeBuildIsRefused() {
-        assertTrue(BuilderRelayPreview.oversized(structureWith(12_001)));
+        assertNull(BuilderRelayPreview.encode(structureWith(12_001)));
     }
 
     @Test
-    @DisplayName("a build under the block cap but over the wire cap is refused too")
+    @DisplayName("a build under the block cap but too heavy to send is refused too")
     void fatBuildIsRefused() {
-        // The block count is the cheap check and it is not the one that matters: a few thousand
-        // blocks carrying sign text and container inventories is what actually blew the client's
-        // 2 MiB NBT accounter and dropped the player out of their world.
+        // The block count is the cheap check and it is not the one that matters: what dropped the
+        // player out of their world was a tag the client's NBT accounter would not spend the budget
+        // to read, which is a different quantity from either the block count or the byte count.
         CompoundTag tag = structureWith(0);
         tag.putByteArray("sidecar", new byte[600 * 1024]);
-        assertTrue(BuilderRelayPreview.oversized(tag));
-        assertTrue(BuilderRelayPreview.encodedSize(tag) > 512 * 1024);
+        assertNull(BuilderRelayPreview.encode(tag));
+    }
+
+    @Test
+    @DisplayName("bytes that are not NBT come back as no picture, not as an exception")
+    void rubbishBytesAreJustNoPicture() {
+        assertNull(BuilderRelayPreview.decode(new byte[] {1, 2, 3, 4}));
+        assertNull(BuilderRelayPreview.decode(new byte[0]));
+        assertNull(BuilderRelayPreview.decode(null));
     }
 
     @Test
     @DisplayName("a structure with no blocks list is not treated as huge")
-    void emptyStructureIsNotOversized() {
-        assertFalse(BuilderRelayPreview.oversized(new CompoundTag()));
+    void emptyStructureIsNotRefused() {
+        assertNotNull(BuilderRelayPreview.encode(new CompoundTag()));
     }
 }
