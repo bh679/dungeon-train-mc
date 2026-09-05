@@ -69,6 +69,16 @@ public final class DungeonTrainConfig {
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
     public static final int DEFAULT_PROGRESSION_LEVEL_DELAY = 1;
     public static final boolean DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP = true;
+    public static final boolean DEFAULT_MOB_EXPERIENCE_SCALING_ENABLED = true;
+    /** Symmetric bounds for the three mob-XP weights — 0 disables that component, 5 makes it dominant. */
+    public static final double MIN_MOB_EXPERIENCE_WEIGHT = 0.0;
+    public static final double MAX_MOB_EXPERIENCE_WEIGHT = 5.0;
+    public static final double DEFAULT_MOB_EXPERIENCE_PER_STAT_POINT = 0.03;
+    public static final double DEFAULT_MOB_EXPERIENCE_PER_ENCHANT_LEVEL = 0.05;
+    public static final double DEFAULT_MOB_EXPERIENCE_PER_EFFECT_POINT = 0.20;
+    public static final double MIN_MOB_EXPERIENCE_MAX_MULTIPLIER = 1.0;
+    public static final double MAX_MOB_EXPERIENCE_MAX_MULTIPLIER = 100.0;
+    public static final double DEFAULT_MOB_EXPERIENCE_MAX_MULTIPLIER = 10.0;
     public static final boolean DEFAULT_VILLAGER_TRADE_SCALING_ENABLED = true;
     public static final int MIN_VILLAGER_TRADE_SCALING_MIN_CARRIAGE = 0;
     public static final int MAX_VILLAGER_TRADE_SCALING_MIN_CARRIAGE = 10_000;
@@ -293,6 +303,11 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue PROGRESSION_LEVEL_DELAY;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP;
+    public static final ModConfigSpec.BooleanValue MOB_EXPERIENCE_SCALING_ENABLED;
+    public static final ModConfigSpec.DoubleValue MOB_EXPERIENCE_PER_STAT_POINT;
+    public static final ModConfigSpec.DoubleValue MOB_EXPERIENCE_PER_ENCHANT_LEVEL;
+    public static final ModConfigSpec.DoubleValue MOB_EXPERIENCE_PER_EFFECT_POINT;
+    public static final ModConfigSpec.DoubleValue MOB_EXPERIENCE_MAX_MULTIPLIER;
     public static final ModConfigSpec.BooleanValue VILLAGER_TRADE_SCALING_ENABLED;
     public static final ModConfigSpec.IntValue VILLAGER_TRADE_SCALING_MIN_CARRIAGE;
     public static final ModConfigSpec.IntValue VILLAGER_TRADE_SCALING_TIERS_PER_STEP;
@@ -349,6 +364,11 @@ public final class DungeonTrainConfig {
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         PROGRESSION_LEVEL_DELAY = pair.getLeft().progressionLevelDelay;
         DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP = pair.getLeft().difficultyScaleHostileGearPastCap;
+        MOB_EXPERIENCE_SCALING_ENABLED = pair.getLeft().mobExperienceScalingEnabled;
+        MOB_EXPERIENCE_PER_STAT_POINT = pair.getLeft().mobExperiencePerStatPoint;
+        MOB_EXPERIENCE_PER_ENCHANT_LEVEL = pair.getLeft().mobExperiencePerEnchantLevel;
+        MOB_EXPERIENCE_PER_EFFECT_POINT = pair.getLeft().mobExperiencePerEffectPoint;
+        MOB_EXPERIENCE_MAX_MULTIPLIER = pair.getLeft().mobExperienceMaxMultiplier;
         VILLAGER_TRADE_SCALING_ENABLED = pair.getLeft().villagerTradeScalingEnabled;
         VILLAGER_TRADE_SCALING_MIN_CARRIAGE = pair.getLeft().villagerTradeScalingMinCarriage;
         VILLAGER_TRADE_SCALING_TIERS_PER_STEP = pair.getLeft().villagerTradeScalingTiersPerStep;
@@ -440,6 +460,21 @@ public final class DungeonTrainConfig {
         ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap = b
                 .comment("When true, hostile carriage mobs keep gaining gear strength after their armor/weapon material caps at netherite (difficulty level 50): each rolled equipment piece gets a flat per-tier primary-stat bonus (attack damage on weapons, armor on armor) scaled by how far the tier is past the cap, so difficulty keeps climbing beyond ~level 50 instead of plateauing. Tiers 50 and below are unchanged. Reuses the same AIS stat-scaling PlayerMobs already receive. Default true; set false to restore the original behavior where hostile gear stops improving at netherite.")
                 .define("difficultyScaleHostileGearPastCap", DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP);
+        ModConfigSpec.BooleanValue mobExperienceScalingEnabled = b
+                .comment("When true, a monster drops more experience the more dangerous it actually is: its worn gear and active buffs are scored at death and the drop is multiplied by (1 + weighted score), capped at mobExperienceMaxMultiplier. Rewards exactly what difficulty progression hands out — high-level armor and weapons, deep enchantments, and stacked beneficial potion effects — so late-train kills pay for the fight instead of dropping the same handful of XP as a naked mob. Scored off the live mob, so it also covers a naturally-armoured vanilla mob and survives a progress reset. Set false for vanilla experience drops.")
+                .define("mobExperienceScalingEnabled", DEFAULT_MOB_EXPERIENCE_SCALING_ENABLED);
+        ModConfigSpec.DoubleValue mobExperiencePerStatPoint = b
+                .comment("Experience multiplier added per point of the mob's gear stat total (each equipped item contributes its attack damage, or its armor if it has no attack damage; bows and crossbows count 4). Includes the AIS stat bonuses difficulty scaling applies past the netherite cap, so gear keeps paying out beyond level 50. Default 0.03 — a vanilla full-iron zombie totals 15 points, so x1.45. 0 disables the gear-stat component.")
+                .defineInRange("mobExperiencePerStatPoint", DEFAULT_MOB_EXPERIENCE_PER_STAT_POINT, MIN_MOB_EXPERIENCE_WEIGHT, MAX_MOB_EXPERIENCE_WEIGHT);
+        ModConfigSpec.DoubleValue mobExperiencePerEnchantLevel = b
+                .comment("Experience multiplier added per enchantment level across all of the mob's equipment (Sharpness V + Unbreaking III on one sword = 8 levels). Counts levels past the vanilla cap that enchantLevelCap allows at high tiers. Default 0.05. 0 disables the enchantment component.")
+                .defineInRange("mobExperiencePerEnchantLevel", DEFAULT_MOB_EXPERIENCE_PER_ENCHANT_LEVEL, MIN_MOB_EXPERIENCE_WEIGHT, MAX_MOB_EXPERIENCE_WEIGHT);
+        ModConfigSpec.DoubleValue mobExperiencePerEffectPoint = b
+                .comment("Experience multiplier added per level of each BENEFICIAL potion effect active on the mob (Speed I = 1 point, Strength III = 3). Harmful and neutral effects score nothing, so a mob the player has debuffed with Weakness never pays a bonus. Weighted highest of the three because the tiered buffs from difficulty progression are the hardest part of a late-train fight. Default 0.20. 0 disables the effect component.")
+                .defineInRange("mobExperiencePerEffectPoint", DEFAULT_MOB_EXPERIENCE_PER_EFFECT_POINT, MIN_MOB_EXPERIENCE_WEIGHT, MAX_MOB_EXPERIENCE_WEIGHT);
+        ModConfigSpec.DoubleValue mobExperienceMaxMultiplier = b
+                .comment("Hard ceiling on the mob experience multiplier, however well-geared the monster is. Default 10.0 — a zombie tops out at 50 XP. Bounds the throughput of an XP farm on the late train, and stops a single absurdly-statted item from producing an unbounded drop. 1.0 caps every mob at its vanilla experience.")
+                .defineInRange("mobExperienceMaxMultiplier", DEFAULT_MOB_EXPERIENCE_MAX_MULTIPLIER, MIN_MOB_EXPERIENCE_MAX_MULTIPLIER, MAX_MOB_EXPERIENCE_MAX_MULTIPLIER);
         ModConfigSpec.BooleanValue difficultyIsolatedStash = b
                 .comment("When true, each vanilla difficulty (Peaceful/Easy/Normal/Hard) is its own self-contained profile: it has its own Ender Chest, and — with keepInventory on — its own carried inventory + XP, so gear farmed on an easy run can't be brought to a hard one. Changing difficulty in-game swaps both (the old difficulty's are stored, the new difficulty's are loaded) and tells the player in chat. Normal keeps using the existing un-suffixed storage, so no current stash moves or disappears; the other three difficulties start empty. Companion to the echo partition in PlayerMob (reincarnationDifficultyIsolation), which keeps each difficulty's echoes to itself. Set false to share one stash and one loadout across all difficulties, as builds before this did.")
                 .define("difficultyIsolatedStash", DEFAULT_DIFFICULTY_ISOLATED_STASH);
@@ -695,6 +730,8 @@ public final class DungeonTrainConfig {
         return new Holder(configVersion, numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyTravelledOffset, difficultyAffectsBabyMobs, progressionLevelDelay,
                 difficultyScaleHostileGearPastCap, difficultyIsolatedStash,
+                mobExperienceScalingEnabled, mobExperiencePerStatPoint, mobExperiencePerEnchantLevel,
+                mobExperiencePerEffectPoint, mobExperienceMaxMultiplier,
                 villagerTradeScalingEnabled, villagerTradeScalingMinCarriage, villagerTradeScalingTiersPerStep,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
@@ -837,6 +874,27 @@ public final class DungeonTrainConfig {
 
     public static boolean getDifficultyScaleHostileGearPastCap() {
         return isLoaded() ? DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP.get() : DEFAULT_DIFFICULTY_SCALE_HOSTILE_GEAR_PAST_CAP;
+    }
+
+    /** When true, a monster's experience drop scales with its gear and active beneficial effects. */
+    public static boolean getMobExperienceScalingEnabled() {
+        return isLoaded() ? MOB_EXPERIENCE_SCALING_ENABLED.get() : DEFAULT_MOB_EXPERIENCE_SCALING_ENABLED;
+    }
+
+    public static double getMobExperiencePerStatPoint() {
+        return isLoaded() ? MOB_EXPERIENCE_PER_STAT_POINT.get() : DEFAULT_MOB_EXPERIENCE_PER_STAT_POINT;
+    }
+
+    public static double getMobExperiencePerEnchantLevel() {
+        return isLoaded() ? MOB_EXPERIENCE_PER_ENCHANT_LEVEL.get() : DEFAULT_MOB_EXPERIENCE_PER_ENCHANT_LEVEL;
+    }
+
+    public static double getMobExperiencePerEffectPoint() {
+        return isLoaded() ? MOB_EXPERIENCE_PER_EFFECT_POINT.get() : DEFAULT_MOB_EXPERIENCE_PER_EFFECT_POINT;
+    }
+
+    public static double getMobExperienceMaxMultiplier() {
+        return isLoaded() ? MOB_EXPERIENCE_MAX_MULTIPLIER.get() : DEFAULT_MOB_EXPERIENCE_MAX_MULTIPLIER;
     }
 
     /** When true, authored hostile carriage mobs do not spawn during the no-hostiles opening stage. */
@@ -1158,6 +1216,11 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue progressionLevelDelay,
             ModConfigSpec.BooleanValue difficultyScaleHostileGearPastCap,
             ModConfigSpec.BooleanValue difficultyIsolatedStash,
+            ModConfigSpec.BooleanValue mobExperienceScalingEnabled,
+            ModConfigSpec.DoubleValue mobExperiencePerStatPoint,
+            ModConfigSpec.DoubleValue mobExperiencePerEnchantLevel,
+            ModConfigSpec.DoubleValue mobExperiencePerEffectPoint,
+            ModConfigSpec.DoubleValue mobExperienceMaxMultiplier,
             ModConfigSpec.BooleanValue villagerTradeScalingEnabled,
             ModConfigSpec.IntValue villagerTradeScalingMinCarriage,
             ModConfigSpec.IntValue villagerTradeScalingTiersPerStep,

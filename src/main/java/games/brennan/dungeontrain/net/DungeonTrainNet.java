@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "56";
+    public static final String PROTOCOL_VERSION = "63";
 
     private DungeonTrainNet() {}
 
@@ -98,6 +98,9 @@ public final class DungeonTrainNet {
         registrar.playToServer(SaveBlockVariantPrefabPacket.TYPE, SaveBlockVariantPrefabPacket.STREAM_CODEC, SaveBlockVariantPrefabPacket::handle);
         registrar.playToServer(SaveLootPrefabPacket.TYPE, SaveLootPrefabPacket.STREAM_CODEC, SaveLootPrefabPacket::handle);
         registrar.playToServer(EditorUnsavedRequestPacket.TYPE, EditorUnsavedRequestPacket.STREAM_CODEC, EditorUnsavedRequestPacket::handle);
+        registrar.playToServer(EditorRosterRequestPacket.TYPE, EditorRosterRequestPacket.STREAM_CODEC, EditorRosterRequestPacket::handle);
+        registrar.playToClient(EditorRosterPacket.TYPE, EditorRosterPacket.STREAM_CODEC, EditorRosterPacket::handle);
+        registrar.playToClient(EditorHistoryPacket.TYPE, EditorHistoryPacket.STREAM_CODEC, EditorHistoryPacket::handle);
         registrar.playToClient(EditorUnsavedListPacket.TYPE, EditorUnsavedListPacket.STREAM_CODEC, EditorUnsavedListPacket::handle);
         registrar.playToServer(EditorChangesRequestPacket.TYPE, EditorChangesRequestPacket.STREAM_CODEC, EditorChangesRequestPacket::handle);
         registrar.playToClient(EditorChangesListPacket.TYPE, EditorChangesListPacket.STREAM_CODEC, EditorChangesListPacket::handle);
@@ -206,6 +209,10 @@ public final class DungeonTrainNet {
         registrar.playToServer(BuilderProfileActionPacket.TYPE, BuilderProfileActionPacket.STREAM_CODEC, BuilderProfileActionPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
         registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
+        // Blocks for a tile-sized picture of somebody's relay build — a read, where the download
+        // above is a write. See RelayBuildPreviewRequestPacket.
+        registrar.playToServer(RelayBuildPreviewRequestPacket.TYPE, RelayBuildPreviewRequestPacket.STREAM_CODEC, RelayBuildPreviewRequestPacket::handle);
+        registrar.playToClient(RelayBuildPreviewPacket.TYPE, RelayBuildPreviewPacket.STREAM_CODEC, RelayBuildPreviewPacket::handle);
         // Builds the relay has lost, asked for from in-world (/dtrebuild). The title-screen card
         // does the same work client-side, where there is no server to ask.
         registrar.playToServer(BuilderReconcileStartPacket.TYPE, BuilderReconcileStartPacket.STREAM_CODEC, BuilderReconcileStartPacket::handle);

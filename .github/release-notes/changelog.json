@@ -11120,9 +11120,9 @@
       "title": "Support page tidy-up",
       "summary": "The stats on the support page have been cleaned up, with a little more to see.",
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "shader-pack-atmosphere",
@@ -11138,9 +11138,9 @@
         "Carriages are no longer lit through solid ceilings"
       ],
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "hide-distant-horizons-upside-down",
@@ -11149,9 +11149,9 @@
       "title": "Distant Horizons in the upside-down section",
       "summary": "Distant Horizons now pauses in the upside-down section, instead of drawing the world the right way up around you.",
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "editor-advancements-creative-only",
@@ -11162,9 +11162,9 @@
       "highlights": [],
       "pr": 1291,
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "chest-break-counts-as-open",
@@ -11178,9 +11178,9 @@
       ],
       "pr": 1294,
       "date": "2026-09-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
     },
     {
       "id": "contents-random-flip",
@@ -11194,6 +11194,92 @@
       ],
       "pr": 1296,
       "date": "2026-09-04",
+      "released": true,
+      "released_in": "v0.794.0",
+      "released_at": "2026-09-04T18:25:18Z"
+    },
+    {
+      "id": "portal-room-lighting-ease",
+      "version": "0.795.0",
+      "type": "fix",
+      "title": "Portal carriage lighting eases in instead of snapping",
+      "summary": "Walking a portal corridor, or arriving in a dimensional carriage, used to brighten the room's dim corners in one hard step. The light now comes up and drops away smoothly, gentlest at the very start of the change rather than harshest.",
+      "highlights": [
+        "The corridor and room lighting fade in and out over about a second instead of jumping",
+        "Most noticeable with a shader pack, which leans on that lighting for its ambient"
+      ],
+      "date": "2026-09-05",
+      "released": true,
+      "released_in": "v0.795.0",
+      "released_at": "2026-09-05T06:48:12Z"
+    },
+    {
+      "id": "shader-menu",
+      "version": "0.795.0",
+      "type": "feat",
+      "title": "Shaders, from the menu",
+      "summary": "Nine shader packs are now supported, and there is a Shaders page to pick one from \u2014 on the title screen between Mods and Options, and in the Esc menu beside Mods. Each pack shows a screenshot of the same stretch of track at the same time of day, so you can see what it actually does before you commit to it, with the unshaded shot there to compare against. One click downloads it from the author's own page and turns it on; if you already have it, one click turns it on. Sort the list by our pick, by how demanding a pack is, by how close it stays to vanilla, or by mood.",
+      "highlights": [
+        "A Shaders page on the title screen and in the Esc menu",
+        "Nine supported packs, each shown as the same scene so they can be compared",
+        "Download and turn a pack on in one click, straight from its author's page",
+        "Sort by our pick, performance cost, closeness to vanilla, or mood",
+        "Shader Settings opens the running pack's own options",
+        "Fixed: the Options screen could push its Done button off the bottom of the screen"
+      ],
+      "pr": 1298,
+      "date": "2026-09-05",
+      "released": true,
+      "released_in": "v0.795.0",
+      "released_at": "2026-09-05T06:48:12Z"
+    },
+    {
+      "id": "x-menu-inventory-screen",
+      "version": "0.796.0",
+      "type": "feat",
+      "title": "The editor's X menu is an inventory screen",
+      "summary": "The Train Editor's X menu is now a full screen laid out like an inventory: tabs across the top, a searchable grid of 3D template previews, and a detail pane where the numbers on the sheet are the things you edit. Dimensional carriages gained the most from it \u2014 a room's sub-variants open under it, Test the Carriage works on whichever room you picked, and a room set to Daylight is lit like one wherever it stands.",
+      "highlights": [
+        "Browse every template in one grid, filter by name, and see each one turning in 3D before you go anywhere near it",
+        "Edit a template's weight, size, level band and stage by clicking the number on its data sheet",
+        "Test the Carriage no longer needs you standing in the room, and a Daylight room is bright in the test as well as on its plot",
+        "Dimensional carriage plots no longer overlap or leave copies of themselves behind",
+        "Rooms can be 90 blocks tall \u2014 every world's basement grew to stand one up \u2014 with new builds capped at 64 per side",
+        "Skybox blocks can be switched off to build behind them, and switch themselves back on for a test"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "terrarium-dimensional-carriage",
+      "version": "0.796.0",
+      "type": "content",
+      "title": "A new dimensional carriage: the Terrarium",
+      "summary": "Firefly_on_ytb built the Terrarium \u2014 a tall glass house of sand, grass and trees, open to the daylight \u2014 and it joins House's rooms, so a dimensional carriage can now drop you into it from level 4 onward.",
+      "highlights": [
+        "Built by Firefly_on_ytb"
+      ],
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mob-xp-scales-with-gear",
+      "version": "0.796.0",
+      "type": "feat",
+      "title": "Tougher monsters are worth more experience",
+      "summary": "A monster now drops more experience the more dangerous it actually is. Its armour, weapon, enchantments and active buffs are all weighed up at the moment it dies, and the payout scales with them \u2014 so the heavily-geared horrors that come out later on the train finally pay for the fight instead of dropping the same few orbs as a bare zombie on carriage one. A fully-kitted late-train mob can be worth several times a normal one.",
+      "highlights": [
+        "Experience drops now scale with a monster's armour, weapon and enchantments",
+        "Beneficial potion effects on a monster raise its payout too \u2014 the buffs that make late-train mobs hard now make them worth killing",
+        "Naturally well-armoured vanilla mobs are rewarded on the same terms, anywhere in the game",
+        "Tunable (or switchable off) in the server config under [difficulty]"
+      ],
+      "pr": 1300,
+      "date": "2026-09-05",
       "released": false,
       "released_in": null,
       "released_at": null

@@ -325,7 +325,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         }
     }
 
-    private static void encodeVariant(FriendlyByteBuf buf, Variant v) {
+    static void encodeVariant(FriendlyByteBuf buf, Variant v) {
         buf.writeUtf(v.name(), 128);
         buf.writeVarInt(v.weight());
         buf.writeVarInt(v.minLevel());
@@ -346,7 +346,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         }
     }
 
-    private static Variant decodeVariant(FriendlyByteBuf buf) {
+    static Variant decodeVariant(FriendlyByteBuf buf) {
         String name = buf.readUtf(128);
         int weight = buf.readVarInt();
         int minLevel = buf.readVarInt();

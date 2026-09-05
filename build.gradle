@@ -165,6 +165,13 @@ neoForge {
             if (project.hasProperty('shaderSweepSites')) {
                 systemProperty 'dungeontrain.shader_sweep_sites', project.property('shaderSweepSites').toString()
             }
+            // -PshaderPreview="<world folder name>" runs the same harness for the Shaders menu's
+            // preview frame instead: one site, the train stopped, no diagnostics panel, written to
+            // run/screenshots/preview-<pack>.png. One launch per pack, same world and same camera —
+            // which is the whole reason the nine previews can be compared at all.
+            if (project.hasProperty('shaderPreview')) {
+                systemProperty 'dungeontrain.shader_preview', project.property('shaderPreview').toString()
+            }
         }
 
         server {

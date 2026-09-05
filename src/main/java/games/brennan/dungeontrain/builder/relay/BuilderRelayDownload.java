@@ -249,7 +249,7 @@ public final class BuilderRelayDownload {
     }
 
     /** Fold the build's delta log onto its base blob — the lease path's rule, on a fetched build. */
-    private static CompoundTag fold(CompoundTag base, SharedCarriageClient.BuildFetch build) {
+    static CompoundTag fold(CompoundTag base, SharedCarriageClient.BuildFetch build) {
         List<SharedCarriageClient.DeltaRec> pending =
                 SharedCarriageClient.pendingDeltas(build.deltas(), build.baseSeq());
         CompoundTag folded = base;

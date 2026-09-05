@@ -324,7 +324,6 @@ public final class PortalCarriageEvents {
      * Player → the daylit-room box they were last told about, on the same "only when it changes"
      * rule as {@link #LAST_FOG}.
      */
-    private static final Map<UUID, PortalRoomSkyPacket> LAST_SKY = new HashMap<>();
 
     /**
      * Player → the corridor hold they were last told about, on the same "only when it changes" rule
@@ -563,7 +562,7 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.narrative.PortalLibraryGreeter.clear();
         ACTIVE_PAIRS.clear();
         LAST_FOG.clear();
-        LAST_SKY.clear();
+        games.brennan.dungeontrain.portal.PlayerSkyRegions.clearAll();
         LAST_CROSSING.clear();
         CROSSING_THIS_TICK.clear();
         LAST_TRAIN_AUDIO.clear();
@@ -1115,7 +1114,7 @@ public final class PortalCarriageEvents {
      * exactly one structure rather than every live pair.
      *
      * <p><b>Why this exists rather than a second implementation.</b> The three senders below dedupe
-     * against {@link #LAST_FOG}, {@link #LAST_SKY} and {@link #LAST_TRAIN_AUDIO}, so a packet only
+     * against {@link #LAST_FOG}, {@code PlayerSkyRegions} and {@link #LAST_TRAIN_AUDIO}, so a packet only
      * goes out when the answer changes. A parallel copy in another class would not merely duplicate
      * them, it would fight them over that state — and a test room lit differently from a live one is
      * exactly the thing a test room must not be. {@code PortalTestTicker} calls this.</p>
@@ -1273,12 +1272,13 @@ public final class PortalCarriageEvents {
         for (ServerPlayer player : players) {
             if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
             skied.add(player.getUUID());
-            if (region.equals(LAST_SKY.get(player.getUUID()))) continue;
-            LAST_SKY.put(player.getUUID(), region);
-            LOGGER.info("[DungeonTrain] room sky -> {}: {} x[{}..{}] y[{}..{}] z[{}..{}]",
-                player.getName().getString(), sky, region.minX(), region.maxX(), region.minY(), region.maxY(),
-                region.minZ(), region.maxZ());
-            PacketDistributor.sendToPlayer(player, region);
+            // Logged when it actually goes out, which the shared memory decides — main added this
+            // line inside the dedup it replaced, so it would otherwise fire every tick.
+            if (games.brennan.dungeontrain.portal.PlayerSkyRegions.send(player, region)) {
+                LOGGER.info("[DungeonTrain] room sky -> {}: {} x[{}..{}] y[{}..{}] z[{}..{}]",
+                    player.getName().getString(), sky, region.minX(), region.maxX(), region.minY(),
+                    region.maxY(), region.minZ(), region.maxZ());
+            }
         }
     }
 
@@ -1331,16 +1331,15 @@ public final class PortalCarriageEvents {
     }
 
     private static void clearSkyFor(List<ServerPlayer> players, Set<UUID> stillSkied) {
-        if (LAST_SKY.isEmpty()) return;
+        if (games.brennan.dungeontrain.portal.PlayerSkyRegions.isEmpty()) return;
         for (ServerPlayer player : players) {
             UUID id = player.getUUID();
-            if (stillSkied.contains(id) || !LAST_SKY.containsKey(id)) continue;
-            LAST_SKY.remove(id);
-            PacketDistributor.sendToPlayer(player, PortalRoomSkyPacket.none());
+            if (stillSkied.contains(id)) continue;
+            games.brennan.dungeontrain.portal.PlayerSkyRegions.clear(player);
         }
         // A player who left the world entirely never gets the message, which is exactly why the
         // client holds a box rather than a flag — it stops applying the moment they are not in it.
-        LAST_SKY.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
+        // Nothing to prune here any more — PlayerSkyRegions forgets a player when they log out.
     }
 
     /** Take the fog back off anyone who was in a room this tick and is not any more. */
