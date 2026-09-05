@@ -8,12 +8,17 @@ import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -34,14 +39,23 @@ public final class BuilderRelayPreview {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
-     * Blocks past which a preview is not worth sending.
+     * Blocks past which a preview is not worth sending — the cheap check, made before the exact one.
      *
      * <p>Well under the client's own bake cap, because the binding limit here is the wire rather
-     * than the GPU: a custom payload is a megabyte, a block entry costs a few dozen bytes of NBT,
-     * and a picture 100 pixels wide is not worth spending the whole budget on. A build over this
-     * keeps its name plate.</p>
+     * than the GPU, and a picture 100 pixels wide is not worth spending a whole payload on.</p>
      */
     private static final int MAX_BLOCKS = 12_000;
+
+    /**
+     * Bytes of encoded NBT past which a preview is dropped.
+     *
+     * <p>The counted size, because guessing by block count is what put a 2 MB tag on the wire and
+     * dropped the player out of their world: the client reads a payload's NBT through an accounter
+     * capped at 2 MiB, which charges per-tag overhead on top of the bytes, and a decode that trips
+     * it is a {@code DecoderException} — which is to say a disconnect, not a missing picture. Half a
+     * megabyte leaves that accounting room to breathe.</p>
+     */
+    private static final int MAX_WIRE_BYTES = 512 * 1024;
 
     private BuilderRelayPreview() {}
 
@@ -78,8 +92,40 @@ public final class BuilderRelayPreview {
         }
     }
 
-    /** Whether this structure is past what a tile-sized picture is worth. */
+    /** Whether this structure is past what a tile-sized picture is worth, or past what will send. */
     static boolean oversized(CompoundTag tag) {
-        return tag.getList("blocks", net.minecraft.nbt.Tag.TAG_COMPOUND).size() > MAX_BLOCKS;
+        if (tag.getList("blocks", Tag.TAG_COMPOUND).size() > MAX_BLOCKS) return true;
+        return encodedSize(tag) > MAX_WIRE_BYTES;
+    }
+
+    /**
+     * How many bytes this tag becomes on the wire, counted rather than estimated.
+     *
+     * <p>Encoding it twice — once to measure, once to send — is the cost of never sending one that
+     * cannot be read. A tag that will not even encode counts as infinite, which drops it.</p>
+     */
+    static int encodedSize(CompoundTag tag) {
+        ByteCounter counter = new ByteCounter();
+        try (DataOutputStream out = new DataOutputStream(counter)) {
+            NbtIo.write(tag, out);
+        } catch (IOException e) {
+            return Integer.MAX_VALUE;
+        }
+        return counter.count;
+    }
+
+    /** Counts bytes and keeps none of them. */
+    private static final class ByteCounter extends OutputStream {
+        private int count;
+
+        @Override
+        public void write(int b) {
+            count++;
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) {
+            count += len;
+        }
     }
 }
