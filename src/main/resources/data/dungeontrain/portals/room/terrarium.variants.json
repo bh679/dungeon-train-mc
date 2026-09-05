@@ -274,7 +274,6 @@
     "13,60,1": { "lockId": 22, "states": ["minecraft:stone", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "14,60,3": { "lockId": 23, "states": ["minecraft:stone", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "14,60,4": { "lockId": 23, "states": ["minecraft:stone", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
-    "14,60,5": { "lockId": 23, "states": ["minecraft:stone", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "13,60,4": { "lockId": 23, "states": ["minecraft:stone", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "14,61,4": { "lockId": 23, "states": ["minecraft:stone", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "14,62,4": { "lockId": 23, "states": ["minecraft:stone", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
@@ -804,6 +803,8 @@
     "39,16,3": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:shulker"}],
     "39,18,5": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:shulker"}],
     "34,17,2": [{"state": "minecraft:chest[facing=east,type=single,waterlogged=false]", "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:porkchop\"},{Slot:2b,count:1,id:\"minecraft:rib_armor_trim_smithing_template\"},{Slot:4b,count:1,id:\"minecraft:cooked_beef\"},{Slot:23b,count:1,id:\"minecraft:netherite_upgrade_smithing_template\"},{Slot:26b,count:1,id:\"minecraft:snout_armor_trim_smithing_template\"}],components:{\"minecraft:custom_data\":{dt_loot_prefab_id:\"loot\"}}}", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "minecraft:chest[facing=east,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}, "lootPrefab": "loot"}],
-    "34,17,4": [{"state": "minecraft:chest[facing=east,type=single,waterlogged=false]", "nbt": "{Items:[{Slot:18b,count:1,id:\"minecraft:netherite_upgrade_smithing_template\"}],components:{\"minecraft:custom_data\":{dt_loot_prefab_id:\"loot\"}}}", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "minecraft:chest[facing=east,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}, "lootPrefab": "loot"}]
+    "34,17,4": [{"state": "minecraft:chest[facing=east,type=single,waterlogged=false]", "nbt": "{Items:[{Slot:18b,count:1,id:\"minecraft:netherite_upgrade_smithing_template\"}],components:{\"minecraft:custom_data\":{dt_loot_prefab_id:\"loot\"}}}", "rotation": {"mode": "lock", "dirs": ["east"]}}, {"state": "minecraft:chest[facing=east,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["east"]}, "lootPrefab": "loot"}],
+    "14,71,5": { "lockId": 57, "states": ["minecraft:dirt", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "14,65,5": { "lockId": 57, "states": ["minecraft:dirt", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}] }
   }
 }
