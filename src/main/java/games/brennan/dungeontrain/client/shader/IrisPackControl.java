@@ -23,6 +23,10 @@ public final class IrisPackControl {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    private static volatile boolean apiResolved = false;
+    private static Object irisApi;
+    private static Method openMainScreen;
+
     private static volatile boolean resolved = false;
     private static Method getIrisConfig;
     private static Method setShaderPackName;
@@ -77,6 +81,58 @@ public final class IrisPackControl {
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Iris pack change failed: {}", t.toString());
             return false;
+        }
+    }
+
+    /**
+     * Open Iris' own shader screen — the pack's settings, which are Iris' business and not ours.
+     *
+     * <p>This is the one thing {@code IrisApi} does offer ({@code openMainIrisScreenObj}), and it
+     * returns the screen rather than showing it. Reflective like the rest, so a future Iris that
+     * drops it degrades to the button not appearing rather than to a crash.</p>
+     *
+     * @return false if Iris is absent or the screen could not be opened
+     */
+    public static boolean openSettings(Object parentScreen) {
+        resolveApi();
+        if (openMainScreen == null) {
+            return false;
+        }
+        try {
+            Object screen = openMainScreen.invoke(irisApi, parentScreen);
+            if (screen instanceof net.minecraft.client.gui.screens.Screen s) {
+                net.minecraft.client.Minecraft.getInstance().setScreen(s);
+                return true;
+            }
+            // Some versions show it themselves and return nothing useful; treat that as done.
+            return screen == null;
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not open Iris' shader screen: {}", t.toString());
+            return false;
+        }
+    }
+
+    /** Whether Iris' own shader screen can be opened. */
+    public static boolean canOpenSettings() {
+        resolveApi();
+        return openMainScreen != null;
+    }
+
+    private static void resolveApi() {
+        if (apiResolved) return;
+        synchronized (IrisPackControl.class) {
+            if (apiResolved) return;
+            try {
+                Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+                irisApi = api.getMethod("getInstance").invoke(null);
+                openMainScreen = api.getMethod("openMainIrisScreenObj", Object.class);
+            } catch (ClassNotFoundException absent) {
+                // No Iris.
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] Iris screen API unavailable: {}", t.toString());
+            } finally {
+                apiResolved = true;
+            }
         }
     }
 

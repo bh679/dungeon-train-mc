@@ -183,8 +183,11 @@ public final class ShaderMenuScreen extends Screen {
         }
         switch (ShaderPackLibrary.stateOf(pack)) {
             case ACTIVE -> {
-                action.setMessage(Component.translatable("gui.dungeontrain.shaders.action.active"));
-                action.active = false;
+                // A disabled button saying "Active" spends the page's best slot telling you what
+                // the green border already says. Once a pack is on, the next thing anyone wants is
+                // its own settings — which are Iris' to present, not ours to reimplement.
+                action.setMessage(Component.translatable("gui.dungeontrain.shaders.action.settings"));
+                action.active = IrisPackControl.canOpenSettings();
             }
             case DOWNLOADING -> {
                 action.setMessage(Component.translatable("gui.dungeontrain.shaders.action.downloading"));
@@ -203,6 +206,11 @@ public final class ShaderMenuScreen extends Screen {
 
     private void onAction() {
         ShaderPack pack = selected == null ? null : selected.pack();
+        if (pack != null && ShaderPackLibrary.active(pack)) {
+            UiAnalytics.click(UiAnalytics.SURFACE_SHADERS, UiAnalytics.TARGET_SHADER_SETTINGS);
+            IrisPackControl.openSettings(this);
+            return;
+        }
         if (pack == null) {
             UiAnalytics.click(UiAnalytics.SURFACE_SHADERS, UiAnalytics.TARGET_SHADERS_OFF);
             IrisPackControl.disable();

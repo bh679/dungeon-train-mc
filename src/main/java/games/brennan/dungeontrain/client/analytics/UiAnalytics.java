@@ -107,6 +107,7 @@ public final class UiAnalytics {
     public static final String TARGET_SHADER_DOWNLOAD = "shader_download";
     public static final String TARGET_SHADER_APPLY = "shader_apply";
     public static final String TARGET_SHADERS_OFF = "shaders_off";
+    public static final String TARGET_SHADER_SETTINGS = "shader_settings";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
     public static final String TARGET_CONTRIBUTE = "contribute"; // "Contribute" opens the donate-options window
     public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run
