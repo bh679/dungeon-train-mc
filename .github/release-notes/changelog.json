@@ -11265,6 +11265,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mob-xp-scales-with-gear",
+      "version": "0.796.0",
+      "type": "feat",
+      "title": "Tougher monsters are worth more experience",
+      "summary": "A monster now drops more experience the more dangerous it actually is. Its armour, weapon, enchantments and active buffs are all weighed up at the moment it dies, and the payout scales with them \u2014 so the heavily-geared horrors that come out later on the train finally pay for the fight instead of dropping the same few orbs as a bare zombie on carriage one. A fully-kitted late-train mob can be worth several times a normal one.",
+      "highlights": [
+        "Experience drops now scale with a monster's armour, weapon and enchantments",
+        "Beneficial potion effects on a monster raise its payout too \u2014 the buffs that make late-train mobs hard now make them worth killing",
+        "Naturally well-armoured vanilla mobs are rewarded on the same terms, anywhere in the game",
+        "Tunable (or switchable off) in the server config under [difficulty]"
+      ],
+      "pr": 1300,
+      "date": "2026-09-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
