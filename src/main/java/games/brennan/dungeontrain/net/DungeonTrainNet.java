@@ -34,6 +34,9 @@ public final class DungeonTrainNet {
 
         registrar.playToClient(VariantHoverPacket.TYPE, VariantHoverPacket.STREAM_CODEC, VariantHoverPacket::handle);
         registrar.playToClient(CarriageIndexPacket.TYPE, CarriageIndexPacket.STREAM_CODEC, CarriageIndexPacket::handle);
+
+        // Dev-HUD read-out: is time on the train banking, and if not, which idle rule stopped it.
+        registrar.playToClient(ActivityStatePacket.TYPE, ActivityStatePacket.STREAM_CODEC, ActivityStatePacket::handle);
         registrar.playToClient(EditorStatusPacket.TYPE, EditorStatusPacket.STREAM_CODEC, EditorStatusPacket::handle);
         registrar.playToClient(BookSuspensionSyncPacket.TYPE, BookSuspensionSyncPacket.STREAM_CODEC, BookSuspensionSyncPacket::handle);
         registrar.playToServer(VariantHotkeyPacket.TYPE, VariantHotkeyPacket.STREAM_CODEC, VariantHotkeyPacket::handle);
@@ -125,6 +128,14 @@ public final class DungeonTrainNet {
         // Client-only actions the server can't see (currently: the train engine volume setting
         // changing). Allowlisted server-side — see ClientActionPacket.
         registrar.playToServer(ClientActionPacket.TYPE, ClientActionPacket.STREAM_CODEC, ClientActionPacket::handle);
+
+        // Pause-screen open/close. The server can't see a client's screen, and on a dedicated
+        // server the world keeps ticking behind the menu — see PlayerActivityTracker.
+        registrar.playToServer(PlayerPausedPacket.TYPE, PlayerPausedPacket.STREAM_CODEC, PlayerPausedPacket::handle);
+
+        // Mouse movement / clicks inside an open screen, which freeze the camera and so are
+        // invisible to the server's own look sampling — see PlayerActivityTracker.
+        registrar.playToServer(ClientInputPacket.TYPE, ClientInputPacket.STREAM_CODEC, ClientInputPacket::handle);
 
         // Book vote: client casts 👍/👎 from the virtual vote page (buttons or Y/N hotkeys); server
         // re-validates the held stack's identity, stamps dt_book_vote (offline burn color), and

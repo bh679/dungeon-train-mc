@@ -141,7 +141,7 @@ class RunStatBookFactoryTest {
             "nothing else is true yet");
 
         PlayerRunState run = new PlayerRunState();
-        run.addRunTicks(20L * 600);
+        run.addTrainTimeTicks(20L * 600);
         for (int i = 0; i < 30; i++) run.openedLootContainer();
         run.advanceTravelled(12);
         run.recordCartMovement(12);

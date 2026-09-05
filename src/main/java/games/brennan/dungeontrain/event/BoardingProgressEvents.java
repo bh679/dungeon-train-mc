@@ -156,11 +156,14 @@ public final class BoardingProgressEvents {
             for (UUID uuid : boarded.keySet()) {
                 ServerPlayer p = level.getServer().getPlayerList().getPlayer(uuid);
                 if (p == null) continue;
+                // Feed the carriage-progress window: "3 carriages in 10 minutes" is judged from
+                // these samples, and a change of carriage also counts as keyboard input.
+                PlayerActivityTracker.recordCarriage(uuid, boarded.get(uuid), level.getGameTime());
                 // Lifetime train-time is a global stat — frozen for cheated runs and
                 // while the player is dead (death-screen time shouldn't count as
                 // "alive on the train"). The "boarded" advancement trigger, distance
                 // and biome sampling below still run regardless of alive state.
-                if (p.isAlive() && !RunIntegrity.isCheated(p)) {
+                if (p.isAlive() && !RunIntegrity.isCheated(p) && PlayerActivityTracker.isCountingTrain(p)) {
                     long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyTrainTime(p, newTotal);
                 }
@@ -175,7 +178,7 @@ public final class BoardingProgressEvents {
                 // Single-life time aboard: per-run boarded-tick counter that
                 // resets on death. Twin of the cross-world train-time above —
                 // also frozen while dead so the death screen doesn't rack up run time.
-                if (p.isAlive()) {
+                if (p.isAlive() && PlayerActivityTracker.isCountingTrain(p)) {
                     long runTrainTicks = p.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
                         .addTrainTimeTicks(SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
@@ -409,12 +412,12 @@ public final class BoardingProgressEvents {
 
             // Lifetime train-time — same gating as the boarded path: frozen for a cheated run and
             // while dead, so a death screen in a portal room racks up no more than one on the train.
-            if (player.isAlive() && !RunIntegrity.isCheated(player)) {
+            if (player.isAlive() && !RunIntegrity.isCheated(player) && PlayerActivityTracker.isCountingTrain(player)) {
                 long newTotal = GlobalPlayerStats.addTrainTicks(player.getUUID(), SCAN_PERIOD_TICKS);
                 AchievementEvents.notifyTrainTime(player, newTotal);
             }
             // Single-life time aboard, the per-run twin of the above.
-            if (player.isAlive()) {
+            if (player.isAlive() && PlayerActivityTracker.isCountingTrain(player)) {
                 long runTrainTicks = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
                     .addTrainTimeTicks(SCAN_PERIOD_TICKS);
                 AchievementEvents.notifyRunTrainTime(player, runTrainTicks);

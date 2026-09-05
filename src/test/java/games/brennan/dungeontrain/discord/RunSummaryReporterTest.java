@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Assembly tests for {@link RunSummaryReporter#buildPayload}. The relay reads {@code runSec} as the
- * life's elapsed seconds ({@code runTicks / 20}); {@code player} is optional. Pure — no running
+ * life's time on the train in seconds ({@code trainTimeTicks / 20}); {@code player} is optional. Pure — no running
  * server or Minecraft bootstrap needed.
  */
 class RunSummaryReporterTest {

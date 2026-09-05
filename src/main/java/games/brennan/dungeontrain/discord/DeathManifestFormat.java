@@ -99,7 +99,7 @@ public final class DeathManifestFormat {
      * Within a column each value is newline-separated; emoji are kept (Discord renders them).
      */
     public static List<DeathField> fields(String deathCause,
-            double distanceBlocks, long runTicks, double damageDealt, double damageTaken,
+            double distanceBlocks, long trainTimeTicks, double damageDealt, double damageTaken,
             int loot, int booksRead, List<String> advancementTitles,
             int playersEncountered, int playersBefriended, int playersKilled,
             int tamed) {
@@ -109,7 +109,7 @@ public final class DeathManifestFormat {
         String cause = clean(deathCause);
         if (!cause.isBlank()) fall.append(E_CAUSE).append(' ').append(cause).append('\n');
         fall.append(E_DIST).append(' ').append(DeathReportFormat.distance(distanceBlocks)).append('\n')
-            .append(E_TIME).append(' ').append(DeathReportFormat.time(runTicks));
+            .append(E_TIME).append(' ').append(DeathReportFormat.time(trainTimeTicks));
 
         // This run — damage / loot + books.
         StringBuilder run = new StringBuilder();
