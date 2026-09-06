@@ -43,6 +43,8 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
     private String typedBuffer = "";
     private String typingPrefix = "";
     private String typingSuffix = "";
+    /** What is being typed, for the label on the standalone field — "new_name" and the like. */
+    private String typingArg = "";
     private int typingRow = -1;
     private int typingSub;
 
@@ -118,6 +120,7 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
 
     @Override public void beginTyping(String argName, String commandPrefix, String commandSuffix, String initialBuffer) {
         typing = true;
+        typingArg = argName == null ? "" : argName;
         typedBuffer = initialBuffer == null ? "" : initialBuffer;
         if (typedBuffer.length() > MAX_TYPED) typedBuffer = typedBuffer.substring(0, MAX_TYPED);
         typingPrefix = commandPrefix;
@@ -137,6 +140,7 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
     public void cancelTyping() {
         typing = false;
         typedBuffer = "";
+        typingArg = "";
         typingRow = -1;
     }
 
@@ -178,7 +182,13 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
     // ---- render ----
 
     public void render(GuiGraphics g, Font font, int screenW, int screenH, int mouseX, int mouseY) {
-        if (stack.isEmpty()) return;
+        if (stack.isEmpty()) {
+            // Typing can begin with no modal open at all — the icon row's Rename is dispatched
+            // straight through this host — and the row-anchored field below has no row to sit on
+            // then. Without this the author types into nothing: the rename works, but blind.
+            if (typing) drawStandaloneTypingField(g, font, screenW, screenH);
+            return;
+        }
         MenuScreen top = stack.peek();
         entries = top.entries();
         MenuScreen side = top.sidePanel();
@@ -213,6 +223,38 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
         if (sw > 0) {
             drawPanel(g, font, sx, sy, sw, sh, side.title(), sideEntries, sideScroll, sideVisible, true);
         }
+        g.flush();
+        g.pose().popPose();
+    }
+
+    /**
+     * The typing field as its own little panel, centred, for a {@code TypeArg} opened from outside
+     * any modal. Shows what is being asked for, what has been typed so far, and the two keys that
+     * end it — a field with no visible caret and no way out reads as a frozen screen.
+     */
+    private void drawStandaloneTypingField(GuiGraphics g, Font font, int screenW, int screenH) {
+        int w = Math.min(PANEL_W, screenW - 20);
+        int h = HEADER_H + ROW_H + PAD * 2 + font.lineHeight + 2;
+        int x = (screenW - w) / 2;
+        int y = Math.max(10, (screenH - InventoryEditorLayout.HOTBAR_RESERVE - h) / 2);
+
+        g.flush();
+        g.pose().pushPose();
+        g.pose().translate(0, 0, MODAL_Z);
+        g.fill(0, 0, screenW, screenH, 0x60000000);
+        g.fill(x, y, x + w, y + h, BG);
+        g.renderOutline(x, y, w, h, 0xFF000000);
+
+        String header = font.plainSubstrByWidth(typingArg.isEmpty() ? "…" : typingArg, w - PAD * 2);
+        g.drawString(font, header, x + (w - font.width(header)) / 2, y + (HEADER_H - font.lineHeight) / 2,
+            MenuRowPainter.TEXT_HEADER, true);
+
+        String value = font.plainSubstrByWidth(typedBuffer + "_", w - PAD * 4);
+        g.drawString(font, value, x + PAD * 2, y + HEADER_H + PAD, MenuRowPainter.TEXT_HEADER, true);
+
+        String hint = font.plainSubstrByWidth("Enter to confirm · Esc to cancel", w - PAD * 2);
+        g.drawString(font, hint, x + (w - font.width(hint)) / 2, y + h - PAD - font.lineHeight,
+            0xFFA0A0A0, false);
         g.flush();
         g.pose().popPose();
     }
@@ -272,7 +314,9 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
 
     /** A click while a modal is open; always consumed so nothing underneath reacts. */
     public boolean mouseClicked(double mouseX, double mouseY) {
-        if (stack.isEmpty()) return false;
+        // Typing with no modal behind it still owns the screen: a click that fell through would open
+        // something else with the field still armed, and the next keystroke would go to the rename.
+        if (stack.isEmpty()) return typing;
         if (typing) return true;
         if (hoveredRow < 0) return true;
         List<CommandMenuEntry> rows = hoveredSide ? sideEntries : entries;
