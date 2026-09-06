@@ -11507,7 +11507,7 @@
     },
     {
       "id": "starting-books-room-to-breathe",
-      "version": "0.809.0",
+      "version": "0.811.0",
       "type": "content",
       "title": "Welcome book tweaks",
       "summary": "Small changes to the books you get when you arrive.",
@@ -11533,6 +11533,36 @@
       "released_in": null,
       "released_at": null,
       "pr": 1315
+    },
+    {
+      "id": "elytra-not-train-travel",
+      "version": "0.809.0",
+      "type": "fix",
+      "title": "Elytra flight no longer counts as travel on the train",
+      "summary": "Gliding past the train no longer counts as riding it. Flying over the roof on an elytra used to bank the same distance and difficulty progress as walking the carriages, so you could out-fly the train's own journey and pull the mobs up a tier for it. Now a glide only counts while you are actually inside a carriage \u2014 down a corridor still counts, skimming the roof does not \u2014 and the moment you land, everything resumes from where you left off with nothing paid out for the flight.",
+      "highlights": [
+        "Elytra flight over or alongside the train earns no distance and no difficulty progress",
+        "Gliding through a carriage's interior still counts as travelling on the train",
+        "Walking, riding and portal-room travel are unchanged"
+      ],
+      "pr": 1317,
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "jumps-tnt-templates",
+      "version": "0.810.0",
+      "type": "content",
+      "title": "Three new dimensional carriages",
+      "summary": "Three new dimensional carriages join the rotation, and the pillared ones have more block variety.",
+      "highlights": [],
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1318
     }
   ]
 }
