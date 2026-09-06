@@ -11375,15 +11375,15 @@
       "released_at": null
     },
     {
-      "id": "new-carriage-contents-and-icebears-room",
+      "id": "new-carriage-contents-and-portal-room",
       "version": "0.800.0",
       "type": "content",
-      "title": "New carriage contents and the Ice Bears portal room",
-      "summary": "Eight new carriage contents \u2014 including a booth, a crafting maze, an icy room, a leafy one, a prismarine chamber, and extra seating \u2014 plus a new bear-themed carriage and the Ice Bears portal room, home to a pack of hostile polar bears.",
+      "title": "New carriage contents and a new portal room",
+      "summary": "Eight new carriage interiors to furnish trains with, a new animal-themed carriage, and a new portal room populated by hostile wildlife.",
       "highlights": [
-        "Eight new carriage contents: booth, crafting maze, ice, leaves, prismarine, extra seating, and more",
-        "A bear-themed carriage content, for a touch of wildlife",
-        "The Ice Bears portal room \u2014 a frozen chamber patrolled by aggressive polar bears"
+        "Eight new carriage contents, adding fresh interiors and loot for trains to roll",
+        "A new animal-themed carriage content",
+        "A new portal room featuring a pack of hostile animals"
       ],
       "date": "2026-09-06",
       "released": false,
