@@ -3,10 +3,6 @@
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
   },
-  "aggressiveplayers": {
-    "weight": 1,
-    "mode": "endless_repetition/dynamic/off/on/off/end"
-  },
   "backrooms": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
@@ -114,6 +110,10 @@
   "house": {
     "weight": 1,
     "mode": "bedrock_lock"
+  },
+  "icebears": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/end"
   },
   "labrynth": {
     "weight": 2,
