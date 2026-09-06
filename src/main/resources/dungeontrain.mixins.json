@@ -58,6 +58,7 @@
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",
+    "client.DebugScreenOverlayDepthMixin",
     "client.BookViewScreenAccessor",
     "client.BookEditScreenAccessor",
     "client.BookEditScreenSignMixin",
@@ -105,6 +106,8 @@
     "client.MinecraftFramerateThrottleMixin",
     "client.SoundEngineMusicFadeMixin",
     "client.LanguageSelectEntryLogoMixin",
+    "client.FrustumPortalSealMixin",
+    "client.SubLevelSealCullMixin",
     "client.SectionOcclusionGraphPortalSwapMixin",
     "client.LevelRendererPortalSwapCompileMixin",
     "client.LanguageSelectEntryAccessor",

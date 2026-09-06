@@ -51,6 +51,19 @@ class PortalRoomTilerFaceActionTest {
     }
 
     @Test
+    @DisplayName("A tag with no Room Walls segment is Kept: nothing is carved or closed by default")
+    void defaultTouchesNothing() {
+        PortalStructure s = new PortalStructure(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
+            PortalRoomSettings.parse("endless_repetition/dynamic"), PortalRoomTiling.base());
+        assertEquals(FaceAction.NONE, PortalRoomTiler.faceAction(s, new Tile(1, 0), 1, true));
+        assertEquals(FaceAction.NONE, PortalRoomTiler.faceAction(s, new Tile(1, 0), 1, false));
+        // Endless Open is untouched by the default: its faces are still opened.
+        PortalStructure open = new PortalStructure(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
+            PortalRoomSettings.parse("endless_open"), PortalRoomTiling.base());
+        assertEquals(FaceAction.OPEN, PortalRoomTiler.faceAction(open, new Tile(1, 0), 1, false));
+    }
+
+    @Test
     @DisplayName("Kept: every face is left exactly as the stamp wrote it, neighbour or not")
     void keptTouchesNothing() {
         PortalStructure s = structure(PortalRoomMode.ENDLESS_REPETITION, PortalRoomDoorWall.REPEATED);

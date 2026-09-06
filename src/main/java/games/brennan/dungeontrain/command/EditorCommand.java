@@ -419,6 +419,22 @@ public final class EditorCommand {
                     .executes(ctx -> runTrackResetActiveVariant(
                         ctx.getSource(),
                         StringArgumentType.getString(ctx, "kind")))))
+            // Addressed by (kind, name) rather than by where the player is standing, so the editor
+            // screen can rename what its pane is showing — the same shape the carriage and contents
+            // renames take. The menu sends the kind spelled out (`… portals rename portal_room <id>`)
+            // rather than a kind-implied second form, which would be an argument-vs-argument
+            // ambiguity at the same node for the sake of one word.
+            .then(Commands.literal("rename")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(TRACK_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                        .then(Commands.argument("new_name", StringArgumentType.word())
+                            .executes(ctx -> runTrackRenameVariant(
+                                ctx.getSource(),
+                                StringArgumentType.getString(ctx, "kind"),
+                                StringArgumentType.getString(ctx, "name"),
+                                StringArgumentType.getString(ctx, "new_name")))))))
             .then(Commands.literal("weight")
                 .then(Commands.argument("kind", StringArgumentType.word())
                     .suggests(TRACK_KIND_SUGGESTIONS)
@@ -520,6 +536,14 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
                             StringArgumentType.getString(ctx, "copies")))))
+                // Which block a sealing room's shell is written in. Means nothing under a mode that
+                // seals nothing; bedrock unless the author has picked something else.
+                .then(Commands.literal("lock")
+                    .then(Commands.literal("held")
+                        .executes(ctx -> runPortalRoomLockHeld(ctx.getSource())))
+                    .then(Commands.argument("block", StringArgumentType.greedyString())
+                        .executes(ctx -> runPortalRoomLockBlock(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "block")))))
                 // Whether the room is furnished from the ordinary contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.
                 .then(Commands.literal("contents")
@@ -6503,6 +6527,68 @@ public final class EditorCommand {
         return 0;
     }
 
+    /**
+     * {@code /dt editor portals lock held} — write this room's shell in whatever the author is
+     * holding.
+     *
+     * <p>A picking gesture rather than a typed id, for the reason the Copies rows are: the value is
+     * any block in the registry, the author is already standing in the plot with their palette in
+     * their hotbar, and the menu is opened by a key toggle so their main hand is free.</p>
+     *
+     * <p><b>An empty hand means air</b>, the same as it does on a Copies plane row — and here that
+     * genuinely unseals the room: no skin, no corridor shells, no plugs. It is the author saying the
+     * shell should not be there, which is why it succeeds rather than failing as a mistake.</p>
+     */
+    private static int runPortalRoomLockHeld(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Only a player can pick a block from their hand."));
+            return 0;
+        }
+        ItemStack held = player.getMainHandItem();
+        if (held.isEmpty()) {
+            return applyPortalRoomLock(source, name,
+                games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK);
+        }
+        if (held.getItem() instanceof BlockItem blockItem) {
+            return applyPortalRoomLock(source, name,
+                net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                    .getKey(blockItem.getBlock()).toString());
+        }
+        source.sendFailure(Component.literal(
+            "Hold a block — or nothing at all for no shell — then press this again."));
+        return 0;
+    }
+
+    /** {@code /dt editor portals lock <id>} — set the shell's block by name, for a script. */
+    private static int runPortalRoomLockBlock(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        String id = raw == null ? "" : raw.trim();
+        // Air by name as well as by empty hand: stateFor reports air as "no block" on purpose, so it
+        // cannot answer this one question, and a script should be able to say what the row can.
+        if (!games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK.equalsIgnoreCase(id)
+                && !"air".equalsIgnoreCase(id)
+                && games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.stateFor(id).isEmpty()) {
+            source.sendFailure(Component.literal(
+                "'" + raw + "' is not a block this world knows about."));
+            return 0;
+        }
+        return applyPortalRoomLock(source, name,
+            "air".equalsIgnoreCase(id)
+                ? games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK : id);
+    }
+
+    /** Save {@code blockId} as this room's shell — the one write both lock verbs share. */
+    private static int applyPortalRoomLock(CommandSourceStack source, String name, String blockId) {
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withLockBlock(blockId));
+    }
+
     /** {@code /dt editor portals copies <block|floor|roof> <id>} — set it by name, for a script. */
     private static int runPortalRoomCopiesBlock(
         CommandSourceStack source,
@@ -6759,9 +6845,15 @@ public final class EditorCommand {
         String doorOffset = doorOffsetValue != 0
             ? ", door position: " + (doorOffsetValue > 0 ? "+" + doorOffsetValue : doorOffsetValue)
             : "";
+        // Same rule again: only worth a word when the room seals AND the author has moved off
+        // bedrock, which is what every sealed room was before the block could be chosen.
+        String lock = settings.lockApplies()
+            && !games.brennan.dungeontrain.portal.PortalRoomLock.DEFAULT.equals(settings.lock())
+            ? ", sealed in: " + (settings.lock().isAir() ? "nothing" : settings.lock().blockId())
+            : "";
         source.sendSuccess(() -> Component.literal(
             "Dimensional carriage '" + name + "' walls: " + settings.mode().displayName() + copies + contents
-            + exits + books + sky + doorOffset
+            + exits + books + sky + doorOffset + lock
             + ". Portals already standing keep the settings they were built with — this takes effect "
             + "on the next one the train reaches." + subVariantNote(name)
         ).withStyle(ChatFormatting.GREEN), true);
@@ -7168,6 +7260,74 @@ public final class EditorCommand {
 
         source.sendSuccess(() -> Component.literal(
             "Created " + kind.id() + ":" + key + " from " + sourceName + " — teleported to the new plot."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /**
+     * {@code /dt editor <tracks|portals> rename <kind> <name> <new_name>} — give a track-side
+     * template, portal rooms included, a new name.
+     *
+     * <p>The move itself is {@link games.brennan.dungeontrain.editor.TrackVariantRename}, which
+     * carries the sidecars, the weight/gate entry and the room's membership of any group with it.
+     * This method is the player-facing half: it turns each refusal into a line worth reading, and
+     * restamps the row afterwards so the plots follow the names.</p>
+     */
+    private static int runTrackRenameVariant(CommandSourceStack source, String rawKind,
+                                             String name, String newName) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        games.brennan.dungeontrain.editor.TrackVariantRename.Result result;
+        try {
+            result = games.brennan.dungeontrain.editor.TrackVariantRename.rename(kind, name, newName);
+        } catch (java.io.IOException e) {
+            LOGGER.error("[DungeonTrain] editor rename {}:{} -> {} failed", kind.id(), name, newName, e);
+            source.sendFailure(Component.literal("Rename failed: " + e.getMessage())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        String from = name.toLowerCase(Locale.ROOT);
+        String to = newName.toLowerCase(Locale.ROOT);
+        switch (result) {
+            case BAD_NAME -> {
+                source.sendFailure(Component.literal("Invalid name '" + newName
+                    + "'. Allowed: lowercase letters, digits, underscore (1..32 chars)."));
+                return 0;
+            }
+            case SAME_NAME -> {
+                source.sendFailure(Component.literal("'" + to + "' is the name it already has."));
+                return 0;
+            }
+            case RESERVED -> {
+                source.sendFailure(Component.literal("'default' is reserved — it cannot be renamed, "
+                    + "and nothing can be renamed to it."));
+                return 0;
+            }
+            case UNKNOWN -> {
+                source.sendFailure(Component.literal("Unknown " + kind.id() + " '" + from + "'."));
+                return 0;
+            }
+            case TAKEN -> {
+                source.sendFailure(Component.literal("Name '" + to + "' is already taken."));
+                return 0;
+            }
+            case NO_CONFIG_COPY -> {
+                // A bundled template is shadowed by a saved copy, never moved — there is nothing on
+                // disk to move, and the bundled original would keep answering to the old name.
+                source.sendFailure(Component.literal("'" + from + "' ships with the mod — save your own "
+                    + "copy of it first, then rename that."));
+                return 0;
+            }
+            case OK -> { }
+        }
+
+        restampPlotForKind(overworld, kind, dims);
+        source.sendSuccess(() -> Component.literal(
+            "Editor: renamed " + kind.id() + ":" + from + " → " + to + "."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }

@@ -312,6 +312,53 @@ public final class SharedCarriageClient {
         return post("/carriages/creators", body).thenApply(SharedCarriageClient::parseCreators);
     }
 
+    /**
+     * Every builder-authored build in a pool, newest first — what the browser's <b>All builders</b>
+     * lists, across owners rather than within one profile.
+     *
+     * <p>The operator's listing rather than a new endpoint: {@code GET /<admin>/carriages} already
+     * answers with every row, metadata only, in the same shape {@link #listMine} does — so the rows
+     * come back through {@link #parseBuild} and cannot drift from the ones a profile shows. Admin cap
+     * only, like {@link #searchCreators}, and {@code null} without an admin URL for the same reason:
+     * no shipped jar carries the secret that reaches it.</p>
+     *
+     * <p>Two narrowings applied here rather than left to the screen. Rows authored in ordinary PLAY
+     * are dropped — a shared carriage picked up by a train is not a builder's submission, and a pool
+     * is mostly those. What survives is trimmed to {@code limit}, because the endpoint takes no limit
+     * of its own and the packet that carries the answer holds 512 rows: trimming late would mean the
+     * newest builds silently falling off the end of the wire.</p>
+     *
+     * <p>It is a big answer — the live pool was 7,989 rows / 6.6 MB on 2026-09-05, of which 552 were
+     * builder rows — so this is asked on a press rather than on a timer, and only ever by an operator
+     * build.</p>
+     *
+     * <p>{@code null} on an unreachable or unusable answer, empty when the pool holds nothing — the
+     * same two-answer convention every listing here follows.</p>
+     */
+    public static CompletableFuture<List<ProfileBuild>> listAll(boolean useLive, int limit) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+        String url = admin + "/carriages?cap=" + (useLive ? "live" : "dev");
+        return get(url).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
+            List<ProfileBuild> out = new java.util.ArrayList<>();
+            for (JsonElement el : o.getAsJsonArray("carriages")) {
+                if (!el.isJsonObject()) continue;
+                JsonObject r = el.getAsJsonObject();
+                if (!r.has("id")) continue;
+                ProfileBuild build = parseBuild(r);
+                if (SOURCE_PLAY.equals(build.source())) continue;
+                out.add(build);
+            }
+            out.sort((a, b) -> Long.compare(b.updatedTs(), a.updatedTs()));
+            return List.copyOf(limit > 0 && out.size() > limit ? out.subList(0, limit) : out);
+        });
+    }
+
+    /** What the relay calls a row uploaded by ordinary play rather than by the Train Builder. */
+    private static final String SOURCE_PLAY = "play";
+
     /** One reconstructable frame of a build's history: a full snapshot and the deltas since it. */
     public record HistoryFrame(int seq, int baseSeq, String base, List<String> deltas) {}
 

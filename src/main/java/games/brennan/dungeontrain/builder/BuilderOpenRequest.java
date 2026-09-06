@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 
 /**
@@ -189,6 +191,25 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
     /** Whether this request is for a portal room rather than something on a carriage. */
     public boolean isPortalRoom() {
         return kind == BuilderPhotoPaths.Kind.PORTAL_ROOM;
+    }
+
+    /**
+     * The {@link BlockVariantPlot} key of the template being opened, or {@code null} when it has no
+     * per-block sidecar of its own.
+     *
+     * <p>Only a carriage group answers null, and only because a group is a run of carriages saved
+     * as one NBT with no sidecar behind it — its members' pools live on the carriages it was
+     * composed from. Opening one therefore starts the builder's own documents empty.</p>
+     */
+    public @Nullable String templatePlotKey() {
+        return switch (kind) {
+            case CARRIAGE -> BlockVariantPlot.carriageKey(id);
+            case CONTENTS -> BlockVariantPlot.contentsKey(id);
+            case PART -> partKind == null ? null : BlockVariantPlot.partKey(partKind, id);
+            case TRACK -> trackKind == null ? null : BlockVariantPlot.trackKey(trackKind, id);
+            case PORTAL_ROOM -> BlockVariantPlot.trackKey(TrackKind.PORTAL_ROOM, id);
+            case CARRIAGE_GROUP -> null;
+        };
     }
 
     public String partKindId() {

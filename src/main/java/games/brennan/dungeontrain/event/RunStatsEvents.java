@@ -55,7 +55,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -74,8 +73,6 @@ import java.util.UUID;
  *       when victim is any {@link LivingEntity} other than the killer. On
  *       the LOW-priority pass, snapshots the dying player's stats and sends
  *       them to that player via {@link DeathStatsPacket}.</li>
- *   <li>{@link PlayerTickEvent.Post} — per-tick {@code runTicks++} on
- *       server players.</li>
  *   <li>{@link BlockEvent.BreakEvent} — counts decorated-pot breaks as
  *       container opens.</li>
  *   <li>{@link PlayerInteractEvent.RightClickItem} — counts held
@@ -359,7 +356,7 @@ public final class RunStatsEvents {
                     packet.containersOpened());
             List<DeathField> manifestFields = DeathManifestFormat.fields(
                     packet.deathCause(),
-                    packet.distanceBlocks(), packet.runTicks(), packet.damageDealt(), packet.damageTaken(),
+                    packet.distanceBlocks(), packet.trainTimeTicks(), packet.damageDealt(), packet.damageTaken(),
                     packet.containersOpened(), packet.booksRead(), advTitles,
                     packet.playersEncountered(), packet.playersBefriended(), packet.playersKilled(),
                     packet.tamedCount());
@@ -490,7 +487,9 @@ public final class RunStatsEvents {
                 run.mobKills(),
                 run.cartsSinceDeath(),
                 run.distanceBlocks(),
-                run.runTicks(),
+                // Time on the train, NOT wall-clock since spawn: this is the figure every death
+                // surface and both "Longest Aboard" leaderboards report.
+                run.trainTimeTicks(),
                 run.containersOpened(),
                 run.booksReadCount(),
                 run.booksWrittenCount(),
@@ -522,7 +521,7 @@ public final class RunStatsEvents {
         return List.of(
                 // Run-stats strip (top death-screen row).
                 new DeathField("Distance", DeathReportFormat.distance(packet.distanceBlocks())),
-                new DeathField("Time", DeathReportFormat.time(packet.runTicks())),
+                new DeathField("Time", DeathReportFormat.time(packet.trainTimeTicks())),
                 new DeathField("Carts travelled", Integer.toString(packet.cartsTravelled())),
                 new DeathField("Loot containers", Integer.toString(packet.containersOpened())),
                 new DeathField("Books read", Integer.toString(packet.booksRead())),
@@ -557,12 +556,6 @@ public final class RunStatsEvents {
         return List.of(
                 packet.mostUsedWeapon(),
                 packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
-    }
-
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addRunTicks(1L);
     }
 
     @SubscribeEvent

@@ -1,16 +1,13 @@
 package games.brennan.dungeontrain.echo;
 
+import games.brennan.dungeontrain.difficulty.ItemPowerScore;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.armortrim.ArmorTrim;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
@@ -44,8 +41,6 @@ final class EchoItemHighlights {
 
     /** Each enchantment level adds this much to a stack's score (mirrors PlayerMob's coefficient). */
     private static final double ENCHANT_LEVEL_WEIGHT = 0.5;
-    /** Bows/crossbows carry no ATTACK_DAMAGE modifier (damage is on the projectile) — score them here. */
-    private static final double BOW_BASE_SCORE = 4.0;
     /** Per rarity tier above COMMON (UNCOMMON→2, RARE→4, EPIC→6) so rare loot floats up. */
     private static final double RARITY_WEIGHT = 2.0;
 
@@ -124,43 +119,9 @@ final class EchoItemHighlights {
     // ---------------- scoring ----------------
 
     private static double score(ItemStack stack) {
-        return baseStat(stack)
-                + totalEnchantmentLevels(stack) * ENCHANT_LEVEL_WEIGHT
+        return ItemPowerScore.baseStat(stack)
+                + ItemPowerScore.totalEnchantmentLevels(stack) * ENCHANT_LEVEL_WEIGHT
                 + stack.getRarity().ordinal() * RARITY_WEIGHT;
-    }
-
-    @SuppressWarnings("deprecation") // Item.getDefaultAttributeModifiers — armor populates only this.
-    private static double baseStat(ItemStack stack) {
-        ItemAttributeModifiers modifiers = stack.getOrDefault(
-                DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
-        if (modifiers.modifiers().isEmpty()) {
-            modifiers = stack.getItem().getDefaultAttributeModifiers();
-        }
-        double attack = sumAddValue(modifiers, Attributes.ATTACK_DAMAGE);
-        if (attack > 0) return attack;
-        double armor = sumAddValue(modifiers, Attributes.ARMOR);
-        if (armor > 0) return armor;
-        if (stack.getItem() instanceof BowItem || stack.getItem() instanceof CrossbowItem) return BOW_BASE_SCORE;
-        return 0;
-    }
-
-    private static double sumAddValue(ItemAttributeModifiers modifiers, Holder<Attribute> attribute) {
-        double total = 0;
-        for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
-            if (entry.attribute().equals(attribute)
-                    && entry.modifier().operation() == AttributeModifier.Operation.ADD_VALUE) {
-                total += entry.modifier().amount();
-            }
-        }
-        return total;
-    }
-
-    private static int totalEnchantmentLevels(ItemStack stack) {
-        int total = 0;
-        for (Object2IntMap.Entry<Holder<Enchantment>> entry : stack.getEnchantments().entrySet()) {
-            total += entry.getIntValue();
-        }
-        return total;
     }
 
     // ---------------- description ----------------
@@ -191,12 +152,12 @@ final class EchoItemHighlights {
                 DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
         ItemAttributeModifiers effective = actual.modifiers().isEmpty() ? defaults : actual;
 
-        double attack = sumAddValue(effective, Attributes.ATTACK_DAMAGE);
-        if (attack > 0 && attack != sumAddValue(defaults, Attributes.ATTACK_DAMAGE)) {
+        double attack = ItemPowerScore.sumAddValue(effective, Attributes.ATTACK_DAMAGE);
+        if (attack > 0 && attack != ItemPowerScore.sumAddValue(defaults, Attributes.ATTACK_DAMAGE)) {
             return number(attack) + " attack";
         }
-        double armor = sumAddValue(effective, Attributes.ARMOR);
-        if (armor > 0 && armor != sumAddValue(defaults, Attributes.ARMOR)) {
+        double armor = ItemPowerScore.sumAddValue(effective, Attributes.ARMOR);
+        if (armor > 0 && armor != ItemPowerScore.sumAddValue(defaults, Attributes.ARMOR)) {
             return number(armor) + " armor";
         }
         return null;

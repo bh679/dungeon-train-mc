@@ -5,17 +5,11 @@ import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.net.BuilderCreatorResultsPacket;
 import games.brennan.dungeontrain.net.BuilderCreatorSearchPacket;
-import games.brennan.dungeontrain.net.BuilderFavouritePacket;
-import games.brennan.dungeontrain.net.BuilderFavouritesPacket;
-import games.brennan.dungeontrain.net.BuilderFavouritesRequestPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * <b>Find a builder</b>, without leaving the editor screen.
@@ -50,7 +44,7 @@ public final class EditorCreatorSearch {
     static final int SEARCH_DELAY_TICKS = 8;
 
     /** What a click did, for the screen that hosts the panel. */
-    public enum Outcome { NONE, CONSUMED, PICKED, CLEARED }
+    public enum Outcome { NONE, CONSUMED, PICKED, CLEARED, ALL }
 
     public record Result(Outcome outcome, BuilderCreatorResultsPacket.Creator creator) {
         static final Result NONE = new Result(Outcome.NONE, null);
@@ -65,8 +59,6 @@ public final class EditorCreatorSearch {
     private boolean searching;
     private boolean unavailable;
     private List<BuilderCreatorResultsPacket.Creator> results = List.of();
-    private List<BuilderCreatorResultsPacket.Creator> favouriteRows = List.of();
-    private final Set<String> starred = new HashSet<>();
     private int scroll;
     private int hoveredRow = -1;
     private boolean hoveredStar;
@@ -75,6 +67,8 @@ public final class EditorCreatorSearch {
     // Geometry from the last frame, so a click lands on what was drawn.
     private InventoryEditorLayout.Rect panel;
     private InventoryEditorLayout.Rect clearRect;
+    private InventoryEditorLayout.Rect allRect;
+    private boolean hoveredAll;
     private int rowsTop;
     private int visibleRows;
 
@@ -87,12 +81,10 @@ public final class EditorCreatorSearch {
         this.open = true;
         this.hoveredRow = -1;
         BuilderProfileState.listenForCreators(this::onResults);
-        BuilderProfileState.listenForFavourites(this::onFavourites);
-        BuilderFavouritesPacket cached = BuilderProfileState.favourites();
-        if (cached != null) rememberStarred(cached);
         // Asked once on the way in rather than per search: it is the same answer for every query
         // typed here, and a star that only appeared after the second search would look forgotten.
-        DungeonTrainNet.sendToServer(new BuilderFavouritesRequestPacket(BuilderProfileState.live()));
+        // The answer lands in EditorCreatorBuilds, this screen's one sink for it.
+        EditorCreatorBuilds.requestFavourites();
     }
 
     /** Hide the panel and stop listening. The query is kept — reopening resumes where it was. */
@@ -101,7 +93,6 @@ public final class EditorCreatorSearch {
         this.ticksUntilSearch = -1;
         this.searching = false;
         BuilderProfileState.listenForCreators(null);
-        BuilderProfileState.listenForFavourites(null);
     }
 
     /**
@@ -111,7 +102,7 @@ public final class EditorCreatorSearch {
      * {@link #results} directly is how a panel ends up drawing one list and clicking another.</p>
      */
     private List<BuilderCreatorResultsPacket.Creator> rows() {
-        return query.trim().isEmpty() ? favouriteRows : results;
+        return query.trim().isEmpty() ? EditorCreatorBuilds.starredBuilders() : results;
     }
 
     /** The debounce. Called from the screen's own tick. */
@@ -134,20 +125,6 @@ public final class EditorCreatorSearch {
         this.answered = packet.query();
         this.results = packet.creators();
         this.scroll = 0;
-    }
-
-    private void onFavourites(BuilderFavouritesPacket packet) {
-        rememberStarred(packet);
-    }
-
-    private void rememberStarred(BuilderFavouritesPacket packet) {
-        starred.clear();
-        List<BuilderCreatorResultsPacket.Creator> favs = new ArrayList<>(packet.builders().size());
-        for (BuilderFavouritesPacket.Builder b : packet.builders()) {
-            starred.add(b.uuid());
-            favs.add(new BuilderCreatorResultsPacket.Creator(b.uuid(), b.name(), b.builds()));
-        }
-        this.favouriteRows = List.copyOf(favs);
     }
 
     // ------------------------------------------------------------------
@@ -193,6 +170,9 @@ public final class EditorCreatorSearch {
     public Result mouseClicked(double mx, double my) {
         if (!open || panel == null) return Result.NONE;
         if (!panel.contains(mx, my)) return Result.NONE;   // the screen closes the panel
+        if (allRect != null && allRect.contains(mx, my)) {
+            return new Result(Outcome.ALL, null);
+        }
         if (clearRect != null && clearRect.contains(mx, my)) {
             return new Result(Outcome.CLEARED, null);
         }
@@ -221,24 +201,7 @@ public final class EditorCreatorSearch {
      * broken.</p>
      */
     private void toggleStar(BuilderCreatorResultsPacket.Creator creator) {
-        boolean next = !starred.contains(creator.uuid());
-        if (next) {
-            starred.add(creator.uuid());
-        } else {
-            starred.remove(creator.uuid());
-        }
-        DungeonTrainNet.sendToServer(
-            BuilderFavouritePacket.forBuilder(creator.uuid(), next, BuilderProfileState.live()));
-        // The empty-box list IS the favourites, so un-starring there removes the row rather than
-        // leaving a hollow star sitting in a list of things that are supposed to be starred.
-        if (!next) {
-            this.favouriteRows = favouriteRows.stream()
-                .filter(c -> !c.uuid().equals(creator.uuid())).toList();
-        } else if (favouriteRows.stream().noneMatch(c -> c.uuid().equals(creator.uuid()))) {
-            List<BuilderCreatorResultsPacket.Creator> grown = new ArrayList<>(favouriteRows);
-            grown.add(creator);
-            this.favouriteRows = List.copyOf(grown);
-        }
+        EditorCreatorBuilds.toggleBuilderStar(creator);
     }
 
     // ------------------------------------------------------------------
@@ -274,10 +237,26 @@ public final class EditorCreatorSearch {
             g.drawString(font, "_", x + PAD + 2 + font.width(query), textY, 0xFFFFFFFF, false);
         }
 
-        // "My builds" — the way out of somebody else's profile, offered only while in one.
+        // "All builders" — everybody's uploads in one grid, above the names because it is the row
+        // for the reviewer who has nobody in mind yet, which is how this panel is usually reached.
         int listTop = fieldY + FIELD_H + 2;
+        allRect = null;
+        if (!EditorCreatorBuilds.pooled()) {
+            allRect = new InventoryEditorLayout.Rect(x + PAD, listTop, w - PAD * 2, ROW_H);
+            hoveredAll = allRect.contains(mouseX, mouseY);
+            g.fill(allRect.x(), allRect.y(), allRect.right(), allRect.bottom(),
+                hoveredAll ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+            g.drawString(font, EditorScreenLang.text(EditorScreenLang.CREATORS_ALL),
+                allRect.x() + 3, allRect.y() + (ROW_H - font.lineHeight) / 2 + 1,
+                hoveredAll ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
+            listTop += ROW_H + 1;
+        }
+
+        // "My builds" — the way out of somebody else's profile, offered only while in one.
         clearRect = null;
-        if (!BuilderProfileState.viewedName().isEmpty()) {
+        // Whenever the browser is showing relay builds at all, pooled ones included — it is the way
+        // back to this world's own templates, and the pool is not a profile with a name to test.
+        if (EditorCreatorBuilds.active()) {
             clearRect = new InventoryEditorLayout.Rect(x + PAD, listTop, w - PAD * 2, ROW_H);
             hoveredClear = clearRect.contains(mouseX, mouseY);
             g.fill(clearRect.x(), clearRect.y(), clearRect.right(), clearRect.bottom(),
@@ -313,7 +292,7 @@ public final class EditorCreatorSearch {
             int starX = x + w - PAD - STAR_W;
             g.fill(starX, rowY, starX + STAR_W, rowY + ROW_H - 1,
                 hovStar ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
-            String star = starred.contains(creator.uuid()) ? "★" : "☆";
+            String star = EditorCreatorBuilds.starredBuilder(creator.uuid()) ? "★" : "☆";
             g.drawString(font, star, starX + (STAR_W - font.width(star)) / 2,
                 rowY + (ROW_H - font.lineHeight) / 2, hovStar ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFDD55, false);
         }
@@ -332,7 +311,7 @@ public final class EditorCreatorSearch {
     private String statusNote() {
         if (searching) return EditorScreenLang.text(EditorScreenLang.CREATORS_SEARCHING);
         if (query.trim().isEmpty()) {
-            return EditorScreenLang.text(favouriteRows.isEmpty()
+            return EditorScreenLang.text(EditorCreatorBuilds.starredBuilders().isEmpty()
                 ? EditorScreenLang.CREATORS_PROMPT : EditorScreenLang.CREATORS_FAVOURITES);
         }
         if (unavailable) return EditorScreenLang.text(EditorScreenLang.CREATORS_UNAVAILABLE);

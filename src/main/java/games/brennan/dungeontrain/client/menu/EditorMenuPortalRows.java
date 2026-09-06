@@ -36,6 +36,22 @@ public final class EditorMenuPortalRows {
     }
 
     /**
+     * The Lock row, or null unless the walls seal — the only case where there is a shell for the
+     * block to describe.
+     *
+     * <p>A picker, not a cycle, for the reason {@link #copiesBlockRowFor} is one: the value is any
+     * block in the registry, so tapping the row takes whatever the author is holding. An empty hand
+     * means no shell at all. No Edit half — a seal of mixed blocks is not what a seal is for.</p>
+     */
+    public static CommandMenuEntry lockRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!EditorPlotLabelsRenderer.hasLockRowFor(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.lockLabel(currentMode) + "  (+ held)",
+            "dungeontrain editor portals lock held");
+    }
+
+    /**
      * The Copies row, or null unless the walls are set to one of the two endless modes — the only
      * ones that append tiles for the setting to describe.
      */

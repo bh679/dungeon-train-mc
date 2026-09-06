@@ -28,33 +28,62 @@ public final class EditorRosterIndex {
      * imported" is sayable — it was not before. Neither toggle set means no filtering at all,
      * which is why there is no longer an "All" to pick.</p>
      */
-    public record Filters(boolean mine, boolean builtin) {
-        public static final Filters NONE = new Filters(false, false);
+    /**
+     * The filter row, one flag per {@link Provenance}.
+     *
+     * <p>Three flags rather than two because there are three kinds of template, and the axis that
+     * used to be missing — content from an installed package — was therefore dropped by every state
+     * except "nothing set": turning a chip on to widen the search narrowed it, and a player with a
+     * package could not see any of it under the browser's own default.</p>
+     */
+    public record Filters(boolean mine, boolean builtin, boolean imported) {
+        public static final Filters NONE = new Filters(false, false, false);
 
         /**
-         * What the browser opens on: the author's own builds, without the built-ins.
+         * What the browser opens on: everything the author has, without the built-ins.
          *
          * <p>An editor is opened to work on your own things far more often than to look at what
-         * shipped, and the built-ins outnumber them heavily in every category.</p>
+         * shipped, and the built-ins outnumber them heavily in every category. A package you
+         * installed counts as yours to browse — it is on this machine because you put it there.</p>
          */
-        public static final Filters DEFAULT = new Filters(true, false);
+        public static final Filters DEFAULT = new Filters(true, false, true);
 
         public Filters withMine(boolean on) {
-            return new Filters(on, builtin);
+            return new Filters(on, builtin, imported);
         }
 
         public Filters withBuiltin(boolean on) {
-            return new Filters(mine, on);
+            return new Filters(mine, on, imported);
+        }
+
+        public Filters withImported(boolean on) {
+            return new Filters(mine, builtin, on);
+        }
+
+        /**
+         * Mine, carrying imported with it — for a surface that does not offer the imported chip.
+         *
+         * <p>The chip is a dev-mode affordance, so on every other build there is no way to ask for
+         * package content by name. Slaving it to "mine" there is what keeps it reachable: without
+         * this, turning Mine on would make somebody's installed package disappear with nothing on
+         * screen to bring it back.</p>
+         */
+        public Filters withMineCarryingImported(boolean on) {
+            return new Filters(on, builtin, on);
         }
 
         /** True when nothing is being filtered out. */
         public boolean isEmpty() {
-            return !mine && !builtin;
+            return !mine && !builtin && !imported;
         }
 
         boolean admits(Provenance p) {
-            if (!mine && !builtin) return true;
-            return (mine && p == Provenance.USER) || (builtin && p == Provenance.BUILTIN);
+            if (isEmpty()) return true;
+            return switch (p) {
+                case USER -> mine;
+                case BUILTIN -> builtin;
+                case IMPORTED -> imported;
+            };
         }
     }
 
@@ -153,6 +182,39 @@ public final class EditorRosterIndex {
      * the one already in reach — which is what the old Current tab was for, without spending a tab
      * on it.</p>
      */
+    /**
+     * What the main grid shows, and whether its first tile is only there because the author is
+     * standing in it.
+     *
+     * <p>The plot under their feet is never filtered away. A filter is a way of looking for
+     * something, and the one build a person can act on with every position-resolved control —
+     * Save, Reset, Clear, the room geometry — disappearing from the grid because they typed three
+     * letters is how you end up saving the wrong plot. So it is put back at the front, and drawn
+     * faded ({@code firstIsGhost}) to say it is not part of what was asked for.</p>
+     *
+     * <p>Only ever put back from {@code all}, this page and strip's own tiles: standing in a carriage
+     * does not make it belong on the Tracks page.</p>
+     */
+    public static Shown standingFirst(List<Tile> filtered, List<Tile> all, VariantKey standing) {
+        if (standing == null) return new Shown(filtered, false);
+        for (Tile tile : filtered) {
+            if (tile.key().sameTemplate(standing)) {
+                return new Shown(standingFirst(filtered, standing), false);
+            }
+        }
+        for (Tile tile : all) {
+            if (!tile.key().sameTemplate(standing)) continue;
+            List<Tile> out = new ArrayList<>(filtered.size() + 1);
+            out.add(tile);
+            out.addAll(filtered);
+            return new Shown(List.copyOf(out), true);
+        }
+        return new Shown(filtered, false);
+    }
+
+    /** The tiles a grid draws, and whether the first of them is the faded standing-in one. */
+    public record Shown(List<Tile> tiles, boolean firstIsGhost) {}
+
     public static List<Tile> standingFirst(List<Tile> tiles, VariantKey standing) {
         if (standing == null || tiles.size() < 2) return tiles;
         for (int i = 0; i < tiles.size(); i++) {
