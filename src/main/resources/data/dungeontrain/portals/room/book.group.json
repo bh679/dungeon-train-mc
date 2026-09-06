@@ -18,7 +18,8 @@
     },
     {
       "id": "moria",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 11
     }
   ]
 }
