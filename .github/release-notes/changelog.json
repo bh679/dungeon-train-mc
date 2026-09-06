@@ -11375,15 +11375,15 @@
       "released_at": null
     },
     {
-      "id": "editor-room-rename-and-far-side-variants",
+      "id": "new-carriage-contents-and-icebears-room",
       "version": "0.800.0",
-      "type": "fix",
-      "title": "Editor: rename a portal room, and author its far side",
-      "summary": "A portal room can be renamed from the editor's X menu, and block variants can be added anywhere inside a big room rather than only in its first eleven blocks.",
+      "type": "content",
+      "title": "New carriage contents and the Ice Bears portal room",
+      "summary": "Eight new carriage contents \u2014 including a booth, a crafting maze, an icy room, a leafy one, a prismarine chamber, and extra seating \u2014 plus a new bear-themed carriage and the Ice Bears portal room, home to a pack of hostile polar bears.",
       "highlights": [
-        "Rename a room from the X menu \u2014 the name field starts on the room's current name, and everything moves with it: the room's blocks, its variants, its loot, its weight and room mode, and its place in whatever group rolls it.",
-        "Block variants and lock groups can be added anywhere in a room. In a room longer than the built-in one, every cell past the eleventh was silently refused \u2014 the menu opened on it and the edit was thrown away.",
-        "Eight new carriage contents, a bear carriage and the icebears portal room."
+        "Eight new carriage contents: booth, crafting maze, ice, leaves, prismarine, extra seating, and more",
+        "A bear-themed carriage content, for a touch of wildlife",
+        "The Ice Bears portal room \u2014 a frozen chamber patrolled by aggressive polar bears"
       ],
       "date": "2026-09-06",
       "released": false,
