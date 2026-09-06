@@ -11474,6 +11474,22 @@
       "released_at": "2026-09-06T09:30:25Z"
     },
     {
+      "id": "ambient-monster-density-cap",
+      "version": "0.806.0",
+      "type": "feat",
+      "title": "Vanilla monster spawn rates off the train",
+      "summary": "Monster spawn rates away from the train now match a normal Minecraft world instead of piling up around you.",
+      "highlights": [
+        "Monster spawn density off the train now matches vanilla",
+        "Tunable via the ambientMonsterCap config option"
+      ],
+      "pr": 1314,
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "duplicate-overlapping-carriages",
       "version": "0.806.0",
       "type": "fix",
@@ -11491,7 +11507,7 @@
     },
     {
       "id": "portal-room-content-pass-sept",
-      "version": "0.807.0",
+      "version": "0.808.0",
       "type": "content",
       "title": "Seven new dimensional carriages",
       "summary": "Seven new dimensional carriages join the rotation, and five existing ones have been rebuilt with more block variety.",
