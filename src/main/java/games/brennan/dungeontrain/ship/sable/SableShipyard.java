@@ -229,6 +229,19 @@ public final class SableShipyard implements Shipyard {
     @Nullable
     private static final java.lang.invoke.MethodHandle GET_OR_LOAD_HOLDING_CHUNK = resolveGetOrLoadHoldingChunk();
 
+    static {
+        if (GET_OR_LOAD_HOLDING_CHUNK == null) {
+            // The index's whole value is telling the spawn lanes "wait, this group is on disk".
+            // Without the handle DT cannot pull a group back off disk, so making that claim would
+            // park the lanes on a promise it cannot keep. Fall back to Sable's in-memory map: the
+            // pre-fix behaviour, which can duplicate a carriage across a save but never deadlocks.
+            LOGGER.error("[Sable] getOrLoadHoldingChunk is unreachable — disabling the Dungeon Train holding index. "
+                + "Held groups fall back to Sable's in-memory map and may duplicate across a save. "
+                + "Re-check SubLevelHoldingChunkMap on this Sable version.");
+            SableHoldingIndex.disable();
+        }
+    }
+
     @Nullable
     private static java.lang.invoke.MethodHandle resolveGetOrLoadHoldingChunk() {
         try {
@@ -256,7 +269,11 @@ public final class SableShipyard implements Shipyard {
     ) {
         if (GET_OR_LOAD_HOLDING_CHUNK == null) return (pointer == null) ? null : pointer.chunkPos();
         List<net.minecraft.world.level.ChunkPos> candidates = new ArrayList<>();
-        if (pointer != null) candidates.add(pointer.chunkPos());
+        // DT's own record of where Sable filed it, first: it is exact, so the pose scan below is
+        // only a fallback for groups culled before the index was populated.
+        net.minecraft.world.level.ChunkPos indexed = SableHoldingIndex.chunkOf(subLevelId);
+        if (indexed != null) candidates.add(indexed);
+        if (pointer != null && !candidates.contains(pointer.chunkPos())) candidates.add(pointer.chunkPos());
         dev.ryanhcode.sable.sublevel.storage.serialization.SubLevelData data = held.data();
         if (data != null && data.pose() != null) {
             int cx = net.minecraft.core.SectionPos.blockToSectionCoord((int) Math.floor(data.pose().position().x()));
@@ -294,6 +311,23 @@ public final class SableShipyard implements Shipyard {
 
     @Override
     public boolean isHeld(java.util.UUID subLevelId) {
+        if (isHeldInMemory(subLevelId)) return true;
+        // Sable's in-memory map is NOT a durable record of what is held: saveAll() writes hidden
+        // holding chunks to disk and then evicts them, dropping their sub-levels from
+        // allHoldingSubLevels while the data stays on disk and will resurrect on chunk load.
+        // Reading only that map made this method answer "gone for good" about a merely sleeping
+        // carriage group, so the appender reaped its anchor and respawned an identical group that
+        // then collided with the original — the duplicate-overlapping-carriages bug. The contract
+        // this method owes its callers is "recoverable", not "in memory right now".
+        return SableHoldingIndex.contains(subLevelId);
+    }
+
+    /**
+     * Whether Sable's in-memory holding map lists {@code subLevelId} right now. Diagnostics and
+     * the internals of {@link #isHeld} only — callers wanting "can this come back?" want
+     * {@link #isHeld}, because this answer evaporates on every save.
+     */
+    boolean isHeldInMemory(java.util.UUID subLevelId) {
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return false;
         dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap holding =
@@ -326,7 +360,22 @@ public final class SableShipyard implements Shipyard {
         // then loads it, so there is no double-load.
         dev.ryanhcode.sable.sublevel.storage.HoldingSubLevel held =
             holding.getHoldingSubLevel(subLevelId);
-        if (held == null) return false; // not in holding (still live, or genuinely gone)
+        if (held == null) {
+            // Absent from Sable's in-memory map. If DT recorded it on disk, re-materialise the
+            // holding chunk it was filed in — getOrLoadHoldingChunk reads from disk and registers
+            // every sub-level it finds back into allHoldingSubLevels, which also repairs the
+            // index for this group's siblings.
+            net.minecraft.world.level.ChunkPos indexed = SableHoldingIndex.chunkOf(subLevelId);
+            if (indexed == null) return false; // not in holding (still live, or genuinely gone)
+            holdingChunkContains(holding, indexed, subLevelId);
+            held = holding.getHoldingSubLevel(subLevelId);
+            if (held == null) {
+                LOGGER.warn("[Sable] reloadFromHolding: {} is recorded in holding chunk {} but did not "
+                    + "re-materialise from disk — counting a failed recovery attempt", subLevelId, indexed);
+                SableHoldingIndex.recordFailure(subLevelId);
+                return false;
+            }
+        }
         dev.ryanhcode.sable.sublevel.storage.holding.GlobalSavedSubLevelPointer pointer = held.pointer();
         // Sable files a culled sub-level in the holding chunk of its CURRENT position but tags it
         // with the pointer from its LAST SAVE (moveToUnloaded → getLastSerializationPointer), and
@@ -340,6 +389,7 @@ public final class SableShipyard implements Shipyard {
         if (filed == null) {
             LOGGER.warn("[Sable] reloadFromHolding: held sub-level {} was not found in any holding chunk near its pose (pointer={}) — leaving it held",
                 subLevelId, pointer);
+            SableHoldingIndex.recordFailure(subLevelId);
             return false;
         }
         dev.ryanhcode.sable.sublevel.storage.holding.GlobalSavedSubLevelPointer target =
@@ -351,6 +401,7 @@ public final class SableShipyard implements Shipyard {
             return true;
         } catch (Throwable t) {
             LOGGER.warn("[Sable] reloadFromHolding failed for sub-level {}: {}", subLevelId, t.toString());
+            SableHoldingIndex.recordFailure(subLevelId);
             return false;
         }
     }

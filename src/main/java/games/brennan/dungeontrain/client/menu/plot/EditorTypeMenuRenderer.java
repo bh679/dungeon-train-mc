@@ -311,6 +311,9 @@ public final class EditorTypeMenuRenderer {
     }
 
     public static void applySnapshot(EditorTypeMenusPacket packet) {
+        // The server only re-sends this when the stamped category's templates changed, which is
+        // exactly when the inventory screen's roster has gone stale too.
+        games.brennan.dungeontrain.client.menu.editorscreen.EditorRosterClient.onTypeMenusChanged();
         if (packet.isEmpty()) {
             CACHE = List.of();
             SELECTED_STAGE = "";

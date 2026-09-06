@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.portal;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.Vec3i;
 
+import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -28,12 +30,16 @@ public final class PortalRoomSizes {
     private static final Map<String, Vec3i> SIZES = new ConcurrentHashMap<>();
     private static final Map<String, Vec3i> PENDING = new ConcurrentHashMap<>();
 
+    /** Names measured and found to have no template — see {@link #measure}. */
+    private static final Set<String> UNMEASURABLE = ConcurrentHashMap.newKeySet();
+
     private PortalRoomSizes() {}
 
     /** Record the size of a template that was just loaded. */
     public static void observe(String name, Vec3i size) {
         if (name == null || size == null) return;
         SIZES.put(name, size);
+        UNMEASURABLE.remove(name);
     }
 
     /** Record a size that has just been written to disk. The template is now the authority. */
@@ -41,17 +47,52 @@ public final class PortalRoomSizes {
         if (name == null || size == null) return;
         SIZES.put(name, size);
         PENDING.remove(name);
+        UNMEASURABLE.remove(name);
     }
 
-    /** The size {@code name}'s plot and stamp should use, clamped to what this world allows. */
+    /**
+     * The size {@code name}'s plot and stamp should use, clamped to what this world allows.
+     *
+     * <p>A name nothing has loaded yet is <b>measured from its own template</b> rather than assumed
+     * to be the built-in room. That assumption was a real bug: the editor's plot box comes from here,
+     * and a 17-long room whose size had not been observed got an 11-long box, so the block-variant
+     * menu refused every cell past x=10 while the room the author was standing in plainly went
+     * further ({@code edit rejected: localPos BlockPos{x=14…} out of bounds}). The measurement reads
+     * the {@code size} field out of the template NBT — no {@code ServerLevel}, no block data — and is
+     * remembered, so the disk is touched once per name and never on the paths that ask this per
+     * tick.</p>
+     */
     public static Vec3i sizeOf(String name, CarriageDims dims) {
         if (name == null) return PortalRoomLayout.builtInSize(dims);
         Vec3i pending = PENDING.get(name);
         if (pending != null) return PortalRoomLayout.clampSize(dims, pending);
         Vec3i known = SIZES.get(name);
+        if (known == null) known = measure(name);
         return known != null
             ? PortalRoomLayout.clampSize(dims, known)
             : PortalRoomLayout.builtInSize(dims);
+    }
+
+    /**
+     * The size in {@code name}'s template file, remembered for next time; null when there is no
+     * template to measure — a room that has never been saved, which the built-in size is the right
+     * answer for.
+     *
+     * <p>Names with no template are remembered too, in {@link #UNMEASURABLE}: {@code TrackSidePlots
+     * .locate} asks about every registered name on every call, and re-reading a file that is not
+     * there would put a filesystem miss on a per-tick path. {@link #observe}, {@link #settle} and
+     * {@link #forget} clear that memory, so a room that is saved later is measured then.</p>
+     */
+    @Nullable
+    private static Vec3i measure(String name) {
+        if (UNMEASURABLE.contains(name)) return null;
+        Vec3i size = PortalRoomTemplateSize.read(name);
+        if (size == null) {
+            UNMEASURABLE.add(name);
+            return null;
+        }
+        SIZES.put(name, size);
+        return size;
     }
 
     /**
@@ -117,11 +158,13 @@ public final class PortalRoomSizes {
         if (name == null) return;
         SIZES.remove(name);
         PENDING.remove(name);
+        UNMEASURABLE.remove(name);
     }
 
     /** Drop every cached size. Called when the variant registry reloads on server start. */
     public static void clear() {
         SIZES.clear();
         PENDING.clear();
+        UNMEASURABLE.clear();
     }
 }

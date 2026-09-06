@@ -21,7 +21,7 @@ import java.util.Map;
  * <p>Owned by the screen, one instance per screen, so nothing survives a close.</p>
  */
 @OnlyIn(Dist.CLIENT)
-final class BuilderTileSpin {
+public final class BuilderTileSpin {
 
     /** Degrees per second while hovered. A full turn in twelve seconds — a drift, not a carousel. */
     private static final float SPIN_DEGREES_PER_SECOND = 30.0F;
@@ -35,7 +35,7 @@ final class BuilderTileSpin {
      * <p>Off-axis so the resting pose shows two faces of the build and reads as a solid, which a
      * head-on elevation does not.</p>
      */
-    static final float REST_YAW = 35.0F;
+    public static final float REST_YAW = 35.0F;
 
     /** Close enough to home to stop moving, in degrees. */
     private static final float SETTLED = 0.5F;
@@ -49,7 +49,7 @@ final class BuilderTileSpin {
      *                same speed whether the game is running at 20 fps or 200, and does not stop
      *                when the game is paused behind the screen
      */
-    float advance(String id, boolean hovered, float seconds) {
+    public float advance(String id, boolean hovered, float seconds) {
         float yaw = yaws.getOrDefault(id, REST_YAW);
         float next = hovered
                 ? wrap(yaw + SPIN_DEGREES_PER_SECOND * seconds)
@@ -65,7 +65,7 @@ final class BuilderTileSpin {
     }
 
     /** Forget every angle — the grid now shows different templates. */
-    void clear() {
+    public void clear() {
         yaws.clear();
     }
 

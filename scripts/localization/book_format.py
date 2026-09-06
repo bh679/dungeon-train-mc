@@ -72,6 +72,36 @@ def tokens(value) -> list[str]:
     return sorted(set(placeholders(value)))
 
 
+#: The starting-book page break — a line holding exactly ``%PAGE%``. Mirrors
+#: ``StartingBookFactory.PAGE_BREAK``; see that folder's CLAUDE.md §3.
+PAGE_BREAK = re.compile(r"(?:\r?\n)?[ \t]*%PAGE%[ \t]*(?:\r?\n)?")
+
+
+def page_breaks(value) -> int:
+    """How many page breaks ``value`` carries.
+
+    Unlike ``{brace}`` placeholders, the COUNT is the contract: a starting book's pages are the
+    text between these markers, so a translation that drops one silently glues two pages together
+    (and one that invents one splits a page in half). Nothing else in the pipeline would notice —
+    the book still loads, still reads, and simply paginates differently than the author wrote it.
+    """
+    return len(PAGE_BREAK.findall(value)) if isinstance(value, str) else 0
+
+
+def page_break_mismatch(value, english) -> str | None:
+    """Why ``value`` cannot stand in for ``english`` as a starting-book page layout, or None.
+
+    Asked at IMPORT time, where both sides are the same book at the same moment. Not asked of the
+    repo sweep: an author re-paginating an English book legitimately leaves its translations behind,
+    and that is staleness for the next review package to pick up, not a broken file.
+    """
+    want, got = page_breaks(english), page_breaks(value)
+    if want == got:
+        return None
+    return (f"{got} %PAGE% marker(s) against English's {want} — the book would paginate "
+            "differently than the author wrote it")
+
+
 def unresolved(value) -> list[str]:
     """The tokens in `value` that nothing will substitute, sorted and without repeats.
 

@@ -18,6 +18,7 @@ public final class BuilderInfoLines {
     private static final String KEY_SIZE = "gui.dungeontrain.builder.info.size";
     private static final String KEY_WEIGHT = "gui.dungeontrain.builder.info.weight";
     private static final String KEY_STAGE_ANY = "gui.dungeontrain.builder.info.stage_any";
+    private static final String KEY_CREATOR = "gui.dungeontrain.builder.info.creator";
 
     private BuilderInfoLines() {}
 
@@ -30,16 +31,29 @@ public final class BuilderInfoLines {
      * @param weight      how often the template rolls in a run; negative when it doesn't apply
      * @param trackKindId which track-side kind this build is, empty for a carriage build — the
      *                    track modes' counterpart to {@code subType}
+     * @param creator     who originally built this template, when it was downloaded from another
+     *                    player; empty for the player's own work, which is the ordinary case
      */
     public record Data(String name, boolean dirty, BuilderMode mode,
                        BuilderNewOptions.SubType subType, String partKindId,
-                       String stageId, int[] dims, int weight, String trackKindId) {
+                       String stageId, int[] dims, int weight, String trackKindId, String creator) {
+
+        public Data {
+            creator = creator == null ? "" : creator;
+        }
+
+        /** The nine-arg form, from before a build could say who built it. */
+        public Data(String name, boolean dirty, BuilderMode mode,
+                    BuilderNewOptions.SubType subType, String partKindId,
+                    String stageId, int[] dims, int weight, String trackKindId) {
+            this(name, dirty, mode, subType, partKindId, stageId, dims, weight, trackKindId, "");
+        }
 
         /** The eight-arg form, from before the track modes had anything to open. */
         public Data(String name, boolean dirty, BuilderMode mode,
                     BuilderNewOptions.SubType subType, String partKindId,
                     String stageId, int[] dims, int weight) {
-            this(name, dirty, mode, subType, partKindId, stageId, dims, weight, "");
+            this(name, dirty, mode, subType, partKindId, stageId, dims, weight, "", "");
         }
     }
 
@@ -53,7 +67,7 @@ public final class BuilderInfoLines {
      * that exists for every build even when there is nothing else to say.</p>
      */
     public static List<String> identity(Data data, UnaryOperator<String> translate) {
-        List<String> lines = new ArrayList<>(3);
+        List<String> lines = new ArrayList<>(4);
         lines.add(nameLine(data, translate));
         lines.add(typeLine(data, translate));
 
@@ -63,6 +77,13 @@ public final class BuilderInfoLines {
             lines.add(data.stageId() == null || data.stageId().isEmpty()
                     ? translate.apply(KEY_STAGE_ANY)
                     : BuilderLabels.pretty(data.stageId()));
+        }
+
+        // Last, and only when there is somebody to name: a build made here says nothing, and a line
+        // reading "Built by" with a blank after it would be worse than no line at all.
+        if (!data.creator().isEmpty()) {
+            lines.add(translate.apply(KEY_CREATOR).replace("%1$s", data.creator())
+                    .replace("%s", data.creator()));
         }
         return lines;
     }

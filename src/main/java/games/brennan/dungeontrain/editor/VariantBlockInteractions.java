@@ -120,6 +120,17 @@ public final class VariantBlockInteractions {
         // they differ in which sidecar they write, not in whether they write.
         EditorEditRecorder.notePendingSidecar(player, "Variant add");
 
+        // A Train Builder world has no plot grid, so not one of the four editor branches below can
+        // resolve anything in it — the gesture would arm and then quietly place the block. Its plot
+        // answers from world data instead, which is why it is asked first and by level rather than
+        // by where the player is standing.
+        BlockVariantPlot builderPlot = games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(
+            level, player.blockPosition(), dims);
+        if (builderPlot != null) {
+            handleBuilderShiftClick(event, player, level, clicked, newVariant, builderPlot);
+            return;
+        }
+
         // Part plot takes priority: if the clicked position falls inside a
         // part plot, route the shift-click into the part's own variants
         // sidecar. Part rows sit past the carriage row, so a carriage plot
@@ -173,6 +184,44 @@ public final class VariantBlockInteractions {
         try {
             sidecar.put(local, updated);
         } catch (IllegalArgumentException e) {
+            player.displayClientMessage(
+                Component.literal("Variant add failed: " + e.getMessage())
+                    .withStyle(ChatFormatting.RED), true);
+            suppressVanillaPlace(event);
+            return;
+        }
+
+        mirrorVariantAdd(level, player, clicked, updated);
+        sendAddedFeedback(player, clicked, local, newVariant, updated);
+        VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
+        suppressVanillaPlace(event);
+    }
+
+    /**
+     * Train Builder branch: append the held block to the build's own working sidecar.
+     *
+     * <p>Written through immediately, unlike the carriage branch above, which leaves the sidecar
+     * dirty for {@code /dt editor save}. There is no such command down here — the builder's Save
+     * writes a <em>template</em>, and an author who flags a few blocks and then quits without ever
+     * naming the build should still find them there next time.</p>
+     */
+    private static void handleBuilderShiftClick(PlayerInteractEvent.RightClickBlock event,
+                                                ServerPlayer player, ServerLevel level,
+                                                BlockPos clicked, VariantState newVariant,
+                                                BlockVariantPlot plot) {
+        BlockPos local = clicked.subtract(plot.origin());
+        if (!plot.inBounds(local)) return;
+
+        BlockState baseState = level.getBlockState(clicked);
+        VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
+        List<VariantState> updated = buildUpdatedList(plot.statesAt(local), baseVariant, newVariant,
+            baseState, player, event);
+        if (updated == null) return;
+
+        try {
+            plot.put(local, updated);
+            plot.save();
+        } catch (IllegalArgumentException | IOException e) {
             player.displayClientMessage(
                 Component.literal("Variant add failed: " + e.getMessage())
                     .withStyle(ChatFormatting.RED), true);

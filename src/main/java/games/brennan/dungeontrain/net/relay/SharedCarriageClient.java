@@ -312,6 +312,97 @@ public final class SharedCarriageClient {
         return post("/carriages/creators", body).thenApply(SharedCarriageClient::parseCreators);
     }
 
+    /**
+     * Every builder-authored build in a pool, newest first — what the browser's <b>All builders</b>
+     * lists, across owners rather than within one profile.
+     *
+     * <p>The operator's listing rather than a new endpoint: {@code GET /<admin>/carriages} already
+     * answers with every row, metadata only, in the same shape {@link #listMine} does — so the rows
+     * come back through {@link #parseBuild} and cannot drift from the ones a profile shows. Admin cap
+     * only, like {@link #searchCreators}, and {@code null} without an admin URL for the same reason:
+     * no shipped jar carries the secret that reaches it.</p>
+     *
+     * <p>Two narrowings applied here rather than left to the screen. Rows authored in ordinary PLAY
+     * are dropped — a shared carriage picked up by a train is not a builder's submission, and a pool
+     * is mostly those. What survives is trimmed to {@code limit}, because the endpoint takes no limit
+     * of its own and the packet that carries the answer holds 512 rows: trimming late would mean the
+     * newest builds silently falling off the end of the wire.</p>
+     *
+     * <p>It is a big answer — the live pool was 7,989 rows / 6.6 MB on 2026-09-05, of which 552 were
+     * builder rows — so this is asked on a press rather than on a timer, and only ever by an operator
+     * build.</p>
+     *
+     * <p>{@code null} on an unreachable or unusable answer, empty when the pool holds nothing — the
+     * same two-answer convention every listing here follows.</p>
+     */
+    public static CompletableFuture<List<ProfileBuild>> listAll(boolean useLive, int limit) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+        String url = admin + "/carriages?cap=" + (useLive ? "live" : "dev");
+        return get(url).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
+            List<ProfileBuild> out = new java.util.ArrayList<>();
+            for (JsonElement el : o.getAsJsonArray("carriages")) {
+                if (!el.isJsonObject()) continue;
+                JsonObject r = el.getAsJsonObject();
+                if (!r.has("id")) continue;
+                ProfileBuild build = parseBuild(r);
+                if (SOURCE_PLAY.equals(build.source())) continue;
+                out.add(build);
+            }
+            out.sort((a, b) -> Long.compare(b.updatedTs(), a.updatedTs()));
+            return List.copyOf(limit > 0 && out.size() > limit ? out.subList(0, limit) : out);
+        });
+    }
+
+    /** What the relay calls a row uploaded by ordinary play rather than by the Train Builder. */
+    private static final String SOURCE_PLAY = "play";
+
+    /** One reconstructable frame of a build's history: a full snapshot and the deltas since it. */
+    public record HistoryFrame(int seq, int baseSeq, String base, List<String> deltas) {}
+
+    /**
+     * The seqs at which a build's change history was recorded, oldest first — the relay's admin
+     * scrubber index, metadata only. Empty when there is none; null when it could not be asked.
+     *
+     * <p>Admin cap only, like {@link #searchCreators}: the history is the operator's view of how a
+     * build came to be, and a release build has no admin URL to ask with.</p>
+     */
+    public static CompletableFuture<List<Integer>> historyIndex(int id, boolean useLive) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+        String url = admin + "/carriages/" + id + "/history?cap=" + (useLive ? "live" : "dev");
+        return get(url).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("history") || !o.get("history").isJsonArray()) return null;
+            List<Integer> out = new java.util.ArrayList<>();
+            for (JsonElement el : o.getAsJsonArray("history")) {
+                if (el.isJsonObject() && el.getAsJsonObject().has("seq")) {
+                    out.add(el.getAsJsonObject().get("seq").getAsInt());
+                }
+            }
+            return List.copyOf(out);
+        });
+    }
+
+    /** The build as it stood at {@code seq}: newest full snapshot at or before it, and the deltas up to it. */
+    public static CompletableFuture<HistoryFrame> historyFrame(int id, int seq, boolean useLive) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
+        String url = admin + "/carriages/" + id + "/history/" + seq + "?cap=" + (useLive ? "live" : "dev");
+        return get(url).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("frame") || !o.get("frame").isJsonObject()) return null;
+            JsonObject f = o.getAsJsonObject("frame");
+            List<String> deltas = new java.util.ArrayList<>();
+            if (f.has("deltas") && f.get("deltas").isJsonArray()) {
+                for (JsonElement el : f.getAsJsonArray("deltas")) deltas.add(el.getAsString());
+            }
+            return new HistoryFrame(intOf(f, "seq"), intOf(f, "baseSeq"), str(f, "base"), List.copyOf(deltas));
+        });
+    }
+
     /** The creator rows in a search answer, or null when there was no usable answer. */
     private static List<Creator> parseCreators(HttpResponse<String> resp) {
         return parseCreatorArray(okJson(resp));

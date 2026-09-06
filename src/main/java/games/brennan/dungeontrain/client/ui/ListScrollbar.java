@@ -1,10 +1,11 @@
-package games.brennan.dungeontrain.client.localization.edit;
+package games.brennan.dungeontrain.client.ui;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
 /**
- * The scrollbar shared by the translation screen's two lists — the strings on the left and the
+ * The scrollbar shared by every hand-rolled scrolling list in the mod — the translation screen's
+ * strings and submissions columns, its source pane, and the shader menu's pack list — the strings on the left and the
  * submissions column on the right.
  *
  * <p>Both widgets drew the same three-pixel thumb and neither could be grabbed: a click anywhere
@@ -15,10 +16,10 @@ import net.minecraft.util.Mth;
  * <p>The grab area is deliberately wider than the drawn track. Three pixels is not a mouse target,
  * and the alternative — drawing a bar fat enough to hit — costs the rows width they need more.</p>
  */
-final class ListScrollbar {
+public final class ListScrollbar {
 
     /** Width of the drawn thumb. Widgets size their text column against this. */
-    static final int WIDTH = 3;
+    public static final int WIDTH = 3;
     /** How far left of the track a click still counts as aiming at it. */
     private static final int GRAB_PAD = 3;
     /** Never let the thumb shrink below something you can actually grab. */
@@ -28,15 +29,15 @@ final class ListScrollbar {
     /** True between pressing the bar and letting go — see {@code mouseDragged} in both widgets. */
     private boolean dragging;
 
-    boolean isDragging() {
+    public boolean isDragging() {
         return dragging;
     }
 
-    void begin() {
+    public void begin() {
         dragging = true;
     }
 
-    void end() {
+    public void end() {
         dragging = false;
     }
 
@@ -45,7 +46,7 @@ final class ListScrollbar {
     }
 
     /** Is the cursor aiming at the bar rather than at the row behind it? */
-    boolean isOverTrack(double mouseX, int x, int width) {
+    public boolean isOverTrack(double mouseX, int x, int width) {
         return mouseX >= trackX(x, width) - GRAB_PAD;
     }
 
@@ -57,7 +58,7 @@ final class ListScrollbar {
      * The scroll offset that puts the thumb under the cursor, centred on it — so pressing the
      * track jumps to roughly what you pointed at, and a drag follows the mouse from there.
      */
-    int scrollFor(double mouseY, int y, int height, int totalHeight, int maxScroll) {
+    public int scrollFor(double mouseY, int y, int height, int totalHeight, int maxScroll) {
         int thumbH = thumbHeight(height, totalHeight);
         int travel = height - thumbH;
         if (travel <= 0 || maxScroll <= 0) {
@@ -68,7 +69,7 @@ final class ListScrollbar {
     }
 
     /** Draw the thumb. Callers skip this when there is nothing to scroll. */
-    void render(GuiGraphics g, int x, int y, int width, int height, int totalHeight, int scroll,
+    public void render(GuiGraphics g, int x, int y, int width, int height, int totalHeight, int scroll,
                 int maxScroll) {
         if (maxScroll <= 0) {
             return;

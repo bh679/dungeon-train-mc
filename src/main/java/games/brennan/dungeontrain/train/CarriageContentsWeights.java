@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.FlipOptions;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.TemplateMeta;
 import games.brennan.dungeontrain.template.TemplateWeightCodec;
@@ -193,13 +194,47 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         if (link == null && prev != null && prev.stageId() != null) {
             inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, prev.stageId());
         }
-        next.put(key, new TemplateMeta(weight, inline, link));
+        // Rebuild from `prev` rather than from parts so the entry's mode tag and flip block survive
+        // a link/detach (constructing a fresh 3-arg TemplateMeta would silently drop both).
+        next.put(key, prev == null
+            ? new TemplateMeta(weight, inline, link)
+            : prev.withGate(inline).withStage(link));
         current = new CarriageContentsWeights(next);
         writeConfig(current);
         trySaveToSource(current);
         LOGGER.info("[DungeonTrain] Set carriage contents stage {}={} (persisted to {}).",
                 key, link == null ? "<custom>" : link, configPath());
         return link;
+    }
+
+    /**
+     * Which axes {@code id} may be randomly flipped along when it is stamped, and whether that roll
+     * also applies to portal-room furnishing. {@link FlipOptions#DEFAULT} (Z on) for any id with no
+     * entry or no authored {@code flip} block — i.e. for every template that shipped before the
+     * option existed. Read by {@code ContentsFlip.roll} at placement time.
+     */
+    public FlipOptions flipFor(String id) {
+        TemplateMeta m = byId.get(id);
+        return m == null ? FlipOptions.DEFAULT : m.effectiveFlip();
+    }
+
+    /**
+     * Update the flip options for {@code id}, preserving its weight, inline gate, Stage link and
+     * mode, and persist. Returns the stored options. Takes effect for the next carriage that spawns
+     * — carriages already on the train keep the orientation they were stamped with.
+     */
+    public static synchronized FlipOptions setFlip(String id, FlipOptions flip) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        FlipOptions value = flip == null ? FlipOptions.DEFAULT : flip;
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        next.put(key, TemplateMeta.mergeFlip(prev, value, DEFAULT));
+        current = new CarriageContentsWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage contents flip {}={} (persisted to {}).",
+                key, value, configPath());
+        return value;
     }
 
     /**

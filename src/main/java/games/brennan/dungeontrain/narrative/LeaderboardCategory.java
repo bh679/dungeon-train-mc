@@ -76,8 +76,8 @@ public enum LeaderboardCategory {
     // chests and books do, so they carry Scope.TOTAL. Alone they say nothing about it (see
     // labelsSpan), but the scope is what makes a one-life half of any of them expressible at all.
     DEATHNOTES_WRITTEN("deathnotes_written", "deathnotes_written", "Most Death Notes", Scope.TOTAL, Format.COUNT),
-    DEATHNOTES_FOUGHT("deathnotes_fought", "deathnotes_fought", "Most Curses Survived", Scope.TOTAL, Format.COUNT),
-    DEATHNOTES_PEOPLE("deathnotes_people", "deathnotes_people", "Most People Cursed", Scope.TOTAL, Format.COUNT),
+    DEATHNOTES_FOUGHT("deathnotes_fought", "deathnotes_fought", "Most Death Notes Survived", Scope.TOTAL, Format.COUNT),
+    DEATHNOTES_PEOPLE("deathnotes_people", "deathnotes_people", "Most People Named", Scope.TOTAL, Format.COUNT),
     LOVENOTES_WRITTEN("lovenotes_written", "lovenotes_written", "Most Love Notes Written", Scope.TOTAL, Format.COUNT),
     LOVENOTES_RECEIVED("lovenotes_received", "lovenotes_received", "Most Love Notes Received", Scope.TOTAL, Format.COUNT),
     LOVENOTES_PEOPLE("lovenotes_people", "lovenotes_people", "Most Lovers", Scope.TOTAL, Format.COUNT),

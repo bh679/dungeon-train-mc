@@ -101,7 +101,7 @@ public final class EditorLayout {
      * Shared plot floor for every editor — the Y every plot's origin sits at.
      *
      * <p>Set by the tallest thing a plot has to stand up, which is a portal room at
-     * {@link games.brennan.dungeontrain.portal.PortalRoomLayout#MAX_HEIGHT} (80): a plot floor plus
+     * {@link games.brennan.dungeontrain.portal.PortalRoomLayout#MAX_HEIGHT} (90): a plot floor plus
      * that has to stay under the build ceiling (320 in every DT preset), and 230 leaves ten blocks
      * of margin. It was 250, which capped an authored room at 70 — a ceiling nothing about rooms
      * asked for, and one an author hit with no way to see why.</p>

@@ -59,9 +59,13 @@ public final class VoidSkyEvents {
         double t = ClientVoidBand.endSkyIntensityAt(event.getCamera().getPosition().x);
         if (t <= 0.0) return;
         float f = (float) (1.0 - 0.85 * Math.min(1.0, t)); // → ~0.15× at full void (End fog)
+        int before = ShaderDiagnostics.recording() ? ShaderDiagnostics.packFog(event) : 0;
         event.setRed(event.getRed() * f);
         event.setGreen(event.getGreen() * f);
         event.setBlue(event.getBlue() * f);
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordFogColor("void", before, ShaderDiagnostics.packFog(event));
+        }
     }
 
     @SubscribeEvent

@@ -19,16 +19,16 @@ import games.brennan.dungeontrain.portal.PortalRoomSky;
 public final class ClientPortalRoomSky {
 
     /**
-     * How fast the lift comes up or goes down, as a fraction of the remaining gap per lightmap
-     * rebuild.
+     * How long the lift takes to come up or go down, in real seconds.
      *
-     * <p><b>Per rebuild, not per frame</b> — {@code LightTexture} refreshes on a tick flag rather
-     * than every frame, so this steps at roughly 20 Hz and reaches most of the way across in about a
-     * second. Stepping straight to the target would have the world change brightness between two
-     * frames as a foot crossed the threshold, which reads as a flash; it is also what makes a portal
-     * swap survivable, since the arrival puts the camera inside a room with no walk-in at all.</p>
+     * <p>Timed rather than counted in rebuilds: {@code LightTexture} refreshes on a tick flag, so a
+     * per-rebuild ease is hostage to how often that happens. Stepping straight to the target would
+     * have the world change brightness between two frames as a foot crossed the threshold, which
+     * reads as a flash; it is also what makes a portal swap survivable, since the arrival puts the
+     * camera inside a room with no walk-in at all.</p>
      */
-    private static final float EASE_PER_REBUILD = 0.10f;
+    private static final float FADE_SECONDS = 1.2f;
+    private static final long[] FADE_CLOCK = new long[1];
 
     /** Below this the lift is not worth applying, and the mixin hands the lightmap back to vanilla. */
     private static final float OFF_EPSILON = 0.004f;
@@ -103,18 +103,68 @@ public final class ClientPortalRoomSky {
         }
         if (want <= 0.0f && applied <= 0.0f) return 0.0f;
 
-        applied += (want - applied) * EASE_PER_REBUILD;
+        applied = approach(applied, want, FADE_SECONDS, FADE_CLOCK);
         if (want <= 0.0f && applied <= OFF_EPSILON) {
             applied = 0.0f;
             easing = PortalRoomSky.NONE;
             return 0.0f;
         }
-        return applied;
+        return shaped(applied);
+    }
+
+    /**
+     * The room box the server last named, for the diagnostics panel — {@code "none"} when it has
+     * named none.
+     *
+     * <p>Purely observational, and the whole point of it is to separate two failures that look the
+     * same from outside: the server never sent a room (nothing here), and the server sent one the
+     * camera is not standing in (a box that does not contain the player). A sweep that only reports
+     * {@code t=0} cannot tell those apart, and they have entirely different causes.</p>
+     */
+    public static String describeRegion() {
+        PortalRoomSkyPacket r = region;
+        if (r.minX() == 0 && r.maxX() == 0 && r.minY() == 0 && r.maxY() == 0) return "none";
+        return r.skyKind() + "[" + r.minX() + ".." + r.maxX() + ", "
+            + r.minY() + ".." + r.maxY() + ", " + r.minZ() + ".." + r.maxZ() + "]";
+    }
+
+
+    /**
+     * Shape a linear 0..1 progress into a fade that eases at both ends.
+     *
+     * <p>The ease this replaced was exponential — {@code applied += (want - applied) * rate} — whose
+     * largest step is its <em>first</em>. For a lift that brightens unlit cells that is backwards:
+     * the change was most abrupt exactly where it should have been imperceptible, and under a shader
+     * pack, which leans on the lightmap for ambient, it read as the lighting snapping on.</p>
+     */
+    private static float shaped(float progress) {
+        float x = Math.max(0.0f, Math.min(1.0f, progress));
+        return x * x * (3.0f - 2.0f * x);
+    }
+
+    /** Move {@code from} toward {@code to} at a fixed pace in real seconds, frame rate be damned. */
+    private static float approach(float from, float to, float seconds, long[] lastNanos) {
+        long now = System.nanoTime();
+        float dt = lastNanos[0] == 0L ? 0.0f : (now - lastNanos[0]) / 1_000_000_000.0f;
+        lastNanos[0] = now;
+        dt = Math.max(0.0f, Math.min(0.25f, dt));
+        float step = seconds <= 0.0f ? 1.0f : dt / seconds;
+        if (to > from) return Math.min(to, from + step);
+        return Math.max(to, from - step);
     }
 
     /** The sky the current lift is toward — only meaningful while {@link #advance} returns above zero. */
     public static PortalRoomSky sky() {
         return easing;
+    }
+
+    /**
+     * How much of the lift is applied right now, {@code 0}..{@code 1}, <em>without</em> advancing
+     * the ease. For readers that need the room's state several times a frame — the shader-world
+     * decision — while {@link #advance} stays the single owner of the ease.
+     */
+    public static float applied() {
+        return shaped(applied);
     }
 
     /**

@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
+import net.minecraft.client.Minecraft;
 
 /**
  * Client mirror of {@link games.brennan.dungeontrain.portal.PortalTestSession} — whether this player
@@ -18,8 +20,17 @@ public final class PortalTestSessionState {
     private PortalTestSessionState() {}
 
     public static void update(PortalTestSessionPacket packet) {
+        boolean was = active;
         active = packet.active();
         roomName = packet.roomName();
+        // A test puts Skybox Blocks back however the author's switch is set, and that changes what
+        // they cull as well as what they draw. The meshes standing when it starts or ends were
+        // built against the other answer, so they are rebuilt — but only when the switch is off,
+        // which is the only case where the two answers differ.
+        if (was != active && !ClientDisplayConfig.areSkyboxBlocksOn()) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.levelRenderer != null) mc.levelRenderer.allChanged();
+        }
     }
 
     /** True while this player is standing in a stamped test carriage. */

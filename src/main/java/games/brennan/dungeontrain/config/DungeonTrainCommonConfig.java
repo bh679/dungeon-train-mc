@@ -121,6 +121,19 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 5000;
+    /**
+     * How many ambient monsters may stand within {@code AmbientDensity.RADIUS} of a player before
+     * natural spawning is held off. 0 disables the cap.
+     *
+     * <p>30 is measured, not guessed: at a pillager outpost a DT world held 59 monsters inside that
+     * radius against a vanilla world's 19 on the same seed, while ordinary DT track sat at ~32. A cap
+     * of 30 therefore leaves the open line alone and trims only the places where the world has
+     * stacked its whole allowance on one player.</p>
+     */
+    public static final int MIN_AMBIENT_MONSTER_CAP = 0;
+    public static final int MAX_AMBIENT_MONSTER_CAP = 1000;
+    public static final int DEFAULT_AMBIENT_MONSTER_CAP = 30;
+
     /** Nether structures in the band core (vanilla spacing + biome rules) are on by default. */
     public static final boolean DEFAULT_NETHER_STRUCTURES = true;
 
@@ -302,6 +315,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue CONFIG_VERSION;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
+    public static final ModConfigSpec.IntValue AMBIENT_MONSTER_CAP;
     public static final ModConfigSpec.BooleanValue COMPATIBLE_TERRAIN;
     public static final ModConfigSpec.BooleanValue DISINTEGRATION_ENABLED;
     public static final ModConfigSpec.IntValue DISINTEGRATION_START_BLOCKS;
@@ -351,6 +365,7 @@ public final class DungeonTrainCommonConfig {
         CONFIG_VERSION = pair.getLeft().configVersion;
         DEFAULT_PLAYER_MOB_SPAWN = pair.getLeft().defaultPlayerMobSpawnOneIn;
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN = pair.getLeft().defaultPlayerMobBehindSpawnPercent;
+        AMBIENT_MONSTER_CAP = pair.getLeft().ambientMonsterCap;
         COMPATIBLE_TERRAIN = pair.getLeft().compatibleTerrain;
         DISINTEGRATION_ENABLED = pair.getLeft().disintegrationEnabled;
         DISINTEGRATION_START_BLOCKS = pair.getLeft().disintegrationStartBlocks;
@@ -416,6 +431,15 @@ public final class DungeonTrainCommonConfig {
                         + "from the rear). Used by any world that has not set a per-world override. Default 15; 0 disables; 100 = always.")
                 .defineInRange("defaultPlayerMobBehindSpawnPercent", DEFAULT_PLAYER_MOB_BEHIND_SPAWN_PERCENT,
                         MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT, MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT);
+        ModConfigSpec.IntValue ambientMonsterCap = b
+                .comment("Most naturally-spawned monsters allowed within 96 blocks of a player before the world stops",
+                        "spawning more around them. Vanilla's own cap is level-wide and assumes a deep world to spend",
+                        "it in; a Dungeon Train overworld generates from y=32, so that whole allowance lands next to",
+                        "whoever is playing - measured as 59 monsters inside that radius at a pillager outpost against",
+                        "a vanilla world's 19 on the same seed. The train's own mobs never count towards this, so the",
+                        "difficulty curve is untouched. Default 30; 0 disables the cap.")
+                .defineInRange("ambientMonsterCap", DEFAULT_AMBIENT_MONSTER_CAP,
+                        MIN_AMBIENT_MONSTER_CAP, MAX_AMBIENT_MONSTER_CAP);
         b.pop();
 
         b.push("train");
@@ -683,7 +707,8 @@ public final class DungeonTrainCommonConfig {
                         MIN_CHUNCKS_SLICE_RATIO, MAX_CHUNCKS_SLICE_RATIO);
         b.pop();
 
-        return new Holder(configVersion, defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
+        return new Holder(configVersion, defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent,
+                ambientMonsterCap, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationEndCities,
                 disintegrationOverworldHoldBlocks,
@@ -903,6 +928,14 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_CORE_HOLD_BLOCKS.get() : DEFAULT_NETHER_CORE_HOLD_BLOCKS;
     }
 
+    /**
+     * Ambient monsters allowed near one player before natural spawning is held off; falls back to the
+     * hardcoded default pre-load. 0 disables the cap.
+     */
+    public static int getAmbientMonsterCap() {
+        return isLoaded() ? AMBIENT_MONSTER_CAP.get() : DEFAULT_AMBIENT_MONSTER_CAP;
+    }
+
     /** Nether structures in the band core; falls back to the hardcoded default pre-load. */
     public static boolean isNetherStructuresEnabled() {
         return isLoaded() ? NETHER_STRUCTURES.get() : DEFAULT_NETHER_STRUCTURES;
@@ -1030,6 +1063,7 @@ public final class DungeonTrainCommonConfig {
     private record Holder(ModConfigSpec.IntValue configVersion,
                           ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
+                          ModConfigSpec.IntValue ambientMonsterCap,
                           ModConfigSpec.BooleanValue compatibleTerrain,
                           ModConfigSpec.BooleanValue disintegrationEnabled,
                           ModConfigSpec.IntValue disintegrationStartBlocks,

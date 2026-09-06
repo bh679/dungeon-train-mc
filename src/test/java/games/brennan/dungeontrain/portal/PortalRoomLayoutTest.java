@@ -129,7 +129,11 @@ class PortalRoomLayoutTest {
     @Test
     @DisplayName("The authoring ceiling is what a stock world can very nearly stand up")
     void maxHeight_isTheAuthoringCeiling() {
-        assertEquals(80, PortalRoomLayout.MAX_HEIGHT);
+        // A room built to the ceiling has to stand up in every stock basement: 96 blocks, less the
+        // floor margin and the row under bedrock, is 93, and 90 fits under that.
+        assertEquals(90, PortalRoomLayout.MAX_HEIGHT);
+        assertTrue(PortalRoomLayout.MAX_HEIGHT <= PortalTwinLanes.maxStructureHeight(-96, 0));
+        assertTrue(PortalRoomLayout.MAX_HEIGHT <= PortalTwinLanes.maxStructureHeight(-64, 32));
         // What a stock DT preset (basement 80, floor -48, bedrock 32) actually holds. A room asked
         // for taller than this is stamped at this instead — see PortalCarriageBuilder.
         assertEquals(77, PortalTwinLanes.maxStructureHeight(-48, 32));
@@ -499,5 +503,22 @@ class PortalRoomLayoutTest {
             + " is outside room minY " + room.getY());
         assertTrue(corridorY + DEFAULT_DIMS.height() - 1 <= room.getY() + height - 1,
             where + ": corridor maxY is outside room maxY");
+    }
+
+    @Test
+    @DisplayName("Growing stops at the authoring ceiling, but a room already past it is neither shrunk nor grown")
+    void authoringCeilingNeverShrinksAnExistingBuild() {
+        Vec3i small = new Vec3i(11, 7, 13);
+        assertEquals(new Vec3i(64, 7, 13), PortalRoomLayout.heldForAuthoring(small, new Vec3i(80, 7, 13)));
+        assertEquals(new Vec3i(11, 64, 13), PortalRoomLayout.heldForAuthoring(small, new Vec3i(11, 90, 13)));
+        assertEquals(new Vec3i(40, 7, 13), PortalRoomLayout.heldForAuthoring(small, new Vec3i(40, 7, 13)));
+
+        // Terrarium: 80 tall from before the ceiling existed. It keeps its 80, may not reach 81, and
+        // may still be made shorter.
+        Vec3i terrarium = new Vec3i(43, 80, 9);
+        assertEquals(terrarium, PortalRoomLayout.heldForAuthoring(terrarium, terrarium));
+        assertEquals(new Vec3i(43, 80, 9), PortalRoomLayout.heldForAuthoring(terrarium, new Vec3i(43, 81, 9)));
+        assertEquals(new Vec3i(43, 70, 9), PortalRoomLayout.heldForAuthoring(terrarium, new Vec3i(43, 70, 9)));
+        assertEquals(new Vec3i(64, 80, 9), PortalRoomLayout.heldForAuthoring(terrarium, new Vec3i(90, 80, 9)));
     }
 }

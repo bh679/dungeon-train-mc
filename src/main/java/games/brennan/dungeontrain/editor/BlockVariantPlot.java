@@ -176,6 +176,30 @@ public interface BlockVariantPlot {
      */
     void restoreJson(String json) throws IOException;
 
+    // ---------- Keys ----------
+
+    /**
+     * The four key formats, stated once. {@link #resolveByKey} parses them and every implementation
+     * below emits one; the Train Builder names a template it is saving to with them as well, which
+     * is what made a second, drifting copy of the string concatenation worth avoiding — see
+     * {@link ContainerContentsStore#trackPlotKey} for the bug the last one caused.
+     */
+    static String carriageKey(String variantId) {
+        return "carriage:" + variantId;
+    }
+
+    static String contentsKey(String contentsId) {
+        return "contents:" + contentsId;
+    }
+
+    static String partKey(CarriagePartKind kind, String name) {
+        return "part:" + kind.id() + ":" + name;
+    }
+
+    static String trackKey(TrackKind kind, String name) {
+        return "track:" + kind.id() + ":" + name;
+    }
+
     // ---------- Resolution ----------
 
     /**
@@ -187,6 +211,25 @@ public interface BlockVariantPlot {
      * <p>Returns {@code null} if the key doesn't parse, the registered
      * template no longer exists, or the plot's origin can't be resolved.</p>
      */
+    /**
+     * Resolve by key in a world that may be a Train Builder one.
+     *
+     * <p>The key-only form below asks the template registries where a plot is, and the builder's
+     * build is not in them — its key names a build, not a template. So that arm is answered here,
+     * from the level, and everything else falls through unchanged.</p>
+     *
+     * <p>This is the form the menus use once they are open: a menu is anchored to a plot, so what it
+     * re-syncs and edits should follow that anchor rather than the author's feet — which is what
+     * lets you stand off a plot, or outside the carriage you are building, and keep working on it.</p>
+     */
+    static @Nullable BlockVariantPlot resolveByKey(@Nullable net.minecraft.server.level.ServerLevel level,
+                                                   String key, CarriageDims dims) {
+        if (level != null && games.brennan.dungeontrain.builder.BuilderCarriagePlot.KEY.equals(key)) {
+            return games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(level, null, dims);
+        }
+        return resolveByKey(key, dims);
+    }
+
     static @Nullable BlockVariantPlot resolveByKey(String key, CarriageDims dims) {
         if (key == null) return null;
         if (key.startsWith("carriage:")) {
@@ -240,7 +283,13 @@ public interface BlockVariantPlot {
             if (kind == null) return null;
             BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);
             if (origin == null) return null;
-            net.minecraft.core.Vec3i footprint = kind.dims(dims);
+            // This template's own box, not the kind's — a portal room is free-sized above its floor,
+            // so {@code kind.dims} is the built-in room's 11x7x13 whatever the author has since built.
+            // The open path (resolveAtPos → TrackSidePlots.locate) has always asked the name-aware
+            // one, and the two disagreeing is what made a big room editable everywhere and savable
+            // only in its first 11 blocks: the menu opened on a cell the edit then rejected as
+            // "localPos out of bounds".
+            net.minecraft.core.Vec3i footprint = TrackSidePlots.footprint(kind, name, dims);
             return new TrackPlot(kind, name, origin, footprint);
         }
         return null;
@@ -332,7 +381,7 @@ public interface BlockVariantPlot {
             this.sidecar = CarriageVariantBlocks.loadFor(variant, CarriageEditor.plotDims(variant, dims));
         }
 
-        @Override public String key() { return "carriage:" + variant.id(); }
+        @Override public String key() { return carriageKey(variant.id()); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -389,7 +438,7 @@ public interface BlockVariantPlot {
             this.sidecar = CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
         }
 
-        @Override public String key() { return "contents:" + contents.id(); }
+        @Override public String key() { return contentsKey(contents.id()); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -444,7 +493,7 @@ public interface BlockVariantPlot {
             this.sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
         }
 
-        @Override public String key() { return "part:" + kind.id() + ":" + name; }
+        @Override public String key() { return partKey(kind, name); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
@@ -505,7 +554,7 @@ public interface BlockVariantPlot {
             this.sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
         }
 
-        @Override public String key() { return "track:" + kind.name().toLowerCase(java.util.Locale.ROOT) + ":" + name; }
+        @Override public String key() { return trackKey(kind, name); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }

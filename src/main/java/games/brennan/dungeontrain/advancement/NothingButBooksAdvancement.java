@@ -2,10 +2,7 @@ package games.brennan.dungeontrain.advancement;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.narrative.NarrativeBookTag;
-import games.brennan.dungeontrain.narrative.RandomBookTag;
-import games.brennan.dungeontrain.narrative.SharedBookFoundTag;
-import games.brennan.dungeontrain.narrative.StartingBookTag;
+import games.brennan.dungeontrain.narrative.BurnableBookTag;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -24,12 +21,15 @@ import org.slf4j.Logger;
  * count, matching the "your whole inventory" framing.
  *
  * <p>A stack counts as a "story book" when it's a vanilla
- * {@link Items#WRITTEN_BOOK} carrying at least one of the mod's own content
- * stamps — {@link NarrativeBookTag}, {@link StartingBookTag},
- * {@link RandomBookTag}, or {@link SharedBookFoundTag}. A vanilla empty
- * {@code writable_book} (book & quill) or a plain unstamped written book (e.g.
- * one the player wrote themselves) both fail every check and so don't count —
- * "empty books don't count".</p>
+ * {@link Items#WRITTEN_BOOK} that {@link BurnableBookTag#isBurnable} recognizes
+ * as one of the mod's burn-after-reading kinds — every content stamp the mod
+ * hands out, from starting/random/shared/narrative books through Death Notes,
+ * Love Notes, leaderboard books and Faulthurst stat notes. Delegating to that
+ * single predicate means this advancement can't quietly fall behind as new
+ * burnable book kinds are added. A vanilla empty {@code writable_book} (book &amp;
+ * quill) or a plain unstamped written book (e.g. one the player wrote
+ * themselves but that vanilla kept, unmarked) both fail every check and so
+ * don't count — "empty books don't count".</p>
  *
  * <p>The advancement JSON
  * ({@code data/dungeontrain/advancement/dungeon_train/nothing_but_books.json})
@@ -56,16 +56,14 @@ public final class NothingButBooksAdvancement {
 
     /**
      * True when {@code stack} is a mod-authored story book: a written book
-     * carrying at least one of the mod's own content stamps. Vanilla writable
-     * books and unstamped written books both return false.
+     * that the mod's burn-after-reading mechanic ({@link BurnableBookTag})
+     * recognizes. Vanilla writable books and unstamped written books both
+     * return false.
      */
     static boolean isStoryBook(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return false;
         if (stack.getItem() != Items.WRITTEN_BOOK) return false;
-        return NarrativeBookTag.read(stack).isPresent()
-            || StartingBookTag.isStartingBook(stack)
-            || RandomBookTag.read(stack).isPresent()
-            || SharedBookFoundTag.isFound(stack);
+        return BurnableBookTag.isBurnable(stack);
     }
 
     /**

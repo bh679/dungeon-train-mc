@@ -11,15 +11,11 @@
       "weight": 1
     },
     {
-      "id": "authorlibrary",
-      "weight": 0
-    },
-    {
-      "id": "test",
+      "id": "defaultweird",
       "weight": 1
     },
     {
-      "id": "defaultweird",
+      "id": "room",
       "weight": 1
     }
   ]

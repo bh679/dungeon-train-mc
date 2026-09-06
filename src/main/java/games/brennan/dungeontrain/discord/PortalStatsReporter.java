@@ -54,7 +54,7 @@ public final class PortalStatsReporter {
             if (!DungeonTrainConfig.isWorldInfoToRelay()) return;
             String uuid = player.getUUID().toString().replace("-", "");
             String name = player.getGameProfile().getName();
-            long runSec = Math.max(0L, packet.runTicks() / TICKS_PER_SECOND);
+            long runSec = Math.max(0L, packet.trainTimeTicks() / TICKS_PER_SECOND);
             JsonObject payload = buildPayload(uuid, name, WorldJoinReport.modVersion(), runSec,
                 packet.cartsTravelled(), life);
             RelayOutbox.get().enqueue(PATH, payload.toString());

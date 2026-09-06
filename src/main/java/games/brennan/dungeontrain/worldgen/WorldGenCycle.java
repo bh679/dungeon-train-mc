@@ -307,6 +307,27 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * How many blocks past the leading edge of the real-Nether <b>core</b> {@code worldX} sits:
+     * {@code 0} at the first full-Nether column (where the netherrack crossfade finishes), growing to
+     * {@code coreHold - 1} at the last one, and {@code -1} anywhere else — both crossfades, the
+     * mountain rise/plateau, and outside the nether segment entirely.
+     *
+     * <p>The layout offsets mirror {@link NetherTransition#netherRamp}: the crossfade-in runs
+     * {@code [riseLen + megaHold, +coreFade)} and the core {@code [+coreFade, +coreHold)} after it. A
+     * depth is what {@link #netherRamp} alone cannot give: the ramp reads {@code 1.0} across the whole
+     * core, so it can say "in the Nether" but not "how far in". {@code NetherMobSpawner} uses this to
+     * hold ghasts back until the player is properly inside the Nether rather than still crossfading
+     * into it.</p>
+     */
+    public long netherCoreDepth(int worldX) {
+        long ln = netherOffset(worldX);
+        if (ln < 0L) return -1L;
+        long coreStart = (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade);
+        long d = ln - coreStart;
+        return (d < 0L || d >= Math.max(0, coreHold)) ? -1L : d;
+    }
+
+    /**
      * Heightmap multiplier at a world-X: 1 outside the nether segment, {@code 1} across
      * stage 1, ramping {@code 1→stage2Mult} across stage 2, {@code stage2Mult→stage3Mult}
      * across stage 3, then held at {@code stage3Mult} across the mega plateau + core, and
