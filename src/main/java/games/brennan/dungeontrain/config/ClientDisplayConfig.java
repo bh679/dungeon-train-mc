@@ -91,6 +91,17 @@ public final class ClientDisplayConfig {
     public static final boolean DEFAULT_PORTAL_ROOM_SURFACE_COORDINATES = true;
 
     /**
+     * Default for {@link #isPortalTwinSealCulling()}.
+     *
+     * <p>On, for the same reason as the setting above it: the illusion is the feature. A dimensional
+     * carriage is supposed to read as a carriage, and a bedrock ceiling overhead — or, where the
+     * upside-down band has cleared that row, the train itself sailing past over your head — says
+     * plainly that it is not. The switch exists because this one culls geometry, and a renderer
+     * Dungeon Train has not met has to be able to opt out.</p>
+     */
+    public static final boolean DEFAULT_PORTAL_TWIN_SEAL_CULLING = true;
+
+    /**
      * The tighter distance {@code AUTO} applies while the player stands in a template, in blocks.
      *
      * <p>Lives here beside its sibling so the config comment can name it and the two numbers are
@@ -205,6 +216,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue EDITOR_PLOT_LIGHTING;
     /** Whether F3 lies about Y in a dimensional carriage. See {@link #isPortalRoomSurfaceCoordinates()}. */
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_SURFACE_COORDINATES;
+    /** Whether the world beyond a twin's seal is culled. See {@link #isPortalTwinSealCulling()}. */
+    public static final ModConfigSpec.BooleanValue PORTAL_TWIN_SEAL_CULLING;
     public static final ModConfigSpec.BooleanValue SKYBOX_PUNCH_ENABLED;
     /** Whether Skybox Blocks exist for this client at all. See {@link #areSkyboxBlocksOn()}. */
     public static final ModConfigSpec.BooleanValue SKYBOX_BLOCKS_ON;
@@ -374,6 +387,7 @@ public final class ClientDisplayConfig {
         SKYBOX_BLOCKS_ON = pair.getLeft().skyboxBlocksOn;
         PORTAL_CROSSING_FADE = pair.getLeft().portalCrossingFade;
         PORTAL_ROOM_SURFACE_COORDINATES = pair.getLeft().portalRoomSurfaceCoordinates;
+        PORTAL_TWIN_SEAL_CULLING = pair.getLeft().portalTwinSealCulling;
         SHADER_CROSSING_LIFT = pair.getLeft().shaderCrossingLift;
         SHADER_CROSSFADE = pair.getLeft().shaderCrossfade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
@@ -534,6 +548,9 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalRoomSurfaceCoordinates = b
                 .comment("Report a surface Y on the debug screen (F3) while you are inside a dimensional carriage, instead of the depth it is really stamped at. A dimensional carriage is a twin corridor built into the sealed space under the world - or, inside the upside-down band, above its lid - standing in the real carriage's own chunk columns. X and Z therefore already read what the carriage would give you and only Y gives the trick away, by well over a hundred blocks. On, the Y figures are shifted so the corridor floor reads at the train's own height, and the Block, Chunk and Targeted Block lines are moved to agree with it; everything else on the screen, the biome and light levels included, is untouched and true. Set false to see where a portal room really is - which is what you want if you are debugging one rather than riding it. Client-side display only: nothing about the world moves.")
                 .define("roomSurfaceCoordinates", DEFAULT_PORTAL_ROOM_SURFACE_COORDINATES);
+        ModConfigSpec.BooleanValue portalTwinSealCulling = b
+                .comment("Stop drawing the world on the far side of the seal while you are inside a dimensional carriage. A dimensional carriage is a twin corridor built into sealed world - under the bedrock, or above the upside-down band's inverted lid - and by default the rest of the world is still drawn through it: the bedrock row reads as a rock ceiling over a room that is supposed to be a carriage, and where the band has cleared that row, the train sails past overhead in plain sight. On, nothing beyond the seal is drawn, the seal row itself included, until you leave. Client-side display only: nothing about the world changes, and other players see what they always did. Set false if your renderer disagrees with it.")
+                .define("twinSealCulling", DEFAULT_PORTAL_TWIN_SEAL_CULLING);
         ModConfigSpec.BooleanValue shaderCrossingLift = b
                 .comment("Under a shader pack, also draw the corridor lift as a screen-space brightening after the pack has finished the frame. Most packs light the world from their own model and never read the lightmap the crossing fade lifts, so without this the transition is invisible under shaders; with it the walk brightens slightly toward the middle of the corridor. Packs that DO read the lightmap already show the lift, and this would double it - hence off by default. No effect without a shader pack.")
                 .define("shaderCrossingLift", false);
@@ -756,7 +773,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
@@ -1568,6 +1585,18 @@ public final class ClientDisplayConfig {
             : DEFAULT_PORTAL_ROOM_SURFACE_COORDINATES;
     }
 
+    /**
+     * Whether the world beyond a twin's seal stops being drawn while the camera is inside one.
+     *
+     * <p>Defaults to {@link #DEFAULT_PORTAL_TWIN_SEAL_CULLING} before the config loads and when it
+     * never does, so a client with no config file behaves like one that has just accepted the
+     * default. Read once a frame through {@code ClientPortalSeal.beginFrame}, so switching it takes
+     * effect on the next frame with nothing re-sent from the server.</p>
+     */
+    public static boolean isPortalTwinSealCulling() {
+        return isLoaded() ? PORTAL_TWIN_SEAL_CULLING.get() : DEFAULT_PORTAL_TWIN_SEAL_CULLING;
+    }
+
     /** Persist the editor plot lighting preference. Idempotent — skips the TOML write when unchanged. */
     public static void setEditorPlotLighting(boolean on) {
         if (!isLoaded()) return;
@@ -1785,6 +1814,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue skyboxBlocksOn,
             ModConfigSpec.BooleanValue portalCrossingFade,
             ModConfigSpec.BooleanValue portalRoomSurfaceCoordinates,
+            ModConfigSpec.BooleanValue portalTwinSealCulling,
             ModConfigSpec.BooleanValue shaderCrossingLift,
             ModConfigSpec.BooleanValue shaderCrossfade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,

@@ -11432,6 +11432,18 @@
       "released": true,
       "released_in": "v0.802.0",
       "released_at": "2026-09-05T18:37:17Z"
+    },
+    {
+      "id": "portal-twin-seal-render",
+      "version": "0.803.0",
+      "type": "fix",
+      "title": "The Developer keeps his secrets",
+      "summary": "And now they are even more secretive.",
+      "highlights": [],
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
