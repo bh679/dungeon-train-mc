@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.portal.PortalRoomCell;
 import games.brennan.dungeontrain.net.SnapshotCue;
 import games.brennan.dungeontrain.net.SnapshotCuePacket;
+import games.brennan.dungeontrain.net.TravelCreditPacket;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
@@ -114,6 +115,12 @@ public final class BoardingProgressEvents {
      */
     private static final Map<UUID, Integer> LAST_NOTIFIED_TIER = new HashMap<>();
 
+    /**
+     * Per-player last pushed {@link TravelCreditPacket} state — the dev-HUD "Travel:" line only
+     * needs a packet when the answer changes. UUID → last-sent state ordinal.
+     */
+    private static final Map<UUID, Integer> LAST_TRAVEL_STATE = new HashMap<>();
+
     /** Transient: consecutive scans the active leader has been off every AABB. */
     private static int leaderOffTrainScans = 0;
 
@@ -149,7 +156,14 @@ public final class BoardingProgressEvents {
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
 
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
-        if (carriages.isEmpty()) return;
+        if (carriages.isEmpty()) {
+            // No train in this level: nobody is earning, and the dev HUD should say so rather than
+            // keep showing whatever it last saw.
+            for (ServerPlayer player : level.players()) {
+                pushTravelState(player, TravelCreditPacket.State.OFF_TRAIN);
+            }
+            return;
+        }
 
         // Map of boarded players → their current carriage anchor pIdx.
         Map<UUID, Integer> boarded = new LinkedHashMap<>();
@@ -214,6 +228,14 @@ public final class BoardingProgressEvents {
         // means when the room they are standing in does not move.
         creditPortalRoomOccupants(level, carriages, boarded);
 
+        // Dev-HUD "Travel:" line — pushed for every player in the level, boarded or not.
+        for (ServerPlayer player : level.players()) {
+            UUID uuid = player.getUUID();
+            pushTravelState(player, !boarded.containsKey(uuid) ? TravelCreditPacket.State.OFF_TRAIN
+                : glidingOutside.contains(uuid) ? TravelCreditPacket.State.ELYTRA_OUTSIDE
+                : TravelCreditPacket.State.CREDITING);
+        }
+
         BoardingProgressData data = BoardingProgressData.get(level);
         UUID leader = data.activeLeaderUUID();
 
@@ -270,6 +292,16 @@ public final class BoardingProgressEvents {
     }
 
     /**
+     * Push the dev-HUD travel-credit read-out, but only when it would look different from the last
+     * one this player received.
+     */
+    private static void pushTravelState(ServerPlayer player, TravelCreditPacket.State state) {
+        Integer last = LAST_TRAVEL_STATE.put(player.getUUID(), state.ordinal());
+        if (last != null && last == state.ordinal()) return;
+        DungeonTrainNet.sendTo(player, TravelCreditPacket.of(state));
+    }
+
+    /**
      * Either promote a remaining boarded player to leader (multiplayer
      * hand-off) or clear the leader and freeze the counter.
      */
@@ -321,6 +353,7 @@ public final class BoardingProgressEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         LAST_BROADCAST.remove(player.getUUID());
         LAST_NOTIFIED_TIER.remove(player.getUUID());
+        LAST_TRAVEL_STATE.remove(player.getUUID());
         // A trip that did not finish this session did not happen — and the room its entry point
         // referred to is itself re-stamped on approach. See PortalTripTracker.
         PortalTripTracker.forget(player.getUUID());

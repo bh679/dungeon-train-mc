@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.ActivityStatePacket;
 import games.brennan.dungeontrain.net.CarriageGroupGapPacket;
+import games.brennan.dungeontrain.net.TravelCreditPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.resources.ResourceLocation;
@@ -42,6 +43,7 @@ public final class VersionHudOverlay {
     private static volatile int travelledCarriageIndex = 0;
     private static volatile int difficultyTier = 0;
     private static volatile ActivityStatePacket activityState = null;
+    private static volatile TravelCreditPacket travelCredit = null;
 
     private VersionHudOverlay() {}
 
@@ -95,6 +97,15 @@ public final class VersionHudOverlay {
         activityState = state;
     }
 
+    /**
+     * Called from {@code TravelCreditPacket.handle} on the client main thread. Drives the dev-HUD
+     * "Travel:" read-out — whether distance and carriage progress are accruing, and what is
+     * withholding them when they are not.
+     */
+    public static void setTravelCredit(TravelCreditPacket state) {
+        travelCredit = state;
+    }
+
     /** {@code M:SS}, or {@code H:MM:SS} once it runs past an hour. */
     private static String formatClock(long ticks) {
         long totalSeconds = Math.max(0L, ticks) / 20L;
@@ -118,6 +129,18 @@ public final class VersionHudOverlay {
             case 3 -> "⏸ no input " + formatClock(state.stoppedSeconds() * 20L);
             case 4 -> "⏸ no progress " + state.carriagesInWindow() + "/3";
             default -> "▶ tracking";
+        };
+    }
+
+    /**
+     * The state half of the "Travel:" line. Mirrors {@link TravelCreditPacket.State} ordinals — the
+     * server owns the rules (carriage AABBs, the interior test), this only names them.
+     */
+    private static String travelLabel(TravelCreditPacket state) {
+        return switch (state.state()) {
+            case 1 -> "⏸ elytra outside train";
+            case 2 -> "— off train";
+            default -> "▶ crediting";
         };
     }
 
@@ -155,6 +178,9 @@ public final class VersionHudOverlay {
         }
         if (activityState != null) {
             lines += 1; // Time: banking state + the train clock
+        }
+        if (travelCredit != null) {
+            lines += 1; // Travel: is movement being booked as travel on the train
         }
         if (carriagePresent && DebugFlagsState.hudDistance()
                 && CarriageGroupGapState.findByCarriage(carriageIndex) != null) {
@@ -202,6 +228,17 @@ public final class VersionHudOverlay {
                 HudText.drawScaled(graphics, mc.font, timeText,
                     4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
                     activity.countingTrain() ? 0xFF80FF80 : 0xFFFFC060, true);
+                line++;
+            }
+
+            // Is movement being booked as distance + carriage progress, and if not, why not?
+            // Server-pushed: only the server knows whether an elytra pilot is inside the train or
+            // skimming its roof.
+            TravelCreditPacket travel = travelCredit;
+            if (travel != null) {
+                HudText.drawScaled(graphics, mc.font, "  Travel: " + travelLabel(travel),
+                    4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
+                    travel.state() == 0 ? 0xFF80FF80 : 0xFFFFC060, true);
                 line++;
             }
 
