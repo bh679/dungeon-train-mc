@@ -11563,6 +11563,22 @@
       "released_in": null,
       "released_at": null,
       "pr": 1318
+    },
+    {
+      "id": "train-build-no-tip-no-jitter",
+      "version": "0.810.0",
+      "type": "fix",
+      "title": "Building on the train no longer tips or shakes the carriage",
+      "summary": "A carriage would lean, twitch or slide when you changed what was on it. Stack blocks high on one side and it tilted; break out a whole wall and it drifted while the game worked out where its weight now sat; ride past a block close to the track and it shuddered against it. Carriages are now held level and immovable: they keep to the rails no matter what you build or mine on them, and nothing they brush past can shove them off course. Building on the train is finally as steady as building on the ground.",
+      "highlights": [
+        "Carriages stay perfectly level \u2014 no tilting from a heavy or lopsided build",
+        "No more drifting or twitching after adding or removing a lot of blocks",
+        "Passing close to terrain no longer makes the carriage shudder"
+      ],
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
