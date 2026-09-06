@@ -182,10 +182,15 @@ public final class EditorScreenActions {
      * category is not the stamped one — its plots are cleared then, and the rename captures blocks
      * from the plot.</p>
      *
-     * <p>Null for built-ins, sub-variants, and the categories with no rename verb.</p>
+     * <p>Null for built-ins and for the categories with no rename verb. Sub-variants are refused per
+     * category rather than up front: a carriage or contents sub-variant is addressed through its
+     * parent and has no rename of its own, while a portal room in a group is an ordinary room that
+     * happens to be listed under one — renaming it rewrites the membership, which is exactly what
+     * the server-side rename does.</p>
      */
     static CommandMenuEntry renameEntry(Ctx ctx) {
-        if (!ctx.hasSelection() || ctx.isSubVariant()) return null;
+        if (!ctx.hasSelection()) return null;
+        if (ctx.isSubVariant() && ctx.category() != PlotCategory.PORTALS) return null;
         VariantKey sel = ctx.selection();
         String id = sel.modelId();
         String label = EditorScreenLang.text(EditorScreenLang.ICON_RENAME);
@@ -196,8 +201,16 @@ public final class EditorScreenActions {
             case CONTENTS -> EditorMenuScreen.isReservedContentsBuiltin(id) ? null
                 : new CommandMenuEntry.TypeArg(label, "new_name",
                     "dungeontrain editor contents rename " + id, "", id);
-            // Parts rename through their own kind:name verb; tracks and rooms have none.
-            case PARTS, TRACKS, PORTALS, ARCHITECTURE -> null;
+            // A room is a track variant under the hood and its key is spelled like one: modelId is
+            // the KIND token (portal_room) and modelName is the room — the same pair the weight and
+            // phase commands beside this one send. Naming the room with modelId is what produced
+            // "Unknown portal_room 'portal_room'". The typed field starts on the current name.
+            case PORTALS -> new CommandMenuEntry.TypeArg(label, "new_name",
+                "dungeontrain editor portals rename " + id + " " + sel.modelName(),
+                "", sel.modelName());
+            // Parts rename through their own kind:name verb; tracks have the command but no pane
+            // selection to address it with yet.
+            case PARTS, TRACKS, ARCHITECTURE -> null;
         };
     }
 
