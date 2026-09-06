@@ -11541,13 +11541,10 @@
     {
       "id": "jumps-tnt-templates",
       "version": "0.810.0",
-      "type": "fix",
-      "title": "A trap carriage no longer appears blank",
-      "summary": "One of the trap carriages could generate as blank fallback geometry instead of a real room. It is now built, along with an unfinished parkour carriage, and a new pillared carriage joins the rotation.",
-      "highlights": [
-        "Fixes a trap carriage that could generate as blank fallback geometry",
-        "A new pillared carriage, plus more block variety in the existing single-pillar carriages"
-      ],
+      "type": "content",
+      "title": "Three new dimensional carriages",
+      "summary": "Three new dimensional carriages join the rotation, and the pillared ones have more block variety.",
+      "highlights": [],
       "date": "2026-09-06",
       "released": false,
       "released_in": null,
