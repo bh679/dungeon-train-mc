@@ -85,11 +85,20 @@ public final class ClientUpsideDownBand {
     }
 
     /**
+     * World-Y of this world's terrain floor — the bedrock row, as synced on join.
+     * {@link Integer#MIN_VALUE} before a sync has landed, which every caller reads as "not known
+     * yet" rather than as a depth.
+     */
+    public static int bedrockY() {
+        return bedrockY;
+    }
+
+    /**
      * World-Y of the in-band inverted bedrock lid — the client's copy of
      * {@code UpsideDownBand.roofY}, from the synced {@code trainY} and {@code bedrockY} plus COMMON
      * config. {@link Integer#MAX_VALUE} before a sync has landed, so nothing is treated as attic.
      */
-    private static int roofY() {
+    public static int roofY() {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || bedrockY == Integer.MIN_VALUE) return Integer.MAX_VALUE;
         int mirror = plane();
