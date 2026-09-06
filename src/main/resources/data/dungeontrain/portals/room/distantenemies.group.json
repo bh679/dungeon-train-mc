@@ -12,8 +12,7 @@
     },
     {
       "id": "aggressiveplayers",
-      "weight": 2,
-      "maxLevel": 14
+      "weight": 1
     }
   ]
 }
