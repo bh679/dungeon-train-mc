@@ -269,7 +269,11 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
                 + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
                 + SEPARATOR + effectiveDoorWall.id() + SEPARATOR + doorOffset.id();
         }
-        if (effectiveDoorWall != PortalRoomDoorWall.DEFAULT) {
+        // The raw value gated on the control applying, not the effective one: effectiveDoorWall
+        // pins every non-repetition mode to Merged, which is no longer the default, and testing it
+        // here would grow a "/sealed" segment onto every Endless Open and Bedrock Lock tag on its
+        // next save — a segment that says nothing, since parse pins those modes the same way.
+        if (doorWallApplies() && doorWall != PortalRoomDoorWall.DEFAULT) {
             return mode.id() + SEPARATOR + effectiveCopies.id() + SEPARATOR + contents.id()
                 + SEPARATOR + effectiveExits.id() + SEPARATOR + books.id() + SEPARATOR + sky.id()
                 + SEPARATOR + effectiveDoorWall.id();
@@ -316,16 +320,23 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
 
     /**
      * What this room actually does at the corridor mouths: {@link #doorWall} where the control
-     * applies, and {@link PortalRoomDoorWall#DEFAULT} where it does not.
+     * applies, and {@link PortalRoomDoorWall#SEALED} where it does not.
      *
      * <p>Read this rather than {@link #doorWall} anywhere the answer drives block writes, for the
      * same reason {@link #effectiveCopies} and {@link #effectiveExits} exist. A room whose walls were
      * changed from Endless Repetition to Endless Open still carries whatever Door Wall value it had,
      * and honouring it there would hand a copy a plane it has no wall to fill — which is a hole in
      * the one boundary that may not have one.</p>
+     *
+     * <p><b>{@code SEALED} by name, not {@code DEFAULT}.</b> The default is Kept, and Kept answers
+     * "leave it alone" to every face question the tiler asks: {@code PortalRoomTiler.faceAction}
+     * returns {@code NONE} for anything that repeats, and {@code stampMaskFor} releases the seal
+     * planes. Endless Open depends on both being the other way — its faces are <i>opened</i>, and
+     * its floor-and-ceiling copies are masked off the mouth plane they have no wall to fill. So the
+     * modes the control does not apply to are pinned to Merged whatever the default says.</p>
      */
     public PortalRoomDoorWall effectiveDoorWall() {
-        return doorWallApplies() ? doorWall : PortalRoomDoorWall.DEFAULT;
+        return doorWallApplies() ? doorWall : PortalRoomDoorWall.SEALED;
     }
 
     /** True when the Copies control applies at all — either endless mode appends tiles to roll. */

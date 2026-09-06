@@ -472,7 +472,8 @@ public final class BuilderProfileScreen extends Screen {
         if (entry == null) return;
         this.lastResolution = BuilderRelayInstall.Resolution.AS_IS;
         this.lastChosenName = "";
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid, BuilderProfileState.live()));
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid,
+                creditedName(entry), BuilderProfileState.live()));
         this.downloadButton.active = false;
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
     }
@@ -628,9 +629,23 @@ public final class BuilderProfileScreen extends Screen {
         this.lastResolution = resolution;
         this.lastChosenName = name == null ? "" : name;
         DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid,
-                BuilderProfileState.live(), overwriteUnsaved));
+                creditedName(selectedBuild()), BuilderProfileState.live(), overwriteUnsaved));
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
         if (this.downloadButton != null) this.downloadButton.active = false;
+    }
+
+    /**
+     * Whose work the build about to be downloaded is, as this screen has been captioning it.
+     *
+     * <p>Sent so the install can file a byline for somebody this world has never seen — the relay's
+     * fetch answers with blocks and a name for the <em>build</em>, never one for its author. The
+     * row's own name first (a favourite spans owners), then the profile being viewed.</p>
+     */
+    private String creditedName(BuilderProfilePacket.Entry entry) {
+        if (entry != null && entry.ownerName() != null && !entry.ownerName().isEmpty()) {
+            return entry.ownerName();
+        }
+        return viewedName;
     }
 
     /**

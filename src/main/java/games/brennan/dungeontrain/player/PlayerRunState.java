@@ -48,7 +48,6 @@ import java.util.UUID;
  *   <li>{@link #mobKills} — entities killed by this player.</li>
  *   <li>{@link #distanceBlocks} — accumulated world-space movement while
  *       boarded; sums train-carried + on-train walking distance.</li>
- *   <li>{@link #runTicks} — server ticks elapsed since the run began.</li>
  *   <li>{@link #echoesKilled}, {@link #maxCarriagesNoChest} — per-run feats fed to the public
  *       leaderboards. Deliberately NOT in {@link #CODEC}, matching {@code booksWrittenCount} and the
  *       other transient death-screen stats here: the codec is already at RecordCodecBuilder's
@@ -86,7 +85,6 @@ public final class PlayerRunState {
         Codec.INT.optionalFieldOf("travelledCarriageIndex", 0).forGetter(PlayerRunState::travelledCarriageIndex),
         Codec.INT.optionalFieldOf("mobKills", 0).forGetter(PlayerRunState::mobKills),
         Codec.DOUBLE.optionalFieldOf("distanceBlocks", 0.0).forGetter(PlayerRunState::distanceBlocks),
-        Codec.LONG.optionalFieldOf("runTicks", 0L).forGetter(PlayerRunState::runTicks),
         Codec.INT.optionalFieldOf("containersOpened", 0).forGetter(PlayerRunState::containersOpened),
         Codec.INT.optionalFieldOf("booksReadCount", 0).forGetter(PlayerRunState::booksReadCount),
         Codec.unboundedMap(Codec.STRING, Codec.INT)
@@ -105,7 +103,6 @@ public final class PlayerRunState {
     private int travelledCarriageIndex;
     private int mobKills;
     private double distanceBlocks;
-    private long runTicks;
     private int containersOpened;
     private int booksReadCount;
     /** Item-id (e.g. {@code minecraft:iron_sword}) → number of mob kills credited to that weapon this run. */
@@ -259,7 +256,6 @@ public final class PlayerRunState {
         this.travelledCarriageIndex = 0;
         this.mobKills = 0;
         this.distanceBlocks = 0.0;
-        this.runTicks = 0L;
         this.containersOpened = 0;
         this.booksReadCount = 0;
         this.weaponKills = new HashMap<>();
@@ -286,7 +282,6 @@ public final class PlayerRunState {
                           int travelledCarriageIndex,
                           int mobKills,
                           double distanceBlocks,
-                          long runTicks,
                           int containersOpened,
                           int booksReadCount,
                           Map<String, Integer> weaponKills,
@@ -302,7 +297,6 @@ public final class PlayerRunState {
         this.travelledCarriageIndex = travelledCarriageIndex;
         this.mobKills = mobKills;
         this.distanceBlocks = distanceBlocks;
-        this.runTicks = runTicks;
         this.containersOpened = containersOpened;
         this.booksReadCount = booksReadCount;
         this.weaponKills = new HashMap<>(weaponKills);
@@ -376,10 +370,6 @@ public final class PlayerRunState {
 
     public double distanceBlocks() {
         return distanceBlocks;
-    }
-
-    public long runTicks() {
-        return runTicks;
     }
 
     public int containersOpened() {
@@ -503,13 +493,6 @@ public final class PlayerRunState {
         if (blocks <= 0.0 || !Double.isFinite(blocks)) return distanceBlocks;
         distanceBlocks += blocks;
         return distanceBlocks;
-    }
-
-    /** Add {@code ticks} to the per-run time counter. Negatives are ignored. */
-    public long addRunTicks(long ticks) {
-        if (ticks <= 0L) return runTicks;
-        runTicks += ticks;
-        return runTicks;
     }
 
     /** Server ticks spent boarded this run (boarded-only). Drives the single-life time advancements. */
@@ -778,7 +761,6 @@ public final class PlayerRunState {
     public void resetDeathStats() {
         mobKills = 0;
         distanceBlocks = 0.0;
-        runTicks = 0L;
         trainTimeTicks = 0L;
         containersOpened = 0;
         booksReadCount = 0;

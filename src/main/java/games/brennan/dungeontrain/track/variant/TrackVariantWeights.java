@@ -206,6 +206,33 @@ public final class TrackVariantWeights {
         return true;
     }
 
+    /**
+     * Carry {@code (kind, from)}'s entry to {@code to} — weight, inline gate, Stage link and mode
+     * together, in one write.
+     *
+     * <p>The whole record moves rather than the weight alone, for the reason {@link #set} spells out
+     * about rebuilding a record from parts: a renamed room that came back at weight 1 with no Stage
+     * link and no level gate would look like a rename that lost the room's tuning, which is exactly
+     * what it would be. A name with no entry has nothing to carry — the defaults follow it anyway —
+     * and answers false without touching the file.</p>
+     */
+    public static synchronized boolean rename(TrackKind kind, String from, String to) throws IOException {
+        String src = from.toLowerCase(Locale.ROOT);
+        String dst = to.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> cur = CURRENT.get(kind);
+        TemplateMeta meta = cur.get(src);
+        if (meta == null) return false;
+        Map<String, TemplateMeta> next = new HashMap<>(cur);
+        next.remove(src);
+        next.put(dst, meta);
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Moved track weight entry {}:{} -> {}:{} (persisted to {}).",
+            kind.id(), src, kind.id(), dst, configPath(kind));
+        return true;
+    }
+
     /** Reload every kind from disk. Wired to {@link ServerStartingEvent}. */
     public static synchronized void reload() {
         int total = 0;

@@ -39,8 +39,8 @@ final class BuilderInfoPanel extends AbstractWidget {
 
     /** Which half of the read-out a panel shows. Two panels are on screen at once, so they split. */
     enum Content {
-        /** Name, type, stage — up to three lines. */
-        IDENTITY(3),
+        /** Name, type, stage, and a byline when the build came from another player — up to four. */
+        IDENTITY(4),
         /** Size and weight — one line, and none at all when neither applies. */
         METRICS(1);
 
@@ -66,6 +66,18 @@ final class BuilderInfoPanel extends AbstractWidget {
     /** Height for {@code lines} rows of text. */
     static int heightFor(int lines) {
         return lines * LINE_HEIGHT + PADDING * 2;
+    }
+
+    /**
+     * Height for what {@code content} has to say right now, never more than it can draw.
+     *
+     * <p>Sized on the lines rather than on {@link Content#maxLines()} because the identity panel's
+     * last row is conditional — a build downloaded from another player names them, and every other
+     * build would otherwise sit above a blank row's worth of empty panel.</p>
+     */
+    static int currentHeight(Content content) {
+        int lines = Math.min(content.maxLines(), currentLines(content).size());
+        return heightFor(Math.max(1, lines));
     }
 
     @Override
@@ -125,7 +137,8 @@ final class BuilderInfoPanel extends AbstractWidget {
                 BuilderBoundsState.stageId(),
                 dims(),
                 BuilderBoundsState.weight(),
-                BuilderBoundsState.trackKindId());
+                BuilderBoundsState.trackKindId(),
+                BuilderBoundsState.creator());
     }
 
     /** True while the name line should be drawn as a draft — shared with the HUD's colouring. */

@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.ConfirmScreen;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
@@ -62,7 +64,7 @@ final class EditorScreenActionsTest {
         VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
         EditorScreenActions.Ctx c = ctx(k, gated("CARRIAGES", "windowed", "windowed", 20, List.of()), k, PlotCategory.CARRIAGES);
         Map<String, EditorScreenActions.Icon> icons = iconsById(c, new ArrayList<>());
-        assertEquals(List.of("save", "rename", "remove", "undo", "redo", "reset", "clear", "package"),
+        assertEquals(List.of("save", "rename", "remove", "undo", "redo", "reset", "clear", "submit"),
             new ArrayList<>(icons.keySet()));
         assertEquals("dungeontrain save", command(icons.get("save").entry()));
         assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
@@ -74,7 +76,9 @@ final class EditorScreenActionsTest {
         assertInstanceOf(ConfirmScreen.class, clear.target());
         CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class, icons.get("remove").entry());
         assertInstanceOf(ConfirmScreen.class, remove.target());
-        assertTrue(icons.get("package").enabled());
+        // Submit needs a relay row, and this ctx has none — see submitIcon.
+        assertFalse(icons.get("submit").enabled());
+        assertEquals(EditorScreenLang.DISABLED_NOT_UPLOADED, icons.get("submit").disabledKey());
     }
 
     @Test
@@ -104,7 +108,7 @@ final class EditorScreenActionsTest {
     }
 
     @Test
-    @DisplayName("parts have no addressed action row, so away from the plot only remove and package remain")
+    @DisplayName("parts have no addressed action row, so away from the plot only remove remains")
     void iconsForPartsElsewhere() {
         VariantKey sel = VariantKey.of(PlotCategory.PARTS, "walls", "quartz");
         EditorTypeMenusPacket.Variant v = new EditorTypeMenusPacket.Variant("quartz", EditorPlotLabelsPacket.NO_WEIGHT,
@@ -130,11 +134,42 @@ final class EditorScreenActionsTest {
     }
 
     @Test
-    @DisplayName("nothing selected: only Package is live")
+    @DisplayName("nothing selected: nothing in the row is live")
     void iconsNoSelection() {
         Map<String, EditorScreenActions.Icon> icons = iconsById(ctx(null, null, null, null), new ArrayList<>());
-        assertEquals(1, icons.values().stream().filter(EditorScreenActions.Icon::enabled).count());
-        assertTrue(icons.get("package").enabled());
+        assertEquals(0, icons.values().stream().filter(EditorScreenActions.Icon::enabled).count());
+    }
+
+    @Test
+    @DisplayName("Submit reads where the build stands from this player's own listing, not the roster")
+    void submitIconFollowsTheRelayRow() {
+        BuilderProfileState.clearCache();
+        assertFalse(EditorScreenActions.submitIcon(0).enabled(), "no relay row, nothing to submit");
+        assertFalse(EditorScreenActions.submitIcon(41).enabled(), "no listing yet is the same answer");
+
+        BuilderProfileState.accept(new BuilderProfilePacket(BuilderProfilePacket.Status.OK,
+            List.of(entry(41, false), entry(42, true)), "me", "Brennan", true));
+        EditorScreenActions.Icon submit = EditorScreenActions.submitIcon(41);
+        assertTrue(submit.enabled());
+        assertEquals("submit", submit.id());
+        assertEquals(EditorScreenLang.ICON_SUBMIT, submit.labelKey());
+
+        EditorScreenActions.Icon withdraw = EditorScreenActions.submitIcon(42);
+        assertTrue(withdraw.enabled());
+        assertEquals("withdraw", withdraw.id());
+        assertEquals(EditorScreenLang.ICON_WITHDRAW, withdraw.labelKey());
+
+        // Somebody else's profile must not speak for this player's builds.
+        BuilderProfileState.clearCache();
+        BuilderProfileState.accept(new BuilderProfilePacket(BuilderProfilePacket.Status.OK,
+            List.of(entry(41, true)), "them", "", false));
+        assertFalse(EditorScreenActions.submitIcon(41).enabled());
+        BuilderProfileState.clearCache();
+    }
+
+    private static BuilderProfilePacket.Entry entry(int relayId, boolean published) {
+        return new BuilderProfilePacket.Entry(relayId, "carriage", "", "cabin", published, "", "", "",
+            0, false, "me", "Brennan");
     }
 
     @Test
