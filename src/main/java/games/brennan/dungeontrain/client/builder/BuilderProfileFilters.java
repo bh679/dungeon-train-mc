@@ -18,10 +18,10 @@ import java.util.List;
  * a review state always one of {@link BuilderReviewState}'s, and the favourite axis' only other value
  * is {@link #STARRED} — so no build can be caught by it by accident.</p>
  */
-final class BuilderProfileFilters {
+public final class BuilderProfileFilters {
 
     /** Every chip's first option: no narrowing at all. */
-    static final String ALL = "";
+    public static final String ALL = "";
 
     /**
      * The favourite chip's other option: only builds this player has starred.
@@ -30,7 +30,7 @@ final class BuilderProfileFilters {
      * things worth coming back to out of many, so narrowing TO them is the whole gesture; narrowing
      * away from them would be asking for the pile you already see.</p>
      */
-    static final String STARRED = "starred";
+    public static final String STARRED = "starred";
 
     private BuilderProfileFilters() {}
 
@@ -42,7 +42,7 @@ final class BuilderProfileFilters {
      * added on the relay first — files under "not submitted" instead of vanishing from every filter
      * including "All", which is the one way a filter can lose a build outright.</p>
      */
-    static boolean matches(BuilderProfilePacket.Entry entry, String kind, String review) {
+    public static boolean matches(BuilderProfilePacket.Entry entry, String kind, String review) {
         return matches(entry, kind, review, ALL);
     }
 
@@ -54,7 +54,7 @@ final class BuilderProfileFilters {
      * keeps it on the right side of the rule this class exists for — a filter must never be the reason
      * a build disappears from "All".</p>
      */
-    static boolean matches(BuilderProfilePacket.Entry entry, String kind, String review, String favourite) {
+    public static boolean matches(BuilderProfilePacket.Entry entry, String kind, String review, String favourite) {
         if (entry == null) return false;
         if (!ALL.equals(kind) && !kind.equals(entry.kind())) return false;
         if (!ALL.equals(review) && !review.equals(BuilderReviewState.of(entry.review()))) return false;
@@ -62,13 +62,13 @@ final class BuilderProfileFilters {
     }
 
     /** The builds to draw, in the order the relay listed them. */
-    static List<BuilderProfilePacket.Entry> apply(List<BuilderProfilePacket.Entry> builds,
+    public static List<BuilderProfilePacket.Entry> apply(List<BuilderProfilePacket.Entry> builds,
                                                   String kind, String review) {
         return apply(builds, kind, review, ALL);
     }
 
     /** As above, with the favourite axis. */
-    static List<BuilderProfilePacket.Entry> apply(List<BuilderProfilePacket.Entry> builds,
+    public static List<BuilderProfilePacket.Entry> apply(List<BuilderProfilePacket.Entry> builds,
                                                   String kind, String review, String favourite) {
         if (ALL.equals(kind) && ALL.equals(review) && !STARRED.equals(favourite)) return builds;
         List<BuilderProfilePacket.Entry> out = new ArrayList<>(builds.size());

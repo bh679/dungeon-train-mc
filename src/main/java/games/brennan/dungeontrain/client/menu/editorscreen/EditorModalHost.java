@@ -40,11 +40,11 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
     private final Runnable afterCommand;
 
     private boolean typing;
+    /** What is being asked for, for the prompt drawn when no modal is open to hold it. */
+    private String typingArg = "";
     private String typedBuffer = "";
     private String typingPrefix = "";
     private String typingSuffix = "";
-    /** What is being typed, for the label on the standalone field — "new_name" and the like. */
-    private String typingArg = "";
     private int typingRow = -1;
     private int typingSub;
 
@@ -151,6 +151,7 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
         if (!typingSuffix.isEmpty()) cmd = cmd + " " + typingSuffix;
         typing = false;
         typedBuffer = "";
+        typingArg = "";
         runAndClose(cmd);
     }
 
@@ -169,7 +170,7 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
         return true;
     }
 
-    /** The typing state for the painter, or null. Typing outside a modal is drawn by the pane. */
+    /** The typing state for the painter, or null — the in-modal prompt, drawn in its own row. */
     public MenuRowPainter.Typing typingFor(boolean side) {
         if (!typing || side != hoveredSide) return null;
         return new MenuRowPainter.Typing(typingRow, typingSub, typedBuffer);
@@ -181,12 +182,22 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
 
     // ---- render ----
 
+    /**
+     * Whether there is a typing prompt this host has to draw itself.
+     *
+     * <p>The invariant behind a bug worth naming: a {@code TypeArg} dispatched from a pane — the
+     * browser's <b>+</b> on Tracks and Dimensions, the toolbar's <b>Rename</b> — put this host into
+     * a typing state that only ever drew inside a modal. With no modal open the button looked dead,
+     * the keyboard was quietly captured, and Enter created a template nobody had seen themselves
+     * name. Typing must never be a state nothing renders.</p>
+     */
+    public boolean hasStandalonePrompt() {
+        return typing && stack.isEmpty();
+    }
+
     public void render(GuiGraphics g, Font font, int screenW, int screenH, int mouseX, int mouseY) {
         if (stack.isEmpty()) {
-            // Typing can begin with no modal open at all — the icon row's Rename is dispatched
-            // straight through this host — and the row-anchored field below has no row to sit on
-            // then. Without this the author types into nothing: the rename works, but blind.
-            if (typing) drawStandaloneTypingField(g, font, screenW, screenH);
+            if (typing) drawStandalonePrompt(g, font, screenW, screenH);
             return;
         }
         MenuScreen top = stack.peek();
@@ -228,35 +239,47 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
     }
 
     /**
-     * The typing field as its own little panel, centred, for a {@code TypeArg} opened from outside
-     * any modal. Shows what is being asked for, what has been typed so far, and the two keys that
-     * end it — a field with no visible caret and no way out reads as a frozen screen.
+     * The prompt for a {@code TypeArg} dispatched straight from a pane, with no modal to hold it.
+     *
+     * <p>Centred and small, in the modal's own colours rather than a new look: it is the same
+     * question a modal row asks, and it takes the keyboard the same way — so it says what it wants,
+     * shows the caret, and names the two keys that end it.</p>
      */
-    private void drawStandaloneTypingField(GuiGraphics g, Font font, int screenW, int screenH) {
-        int w = Math.min(PANEL_W, screenW - 20);
-        int h = HEADER_H + ROW_H + PAD * 2 + font.lineHeight + 2;
+    private void drawStandalonePrompt(GuiGraphics g, Font font, int screenW, int screenH) {
+        String caption = prettyArg(typingArg);
+        String hint = EditorScreenLang.text(EditorScreenLang.TYPING_HINT);
+        int w = Math.min(PANEL_W, Math.max(120, screenW - 20));
+        int h = HEADER_H + ROW_H + font.lineHeight + PAD * 3;
         int x = (screenW - w) / 2;
         int y = Math.max(10, (screenH - InventoryEditorLayout.HOTBAR_RESERVE - h) / 2);
 
+        // Same z dance the modal does: text is batched and flushed at the end of the frame, so
+        // without this the panel lands under text queued before it.
         g.flush();
         g.pose().pushPose();
         g.pose().translate(0, 0, MODAL_Z);
         g.fill(0, 0, screenW, screenH, 0x60000000);
+        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, 0xFF000000);
         g.fill(x, y, x + w, y + h, BG);
-        g.renderOutline(x, y, w, h, 0xFF000000);
+        g.drawString(font, caption, x + PAD, y + PAD, MenuRowPainter.TEXT_HEADER, false);
 
-        String header = font.plainSubstrByWidth(typingArg.isEmpty() ? "…" : typingArg, w - PAD * 2);
-        g.drawString(font, header, x + (w - font.width(header)) / 2, y + (HEADER_H - font.lineHeight) / 2,
-            MenuRowPainter.TEXT_HEADER, true);
+        int fieldY = y + PAD + HEADER_H;
+        g.fill(x + PAD, fieldY, x + w - PAD, fieldY + ROW_H, MenuRowPainter.CELL_IDLE);
+        String shown = typedBuffer + "_";
+        g.drawString(font, font.plainSubstrByWidth(shown, w - PAD * 2 - 4), x + PAD + 3,
+            fieldY + (ROW_H - font.lineHeight) / 2 + 1, 0xFFFFFFFF, false);
 
-        String value = font.plainSubstrByWidth(typedBuffer + "_", w - PAD * 4);
-        g.drawString(font, value, x + PAD * 2, y + HEADER_H + PAD, MenuRowPainter.TEXT_HEADER, true);
-
-        String hint = font.plainSubstrByWidth("Enter to confirm · Esc to cancel", w - PAD * 2);
-        g.drawString(font, hint, x + (w - font.width(hint)) / 2, y + h - PAD - font.lineHeight,
-            0xFFA0A0A0, false);
+        g.drawString(font, font.plainSubstrByWidth(hint, w - PAD * 2), x + PAD,
+            fieldY + ROW_H + PAD, 0xFFA0A0A0, false);
         g.flush();
         g.pose().popPose();
+    }
+
+    /** The argument's own token, made readable: {@code new_name} reads as "New name". */
+    static String prettyArg(String argName) {
+        if (argName == null || argName.isBlank()) return "";
+        String spaced = argName.trim().replace('_', ' ');
+        return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
     }
 
     private void drawPanel(GuiGraphics g, Font font, int x, int y, int w, int h, String title,
@@ -314,9 +337,7 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
 
     /** A click while a modal is open; always consumed so nothing underneath reacts. */
     public boolean mouseClicked(double mouseX, double mouseY) {
-        // Typing with no modal behind it still owns the screen: a click that fell through would open
-        // something else with the field still armed, and the next keystroke would go to the rename.
-        if (stack.isEmpty()) return typing;
+        if (stack.isEmpty()) return false;
         if (typing) return true;
         if (hoveredRow < 0) return true;
         List<CommandMenuEntry> rows = hoveredSide ? sideEntries : entries;

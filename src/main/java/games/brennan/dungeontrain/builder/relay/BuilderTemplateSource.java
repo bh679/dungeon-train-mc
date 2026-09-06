@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.builder.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.builder.BuilderTemplateIdentity;
 import games.brennan.dungeontrain.data.PlayerDataBackup;
 import games.brennan.dungeontrain.data.PlayerDataBackupHook;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
@@ -136,6 +137,35 @@ public final class BuilderTemplateSource {
             out.add(new Slug(kind, track.id(), track.subdir()));
         }
         return List.copyOf(out);
+    }
+
+    /** The extension every template file carries; a sidecar beside one is something else. */
+    private static final String NBT_EXT = ".nbt";
+
+    /**
+     * Which template a file under the user-content root is — the reverse of {@link #slugs()}.
+     *
+     * <p>For anything holding a path that needs the {@code (kind, subKind, id)} triple the relay,
+     * the installer and {@link BuildCredits} all address a template by. Answered through the same
+     * table {@link #slugs()} states rather than a second copy of it: two copies drift the day a
+     * store moves, and the failure is silent — a lookup against a triple nothing files under.</p>
+     *
+     * <p>Empty for a path under no store directory, and for a file that is not an {@code .nbt}.</p>
+     *
+     * @param subSlug  the directory under the user-content root, {@code /}-separated
+     * @param filename the file's own name, extension included
+     */
+    public static Optional<BuilderTemplateIdentity.Identity> identityOf(String subSlug, String filename) {
+        if (subSlug == null || filename == null || !filename.endsWith(NBT_EXT)) return Optional.empty();
+        String normalised = subSlug.replace('\\', '/');
+        String id = filename.substring(0, filename.length() - NBT_EXT.length());
+        if (id.isEmpty()) return Optional.empty();
+        for (Slug slug : slugs()) {
+            if (slug.subSlug().equals(normalised)) {
+                return Optional.of(new BuilderTemplateIdentity.Identity(slug.kind(), slug.subKind(), id));
+            }
+        }
+        return Optional.empty();
     }
 
     /**
