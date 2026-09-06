@@ -15,6 +15,10 @@
       "id": "sloped",
       "weight": 1,
       "minLevel": 5
+    },
+    {
+      "id": "moria",
+      "weight": 1
     }
   ]
 }
