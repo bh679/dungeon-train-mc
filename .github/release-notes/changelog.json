@@ -11509,13 +11509,9 @@
       "id": "starting-books-room-to-breathe",
       "version": "0.808.0",
       "type": "content",
-      "title": "Welcome books with room to breathe",
-      "summary": "The books the train hands you when you arrive have been re-set. Lines land one at a time instead of stacking into a block, several thoughts now get a page to themselves, and a few have been reworded. Nothing was cut \u2014 the same books say the same things, with more air around them.",
-      "highlights": [
-        "The opening questions now arrive one per beat, with space between them",
-        "Rewritten and re-paginated: the first-play welcome books and all five new-world variants",
-        "Book authors can now place blank lines anywhere on a page, so future books can be laid out the same way"
-      ],
+      "title": "Welcome book tweaks",
+      "summary": "Small changes to the books you get when you arrive.",
+      "highlights": [],
       "pr": 1316,
       "date": "2026-09-06",
       "released": false,
