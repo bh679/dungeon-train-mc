@@ -136,14 +136,16 @@ def divergences(narrative_dir: Path, english_dir: Path) -> dict[str, dict]:
 STARTING_BOOKS = "starting_books/"
 
 
-def page_break_problems(narrative_dir: Path, english_dir: Path) -> list[str]:
-    """Translated starting books that gained or lost a ``%PAGE%`` marker.
+def page_break_notes(narrative_dir: Path, english_dir: Path) -> list[str]:
+    """Translated starting books whose ``%PAGE%`` count no longer matches their English original.
 
-    Separate from the placeholder check above because the contract is different: placeholders are
-    compared as a SET (a translator may legitimately say a repeated figure once), while page breaks
-    are compared by COUNT — each one is a page turn the author composed, and dropping one merges two
-    pages of their layout. Not baselined: unlike the ordinal divergences, there is no reading of a
-    missing page break that is correct.
+    Reported, NOT failed. The contract differs from placeholders — page breaks are compared by
+    COUNT, since each one is a page turn the author composed — but the usual cause is not a bad
+    translation: it is an author re-paginating an English book, which leaves every locale behind
+    until the next review round. That is ordinary staleness (``build-review-package.py`` already
+    tracks it), so failing CI here would make re-paginating a book impossible without re-translating
+    it in the same commit. The hard check lives in ``import-approved-translations.py``, where the
+    translation and the English it was made from are the same book at the same moment.
     """
     problems = []
     for locale in pio.narrative_locales(narrative_dir):
@@ -162,7 +164,7 @@ def page_break_problems(narrative_dir: Path, english_dir: Path) -> list[str]:
                 if want != got:
                     problems.append(
                         f"{locale}/{book_path}#{field}: {got} %PAGE% marker(s), English has {want} "
-                        "— the translation would paginate differently than the author wrote it")
+                        "— the translation paginates differently than the English now does")
     return problems
 
 
@@ -243,7 +245,14 @@ def main(argv: list[str] | None = None) -> int:
 
     problems = check_english(args.english_dir)
     problems += report(found, load_baseline(args.baseline))
-    problems += page_break_problems(args.narrative_dir, args.english_dir)
+
+    stale_pages = page_break_notes(args.narrative_dir, args.english_dir)
+    if stale_pages:
+        books = sorted({line.split("#", 1)[0].split("/", 1)[1] for line in stale_pages})
+        print(f"note: {len(stale_pages)} translated field(s) across {len(books)} book(s) no longer "
+              "match their English page breaks — re-translate them in the next review round:")
+        for book in books:
+            print(f"  {book}")
     if problems:
         print(f"{len(problems)} book placeholder problem(s):")
         for line in problems:

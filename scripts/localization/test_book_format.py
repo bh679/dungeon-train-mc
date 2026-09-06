@@ -112,3 +112,13 @@ def _main():
 
 if __name__ == "__main__":
     sys.exit(_main())
+
+
+def test_page_break_mismatch_is_about_the_count_not_the_newlines():
+    """The importer's contract: same number of %PAGE% markers, whatever the translator does with
+    the newlines around them."""
+    en = "Page one.\n%PAGE%\nPage two."
+    assert bf.page_break_mismatch("Seite eins.\n%PAGE%\n\n\nSeite zwei.", en) is None
+    assert "0 %PAGE%" in bf.page_break_mismatch("Seite eins. Seite zwei.", en)
+    assert "2 %PAGE%" in bf.page_break_mismatch("Eins\n%PAGE%\nZwei\n%PAGE%\nDrei", en)
+    assert bf.page_break_mismatch("kein marker", "kein marker") is None

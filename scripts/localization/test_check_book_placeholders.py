@@ -150,32 +150,29 @@ def test_write_baseline_makes_the_run_green():
     assert proc.returncode == 0, proc.stdout
 
 
-def test_a_translation_that_drops_a_page_break_fails():
-    """A merged page is invisible to every other guard: the book still loads and still reads."""
+def test_a_page_break_mismatch_is_reported_but_does_not_fail():
+    """Usually the author re-paginated the English; the locales catch up at the next review round.
+
+    Failing here would mean no starting book could be re-paginated without re-translating it in the
+    same commit. The hard check lives in import-approved-translations.py instead.
+    """
     ws = workspace(starting={"id": "welcome", "title": "Willkommen",
                              "variants": ["Seite eins.\nSeite zwei."]})
     proc = run(ws)
-    assert proc.returncode == 1, proc.stdout
-    assert "xx_yy/starting_books/welcome#variants.0" in proc.stdout
-    assert "%PAGE%" in proc.stdout
+    assert proc.returncode == 0, proc.stdout
+    assert "starting_books/welcome" in proc.stdout
+    assert "page breaks" in proc.stdout
 
 
-def test_a_translation_that_invents_a_page_break_fails():
-    ws = workspace(starting={"id": "welcome", "title": "Willkommen",
-                             "variants": ["Seite eins.\n%PAGE%\nSeite zwei.\n%PAGE%\nUnd drei."]})
-    proc = run(ws)
-    assert proc.returncode == 1, proc.stdout
-    assert "2 %PAGE% marker(s), English has 1" in proc.stdout
-
-
-def test_page_break_parity_ignores_blank_lines_and_flow_books():
-    """Newlines are the translator's to place — only the marker count is the contract."""
+def test_page_break_parity_is_silent_when_the_markers_line_up():
+    """Newlines are the translator's to place — only the marker count is reported on."""
     ws = workspace(starting={"id": "welcome", "title": "Willkommen",
                              "variants": ["Seite eins.\n\n\nnoch text\n%PAGE%\nSeite zwei."]},
                    story={"id": "deathnote", "title": "Eine Notiz",
                           "variants": ["eins\n\n\nmehr", "zwei"]})
     proc = run(ws)
     assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "page breaks" not in proc.stdout
 
 
 def test_the_real_repo_is_clean():
