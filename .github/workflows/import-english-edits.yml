@@ -1,0 +1,164 @@
+# Pulls the operator's relay-authored English back into the repo, as a PR.
+#
+# An advancement's title, description and pre-earn hint can be rewritten from the explorer's
+# #/advancements page. The relay serves the new text out of its source pool and every English
+# client installs it over the jar at its next launch — which is the point, since the players
+# reading the old wording are already on a shipped build. But the repo never hears about it: the
+# jar keeps shipping the old line for good, every new locale gets translated from text nobody is
+# reading, and the relay row becomes the only copy of the current English.
+#
+# Deliberately its OWN workflow rather than a step inside import-approved-translations.yml. That
+# job reviews PLAYER writing and is built around provenance — who translated which line, and who
+# gets credited for it. This is Dungeon Train editing its own source text, with nobody to credit;
+# folding the two together would muddy both the review and the failure signal on a job that took
+# seven dispatches to get green.
+#
+# A run that finds nothing new ends green and silent.
+name: Import English edits
+
+on:
+  schedule:
+    # Mondays 04:00 UTC — an hour after the translations import, so the two never race the same
+    # lang directory, and late enough that a week's edits arrive as one PR.
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report what would be imported, change nothing'
+        type: boolean
+        default: false
+
+concurrency:
+  group: import-english-edits
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # The base URL carries the admin capability, so it is a secret and never echoed. The importer
+      # redacts it from its own error messages (urllib puts the failing URL in those).
+      - name: Check the relay secret is configured
+        env:
+          RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          if [ -z "$RELAY_ADMIN_BASE" ]; then
+            echo "::error::RELAY_ADMIN_BASE is not set. Add it with:" \
+                 "gh secret set RELAY_ADMIN_BASE --body 'https://<host>/api/dp-relay/<admin cap>'"
+            exit 1
+          fi
+
+      - name: Import the English overrides
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          python3 scripts/localization/import-english-edits.py \
+            --deferred-out "$RUNNER_TEMP/deferred.json" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      - name: Anything to ship?
+        id: changed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "yes=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat
+          else
+            echo "yes=false" >> "$GITHUB_OUTPUT"
+            echo "No English edits since the last import — nothing to do."
+          fi
+
+      # build.yml's checks do not run on a PR opened with the default GITHUB_TOKEN (a token-authored
+      # PR raises no workflow events), so the guards that matter run HERE, before the PR exists.
+      #
+      # AdvancementLangKeysTest is the one that counts: it asserts every key an advancement's
+      # datapack JSON names exists in en_us.json, which is exactly what a bad rewrite of this file
+      # would break — and it was itself written after a build shipped with English keys silently
+      # lost. The locale validators come along because changing English changes what every other
+      # locale is measured against.
+      - name: Locale checks
+        if: steps.changed.outputs.yes == 'true'
+        run: |
+          python3 scripts/localization/check-lang-parity.py
+          python3 scripts/localization/check-provenance.py
+
+      - name: Set up JDK 21
+        if: steps.changed.outputs.yes == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        if: steps.changed.outputs.yes == 'true'
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run the test suite against the imported text
+        if: steps.changed.outputs.yes == 'true'
+        run: ./gradlew test --no-daemon
+
+      # Composed in Python for the same reason the translations job does it: the text came from
+      # outside this repo and has no business being interpolated into a shell string.
+      - name: Compose the PR body
+        if: steps.changed.outputs.yes == 'true' && !inputs.dry_run
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          temp = pathlib.Path(os.environ['RUNNER_TEMP'])
+          diff = subprocess.run(['git', '--no-pager', 'diff', '--stat'],
+                                capture_output=True, text=True).stdout.strip()
+          body = [
+              "Advancement text rewritten from the explorer's #/advancements page, imported back "
+              "into `en_us.json`.",
+              '',
+              'Players have **already been reading this text** — the relay serves it over the jar '
+              'to every English client. What this PR changes is where it lives: the jar starts '
+              'shipping it, and every locale is translated from it from here on.',
+              '',
+              '```',
+              diff,
+              '```',
+              '',
+              'Reviewing it is reviewing the wording. Reverting this PR does **not** revert what '
+              'players see — that is the relay row, cleared with Revert on the advancement.',
+          ]
+          skipped = temp / 'deferred.json'
+          left = json.loads(skipped.read_text(encoding='utf-8')) if skipped.is_file() else []
+          if left:
+              # Named here because this is the only place anyone will look. The interesting case is
+              # a key somebody has since edited in git: the repo's version won, and the relay is
+              # still serving the other one to every player until an operator settles it.
+              listed = '\n'.join(f'- `{line}`' for line in sorted(left)[:40])
+              more = f'\n- …and {len(left) - 40} more' if len(left) > 40 else ''
+              body += ['', f'## {len(left)} override(s) could not be imported', '',
+                       'Nothing here failed the run and nothing is lost — each is still being '
+                       'served to players by the relay. A row that says `en_us.json has changed '
+                       'since` is the one to look at: two people have now written that line, and '
+                       'the game is showing the relay\'s.', '', listed + more]
+          body += ['', 'Opened by `.github/workflows/import-english-edits.yml`.']
+          (temp / 'pr-body.md').write_text('\n'.join(body) + '\n', encoding='utf-8')
+          print('\n'.join(body))
+          PY
+
+      # The lang directory staged explicitly. `git add -A` is unsafe in this repo: the in-game
+      # editor's dev mode writes into src/main/resources, so a blanket add can sweep up content.
+      - name: Open the PR
+        if: steps.changed.outputs.yes == 'true' && !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branch="chore/import-english-edits-$(date -u +%Y%m%d)"
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
+          git add -- src/main/resources/assets/dungeontrain/lang/en_us.json
+          git commit -m 'feat(advancements): import relay-authored English advancement text'
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title 'feat(advancements): import relay-authored English advancement text' \
+            --body-file "$RUNNER_TEMP/pr-body.md"
