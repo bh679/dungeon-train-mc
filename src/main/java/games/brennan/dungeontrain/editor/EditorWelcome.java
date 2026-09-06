@@ -130,8 +130,8 @@ public final class EditorWelcome {
         return List.of(
             new Line(WELCOME_DELAY_TICKS, p -> Component.literal("Welcome to the Dungeon Train Editor!")
                 .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)),
-            new Line(LINE_GAP_TICKS, p -> Component.literal("This is a full editor for everything in the train.")),
-            new Line(LINE_GAP_TICKS, p -> Component.literal("From train carriage templates to custom loot tables editor.")),
+            new Line(LINE_GAP_TICKS, p -> Component.literal("Everything on the train is editable here —")),
+            new Line(LINE_GAP_TICKS, p -> Component.literal("carriages, parts, tracks, rooms and loot tables.")),
             new Line(LINE_GAP_TICKS, p -> Component.literal("If you have any questions - message Brennan in here with ")
                 .append(mentionTag())),
             new Line(LINE_GAP_TICKS, p -> Component.literal(
