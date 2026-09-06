@@ -283,7 +283,13 @@ public interface BlockVariantPlot {
             if (kind == null) return null;
             BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);
             if (origin == null) return null;
-            net.minecraft.core.Vec3i footprint = kind.dims(dims);
+            // This template's own box, not the kind's — a portal room is free-sized above its floor,
+            // so {@code kind.dims} is the built-in room's 11x7x13 whatever the author has since built.
+            // The open path (resolveAtPos → TrackSidePlots.locate) has always asked the name-aware
+            // one, and the two disagreeing is what made a big room editable everywhere and savable
+            // only in its first 11 blocks: the menu opened on a cell the edit then rejected as
+            // "localPos out of bounds".
+            net.minecraft.core.Vec3i footprint = TrackSidePlots.footprint(kind, name, dims);
             return new TrackPlot(kind, name, origin, footprint);
         }
         return null;

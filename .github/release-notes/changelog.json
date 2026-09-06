@@ -11432,6 +11432,46 @@
       "released": true,
       "released_in": "v0.802.0",
       "released_at": "2026-09-05T18:37:17Z"
+    },
+    {
+      "id": "portal-twin-seal-render",
+      "version": "0.803.0",
+      "type": "fix",
+      "title": "The Developer keeps his secrets",
+      "summary": "And now they are even more secretive.",
+      "highlights": [],
+      "date": "2026-09-06",
+      "released": true,
+      "released_in": "v0.805.0",
+      "released_at": "2026-09-06T09:30:25Z"
+    },
+    {
+      "id": "distant-horizons-portal-rooms",
+      "version": "0.804.0",
+      "type": "fix",
+      "title": "The Developer keeps his secrets from Distant Horizons too",
+      "summary": "It was peeking over the wall. It is not any more.",
+      "highlights": [],
+      "date": "2026-09-06",
+      "released": true,
+      "released_in": "v0.805.0",
+      "released_at": "2026-09-06T09:30:25Z"
+    },
+    {
+      "id": "new-carriage-contents-and-portal-room",
+      "version": "0.800.0",
+      "type": "content",
+      "title": "New carriage contents and a new dimensional carriage",
+      "summary": "Eight new carriage interiors to furnish trains with, a new animal-themed carriage, and a new dimensional carriage populated by hostile wildlife.",
+      "highlights": [
+        "Eight new carriage contents, adding fresh interiors and loot for trains to roll",
+        "A new animal-themed carriage content",
+        "A new dimensional carriage featuring a pack of hostile animals"
+      ],
+      "date": "2026-09-06",
+      "released": true,
+      "released_in": "v0.805.0",
+      "released_at": "2026-09-06T09:30:25Z"
     }
   ]
 }

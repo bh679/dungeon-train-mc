@@ -419,6 +419,22 @@ public final class EditorCommand {
                     .executes(ctx -> runTrackResetActiveVariant(
                         ctx.getSource(),
                         StringArgumentType.getString(ctx, "kind")))))
+            // Addressed by (kind, name) rather than by where the player is standing, so the editor
+            // screen can rename what its pane is showing — the same shape the carriage and contents
+            // renames take. The menu sends the kind spelled out (`… portals rename portal_room <id>`)
+            // rather than a kind-implied second form, which would be an argument-vs-argument
+            // ambiguity at the same node for the sake of one word.
+            .then(Commands.literal("rename")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(TRACK_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                        .then(Commands.argument("new_name", StringArgumentType.word())
+                            .executes(ctx -> runTrackRenameVariant(
+                                ctx.getSource(),
+                                StringArgumentType.getString(ctx, "kind"),
+                                StringArgumentType.getString(ctx, "name"),
+                                StringArgumentType.getString(ctx, "new_name")))))))
             .then(Commands.literal("weight")
                 .then(Commands.argument("kind", StringArgumentType.word())
                     .suggests(TRACK_KIND_SUGGESTIONS)
@@ -7244,6 +7260,74 @@ public final class EditorCommand {
 
         source.sendSuccess(() -> Component.literal(
             "Created " + kind.id() + ":" + key + " from " + sourceName + " — teleported to the new plot."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /**
+     * {@code /dt editor <tracks|portals> rename <kind> <name> <new_name>} — give a track-side
+     * template, portal rooms included, a new name.
+     *
+     * <p>The move itself is {@link games.brennan.dungeontrain.editor.TrackVariantRename}, which
+     * carries the sidecars, the weight/gate entry and the room's membership of any group with it.
+     * This method is the player-facing half: it turns each refusal into a line worth reading, and
+     * restamps the row afterwards so the plots follow the names.</p>
+     */
+    private static int runTrackRenameVariant(CommandSourceStack source, String rawKind,
+                                             String name, String newName) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        games.brennan.dungeontrain.editor.TrackVariantRename.Result result;
+        try {
+            result = games.brennan.dungeontrain.editor.TrackVariantRename.rename(kind, name, newName);
+        } catch (java.io.IOException e) {
+            LOGGER.error("[DungeonTrain] editor rename {}:{} -> {} failed", kind.id(), name, newName, e);
+            source.sendFailure(Component.literal("Rename failed: " + e.getMessage())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        String from = name.toLowerCase(Locale.ROOT);
+        String to = newName.toLowerCase(Locale.ROOT);
+        switch (result) {
+            case BAD_NAME -> {
+                source.sendFailure(Component.literal("Invalid name '" + newName
+                    + "'. Allowed: lowercase letters, digits, underscore (1..32 chars)."));
+                return 0;
+            }
+            case SAME_NAME -> {
+                source.sendFailure(Component.literal("'" + to + "' is the name it already has."));
+                return 0;
+            }
+            case RESERVED -> {
+                source.sendFailure(Component.literal("'default' is reserved — it cannot be renamed, "
+                    + "and nothing can be renamed to it."));
+                return 0;
+            }
+            case UNKNOWN -> {
+                source.sendFailure(Component.literal("Unknown " + kind.id() + " '" + from + "'."));
+                return 0;
+            }
+            case TAKEN -> {
+                source.sendFailure(Component.literal("Name '" + to + "' is already taken."));
+                return 0;
+            }
+            case NO_CONFIG_COPY -> {
+                // A bundled template is shadowed by a saved copy, never moved — there is nothing on
+                // disk to move, and the bundled original would keep answering to the old name.
+                source.sendFailure(Component.literal("'" + from + "' ships with the mod — save your own "
+                    + "copy of it first, then rename that."));
+                return 0;
+            }
+            case OK -> { }
+        }
+
+        restampPlotForKind(overworld, kind, dims);
+        source.sendSuccess(() -> Component.literal(
+            "Editor: renamed " + kind.id() + ":" + from + " → " + to + "."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }

@@ -82,6 +82,22 @@
       "id": "bamboo",
       "weight": 1,
       "minLevel": 10
+    },
+    {
+      "id": "pris",
+      "weight": 4
+    },
+    {
+      "id": "craftingmaze",
+      "weight": 2
+    },
+    {
+      "id": "leaves",
+      "weight": 5
+    },
+    {
+      "id": "ice",
+      "weight": 2
     }
   ]
 }
