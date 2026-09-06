@@ -265,6 +265,8 @@ public final class BuilderSave {
             return Result.failed(t.getMessage() == null ? t.toString() : t.getMessage());
         }
 
+        BuilderSidecarCarry.carryToTemplate(level, BlockVariantPlot.trackKey(kind, name), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.TRACK, null, dims));
         EditorPlotSnapshots.capture(BuilderDirtyCheck.snapshotKey(kind, name), level, origin,
                 footprint.getX(), footprint.getY(), footprint.getZ());
         LOGGER.info("[DungeonTrain] Builder save: wrote track {} '{}'", kind.id(), name);
@@ -334,6 +336,10 @@ public final class BuilderSave {
 
         CarriageTemplateStore.save(variant, template);
         linkStage(variant.id(), stageId);
+        // Pools before the mirror flags: both end up on the same CarriageVariantBlocks instance, and
+        // the mirror carry is the write that persists it.
+        BuilderSidecarCarry.carryToTemplate(level, BlockVariantPlot.carriageKey(variant.id()), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.CARRIAGE, null, dims));
         carryMirrorToTemplate(level, variant, dims);
         return new Written(BuilderPhotoPaths.Kind.CARRIAGE, name, "", origin,
                 new Vec3i(dims.length(), dims.height(), dims.width()));
@@ -391,9 +397,11 @@ public final class BuilderSave {
                 throw new IOException("'" + name + "' is a reserved contents name");
             }
             LOGGER.info("[DungeonTrain] Builder save: registered new contents '{}'", name);
+            carryContentsSidecars(level, dims, name);
             return written;
         }
         CarriageContentsStore.save(contents, template);
+        carryContentsSidecars(level, dims, name);
         return written;
     }
 
@@ -422,6 +430,8 @@ public final class BuilderSave {
         if (CarriagePartRegistry.register(kind, name)) {
             LOGGER.info("[DungeonTrain] Builder save: registered new {} part '{}'", kind.id(), name);
         }
+        BuilderSidecarCarry.carryToTemplate(level, BlockVariantPlot.partKey(kind, name), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.PART, kind, dims));
         // The master copy's region, mirroring the capture above — a part id is only unique within its
         // kind ('standard' is both a floor and a door), so the kind is the sub kind.
         return new Written(BuilderPhotoPaths.Kind.PART, name, kind.id(), partOrigin, partSize);
@@ -442,6 +452,21 @@ public final class BuilderSave {
         ServerLevel level, BlockPos origin, Vec3i size, String name
     ) throws IOException {
         PortalRoomEditor.saveRoomFrom(level, origin, size, name);
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        BuilderSidecarCarry.carryToTemplate(level,
+                BlockVariantPlot.trackKey(TrackKind.PORTAL_ROOM, name), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.PORTAL_ROOM, null, dims));
+    }
+
+    /**
+     * A carriage room's pools and contents, onto the template the save just wrote.
+     *
+     * <p>Its own helper because {@link #saveContents} returns from two places — a new registration
+     * and an overwrite — and the carry has to happen on both.</p>
+     */
+    private static void carryContentsSidecars(ServerLevel level, CarriageDims dims, String name) {
+        BuilderSidecarCarry.carryToTemplate(level, BlockVariantPlot.contentsKey(name), dims,
+                BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.CONTENTS, null, dims));
     }
 
     /**

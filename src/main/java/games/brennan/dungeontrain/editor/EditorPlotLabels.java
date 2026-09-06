@@ -296,7 +296,35 @@ public final class EditorPlotLabels {
         java.nio.file.Path parent = relPath.getParent();
         String subSlug = parent == null ? "" : parent.toString().replace('\\', '/');
         UserContentPaths.Provenance p = UserContentPaths.provenanceOf(subSlug, filename);
-        return new Provenance(p.isUser(), p.isImported());
+        return credited(p, hasCredit(subSlug, filename));
+    }
+
+    /**
+     * Whether this template carries somebody else's byline.
+     *
+     * <p>A credit is filed only for work that is not the player's own — {@code BuilderRelayDownload}
+     * clears it when the build is theirs and files one otherwise — so its presence IS the answer,
+     * with no player to compare against (this runs where the roster is built, which has none).</p>
+     */
+    private static boolean hasCredit(String subSlug, String filename) {
+        return games.brennan.dungeontrain.builder.relay.BuilderTemplateSource.identityOf(subSlug, filename)
+                .map(id -> games.brennan.dungeontrain.builder.relay.BuildCredits
+                        .get(id.kind(), id.subKind(), id.id()) != null)
+                .orElse(false);
+    }
+
+    /**
+     * The directory's answer, corrected by the byline.
+     *
+     * <p>A build downloaded from another player lands in the active package and would otherwise read
+     * as the player's own from that moment on — and stay that way however much they edit it, since
+     * nothing on disk said whose work it was. A credit says, and outranks the directory in that one
+     * direction only: a bundled file cannot carry one, and a file already in another package is
+     * imported for a reason that does not need this one.</p>
+     */
+    static Provenance credited(UserContentPaths.Provenance dir, boolean credited) {
+        if (credited && dir == UserContentPaths.Provenance.USER) return new Provenance(false, true);
+        return new Provenance(dir.isUser(), dir.isImported());
     }
 
     /** Lightweight pair returned by {@link #provenanceOf(java.nio.file.Path)}. Lives here so the call sites stay one line each. */

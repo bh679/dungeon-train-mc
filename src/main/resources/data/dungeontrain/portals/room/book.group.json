@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "romanpillars",
+      "weight": 1
+    },
+    {
+      "id": "romanhuge",
+      "weight": 1,
+      "minLevel": 7
+    },
+    {
+      "id": "sloped",
+      "weight": 1,
+      "minLevel": 5
+    },
+    {
+      "id": "moria",
+      "weight": 1,
+      "minLevel": 11
+    }
+  ]
+}

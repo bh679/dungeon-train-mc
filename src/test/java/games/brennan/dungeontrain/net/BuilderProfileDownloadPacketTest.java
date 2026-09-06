@@ -37,7 +37,7 @@ final class BuilderProfileDownloadPacketTest {
     void resolvedRequestRoundTrip() {
         for (BuilderRelayInstall.Resolution resolution : BuilderRelayInstall.Resolution.values()) {
             BuilderProfileDownloadPacket original =
-                    new BuilderProfileDownloadPacket(4271, resolution, "brick_cabin_2", "", false, false);
+                    new BuilderProfileDownloadPacket(4271, resolution, "brick_cabin_2", "", "", false, false);
             assertEquals(original, roundTrip(original),
                     "the second press must survive the wire for " + resolution);
         }
@@ -48,14 +48,14 @@ final class BuilderProfileDownloadPacketTest {
     void firstPressDoesNotConfirmOverwrite() {
         assertFalse(new BuilderProfileDownloadPacket(4271).overwriteUnsaved(),
                 "the unsaved-edits question has to be asked before anything is written");
-        assertFalse(new BuilderProfileDownloadPacket(4271, "", false).overwriteUnsaved());
+        assertFalse(new BuilderProfileDownloadPacket(4271, "", "", false).overwriteUnsaved());
     }
 
     @Test
     @DisplayName("the answer to the unsaved-edits question survives the wire with its resolution")
     void overwriteUnsavedRoundTrip() {
         BuilderProfileDownloadPacket original = new BuilderProfileDownloadPacket(
-                4271, BuilderRelayInstall.Resolution.LOAD_AS_NEW, "brick_cabin_2", "", false, true);
+                4271, BuilderRelayInstall.Resolution.LOAD_AS_NEW, "brick_cabin_2", "", "", false, true);
         BuilderProfileDownloadPacket back = roundTrip(original);
         assertTrue(back.overwriteUnsaved(), "a confirmed overwrite that arrived as false would re-ask forever");
         assertEquals(BuilderRelayInstall.Resolution.LOAD_AS_NEW, back.resolution(),
@@ -73,8 +73,9 @@ final class BuilderProfileDownloadPacketTest {
     @DisplayName("a request for somebody else's build names whose it is")
     void foreignRequestRoundTrip() {
         BuilderProfileDownloadPacket original =
-                new BuilderProfileDownloadPacket(4271, "2b1f9e00-0000-4000-8000-00000000abcd", true);
+                new BuilderProfileDownloadPacket(4271, "2b1f9e00-0000-4000-8000-00000000abcd", "Edda", true);
         assertEquals("2b1f9e00-0000-4000-8000-00000000abcd", original.ownerUuid());
+        assertEquals("Edda", original.ownerName(), "the byline the screen showed has to reach the install");
         assertTrue(original.live(), "a build is fetched from the pool it was listed in");
         assertEquals(original, roundTrip(original));
     }

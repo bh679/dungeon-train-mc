@@ -61,14 +61,15 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Contents, Books, Sky, Enter and actions")
+    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Lock, Contents, Books, Sky, Enter and actions")
     void portalInPlot_rowOrder() {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.DOOR_OFFSET, RowKind.ROOM_CONTENTS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.LOCK, RowKind.DOOR_OFFSET,
+                RowKind.ROOM_CONTENTS,
                 RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(portalInPlot()));
-        assertEquals(12, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
+        assertEquals(13, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
     }
 
     @Test
@@ -154,12 +155,50 @@ class EditorPlotLabelsRendererTest {
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7,
                 "endless_repetition/single:minecraft:sandstone")));
 
-        // Bedrock Lock repeats nothing, so it has neither.
+        // Bedrock Lock repeats nothing, so it has neither — but it seals, so it has a Lock row.
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.DOOR_OFFSET, RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.LOCK, RowKind.DOOR_OFFSET,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock")));
+    }
+
+    @Test
+    @DisplayName("The Lock row shows under the two sealing modes and nowhere else")
+    void lockRowFollowsTheSealingModes() {
+        for (String sealing : new String[]{"bedrock_lock", "chunk_dimension"}) {
+            RowKind[] rows =
+                EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, sealing));
+            assertTrue(indexOf(rows, RowKind.LOCK) >= 0, sealing + " should show a Lock row");
+            // Directly under Walls, which is where the setting it qualifies lives.
+            assertEquals(indexOf(rows, RowKind.MODE) + 1, indexOf(rows, RowKind.LOCK), sealing);
+        }
+        for (String unsealed : new String[]{"endless_open", "endless_repetition", "bedrockless"}) {
+            assertFalse(EditorPlotLabelsRenderer.hasLockRow(
+                entry("PORTALS", true, 1, 11, 13, 7, unsealed)), unsealed);
+        }
+    }
+
+    @Test
+    @DisplayName("A click anywhere on the Lock row takes the held block")
+    void lockRow_isOneCell() {
+        EditorPlotLabelsPacket.Entry e = portalInPlot();
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        double y = rowCentreY(e, indexOf(EditorPlotLabelsRenderer.rows(e), RowKind.LOCK));
+        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
+            assertEquals(CellKind.LOCK_HELD, EditorPlotLabelsRenderer.cellAt(e, halfW, x, y));
+        }
+    }
+
+    @Test
+    @DisplayName("The Lock row names its block, without the namespace, and calls air nothing")
+    void lockLabelReadsTheTag() {
+        assertEquals("Lock: bedrock", EditorPlotLabelsRenderer.lockLabel("bedrock_lock"));
+        assertEquals("Lock: obsidian", EditorPlotLabelsRenderer.lockLabel(
+            "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/minecraft:obsidian"));
+        assertEquals("Lock: nothing", EditorPlotLabelsRenderer.lockLabel(
+            "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/minecraft:air"));
     }
 
     @Test
@@ -208,14 +247,14 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A tag that never mentioned Room Walls reads Merged — the row cannot imply a change")
-    void doorWallLabelDefaultsToSealed() {
-        assertEquals("Room Walls: Merged",
+    @DisplayName("A tag that never mentioned Room Walls reads Kept — the default — and Merged when named")
+    void doorWallLabelDefaultsToKept() {
+        assertEquals("Room Walls: Kept",
             EditorPlotLabelsRenderer.doorWallLabel("endless_repetition"));
-        assertEquals("Room Walls: Merged",
+        assertEquals("Room Walls: Kept",
             EditorPlotLabelsRenderer.doorWallLabel("endless_repetition/dynamic"));
-        assertEquals("Room Walls: Kept", EditorPlotLabelsRenderer.doorWallLabel(
-            "endless_repetition/dynamic/off/lattice:8/off/none/repeated"));
+        assertEquals("Room Walls: Merged", EditorPlotLabelsRenderer.doorWallLabel(
+            "endless_repetition/dynamic/off/lattice:8/off/none/sealed"));
     }
 
     @Test
@@ -439,7 +478,8 @@ class EditorPlotLabelsRendererTest {
         EditorPlotLabelsPacket.Entry on = entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock/exact/fit");
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
-                RowKind.HEIGHT, RowKind.MODE, RowKind.DOOR_OFFSET, RowKind.ROOM_CONTENTS,
+                RowKind.HEIGHT, RowKind.MODE, RowKind.LOCK, RowKind.DOOR_OFFSET,
+                RowKind.ROOM_CONTENTS,
                 RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
                 RowKind.ACTION, RowKind.CONTENTS},
             EditorPlotLabelsRenderer.rows(on));

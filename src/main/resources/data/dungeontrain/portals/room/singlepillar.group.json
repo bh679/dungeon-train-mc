@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 8,
+  "variants": [
+    {
+      "id": "singlepillar2",
+      "weight": 12
+    },
+    {
+      "id": "singlesomething",
+      "weight": 1
+    }
+  ]
+}

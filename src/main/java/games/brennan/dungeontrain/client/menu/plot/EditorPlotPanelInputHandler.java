@@ -152,6 +152,7 @@ public final class EditorPlotPanelInputHandler {
             case WIDTH_TYPE -> openAxisEntry(entry, "width", "Width", entry.roomWidth());
             case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
             case MODE_CYCLE -> dispatchModeCycle(entry);
+            case LOCK_HELD -> dispatchLockHeld(entry);
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
             case COPIES_FLOOR_HELD -> dispatchCopiesBlockHeld(entry,
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
@@ -216,6 +217,13 @@ public final class EditorPlotPanelInputHandler {
     /** Step the portal room the player is standing in to its next mode. */
     private static void dispatchModeCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.modeCycleCommandFor(entry.plotCategory());
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
+    /** Write the shell of the portal room the player is standing in in whatever they hold. */
+    private static void dispatchLockHeld(EditorPlotLabelsPacket.Entry entry) {
+        String cmd = EditorPlotTeleport.lockHeldCommandFor(entry.plotCategory());
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }

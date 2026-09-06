@@ -48,6 +48,15 @@ public final class EditorWorldLayout {
 
     /** Whether {@code level} is the Train Editor's void world. */
     public static boolean isEditorWorld(ServerLevel level) {
-        return level.dimensionTypeRegistration().is(EDITOR_DIMENSION_TYPE);
+        return isEditorWorld((net.minecraft.world.level.Level) level);
+    }
+
+    /**
+     * The same question asked of any level, so the client can ask it too — the authoring hotkeys
+     * need to know they are in the editor world while the player is standing between plots, where
+     * the server's per-plot status HUD has nothing to say.
+     */
+    public static boolean isEditorWorld(net.minecraft.world.level.Level level) {
+        return level != null && level.dimensionTypeRegistration().is(EDITOR_DIMENSION_TYPE);
     }
 }

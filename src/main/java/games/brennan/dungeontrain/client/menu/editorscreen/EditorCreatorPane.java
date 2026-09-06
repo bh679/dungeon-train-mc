@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -28,13 +30,14 @@ public final class EditorCreatorPane {
     static final int LOADED_TEXT = 0xFF88DD88;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, LOAD, GO_HERE, PREVIEW, OLDER, NEWER }
+    public enum HitKind { NONE, LOAD, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT }
 
     private final VersionStrip versions = new VersionStrip();
 
     private InventoryEditorLayout.Rect loadRect;
     private InventoryEditorLayout.Rect goHereRect;
     private InventoryEditorLayout.Rect previewRect;
+    private InventoryEditorLayout.Rect submitRect;
 
     public void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
                        EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
@@ -42,6 +45,7 @@ public final class EditorCreatorPane {
                        boolean going, int seq, int mouseX, int mouseY) {
 
         drawHeader(g, font, layout.header(), theme, entry, landed, going, mouseX, mouseY);
+        drawSubmit(g, font, layout.icons(), entry, mouseX, mouseY);
 
         previewRect = layout.preview();
         TemplateArt art = entry == null ? null : EditorCreatorBuilds.artOf(entry);
@@ -162,6 +166,45 @@ public final class EditorCreatorPane {
             !enabled ? 0x80FFFFFF : hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
     }
 
+    /**
+     * <b>Submit to the train</b> / <b>Withdraw</b>, in the row a template's toolbar occupies — which
+     * is the one control on a relay build that changes it rather than reads it.
+     *
+     * <p>Offered on your OWN builds only, and only for a kind that can be offered for review. The
+     * decision to put a build in front of the operator is its author's, and the relay agrees: the
+     * action is authorised by the owner secret this world holds, so somebody else's build would be
+     * refused there too. Disabled rather than hidden, so the button is where a reviewer expects it
+     * and says why it cannot be pressed.</p>
+     */
+    private void drawSubmit(GuiGraphics g, Font font, InventoryEditorLayout.Rect r,
+                            BuilderProfilePacket.Entry entry, int mouseX, int mouseY) {
+        submitRect = null;
+        if (entry == null) return;
+        boolean mine = isMine(entry);
+        boolean enabled = mine && BuilderRelayKinds.canSubmitForReview(entry.kind());
+        submitRect = enabled ? r : null;
+        boolean hot = enabled && r.contains(mouseX, mouseY);
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), !enabled ? EditorDetailPane.DISABLED
+            : hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+        String label = EditorScreenLang.text(!mine ? EditorScreenLang.CREATOR_NOT_YOURS
+            : entry.published() ? EditorScreenLang.CREATOR_WITHDRAW : EditorScreenLang.CREATOR_SUBMIT);
+        g.drawString(font, font.plainSubstrByWidth(label, r.w() - 6),
+            r.x() + (r.w() - font.width(label)) / 2, r.y() + (r.h() - font.lineHeight) / 2 + 1,
+            !enabled ? 0x80FFFFFF : hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
+    }
+
+    /**
+     * Whether this build is the viewer's own.
+     *
+     * <p>By uuid rather than by which listing it came from: the pooled grid holds everybody's builds
+     * including this player's, and those are exactly the ones they may still submit or withdraw.</p>
+     */
+    private static boolean isMine(BuilderProfilePacket.Entry entry) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.player == null || entry.ownerUuid().isEmpty()) return false;
+        return mc.player.getUUID().toString().equals(entry.ownerUuid());
+    }
+
     /** What a click at this point means. Reads back the geometry of the last frame. */
     public HitKind hitTest(double mx, double my) {
         switch (versions.hit(mx, my)) {
@@ -170,6 +213,7 @@ public final class EditorCreatorPane {
             case NONE -> { }
         }
         if (goHereRect != null && goHereRect.contains(mx, my)) return HitKind.GO_HERE;
+        if (submitRect != null && submitRect.contains(mx, my)) return HitKind.SUBMIT;
         if (loadRect != null && loadRect.contains(mx, my)) return HitKind.LOAD;
         if (previewRect != null && previewRect.contains(mx, my)) return HitKind.PREVIEW;
         return HitKind.NONE;
