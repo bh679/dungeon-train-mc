@@ -25,10 +25,6 @@
     "weight": 1,
     "mode": "bedrockless"
   },
-  "big": {
-    "weight": 1,
-    "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
-  },
   "bigger": {
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on/off/end"
@@ -195,6 +191,10 @@
   "singlepillar2": {
     "weight": 1,
     "mode": "endless_open"
+  },
+  "skymaze": {
+    "weight": 1,
+    "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
   },
   "smalllibrary": {
     "weight": 1,
