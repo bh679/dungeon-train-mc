@@ -61,6 +61,9 @@ public final class AmbientDensity {
     /** How often the per-player counts are recomputed. */
     public static final int REFRESH_TICKS = 20;
 
+    /** {@link #RADIUS} squared, for the distance test the box query is narrowed with. */
+    private static final double RADIUS_SQ = (double) RADIUS * RADIUS;
+
     /** Player id → ambient monsters within {@link #RADIUS} at the last refresh. */
     private static final Map<UUID, Integer> COUNTS = new HashMap<>();
 
@@ -86,12 +89,21 @@ public final class AmbientDensity {
         return !PortalTwinSpace.isInside(level, mob.getBlockX(), mob.getY());
     }
 
-    /** Recompute every player's count. Called on the refresh tick, never per spawn attempt. */
+    /**
+     * Recompute every player's count. Called on the refresh tick, never per spawn attempt.
+     *
+     * <p>The box is only how the entity index is asked; the count is a <b>sphere</b>. An inflated
+     * {@link AABB} reaches {@code RADIUS * √3} — 166 blocks — into its corners, and in a world as
+     * vertically thin as this one that is most of the monsters alive anywhere. Counting the box
+     * against a cap tuned for the sphere reads permanently over the cap, so spawning near the player
+     * is held off for good while the far population keeps the number up: measured as near-player
+     * monsters falling to zero while the level-wide total sat unchanged at ~55.</p>
+     */
     public static void refresh(ServerLevel level) {
         for (ServerPlayer player : level.players()) {
             AABB around = player.getBoundingBox().inflate(RADIUS);
-            COUNTS.put(player.getUUID(),
-                    level.getEntitiesOfClass(Mob.class, around, m -> counts(level, m)).size());
+            COUNTS.put(player.getUUID(), level.getEntitiesOfClass(Mob.class, around,
+                    m -> m.distanceToSqr(player) <= RADIUS_SQ && counts(level, m)).size());
         }
     }
 
