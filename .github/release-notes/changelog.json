@@ -11477,13 +11477,11 @@
       "id": "ambient-monster-density-cap",
       "version": "0.806.0",
       "type": "feat",
-      "title": "Fewer mobs piling up around you",
-      "summary": "The world used to stack its whole monster budget on top of you. Minecraft allows a fixed number of naturally-spawned monsters at a time and normally spends most of it in deep caves you never visit \u2014 but a Dungeon Train world is shallow, so all of it spawned in arm's reach. At a pillager outpost that meant a stream that never let up: three times as many monsters around you as the same outpost in a normal world. There is now a ceiling on how many can crowd one player, so an outpost is a fight instead of a siege, while an ordinary night on the line is as busy as it ever was. The train's own mobs are not counted, so nothing about the difficulty you signed up for changes.",
+      "title": "Vanilla monster spawn rates off the train",
+      "summary": "Monster spawn rates away from the train now match a normal Minecraft world instead of piling up around you.",
       "highlights": [
-        "Naturally-spawned monsters no longer pile up endlessly around one player",
-        "Pillager outposts are back to roughly the density a normal world gives them",
-        "The train's own mobs are exempt \u2014 difficulty is untouched",
-        "Tunable or off entirely via the ambientMonsterCap config option"
+        "Monster spawn density off the train now matches vanilla",
+        "Tunable via the ambientMonsterCap config option"
       ],
       "pr": 1314,
       "date": "2026-09-06",
