@@ -97,7 +97,12 @@
     },
     {
       "id": "moreseats",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 5
+    },
+    {
+      "id": "double",
+      "weight": 3
     }
   ]
 }
