@@ -11449,14 +11449,9 @@
       "id": "distant-horizons-portal-rooms",
       "version": "0.804.0",
       "type": "fix",
-      "title": "Distant Horizons no longer shows the outside world from inside a dimensional carriage",
-      "summary": "A dimensional carriage is meant to be its own place, but if you play with Distant Horizons installed, the real world's horizon kept drawing around you in there. DH renders its own copy of the world from its own data, and a portal room sits at ordinary world coordinates, so it had no idea the room was supposed to be somewhere else - you got the room's sky with the overworld's distant terrain behind it. DH now stops drawing while you are in a portal room or the corridor leading into one, and picks up again as you leave.",
-      "highlights": [
-        "Distant Horizons stops drawing inside dimensional carriages and the corridors into them",
-        "Worst in Chunk Dimension rooms, which are themselves a slice of terrain DH was contradicting",
-        "Your Distant Horizons settings and its stored terrain are untouched - only those frames are skipped",
-        "New client option distantHorizons.hideInPortalRooms if you would rather DH kept drawing"
-      ],
+      "title": "The Developer keeps his secrets from Distant Horizons too",
+      "summary": "It was peeking over the wall. It is not any more.",
+      "highlights": [],
       "date": "2026-09-06",
       "released": false,
       "released_in": null,
