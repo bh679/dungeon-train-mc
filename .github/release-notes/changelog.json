@@ -11444,6 +11444,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "distant-horizons-portal-rooms",
+      "version": "0.804.0",
+      "type": "fix",
+      "title": "The Developer keeps his secrets from Distant Horizons too",
+      "summary": "It was peeking over the wall. It is not any more.",
+      "highlights": [],
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

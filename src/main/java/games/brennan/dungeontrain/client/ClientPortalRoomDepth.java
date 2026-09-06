@@ -46,4 +46,18 @@ public final class ClientPortalRoomDepth {
         PortalRoomDepthPacket r = region;
         return r.contains(x, y, z) ? r.yShift() : 0;
     }
+
+    /**
+     * Whether {@code (x, y, z)} is inside the portal structure the server last named — the whole of
+     * it, corridors and stamped copies included, not just a room's interior.
+     *
+     * <p>The same box {@link #shiftAt} tests, asked without the surface-coordinates config in the
+     * way: that setting is a preference about the debug screen, and a caller that wants to know
+     * <em>where the camera is</em> should not have its answer changed by it. Used by
+     * {@link DistantHorizonsSuppression}; this is the widest and the only universal "inside a
+     * dimensional carriage" region DT sends, since fog and sky are per-room opt-ins.</p>
+     */
+    public static boolean isInsideStructure(double x, double y, double z) {
+        return region.contains(x, y, z);
+    }
 }
