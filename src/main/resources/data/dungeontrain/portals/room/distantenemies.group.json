@@ -9,6 +9,11 @@
     {
       "id": "ender",
       "weight": 1
+    },
+    {
+      "id": "aggressiveplayers",
+      "weight": 2,
+      "maxLevel": 14
     }
   ]
 }
