@@ -11504,6 +11504,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-content-pass-sept",
+      "version": "0.808.0",
+      "type": "content",
+      "title": "Seven new dimensional carriages",
+      "summary": "Seven new dimensional carriages join the rotation, and five existing ones have been rebuilt with more block variety.",
+      "highlights": [
+        "New carriages: a Roman colonnade, a vast pillared hall, a sky maze, a sloped nether passage, a mine of deep halls, a library annex and a trap room packed with TNT",
+        "More block variety in the backrooms, bigger, small library and ender carriages"
+      ],
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1315
     }
   ]
 }

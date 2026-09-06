@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "tnt",
+      "weight": 1
+    },
+    {
+      "id": "tntfull",
+      "weight": 1
+    }
+  ]
+}

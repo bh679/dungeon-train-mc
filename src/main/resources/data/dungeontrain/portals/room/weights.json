@@ -3,6 +3,10 @@
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
   },
+  "author_new": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/mix:2:1:0:1:5:0"
+  },
   "backrooms": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
@@ -103,6 +107,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "ender": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "foundation": {
     "weight": 1,
     "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30"
@@ -136,6 +144,10 @@
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/off/day"
   },
+  "moria": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "nobeam": {
     "weight": 1,
     "mode": "bedrockless"
@@ -150,7 +162,6 @@
   },
   "parkour": {
     "weight": 3,
-    "minLevel": 10,
     "mode": "bedrockless"
   },
   "paths": {
@@ -174,6 +185,14 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/fit"
   },
+  "romanhuge": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "romanpillars": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "sanemaze": {
     "weight": 1,
     "mode": "bedrock_lock"
@@ -187,6 +206,14 @@
   "singlepillar2": {
     "weight": 1,
     "mode": "endless_open"
+  },
+  "skymaze": {
+    "weight": 1,
+    "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
+  },
+  "sloped": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/nether"
   },
   "smalllibrary": {
     "weight": 1,
@@ -211,7 +238,7 @@
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
   },
   "window": {
-    "weight": 2,
+    "weight": 1,
     "maxLevel": 10,
     "mode": "bedrockless"
   },
