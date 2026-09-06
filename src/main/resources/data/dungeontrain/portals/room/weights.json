@@ -207,6 +207,10 @@
     "weight": 1,
     "mode": "endless_open"
   },
+  "singlesomething": {
+    "weight": 1,
+    "mode": "endless_open"
+  },
   "skymaze": {
     "weight": 1,
     "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
