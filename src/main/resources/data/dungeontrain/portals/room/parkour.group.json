@@ -1,10 +1,15 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 0,
   "variants": [
     {
       "id": "skymaze",
       "weight": 1
+    },
+    {
+      "id": "jumps",
+      "weight": 1,
+      "minLevel": 10
     }
   ]
 }

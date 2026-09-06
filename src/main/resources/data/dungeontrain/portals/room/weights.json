@@ -154,7 +154,6 @@
   },
   "parkour": {
     "weight": 3,
-    "minLevel": 10,
     "mode": "bedrockless"
   },
   "paths": {
