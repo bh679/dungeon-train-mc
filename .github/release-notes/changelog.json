@@ -11506,6 +11506,19 @@
       "released_at": null
     },
     {
+      "id": "starting-books-room-to-breathe",
+      "version": "0.811.0",
+      "type": "content",
+      "title": "Welcome book tweaks",
+      "summary": "Small changes to the books you get when you arrive.",
+      "highlights": [],
+      "pr": 1316,
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "portal-room-content-pass-sept",
       "version": "0.808.0",
       "type": "content",
