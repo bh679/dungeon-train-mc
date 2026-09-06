@@ -86,12 +86,12 @@ public final class CarriagePartVariantBlocks {
     private boolean mirrorVariants;
 
     /**
-     * True when this instance is a bounded <em>view</em> built by {@link #croppedTo} — safe to read,
-     * refused by both write paths, and never the object held in {@link #CACHE}. See
-     * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks#cropped} for the failure
-     * this prevents.
+     * The whole sidecar this instance is a bounded <em>view</em> of, or null when this <em>is</em>
+     * the whole sidecar — see
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks#source}. Mutations and both
+     * write paths go through to it, so a bounded read can never become a truncated write.
      */
-    private final boolean cropped;
+    private final CarriagePartVariantBlocks source;
 
     private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this(entries, lockIds, false, false, false, false);
@@ -99,13 +99,13 @@ public final class CarriagePartVariantBlocks {
 
     private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                       boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
-        this(entries, lockIds, mirrorX, mirrorY, mirrorZ, mirrorVariants, false);
+        this(entries, lockIds, mirrorX, mirrorY, mirrorZ, mirrorVariants, null);
     }
 
     private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                       boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants,
-                                      boolean cropped) {
-        this.cropped = cropped;
+                                      CarriagePartVariantBlocks source) {
+        this.source = source;
         this.entries = entries;
         this.lockIds = lockIds;
         this.groupRefs = new VariantGroupResolver(entries, lockIds);
@@ -138,6 +138,7 @@ public final class CarriagePartVariantBlocks {
 
     /** Set all three editor mirror axes — used by the {@code editor mirror} command before {@link #save}. */
     public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
+        if (source != null) source.setMirrorAxes(x, y, z);
         this.mirrorX = x;
         this.mirrorY = y;
         this.mirrorZ = z;
@@ -145,6 +146,7 @@ public final class CarriagePartVariantBlocks {
 
     /** Set the mirror-variants ("V") opt-in — used by {@code editor mirror v on|off} before {@link #save}. */
     public synchronized void setMirrorVariants(boolean v) {
+        if (source != null) source.setMirrorVariants(v);
         this.mirrorVariants = v;
     }
 
@@ -201,25 +203,12 @@ public final class CarriagePartVariantBlocks {
                 contextId, pos, size.getX(), size.getY(), size.getZ());
         }
         return new CarriagePartVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ,
-            mirrorVariants, true);
+            mirrorVariants, this);
     }
 
     /** True when this instance is a bounded view — see {@link #cropped}. */
-    public boolean isCropped() { return cropped; }
+    public boolean isCropped() { return source != null; }
 
-    /**
-     * Guard for both write paths: writing a {@link #cropped} view would delete every cell the crop
-     * removed. Logs and refuses rather than throwing, so a wrong footprint costs a sidecar write
-     * rather than the author's whole save.
-     */
-    private boolean refuseCroppedWrite(CarriagePartKind kind, String name, String target) {
-        if (!cropped) return false;
-        LOGGER.error("[DungeonTrain] Refusing to write a cropped part variant sidecar {}:{} to the {} — "
-                + "it is a bounded view of a larger sidecar and saving it would drop the cells outside "
-                + "that footprint. The file on disk is unchanged.",
-            kind.id(), name, target);
-        return true;
-    }
 
     private static CarriagePartVariantBlocks loadFromDisk(CarriagePartKind kind, String name) {
         Path cfg = UserContentPaths.findFile(SUBDIR_BASE + "/" + kind.id(), name + EXT);
@@ -358,11 +347,13 @@ public final class CarriagePartVariantBlocks {
         for (VariantState s : states) {
             if (s == null) throw new IllegalArgumentException("null state");
         }
+        if (source != null) source.put(localPos, states);
         entries.put(localPos.immutable(), List.copyOf(states));
         groupRefs.invalidate();
     }
 
     public synchronized boolean remove(BlockPos localPos) {
+        if (source != null) source.remove(localPos);
         lockIds.remove(localPos);
         groupRefs.invalidate();
         return entries.remove(localPos) != null;
@@ -391,6 +382,7 @@ public final class CarriagePartVariantBlocks {
      * no cell exists at {@code localPos}.
      */
     public synchronized void setLockId(BlockPos localPos, int lockId) {
+        if (source != null) source.setLockId(localPos, lockId);
         if (!entries.containsKey(localPos)) {
             throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
         }
@@ -438,7 +430,7 @@ public final class CarriagePartVariantBlocks {
     }
 
     public synchronized void save(CarriagePartKind kind, String name) throws IOException {
-        if (refuseCroppedWrite(kind, name, "config")) return;
+        if (source != null) { source.save(kind, name); return; }
         Path file = configPathFor(kind, name);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
@@ -458,7 +450,7 @@ public final class CarriagePartVariantBlocks {
      * bundled resource.
      */
     public synchronized void saveToSource(CarriagePartKind kind, String name) throws IOException {
-        if (refuseCroppedWrite(kind, name, "source tree")) return;
+        if (source != null) { source.saveToSource(kind, name); return; }
         Path file = sourcePathFor(kind, name);
         if (file == null) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");

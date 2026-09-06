@@ -47,7 +47,7 @@ import java.util.Map;
  * entries outside that box are dropped with a warning so a kind-renamed
  * template doesn't poison neighbouring blocks. The clamp produces a
  * throwaway {@link #croppedTo view}; the cache always holds the whole
- * sidecar, and a view refuses to be saved. See {@link #loadFor}.</p>
+ * sidecar, and a view's edits and saves go through to it. See {@link #loadFor}.</p>
  */
 public final class TrackVariantBlocks {
 
@@ -87,25 +87,29 @@ public final class TrackVariantBlocks {
     private final TrackKind kind;
 
     /**
-     * True when this instance is a bounded <em>view</em> of a larger sidecar — {@link #croppedTo}
-     * dropped at least one out-of-bounds cell to build it.
+     * The whole sidecar this instance is a bounded <em>view</em> of, or null when this <em>is</em>
+     * the whole sidecar (everything the cache holds, and everything a caller whose footprint fits
+     * receives).
      *
-     * <p>A cropped view is safe to read from and unsafe to write back: persisting it would delete
-     * every cell the crop removed. {@link #save} and {@link #saveToSource} therefore refuse. The
-     * cache only ever holds uncropped instances, so the refusal never fires on the object a
-     * correctly-sized caller holds.</p>
+     * <p>A view exists so a caller that asks with a small footprint reads only the cells inside it —
+     * a stamp must never paint outside its own room. It must not become a second, truncated copy of
+     * the sidecar, though: callers like {@code VariantBlockInteractions} and {@code BlockVariantPlot}
+     * edit and then save whatever {@link #loadFor} handed them. So every mutation and both write
+     * paths go through to the source, and only reads are bounded. Writing the view's own cells
+     * instead would delete every cell the bound removed — the failure that emptied four portal
+     * rooms' sidecars on 2026-09-02.</p>
      */
-    private final boolean cropped;
+    private final TrackVariantBlocks source;
 
     private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
-        this(entries, lockIds, kind, mirrorX, mirrorY, mirrorZ, mirrorVariants, false);
+        this(entries, lockIds, kind, mirrorX, mirrorY, mirrorZ, mirrorVariants, null);
     }
 
     private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
-                               boolean mirrorVariants, boolean cropped) {
-        this.cropped = cropped;
+                               boolean mirrorVariants, TrackVariantBlocks source) {
+        this.source = source;
         this.entries = entries;
         this.lockIds = lockIds;
         this.groupRefs = new games.brennan.dungeontrain.editor.VariantGroupResolver(entries, lockIds);
@@ -149,7 +153,7 @@ public final class TrackVariantBlocks {
         return new TrackVariantBlocks(
             new LinkedHashMap<>(source.entries), new LinkedHashMap<>(source.lockIds),
             source.kind, source.mirrorX, source.mirrorY, source.mirrorZ, source.mirrorVariants,
-            source.cropped);
+            null);
     }
 
     /** Mirror X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
@@ -166,6 +170,7 @@ public final class TrackVariantBlocks {
 
     /** Set all three mirror axes — used by the {@code editor mirror} command before {@link #save}. */
     public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
+        if (source != null) source.setMirrorAxes(x, y, z);
         this.mirrorX = x;
         this.mirrorY = y;
         this.mirrorZ = z;
@@ -173,6 +178,7 @@ public final class TrackVariantBlocks {
 
     /** Set the mirror-variants ("V") opt-in — used by {@code editor mirror v on|off} before {@link #save}. */
     public synchronized void setMirrorVariants(boolean v) {
+        if (source != null) source.setMirrorVariants(v);
         this.mirrorVariants = v;
     }
 
@@ -243,7 +249,7 @@ public final class TrackVariantBlocks {
                 contextId, pos, size.getX(), size.getY(), size.getZ());
         }
         return new TrackVariantBlocks(kept, keptLocks, kind, mirrorX, mirrorY, mirrorZ,
-            mirrorVariants, true);
+            mirrorVariants, this);
     }
 
     private static TrackVariantBlocks loadFromDisk(TrackKind kind, String name) {
@@ -373,11 +379,13 @@ public final class TrackVariantBlocks {
         for (VariantState s : states) {
             if (s == null) throw new IllegalArgumentException("null state");
         }
+        if (source != null) source.put(localPos, states);
         entries.put(localPos.immutable(), List.copyOf(states));
         groupRefs.invalidate();
     }
 
     public synchronized boolean remove(BlockPos localPos) {
+        if (source != null) source.remove(localPos);
         lockIds.remove(localPos);
         groupRefs.invalidate();
         return entries.remove(localPos) != null;
@@ -388,6 +396,7 @@ public final class TrackVariantBlocks {
     }
 
     public synchronized void setLockId(BlockPos localPos, int lockId) {
+        if (source != null) source.setLockId(localPos, lockId);
         if (!entries.containsKey(localPos)) {
             throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
         }
@@ -435,7 +444,7 @@ public final class TrackVariantBlocks {
     }
 
     public synchronized void save(TrackKind kind, String name) throws IOException {
-        if (refuseCroppedWrite(kind, name, "config")) return;
+        if (source != null) { source.save(kind, name); return; }
         Path file = configPathFor(kind, name);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
@@ -454,7 +463,7 @@ public final class TrackVariantBlocks {
      * leave a stale bundled resource.
      */
     public synchronized void saveToSource(TrackKind kind, String name) throws IOException {
-        if (refuseCroppedWrite(kind, name, "source tree")) return;
+        if (source != null) { source.saveToSource(kind, name); return; }
         Path file = sourcePathFor(kind, name);
         if (file == null) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
@@ -476,25 +485,8 @@ public final class TrackVariantBlocks {
             kind.id(), name, file);
     }
 
-    /**
-     * Guard for both write paths: a {@link #cropped} instance is a bounded view of a bigger
-     * sidecar, so writing it would delete every cell the crop removed — the failure that emptied
-     * four portal rooms' sidecars in one editor session. Logs and refuses rather than throwing:
-     * the callers are editor save paths, and losing the author's template save because the
-     * sidecar's footprint was wrong would trade one silent loss for another.
-     */
-    private boolean refuseCroppedWrite(TrackKind kind, String name, String target) {
-        if (!cropped) return false;
-        LOGGER.error("[DungeonTrain] Refusing to write a cropped track variant sidecar {}:{} to the {} — "
-                + "it is a bounded view of a larger sidecar and saving it would drop the cells outside "
-                + "that footprint. This means a caller loaded it with the wrong footprint; the file on "
-                + "disk is unchanged.",
-            kind == null ? "?" : kind.id(), name, target);
-        return true;
-    }
-
-    /** True when this instance is a bounded view — see {@link #cropped}. Never true for a cached load. */
-    public boolean isCropped() { return cropped; }
+    /** True when this instance is a bounded view of a larger sidecar — see {@link #source}. */
+    public boolean isCropped() { return source != null; }
 
     /** True when the axes match this kind's defaults — the absent-{@code mirror}-field state. */
     public boolean isDefaultMirror() {

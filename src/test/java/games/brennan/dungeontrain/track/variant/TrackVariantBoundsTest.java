@@ -2,16 +2,23 @@ package games.brennan.dungeontrain.track.variant;
 
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
+import games.brennan.dungeontrain.editor.VariantState;
 import net.minecraft.SharedConstants;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.Bootstrap;
+import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,7 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * deleted {@code miniword}'s sidecar outright.</p>
  *
  * <p>So the bound is now a throwaway view: the cache holds the whole sidecar, each caller gets its
- * own bounded copy, and a bounded copy refuses to be written back.</p>
+ * own bounded copy, and that copy's edits and saves go through to the whole sidecar rather than
+ * replacing it. Read bounded, write whole — a bounded read can never become a truncated write.</p>
  *
  * <p>Uses the real bundled {@code abandonedroom} sidecar rather than a fixture — the counts below
  * are the ones the incident turned on, and reading them off the shipped file is what makes this a
@@ -97,18 +105,26 @@ final class TrackVariantBoundsTest {
     }
 
     @Test
-    @DisplayName("a cropped view refuses both writes; only a whole sidecar can be saved")
-    void croppedViewRefusesToBeWritten() throws Exception {
-        TrackVariantBlocks cropped = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
-        assertTrue(cropped.isCropped());
+    @DisplayName("edits through a bounded view reach the whole sidecar")
+    void viewEditsWriteThroughToTheSource() {
+        TrackVariantBlocks view = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, BUILT_IN_SIZE);
+        assertTrue(view.isCropped());
 
-        // Both return without touching the filesystem — resolving a path would fail outside a game
-        // install, so reaching one at all is itself the failure this asserts against.
-        cropped.save(TrackKind.PORTAL_ROOM, ROOM);
-        cropped.saveToSource(TrackKind.PORTAL_ROOM, ROOM);
+        BlockPos cell = new BlockPos(1, 1, 1);
+        view.put(cell, List.of(
+            VariantState.of(Blocks.STONE_BRICKS.defaultBlockState()),
+            VariantState.of(Blocks.MOSSY_STONE_BRICKS.defaultBlockState())));
 
-        assertEquals(CELLS_TOTAL, TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE).size(),
-            "the refused writes must have left the sidecar whole");
+        TrackVariantBlocks whole = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE);
+        assertNotNull(whole.statesAt(cell),
+            "an edit made through a view must land on the sidecar the editor will save, not on a copy");
+        assertEquals(CELLS_TOTAL + 1, whole.size(),
+            "and it must not cost the cells the view's own footprint hid");
+
+        assertTrue(view.remove(cell));
+        assertNull(TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE).statesAt(cell),
+            "removal writes through too");
+        assertEquals(CELLS_TOTAL, TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, ROOM, REAL_SIZE).size());
     }
 
     @Test

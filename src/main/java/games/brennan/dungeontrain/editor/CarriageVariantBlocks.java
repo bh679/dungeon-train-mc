@@ -211,12 +211,12 @@ public final class CarriageVariantBlocks {
     private boolean mirrorVariants;
 
     /**
-     * True when this instance is a bounded <em>view</em> built by {@link #croppedTo} — safe to read,
-     * refused by both write paths, and never the object held in {@link #CACHE}. See
-     * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks#cropped} for the failure
-     * this prevents.
+     * The whole sidecar this instance is a bounded <em>view</em> of, or null when this <em>is</em>
+     * the whole sidecar — see
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks#source}. Mutations and both
+     * write paths go through to it, so a bounded read can never become a truncated write.
      */
-    private final boolean cropped;
+    private final CarriageVariantBlocks source;
 
     private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this(entries, lockIds, false, false, false, false);
@@ -224,13 +224,13 @@ public final class CarriageVariantBlocks {
 
     private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                   boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
-        this(entries, lockIds, mirrorX, mirrorY, mirrorZ, mirrorVariants, false);
+        this(entries, lockIds, mirrorX, mirrorY, mirrorZ, mirrorVariants, null);
     }
 
     private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                   boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants,
-                                  boolean cropped) {
-        this.cropped = cropped;
+                                  CarriageVariantBlocks source) {
+        this.source = source;
         this.entries = entries;
         this.lockIds = lockIds;
         this.groupRefs = new VariantGroupResolver(entries, lockIds);
@@ -263,6 +263,7 @@ public final class CarriageVariantBlocks {
 
     /** Set all three editor mirror axes — used by the {@code editor mirror} command before {@link #save}. */
     public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
+        if (source != null) source.setMirrorAxes(x, y, z);
         this.mirrorX = x;
         this.mirrorY = y;
         this.mirrorZ = z;
@@ -270,6 +271,7 @@ public final class CarriageVariantBlocks {
 
     /** Set the mirror-variants ("V") opt-in — used by {@code editor mirror v on|off} before {@link #save}. */
     public synchronized void setMirrorVariants(boolean v) {
+        if (source != null) source.setMirrorVariants(v);
         this.mirrorVariants = v;
     }
 
@@ -338,23 +340,12 @@ public final class CarriageVariantBlocks {
             LOGGER.warn("[DungeonTrain] Variant sidecar {}: position {} outside dims {}x{}x{}, skipping.",
                 id, pos, dims.length(), dims.height(), dims.width());
         }
-        return new CarriageVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants, true);
+        return new CarriageVariantBlocks(kept, keptLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants, this);
     }
 
     /** True when this instance is a bounded view — see {@link #cropped}. */
-    public boolean isCropped() { return cropped; }
+    public boolean isCropped() { return source != null; }
 
-    /**
-     * Guard for both write paths: writing a {@link #cropped} view would delete every cell the crop
-     * removed — including, when the view is empty, deleting the file outright. Logs and refuses.
-     */
-    private boolean refuseCroppedWrite(String id, String target) {
-        if (!cropped) return false;
-        LOGGER.error("[DungeonTrain] Refusing to write a cropped variant sidecar {} to the {} — it is a "
-                + "bounded view of a larger sidecar and saving it would drop the cells outside those "
-                + "dims. The file on disk is unchanged.", id, target);
-        return true;
-    }
 
     private static CarriageVariantBlocks loadFromDisk(CarriageVariant variant) {
         Path cfg = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
@@ -660,12 +651,14 @@ public final class CarriageVariantBlocks {
         for (VariantState s : states) {
             if (s == null) throw new IllegalArgumentException("null state");
         }
+        if (source != null) source.put(localPos, states);
         entries.put(localPos.immutable(), List.copyOf(states));
         invalidateGroupRefCache();
     }
 
     /** Remove the entry at {@code localPos}. Returns true if one was present. */
     public synchronized boolean remove(BlockPos localPos) {
+        if (source != null) source.remove(localPos);
         lockIds.remove(localPos);
         invalidateGroupRefCache();
         return entries.remove(localPos) != null;
@@ -695,6 +688,7 @@ public final class CarriageVariantBlocks {
      * can be locked.
      */
     public synchronized void setLockId(BlockPos localPos, int lockId) {
+        if (source != null) source.setLockId(localPos, lockId);
         if (!entries.containsKey(localPos)) {
             throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
         }
@@ -879,7 +873,7 @@ public final class CarriageVariantBlocks {
      * leave stale sidecars on disk.
      */
     public synchronized void save(CarriageVariant variant) throws IOException {
-        if (refuseCroppedWrite(variant.id(), "config")) return;
+        if (source != null) { source.save(variant); return; }
         Path file = configPathFor(variant);
         if (entries.isEmpty() && isDefaultMirror()) {
             Files.deleteIfExists(file);
@@ -910,7 +904,7 @@ public final class CarriageVariantBlocks {
      * Mirrors {@link CarriageTemplateStore#saveToSource(CarriageVariant, net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate)}.
      */
     public synchronized void saveToSource(CarriageVariant variant) throws IOException {
-        if (refuseCroppedWrite(variant.id(), "source tree")) return;
+        if (source != null) { source.saveToSource(variant); return; }
         Path file = sourcePathForVariant(variant);
         if (entries.isEmpty() && isDefaultMirror()) {
             Files.deleteIfExists(file);
