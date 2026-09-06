@@ -11472,6 +11472,22 @@
       "released": true,
       "released_in": "v0.805.0",
       "released_at": "2026-09-06T09:30:25Z"
+    },
+    {
+      "id": "duplicate-overlapping-carriages",
+      "version": "0.806.0",
+      "type": "fix",
+      "pr": 1313,
+      "title": "No more duplicate carriages when you come back to the train",
+      "summary": "Leaving the train and returning to the track could leave you facing two identical trains stacked on top of each other. Carriages you walked away from are now recognised as asleep rather than gone, so they are brought back instead of being rebuilt as copies.",
+      "highlights": [
+        "Fixes overlapping duplicate carriages after you leave the train and return, which the game's periodic autosave used to trigger.",
+        "Adds a safety net that clears a stacked carriage if one still slips through, never while you are standing in it."
+      ],
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
