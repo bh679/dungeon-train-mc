@@ -16,10 +16,6 @@
       "id": "backrooms",
       "weight": 8,
       "minLevel": 10
-    },
-    {
-      "id": "tunnels",
-      "weight": 0
     }
   ]
 }
