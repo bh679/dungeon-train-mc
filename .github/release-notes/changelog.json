@@ -11506,8 +11506,24 @@
       "released_at": null
     },
     {
-      "id": "elytra-not-train-travel",
+      "id": "portal-room-content-pass-sept",
       "version": "0.808.0",
+      "type": "content",
+      "title": "Seven new dimensional carriages",
+      "summary": "Seven new dimensional carriages join the rotation, and five existing ones have been rebuilt with more block variety.",
+      "highlights": [
+        "New carriages: a Roman colonnade, a vast pillared hall, a sky maze, a sloped nether passage, a mine of deep halls, a library annex and a trap room packed with TNT",
+        "More block variety in the backrooms, bigger, small library and ender carriages"
+      ],
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1315
+    },
+    {
+      "id": "elytra-not-train-travel",
+      "version": "0.809.0",
       "type": "fix",
       "title": "Elytra flight no longer counts as travel on the train",
       "summary": "Gliding past the train no longer counts as riding it. Flying over the roof on an elytra used to bank the same distance and difficulty progress as walking the carriages, so you could out-fly the train's own journey and pull the mobs up a tier for it. Now a glide only counts while you are actually inside a carriage \u2014 down a corridor still counts, skimming the roof does not \u2014 and the moment you land, everything resumes from where you left off with nothing paid out for the flight.",
