@@ -39,6 +39,7 @@
     "FlowingFluidNetherBandLavaMixin",
     "LiquidBlockNetherBandLavaMixin",
     "ServerSubLevelFreezeMixin",
+    "ServerSubLevelRotationLockMixin",
     "SubLevelPhysicsSystemFreezeMixin",
     "SubLevelPhysicsSystemRotationLockMixin",
     "SubLevelHeatMapSplitMixin",

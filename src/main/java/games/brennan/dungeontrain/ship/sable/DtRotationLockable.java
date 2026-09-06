@@ -22,7 +22,11 @@ package games.brennan.dungeontrain.ship.sable;
  *
  * <p>Read/written on the server thread only. See {@link TrainRotationLock} for the read helper and
  * {@link games.brennan.dungeontrain.mixin.SubLevelPhysicsSystemRotationLockMixin} /
- * {@link games.brennan.dungeontrain.mixin.RapierPipelineRotationLockMixin} for the two clamps.</p>
+ * {@link games.brennan.dungeontrain.mixin.RapierPipelineRotationLockMixin} /
+ * {@link games.brennan.dungeontrain.mixin.ServerSubLevelRotationLockMixin} for the three clamps
+ * (pose read-back, pipeline impulses, native spin per substep), and
+ * {@link games.brennan.dungeontrain.mixin.MergedMassTrackerPivotFreezeMixin} for the pivot freeze
+ * that rides on the same flag.</p>
  */
 public interface DtRotationLockable {
 
