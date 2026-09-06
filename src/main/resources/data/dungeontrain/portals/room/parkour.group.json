@@ -8,7 +8,7 @@
     },
     {
       "id": "jumps",
-      "weight": 1,
+      "weight": 0,
       "minLevel": 10
     }
   ]

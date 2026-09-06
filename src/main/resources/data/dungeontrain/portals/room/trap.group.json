@@ -4,7 +4,7 @@
   "variants": [
     {
       "id": "tnt",
-      "weight": 1
+      "weight": 0
     },
     {
       "id": "tntfull",
