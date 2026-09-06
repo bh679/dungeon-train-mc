@@ -39,7 +39,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -88,6 +90,15 @@ public final class BoardingProgressEvents {
      * "off-train" once per group boundary and we lose the cross-group delta.
      */
     private static final double HORIZONTAL_PADDING = 1.0;
+
+    /**
+     * How far inside a carriage's raw {@code worldAABB} a player must be to count as
+     * <em>inside</em> the train rather than merely on it, in blocks. Deliberately measured against
+     * the unpadded box — the pads above exist to keep a walking player boarded across joints and
+     * roofs, and an elytra pilot skimming the roof or clipping the outer wall is exactly the case
+     * this test has to exclude. See {@link #insideInterior}.
+     */
+    private static final double INTERIOR_INSET = 1.0;
 
     /**
      * Per-player last broadcast value of {@code travelledCarriageIndex} —
@@ -142,9 +153,15 @@ public final class BoardingProgressEvents {
 
         // Map of boarded players → their current carriage anchor pIdx.
         Map<UUID, Integer> boarded = new LinkedHashMap<>();
+        // Boarded players who are gliding outside the train's interior. They stay boarded — time
+        // aboard and biomes keep counting — but earn neither distance nor carriage progress this
+        // scan: flying past the train is not travelling on it.
+        Set<UUID> glidingOutside = new HashSet<>();
         for (ServerPlayer player : level.players()) {
             Integer pIdx = findPlayerCarriagePIdx(carriages, player);
-            if (pIdx != null) boarded.put(player.getUUID(), pIdx);
+            if (pIdx == null) continue;
+            boarded.put(player.getUUID(), pIdx);
+            if (isGlidingOutside(carriages, player)) glidingOutside.add(player.getUUID());
         }
 
         // Cumulative time-on-train: every boarded player accrues
@@ -183,7 +200,7 @@ public final class BoardingProgressEvents {
                         .addTrainTimeTicks(SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
                 }
-                accumulateBoardedDistance(p);
+                accumulateBoardedDistance(p, !glidingOutside.contains(uuid));
                 sampleBoardedBiome(level, p);
             }
         }
@@ -203,14 +220,19 @@ public final class BoardingProgressEvents {
         if (leader != null && boarded.containsKey(leader)) {
             // Happy path: leader currently in a carriage AABB. Apply delta.
             int current = boarded.get(leader);
-            int delta = current - data.lastLeaderCarriage();
+            // A gliding leader re-anchors instead of advancing: the carriages they flew over are
+            // neither booked now nor paid out in one lump on the scan after they land. They keep
+            // the leadership — clearing it here would just hand the same suppressed delta to
+            // whoever inherits it.
+            boolean gliding = glidingOutside.contains(leader);
+            int delta = gliding ? 0 : current - data.lastLeaderCarriage();
             data.advance(delta, current);
             // Tick the per-player carts-since-death counter so the
             // carts_in_run advancement fires once the leader has actually
             // traversed forward. Negative / zero deltas no-op inside the
             // notify helper.
             ServerPlayer leaderPlayer = level.getServer().getPlayerList().getPlayer(leader);
-            if (leaderPlayer != null) {
+            if (leaderPlayer != null && !gliding) {
                 AchievementEvents.notifyCartAdvance(leaderPlayer, delta);
                 // Per-player travelled-carriage-index drives mob difficulty
                 // (max across players, resets on respawn). Signed delta —
@@ -227,12 +249,12 @@ public final class BoardingProgressEvents {
             // concluding they disembarked.
             boolean leaderOnline = level.getServer().getPlayerList().getPlayer(leader) != null;
             if (!leaderOnline) {
-                handOffOrClear(data, boarded);
+                handOffOrClear(data, boarded, glidingOutside);
                 leaderOffTrainScans = 0;
             } else {
                 leaderOffTrainScans++;
                 if (leaderOffTrainScans > OFF_TRAIN_GRACE_SCANS) {
-                    handOffOrClear(data, boarded);
+                    handOffOrClear(data, boarded, glidingOutside);
                     leaderOffTrainScans = 0;
                 }
                 // Within grace: keep leader + lastLeaderCarriage, do nothing.
@@ -240,10 +262,8 @@ public final class BoardingProgressEvents {
         } else {
             // No leader. Promote any boarded player to leader; otherwise idle.
             leaderOffTrainScans = 0;
-            if (!boarded.isEmpty()) {
-                Map.Entry<UUID, Integer> first = boarded.entrySet().iterator().next();
-                data.setLeader(first.getKey(), first.getValue());
-            }
+            Map.Entry<UUID, Integer> next = chooseLeader(boarded, glidingOutside);
+            if (next != null) data.setLeader(next.getKey(), next.getValue());
         }
 
         broadcastPerPlayer(level);
@@ -253,13 +273,30 @@ public final class BoardingProgressEvents {
      * Either promote a remaining boarded player to leader (multiplayer
      * hand-off) or clear the leader and freeze the counter.
      */
-    private static void handOffOrClear(BoardingProgressData data, Map<UUID, Integer> boarded) {
-        if (boarded.isEmpty()) {
+    private static void handOffOrClear(BoardingProgressData data, Map<UUID, Integer> boarded,
+                                       Set<UUID> glidingOutside) {
+        Map.Entry<UUID, Integer> next = chooseLeader(boarded, glidingOutside);
+        if (next == null) {
             data.clearLeader();
         } else {
-            Map.Entry<UUID, Integer> first = boarded.entrySet().iterator().next();
-            data.setLeader(first.getKey(), first.getValue());
+            data.setLeader(next.getKey(), next.getValue());
         }
+    }
+
+    /**
+     * Pick the boarded player who should lead: the first one who is not gliding outside the train,
+     * falling back to a glider only when every candidate is one (their deltas stay suppressed while
+     * they glide, so leading costs nothing) and to {@code null} when nobody is boarded.
+     */
+    @Nullable
+    static Map.Entry<UUID, Integer> chooseLeader(Map<UUID, Integer> boarded,
+                                                 Set<UUID> glidingOutside) {
+        Map.Entry<UUID, Integer> fallback = null;
+        for (Map.Entry<UUID, Integer> entry : boarded.entrySet()) {
+            if (!glidingOutside.contains(entry.getKey())) return entry;
+            if (fallback == null) fallback = entry;
+        }
+        return fallback;
     }
 
     /**
@@ -499,8 +536,13 @@ public final class BoardingProgressEvents {
      * {@link PlayerRunState#distanceBlocks} counter. Naturally combines
      * train-carried movement and on-train walking — both move the player's
      * world position.
+     *
+     * <p>{@code creditDistance} false (the player is gliding outside the train's interior) still
+     * re-samples the baseline and books nothing. Skipping the sample instead would hand the whole
+     * flight to the first scan after landing as one delta — which {@link #MAX_DELTA_PER_SCAN} would
+     * then throw away silently, making the suppression depend on how far they flew.</p>
      */
-    private static void accumulateBoardedDistance(ServerPlayer player) {
+    private static void accumulateBoardedDistance(ServerPlayer player, boolean creditDistance) {
         Vec3 current = new Vec3(player.getX(), player.getY(), player.getZ());
         // Fallback origin capture for a world's FIRST life, which never fires PlayerRespawnEvent.
         // Only when absent — a captured origin must never drift forward, or every later death in this
@@ -509,7 +551,7 @@ public final class BoardingProgressEvents {
             player.setData(ModDataAttachments.RUN_SPAWN_X.get(), player.blockPosition().getX());
         }
         Vec3 last = LAST_BOARDED_POS.put(player.getUUID(), current);
-        if (last == null) return;
+        if (last == null || !creditDistance) return;
         double dx = current.x - last.x;
         double dy = current.y - last.y;
         double dz = current.z - last.z;
@@ -585,6 +627,44 @@ public final class BoardingProgressEvents {
     private static BoardingProgressPacket packetFor(int travelled) {
         int tier = DifficultyProgression.tierForTravelled(travelled);
         return new BoardingProgressPacket(travelled, tier);
+    }
+
+    /**
+     * Whether {@code player} is gliding on an elytra somewhere that is not the inside of a
+     * carriage. Flying past the train — over the roof, alongside the wall, through the gap between
+     * two groups — is not travelling on it, so those scans credit neither distance nor carriage
+     * progress. Gliding down a corridor still counts: they are inside the train.
+     */
+    private static boolean isGlidingOutside(List<Trains.Carriage> carriages, ServerPlayer player) {
+        if (!player.isFallFlying()) return false;
+        double px = player.getX();
+        double py = player.getY();
+        double pz = player.getZ();
+        for (Trains.Carriage c : carriages) {
+            AABBdc bb = c.ship().worldAABB();
+            if (insideInterior(bb.minX(), bb.minY(), bb.minZ(),
+                               bb.maxX(), bb.maxY(), bb.maxZ(), px, py, pz)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Whether {@code (px, py, pz)} lies within the given box shrunk by {@link #INTERIOR_INSET} on
+     * all six faces — one block smaller than the carriage's outside, in every direction. A box with
+     * no room left after the inset (thinner than twice the inset on any axis) has no interior and
+     * contains nothing.
+     */
+    static boolean insideInterior(double minX, double minY, double minZ,
+                                  double maxX, double maxY, double maxZ,
+                                  double px, double py, double pz) {
+        if (maxX - minX < 2 * INTERIOR_INSET) return false;
+        if (maxY - minY < 2 * INTERIOR_INSET) return false;
+        if (maxZ - minZ < 2 * INTERIOR_INSET) return false;
+        return px >= minX + INTERIOR_INSET && px <= maxX - INTERIOR_INSET
+            && py >= minY + INTERIOR_INSET && py <= maxY - INTERIOR_INSET
+            && pz >= minZ + INTERIOR_INSET && pz <= maxZ - INTERIOR_INSET;
     }
 
     /**
