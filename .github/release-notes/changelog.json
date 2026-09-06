@@ -11441,9 +11441,9 @@
       "summary": "And now they are even more secretive.",
       "highlights": [],
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.805.0",
+      "released_at": "2026-09-06T09:30:25Z"
     },
     {
       "id": "distant-horizons-portal-rooms",
@@ -11453,9 +11453,9 @@
       "summary": "It was peeking over the wall. It is not any more.",
       "highlights": [],
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.805.0",
+      "released_at": "2026-09-06T09:30:25Z"
     },
     {
       "id": "new-carriage-contents-and-portal-room",
@@ -11469,9 +11469,9 @@
         "A new dimensional carriage featuring a pack of hostile animals"
       ],
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.805.0",
+      "released_at": "2026-09-06T09:30:25Z"
     }
   ]
 }
