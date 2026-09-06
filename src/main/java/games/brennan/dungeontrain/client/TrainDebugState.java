@@ -31,6 +31,7 @@ public final class TrainDebugState {
     private static volatile String variantId = "";
     private static volatile String contentsId = "";
     private static volatile String subVariantId = "";
+    private static volatile String flip = "";
 
     private TrainDebugState() {}
 
@@ -77,6 +78,14 @@ public final class TrainDebugState {
     }
 
     /**
+     * Which axes this carriage's interior was stamped flipped along ({@code none}, {@code X},
+     * {@code X+Z}, …), or {@code ""} for an index this session never placed / off-train.
+     */
+    public static String flip() {
+        return flip;
+    }
+
+    /**
      * Flip the panel. A no-op without permission, so an ungranted player pressing F3+4 gets no
      * panel and no hint that the chord exists.
      */
@@ -100,12 +109,14 @@ public final class TrainDebugState {
 
     /** Fed by {@code TrainDebugCarriagePacket.handle} on every carriage-boundary crossing. */
     public static void setCarriage(boolean present, int carriagePIdx, String carriageVariantId,
-                                   String carriageContentsId, String carriageSubVariantId) {
+                                   String carriageContentsId, String carriageSubVariantId,
+                                   String carriageFlip) {
         carriagePresent = present;
         pIdx = present ? carriagePIdx : 0;
         variantId = present ? orEmpty(carriageVariantId) : "";
         contentsId = present ? orEmpty(carriageContentsId) : "";
         subVariantId = present ? orEmpty(carriageSubVariantId) : "";
+        flip = present ? orEmpty(carriageFlip) : "";
     }
 
     private static String orEmpty(String s) {
@@ -126,5 +137,6 @@ public final class TrainDebugState {
         variantId = "";
         contentsId = "";
         subVariantId = "";
+        flip = "";
     }
 }

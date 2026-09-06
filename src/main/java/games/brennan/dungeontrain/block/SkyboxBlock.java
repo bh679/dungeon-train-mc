@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.block;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
@@ -79,7 +80,8 @@ public class SkyboxBlock extends Block {
      */
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return isCreativePlayer(context) ? Shapes.block() : Shapes.empty();
+        return isCreativePlayer(context) && dungeontrainSkyboxesOn(context)
+            ? Shapes.block() : Shapes.empty();
     }
 
     /**
@@ -91,7 +93,11 @@ public class SkyboxBlock extends Block {
      */
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return Shapes.block();
+        // Switched off, the block is not there: no collision, so an author can walk out through a
+        // sky wall to see it from behind. Client-side, and in single player that IS the server, so
+        // the walk-through is real; a dedicated server answers with its own config and keeps them
+        // solid — see ClientDisplayConfig.areSkyboxBlocksOn().
+        return dungeontrainSkyboxesOn(context) ? Shapes.block() : Shapes.empty();
     }
 
     /**
@@ -104,7 +110,13 @@ public class SkyboxBlock extends Block {
      */
     @Override
     protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
-        return Shapes.block();
+        // Off, it must not cull its neighbours either: an invisible block that still hides the wall
+        // behind it leaves a hole in the room, which is the opposite of what turning it off is for.
+        // No context to ask who is looking, so the test override is "is anybody testing" — see
+        // PortalTestSession.anyActive.
+        return ClientDisplayConfig.areSkyboxBlocksOn()
+            || games.brennan.dungeontrain.portal.PortalTestSession.anyActive()
+            ? Shapes.block() : Shapes.empty();
     }
 
     /**
@@ -112,6 +124,22 @@ public class SkyboxBlock extends Block {
      * entity, so every context-free {@code getShape} call answers "not creative" — which is
      * why the two overrides above exist.
      */
+    /**
+     * Whether Skybox Blocks are there for whoever is asking.
+     *
+     * <p>The author's switch, <b>except inside a test</b>. Turning them off is a way to build — walk
+     * out through a sky wall and see it from behind — and Test the Carriage is the one place in the
+     * editor that promises the room as a player will meet it. A wall you can stroll through there is
+     * the test lying about the build, so a test session puts them back however the switch is set,
+     * and takes them away again on the way out.</p>
+     */
+    private static boolean dungeontrainSkyboxesOn(CollisionContext context) {
+        if (ClientDisplayConfig.areSkyboxBlocksOn()) return true;
+        return context instanceof EntityCollisionContext entityContext
+            && entityContext.getEntity() instanceof Player player
+            && games.brennan.dungeontrain.portal.PortalTestSession.has(player.getUUID());
+    }
+
     private static boolean isCreativePlayer(CollisionContext context) {
         return context instanceof EntityCollisionContext entityContext
             && entityContext.getEntity() instanceof Player player

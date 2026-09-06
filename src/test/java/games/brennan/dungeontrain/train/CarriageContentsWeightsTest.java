@@ -101,6 +101,26 @@ final class CarriageContentsWeightsTest {
     }
 
     @Test
+    @DisplayName("flipFor falls back to the Z-on default for an id with no entry or no flip block")
+    void flipFor_defaultsToXOnly() {
+        CarriageContentsWeights w = CarriageContentsWeights.ofWeights(java.util.Map.of("books", 5));
+        assertEquals(games.brennan.dungeontrain.template.FlipOptions.DEFAULT, w.flipFor("books"));
+        assertEquals(games.brennan.dungeontrain.template.FlipOptions.DEFAULT, w.flipFor("not-in-the-map"));
+    }
+
+    @Test
+    @DisplayName("flipFor returns an authored block, weight untouched")
+    void flipFor_returnsAuthoredBlock() {
+        games.brennan.dungeontrain.template.FlipOptions flip =
+            games.brennan.dungeontrain.template.FlipOptions.DEFAULT.with("x", true);
+        CarriageContentsWeights w = new CarriageContentsWeights(java.util.Map.of("maze",
+            new games.brennan.dungeontrain.template.TemplateMeta(
+                4, games.brennan.dungeontrain.template.TemplateGate.DEFAULT, null, null, flip)));
+        assertEquals(flip, w.flipFor("maze"));
+        assertEquals(4, w.weightFor("maze"));
+    }
+
+    @Test
     @DisplayName("MIN is 0, DEFAULT is 1, MAX is 100 (contract for weights.json authors)")
     void constants_matchDocumentedContract() {
         assertEquals(0, CarriageContentsWeights.MIN);

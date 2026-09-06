@@ -28,19 +28,18 @@ public final class DevHours {
     }
 
     /**
-     * Whether the hours tile takes the ledger's lead slot — the one the current funding goal
-     * occupies until that goal is met.
+     * Whether there is an hour count worth drawing. {@code 0} (or a nonsense negative) means the
+     * build could not read any history — <b>unknown</b>, not "no work done" — and an unknown figure
+     * is withheld rather than shown as a zero to a would-be donor.
      *
-     * <p>The ledger climbs: the server bill leads until it is paid, then the next goal leads and
-     * the bill drops below it, ticked off. When that goal is met too there is nothing left to ask
-     * against, so the goal drops the same way and this is what leads instead — the work itself.</p>
-     *
-     * @param hours              the baked count; {@code 0} (unknown) declines the slot
-     * @param serverCostsMet     the running-cost rung is settled and no longer the ask
-     * @param activeGoalComplete the rung after it is funded too
+     * <p>The card used to be gated on the funding ladder too: it appeared only once every goal was
+     * funded, taking the lead slot the current ask had held until then. That gate was about layout
+     * — one slot, and the ask had first claim on it — not about the figure, which is equally true
+     * at every rung. Now that the ask holds a slot of its own and the rest are dealt by experiment
+     * arm ({@link DonateCards}), the only question left is whether the number is known.</p>
      */
-    public static boolean takesGoalSlot(int hours, boolean serverCostsMet, boolean activeGoalComplete) {
-        return hours > 0 && serverCostsMet && activeGoalComplete;
+    public static boolean known(int hours) {
+        return hours > 0;
     }
 
     /** The tile's figure for this client, grouped for the language chosen in Minecraft. */

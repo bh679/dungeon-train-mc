@@ -92,8 +92,8 @@ class UpdateStatsTest {
     @Test
     void theCardShowsTheWeekByDefault() {
         var f = figures(117, 244, 765, 5);
-        assertEquals(117L, count(UpdateStats.value(f, false, "en_us")));
-        assertEquals("chat.dungeontrain.time.week.one", spanKey(f, false));
+        assertEquals(117L, shown(UpdateStats.value(f, false, Locale.US)));
+        assertEquals("gui.dungeontrain.death.narr.lbl_updates_week", labelKey(f, false));
     }
 
     @Test
@@ -101,37 +101,58 @@ class UpdateStatsTest {
         // One update this week is a true number that reads as a dead project — the month is the
         // honest picture, and it is the one shown.
         var f = figures(1, 40, 765, 5);
-        assertEquals(40L, count(UpdateStats.value(f, false, "en_us")));
-        assertEquals("chat.dungeontrain.time.month.one", spanKey(f, false));
+        assertEquals(40L, shown(UpdateStats.value(f, false, Locale.US)));
+        assertEquals("gui.dungeontrain.death.narr.lbl_updates_month", labelKey(f, false));
     }
 
     @Test
     void aThinMonthFallsAllTheWayThroughToTheWindow() {
         var f = figures(0, 1, 765, 5);
-        assertEquals(765L, count(UpdateStats.value(f, false, "en_us")));
-        assertEquals("chat.dungeontrain.time.month.other", spanKey(f, false));
+        assertEquals(765L, shown(UpdateStats.value(f, false, Locale.US)));
+        assertEquals("gui.dungeontrain.death.narr.lbl_updates_months", labelKey(f, false));
     }
 
     @Test
     void hoveringAlwaysTakesTheLongestSpan() {
         var f = figures(117, 244, 765, 5);
-        assertEquals(765L, count(UpdateStats.value(f, true, "en_us")));
-        assertEquals("chat.dungeontrain.time.month.other", spanKey(f, true));
+        assertEquals(765L, shown(UpdateStats.value(f, true, Locale.US)));
+        assertEquals("gui.dungeontrain.death.narr.lbl_updates_months", labelKey(f, true));
         assertEquals(5L, spanArg(f, true));
     }
 
     @Test
     void aFullWindowIsAYearNotTwelveMonths() {
         var f = figures(117, 244, 3000, 12);
-        assertEquals("chat.dungeontrain.time.year.one", spanKey(f, true));
-        assertEquals(1L, spanArg(f, true));
+        // A full window says "Updates this year" outright — no nested "1 year" clause to build.
+        assertEquals("gui.dungeontrain.death.narr.lbl_updates_year", labelKey(f, true));
     }
 
     @Test
-    void oneUpdateTakesTheSingularForm() {
+    void theValueLineIsTheBareNumber() {
+        // The word "Updates" moved down into the caption, so the value line is a figure like every
+        // other card's — and no longer needs a plural form of its own.
         var f = figures(0, 0, 1, 1);
-        assertEquals("gui.dungeontrain.death.narr.updates_value.one",
-                translatable(UpdateStats.value(f, false, "en_us")).getKey());
+        assertEquals(1L, shown(UpdateStats.value(f, false, Locale.US)));
+        assertEquals(1394L, shown(UpdateStats.value(figures(1394, 0, 1394, 1), false, Locale.US)));
+    }
+
+    @Test
+    void theCaptionNamesTheSpanInOneLine() {
+        assertEquals("gui.dungeontrain.death.narr.lbl_updates_week",
+                labelKey(figures(117, 244, 765, 5), false));
+        assertEquals("gui.dungeontrain.death.narr.lbl_updates_month",
+                labelKey(figures(1, 40, 765, 5), false));
+        assertEquals("gui.dungeontrain.death.narr.lbl_updates_year",
+                labelKey(figures(117, 244, 3000, 12), true));
+    }
+
+    @Test
+    void aProjectYoungerThanAYearNamesItsOwnWindow() {
+        // The one case that still needs a placeholder: "Updates in 5 months".
+        var f = figures(117, 244, 765, 5);
+        assertEquals("gui.dungeontrain.death.narr.lbl_updates_months", labelKey(f, true));
+        assertEquals("chat.dungeontrain.time.month.other", spanKey(f, true));
+        assertEquals(5L, spanArg(f, true));
     }
 
     // ---- the pitch's opening line ----
@@ -260,12 +281,21 @@ class UpdateStatsTest {
         return assertInstanceOf(TranslatableContents.class, c.getContents());
     }
 
-    /** The count the card's first line is built around. */
-    private static long count(Component value) {
-        return (Long) translatable(value).getArgs()[0];
+    /** The figure the card's value line actually renders, parsed back out of the literal. */
+    private static long shown(Component value) {
+        return Long.parseLong(value.getString().replace(",", ""));
     }
 
-    /** The {@code chat.dungeontrain.time.*} key the second line's span resolves to. */
+    /** The caption's own translation key. */
+    private static String labelKey(UpdateStats.Figures f, boolean hovered) {
+        return translatable(UpdateStats.label(f, hovered, "en_us")).getKey();
+    }
+
+    /**
+     * The {@code chat.dungeontrain.time.*} key nested inside the caption — only the unnamed-window
+     * caption ("Updates in 5 months") still carries one; the week/month/year captions are whole
+     * sentences of their own.
+     */
     private static String spanKey(UpdateStats.Figures f, boolean hovered) {
         return translatable((Component) translatable(UpdateStats.label(f, hovered, "en_us"))
                 .getArgs()[0]).getKey();

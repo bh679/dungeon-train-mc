@@ -1,19 +1,15 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.client.ClientNetherBand;
-import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
 import games.brennan.dungeontrain.client.NetherSkyRenderer;
 import games.brennan.dungeontrain.client.UpsideDownSkyRenderer;
 import games.brennan.dungeontrain.client.VoidSkyRenderer;
 import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,9 +27,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *   <li>{@code renderClouds} HEAD → cancel cloud rendering once the End or Nether sky has
  *       mostly faded in, so clouds disappear over the void/End rather than floating
  *       incongruously above it.</li>
- *   <li>{@code renderClouds} getCloudHeight → in the <b>upside-down</b> band the sky sits below the
- *       train, so rather than hide the clouds, lerp the cloud plane down toward the configured
- *       {@code upsideDownCloudY} by the band intensity — the clouds sink beneath you as the flip fades in.</li>
+ *   <li>{@code renderClouds} getCloudHeight → records the cloud plane vanilla's pass read. The
+ *       upside-down band's sinking of that plane lives on {@code getCloudHeight()} itself, in
+ *       {@code DimensionSpecialEffectsCloudHeightMixin}, so it also reaches Iris' uniform.</li>
+ *   <li>{@code renderSky} HEAD → under a shader pack being told this frame is the Nether or the End,
+ *       draw what vanilla draws there (the End box, or nothing) and cancel the overworld sky.</li>
  *   <li>{@code renderSnowAndRain} HEAD → cancel falling rain/snow over the Nether core and the
  *       End band, so storms don't rain on the hellscape or into the void (neither the Nether nor
  *       the End has weather).</li>
@@ -48,11 +46,42 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * and vanilla's black void plane must be skipped, since showing the sky as it looks from above
  * ground is the entire point of that variant.</p>
  */
-@Mixin(LevelRenderer.class)
+// Priority 1500: Iris injects at renderSky HEAD too (its render-phase bookkeeping), at the default
+// 1000. Ours runs after it, so a spoofed frame's sky is drawn — or cancelled — in exactly the phase
+// vanilla's own End/Nether branches would run in.
+@Mixin(value = LevelRenderer.class, priority = 1500)
 public abstract class LevelRendererVoidSkyMixin {
 
     /** Above this End-sky intensity, clouds are hidden. */
     private static final double DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD = 0.5;
+
+    /**
+     * Under a shader pack that is being told this frame is the Nether or the End, replace the
+     * overworld sky pass with what vanilla draws in that dimension: the End's sky box, or nothing
+     * for the Nether. The pack's composite then paints its own atmosphere where the depth is still
+     * the far plane, exactly as it does in the real dimension. The TAIL overlays below never run on
+     * these frames; they belong to the vanilla path and to the pack's overworld frames of a fade.
+     */
+    @Inject(
+            method = "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void dungeontrain$spoofedWorldSky(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick,
+                                              Camera camera, boolean isFoggy, Runnable skyFogSetup, CallbackInfo ci) {
+        games.brennan.dungeontrain.client.shader.ShaderWorld.World world =
+            games.brennan.dungeontrain.client.shader.ShaderWorld.reporting();
+        if (world == null || SkyboxStencil.isDrawingSurfaceSky()) return;
+        if (world == games.brennan.dungeontrain.client.shader.ShaderWorld.World.END) {
+            // Vanilla's renderEndSky: the end_sky box through position_tex_color, no depth.
+            VoidSkyRenderer.renderAsSkySource(frustumMatrix);
+            ci.cancel();
+        } else if (world == games.brennan.dungeontrain.client.shader.ShaderWorld.World.NETHER) {
+            // Vanilla draws no sky in the Nether; the fog colour (already tinted by NetherFogEvents)
+            // is what the pack's Nether programs start from.
+            ci.cancel();
+        }
+    }
 
     @Inject(
             method = "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",
@@ -109,18 +138,26 @@ public abstract class LevelRendererVoidSkyMixin {
                                                double camX, double camY, double camZ, CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
-        if (ClientVoidBand.endSkyIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD
-                || ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
+        boolean hide = ClientVoidBand.endSkyIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD
+                || ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD;
+        // Recorded whether or not it hides: that this hook ran AT ALL is the thing worth knowing.
+        // Both of DT's cloud behaviours go through vanilla's cloud pass, so a pack that draws its
+        // own clouds in composite never calls it and silently keeps both of them off.
+        if (games.brennan.dungeontrain.client.ShaderDiagnostics.recording()) {
+            games.brennan.dungeontrain.client.ShaderDiagnostics.recordCloudsHook(hide);
+        }
+        if (hide) {
             ci.cancel();
         }
     }
 
     /**
-     * Lower the cloud plane in the upside-down band. The flipped world's sky sits <em>below</em> the
-     * train, so instead of hiding clouds (as the void/Nether do above), redirect the
-     * {@code getCloudHeight()} that {@code renderClouds} reads toward the configured
-     * {@code upsideDownCloudY}, lerped by the band intensity so the clouds sink beneath you as the flip
-     * fades in and rise back out on exit. Outside the band the original height (192) is kept unchanged.
+     * The cloud plane vanilla's cloud pass is about to draw at. The lowering itself now happens in
+     * {@code DimensionSpecialEffectsCloudHeightMixin} — on {@code getCloudHeight()} itself, so it
+     * also reaches Iris' {@code cloudHeight} uniform — and this only records that vanilla's pass
+     * read it. Recorded on EVERY call, including the ones that change nothing: recording only the
+     * lowering made "this hook never ran" and "it ran where the band is zero" the same reading, and
+     * those are entirely different faults.
      */
     @ModifyExpressionValue(
             method = "renderClouds(Lcom/mojang/blaze3d/vertex/PoseStack;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FDDD)V",
@@ -129,12 +166,12 @@ public abstract class LevelRendererVoidSkyMixin {
                     target = "Lnet/minecraft/client/renderer/DimensionSpecialEffects;getCloudHeight()F"
             )
     )
-    private float dungeontrain$lowerCloudsInUpsideDown(float original, @Local(argsOnly = true, ordinal = 0) double camX) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return original;
-        double t = ClientUpsideDownBand.upsideDownIntensityAt(camX);
-        if (t <= 0.0) return original;
-        return Mth.lerp((float) t, original, DungeonTrainCommonConfig.getUpsideDownCloudY());
+    private float dungeontrain$recordCloudPlane(float applied) {
+        if (games.brennan.dungeontrain.client.ShaderDiagnostics.recording()) {
+            games.brennan.dungeontrain.client.ShaderDiagnostics.recordCloudHeight(
+                games.brennan.dungeontrain.client.ShaderDiagnostics.cloudHeightVanilla(), applied);
+        }
+        return applied;
     }
 
     /**

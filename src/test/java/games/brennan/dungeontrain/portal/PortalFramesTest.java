@@ -622,4 +622,34 @@ final class PortalFramesTest {
                 1e-9, "localX " + localX);
         }
     }
+
+    /**
+     * The clip this pins: the containment box pads half a block past each end plane, which is open
+     * space outside the carriage — the gap at the edge of the group, or the pocket room's air around
+     * a twin. A player pressed against the solid part of an end wall therefore read as being in the
+     * corridor and the facing rule teleported them through the shell. Only the doorway may reach
+     * past a plane.
+     */
+    @Test
+    @DisplayName("A player outside an end wall is in neither corridor, whatever they are looking at")
+    void outsideAnEndWall_isNeverSwapped() {
+        PortalFrames f = frames();
+        double offDoorZ = WALK_Z - 1;   // one block over from the doorway: solid end plane
+
+        for (double localX : new double[] {-0.3, LAYOUT.length() + 0.3}) {
+            double x = CAR_X + localX, y = CAR_Y + FEET_Y, z = CAR_Z + offDoorZ;
+            assertEquals(PortalFrames.FRAME_NONE, f.frameAt(x, y, z), "localX " + localX);
+            assertNull(f.requiredMove(x, y, z), "localX " + localX);
+            assertNull(f.requiredMoveFacing(x, y, z, 0f), "localX " + localX);
+            assertNull(f.requiredMoveFacing(x, y, z, 180f), "localX " + localX);
+            assertNull(f.mirror(x, y, z), "localX " + localX);
+        }
+
+        // Stepping through the doorway puts the same X back in the corridor, which is the whole
+        // reason the pad exists.
+        assertEquals(PortalFrames.FRAME_CARRIAGE,
+            f.frameAt(CAR_X - 0.3, CAR_Y + FEET_Y, CAR_Z + WALK_Z));
+        assertEquals(PortalFrames.FRAME_TWIN,
+            f.frameAt(TWIN_X + LAYOUT.length() + 0.3, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z));
+    }
 }

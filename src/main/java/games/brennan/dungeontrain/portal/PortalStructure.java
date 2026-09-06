@@ -126,6 +126,11 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return settings.effectiveExits();
     }
 
+    /** What this room's shell is written in — the setting as its walls can actually use it. */
+    public PortalRoomLock lock() {
+        return settings.effectiveLock();
+    }
+
     /** What this room's appended tiles are made of — the setting as its walls can actually use it. */
     public PortalRoomCopies copies() {
         return settings.effectiveCopies();

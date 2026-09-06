@@ -333,9 +333,22 @@ public final class BuilderRelayInstall {
      * use and for the same reason: an interruption must never leave a registered name with no file
      * behind it. Only a saved copy can move; a bundled built-in has nothing in the config dir to
      * rename, and this answers false rather than pretending otherwise.</p>
+     *
+     * <p>A build's byline travels with it ({@link BuildCredits#move}). The template being moved
+     * aside is usually one the player made, which has no byline and so moves nothing — but it can
+     * itself be a download, and a credit left behind on the old name would end up captioning the
+     * build that lands there next.</p>
      */
     private static boolean renameLocal(BuilderPhotoPaths.Kind kind, String id, String subKind,
                                        String newId) throws IOException {
+        boolean moved = renameTemplate(kind, id, subKind, newId);
+        if (moved) BuildCredits.move(kind, subKind, id, newId);
+        return moved;
+    }
+
+    /** The move itself, per store — see {@link #renameLocal}, which is what callers ask. */
+    private static boolean renameTemplate(BuilderPhotoPaths.Kind kind, String id, String subKind,
+                                          String newId) throws IOException {
         switch (kind) {
             case CARRIAGE -> {
                 boolean whole = WholeCarriageTemplateStore.rename(id, newId);

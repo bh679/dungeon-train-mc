@@ -1,14 +1,17 @@
 package games.brennan.dungeontrain.command;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
+import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
 import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageLayout;
 import games.brennan.dungeontrain.portal.PortalClear;
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
@@ -74,11 +77,26 @@ public final class PortalTestCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("test")
-            .executes(ctx -> runTest(ctx.getSource()))
-            .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())));
+            .executes(ctx -> runTest(ctx.getSource(), null))
+            .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
+            // Naming the room tests one the author is not standing in — what the X menu's button
+            // sends, since a tile can be selected from anywhere in the browser.
+            .then(Commands.argument("room", StringArgumentType.word())
+                .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                    games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
+                        games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM), builder))
+                .executes(ctx -> runTest(ctx.getSource(), StringArgumentType.getString(ctx, "room"))));
     }
 
-    private static int runTest(CommandSourceStack source) {
+    /**
+     * Stand up {@code roomName}, or the room whose plot the player is standing in when it is null.
+     *
+     * <p>Standing in it was once the only way to name one, which made Test the Carriage unreachable
+     * for a tile selected from across the browser — the room is stamped in its own band in the
+     * basement either way, and where the author happens to be standing has never been part of what
+     * it tests.</p>
+     */
+    private static int runTest(CommandSourceStack source, String roomArg) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -96,12 +114,24 @@ public final class PortalTestCommand {
             runBack(source);
         }
 
-        String roomName = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
-        if (roomName == null) {
-            source.sendFailure(Component.literal(
-                "Stand in a dimensional carriage plot first — this tests the room you are in. "
-                    + "Try /dungeontrain editor portals.").withStyle(ChatFormatting.RED));
-            return 0;
+        String roomName;
+        if (roomArg != null && !roomArg.isBlank()) {
+            roomName = games.brennan.dungeontrain.track.variant.TrackVariantRegistry
+                .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, roomArg)
+                .orElse(null);
+            if (roomName == null) {
+                source.sendFailure(Component.literal("Unknown dimensional carriage '" + roomArg + "'.")
+                    .withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        } else {
+            roomName = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+            if (roomName == null) {
+                source.sendFailure(Component.literal(
+                    "Name a dimensional carriage to test, or stand in one's plot — "
+                        + "/dungeontrain portal test <room>.").withStyle(ChatFormatting.RED));
+                return 0;
+            }
         }
 
         // The room as authored, so what is tested is what was built: its own size and its own
@@ -112,10 +142,32 @@ public final class PortalTestCommand {
         //
         // The basement rather than PortalTwinSpace.regionFor, because the basement is the region this
         // command actually stamps into — originFor stands the lane on the build floor.
-        Vec3i authored = PortalRoomSizes.sizeOf(roomName, dims);
-        PortalRoomSettings settings = PortalRoomSettings.of(roomName);
+        //
+        // Read off the TEMPLATE, not off PortalRoomSizes: the box and the blocks put into it have to
+        // be the same size, and only the template can answer for both. PortalRoomSizes is a
+        // process-wide cache with a `pending` override for a plot resize that disk does not have
+        // yet, so it drifts from the template in both directions — and a box that disagrees sends
+        // stampRoomAt down its resize branch, which lays the built-in shell and clips the authored
+        // room to the box. Either way an edge of the room is not the author's. Under endless
+        // repetition every tile inherits it, because the tiler stamps all of them from this one
+        // size. This is the call planStructure makes in play, so a test now sizes the room exactly
+        // as a player would meet it.
+        Vec3i authoredSize = PortalRoomTemplateStore.sizeOf(overworld, roomName, dims);
+        PortalRoomSettings authored = PortalRoomSettings.of(roomName);
+
+        // A plot resized but not saved: the test can only stand up what is on disk, so say so rather
+        // than stamping the last save and letting the author read it as their new room.
+        Vec3i plot = PortalRoomSizes.sizeOf(roomName, dims);
+        if (!plot.equals(authoredSize)) {
+            source.sendSuccess(() -> Component.literal(
+                "'" + roomName + "' is " + plot.getX() + "x" + plot.getY() + "x" + plot.getZ()
+                    + " in the plot but " + authoredSize.getX() + "x" + authoredSize.getY() + "x"
+                    + authoredSize.getZ() + " on disk — testing what was saved. Save it to test the "
+                    + "size you are building."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
         PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
-        Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authored);
+        Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authoredSize);
 
         // The one thing a twin has to do is fit in the space it is stamped into, and this command
         // never asked. In play a pair that does not fit simply goes without a twin
@@ -131,13 +183,32 @@ public final class PortalTestCommand {
                     + ". Make it shorter to test it here.").withStyle(ChatFormatting.RED));
             return 0;
         }
-        if (roomSize.getY() < authored.getY()) {
+        if (roomSize.getY() < authoredSize.getY()) {
             int held = roomSize.getY();
             source.sendSuccess(() -> Component.literal(
-                "'" + roomName + "' is " + authored.getY() + " tall and this world can only stand up "
+                "'" + roomName + "' is " + authoredSize.getY() + " tall and this world can only stand up "
                     + held + " — testing it at that height, which is what a player would walk into."
             ).withStyle(ChatFormatting.YELLOW), false);
         }
+        // A chunk dimension stands its doorways on the ground its sample landed, so there is nothing
+        // to stamp until that sample is in hand. In play the pair simply waits a tick; an author who
+        // asked out loud gets told, and the sampling they just started is finished by the time they
+        // read the message.
+        PortalRoomSettings settings = authored;
+        if (authored.mode().generatesTerrain()) {
+            games.brennan.dungeontrain.portal.PortalChunkSlice slice =
+                games.brennan.dungeontrain.portal.PortalChunkTerrain.slice(
+                    overworld, PortalTestSession.PAIR_KEY, roomName);
+            if (slice == null) {
+                source.sendFailure(Component.literal(
+                    "'" + roomName + "' is still sampling its chunk of world generation — run this "
+                        + "again in a second.").withStyle(ChatFormatting.YELLOW));
+                return 0;
+            }
+            settings = games.brennan.dungeontrain.portal.PortalChunkDoors.fit(authored, slice, dims,
+                PortalCarriageBuilder.layoutFor(dims, PortalCorridorKind.DEFAULT), roomSize);
+        }
+
         // Both entry-door offsets, clamped exactly as roomOrigin will clamp them: the raw authored
         // values can sit outside what this room's width and height can spend, and re-deriving either
         // the stamp height or the doorway from an unclamped number lands beside the opening rather
@@ -183,6 +254,10 @@ public final class PortalTestCommand {
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
         DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, roomName));
+        // The room's own light. In play PortalCarriageEvents sends this to whoever stands inside a
+        // live pair's room, on the same box; a test session is not a pair, so nothing there sees
+        // it, and a room set to Daylight tested dark — which is precisely what the test is for.
+        sendSky(player, dims, layout, structure);
 
         LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}",
             roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
@@ -192,6 +267,18 @@ public final class PortalTestCommand {
             "You're in the doorway of '" + roomName + "' — a corridor each side, no train attached. "
                 + "Back in the menu returns you to the plot.").withStyle(ChatFormatting.AQUA), false);
         return 1;
+    }
+
+    /** The same lift the live path sends — {@code PortalCarriageEvents.sendSkyFor} — for this one player. */
+    private static void sendSky(ServerPlayer player, CarriageDims dims, PortalCarriageLayout layout,
+                                PortalStructure structure) {
+        games.brennan.dungeontrain.portal.PortalRoomSky sky = structure.settings().sky();
+        if (!sky.lights() || !games.brennan.dungeontrain.config.DungeonTrainConfig.isPortalRoomDaylight()) return;
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.inWorld(
+            structure.tiledMinX(dims, layout), roomOrigin.getY(), structure.tiledMinZ(dims, layout),
+            structure.tiledMaxX(dims, layout), roomOrigin.getY() + structure.roomSize().getY() - 1,
+            structure.tiledMaxZ(dims, layout), sky.ordinal()));
     }
 
     private static int runBack(CommandSourceStack source) {
@@ -221,14 +308,20 @@ public final class PortalTestCommand {
             player.setGameMode(session.previousGameType());
         }
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
+        DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.none());
 
-        // Take the room's fog, daylight and train audio back. The same call the ticker makes, run
-        // once more now that the player is standing outside the structure: the send pass finds
-        // nobody inside and the clear pass lifts all three. Without it the ticker simply stops —
-        // the session is gone — and they would walk around the plot still fogged.
+        // Take the room's fog, daylight, train audio and depth disguise back. The same call the
+        // ticker makes, run once more now that the player is standing outside the structure: the send
+        // pass finds nobody inside and the clear pass lifts all four. Without it the ticker simply
+        // stops — the session is gone — and they would walk around the plot still fogged.
+        //
+        // groundY only reaches the send pass, which finds nobody; it is read off the world anyway so
+        // that this call cannot be the one that disagrees with the ticker about the disguise.
         PortalCarriageEvents.sendRoomAmbience(dims,
             PortalCarriageBuilder.layoutFor(dims, session.structure().kind()),
-            session.structure(), java.util.List.of(player));
+            session.structure(),
+            DungeonTrainWorldData.get(overworld).getTrainY(),
+            java.util.List.of(player));
 
         // Sweep the whole WINDOW, not just the base room. footprintOf is deliberately blind to
         // tiling — copies are laid around the corridors rather than through them — so clearing only

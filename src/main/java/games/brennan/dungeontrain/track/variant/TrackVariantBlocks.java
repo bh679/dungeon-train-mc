@@ -241,7 +241,7 @@ public final class TrackVariantBlocks {
 
         Map<BlockPos, List<VariantState>> kept = new LinkedHashMap<>(entries);
         Map<BlockPos, Integer> keptLocks = new LinkedHashMap<>(lockIds);
-        String contextId = (kind == null ? "?" : kind.id()) + ":" + name;
+        String contextId = (kind == null ? "builder" : kind.id()) + ":" + name;
         for (BlockPos pos : outside) {
             kept.remove(pos);
             keptLocks.remove(pos);
@@ -282,10 +282,14 @@ public final class TrackVariantBlocks {
      */
     private static TrackVariantBlocks parse(Reader reader, TrackKind kind, String name,
                                              String origin) {
+        // Null kind is a detached document with no track template behind it — the Train Builder's
+        // per-world sidecar (see BuilderVariantStore). Only the log context and the default mirror
+        // axes read the kind, and both have an answer without one.
+        String kindId = kind == null ? "builder" : kind.id();
         JsonElement root = JsonParser.parseReader(reader);
         if (!root.isJsonObject()) {
             LOGGER.warn("[DungeonTrain] Track variant sidecar {}:{} ({}) is not a JSON object — ignoring.",
-                kind.id(), name, origin);
+                kindId, name, origin);
             return emptyFor(kind);
         }
         JsonObject obj = root.getAsJsonObject();
@@ -293,7 +297,7 @@ public final class TrackVariantBlocks {
             int v = obj.get("schemaVersion").getAsInt();
             if (v > CURRENT_SCHEMA_VERSION) {
                 LOGGER.warn("[DungeonTrain] Track variant sidecar {}:{} ({}) schemaVersion {} (newer than {}) — best-effort parse.",
-                    kind.id(), name, origin, v, CURRENT_SCHEMA_VERSION);
+                    kindId, name, origin, v, CURRENT_SCHEMA_VERSION);
             }
         }
         // Optional top-level mirror axes. Absent → this kind's default (tunnels
@@ -319,7 +323,7 @@ public final class TrackVariantBlocks {
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
-        String contextId = kind.id() + ":" + name;
+        String contextId = kindId + ":" + name;
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = CarriageVariantBlocks.parsePos(field.getKey());
             if (pos == null) {

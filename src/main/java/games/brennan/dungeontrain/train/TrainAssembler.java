@@ -732,6 +732,10 @@ public final class TrainAssembler {
         // the appender's wait-for-Sable-settle tracker so the first
         // post-wipe spawn doesn't get gated on a now-deleted ship's AABB.
         Trains.clearRegistry();
+        // Held groups are not in findAll() and so survive the delete loop above; drop DT's
+        // record of them too, or they would answer isHeld for the freshly spawned train's
+        // re-used anchors.
+        games.brennan.dungeontrain.ship.sable.SableHoldingIndex.clear();
         // A regenerated train re-rolls every index, so last train's identities must not survive
         // to be reported for the new one.
         PlacedCarriageFacts.clear();

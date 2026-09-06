@@ -55,6 +55,15 @@ import org.slf4j.LoggerFactory;
  * copy the pin silently becomes a no-op and the bug returns without a compile error. Re-verify that,
  * plus {@code SubLevelPhysicsSystem.IN_PHYSICS_STEP} and {@code RigidBodyHandle.of/isValid/teleport},
  * on any {@code sable_version} bump. Verified against {@code sable-2.0.2+mc1.21.1}.</p>
+ *
+ * <p><b>Since the mass-upload guard landed, this class is a backstop rather than the primary
+ * defence.</b> {@code MergedMassTrackerPivotFreezeMixin} cancels {@code MergedMassTracker.uploadData}
+ * for a DT carriage, so the pivot no longer moves in the first place and there is no compensating
+ * teleport to undo — that removed the jitter this after-the-fact correction could only chase
+ * (deleting one side of a carriage used to walk the pivot half a block, ~90 corrections deep). The
+ * pin stays for any path the guard does not cover, which makes its {@code [pinCorrected]} log line a
+ * tripwire: a drift materially above {@link #PIVOT_EPSILON} means the guard stopped applying (a
+ * Sable refactor of {@code uploadData}, say) and should be investigated, not ignored.</p>
  */
 public final class CarriagePivotPin {
 
