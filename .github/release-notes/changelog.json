@@ -11432,6 +11432,22 @@
       "released": true,
       "released_in": "v0.802.0",
       "released_at": "2026-09-05T18:37:17Z"
+    },
+    {
+      "id": "portal-twin-seal-render",
+      "version": "0.803.0",
+      "type": "fix",
+      "title": "Dimensional carriages no longer show the world they are hidden in",
+      "summary": "A dimensional carriage is really a copy of the carriage built into sealed space under the world, and until now you could see straight through that seal. Standing in one, the bedrock overhead read as a rock ceiling over a room that is meant to look like a carriage; where the train's upside-down stretch opens the floor of the world, the train itself sailed past above you. Looking down from the train, the hidden rooms hung there in mid-air. Now neither side draws the other.",
+      "highlights": [
+        "No bedrock ceiling over a dimensional carriage, and no train overhead where the world's floor is open.",
+        "Looking down from the train no longer shows the hidden rooms below it.",
+        "Can be switched off with the Twin Seal Culling client setting."
+      ],
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
