@@ -107,6 +107,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "ender": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "foundation": {
     "weight": 1,
     "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30"
