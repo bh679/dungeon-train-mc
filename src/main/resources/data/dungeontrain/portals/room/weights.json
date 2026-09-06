@@ -181,6 +181,14 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/fit"
   },
+  "romanhuge": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "romanpillars": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "sanemaze": {
     "weight": 1,
     "mode": "bedrock_lock"
@@ -198,6 +206,10 @@
   "skymaze": {
     "weight": 1,
     "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
+  },
+  "sloped": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/nether"
   },
   "smalllibrary": {
     "weight": 1,
@@ -222,7 +234,7 @@
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
   },
   "window": {
-    "weight": 2,
+    "weight": 1,
     "maxLevel": 10,
     "mode": "bedrockless"
   },
