@@ -13,7 +13,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Carriage rotation lock, native side — the third clamp, closing the gap the other two leave.
+ * Carriage rotation lock, native side — the third clamp, closing the gap the other two leave, and
+ * the trigger that makes the native body immovable (see {@code dungeonTrain$immovableBodyId}).
  *
  * <p>{@link SubLevelPhysicsSystemRotationLockMixin} flattens the pose Sable reads back and
  * {@link RapierPipelineRotationLockMixin} strips the angular half of every impulse that goes
@@ -48,12 +49,30 @@ public abstract class ServerSubLevelRotationLockMixin {
     @Unique private static final Vector3d DUNGEON_TRAIN$SPIN = new Vector3d();
     @Unique private static final Vector3d DUNGEON_TRAIN$NO_LINEAR = new Vector3d();
 
+    /**
+     * Runtime id of the native body that last had {@link games.brennan.dungeontrain.ship.sable.ImmovableMassData}
+     * pushed to it. Sable re-creates bodies (cull→reload, split), and each new body comes up with the
+     * carriage's real mass, so the push is keyed on the body, not the sub-level. No initializer —
+     * mixins can't run them — hence the separate {@code pushed} flag rather than a sentinel.
+     */
+    @Unique private int dungeonTrain$immovableBodyId;
+    @Unique private boolean dungeonTrain$immovablePushed;
+
     @Inject(method = "applyQueuedForces", at = @At("HEAD"))
     private void dungeonTrain$killNativeSpin(SubLevelPhysicsSystem system, RigidBodyHandle handle,
                                              double dt, CallbackInfo ci) {
         ServerSubLevel self = (ServerSubLevel) (Object) this;
         if (!TrainRotationLock.isLocked(self) || PhysicsFreeze.isFrozen(self)) return;
         if (handle == null || !handle.isValid()) return;
+        // Make this native body immovable the first time we see it: onStatsChanged re-pushes the
+        // carriage's mass properties, and RapierPipelineRotationLockMixin swaps them for zero
+        // mass / zero inertia on the way to Rapier. Once per body — see the field note above.
+        int bodyId = self.getRuntimeId();
+        if (!dungeonTrain$immovablePushed || dungeonTrain$immovableBodyId != bodyId) {
+            system.getPipeline().onStatsChanged(self);
+            dungeonTrain$immovableBodyId = bodyId;
+            dungeonTrain$immovablePushed = true;
+        }
         handle.getAngularVelocity(DUNGEON_TRAIN$SPIN);
         if (DUNGEON_TRAIN$SPIN.lengthSquared() == 0.0) return;
         handle.addLinearAndAngularVelocity(DUNGEON_TRAIN$NO_LINEAR, DUNGEON_TRAIN$SPIN.negate());

@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.mixin;
 
 import dev.ryanhcode.sable.api.physics.PhysicsPipelineBody;
+import dev.ryanhcode.sable.api.physics.mass.MassData;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import games.brennan.dungeontrain.ship.sable.ImmovableMassData;
 import games.brennan.dungeontrain.ship.sable.TrainRotationLock;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
@@ -10,6 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -29,6 +33,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *       carriage's velocity from its driver every tick anyway, so nothing is lost.</li>
  *   <li>{@code teleport} — the rotation argument is replaced with identity, so no caller can park a
  *       locked carriage at an angle.</li>
+ *   <li>{@code onStatsChanged} — the {@code MassData} handed to {@code Rapier3D.setMassPropertiesFrom}
+ *       is swapped for {@link ImmovableMassData}: zero mass, zero inertia. This is the one that makes
+ *       the body <em>immovable</em> — zero inverse mass means Rapier's contact solver cannot shove
+ *       or turn it when it brushes a world block or a neighbouring carriage, which no amount of
+ *       velocity-cancelling after the fact could fully hide. Pushed by
+ *       {@link ServerSubLevelRotationLockMixin} once per native body.</li>
  * </ul>
  *
  * <p>{@code addLinearAndAngularVelocity} is deliberately <b>not</b> gated:
@@ -59,6 +69,31 @@ public abstract class RapierPipelineRotationLockMixin {
     private void dungeonTrain$dropPointImpulse(PhysicsPipelineBody body, Vector3dc impulse,
                                                Vector3dc point, CallbackInfo ci) {
         if (TrainRotationLock.isLocked(body)) ci.cancel();
+    }
+
+    /**
+     * The sub-level {@code onStatsChanged} is currently pushing, so the {@code @ModifyArg} below can
+     * decide per body. Server thread only; {@code onStatsChanged} does not re-enter.
+     */
+    @Unique private static ServerSubLevel dungeonTrain$statsFor;
+
+    @Inject(method = "onStatsChanged", at = @At("HEAD"))
+    private void dungeonTrain$rememberStatsTarget(ServerSubLevel subLevel, CallbackInfo ci) {
+        dungeonTrain$statsFor = subLevel;
+    }
+
+    @Inject(method = "onStatsChanged", at = @At("RETURN"))
+    private void dungeonTrain$forgetStatsTarget(ServerSubLevel subLevel, CallbackInfo ci) {
+        dungeonTrain$statsFor = null;
+    }
+
+    /** {@code MassData} arg of {@code Rapier3D.setMassPropertiesFrom(scene, id, data)}. */
+    @ModifyArg(method = "onStatsChanged",
+        at = @At(value = "INVOKE",
+            target = "Ldev/ryanhcode/sable/physics/impl/rapier/Rapier3D;setMassPropertiesFrom(JILdev/ryanhcode/sable/api/physics/mass/MassData;)V"),
+        index = 2)
+    private MassData dungeonTrain$immovableMass(MassData measured) {
+        return TrainRotationLock.isLocked(dungeonTrain$statsFor) ? new ImmovableMassData(measured) : measured;
     }
 
     /** Rotation arg of {@code teleport(body, position, rotation)}. */
