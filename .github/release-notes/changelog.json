@@ -11485,9 +11485,9 @@
       ],
       "pr": 1314,
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.811.0",
+      "released_at": "2026-09-06T15:02:28Z"
     },
     {
       "id": "duplicate-overlapping-carriages",
@@ -11501,9 +11501,9 @@
         "Adds a safety net that clears a stacked carriage if one still slips through, never while you are standing in it."
       ],
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.811.0",
+      "released_at": "2026-09-06T15:02:28Z"
     },
     {
       "id": "starting-books-room-to-breathe",
@@ -11514,9 +11514,9 @@
       "highlights": [],
       "pr": 1316,
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.811.0",
+      "released_at": "2026-09-06T15:02:28Z"
     },
     {
       "id": "portal-room-content-pass-sept",
@@ -11529,9 +11529,9 @@
         "More block variety in the backrooms, bigger, small library and ender carriages"
       ],
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.811.0",
+      "released_at": "2026-09-06T15:02:28Z",
       "pr": 1315
     },
     {
@@ -11547,9 +11547,9 @@
       ],
       "pr": 1317,
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.811.0",
+      "released_at": "2026-09-06T15:02:28Z"
     },
     {
       "id": "jumps-tnt-templates",
@@ -11559,9 +11559,9 @@
       "summary": "Three new dimensional carriages join the rotation, and the pillared ones have more block variety.",
       "highlights": [],
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.811.0",
+      "released_at": "2026-09-06T15:02:28Z",
       "pr": 1318
     },
     {
@@ -11576,9 +11576,9 @@
         "Passing close to terrain no longer makes the carriage shudder"
       ],
       "date": "2026-09-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.811.0",
+      "released_at": "2026-09-06T15:02:28Z"
     },
     {
       "id": "relay-advancement-text",
