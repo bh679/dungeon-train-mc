@@ -11579,6 +11579,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "relay-advancement-text",
+      "version": "0.812.0",
+      "type": "feat",
+      "title": "Advancement wording fixes arrive without an update",
+      "summary": "Typos and unclear hints in Dungeon Train's advancements can now be corrected centrally, and your game picks the corrections up the next time you launch \u2014 no need to wait for a new version. Only the English text is affected; every other language keeps the wording it ships with.",
+      "highlights": [
+        "A reworded advancement title, description or pre-earn hint reaches you on the build you already have.",
+        "Hints can be written for advancements that shipped without one.",
+        "Every correction is fetched anonymously, the same way the game already fetches approved player translations."
+      ],
+      "date": "2026-09-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

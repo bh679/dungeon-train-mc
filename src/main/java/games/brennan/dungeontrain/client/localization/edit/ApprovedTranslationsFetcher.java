@@ -49,9 +49,13 @@ public final class ApprovedTranslationsFetcher {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
 
     /**
-     * One fetch per locale per session — approvals are not urgent enough to poll for. A SET rather
+     * One fetch per POOL per session — approvals are not urgent enough to poll for. A SET rather
      * than a single locale because two locales are legitimately in play at once on a dev build: the
      * one being displayed, and the one being edited (see {@link TranslationTarget}).
+     *
+     * <p>Keyed by the pool ({@link TranslationFilters#poolLocaleFor}), not the display locale, so a
+     * client that switches between English variants does not re-fetch the one English pool they all
+     * share.</p>
      */
     private static final Set<String> FETCHED = ConcurrentHashMap.newKeySet();
 
@@ -71,45 +75,56 @@ public final class ApprovedTranslationsFetcher {
      * string had been reviewed.
      */
     public static void fetchOnceFor(String locale) {
-        if (!TranslationScreen.isEditable(locale) || !FETCHED.add(locale)) {
+        String pool = TranslationFilters.poolLocaleFor(locale);
+        if (pool.isEmpty() || !FETCHED.add(pool)) {
             return;
         }
-        fetchAsync(locale);
+        request(pool);
     }
 
     /**
      * Force a fetch for {@code locale}, ignoring the once-per-session guard — the language just
      * changed, or the editor just opened, and either is a moment worth paying a request for.
-     * No-throw. Locales with nothing to translate (English, or one the mod does not ship) are
-     * skipped here so no caller has to remember to check.
+     * No-throw. The pool a locale maps to is resolved here, so no caller has to remember that every
+     * English variant reads one shared source pool.
      */
     public static void fetchAsync(String locale) {
-        if (!TranslationScreen.isEditable(locale)) {
+        String pool = TranslationFilters.poolLocaleFor(locale);
+        if (pool.isEmpty()) {
             return;
         }
-        FETCHED.add(locale); // a later fetchOnceFor for the same locale is then a no-op
+        FETCHED.add(pool); // a later fetchOnceFor for the same pool is then a no-op
+        request(pool);
+    }
+
+    /** Ask the relay for one pool. {@code poolLocale} is already resolved and non-blank. */
+    private static void request(String poolLocale) {
         try {
-            String url = DungeonTrain.relayBaseUrl() + "/translations/pool?locale=" + locale;
+            String url = DungeonTrain.relayBaseUrl() + "/translations/pool?locale=" + poolLocale;
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Accept", "application/json")
                 .GET()
                 .build();
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .whenComplete((resp, err) -> accept(locale, resp, err));
+                .whenComplete((resp, err) -> accept(poolLocale, resp, err));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] Translations: pool request could not start — {}", t.toString());
         }
     }
 
-    private static void accept(String locale, HttpResponse<String> resp, Throwable err) {
+    /**
+     * Install one pool response. {@code poolLocale} is the pool that was asked for — which for an
+     * English client is {@code en_us} whatever variant of English they are displaying.
+     */
+    private static void accept(String poolLocale, HttpResponse<String> resp, Throwable err) {
         try {
             if (err != null || resp == null || resp.statusCode() / 100 != 2) {
                 LOGGER.debug("[DungeonTrain] Translations: pool fetch failed for {} — {}",
-                    locale, err != null ? err.toString() : "HTTP " + (resp == null ? "?" : resp.statusCode()));
+                    poolLocale, err != null ? err.toString() : "HTTP " + (resp == null ? "?" : resp.statusCode()));
                 return;
             }
-            ApprovedPool pool = parse(locale, resp.body(), VersionInfo.VERSION);
+            ApprovedPool pool = parse(poolLocale, resp.body(), VersionInfo.VERSION);
             if (pool == null) {
                 return;
             }
@@ -118,7 +133,7 @@ public final class ApprovedTranslationsFetcher {
             if (withheld > 0) {
                 LOGGER.debug("[DungeonTrain] Translations: {} approved override(s) for {} were "
                     + "written for a newer build than {} and are not applied.",
-                    withheld, locale, VersionInfo.VERSION);
+                    withheld, poolLocale, VersionInfo.VERSION);
             }
             // Installing touches the language, which is render-thread state.
             Minecraft mc = Minecraft.getInstance();
@@ -130,15 +145,16 @@ public final class ApprovedTranslationsFetcher {
                 // before the applied layer so a translator never sees a string as "needs a human"
                 // that the overlay has just been handed.
                 TranslationOverrideStore.save(TranslationOverrideStore.Layer.APPROVED_ALL, pool.all());
-                RelayTranslationCredits.put(locale, pool.contributors());
+                RelayTranslationCredits.put(poolLocale, pool.contributors());
                 // The locale can have changed while the request was in flight; applying a stale
                 // locale's overrides would put German text on a French client.
                 boolean stored;
-                if (locale.equals(TranslationOverrides.locale())) {
+                if (poolLocale.equals(
+                        TranslationFilters.poolLocaleFor(TranslationOverrides.locale()))) {
                     stored = TranslationOverrides.replaceApproved(approved);
                     if (stored && !approved.isEmpty()) {
                         LOGGER.info("[DungeonTrain] Translations: applied {} approved override(s) for {}.",
-                            approved.size(), locale);
+                            approved.size(), poolLocale);
                     }
                 } else {
                     // A locale the client is NOT displaying — the dev build's edit target. Cache the
@@ -149,7 +165,7 @@ public final class ApprovedTranslationsFetcher {
                         TranslationOverrideStore.Layer.APPROVED, approved);
                     if (stored && !approved.isEmpty()) {
                         LOGGER.info("[DungeonTrain] Translations: cached {} approved override(s) for {} "
-                            + "(not the displayed language, so not applied).", approved.size(), locale);
+                            + "(not the displayed language, so not applied).", approved.size(), poolLocale);
                     }
                 }
                 if (!stored) {
@@ -163,7 +179,7 @@ public final class ApprovedTranslationsFetcher {
                 // The editor may be open on this very locale — drop the newly-approved rows out of
                 // its queue now rather than making the translator reopen the screen to find out.
                 if (mc.screen instanceof TranslationScreen editor) {
-                    editor.onApprovedFetched(locale);
+                    editor.onApprovedFetched(poolLocale);
                 }
             });
         } catch (Throwable t) {
