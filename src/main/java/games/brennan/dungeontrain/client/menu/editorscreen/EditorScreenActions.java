@@ -162,13 +162,13 @@ public final class EditorScreenActions {
             case CONTENTS -> EditorMenuScreen.isReservedContentsBuiltin(id) ? null
                 : new CommandMenuEntry.TypeArg(label, "new_name",
                     "dungeontrain editor contents rename " + id, "", id);
-            // A room is a portal_room track variant under the hood, so the kind is spelled out here
-            // rather than implied — the command node takes (kind, name, new_name) for tracks and
-            // rooms alike. The server refuses a room that only ships bundled, and says why.
+            // A room is a track variant under the hood and its key is spelled like one: modelId is
+            // the KIND token (portal_room) and modelName is the room — the same pair the weight and
+            // phase commands beside this one send. Naming the room with modelId is what produced
+            // "Unknown portal_room 'portal_room'". The typed field starts on the current name.
             case PORTALS -> new CommandMenuEntry.TypeArg(label, "new_name",
-                "dungeontrain editor portals rename "
-                    + games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id() + " " + id,
-                "", id);
+                "dungeontrain editor portals rename " + id + " " + sel.modelName(),
+                "", sel.modelName());
             // Parts rename through their own kind:name verb; tracks have the command but no pane
             // selection to address it with yet.
             case PARTS, TRACKS, ARCHITECTURE -> null;
