@@ -2,7 +2,10 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.portal.PortalSealPlane;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 
 /**
  * The seal cut in force this frame — the client half of {@link PortalSealPlane}, and the one thing
@@ -31,7 +34,7 @@ public final class ClientPortalSeal {
      * level is drawn, so the frame a portal swap lands on is already cut correctly.
      */
     public static void beginFrame(double cameraX, double cameraY) {
-        if (!ClientDisplayConfig.isPortalTwinSealCulling()) {
+        if (!ClientDisplayConfig.isPortalTwinSealCulling() || !inTheSyncedWorld()) {
             cut = PortalSealPlane.Cut.NONE;
             return;
         }
@@ -40,6 +43,21 @@ public final class ClientPortalSeal {
             ClientUpsideDownBand.roofY(),
             ClientUpsideDownBand.isInBand(Mth.floor(cameraX)),
             cameraY);
+    }
+
+    /**
+     * Whether the camera is in the world the synced planes actually describe — the overworld.
+     *
+     * <p><b>Load-bearing, not a tidiness check.</b> {@code bedrockY} is measured off the
+     * <i>overworld's</i> chunk generator and sent once on login ({@code VoidBandSyncPacket}), so it
+     * says nothing about any other dimension. The Train Builder's dimension starts at Y 0 and stands
+     * its plots on that floor; an overworld terrain floor of 32 applied there would cut the entire
+     * build away. The other portal client caches self-disable outside the overworld for the same
+     * reason — see {@code VoidSkyEvents} and {@code UpsideDownFogEvents}.</p>
+     */
+    private static boolean inTheSyncedWorld() {
+        ClientLevel level = Minecraft.getInstance().level;
+        return level != null && level.dimension().equals(Level.OVERWORLD);
     }
 
     /** Forget the cut. Wired to logging out, so a seal never leaks into the next world. */
