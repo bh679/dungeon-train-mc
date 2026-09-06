@@ -11378,12 +11378,12 @@
       "id": "new-carriage-contents-and-portal-room",
       "version": "0.800.0",
       "type": "content",
-      "title": "New carriage contents and a new portal room",
-      "summary": "Eight new carriage interiors to furnish trains with, a new animal-themed carriage, and a new portal room populated by hostile wildlife.",
+      "title": "New carriage contents and a new dimensional carriage",
+      "summary": "Eight new carriage interiors to furnish trains with, a new animal-themed carriage, and a new dimensional carriage populated by hostile wildlife.",
       "highlights": [
         "Eight new carriage contents, adding fresh interiors and loot for trains to roll",
         "A new animal-themed carriage content",
-        "A new portal room featuring a pack of hostile animals"
+        "A new dimensional carriage featuring a pack of hostile animals"
       ],
       "date": "2026-09-06",
       "released": false,
