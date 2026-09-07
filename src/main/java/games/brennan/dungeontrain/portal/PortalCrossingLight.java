@@ -65,6 +65,33 @@ public final class PortalCrossingLight {
     public static final double OFF = 0.0;
 
     /**
+     * How far <b>outside</b> the train-side door the ramp begins, in blocks.
+     *
+     * <p><b>The ramp used to start at the door and that was too late.</b> A player is swapped by the
+     * facing rule from one block inside it ({@link PortalFacing}), which is where the ramp still read
+     * zero — so walking into a corridor whose contents carry no lamps of their own landed the player
+     * in the dark, and the lift then rose under them as they walked on. A dimensional carriage is
+     * entered from the neighbouring carriage, so the transition has somewhere to begin: five blocks
+     * of the approach, which is a pace or two before the doorway and well inside the range at which
+     * the pair is being ticked at all ({@code PortalCarriageEvents.APPROACH_RANGE}).</p>
+     *
+     * <p>It changes where the ramp starts, not what it is: still one transition, still eased at both
+     * ends, still identical either side of a swap.</p>
+     */
+    public static final int LEAD_IN_BLOCKS = 5;
+
+    /**
+     * How far through the transition the train-side <b>door block</b> is.
+     *
+     * <p>Fixed rather than falling out of the arithmetic, and that is the point: the approach and the
+     * corridor are mapped onto their own halves of the ramp, so the doorway reads the same wherever
+     * it is and a sixteen-block corridor does not start its player darker than a seven-block one.
+     * Half, because the doorway is the boundary — the walk up to it and the walk down it are the two
+     * halves of one crossing, and the swap fires a block inside, comfortably above this.</p>
+     */
+    private static final double AT_TRAIN_DOOR = 0.5;
+
+    /**
      * The ramp at {@code localX} in a corridor of this layout and role: {@link #OFF} through the
      * train-side door block, {@code 1} from the room-side one, and a straight line between.
      *
@@ -90,17 +117,49 @@ public final class PortalCrossingLight {
      */
     public static double intensityAt(double localX, PortalCarriageLayout layout,
                                      PortalCarriageRole role) {
-        int length = layout.length();
-        double depth = PortalFacing.depthFromTrainDoor(localX, length, role);
+        return intensityAtDepth(depthWithLeadIn(localX, layout.length(), role), layout.length());
+    }
 
-        // Train-side door block to one in from the room-side one.
+    /**
+     * The ramp at a given depth from the train-side door, where negative depths are the approach
+     * outside it.
+     *
+     * <p>Split out because the approach is not in the corridor at all: {@link PortalFrames} has to
+     * measure the depth itself for a position in the carriage in front of the doorway, and both
+     * callers must land on one curve or the walk through the door would have a step in it.</p>
+     */
+    public static double intensityAtDepth(double depth, int length) {
+        // Train-side door block to one in from the room-side one, plus the approach ahead of it.
         int span = PortalFacing.lastRampBlock(length);
         // A corridor with nothing to cross has no transition to make; MIN_LENGTH rules it out, and
         // this is here so that loosening that constant cannot turn into a division by zero.
         if (span <= 0) return depth > 0 ? 1.0 : OFF;
 
-        double t = Math.max(0.0, Math.min(1.0, depth / span));
+        // Two segments onto one curve: the approach fills the first half, the corridor the second,
+        // meeting at the doorway. Monotone across the join, so the walk has no step in it.
+        double t;
+        if (depth >= 0) {
+            t = AT_TRAIN_DOOR + (1.0 - AT_TRAIN_DOOR) * (depth / span);
+        } else {
+            t = AT_TRAIN_DOOR * (depth + LEAD_IN_BLOCKS) / LEAD_IN_BLOCKS;
+        }
+        t = Math.max(0.0, Math.min(1.0, t));
         return t * t * (3.0 - 2.0 * t);
+    }
+
+    /**
+     * Corridor-local X as a depth from the train-side door, running <b>negative</b> through the
+     * approach and clamping to {@code -LEAD_IN_BLOCKS} beyond it.
+     *
+     * <p>{@link PortalFacing#depthFromTrainDoor} clamps to the corridor's own end blocks, which is
+     * right for the facing rule — a swap decision is about the corridor — and wrong here, where the
+     * whole point is the blocks in front of it. Mirrored by role the same way: {@code ENTRY} has the
+     * train at low local X, {@code EXIT} at high.</p>
+     */
+    public static double depthWithLeadIn(double localX, int length, PortalCarriageRole role) {
+        double block = Math.floor(localX);
+        double depth = role == PortalCarriageRole.ENTRY ? block : (length - 1) - block;
+        return Math.max(-LEAD_IN_BLOCKS, Math.min(length - 1, depth));
     }
 
     /** The wire form: {@code 0}..{@code 255}, which is all the resolution an eased lift can show. */

@@ -34,16 +34,29 @@ final class PortalCrossingLightTest {
             PortalCarriageLayout l = layout(length);
 
             // ENTRY puts the train at low local X, EXIT at high — the mirror PortalFacing carries.
+            // The ramp now STARTS a lead-in outside the train door, so the door block itself is
+            // already part of the way up: a player swapped from one block inside it (PortalFacing)
+            // must not land at nothing. OFF belongs to the far end of the approach.
             assertEquals(PortalCrossingLight.OFF,
+                PortalCrossingLight.intensityAt(
+                    l.nearDoorX() - PortalCrossingLight.LEAD_IN_BLOCKS + 0.5, l,
+                    PortalCarriageRole.ENTRY),
+                1e-9, "ENTRY approach start at length " + length);
+            assertEquals(0.5,
                 PortalCrossingLight.intensityAt(l.nearDoorX() + 0.5, l, PortalCarriageRole.ENTRY),
-                1e-9, "ENTRY train door at length " + length);
+                1e-9, "ENTRY train door is half way at length " + length);
             assertEquals(1.0,
                 PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l, PortalCarriageRole.ENTRY),
                 1e-9, "ENTRY room door at length " + length);
 
             assertEquals(PortalCrossingLight.OFF,
+                PortalCrossingLight.intensityAt(
+                    l.farDoorX() + PortalCrossingLight.LEAD_IN_BLOCKS + 0.5, l,
+                    PortalCarriageRole.EXIT),
+                1e-9, "EXIT approach start at length " + length);
+            assertEquals(0.5,
                 PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l, PortalCarriageRole.EXIT),
-                1e-9, "EXIT train door at length " + length);
+                1e-9, "EXIT train door is half way at length " + length);
             assertEquals(1.0,
                 PortalCrossingLight.intensityAt(l.nearDoorX() + 0.5, l, PortalCarriageRole.EXIT),
                 1e-9, "EXIT room door at length " + length);
@@ -65,11 +78,15 @@ final class PortalCrossingLightTest {
             PortalCarriageLayout l = layout(length);
             PortalCarriageRole role = PortalCarriageRole.ENTRY;
             int last = PortalFacing.lastRampBlock(length);
-            double even = 1.0 / last;
+            int lead = PortalCrossingLight.LEAD_IN_BLOCKS;
+            // An even share over the WHOLE transition, which now begins out in the approach.
+            double even = 1.0 / (lead + last);
 
-            assertEquals(PortalCrossingLight.OFF,
+            // Half, not off: the ramp starts out in the approach now, and the doorway is its
+            // midpoint at every length. See PortalCrossingLight.LEAD_IN_BLOCKS.
+            assertEquals(0.5,
                 PortalCrossingLight.intensityAt(0.5, l, role), 1e-9,
-                "train door block should be off at length " + length);
+                "train door block should be half way at length " + length);
             assertEquals(1.0,
                 PortalCrossingLight.intensityAt(last + 0.5, l, role), 1e-9,
                 "last ramp block should be full at length " + length);
@@ -77,7 +94,10 @@ final class PortalCrossingLightTest {
                 PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l, role), 1e-9,
                 "the room doorway itself must add nothing at length " + length);
 
-            double firstStep = PortalCrossingLight.intensityAt(1.5, l, role);
+            // The two ends of the transition are the far end of the approach and the last ramp
+            // block — not the doorway, which is its middle and is meant to be the steep part.
+            double firstStep = PortalCrossingLight.intensityAt(-lead + 1.5, l, role)
+                - PortalCrossingLight.intensityAt(-lead + 0.5, l, role);
             double lastStep = 1.0 - PortalCrossingLight.intensityAt((last - 1) + 0.5, l, role);
             assertTrue(firstStep < even * 0.75,
                 "first step " + firstStep + " should be well under an even " + even
@@ -152,14 +172,35 @@ final class PortalCrossingLightTest {
         assertEquals(at, PortalCrossingLight.intensityAt(1.99, l, PortalCarriageRole.ENTRY), 1e-9);
     }
 
-    /** Positions past either end clamp to the end block rather than running negative or past 1. */
+    /**
+     * The train side runs out through the approach and stops at {@link PortalCrossingLight#OFF};
+     * the room side still clamps to full. Nothing runs negative or past 1 in either direction.
+     */
     @Test
-    @DisplayName("positions outside the corridor clamp to its end blocks")
+    @DisplayName("the approach ramps up to the door, and beyond it there is nothing")
     void clampsOutsideTheCorridor() {
         PortalCarriageLayout l = layout(9);
         PortalCarriageRole role = PortalCarriageRole.ENTRY;
-        assertEquals(PortalCrossingLight.intensityAt(0.5, l, role),
-            PortalCrossingLight.intensityAt(-4.0, l, role), 1e-9);
+        int lead = PortalCrossingLight.LEAD_IN_BLOCKS;
+
+        // Walking the approach toward the door: strictly rising, from nothing.
+        double previous = -1.0;
+        for (int x = -lead; x <= 0; x++) {
+            double t = PortalCrossingLight.intensityAt(x + 0.5, l, role);
+            assertTrue(t >= previous, "fell in the approach at " + x);
+            assertTrue(t >= 0.0 && t <= 1.0, "out of range in the approach at " + x);
+            previous = t;
+        }
+        assertEquals(PortalCrossingLight.OFF,
+            PortalCrossingLight.intensityAt(-lead + 0.5, l, role), 1e-9);
+
+        // Further out than the lead-in is off, and stays off however far you go.
+        assertEquals(PortalCrossingLight.OFF,
+            PortalCrossingLight.intensityAt(-lead - 1.0, l, role), 1e-9);
+        assertEquals(PortalCrossingLight.OFF,
+            PortalCrossingLight.intensityAt(-400.0, l, role), 1e-9);
+
+        // The room end is unchanged: past the last ramp block is full.
         assertEquals(PortalCrossingLight.intensityAt(l.farDoorX() + 0.5, l, role),
             PortalCrossingLight.intensityAt(l.length() + 4.0, l, role), 1e-9);
     }

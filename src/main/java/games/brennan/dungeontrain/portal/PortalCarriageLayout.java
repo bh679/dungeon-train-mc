@@ -233,6 +233,26 @@ public record PortalCarriageLayout(int length, int height, int width) {
     public record Bounds(double minX, double minY, double minZ,
                          double maxX, double maxY, double maxZ) {}
 
+    /**
+     * Whether a corridor-local position is in the <b>approach</b> to the train-side door — the
+     * neighbouring carriage's interior in front of the doorway, {@code lead} blocks of it.
+     *
+     * <p>Not part of the corridor, and deliberately shaped like it: the corridor's own Y and Z
+     * bounds, with X taken from outside whichever end this role puts the train at. That is what
+     * makes it the ground a player actually walks to reach the door, rather than a box beside it.
+     * {@link PortalCrossingLight#LEAD_IN_BLOCKS} explains why the ramp needs it.</p>
+     */
+    public boolean insideApproach(double localX, double localY, double localZ,
+                                  PortalCarriageRole role, int lead) {
+        Bounds b = localBounds();
+        if (localY < b.minY() || localY > b.maxY() || localZ < b.minZ() || localZ > b.maxZ()) {
+            return false;
+        }
+        return role == PortalCarriageRole.ENTRY
+            ? localX < b.minX() && localX >= b.minX() - lead
+            : localX > b.maxX() && localX <= b.maxX() + lead;
+    }
+
     /** {@link Bounds} of this corridor. */
     public Bounds localBounds() {
         return new Bounds(
