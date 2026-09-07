@@ -216,6 +216,27 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
         return doc().positionsWithLockId(lockId);
     }
 
+    /**
+     * True only while the build is a dimensional carriage room — the one thing built here that
+     * repeats. The builder holds one build of whatever kind, so the answer is the world's own
+     * sub-type rather than a property of this class.
+     */
+    @Override
+    public boolean supportsPerCopyReroll() {
+        return BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(
+            DungeonTrainWorldData.get(level).builderSubType());
+    }
+
+    @Override
+    public boolean rerollsPerCopy(BlockPos localPos) {
+        return doc().rerollsPerCopy(localPos);
+    }
+
+    @Override
+    public void setRerollsPerCopy(BlockPos localPos, boolean reroll) {
+        doc().setRerollsPerCopy(localPos, reroll);
+    }
+
     @Override
     public Map<BlockPos, Integer> allLockIds() {
         return doc().allLockIds();

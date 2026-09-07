@@ -39,8 +39,20 @@ public record BlockVariantSyncPacket(
     int lockId,
     Vec3 anchorPos,
     Vec3 anchorRight,
-    Vec3 anchorUp
+    Vec3 anchorUp,
+    boolean rerollPerCopy,
+    boolean rerollSupported
 ) implements CustomPacketPayload {
+
+    /**
+     * The shape every call site had before the per-copy reroll flag — a cell in
+     * a plot that does not repeat, which is every plot but a dimensional
+     * carriage room's.
+     */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp, false, false);
+    }
 
     /**
      * Single per-cell candidate, mirrored on the wire. Lock semantics live
@@ -157,6 +169,11 @@ public record BlockVariantSyncPacket(
         buf.writeVarInt(localPos.getY());
         buf.writeVarInt(localPos.getZ());
         buf.writeVarInt(lockId);
+        // Two flags rather than one: the cell's state, and whether the plot repeats at all. The
+        // second is what decides whether the menu draws the button, and the client cannot work it
+        // out — only the server knows which template the plot is a view of.
+        buf.writeBoolean(rerollPerCopy);
+        buf.writeBoolean(rerollSupported);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -193,6 +210,8 @@ public record BlockVariantSyncPacket(
         }
         BlockPos local = new BlockPos(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
         int lockId = buf.readVarInt();
+        boolean reroll = buf.readBoolean();
+        boolean rerollSupported = buf.readBoolean();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -217,7 +236,8 @@ public record BlockVariantSyncPacket(
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive));
         }
-        return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
+        return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
+            reroll, rerollSupported);
     }
 
     @Override

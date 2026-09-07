@@ -1773,7 +1773,11 @@ public final class PortalCarriageBuilder {
             BlockPos world = roomOrigin.offset(local);
             if (mask.covers(world)) continue;
 
-            VariantState picked = sidecar.resolve(local, worldSeed, variantIndex);
+            // A cell the author flagged rolls against this copy's own identity instead of the
+            // room's, so it varies from tile to tile in a room every other cell of which repeats.
+            int cellIndex = sidecar.rerollsPerCopy(local)
+                ? perCopyIndex(variantIndex, tile) : variantIndex;
+            VariantState picked = sidecar.resolve(local, worldSeed, cellIndex);
             if (picked == null) continue;
             if (picked.isMob()) {
                 // The cell itself still has to go: a mob entry carries a COMMAND_BLOCK sentinel as
@@ -1811,10 +1815,29 @@ public final class PortalCarriageBuilder {
             // promotes a PENDING block entity to live before dropping it, which is the whole point of
             // the eviction here — a freshly stamped chest's NBT has not been promoted yet.
             SilentBlockOps.evictBlockEntity(level.getChunkAt(world), world);
+            // The same index the block was picked at, so a flagged chest's contents vary with the
+            // block rather than the block changing over identical loot. Still the pair-and-copy
+            // frame, never the difficulty one — pairKey stays that, see the javadoc above.
             ContainerContentsPlacement.place(level, world, picked.state(), picked.blockEntityNbt(),
-                plotKey, local, worldSeed, variantIndex, /*diffIndex*/ pairKey,
+                plotKey, local, worldSeed, cellIndex, /*diffIndex*/ pairKey,
                 picked.linkedLootPrefabId());
         }
+    }
+
+    /**
+     * The variant index a per-copy cell rolls at: the room's index mixed with the copy's place on
+     * the tiling grid.
+     *
+     * <p>Deliberately the same expression {@code PortalStructure.variantIndexFor} uses for a
+     * {@link PortalRoomCopies.Kind#DYNAMIC} room — a flagged cell is asking for exactly what
+     * Dynamic gives every cell, so it should be given it by the same mix rather than by a second
+     * one that happens to also vary. It stays a pure function of <i>where</i>: the pair's key and a
+     * grid cell, never the stamp. So a copy that retires as the window slides and is stamped again
+     * comes back with the block the player left, which is the promise the whole tiling path is
+     * written around.</p>
+     */
+    private static int perCopyIndex(int variantIndex, PortalRoomTiling.Tile tile) {
+        return java.util.Objects.hash(variantIndex, tile.x(), tile.z());
     }
 
     /**

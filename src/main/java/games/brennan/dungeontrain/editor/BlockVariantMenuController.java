@@ -342,7 +342,8 @@ public final class BlockVariantMenuController {
                 s.difficulty().min(), s.difficulty().max(),
                 s.groupRef(), refLive));
         }
-        return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
+        return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
+            plot.rerollsPerCopy(localPos), plot.supportsPerCopyReroll());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -388,6 +389,10 @@ public final class BlockVariantMenuController {
             cycleLockId(player, plot, localPos);
             games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
                 .trigger(player, "used_block_variant_lock");
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.TOGGLE_REROLL) {
+            toggleRerollPerCopy(player, plot, localPos);
             return;
         }
         if (packet.op() == BlockVariantEditPacket.Op.COPY) {
@@ -896,6 +901,52 @@ public final class BlockVariantMenuController {
         // sees the badge appear/disappear without waiting for the next
         // VariantOverlayRenderer tick.
         VariantOverlayRenderer.pushLockIdSnapshot(player);
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * Flip the cell's per-copy reroll flag — whether it rolls again in each copy
+     * of a repeating dimensional carriage room, or repeats the room's one roll
+     * like everything else under {@code PortalRoomCopies.Kind#EXACT}.
+     *
+     * <p><b>A lock group moves as one.</b> Every cell in a group draws a single
+     * index, so a member that rerolled while its siblings did not would show a
+     * different block from them in every copy but the base — the exact thing the
+     * lock exists to prevent. Flipping any member flips the group.</p>
+     *
+     * <p>Refused where the template does not repeat, and where the cell has no
+     * candidates yet, for the same reasons {@link #cycleLockId} refuses: a flag
+     * with nothing to apply to is a setting the author cannot see the effect
+     * of.</p>
+     */
+    private static void toggleRerollPerCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        if (!plot.supportsPerCopyReroll()) {
+            actionBar(player, "Only a dimensional carriage room repeats — nothing to reroll against",
+                ChatFormatting.YELLOW);
+            return;
+        }
+        if (plot.statesAt(localPos) == null) {
+            actionBar(player, "Add at least one variant first", ChatFormatting.YELLOW);
+            return;
+        }
+        boolean next = !plot.rerollsPerCopy(localPos);
+        plot.setRerollsPerCopy(localPos, next);
+        int lockId = plot.lockIdAt(localPos);
+        if (lockId > 0) {
+            for (BlockPos sibling : plot.positionsWithLockId(lockId)) {
+                if (!sibling.equals(localPos)) plot.setRerollsPerCopy(sibling, next);
+            }
+        }
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] BlockVariantMenu reroll save failed for {}: {}",
+                plot.key(), e.toString());
+            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+        }
+        actionBar(player, next
+            ? "Cell rerolls in every copy of the room"
+            : "Cell repeats the room's roll", ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
     }
 

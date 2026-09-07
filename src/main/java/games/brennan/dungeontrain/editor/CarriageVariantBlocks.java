@@ -138,9 +138,20 @@ public final class CarriageVariantBlocks {
      *       duplicating it. Dead references (missing group, self, cycle) are
      *       dropped from the pool before the roll. Omitted when 0, so v8
      *       entries round-trip diff-clean. See {@link VariantGroupRefs}.</li>
+     *   <li>v10 — adds an optional per-<b>cell</b> {@code "reroll": true}
+     *       inside the v4 cell object. It says the cell may roll again in each
+     *       copy of a repeating dimensional carriage room instead of repeating
+     *       the room's one roll — the per-cell escape hatch from
+     *       {@code PortalRoomCopies.Kind#EXACT}. It means nothing to any other
+     *       sidecar, is written only when set, and is absent-is-false, so v9
+     *       files round-trip diff-clean. See
+     *       {@code TrackVariantBlocks#rerollsPerCopy}.</li>
      * </ul>
      */
-    public static final int CURRENT_SCHEMA_VERSION = 9;
+    public static final int CURRENT_SCHEMA_VERSION = 10;
+
+    /** The v10 per-cell reroll field's key, shared by the cell reader and writer. */
+    static final String REROLL_KEY = "reroll";
 
     static final String SUBDIR = "templates";
     static final String EXT = ".variants.json";
@@ -954,9 +965,17 @@ public final class CarriageVariantBlocks {
     /**
      * Parsed cell — what {@link #parseCellValue} returns. {@code states}
      * is the candidate list, {@code lockId} is the v4 cell-level lock-id
-     * (0 when unlocked or for v1/v2/v3 array-form cells).
+     * (0 when unlocked or for v1/v2/v3 array-form cells), and
+     * {@code rerollPerCopy} is the v10 per-copy reroll flag (false for every
+     * cell that does not carry it, which is every cell authored before v10).
      */
-    public record ParsedCell(List<VariantState> states, int lockId) {}
+    public record ParsedCell(List<VariantState> states, int lockId, boolean rerollPerCopy) {
+
+        /** Two-arg form for the cells that cannot repeat — every sidecar but a portal room's. */
+        public ParsedCell(List<VariantState> states, int lockId) {
+            this(states, lockId, false);
+        }
+    }
 
     /**
      * Parse a {@code "x,y,z" → value} JSON entry into a {@link ParsedCell}.
@@ -965,6 +984,10 @@ public final class CarriageVariantBlocks {
      *   <li>v3 / pre-v4 — bare array of state elements; {@code lockId = 0}.</li>
      *   <li>v4 — object {@code {"lockId":N, "states":[...]}}; lockId is read
      *       from the object (≥0; negatives clamped to 0).</li>
+     *   <li>v10 — the same object may carry {@code "reroll": true}, the
+     *       per-copy reroll flag a repeating dimensional carriage room reads.
+     *       Absent reads as false, so every cell written before v10 keeps the
+     *       one roll its room repeats.</li>
      * </ul>
      * Returns {@code null} when the value is malformed (caller logs).
      * Used by all four block-variant sidecars
@@ -977,6 +1000,7 @@ public final class CarriageVariantBlocks {
                                             String contextId, BlockPos contextPos) {
         JsonArray arr;
         int lockId = 0;
+        boolean reroll = false;
         if (value.isJsonArray()) {
             arr = value.getAsJsonArray();
         } else if (value.isJsonObject()) {
@@ -992,6 +1016,10 @@ public final class CarriageVariantBlocks {
                 int raw = cellObj.get("lockId").getAsInt();
                 lockId = raw < 0 ? 0 : raw;
             }
+            if (cellObj.has(REROLL_KEY) && cellObj.get(REROLL_KEY).isJsonPrimitive()
+                && cellObj.get(REROLL_KEY).getAsJsonPrimitive().isBoolean()) {
+                reroll = cellObj.get(REROLL_KEY).getAsBoolean();
+            }
         } else {
             LOGGER.warn("[DungeonTrain] Variant sidecar {}: value for {} is neither array nor object, skipping.",
                 contextId, contextPos);
@@ -1002,7 +1030,7 @@ public final class CarriageVariantBlocks {
             VariantState parsed = parseVariantElement(el, blocks, contextId, contextPos);
             if (parsed != null) states.add(parsed);
         }
-        return new ParsedCell(states, lockId);
+        return new ParsedCell(states, lockId, reroll);
     }
 
     /**
@@ -1012,8 +1040,23 @@ public final class CarriageVariantBlocks {
      * Used by all four sidecars to keep on-disk output identical.
      */
     public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId) {
-        if (lockId > 0) {
-            sb.append("{ \"lockId\": ").append(lockId).append(", \"states\": [");
+        appendCellJson(sb, states, lockId, false);
+    }
+
+    /**
+     * {@link #appendCellJson(StringBuilder, List, int)} plus the v10 per-copy
+     * reroll flag. A cell with the flag set takes the object form even when it
+     * has no lock-id — the flag has nowhere else to live — and a cell without
+     * it writes exactly what it always did, so every sidecar authored before
+     * v10 re-saves byte-identical.
+     */
+    public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId,
+                                      boolean rerollPerCopy) {
+        if (lockId > 0 || rerollPerCopy) {
+            sb.append("{ ");
+            if (lockId > 0) sb.append("\"lockId\": ").append(lockId).append(", ");
+            if (rerollPerCopy) sb.append('"').append(REROLL_KEY).append("\": true, ");
+            sb.append("\"states\": [");
             boolean firstState = true;
             for (VariantState s : states) {
                 if (!firstState) sb.append(", ");

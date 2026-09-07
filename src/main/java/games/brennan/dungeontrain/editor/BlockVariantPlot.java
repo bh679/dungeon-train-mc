@@ -102,6 +102,38 @@ public interface BlockVariantPlot {
     java.util.Set<BlockPos> positionsWithLockId(int lockId);
 
     /**
+     * True when this plot's template is one that <b>repeats</b> — a dimensional
+     * carriage room, whose endless modes stamp copy after copy of it. Only there
+     * does a cell's per-copy reroll flag mean anything, so only there does the
+     * menu offer it.
+     *
+     * <p>False for every other plot, which is why this is a default: a carriage,
+     * a part and a contents plot are stamped once and have no copies to differ
+     * from.</p>
+     */
+    default boolean supportsPerCopyReroll() {
+        return false;
+    }
+
+    /**
+     * True when the cell at {@code localPos} rolls again in each copy of a
+     * repeating room rather than repeating the room's one roll. Always false
+     * where {@link #supportsPerCopyReroll} is.
+     */
+    default boolean rerollsPerCopy(BlockPos localPos) {
+        return false;
+    }
+
+    /**
+     * Set that flag. A no-op where the plot does not repeat — the menu never
+     * offers the button there, and the server re-checks
+     * {@link #supportsPerCopyReroll} before calling this, so reaching the no-op
+     * means a hand-crafted packet rather than a state worth failing over.
+     */
+    default void setRerollsPerCopy(BlockPos localPos, boolean reroll) {
+    }
+
+    /**
      * This plot's v9 lock-group reference resolver. The menu uses it to tell
      * live references from dead ones when composing a sync, to reject an Add
      * that would close a cycle, and to preview what a reference row actually
@@ -591,6 +623,10 @@ public interface BlockVariantPlot {
         @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
         @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
         @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
+        // A portal room is the one track template that repeats — see PortalRoomCopies.
+        @Override public boolean supportsPerCopyReroll() { return kind == TrackKind.PORTAL_ROOM; }
+        @Override public boolean rerollsPerCopy(BlockPos l) { return sidecar.rerollsPerCopy(l); }
+        @Override public void setRerollsPerCopy(BlockPos l, boolean r) { sidecar.setRerollsPerCopy(l, r); }
     }
 
     /**

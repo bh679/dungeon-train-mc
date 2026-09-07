@@ -125,22 +125,14 @@ public final class BlockVariantMenuRaycast {
 
         if (hitY > headerBottom) return BlockVariantMenu.Hit.NONE;
 
-        // Toolbar — 7 cells: Copy | Save | Add | Lock | Remove | Clear | X.
+        // Toolbar — the same cells the renderer drew, in the same order, from the same list.
         if (hitY > toolbarBottom) {
-            double cellW = panelW / 7.0;
+            java.util.List<BlockVariantMenu.CellKind> toolbar = BlockVariantMenu.toolbarCells();
+            double cellW = panelW / toolbar.size();
             int idx = (int) Math.floor((hitX + halfW) / cellW);
             if (idx < 0) idx = 0;
-            if (idx > 6) idx = 6;
-            BlockVariantMenu.CellKind kind = switch (idx) {
-                case 0 -> BlockVariantMenu.CellKind.COPY;
-                case 1 -> BlockVariantMenu.CellKind.SAVE;
-                case 2 -> BlockVariantMenu.CellKind.ADD;
-                case 3 -> BlockVariantMenu.CellKind.LOCK;
-                case 4 -> BlockVariantMenu.CellKind.REMOVE;
-                case 5 -> BlockVariantMenu.CellKind.CLEAR;
-                default -> BlockVariantMenu.CellKind.CLOSE;
-            };
-            return new BlockVariantMenu.Hit(kind, -1);
+            if (idx >= toolbar.size()) idx = toolbar.size() - 1;
+            return new BlockVariantMenu.Hit(toolbar.get(idx), -1);
         }
 
         // Grid

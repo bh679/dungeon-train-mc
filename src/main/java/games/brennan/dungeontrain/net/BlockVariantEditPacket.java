@@ -61,6 +61,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       the container-contents menu anchored on the same face. Edits in
  *       that menu route to {@code LootPrefabStore.save} as usual for a
  *       linked cell, propagating to every linked container.</li>
+ *   <li>{@link Op#TOGGLE_REROLL} — flip the cell's per-copy reroll flag. Only
+ *       a dimensional carriage room repeats, so the server rejects this
+ *       anywhere else ({@code BlockVariantPlot.supportsPerCopyReroll}) and the
+ *       menu does not draw the button there. A cell in a lock group takes the
+ *       whole group with it: the group shares one roll, and a member rerolling
+ *       on its own is the thing a lock exists to prevent.</li>
  *   <li>{@link Op#BUMP_DIFF_MIN} / {@link Op#BUMP_DIFF_MAX} — adjust a mob
  *       entry's difficulty band ({@code entryIndex} = row, {@code delta}
  *       signed). The server cycles the value the same way the
@@ -76,9 +82,15 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                                      int entryIndex, String stateString, int delta) implements CustomPacketPayload {
 
+    /**
+     * The wire format is the ordinal, so a new op goes on the <b>end</b>:
+     * inserting one would renumber every op after it, and an old client's
+     * clicks would land on a different edit entirely.
+     */
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
                      PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
-                     OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX }
+                     OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX,
+                     TOGGLE_REROLL }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

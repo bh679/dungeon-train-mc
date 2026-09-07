@@ -73,6 +73,10 @@ public final class BuilderSidecarCarry {
                     target.put(local, states);
                     int lockId = source.lockIdAt(pos);
                     if (lockId > 0) target.setLockId(local, lockId);
+                    // Carried like the lock-id, and for the same reason: it is authored on the
+                    // cell, so a room opened in the builder and saved back must come out holding
+                    // what it went in with.
+                    if (source.rerollsPerCopy(pos)) target.setRerollsPerCopy(local, true);
                 }
                 BuilderVariantStore.save(level, target, footprint);
             } catch (Throwable t) {
@@ -117,6 +121,7 @@ public final class BuilderSidecarCarry {
                     target.put(local, entry.states());
                     int lockId = doc.lockIdAt(entry.localPos());
                     if (lockId > 0) target.setLockId(local, lockId);
+                    if (doc.rerollsPerCopy(entry.localPos())) target.setRerollsPerCopy(local, true);
                 }
                 target.save();
             } catch (Throwable t) {

@@ -58,6 +58,7 @@ public final class BlockVariantMenu {
         REMOVE,
         CLEAR,
         LOCK,
+        REROLL,
         CLOSE,
         ENTRY_NAME,
         ENTRY_WEIGHT,
@@ -93,6 +94,8 @@ public final class BlockVariantMenu {
     @Nullable private static BlockPos localPos;
     private static List<BlockVariantSyncPacket.Entry> entries = Collections.emptyList();
     private static int lockId = 0;
+    private static boolean rerollPerCopy;
+    private static boolean rerollSupported;
     private static Vec3 anchorPos = Vec3.ZERO;
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
     private static Vec3 anchorUp = new Vec3(0, 1, 0);
@@ -142,6 +145,28 @@ public final class BlockVariantMenu {
     @Nullable public static BlockPos localPos() { return localPos; }
     public static List<BlockVariantSyncPacket.Entry> entries() { return entries; }
     public static int lockId() { return lockId; }
+
+    /** True when this cell rolls again in each copy of the repeating room it belongs to. */
+    public static boolean rerollPerCopy() { return rerollPerCopy; }
+
+    /** True when this plot's template repeats at all — only then is the Reroll cell drawn. */
+    public static boolean rerollSupported() { return rerollSupported; }
+
+    /**
+     * The toolbar's cells, left to right — the one list the renderer draws and the raycaster
+     * hit-tests. They were two hard-coded {@code switch (i)} ladders that had to be kept in step by
+     * hand; a cell that appears only on some plots is exactly the change that would have made them
+     * drift.
+     */
+    public static List<CellKind> toolbarCells() {
+        if (!rerollSupported) {
+            return List.of(CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK,
+                CellKind.REMOVE, CellKind.CLEAR, CellKind.CLOSE);
+        }
+        // Beside Lock, which is the other per-cell setting on this toolbar.
+        return List.of(CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK, CellKind.REROLL,
+            CellKind.REMOVE, CellKind.CLEAR, CellKind.CLOSE);
+    }
     public static Vec3 anchorPos() { return anchorPos; }
     public static Vec3 anchorRight() { return anchorRight; }
     public static Vec3 anchorUp() { return anchorUp; }
@@ -195,6 +220,8 @@ public final class BlockVariantMenu {
             localPos = null;
             entries = Collections.emptyList();
             lockId = 0;
+            rerollPerCopy = false;
+            rerollSupported = false;
             screen = Screen.ROOT;
             removeMode = false;
             searchBuffer = "";
@@ -213,6 +240,8 @@ public final class BlockVariantMenu {
         localPos = packet.localPos();
         entries = List.copyOf(packet.entries());
         lockId = packet.lockId();
+        rerollPerCopy = packet.rerollPerCopy();
+        rerollSupported = packet.rerollSupported();
         anchorPos = packet.anchorPos();
         anchorRight = packet.anchorRight();
         anchorUp = packet.anchorUp();

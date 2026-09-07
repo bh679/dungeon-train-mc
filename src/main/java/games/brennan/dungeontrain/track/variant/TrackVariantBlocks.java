@@ -62,6 +62,20 @@ public final class TrackVariantBlocks {
     /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
     private final Map<BlockPos, Integer> lockIds;
 
+    /**
+     * The cells that roll again in every copy of a repeating room — the v10
+     * {@code "reroll": true} flag.
+     *
+     * <p>Only a {@link TrackKind#PORTAL_ROOM} repeats, so only a room's sidecar
+     * ever holds anything here; it is stored on this class rather than on a
+     * portal-only one because a room's cells live in this document (and in the
+     * Train Builder's working copy of it, which is the same class again).</p>
+     *
+     * <p>A set and not a per-cell field: the flag is the exception, so the empty
+     * set is the answer for every cell in almost every template.</p>
+     */
+    private final java.util.Set<BlockPos> rerollPerCopy;
+
     /** v9 lock-group reference resolution over {@link #entries} / {@link #lockIds}. */
     private final games.brennan.dungeontrain.editor.VariantGroupResolver groupRefs;
 
@@ -86,8 +100,15 @@ public final class TrackVariantBlocks {
 
     private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
+        this(entries, lockIds, new java.util.LinkedHashSet<>(), kind, mirrorX, mirrorY, mirrorZ, mirrorVariants);
+    }
+
+    private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
+                               java.util.Set<BlockPos> rerollPerCopy, TrackKind kind,
+                               boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.rerollPerCopy = rerollPerCopy;
         this.groupRefs = new games.brennan.dungeontrain.editor.VariantGroupResolver(entries, lockIds);
         this.kind = kind;
         this.mirrorX = mirrorX;
@@ -128,6 +149,7 @@ public final class TrackVariantBlocks {
     public static synchronized TrackVariantBlocks copyOf(TrackVariantBlocks source) {
         return new TrackVariantBlocks(
             new LinkedHashMap<>(source.entries), new LinkedHashMap<>(source.lockIds),
+            new java.util.LinkedHashSet<>(source.rerollPerCopy),
             source.kind, source.mirrorX, source.mirrorY, source.mirrorZ, source.mirrorVariants);
     }
 
@@ -253,6 +275,7 @@ public final class TrackVariantBlocks {
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
+        java.util.Set<BlockPos> outReroll = new java.util.LinkedHashSet<>();
         String contextId = kindId + ":" + name;
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = CarriageVariantBlocks.parsePos(field.getKey());
@@ -277,10 +300,11 @@ public final class TrackVariantBlocks {
             BlockPos posI = pos.immutable();
             out.put(posI, List.copyOf(cell.states()));
             if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
+            if (cell.rerollPerCopy()) outReroll.add(posI);
         }
         LOGGER.info("[DungeonTrain] Loaded {} track variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new TrackVariantBlocks(out, outLocks, kind, mirrorX, mirrorY, mirrorZ, mirrorVariants);
+        return new TrackVariantBlocks(out, outLocks, outReroll, kind, mirrorX, mirrorY, mirrorZ, mirrorVariants);
     }
 
     private static boolean inBounds(BlockPos p, Vec3i size) {
@@ -324,6 +348,7 @@ public final class TrackVariantBlocks {
 
     public synchronized boolean remove(BlockPos localPos) {
         lockIds.remove(localPos);
+        rerollPerCopy.remove(localPos);
         groupRefs.invalidate();
         return entries.remove(localPos) != null;
     }
@@ -340,6 +365,35 @@ public final class TrackVariantBlocks {
         if (lockId == 0) lockIds.remove(localPos);
         else lockIds.put(localPos.immutable(), lockId);
         groupRefs.invalidate();
+    }
+
+    /**
+     * True when the cell at {@code localPos} rolls again in each copy of a
+     * repeating room instead of repeating the room's one roll. False for every
+     * cell of every template that is not a portal room — nothing else repeats.
+     */
+    public synchronized boolean rerollsPerCopy(BlockPos localPos) {
+        return rerollPerCopy.contains(localPos);
+    }
+
+    /**
+     * Set the per-copy reroll flag on an existing cell.
+     *
+     * <p>Rejects a position with no cell for the same reason {@link #setLockId}
+     * does: a flag on nothing would be written to a file that has no cell to
+     * hang it on, and would then be silently dropped on the next load.</p>
+     */
+    public synchronized void setRerollsPerCopy(BlockPos localPos, boolean reroll) {
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (reroll) rerollPerCopy.add(localPos.immutable());
+        else rerollPerCopy.remove(localPos);
+    }
+
+    /** Snapshot of every cell flagged to reroll per copy. Defensive copy. */
+    public synchronized java.util.Set<BlockPos> allRerollPositions() {
+        return new java.util.LinkedHashSet<>(rerollPerCopy);
     }
 
     public synchronized java.util.Set<BlockPos> positionsWithLockId(int lockId) {
@@ -468,7 +522,7 @@ public final class TrackVariantBlocks {
             firstEntry = false;
             int lockId = lockIds.getOrDefault(e.getKey(), 0);
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
-            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId);
+            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId, rerollPerCopy.contains(e.getKey()));
         }
         sb.append("\n  }\n}\n");
         return sb.toString();

@@ -76,7 +76,7 @@ public final class BlockVariantMenuRenderer {
     static final double TOOLBAR_HEIGHT = 0.32;
     /** A grid column = name cell + weight + (optional) X. */
     static final double COLUMN_WIDTH = 1.7;
-    /** Six-cell toolbar (Copy/Add/Lock/Remove/Clear/X) needs more width. */
+    /** Multi-cell toolbar (Copy/Save/Add/Lock/[Reroll]/Remove/Clear/X) needs more width. */
     static final double MIN_PANEL_WIDTH = 3.2;
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
@@ -212,23 +212,18 @@ public final class BlockVariantMenuRenderer {
             : "Block Variants @ " + local.getX() + "," + local.getY() + "," + local.getZ() + lockLabel;
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFFFFEEBB);
 
-        // Toolbar — 7 cells: Copy | Save | Add | Lock | Remove | Clear | X.
+        // Toolbar — Copy | Save | Add | Lock | (Reroll) | Remove | Clear | X. The Reroll cell is
+        // there only for a template that repeats; see BlockVariantMenu.toolbarCells().
         double toolbarTop = halfH - HEADER_HEIGHT;
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
-        double cellW = panelW / 7.0;
-        for (int i = 0; i < 7; i++) {
+        List<BlockVariantMenu.CellKind> toolbar = BlockVariantMenu.toolbarCells();
+        boolean reroll = BlockVariantMenu.rerollPerCopy();
+        double cellW = panelW / toolbar.size();
+        for (int i = 0; i < toolbar.size(); i++) {
             double xL = -halfW + i * cellW;
             double xR = xL + cellW;
-            BlockVariantMenu.CellKind cellKind = switch (i) {
-                case 0 -> BlockVariantMenu.CellKind.COPY;
-                case 1 -> BlockVariantMenu.CellKind.SAVE;
-                case 2 -> BlockVariantMenu.CellKind.ADD;
-                case 3 -> BlockVariantMenu.CellKind.LOCK;
-                case 4 -> BlockVariantMenu.CellKind.REMOVE;
-                case 5 -> BlockVariantMenu.CellKind.CLEAR;
-                default -> BlockVariantMenu.CellKind.CLOSE;
-            };
+            BlockVariantMenu.CellKind cellKind = toolbar.get(i);
             boolean isHover = hovered.kind() == cellKind;
             int tint;
             if (cellKind == BlockVariantMenu.CellKind.REMOVE && removeMode) {
@@ -246,6 +241,12 @@ public final class BlockVariantMenuRenderer {
                 } else {
                     tint = isHover ? 0xC0AAAAAA : 0x60777777;
                 }
+            } else if (cellKind == BlockVariantMenu.CellKind.REROLL) {
+                // Same two-state treatment as Lock: lit when the cell is doing something other
+                // than what every other cell does, grey when it is following the room.
+                tint = reroll
+                    ? (isHover ? 0xC066DDFF : 0x803388AA)
+                    : (isHover ? 0xC0AAAAAA : 0x60777777);
             } else {
                 tint = isHover ? 0xB0FFCC33 : 0x30FFFFFF;
             }
@@ -259,6 +260,9 @@ public final class BlockVariantMenuRenderer {
                 // the digit (e.g. "2") when locked. Cycles to next free
                 // when 0, back to 0 when set.
                 case LOCK -> cellLockId > 0 ? Integer.toString(cellLockId) : "-";
+                // "Exact" is the word the room's own Copies setting uses for repeating one roll,
+                // so the cell says whether it is following that or breaking from it.
+                case REROLL -> reroll ? "Vary" : "Exact";
                 case REMOVE -> removeMode ? "Cancel" : "Remove";
                 case CLEAR -> "Clear";
                 case CLOSE -> "X";
