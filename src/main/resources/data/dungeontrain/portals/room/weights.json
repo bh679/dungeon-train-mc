@@ -254,6 +254,10 @@
     "weight": 1,
     "mode": "bedrockless/exact/fit"
   },
+  "woodpillars": {
+    "weight": 1,
+    "mode": "endless_repetition"
+  },
   "zombies": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"

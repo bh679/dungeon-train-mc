@@ -17,6 +17,14 @@
     {
       "id": "room",
       "weight": 1
+    },
+    {
+      "id": "room2",
+      "weight": 1
+    },
+    {
+      "id": "room3",
+      "weight": 0
     }
   ]
 }
