@@ -11704,6 +11704,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-train-time",
+      "version": "0.820.0",
+      "type": "fix",
+      "title": "Time aboard fix",
+      "summary": "Time aboard now keeps counting inside dimensional carriages.",
+      "highlights": [],
+      "pr": 1332,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

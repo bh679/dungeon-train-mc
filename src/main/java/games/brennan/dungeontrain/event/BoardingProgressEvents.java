@@ -223,15 +223,17 @@ public final class BoardingProgressEvents {
         // rather than booking a teleport-sized jump.
         LAST_BOARDED_POS.keySet().retainAll(boarded.keySet());
 
-        // A player who walked into a portal room is off every carriage AABB, so none of the above
-        // sees them. Credit them here instead — see creditPortalRoomOccupants for what "credit"
-        // means when the room they are standing in does not move.
-        creditPortalRoomOccupants(level, carriages, boarded);
+        // A player who walked into a dimensional carriage is off every carriage AABB, so none of the
+        // above sees them. Credit them here instead — see creditPortalRoomOccupants for what
+        // "credit" means when the room they are standing in does not move.
+        Set<UUID> inStructure = creditPortalRoomOccupants(level, carriages, boarded);
 
-        // Dev-HUD "Travel:" line — pushed for every player in the level, boarded or not.
+        // Dev-HUD "Travel:" line — pushed for every player in the level, boarded or not. A player
+        // inside a dimensional carriage is riding the train and reads as crediting, not off it.
         for (ServerPlayer player : level.players()) {
             UUID uuid = player.getUUID();
-            pushTravelState(player, !boarded.containsKey(uuid) ? TravelCreditPacket.State.OFF_TRAIN
+            boolean riding = boarded.containsKey(uuid) || inStructure.contains(uuid);
+            pushTravelState(player, !riding ? TravelCreditPacket.State.OFF_TRAIN
                 : glidingOutside.contains(uuid) ? TravelCreditPacket.State.ELYTRA_OUTSIDE
                 : TravelCreditPacket.State.CREDITING);
         }
@@ -439,13 +441,25 @@ public final class BoardingProgressEvents {
             box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ());
     }
 
-    private static void creditPortalRoomOccupants(ServerLevel level, List<Trains.Carriage> carriages,
-                                                  Map<UUID, Integer> boarded) {
+    /**
+     * Credit the players standing inside a dimensional carriage, and return them.
+     *
+     * <p>Two volumes, two kinds of credit. Anywhere in the <b>structure</b> — room body or corridor —
+     * is riding the train: time on the train accrues (through the same activity gate as the boarded
+     * path) and the progress rule is told the player is getting somewhere. Only the room <b>body</b>
+     * earns the rest: the train's travel credited as distance, the "Train inside a train?" dwell, and
+     * the library greeter, none of which should count a doorway as a room.</p>
+     */
+    private static Set<UUID> creditPortalRoomOccupants(ServerLevel level, List<Trains.Carriage> carriages,
+                                                       Map<UUID, Integer> boarded) {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         Map<Integer, Double> movedByPair = new HashMap<>();
-        Map<UUID, Integer> occupants = new LinkedHashMap<>();
+        Map<UUID, Integer> inStructure = new LinkedHashMap<>();
+        Map<UUID, Integer> inBody = new LinkedHashMap<>();
+        long now = level.getGameTime();
 
         for (ServerPlayer player : level.players()) {
+            UUID uuid = player.getUUID();
             // Belt and braces: the room body sits below bedrock and the carriage AABBs above it, so
             // these sets are disjoint by construction — but a player credited twice in one scan is
             // exactly the bug this is cheap to make impossible.
@@ -454,36 +468,38 @@ public final class BoardingProgressEvents {
             // dwell counts CONSECUTIVE scans, so walking back out to the train has to clear it. Skip
             // them here and a player could bank four seconds, step onto the train, and come back to
             // earn the advancement one second later.
-            Integer pairKey = boarded.containsKey(player.getUUID()) ? null
+            Integer structureKey = boarded.containsKey(uuid) ? null
+                : PortalCarriageEvents.portalStructurePairKey(
+                    dims, player.getX(), player.getY(), player.getZ());
+            Integer bodyKey = structureKey == null ? null
                 : PortalCarriageEvents.portalRoomBodyPairKey(
                     dims, player.getX(), player.getY(), player.getZ());
-            if (pairKey == null) {
-                PortalTripTracker.tickDwell(player.getUUID(), false);
-                continue;
+            if (structureKey != null) inStructure.put(uuid, structureKey);
+            if (bodyKey != null) {
+                inBody.put(uuid, bodyKey);
+            } else {
+                PortalTripTracker.tickDwell(uuid, false);
             }
-            occupants.put(player.getUUID(), pairKey);
         }
 
         // Drop the movement baseline for pairs nobody is in, so a room re-entered later starts a
         // fresh delta rather than booking everything the train did while it stood empty. Same
         // reasoning as LAST_BOARDED_POS's retainAll.
-        LAST_PAIR_CARRIAGE_POS.keySet().retainAll(occupants.values());
-        if (occupants.isEmpty()) return;
+        LAST_PAIR_CARRIAGE_POS.keySet().retainAll(inBody.values());
+        if (inStructure.isEmpty()) return Set.of();
 
-        for (Map.Entry<UUID, Integer> entry : occupants.entrySet()) {
-            ServerPlayer player = level.getServer().getPlayerList().getPlayer(entry.getKey());
+        for (UUID uuid : inStructure.keySet()) {
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
             if (player == null) continue;
-            int pairKey = entry.getValue();
 
-            // Whose library is this? Silent for every room that does not lock its books, which is
-            // almost all of them. Rides this scan rather than adding one: the occupancy question it
-            // needs — which player is in which room body — has just been answered above.
-            games.brennan.dungeontrain.narrative.PortalLibraryGreeter.tick(player, pairKey);
+            // Being in here is the progress: the train travels on with the player inside it, and no
+            // carriage index can say so. Recorded before the gate below reads it.
+            PlayerActivityTracker.recordPortalRoom(uuid, now);
 
             // Lifetime train-time — same gating as the boarded path: frozen for a cheated run and
             // while dead, so a death screen in a portal room racks up no more than one on the train.
             if (player.isAlive() && !RunIntegrity.isCheated(player) && PlayerActivityTracker.isCountingTrain(player)) {
-                long newTotal = GlobalPlayerStats.addTrainTicks(player.getUUID(), SCAN_PERIOD_TICKS);
+                long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                 AchievementEvents.notifyTrainTime(player, newTotal);
             }
             // Single-life time aboard, the per-run twin of the above.
@@ -492,6 +508,17 @@ public final class BoardingProgressEvents {
                     .addTrainTimeTicks(SCAN_PERIOD_TICKS);
                 AchievementEvents.notifyRunTrainTime(player, runTrainTicks);
             }
+        }
+
+        for (Map.Entry<UUID, Integer> entry : inBody.entrySet()) {
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(entry.getKey());
+            if (player == null) continue;
+            int pairKey = entry.getValue();
+
+            // Whose library is this? Silent for every room that does not lock its books, which is
+            // almost all of them. Rides this scan rather than adding one: the occupancy question it
+            // needs — which player is in which room body — has just been answered above.
+            games.brennan.dungeontrain.narrative.PortalLibraryGreeter.tick(player, pairKey);
 
             double moved = movedByPair.computeIfAbsent(pairKey,
                 key -> pairCarriageMovement(carriages, key));
@@ -512,6 +539,7 @@ public final class BoardingProgressEvents {
                 }
             }
         }
+        return inStructure.keySet();
     }
 
     /**

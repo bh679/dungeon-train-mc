@@ -130,6 +130,21 @@ class PlayerActivityTrackerTest {
         assertEquals(0, PlayerActivityTracker.carriageSpan(null));
     }
 
+    @Test
+    @DisplayName("a player who has never entered a dimensional carriage is judged on carriages alone")
+    void noRoomPresenceIsNotProgress() {
+        assertFalse(PlayerActivityTracker.roomPresenceInWindow(null, 50_000L));
+    }
+
+    @Test
+    @DisplayName("standing inside a dimensional carriage is progress for the whole window after")
+    void roomPresenceIsProgressWithinTheWindow() {
+        long window = PlayerActivityTracker.PROGRESS_WINDOW_TICKS;
+        assertTrue(PlayerActivityTracker.roomPresenceInWindow(1_000L, 1_000L));
+        assertTrue(PlayerActivityTracker.roomPresenceInWindow(1_000L, 1_000L + window));
+        assertFalse(PlayerActivityTracker.roomPresenceInWindow(1_000L, 1_000L + window + 1));
+    }
+
     // ----------------------------------------------------------- the two tiers
 
     @Test
