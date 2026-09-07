@@ -411,6 +411,26 @@ public final class PortalCarriageEvents {
     }
 
     /**
+     * The pair whose structure — room body <b>and</b> corridors — contains {@code (x, y, z)}, or
+     * {@code null} for anywhere else.
+     *
+     * <p>This is the time-on-train volume: a player anywhere inside a dimensional carriage is riding
+     * the train, doorway included, so {@code BoardingProgressEvents} banks their time against this
+     * and not against {@link #portalRoomBodyPairKey}, whose body-only answer is for the things a
+     * corridor must not count towards — the distance trip, the "Train inside a train?" dwell, and
+     * the library greeter. Unpadded like that query and unlike {@link #isInsidePortalStructure}:
+     * the fog margin is spawning slack, not somewhere the train is ridden from.</p>
+     */
+    @Nullable
+    public static Integer portalStructurePairKey(CarriageDims dims, double x, double y, double z) {
+        if (STRUCTURES.isEmpty()) return null;
+        for (Map.Entry<Integer, PortalStructure> entry : STRUCTURES.entrySet()) {
+            if (structureBox(dims, entry.getValue()).contains(x, y, z)) return entry.getKey();
+        }
+        return null;
+    }
+
+    /**
      * The pair whose room <b>body</b> contains {@code (x, y, z)}, or {@code null} for anywhere else.
      *
      * <p>The room body is the structure minus its corridors: past the entry twin's far door, before
