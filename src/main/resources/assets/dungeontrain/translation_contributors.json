@@ -17,18 +17,18 @@
       "languages": [
         {
           "locale": "ru_ru",
-          "contributed": 1032,
+          "contributed": 1031,
           "total": 2095
         }
       ]
     },
     {
-      "name": "SandRuin",
+      "name": "miyocrack",
       "languages": [
         {
-          "locale": "ru_ru",
-          "contributed": 43,
-          "total": 2095
+          "locale": "es_es",
+          "contributed": 81,
+          "total": 2063
         }
       ]
     },
@@ -58,11 +58,11 @@
       ]
     },
     {
-      "name": "WeeKsT",
+      "name": "SandRuin",
       "languages": [
         {
           "locale": "ru_ru",
-          "contributed": 3,
+          "contributed": 11,
           "total": 2095
         }
       ]
@@ -94,6 +94,16 @@
           "locale": "zh_cn",
           "contributed": 1,
           "total": 2045
+        }
+      ]
+    },
+    {
+      "name": "WeeKsT",
+      "languages": [
+        {
+          "locale": "ru_ru",
+          "contributed": 1,
+          "total": 2095
         }
       ]
     },
