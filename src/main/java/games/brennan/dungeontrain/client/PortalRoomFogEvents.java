@@ -119,5 +119,9 @@ public final class PortalRoomFogEvents {
         // And the debug screen's Y disguise, which is the same shape of cache again — a stale one
         // would have the next world's F3 reading a hundred blocks off wherever the player landed.
         ClientPortalRoomDepth.reset();
+        // And the portal prewarm's destination, which is the same shape of live value as the
+        // corridor hold: a client that logs out mid-corridor would otherwise spend the next world's
+        // first seconds building chunks around a place that is not there any more.
+        games.brennan.dungeontrain.client.portal.ClientPortalPrewarm.reset();
     }
 }

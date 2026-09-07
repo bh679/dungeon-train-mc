@@ -19,6 +19,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -40,7 +41,10 @@ import java.util.UUID;
  *   <li>No <em>non-look</em> input for {@link #INPUT_IDLE_TICKS} (5 min)</li>
  *   <li>Pause screen open ({@link games.brennan.dungeontrain.net.PlayerPausedPacket})</li>
  *   <li>Fewer than {@link #MIN_CARRIAGES_PER_WINDOW} carriages traversed in the last
- *       {@link #PROGRESS_WINDOW_TICKS} (10 min) — playing, but not getting anywhere</li>
+ *       {@link #PROGRESS_WINDOW_TICKS} (10 min) — playing, but not getting anywhere. Standing
+ *       anywhere inside a dimensional carriage counts as getting somewhere: the train travels on
+ *       with the player inside it, so the rule is satisfied for as long as they are in there (and
+ *       for one window after they walk back out)</li>
  * </ul>
  *
  * <p>Looking around deliberately does <em>not</em> refresh the input clock — otherwise the 5-minute
@@ -134,6 +138,13 @@ public final class PlayerActivityTracker {
     /** Player → the tick they first boarded. The progress rule stays silent for one window after it. */
     private static final Map<UUID, Long> FIRST_BOARDED_TICK = new HashMap<>();
 
+    /**
+     * Player → the last scan tick they stood inside a dimensional carriage (room body or corridor).
+     * A player in there is off every carriage AABB, so {@link #CARRIAGE_HISTORY} sees nothing — this
+     * is what keeps the progress rule from freezing them ten minutes in.
+     */
+    private static final Map<UUID, Long> LAST_ROOM_TICK = new HashMap<>();
+
     /** What last counted as input for a player — named in the resume log line. */
     private static final Map<UUID, String> LAST_TRIGGER = new HashMap<>();
 
@@ -184,10 +195,15 @@ public final class PlayerActivityTracker {
         Long firstBoarded = FIRST_BOARDED_TICK.get(uuid);
         if (firstBoarded == null) return true;
         if (now - firstBoarded < PROGRESS_WINDOW_TICKS) return true;
+        // Inside a dimensional carriage the train keeps travelling with the player in it, and no
+        // carriage index can say so — presence there is the progress. Judged on the same window as
+        // the carriage samples, so walking back out to the train does not freeze the clock on the
+        // spot either.
+        if (roomPresenceInWindow(LAST_ROOM_TICK.get(uuid), now)) return true;
         Deque<long[]> history = CARRIAGE_HISTORY.get(uuid);
         prune(history, now);
-        // No sample in the last window means they are not aboard a carriage at all (a portal room,
-        // say) — which is not progress either.
+        // No sample in the last window means they are not aboard a carriage at all — off the train
+        // entirely, or somewhere that is not a dimensional carriage — which is not progress.
         if (history == null || history.isEmpty()) return false;
         return carriageSpan(history) >= MIN_CARRIAGES_PER_WINDOW;
     }
@@ -197,6 +213,14 @@ public final class PlayerActivityTracker {
     /** Has {@code lastTick} fallen {@code thresholdTicks} or more behind {@code nowTick}? */
     public static boolean isIdle(long lastTick, long nowTick, long thresholdTicks) {
         return nowTick - lastTick >= thresholdTicks;
+    }
+
+    /**
+     * Was the player inside a dimensional carriage within the progress window? {@code null} means
+     * never — a player who has not been in one is judged on carriages alone.
+     */
+    public static boolean roomPresenceInWindow(@Nullable Long lastRoomTick, long nowTick) {
+        return lastRoomTick != null && nowTick - lastRoomTick <= PROGRESS_WINDOW_TICKS;
     }
 
     /**
@@ -265,6 +289,21 @@ public final class PlayerActivityTracker {
         }
         history.addLast(new long[] { nowTick, pIdx });
         prune(history, nowTick);
+    }
+
+    /**
+     * Note that a player is standing inside a dimensional carriage, from
+     * {@link BoardingProgressEvents}' scan. Arriving there is non-look input for the same reason a
+     * change of carriage is — the train cannot walk them through a portal — but only the arrival:
+     * a run of consecutive scans in the same room is presence, not input, and the idle clocks must
+     * still be able to stop it.
+     */
+    public static void recordPortalRoom(UUID uuid, long nowTick) {
+        FIRST_BOARDED_TICK.putIfAbsent(uuid, nowTick);
+        Long previous = LAST_ROOM_TICK.put(uuid, nowTick);
+        if (previous == null || nowTick - previous > SAMPLE_PERIOD_TICKS) {
+            markInput(uuid, nowTick, "entered dimensional carriage");
+        }
     }
 
     /**
@@ -414,6 +453,7 @@ public final class PlayerActivityTracker {
         LAST_INPUT_STATE.remove(uuid);
         CARRIAGE_HISTORY.remove(uuid);
         FIRST_BOARDED_TICK.remove(uuid);
+        LAST_ROOM_TICK.remove(uuid);
         LAST_TRIGGER.remove(uuid);
         REPORTED_REASON.remove(uuid);
         LAST_SENT.remove(uuid);

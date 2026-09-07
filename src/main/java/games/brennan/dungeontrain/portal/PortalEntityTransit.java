@@ -43,15 +43,21 @@ public final class PortalEntityTransit {
 
     private PortalEntityTransit() {}
 
-    /** Move every entity in the pair's corridors that is on the wrong side of its midpoint. */
+    /**
+     * Move every entity in the pair's corridors that is on the wrong side of its midpoint.
+     *
+     * @param disconnected whether the pair has stopped taking anything in — severed, or given up
+     *                     after a run of refusals. Handed in rather than read here so a mob and the
+     *                     player who led it in are answered by the same verdict on the same tick.
+     */
     public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
-                           int carriageIndex) {
-        run(level, frames, entities, carriageIndex, null);
+                           int carriageIndex, boolean disconnected) {
+        run(level, frames, entities, carriageIndex, disconnected, null);
     }
 
     /**
-     * As {@link #run(ServerLevel, PortalFrames, List, int)}, but landing anything walking <b>in</b>
-     * at {@code twinOverride} instead of the frame's own twin.
+     * As {@link #run(ServerLevel, PortalFrames, List, int, boolean)}, but landing anything walking
+     * <b>in</b> at {@code twinOverride} instead of the frame's own twin.
      *
      * <p>What makes a led villager arrive where its player does. A player who came out through an
      * extra corridor eight rooms out walks back in to that corridor ({@link PortalExitBindings});
@@ -62,7 +68,8 @@ public final class PortalEntityTransit {
      * <p>Null means the original twin, so the ordinary call above is this one with nothing to say.</p>
      */
     public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
-                           int carriageIndex, PortalFrames.Origin twinOverride) {
+                           int carriageIndex, boolean disconnected,
+                           PortalFrames.Origin twinOverride) {
         for (Entity entity : entities) {
             if (!eligible(entity)) continue;
 
@@ -70,14 +77,11 @@ public final class PortalEntityTransit {
             PortalFrames.Move move = frames.redirectedTo(frames.requiredMove(x, y, z), twinOverride);
             if (move == null) continue;
 
-            // Same one-way gate the player swap carries, and for the same reason: a severed corridor
-            // takes nothing in, but everything already in the room can still come back out. Without
-            // this a villager led in before the break would be walled off from the train while its
-            // player walked back through.
-            if (PortalSever.blocksMove(move.toFrame(),
-                PortalSever.isSevered(level, carriageIndex))) {
-                continue;
-            }
+            // Same one-way gate the player swap carries, and for the same reason: a pair that has
+            // stopped taking people in takes nothing else in either, but everything already in the
+            // room can still come back out. Without this a villager led in before the break would be
+            // walled off from the train while its player walked back through.
+            if (PortalSever.blocksMove(move.toFrame(), disconnected)) continue;
 
             // Grounded entities land on the destination floor's surface rather than the
             // carried-across local Y, for the reason the player swap does it: the two frames' block

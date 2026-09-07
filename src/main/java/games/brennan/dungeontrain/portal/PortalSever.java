@@ -40,10 +40,16 @@ import org.slf4j.Logger;
  * the reasons. It happens twice over — here, for whoever is standing in the corridor at the moment it
  * breaks, and again in {@link PortalCarriageBuilder#stampMiddle} every time the group is re-stamped.</p>
  *
- * <p><b>Permanent.</b> Recorded against the carriage index in {@link PortalRegistry}, which is a
- * fixed place along the track, and persisted. It has to be stored rather than re-derived from the
- * hole: a corridor's blocks are re-stamped from its template every time the rolling window brings
- * it round again, so the hole itself is gone within a minute of being made.</p>
+ * <p><b>Recorded against the pair, and only for as long as the damage lasts.</b> The verdict is
+ * stored in {@link PortalRegistry} under the pair's key — its group's anchor — and persisted,
+ * because it cannot be re-derived from the hole: a corridor's blocks are re-stamped from its
+ * template every time the rolling window brings it round again, so the hole itself is gone within a
+ * minute of being made. What the record must <i>not</i> do is outlive those blocks. It used to:
+ * the pair stayed dead for the life of the world while a corridor stood there whole, which is how a
+ * dimensional carriage could be found intact and leading nowhere, and how one could appear to have
+ * spawned in already broken. {@code CarriagePlacer} now repairs the pair as it re-stamps the group
+ * ({@link PortalRegistry#repairPair}) — the shell it is about to write is the answer to the
+ * contradiction, so there is nothing left to refuse for.</p>
  */
 public final class PortalSever {
 
@@ -85,7 +91,8 @@ public final class PortalSever {
      * one room — and it is the <i>pair</i> that is broken, not the corridor that happened to be
      * mined. Severing only the corridor with the hole in it would leave the other end still taking
      * people into a room whose way back is now half dead, which is a worse state than either
-     * corridor working or neither. So the partner goes with it.</p>
+     * corridor working or neither. So the record is made against the pair's own key and there is no
+     * second entry to fall out of step with.</p>
      */
     public static void onCarriageBlockChanged(ServerLevel level, PortalPairIndex.Entry entry,
                                               int[] local, BlockState newState, BlockPos twinPos) {
@@ -93,15 +100,12 @@ public final class PortalSever {
         if (!isSeveringBreak(frames.layout(), frames.role(), local, newState.isAir())) return;
 
         int broken = entry.carriageIndex();
-        int partner = PortalCarriageRole.partnerIndex(broken, DungeonTrainConfig.getGroupSize());
+        int pairKey = PortalCarriageRole.entryIndexOf(broken, DungeonTrainConfig.getGroupSize());
 
-        // Read before writing either: if this pair is already severed — including from a hole made
-        // in its OTHER corridor — the effects have played once already and must not play again.
-        PortalRegistry registry = PortalRegistry.get(level);
-        boolean already = registry.isSevered(broken) || registry.isSevered(partner);
-        registry.sever(broken);
-        registry.sever(partner);
-        if (already) return;
+        // One record for the pair, whichever of its corridors was mined. severPair answers false
+        // when the pair was already severed — including from a hole made in its OTHER corridor —
+        // which is what keeps the effects to once.
+        if (!PortalRegistry.get(level).severPair(pairKey)) return;
 
         BlockPos carriagePos = BlockPos.containing(
             entry.carriageWorld().x + local[0] + 0.5,
@@ -114,10 +118,11 @@ public final class PortalSever {
 
         openCentreWall(level, entry);
 
-        LOGGER.info("[DungeonTrain] Portal connection severed: carriages {} ({}) + {} (partner), "
+        LOGGER.info("[DungeonTrain] Portal connection severed: pair {} (broken at carriage {}, {}), "
                 + "shell broken at local ({},{},{}) — world {}, twin {}. "
-                + "Both ends are closed to entry; both ways out stay open.",
-            broken, frames.role(), partner, local[0], local[1], local[2], carriagePos, twinPos);
+                + "Both ends are closed to entry; both ways out stay open. Repaired when the "
+                + "rolling window re-stamps the group.",
+            pairKey, broken, frames.role(), local[0], local[1], local[2], carriagePos, twinPos);
     }
 
     /**
@@ -170,13 +175,14 @@ public final class PortalSever {
     }
 
     /**
-     * True if this corridor no longer takes anyone in.
+     * True if this pair no longer takes anyone in — asked of the pair's key, so both of its
+     * corridors answer alike.
      *
      * <p>Asked only of a move whose destination is {@link PortalFrames#FRAME_TWIN}. A move back to
      * the carriage is never gated on this, by design.</p>
      */
-    public static boolean isSevered(ServerLevel level, int carriageIndex) {
-        return PortalRegistry.get(level).isSevered(carriageIndex);
+    public static boolean isSevered(ServerLevel level, int pairKey) {
+        return PortalRegistry.get(level).isPairSevered(pairKey);
     }
 
     /**
@@ -193,11 +199,16 @@ public final class PortalSever {
      * callers pass the answer they already have rather than a level, so nothing here reads the
      * registry twice.</p>
      *
-     * @param toFrame  where the move is going: {@link PortalFrames#FRAME_TWIN} or
-     *                 {@link PortalFrames#FRAME_CARRIAGE}
-     * @param severed  whether this corridor's pair has been severed
+     * <p>Also asked of the other way a pair stops taking people in — the transient give-up
+     * {@link PortalWalkThrough} decides after a run of refusals — because the one-way rule is the
+     * same rule in both cases and belongs in one place. Severed or merely given up, the way out is
+     * never cut.</p>
+     *
+     * @param toFrame       where the move is going: {@link PortalFrames#FRAME_TWIN} or
+     *                      {@link PortalFrames#FRAME_CARRIAGE}
+     * @param disconnected  whether this pair has stopped taking anyone in, severed or given up
      */
-    public static boolean blocksMove(int toFrame, boolean severed) {
-        return severed && toFrame == PortalFrames.FRAME_TWIN;
+    public static boolean blocksMove(int toFrame, boolean disconnected) {
+        return disconnected && toFrame == PortalFrames.FRAME_TWIN;
     }
 }
