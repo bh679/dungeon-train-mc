@@ -11660,6 +11660,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "per-cell-copy-settings",
+      "version": "0.817.0",
+      "type": "feat",
+      "title": "Dimensional carriage rooms can vary block by block",
+      "summary": "A repeating dimensional carriage room used to be all or nothing: every copy identical, or every copy freshly rolled. Now a room's author can decide that cell by cell \u2014 a torch that flickers between copies in a hall that is otherwise the same, a doorway that belongs to the room you arrive in and is not repeated down the hall, a chest whose block and contents differ every time. Five of the shipped rooms already use it.",
+      "highlights": [
+        "Each block in a room can hold one roll across every copy, roll again in each, or simply follow the room",
+        "A block can also be set to appear only in the repeated copies, or only in the room you walk into",
+        "Copying a block variant to the hotbar now carries these settings, so pasting one really does duplicate the cell"
+      ],
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
