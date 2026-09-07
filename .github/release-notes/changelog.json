@@ -11678,13 +11678,15 @@
       "released_at": null
     },
     {
-      "id": "dimensional-carriage-train-time",
+      "id": "dimensional-carriage-arrival",
       "version": "0.818.0",
       "type": "fix",
-      "title": "Time aboard fix",
-      "summary": "Time aboard now keeps counting inside dimensional carriages.",
-      "highlights": [],
-      "pr": 1332,
+      "title": "Dimensional carriages arrive cleanly",
+      "summary": "Stepping through a dimensional carriage no longer flashes the world for a moment as you arrive, and the lighting now carries you across the doorway instead of dropping dark on the other side.",
+      "highlights": [
+        "No more flash when you step through a dimensional carriage",
+        "Lighting eases across the doorway rather than snapping"
+      ],
       "date": "2026-09-07",
       "released": false,
       "released_in": null,

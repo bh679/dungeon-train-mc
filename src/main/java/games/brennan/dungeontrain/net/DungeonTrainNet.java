@@ -89,6 +89,11 @@ public final class DungeonTrainNet {
         // the renderer has to be told to finish its occlusion rebuild before drawing, or the first
         // frames in the twin draw nothing at all. See client/portal/ClientPortalSwap.
         registrar.playToClient(PortalSwapPacket.TYPE, PortalSwapPacket.STREAM_CODEC, PortalSwapPacket::handle);
+        // …and the same thing said early enough to act on: where the swap WOULD put this player, sent
+        // while they are still walking down the corridor. Repairing the arrival frame cannot build
+        // meshes that take longer than a frame to build, so the destination is built during the walk
+        // instead. See client/portal/ClientPortalPrewarm.
+        registrar.playToClient(PortalPrewarmPacket.TYPE, PortalPrewarmPacket.STREAM_CODEC, PortalPrewarmPacket::handle);
         // …and the same region trick for the engine sound: a twin corridor is not a sub-level, so the
         // client cannot work out from the train's geometry that it should still sound like one.
         registrar.playToClient(PortalTrainAudioPacket.TYPE, PortalTrainAudioPacket.STREAM_CODEC, PortalTrainAudioPacket::handle);
