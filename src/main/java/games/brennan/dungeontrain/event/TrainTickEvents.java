@@ -458,8 +458,17 @@ public final class TrainTickEvents {
             // Rare + only-when-idle → ~1% of the old every-tick full scan. This is why the frontier ring no
             // longer costs per-tick CPU yet can never be permanently stranded.
             if (ready.isEmpty() && level.getGameTime() % MIRROR_RECONCILE_PERIOD_TICKS == 0) {
-                for (Long key : pending) {
-                    if (WorldUpsideDownEvents.neighboursFull(level, ChunkPos.getX(key), ChunkPos.getZ(key))) {
+                for (Long key : new java.util.ArrayList<>(pending)) {
+                    int cx = ChunkPos.getX(key);
+                    int cz = ChunkPos.getZ(key);
+                    // A chunk that unloaded behind the train can never satisfy neighboursFull from
+                    // here, and the durable marker is the chunk attachment — a reload re-enqueues it.
+                    // Same rule the budgeted drain applies; without it the frontier ring is forever.
+                    if (level.getChunkSource().getChunkNow(cx, cz) == null) {
+                        data.removeMirrorChunk(key);
+                        continue;
+                    }
+                    if (WorldUpsideDownEvents.neighboursFull(level, cx, cz)) {
                         data.promoteMirrorChunk(key);
                     }
                 }

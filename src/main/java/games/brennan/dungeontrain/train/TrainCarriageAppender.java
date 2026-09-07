@@ -1140,6 +1140,7 @@ public final class TrainCarriageAppender {
      */
     private static boolean isBodyFrozen(Trains.Carriage carriage) {
         return carriage.ship() instanceof SableManagedShip sable
+            && sable.subLevel() != null
             && PhysicsFreeze.isFrozen(sable.subLevel());
     }
 
@@ -3835,6 +3836,9 @@ public final class TrainCarriageAppender {
             if (forceLoaded.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
         }
         shipyard.delete(ship);
+        // Gone for good, so its driver goes too. A merely culled group keeps its driver — the
+        // reload path re-attaches by sub-level id — which is why this lives here and not on cull.
+        SableManagedShip.forgetDriver(shipId);
         return new ReapOutcome(true, sharedCaptured, sharedDeferred);
     }
 
@@ -6094,7 +6098,9 @@ public final class TrainCarriageAppender {
      * A split's pieces share a pIdx and would otherwise read as a duplicate.
      */
     private static boolean isSplitPiece(ManagedShip ship) {
-        return ship instanceof SableManagedShip sable && sable.subLevel().getSplitFromSubLevel() != null;
+        return ship instanceof SableManagedShip sable
+            && sable.subLevel() != null
+            && sable.subLevel().getSplitFromSubLevel() != null;
     }
 
     /**
@@ -6504,7 +6510,7 @@ public final class TrainCarriageAppender {
      * next {@code applyTickOutput} has teleported it first. Non-Sable ships are never frozen.
      */
     private static void thawForPlacement(Trains.Carriage reference) {
-        if (reference.ship() instanceof SableManagedShip sable) {
+        if (reference.ship() instanceof SableManagedShip sable && sable.subLevel() != null) {
             PhysicsFreeze.unfreeze(sable.subLevel());
             PhysicsFreeze.setInactiveTicks(sable.subLevel(), 0);
         }

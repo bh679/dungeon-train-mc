@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.portal.PortalConnectionStats;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.portal.PortalCrossingLight;
 import games.brennan.dungeontrain.portal.PortalRoomCell;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.portal.PortalEditMirror;
 import games.brennan.dungeontrain.portal.PortalExitBindings;
@@ -521,6 +522,9 @@ public final class PortalCarriageEvents {
         long now = level.getGameTime();
         Long last = SKIP_WARNED_AT.get(anchorPIdx);
         if (last != null && now - last < SKIP_WARN_PERIOD_TICKS) return;
+        // A stamp older than the period can never suppress anything again, and anchors march with
+        // the train, so without this the map grows for the whole session.
+        SKIP_WARNED_AT.values().removeIf(t -> now - t >= SKIP_WARN_PERIOD_TICKS);
         SKIP_WARNED_AT.put(anchorPIdx, now);
         LOGGER.warn("[DungeonTrain] Portal swap refused [{}] for group anchorPIdx={}: {}. "
             + "There is no swap plane for it this tick — running one off a stale pose would freeze "
@@ -561,6 +565,8 @@ public final class PortalCarriageEvents {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         STRUCTURES.clear();
+        // Each pairing holds its carriage's plot; a pair key names a different carriage next world.
+        games.brennan.dungeontrain.portal.PortalPairIndex.clear();
         // The author each locked room settled on, and the catalogues behind them. Keyed by pair key
         // like everything else here, so the same stale-record hazard applies: the next world's pair 12
         // is a different room and must not inherit this one's library.
@@ -649,6 +655,8 @@ public final class PortalCarriageEvents {
             // ever live with no player to release it — and the ticket is DT's own type now, so no
             // other subsystem's reconcile will sweep it. Free when nothing is held.
             PortalPairResidency.syncTo(level, Set.of());
+            // No walk this tick means no pairing is live; the entries hold carriage plots.
+            games.brennan.dungeontrain.portal.PortalPairIndex.clear();
             return;
         }
 
@@ -755,6 +763,11 @@ public final class PortalCarriageEvents {
         // dispatch, so a pair revived or picked up here contributes its puppets to the same snapshot —
         // a second dispatch would look like the whole picture and wipe the first.
         tickStrandedPairs(level, players, dims, groupSize, padLen, puppets);
+
+        // Every live corridor has republished its pairing by now; anything left from an earlier
+        // tick belongs to a carriage the walk no longer reaches, and its entry pins that carriage's
+        // plot. The index's readers only ever want live pairs.
+        games.brennan.dungeontrain.portal.PortalPairIndex.sweep();
 
         puppets.dispatch(players);
 
@@ -2130,7 +2143,9 @@ public final class PortalCarriageEvents {
                                        BlockPos twinOrigin, PortalFrames frames) {
         if (!(ship instanceof SableManagedShip sable)) return;
 
-        LevelPlot plot = sable.subLevel().getPlot();
+        ServerSubLevel subLevel = sable.subLevel();
+        if (subLevel == null) return;
+        LevelPlot plot = subLevel.getPlot();
         if (plot == null) return;
 
         // The world origin, not a precomputed plot origin: the entry converts each point through the

@@ -36,10 +36,10 @@ import java.util.WeakHashMap;
  * not (still 1.20.1-only as of 2026-04-28).</p>
  *
  * <p>Wrapper identity: the ship-yard caches one {@link SableManagedShip}
- * per {@link ServerSubLevel} so {@code findAt} / {@code findAll} return
- * the same wrapper across calls within a tick. This matters for the
- * train code, which uses identity equality of {@link ManagedShip}
- * handles to detect duplicates while iterating.</p>
+ * per live {@link ServerSubLevel} so {@code findAt} / {@code findAll} return
+ * the same wrapper across calls while the sub-level is live. The wrapper
+ * holds its sub-level weakly and caches nothing else, so the cache entry —
+ * and the sub-level's chunks — go with the sub-level once Sable drops it.</p>
  */
 public final class SableShipyard implements Shipyard {
 
@@ -92,6 +92,11 @@ public final class SableShipyard implements Shipyard {
      * Wrapper cache. Weak so that when Sable removes a {@link ServerSubLevel}
      * (after {@code markRemoved} + container tick), the corresponding
      * {@link SableManagedShip} entry can be GC'd without manual cleanup.
+     *
+     * <p>This only works because the value does NOT reference the key: the wrapper holds its
+     * sub-level through a {@code WeakReference}. A strong back-reference from value to key makes
+     * a {@code WeakHashMap} permanent — which is exactly how every carriage the train ever culled
+     * stayed on the heap for the whole session.</p>
      */
     private final WeakHashMap<ServerSubLevel, SableManagedShip> wrappers = new WeakHashMap<>();
 
@@ -134,7 +139,9 @@ public final class SableShipyard implements Shipyard {
             LOGGER.warn("[Sable] delete called with non-Sable ManagedShip: {}", ship);
             return;
         }
-        sableShip.subLevel().markRemoved();
+        ServerSubLevel subLevel = sableShip.subLevel();
+        if (subLevel == null) return; // already collected — nothing left to remove
+        subLevel.markRemoved();
         // The container's per-tick removal pass picks this up next tick and
         // also clears our weak cache entry once the ServerSubLevel is GC'd.
     }
@@ -170,9 +177,14 @@ public final class SableShipyard implements Shipyard {
             LOGGER.warn("[Sable] forceLoad called with non-Sable ManagedShip: {}", ship);
             return;
         }
+        ServerSubLevel subLevel = sableShip.subLevel();
+        if (subLevel == null) {
+            LOGGER.debug("[Sable] forceLoad: sub-level {} is already collected — cannot hold it", sableShip.subLevelId());
+            return;
+        }
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return;
-        container.addForceLoadTicket(sableShip.subLevel(), ticketFor(hold), Unit.INSTANCE);
+        container.addForceLoadTicket(subLevel, ticketFor(hold), Unit.INSTANCE);
     }
 
     @Override
@@ -181,9 +193,11 @@ public final class SableShipyard implements Shipyard {
             LOGGER.warn("[Sable] releaseForceLoad called with non-Sable ManagedShip: {}", ship);
             return;
         }
+        ServerSubLevel subLevel = sableShip.subLevel();
+        if (subLevel == null) return; // gone with its ticket; the session-boundary sweep covers leftovers
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return;
-        container.removeForceLoadTicket(sableShip.subLevel(), ticketFor(hold), Unit.INSTANCE);
+        container.removeForceLoadTicket(subLevel, ticketFor(hold), Unit.INSTANCE);
     }
 
     @Override

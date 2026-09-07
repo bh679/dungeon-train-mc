@@ -609,6 +609,7 @@ public final class DebugCommand {
                 // hit the real BE positions.
                 if (!(ship instanceof SableManagedShip sableShip)) continue;
                 ServerSubLevel subLevel = sableShip.subLevel();
+                if (subLevel == null) continue;
                 LevelPlot plot = subLevel.getPlot();
                 int beInShip = 0;
                 int matched = 0;

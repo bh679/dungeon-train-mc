@@ -125,7 +125,7 @@ public final class PhysicsFreezeController {
             for (Trains.Carriage c : train) {
                 if (!(c.ship() instanceof SableManagedShip ship)) continue;
                 ServerSubLevel sl = ship.subLevel();
-                if (sl.isRemoved()) continue; // non-resident: stale wrapper, leave it alone
+                if (sl == null || sl.isRemoved()) continue; // non-resident: stale wrapper, leave it alone
                 resident++;
 
                 boolean frozenNow = PhysicsFreeze.isFrozen(sl);
