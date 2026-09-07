@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import dev.ryanhcode.sable.sublevel.plot.SubLevelPlayerChunkSender;
@@ -184,7 +185,9 @@ public final class CinematographerClearView {
                 ship.worldToShip(v);
                 local.add(BlockPos.containing(v.x, v.y, v.z));
             }
-            current.put(sableShip.subLevel().getPlot(), local);
+            ServerSubLevel subLevel = sableShip.subLevel();
+            if (subLevel == null) continue;
+            current.put(subLevel.getPlot(), local);
         }
 
         // Union of plots overlapping now and plots still holding swaps.

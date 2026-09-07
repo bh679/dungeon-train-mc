@@ -11595,6 +11595,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "culled-carriage-memory-leak",
+      "version": "0.813.0",
+      "type": "fix",
+      "title": "Long rides stop eating memory",
+      "summary": "Carriages the train left behind were never released \u2014 every one stayed in memory with all of its blocks, so a long session slowly filled up and the server started stuttering after several hours. They are now let go once the train has moved on.",
+      "highlights": [
+        "Memory no longer climbs for the whole session on a long ride",
+        "Fewer long freezes and tick-lag warnings after several hours of play"
+      ],
+      "pr": 1323,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -2539,6 +2539,19 @@ public final class TrackGenerator {
             ship.id(), queued, skippedFeaturePainted, centerCx, viewDistance);
     }
 
+    /** Chunks beyond view distance a provider keeps remembering as painted before they are pruned. */
+    static final int FILLED_KEEP_MARGIN_CHUNKS = 16;
+
+    /**
+     * Drop every chunk key whose X is more than {@code halfWidthChunks} from {@code centerCx}.
+     * Returns how many were dropped. Minecraft-free so the window rule is unit-testable.
+     */
+    static int pruneOutsideX(java.util.Collection<Long> keys, int centerCx, int halfWidthChunks) {
+        int before = keys.size();
+        keys.removeIf(key -> Math.abs(ChunkPos.getX(key) - centerCx) > halfWidthChunks);
+        return before - keys.size();
+    }
+
     /**
      * Drain up to {@link #CHUNKS_PER_SCAN_BUDGET} chunks of work per call:
      * first from the pending-chunk queue populated by {@code TrackChunkEvents}
@@ -2559,6 +2572,17 @@ public final class TrackGenerator {
         Deque<Long> pending = provider.getPendingChunks();
         int budget = CHUNKS_PER_SCAN_BUDGET;
         int drainedFromPending = 0;
+
+        int viewDistance = level.getServer().getPlayerList().getViewDistance();
+        if (viewDistance <= 0) viewDistance = 10; // dedicated-server fallback
+        Vector3dc shipWorldPos = ship.currentWorldPosition();
+        int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
+
+        // The dedupe set and the queue only matter within reach of the train; keys behind it are
+        // one boxed long each, forever, on a provider that lives for the session. Painting is
+        // idempotent, so a chunk that drops out of the window and reloads costs one redundant scan.
+        pruneOutsideX(filled, centerCx, viewDistance + FILLED_KEEP_MARGIN_CHUNKS);
+        pruneOutsideX(pending, centerCx, viewDistance + FILLED_KEEP_MARGIN_CHUNKS);
 
         // 1. Drain the pending queue first — FIFO so nearby chunks (loaded
         //    first around the player) paint before far-away chunks. poll()
@@ -2581,11 +2605,6 @@ public final class TrackGenerator {
         //    anything dropped from pending because filled/shipyard/unloaded).
         int scanned = 0;
         if (budget > 0) {
-            int viewDistance = level.getServer().getPlayerList().getViewDistance();
-            if (viewDistance <= 0) viewDistance = 10; // dedicated-server fallback
-
-            Vector3dc shipWorldPos = ship.currentWorldPosition();
-            int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
             int centerCz = g.trackCenterZ() >> 4;
 
             for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN && budget > 0; cz++) {
