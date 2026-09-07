@@ -67,7 +67,7 @@ public abstract class SectionOcclusionGraphPortalSwapMixin {
                                                           Frustum frustum,
                                                           List<SectionRenderDispatcher.RenderSection> sections,
                                                           CallbackInfo ci) {
-        if (!ClientPortalSwap.claimGraphWait()) return;
+        if (!ClientPortalSwap.inArrivalWindow()) return;
         if (ClientPortalSwap.claimFirstTrace()) {
             LogUtils.getLogger().info(
                 "[DungeonTrain] Portal swap: renderer is waiting out the occlusion rebuild before drawing");
