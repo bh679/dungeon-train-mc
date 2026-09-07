@@ -11697,7 +11697,7 @@
       "version": "0.819.0",
       "type": "fix",
       "title": "Dimensional carriage fixes",
-      "summary": "Dimensional carriages that stopped working now recover on their own.",
+      "summary": "Some fixes to dimensional carriages.",
       "highlights": [],
       "pr": 1328,
       "date": "2026-09-07",
