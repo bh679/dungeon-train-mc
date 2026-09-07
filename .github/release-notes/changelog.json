@@ -11626,9 +11626,9 @@
       ],
       "pr": 1325,
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "new-dimensional-carriages-sept",
@@ -11641,9 +11641,9 @@
       ],
       "pr": 1327,
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "weight-cmd-click-input",
@@ -11657,9 +11657,9 @@
       ],
       "pr": 1329,
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "per-cell-copy-settings",
@@ -11673,9 +11673,9 @@
         "Copying a block variant to the hotbar now carries these settings, so pasting one really does duplicate the cell"
       ],
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "dimensional-carriage-arrival",
@@ -11688,9 +11688,9 @@
         "Lighting eases across the doorway rather than snapping"
       ],
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "dimensional-carriages-repair-themselves",
@@ -11701,9 +11701,9 @@
       "highlights": [],
       "pr": 1328,
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "dimensional-carriage-train-time",
@@ -11714,9 +11714,9 @@
       "highlights": [],
       "pr": 1332,
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "variant-sidecar-footprint-crop",
@@ -11731,9 +11731,9 @@
       ],
       "pr": 1333,
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "statue-dimensional-carriages",
@@ -11747,9 +11747,9 @@
       ],
       "pr": 1333,
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "portal-carriage-velocity-carry",
@@ -11759,9 +11759,9 @@
       "summary": "Stepping into a dimensional carriage could give you a small unwanted shove. It doesn't any more.",
       "pr": 1336,
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     },
     {
       "id": "sodium-shader-arrival",
@@ -11774,9 +11774,9 @@
         "Dimensional carriages arrive cleanly with shaders on"
       ],
       "date": "2026-09-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.823.0",
+      "released_at": "2026-09-07T17:34:58Z"
     }
   ]
 }
