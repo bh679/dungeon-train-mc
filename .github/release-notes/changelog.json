@@ -11635,12 +11635,9 @@
       "version": "0.815.0",
       "type": "content",
       "title": "Four new dimensional carriages",
-      "summary": "Four new carriages join the rotation behind the portals \u2014 a slime chamber among the distant-enemies rooms, a wood-pillared hall in the library set, a piston room, and a new default chamber guarded by a mixed pack. One older room steps out of the rotation to make space.",
+      "summary": "A handful of new dimensional carriages have joined the rotation, and one older one has stepped aside.",
       "highlights": [
-        "New slime carriage, found among the distant-enemies rooms",
-        "New wood-pillared hall, found among the library rooms",
-        "New piston carriage and a new default chamber with a mixed guard pack",
-        "The outside-the-box carriage has stepped out of the rotation"
+        "A few new carriage variants to find behind the portals"
       ],
       "pr": 1327,
       "date": "2026-09-07",
