@@ -11717,6 +11717,39 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "variant-sidecar-footprint-crop",
+      "version": "0.821.0",
+      "type": "fix",
+      "title": "Editing a room no longer strips its block variety",
+      "summary": "Saving a dimensional carriage from the editor could quietly delete most of its block variants \u2014 the per-cell lists that make one copy of a room look different from the next. A room larger than the built-in size was measured against that smaller size before its own had been read, every cell outside the smaller box was dropped, and the next save wrote the shortened version over the original. One room lost 437 of its 488 variant cells this way; another had its variant file deleted outright. Rooms now keep every variant cell through a save, whatever size they are.",
+      "highlights": [
+        "Saving a room keeps all of its block variants, whatever the room's size",
+        "Toggling a mirror axis on a room no longer trims its variants",
+        "Rooms with cells authored outside their own footprint stay editable"
+      ],
+      "pr": 1333,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "statue-dimensional-carriages",
+      "version": "0.821.0",
+      "type": "content",
+      "title": "Seven statue dimensional carriages",
+      "summary": "A statues dimensional carriage joins the rotation, with six more statue rooms grouped under it so a portal draws a different one each time it opens. The existing singlesomething room moves into the same group.",
+      "highlights": [
+        "New statues room, plus statue2 through statue7",
+        "singlesomething now rolls as part of the statues group"
+      ],
+      "pr": 1333,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
