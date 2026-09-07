@@ -53,17 +53,28 @@ public final class PortalPrewarmTicker {
      * <p>On while the shape of this is still being settled. It is one line a second and only while a
      * player is walking into a portal, which is the moment somebody reading the log cares about.</p>
      */
-    private static final boolean TRACE = false;
+    private static final boolean TRACE = true;
 
     /** Ticks between tally lines — a second, so the shape of an approach is readable. */
     private static final int TRACE_PERIOD_TICKS = 20;
 
-    /** built, noChunk, lightOff, clean, missing — see {@link #traceTally}. */
+    /** built, noChunk, lightOff, clean, missing, compiled — see {@link #traceTally}. */
     private static int built;
     private static int noChunk;
     private static int lightOff;
     private static int clean;
     private static int missing;
+
+    /**
+     * How many of the sections looked at this pass actually hold geometry.
+     *
+     * <p>The number that was missing, and whose absence cost two rounds of diagnosis. The others count
+     * what the prewarm <i>did</i>; this counts what came of it. A section can be neither dirty nor
+     * compiled — which is what the old {@code setNotDirty} left behind — and in that state it is
+     * invisible to vanilla's rebuild path and impassable to the occlusion graph, while reading as
+     * "clean" and looking, in a tally, exactly like success.</p>
+     */
+    private static int compiled;
 
     /** Ticks since the last tally line, and whether anything has happened worth reporting. */
     private static int sinceTrace;
@@ -121,12 +132,19 @@ public final class PortalPrewarmTicker {
             }
             if (!target.isDirty()) {
                 clean++;
+                if (target.getCompiled() != SectionRenderDispatcher.CompiledSection.UNCOMPILED) compiled++;
                 continue;
             }
 
             if (regions == null) regions = new RenderRegionCache();
+            // Scheduled, and the dirty flag deliberately LEFT ALONE. Vanilla clears it here because
+            // vanilla only ever does this for sections it is about to draw; ours are on the far side
+            // of a portal, and if the build does not land, clearing it tells the renderer nobody owes
+            // this section a rebuild any more. It is then neither dirty nor compiled — invisible to
+            // the rebuild path and impassable to the occlusion graph, whose BFS can only walk through
+            // sections that have been compiled. That is what left an arrival with an empty graph and
+            // a screen that filled in over 300ms. Leaving it dirty costs at worst one extra build.
             target.rebuildSectionAsync(dispatcher, regions);
-            target.setNotDirty();
             built++;
 
             if (ClientPortalPrewarm.claimFirstTrace()) {
@@ -154,13 +172,14 @@ public final class PortalPrewarmTicker {
 
         if (TRACE) {
             LogUtils.getLogger().info(
-                "[DungeonTrain] Portal prewarm tally ({}): built={} noChunk={} lightOff={} clean={} missing={}",
-                state, built, noChunk, lightOff, clean, missing);
+                "[DungeonTrain] Portal prewarm tally ({}): built={} compiled={} noChunk={} lightOff={} clean={} missing={}",
+                state, built, compiled, noChunk, lightOff, clean, missing);
         }
         built = 0;
         noChunk = 0;
         lightOff = 0;
         clean = 0;
         missing = 0;
+        compiled = 0;
     }
 }
