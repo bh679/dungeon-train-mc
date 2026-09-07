@@ -22,6 +22,7 @@ import games.brennan.dungeontrain.portal.PortalExitBindings;
 import games.brennan.dungeontrain.portal.PortalExitTransit;
 import games.brennan.dungeontrain.portal.PortalFacing;
 import games.brennan.dungeontrain.portal.PortalFrames;
+import games.brennan.dungeontrain.portal.PortalPrewarmHints;
 import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
 import games.brennan.dungeontrain.portal.PortalOccupants;
@@ -352,6 +353,18 @@ public final class PortalCarriageEvents {
     private static final Map<UUID, Double> CROSSING_THIS_TICK = new HashMap<>();
 
     /**
+     * Player → where a swap would put them <b>this tick</b>, rebuilt from empty each time, for the
+     * reason {@link #CROSSING_THIS_TICK} is: a player standing inside a pair's base corridor and one
+     * of its copies at once is inside two frames, and should be told about one destination rather
+     * than about two in an order nothing defines. The first frame to claim them wins, which is the
+     * same one {@link PortalExitTransit} would have swapped them through.
+     *
+     * <p>What has already been sent lives in {@link PortalPrewarmHints}, shared with the
+     * free-standing portals so both systems dedupe on one rule.</p>
+     */
+    private static final Map<UUID, BlockPos> PREWARM_THIS_TICK = new HashMap<>();
+
+    /**
      * Carriage indices whose swap was wanted and refused this tick for a reason that does not clear
      * on its own — what {@link PortalWalkThrough} is fed. Rebuilt from empty every tick, like
      * {@link #CROSSING_THIS_TICK}: it describes this tick's refusals and nothing older.
@@ -578,6 +591,8 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.PlayerSkyRegions.clearAll();
         LAST_CROSSING.clear();
         CROSSING_THIS_TICK.clear();
+        PortalPrewarmHints.clear();
+        PREWARM_THIS_TICK.clear();
         LAST_TRAIN_AUDIO.clear();
         COOLDOWNS.clear();
         LAST_SWAP.clear();
@@ -676,6 +691,7 @@ public final class PortalCarriageEvents {
         // Rebuilt from empty every tick: it describes where players are now, and a leftover entry
         // would hold a lift on somebody who has walked out of the corridor it came from.
         CROSSING_THIS_TICK.clear();
+        PREWARM_THIS_TICK.clear();
         REFUSED_THIS_TICK.clear();
 
         for (UUID trainId : Trains.byTrainId(level).keySet()) {
@@ -774,6 +790,10 @@ public final class PortalCarriageEvents {
         // Same reason as the puppets' single dispatch, and after it for tidiness rather than
         // necessity: every frame that could have something to say about a player has now spoken.
         dispatchCrossing(players);
+
+        // …and the destinations, on the same "every frame has spoken" footing, and for the same
+        // reason as the hold above: a player inside two overlapping frames is told one thing.
+        dispatchPrewarm(players, level.getGameTime());
 
         // Once per pair rather than once per carriage, and outside the loop above so it also runs for
         // pairs nobody is near any more — those are exactly the ones that need draining.
@@ -1399,6 +1419,46 @@ public final class PortalCarriageEvents {
         LAST_CROSSING.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
     }
 
+    /**
+     * Record where a swap would put this player, keeping the first frame to answer for them.
+     *
+     * <p>Only the world-side destination is worth a word: a move back to the carriage lands on the
+     * train, whose sections have been compiled the whole time the player has been riding it, and
+     * which Sable draws from a sub-level rather than from the world sections a prewarm builds.
+     * A null move — the player is in neither half of this frame — is not a destination at all.</p>
+     */
+    private static void notePrewarm(ServerPlayer player, PortalFrames.Move move) {
+        if (move == null || move.toFrame() != PortalFrames.FRAME_TWIN) return;
+        PREWARM_THIS_TICK.putIfAbsent(player.getUUID(),
+            BlockPos.containing(move.x(), move.y(), move.z()));
+    }
+
+    /**
+     * Tell each player about the destination this tick found for them, when it is news.
+     *
+     * <p>Shaped like {@link #dispatchCrossing} and differing in what "news" means: a destination is
+     * news when its <b>section</b> changes, because that is the granularity the client builds at, or
+     * when the last one was sent long enough ago to be worth restating. A player who has left every
+     * corridor is sent nothing — their client's own expiry is what ends the prewarm, so there is no
+     * "you have stopped" message to drop.</p>
+     */
+    private static void dispatchPrewarm(List<ServerPlayer> players, long gameTime) {
+        if (PREWARM_THIS_TICK.isEmpty() && !PortalPrewarmHints.anyOutstanding()) return;
+
+        for (ServerPlayer player : players) {
+            UUID id = player.getUUID();
+            BlockPos destination = PREWARM_THIS_TICK.get(id);
+            if (destination == null) {
+                PortalPrewarmHints.forget(id);
+                continue;
+            }
+
+            PortalPrewarmHints.send(player, destination, gameTime);
+        }
+        // And whoever left the world entirely, who by definition never appears in the loop above.
+        PortalPrewarmHints.retain(players);
+    }
+
     /** Take the daylight back off anyone who was near a daylit room this tick and is not any more. */
     /** Everyone but the players inside a {@code portal test} twin, whose ambience is not this pass' to touch. */
     private static List<ServerPlayer> withoutPortalTesters(List<ServerPlayer> players) {
@@ -1724,6 +1784,12 @@ public final class PortalCarriageEvents {
             // somebody into rock. Never applied to a copy's own frame: a copy is only a way out.
             PortalFrames.Origin boundTwin = copyOnly ? null : PortalExitBindings.twinFrameFor(
                 level, structure, dims, player.getUUID(), pairKey, role);
+
+            // Where this player would land if they crossed right now — the counterpart position, not
+            // the swap decision, so it is answered on BOTH sides of the midpoint and for the whole
+            // walk rather than only on the tick the swap fires. That tick is far too late to be worth
+            // telling a renderer about; see net/PortalPrewarmPacket.
+            notePrewarm(player, frames.redirectedTo(frames.mirror(px, py, pz), boundTwin));
 
             // Asked BEFORE the passenger and cooldown tests, which it did not used to be. Nothing
             // about the order changes what happens — all three merely skip the player — but it
