@@ -29,9 +29,12 @@ import java.util.List;
  * server is the only authority on where a villager is — so the hysteresis band alone settles it, and
  * the rule's idempotence does the rest.</p>
  *
- * <p><b>Momentum survives.</b> {@code teleportTo} moves an entity without touching its velocity,
- * which is what an ender pearl needs: it arrives in the twin still travelling, at the speed and
- * bearing it had, and carries on down the corridor as though nothing happened.</p>
+ * <p><b>Momentum survives — the train's share of it does not.</b> {@code teleportTo} moves an
+ * entity without touching its velocity, which is what an ender pearl needs: it arrives in the twin
+ * still travelling, at the bearing it had, and carries on down the corridor as though nothing
+ * happened. What it should not carry is the carriage's own motion, which is the train's rather than
+ * its own and means nothing in a room stamped into the static world — so on the way off the train
+ * that component is taken back out. See {@link PortalTransitVelocity}.</p>
  */
 public final class PortalEntityTransit {
 
@@ -41,12 +44,12 @@ public final class PortalEntityTransit {
 
     /** Move every entity in the pair's corridors that is on the wrong side of its midpoint. */
     public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
-                           int carriageIndex) {
-        run(level, frames, entities, carriageIndex, null);
+                           int carriageIndex, Vec3 carrier) {
+        run(level, frames, entities, carriageIndex, carrier, null);
     }
 
     /**
-     * As {@link #run(ServerLevel, PortalFrames, List, int)}, but landing anything walking <b>in</b>
+     * As {@link #run(ServerLevel, PortalFrames, List, int, Vec3)}, but landing anything walking <b>in</b>
      * at {@code twinOverride} instead of the frame's own twin.
      *
      * <p>What makes a led villager arrive where its player does. A player who came out through an
@@ -58,7 +61,7 @@ public final class PortalEntityTransit {
      * <p>Null means the original twin, so the ordinary call above is this one with nothing to say.</p>
      */
     public static void run(ServerLevel level, PortalFrames frames, List<Entity> entities,
-                           int carriageIndex, PortalFrames.Origin twinOverride) {
+                           int carriageIndex, Vec3 carrier, PortalFrames.Origin twinOverride) {
         for (Entity entity : entities) {
             if (!eligible(entity)) continue;
 
@@ -83,9 +86,14 @@ public final class PortalEntityTransit {
                 ? frames.floorSurfaceY(move.toFrame(), twinOverride)
                 : move.y();
 
+            // Off the train, the carriage's own motion goes with it: the destination is not moving,
+            // so keeping it would send whatever crossed sliding down the twin corridor. Coming back
+            // the other way nothing is added — Sable's carry picks a traveller up again by itself.
             Vec3 velocity = entity.getDeltaMovement();
             entity.teleportTo(move.x(), targetY, move.z());
-            entity.setDeltaMovement(velocity);
+            entity.setDeltaMovement(move.toFrame() == PortalFrames.FRAME_TWIN
+                ? PortalTransitVelocity.withoutCarrier(velocity, carrier)
+                : velocity);
 
             // The path it was following leads back to a place it is no longer near — in the twin's
             // case, forty-odd blocks straight up. Dropping it makes the mob look around and decide

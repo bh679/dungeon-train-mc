@@ -41,6 +41,7 @@ import games.brennan.dungeontrain.portal.PortalStampRecord;
 import games.brennan.dungeontrain.portal.PortalSwapDiagnostics;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalTrainFreeze;
+import games.brennan.dungeontrain.portal.PortalTransitVelocity;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.portal.PortalTwinLanes;
 import games.brennan.dungeontrain.portal.PortalTwinRegion;
@@ -51,12 +52,14 @@ import games.brennan.dungeontrain.net.PortalCrossingPacket;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
+import games.brennan.dungeontrain.ship.KinematicDriver;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.ShipAabbs;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.template.GateContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
@@ -64,6 +67,7 @@ import net.minecraft.world.phys.Vec3;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainMotionFreeze;
+import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
@@ -76,6 +80,7 @@ import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import org.joml.Vector3dc;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -129,7 +134,12 @@ public final class PortalCarriageEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** All five axes relative: velocity and the render interpolation baseline both survive the move. */
+    /**
+     * All five axes relative: the render interpolation baseline survives the move, so the camera
+     * does not smear across the jump. Velocity survives it too — an absolute axis would zero the
+     * velocity and reset the baseline with it — so the train's share of that velocity is taken back
+     * out separately, after the teleport. See {@link PortalTransitVelocity}.
+     */
     private static final Set<RelativeMovement> RELATIVE_ALL = EnumSet.allOf(RelativeMovement.class);
 
     /**
@@ -1602,8 +1612,13 @@ public final class PortalCarriageEvents {
         publishPairing(carriageIndex, ship, dims, built.kind(), originX, originY, originZ,
             twinOrigin, frames);
 
+        // What the carriage frame itself is doing, so that whatever crosses to the static twin can
+        // have the train's share of its velocity taken back out. Read once for the tick and handed
+        // to every mover below. See PortalTransitVelocity.
+        Vec3 carrier = carrierVelocity(ship);
+
         swapPlayers(level, players, frames, carriageIndex, pairKey, built, dims, role,
-            PortalRoomTiling.Tile.BASE, /*copyOnly*/ false);
+            PortalRoomTiling.Tile.BASE, carrier, /*copyOnly*/ false);
 
         // Everything anywhere in the structure — both twin corridors and the pocket room between
         // them — is noted as being in a portal room, so vanilla's despawn rule leaves it alone. The
@@ -1622,7 +1637,7 @@ public final class PortalCarriageEvents {
         // The override is what keeps a led villager with its player: whoever is in this carriage's
         // corridor decides where things walking IN out of it end up, so a player bound to a copy
         // eight rooms out takes their followers there rather than leaving them at the original twin.
-        PortalEntityTransit.run(level, frames, occupants, carriageIndex,
+        PortalEntityTransit.run(level, frames, occupants, carriageIndex, carrier,
             PortalExitBindings.followerTwinFor(level, built, dims, pairKey, role,
                 level.getGameTime()));
 
@@ -1639,10 +1654,10 @@ public final class PortalCarriageEvents {
         for (PortalExitTransit.Copy copy : PortalExitTransit.framesFor(
                 built, dims, layout, role, frames.carriage(), players)) {
             swapPlayers(level, players, copy.frames(), carriageIndex, pairKey, built, dims, role,
-                copy.site().tile(), /*copyOnly*/ true);
+                copy.site().tile(), carrier, /*copyOnly*/ true);
             PortalEntityTransit.run(level, copy.frames(),
                 inCopyOnly(copy.frames(), PortalCorridorEntities.inCorridors(level, copy.frames())),
-                carriageIndex);
+                carriageIndex, carrier);
         }
 
         // Last: everything above has had its say about whether this tick's swap was refused.
@@ -1707,7 +1722,7 @@ public final class PortalCarriageEvents {
                                     PortalFrames frames, int carriageIndex, int pairKey,
                                     PortalStructure structure, CarriageDims dims,
                                     PortalCarriageRole role, PortalRoomTiling.Tile tile,
-                                    boolean copyOnly) {
+                                    Vec3 carrier, boolean copyOnly) {
         for (ServerPlayer player : players) {
             double px = player.getX(), py = player.getY(), pz = player.getZ();
             if (copyOnly && !PortalExitTransit.inCopy(frames, px, py, pz)) continue;
@@ -1866,8 +1881,28 @@ public final class PortalCarriageEvents {
             if (move.toFrame() == PortalFrames.FRAME_TWIN && !copyOnly) {
                 PortalConnectionStats.noteConnected(player.getUUID());
             }
+            // getKnownMovement, not getDeltaMovement: for a player the client is the authority on
+            // movement, and the server's deltaMovement is not kept in step with it — what the server
+            // does know is the displacement the last movement packet actually reported, which is
+            // what has to be corrected here.
+            Vec3 before = player.getKnownMovement();
             player.connection.teleport(move.x(), targetY, move.z(),
                 player.getYRot(), player.getXRot(), RELATIVE_ALL);
+            // Off the train and into a room that is not moving: the carriage's own motion is no
+            // longer theirs to keep, so it comes out of what they arrive with — leaving whatever
+            // they were doing under their own steam. Nothing is added on the way back; Sable's carry
+            // picks a player up again by itself (client/SpawnDeckHold waits for exactly that).
+            //
+            // Sent as its own packet because the client, not the server, is the authority on where a
+            // player is going: setDeltaMovement alone would be overwritten by the next movement
+            // packet. It goes AFTER the position, so it lands after handleMovePlayer has restored
+            // the velocity the relative teleport preserved.
+            Vec3 after = before;
+            if (move.toFrame() == PortalFrames.FRAME_TWIN) {
+                after = PortalTransitVelocity.withoutCarrier(before, carrier);
+                player.setDeltaMovement(after);
+                player.connection.send(new ClientboundSetEntityMotionPacket(player));
+            }
             // Straight after the position, so the client's renderer knows this frame is the one to
             // finish its occlusion rebuild on. Without it the twin's sections — culled behind sealed
             // bedrock — are missing from the frame the player arrives in, and it flashes. See
@@ -1876,10 +1911,14 @@ public final class PortalCarriageEvents {
             COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
             LAST_SWAP.put(player.getUUID(), level.getGameTime());
 
-            LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={}{} → {} ({}, {}, {}) → ({}, {}, {})",
+            // Velocity is logged alongside the move because the correction is invisible when it
+            // works and indistinguishable from never having run when it does not — the same reason
+            // the swap itself is logged.
+            LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={}{} → {} ({}, {}, {}) → ({}, {}, {}) velocity {} → {} (carrier {})",
                 player.getName().getString(), carriageIndex, copyOnly ? " (exit copy)" : "",
                 move.toFrame() == PortalFrames.FRAME_TWIN ? "TWIN" : "CARRIAGE",
-                fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()));
+                fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()),
+                fmt(before), fmt(after), fmt(carrier));
         }
     }
 
@@ -2331,6 +2370,27 @@ public final class PortalCarriageEvents {
 
     private static String fmt(double v) {
         return String.format("%.2f", v);
+    }
+
+    private static String fmt(Vec3 v) {
+        return "(" + fmt(v.x) + ", " + fmt(v.y) + ", " + fmt(v.z) + ")";
+    }
+
+    /**
+     * The world-space velocity of the frame a carriage's corridor is riding in.
+     *
+     * <p>{@link Vec3#ZERO} for anything that is not one of DT's kinematically-driven trains — a
+     * parked group, a ship some other system is moving, a wrapper whose driver has gone. Zero is the
+     * right answer for all of them: nothing is being carried, so nothing has to come back out, and
+     * {@link PortalTransitVelocity#withoutCarrier} leaves the traveller exactly as it found them.</p>
+     */
+    private static Vec3 carrierVelocity(ManagedShip ship) {
+        if (ship == null) return Vec3.ZERO;
+        KinematicDriver driver = ship.getKinematicDriver();
+        if (!(driver instanceof TrainTransformProvider train)) return Vec3.ZERO;
+
+        Vector3dc velocity = train.getTargetVelocity();
+        return velocity == null ? Vec3.ZERO : new Vec3(velocity.x(), velocity.y(), velocity.z());
     }
 
     // ─── Diagnosis ──────────────────────────────────────────────────────
