@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
+import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -56,6 +57,11 @@ public abstract class LevelRendererFrustumRefreshMixin {
             target = "Lnet/minecraft/client/renderer/SectionOcclusionGraph;consumeFrustumUpdate()Z"),
         require = 0)
     private boolean dungeontrain$refreshFrustumWhileArriving(boolean original) {
-        return original || ClientPortalSwap.inArrivalWindow();
+        if (original || !ClientPortalSwap.inArrivalWindow()) return original;
+        // Said out loud rather than assumed: require = 0 means a mixin that never attached looks
+        // exactly like one that works, and this hook forcing the re-derive is half of what the
+        // arrival trace is trying to establish.
+        PortalArrivalTrace.noteForced();
+        return true;
     }
 }

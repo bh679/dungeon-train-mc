@@ -115,6 +115,7 @@
     "client.SectionOcclusionGraphPortalSwapMixin",
     "client.LevelRendererPortalSwapCompileMixin",
     "client.LevelRendererFrustumRefreshMixin",
+    "client.LevelRendererArrivalTraceMixin",
     "client.LevelRendererPrewarmAccessor",
     "client.ViewAreaPrewarmInvoker",
     "client.LanguageSelectEntryAccessor",

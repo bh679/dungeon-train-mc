@@ -1,0 +1,50 @@
+package games.brennan.dungeontrain.mixin.client;
+
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.ClientPortalSeal;
+import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
+import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.client.Camera;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+import net.minecraft.client.renderer.culling.Frustum;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+/**
+ * Reports what {@code setupRender} left behind on each frame of a portal arrival — the measurement
+ * {@link PortalArrivalTrace} explains, and the thing that separates the remaining hypotheses.
+ *
+ * <p>Reads {@code visibleSections} after vanilla has finished with it, which is the list the terrain
+ * layers are drawn from a few lines later. If it is full and the screen is empty, the fault is past
+ * this point (meshes, or the draw itself); if it is empty, the fault is the graph or the frustum that
+ * filtered it, and {@code sealed} says which.</p>
+ *
+ * <p>Diagnostic, not a fix: no behaviour of any kind, and budgeted to twenty frames per arrival so a
+ * long window cannot flood a log.</p>
+ */
+@Mixin(LevelRenderer.class)
+public abstract class LevelRendererArrivalTraceMixin {
+
+    @Shadow
+    @org.spongepowered.asm.mixin.Final
+    private ObjectArrayList<SectionRenderDispatcher.RenderSection> visibleSections;
+
+    @Inject(method = "setupRender", at = @At("TAIL"), require = 0)
+    private void dungeontrain$traceArrivalFrame(Camera camera, Frustum frustum,
+                                                boolean hasCapturedFrustum, boolean isSpectator,
+                                                CallbackInfo ci) {
+        if (!ClientPortalSwap.inArrivalWindow()) return;
+        boolean forced = PortalArrivalTrace.consumeForced();
+        if (!PortalArrivalTrace.claimFrame()) return;
+
+        LogUtils.getLogger().info(
+            "[DungeonTrain] Portal arrival frame: forced={} visible={} sealed={} camY={}",
+            forced, this.visibleSections.size(), ClientPortalSeal.sealed(),
+            String.format("%.1f", camera.getPosition().y));
+    }
+}

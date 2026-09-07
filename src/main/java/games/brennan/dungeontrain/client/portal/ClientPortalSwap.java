@@ -59,6 +59,7 @@ public final class ClientPortalSwap {
     public static void arm() {
         nearbyCompiled = false;
         armedAt = System.nanoTime();
+        PortalArrivalTrace.beginArrival();
     }
 
     /** Forget an armed swap outright. */
