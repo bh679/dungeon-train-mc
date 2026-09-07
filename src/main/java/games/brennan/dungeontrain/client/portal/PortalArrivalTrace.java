@@ -32,7 +32,7 @@ package games.brennan.dungeontrain.client.portal;
 public final class PortalArrivalTrace {
 
     /** Whether to say what each arrival frame did. Off ships; on diagnoses. */
-    public static final boolean TRACE = false;
+    public static final boolean TRACE = true;
 
     /** Set by the frustum mixin when it forced a re-derive this frame; read and cleared by the trace. */
     private static volatile boolean forced;
