@@ -232,8 +232,38 @@
     "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
   },
   "smallpat": 1,
+  "statue2": {
+    "weight": 1,
+    "mode": "endless_open/dynamic/off/off/off/cycle"
+  },
+  "statue3": {
+    "weight": 1,
+    "mode": "endless_open/dynamic/off/off/off/cycle"
+  },
+  "statue4": {
+    "weight": 1,
+    "mode": "endless_open/dynamic/off/off/off/cycle"
+  },
+  "statue5": {
+    "weight": 1,
+    "mode": "endless_open/dynamic/off/off/off/cycle"
+  },
+  "statue6": {
+    "weight": 1,
+    "mode": "endless_open/dynamic/off/off/off/cycle"
+  },
+  "statue7": {
+    "weight": 1,
+    "mode": "endless_open/dynamic/off/off/off/cycle"
+  },
   "statues": {
     "weight": 1,
+    "maxLevel": 0,
+    "phases": [
+      "OVERWORLD",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },
   "suspiciousfurniturestore": {
