@@ -8,7 +8,9 @@ import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.portal.PortalAnchors;
 import games.brennan.dungeontrain.portal.PortalBuilder;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
+import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
@@ -334,10 +336,6 @@ public final class PortalCommand {
     }
 
     /**
-     * The corridors whose way in has been broken open. Reports both directions explicitly, because
-     * "severed" reads as fully dead and it is not — the way out of a severed corridor still works.
-     */
-    /**
      * Say why the nearest portal is or is not working, from where the caller is standing.
      *
      * <p>The in-game half of {@link games.brennan.dungeontrain.portal.PortalSwapDiagnostics}: that
@@ -374,18 +372,31 @@ public final class PortalCommand {
         return report.size();
     }
 
+    /**
+     * The pairs whose way in has been broken open, listed by pair key — the group's anchor, which is
+     * also its entry corridor's index. One line per pair rather than per corridor, because severing
+     * is a pair-level fact: both ends stop taking people in together.
+     *
+     * <p>Reports both directions explicitly, because "severed" reads as fully dead and it is not —
+     * the way out of a severed pair still works, at both ends. It is also not forever: the record is
+     * dropped when the rolling window next re-stamps the group, which restores the broken shell.</p>
+     */
     private static int runSeveredList(CommandSourceStack source) {
         List<Integer> severed = PortalRegistry.get(source.getLevel()).severed();
         if (severed.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No severed portal corridors in this dimension."), false);
+            source.sendSuccess(() -> Component.literal("No severed portal pairs in this dimension."), false);
             return 0;
         }
 
         source.sendSuccess(() -> Component.literal(
-            severed.size() + " severed portal corridor" + (severed.size() == 1 ? "" : "s")
-                + " (no way in; the way out still works):"), false);
-        for (int carriageIndex : severed) {
-            source.sendSuccess(() -> Component.literal("  carriage " + carriageIndex), false);
+            severed.size() + " severed portal pair" + (severed.size() == 1 ? "" : "s")
+                + " (no way in at either end; the ways out still work; repaired on the next "
+                + "re-stamp):"), false);
+        for (int pairKey : severed) {
+            source.sendSuccess(() -> Component.literal("  pair " + pairKey
+                + " (carriages " + pairKey + " + "
+                + PortalCarriageRole.partnerIndex(pairKey, DungeonTrainConfig.getGroupSize()) + ")"),
+                false);
         }
         return severed.size();
     }
@@ -393,7 +404,7 @@ public final class PortalCommand {
     private static int runSeveredClear(CommandSourceStack source) {
         int restored = PortalRegistry.get(source.getLevel()).clearSevered();
         source.sendSuccess(() -> Component.literal(
-            "Restored " + restored + " severed portal corridor" + (restored == 1 ? "" : "s") + "."), true);
+            "Restored " + restored + " severed portal pair" + (restored == 1 ? "" : "s") + "."), true);
         return restored;
     }
 

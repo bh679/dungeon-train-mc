@@ -312,6 +312,9 @@ public final class CarriagePlacer {
             // placed underground later roll the same contents sub-variant without either knowing
             // about the other. Entry and exit share the key, and so share a corridor.
             int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, groupSize);
+            // The shell about to be written is whole, so whatever broke the last one is gone with
+            // it — see repairSeveredPair.
+            repairSeveredPair(level, pairKey);
             // And the pair's corridor shape, drawn from the same key for the same reason: the
             // carriage stamped here and the twin stamped later must agree on the box without either
             // consulting the other. PortalCarriageBuilder.planStructure draws it identically.
@@ -338,9 +341,14 @@ public final class CarriagePlacer {
         // skips the same passes the corridors do. Furnishing a room nobody can enter with loot, and
         // trapping mobs in it, is the waste that pinning a portal to one group exists to remove.
         if (portalMiddle) {
+            int pairKey =
+                PortalCarriageRole.entryIndexOf(carriageIndex, DungeonTrainConfig.getGroupSize());
+            // Before stampMiddle, which reads the severed state to decide whether to leave the
+            // doorway column open: repairing first is what re-seals the plate on the same pass that
+            // restores the corridors, so a healed pair stops being a walk-through.
+            repairSeveredPair(level, pairKey);
             PortalCarriageBuilder.stampMiddle(level, origin, dims,
-                PortalCarriageSelection.corridorKindFor(level,
-                    PortalCarriageRole.entryIndexOf(carriageIndex, DungeonTrainConfig.getGroupSize())),
+                PortalCarriageSelection.corridorKindFor(level, pairKey),
                 /*relight*/ false, carriageIndex);
             return finishPlace(level, origin, PortalCarriageBuilder.middleVariant(), dims, "portal_middle", null);
         }
@@ -785,6 +793,31 @@ public final class CarriagePlacer {
      * {@link #placeHalfFlatbedPad}, OUTSIDE the integer carriage-slot
      * grid.</p>
      */
+    /**
+     * Forget a portal pair's severing as its group is re-stamped.
+     *
+     * <p><b>Why a re-stamp is a repair.</b> {@link games.brennan.dungeontrain.portal.PortalSever}
+     * closes a pair's way in when a hole is broken in the twin-side half of a corridor's shell,
+     * because from inside the corridor that hole shows open sky on the train side and a deepslate
+     * plug in the twin, and the illusion cannot survive being contradicted. The record has to be
+     * stored rather than re-derived, since the hole itself does not last — which is exactly what
+     * this is about: the template stamped here <b>restores the shell</b>, so a moment from now
+     * there will be no contradiction left to refuse for.</p>
+     *
+     * <p>Left permanent, as it used to be, a single creeper — or one stray swing at a floor block —
+     * killed that place on the track for the life of the world, and the pair that came back round
+     * intact still led nowhere. Live telemetry had severing as four out of five of every reported
+     * dimensional-carriage breakage, which is what settled it.</p>
+     *
+     * <p>Called from the spawn path only. The editor's own {@code placeAt} has no carriage index and
+     * no train pair to repair; see the two-placeAt note on this class.</p>
+     */
+    private static void repairSeveredPair(ServerLevel level, int pairKey) {
+        if (!PortalRegistry.get(level).repairPair(pairKey)) return;
+        LOGGER.info("[DungeonTrain] Portal pair {} repaired: its corridors are being re-stamped from "
+            + "their template, so the shell that was broken open is whole again.", pairKey);
+    }
+
     private static String stampBase(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                     CarriageDims dims, long seed, int carriageIndex,
                                     boolean flatbedAtBack, boolean flatbedAtFront, int groupAnchorWorldX,

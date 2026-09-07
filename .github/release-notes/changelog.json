@@ -11693,8 +11693,21 @@
       "released_at": null
     },
     {
-      "id": "dimensional-carriage-train-time",
+      "id": "dimensional-carriages-repair-themselves",
       "version": "0.819.0",
+      "type": "fix",
+      "title": "Dimensional carriage fixes",
+      "summary": "Some fixes to dimensional carriages.",
+      "highlights": [],
+      "pr": 1328,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-train-time",
+      "version": "0.820.0",
       "type": "fix",
       "title": "Time aboard fix",
       "summary": "Time aboard now keeps counting inside dimensional carriages.",
