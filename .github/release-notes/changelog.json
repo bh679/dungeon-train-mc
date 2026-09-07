@@ -11634,13 +11634,9 @@
       "id": "dimensional-carriages-repair-themselves",
       "version": "0.815.0",
       "type": "fix",
-      "title": "Broken dimensional carriages repair themselves",
-      "summary": "A dimensional carriage whose corridor shell gets broken open \u2014 a creeper, a stray pickaxe swing \u2014 used to be dead for the rest of the run, even after the train rebuilt it good as new. Now the break only closes it for as long as the damage lasts: once that stretch of train comes back round and is rebuilt, the carriage works again. And when a pair does stop working, it stops at both ends together instead of leaving an entrance that goes nowhere while the far end still lets people in. Whatever state it is in, the way out of a dimensional carriage always works.",
-      "highlights": [
-        "A broken dimensional carriage comes back to life when its stretch of train is rebuilt",
-        "Both ends of a pair stop working together \u2014 no more entrance that leads nowhere while the exit still works",
-        "Every way out of a dimensional carriage keeps working, in every state"
-      ],
+      "title": "Dimensional carriage fixes",
+      "summary": "Dimensional carriages that stopped working now recover on their own.",
+      "highlights": [],
       "date": "2026-09-07",
       "released": false,
       "released_in": null,
