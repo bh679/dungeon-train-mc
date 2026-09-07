@@ -77,6 +77,7 @@ public final class BuilderSidecarCarry {
                     // cell, so a room opened in the builder and saved back must come out holding
                     // what it went in with.
                     if (source.rerollsPerCopy(pos)) target.setRerollsPerCopy(local, true);
+                    target.setCopyScope(local, source.copyScopeAt(pos));
                 }
                 BuilderVariantStore.save(level, target, footprint);
             } catch (Throwable t) {
@@ -122,6 +123,7 @@ public final class BuilderSidecarCarry {
                     int lockId = doc.lockIdAt(entry.localPos());
                     if (lockId > 0) target.setLockId(local, lockId);
                     if (doc.rerollsPerCopy(entry.localPos())) target.setRerollsPerCopy(local, true);
+                    target.setCopyScope(local, doc.copyScopeAt(entry.localPos()));
                 }
                 target.save();
             } catch (Throwable t) {

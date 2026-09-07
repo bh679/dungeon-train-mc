@@ -75,6 +75,7 @@ final class PortalRoomResizeSlabs {
             // The flag is authored on the cell, so it travels with the row a shrink files away —
             // otherwise growing the room back returns cells that no longer vary.
             if (sidecar.rerollsPerCopy(e.getKey())) slabSidecar.setRerollsPerCopy(local, true);
+            slabSidecar.setCopyScope(local, sidecar.copyScopeAt(e.getKey()));
             sidecar.remove(e.getKey());
             cells++;
         }
@@ -155,6 +156,7 @@ final class PortalRoomResizeSlabs {
             int lock = slabSidecar.lockIdAt(e.localPos());
             if (lock > 0) sidecar.setLockId(target, lock);
             if (slabSidecar.rerollsPerCopy(e.localPos())) sidecar.setRerollsPerCopy(target, true);
+            sidecar.setCopyScope(target, slabSidecar.copyScopeAt(e.localPos()));
         }
 
         if (!slab.contentsJson().isEmpty()) {
@@ -191,19 +193,23 @@ final class PortalRoomResizeSlabs {
         Map<BlockPos, List<VariantState>> moved = new LinkedHashMap<>();
         Map<BlockPos, Integer> movedLocks = new LinkedHashMap<>();
         java.util.Set<BlockPos> movedRerolls = new java.util.LinkedHashSet<>();
+        Map<BlockPos, VariantCopyScope> movedScopes = new LinkedHashMap<>();
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
             BlockPos target = e.localPos().offset(shift);
             int lock = sidecar.lockIdAt(e.localPos());
             boolean reroll = sidecar.rerollsPerCopy(e.localPos());
+            VariantCopyScope scope = sidecar.copyScopeAt(e.localPos());
             sidecar.remove(e.localPos());
             if (!inBounds(target, sizeAfter)) continue;
             moved.put(target, e.states());
             if (lock > 0) movedLocks.put(target, lock);
             if (reroll) movedRerolls.add(target);
+            if (!scope.isDefault()) movedScopes.put(target, scope);
         }
         moved.forEach(sidecar::put);
         movedLocks.forEach(sidecar::setLockId);
         movedRerolls.forEach(pos -> sidecar.setRerollsPerCopy(pos, true));
+        movedScopes.forEach(sidecar::setCopyScope);
 
         ContainerContentsStore store = ContainerContentsStore.loadFor(plotKey(name));
         Map<BlockPos, String> movedLinks = new LinkedHashMap<>();

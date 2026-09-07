@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.track.variant;
 
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.VariantCopyScope;
 import games.brennan.dungeontrain.editor.VariantState;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
@@ -22,8 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Coverage for the v10 per-cell reroll flag — the escape hatch that lets one cell vary from copy to
- * copy inside a dimensional carriage room that otherwise repeats one roll exactly.
+ * Coverage for the two v10 per-cell copy settings — the pair that lets one cell behave differently
+ * from the rest of a dimensional carriage room that otherwise repeats one roll exactly, in every
+ * tile. {@code reroll} says the cell rolls again in each copy; {@link VariantCopyScope} says which
+ * tiles it applies in at all.
  *
  * <p>Three things carry it. <b>It survives the file</b>, or an author sets it and loses it on the
  * next load. <b>A cell without it writes what it always wrote</b> — the bare-array form — so every
@@ -34,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Needs a headless Minecraft bootstrap so {@link VariantState}'s {@code BlockState} resolves.</p>
  */
-final class TrackVariantBlocksRerollTest {
+final class TrackVariantBlocksCopySettingsTest {
 
     private static final BlockPos VARYING = new BlockPos(1, 2, 3);
     private static final BlockPos REPEATING = new BlockPos(4, 5, 6);
@@ -115,6 +118,98 @@ final class TrackVariantBlocksRerollTest {
         TrackVariantBlocks doc = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
         assertThrows(IllegalArgumentException.class,
             () -> doc.setRerollsPerCopy(VARYING, true));
+        assertThrows(IllegalArgumentException.class,
+            () -> doc.setCopyScope(VARYING, VariantCopyScope.COPIES));
+    }
+
+    // ---------- copy scope ----------
+
+    @Test
+    @DisplayName("the scope round-trips, and 'both' writes nothing at all")
+    void scopeRoundTrips() {
+        TrackVariantBlocks doc = authored();
+        doc.setCopyScope(VARYING, VariantCopyScope.COPIES);
+
+        String json = doc.asJsonText();
+        assertTrue(json.contains("\"scope\": \"copies\""), "scope not written: " + json);
+        assertFalse(json.contains("\"both\""), "the default scope must never reach the file: " + json);
+
+        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+            json, TrackKind.PORTAL_ROOM, "room", ROOM);
+        assertEquals(VariantCopyScope.COPIES, reloaded.copyScopeAt(VARYING));
+        assertEquals(VariantCopyScope.BOTH, reloaded.copyScopeAt(REPEATING),
+            "a cell that was never scoped must read as 'both'");
+    }
+
+    @Test
+    @DisplayName("scope, reroll and a lock id coexist in one cell")
+    void allThreeCoexist() {
+        TrackVariantBlocks doc = authored();
+        doc.setLockId(VARYING, 3);
+        doc.setCopyScope(VARYING, VariantCopyScope.NOT_COPIES);
+
+        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+            doc.asJsonText(), TrackKind.PORTAL_ROOM, "room", ROOM);
+
+        assertEquals(3, reloaded.lockIdAt(VARYING));
+        assertTrue(reloaded.rerollsPerCopy(VARYING));
+        assertEquals(VariantCopyScope.NOT_COPIES, reloaded.copyScopeAt(VARYING));
+    }
+
+    @Test
+    @DisplayName("setting the scope back to 'both' clears it rather than storing it")
+    void scopeClearsBackToDefault() {
+        TrackVariantBlocks doc = authored();
+        doc.setCopyScope(VARYING, VariantCopyScope.COPIES);
+        doc.setCopyScope(VARYING, VariantCopyScope.BOTH);
+
+        assertEquals(VariantCopyScope.BOTH, doc.copyScopeAt(VARYING));
+        assertFalse(doc.asJsonText().contains("\"scope\""),
+            "a cell cycled back to the default must write what it always wrote");
+    }
+
+    @Test
+    @DisplayName("copyOf carries the scope, and removing a cell drops it")
+    void scopeCopiedAndCleared() {
+        TrackVariantBlocks doc = authored();
+        doc.setCopyScope(VARYING, VariantCopyScope.COPIES);
+        assertEquals(VariantCopyScope.COPIES, TrackVariantBlocks.copyOf(doc).copyScopeAt(VARYING));
+
+        doc.remove(VARYING);
+        assertEquals(VariantCopyScope.BOTH, doc.copyScopeAt(VARYING),
+            "a scope left behind would reattach to whatever cell is authored here next");
+    }
+
+    @Test
+    @DisplayName("which tiles each scope applies in")
+    void scopeSelectsTiles() {
+        // true = the arrival room (Tile.BASE), false = one of the copies around it.
+        assertTrue(VariantCopyScope.BOTH.appliesTo(true));
+        assertTrue(VariantCopyScope.BOTH.appliesTo(false));
+
+        assertFalse(VariantCopyScope.COPIES.appliesTo(true), "'copies' must skip the arrival room");
+        assertTrue(VariantCopyScope.COPIES.appliesTo(false));
+
+        assertTrue(VariantCopyScope.NOT_COPIES.appliesTo(true));
+        assertFalse(VariantCopyScope.NOT_COPIES.appliesTo(false), "'not copies' must skip the copies");
+    }
+
+    @Test
+    @DisplayName("the scope cycle visits every state and comes back")
+    void scopeCycles() {
+        assertEquals(VariantCopyScope.COPIES, VariantCopyScope.BOTH.next());
+        assertEquals(VariantCopyScope.NOT_COPIES, VariantCopyScope.COPIES.next());
+        assertEquals(VariantCopyScope.BOTH, VariantCopyScope.NOT_COPIES.next());
+    }
+
+    @Test
+    @DisplayName("an unreadable scope reads as 'both' rather than dropping the cell")
+    void scopeParseIsTotal() {
+        assertEquals(VariantCopyScope.BOTH, VariantCopyScope.parse(null));
+        assertEquals(VariantCopyScope.BOTH, VariantCopyScope.parse("nonsense"));
+        assertEquals(VariantCopyScope.BOTH, VariantCopyScope.fromOrdinal(-1));
+        assertEquals(VariantCopyScope.BOTH, VariantCopyScope.fromOrdinal(99));
+        assertEquals(VariantCopyScope.COPIES, VariantCopyScope.parse(" COPIES "));
     }
 
     @Test

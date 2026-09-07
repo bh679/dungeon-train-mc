@@ -89,7 +89,7 @@ public final class BlockVariantMenuRaycast {
         List<BlockVariantSyncPacket.Entry> entries = BlockVariantMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(BlockVariantMenuRenderer.MIN_PANEL_WIDTH, colCount * BlockVariantMenuRenderer.COLUMN_WIDTH);
+        double panelW = Math.max(BlockVariantMenuRenderer.minPanelWidth(), colCount * BlockVariantMenuRenderer.COLUMN_WIDTH);
         int displayedRows = Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * BlockVariantMenuRenderer.ROW_HEIGHT;
@@ -258,7 +258,7 @@ public final class BlockVariantMenuRaycast {
         int maxRows = BlockVariantMenu.ROWS_PER_COLUMN * 4;
         int n = Math.min(filtered.size(), maxRows);
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(BlockVariantMenuRenderer.MIN_PANEL_WIDTH, colCount * BlockVariantMenuRenderer.COLUMN_WIDTH);
+        double panelW = Math.max(BlockVariantMenuRenderer.minPanelWidth(), colCount * BlockVariantMenuRenderer.COLUMN_WIDTH);
         int displayedRows = Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * BlockVariantMenuRenderer.ROW_HEIGHT;

@@ -104,14 +104,15 @@ public interface BlockVariantPlot {
     /**
      * True when this plot's template is one that <b>repeats</b> — a dimensional
      * carriage room, whose endless modes stamp copy after copy of it. Only there
-     * does a cell's per-copy reroll flag mean anything, so only there does the
-     * menu offer it.
+     * do the two per-cell copy settings mean anything (which tiles a cell applies
+     * in, and whether it rerolls in each), so only there does the menu offer
+     * them.
      *
      * <p>False for every other plot, which is why this is a default: a carriage,
      * a part and a contents plot are stamped once and have no copies to differ
      * from.</p>
      */
-    default boolean supportsPerCopyReroll() {
+    default boolean supportsCopySettings() {
         return false;
     }
 
@@ -131,6 +132,19 @@ public interface BlockVariantPlot {
      * means a hand-crafted packet rather than a state worth failing over.
      */
     default void setRerollsPerCopy(BlockPos localPos, boolean reroll) {
+    }
+
+    /**
+     * Which tiles of a repeating room the cell at {@code localPos} applies in.
+     * Always {@link VariantCopyScope#BOTH} where {@link #supportsCopySettings}
+     * is false — a plot stamped once applies everywhere it is, by definition.
+     */
+    default VariantCopyScope copyScopeAt(BlockPos localPos) {
+        return VariantCopyScope.BOTH;
+    }
+
+    /** Set it. A no-op for the plots that cannot repeat, like {@link #setRerollsPerCopy}. */
+    default void setCopyScope(BlockPos localPos, VariantCopyScope scope) {
     }
 
     /**
@@ -624,9 +638,11 @@ public interface BlockVariantPlot {
         @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
         @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
         // A portal room is the one track template that repeats — see PortalRoomCopies.
-        @Override public boolean supportsPerCopyReroll() { return kind == TrackKind.PORTAL_ROOM; }
+        @Override public boolean supportsCopySettings() { return kind == TrackKind.PORTAL_ROOM; }
         @Override public boolean rerollsPerCopy(BlockPos l) { return sidecar.rerollsPerCopy(l); }
         @Override public void setRerollsPerCopy(BlockPos l, boolean r) { sidecar.setRerollsPerCopy(l, r); }
+        @Override public VariantCopyScope copyScopeAt(BlockPos l) { return sidecar.copyScopeAt(l); }
+        @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { sidecar.setCopyScope(l, s); }
     }
 
     /**

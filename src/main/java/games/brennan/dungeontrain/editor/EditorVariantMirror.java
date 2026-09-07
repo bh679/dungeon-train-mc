@@ -64,6 +64,7 @@ public final class EditorVariantMirror {
         // And its per-copy reroll flag, for the same reason: a reflected cell that repeated while
         // its source varied would make the two halves of a mirrored room disagree copy by copy.
         boolean srcReroll = plot.rerollsPerCopy(localEdited);
+        VariantCopyScope srcScope = plot.copyScopeAt(localEdited);
         boolean changed = false;
         for (EditorMirror.Image img : EditorMirror.imagesOf(localEdited, f, mx, my, mz)) {
             BlockPos tgtWorld = origin.offset(img.local().getX(), img.local().getY(), img.local().getZ());
@@ -76,6 +77,7 @@ public final class EditorVariantMirror {
                 plot.put(img.local(), reflected);
                 plot.setLockId(img.local(), srcLockId); // 0 clears — mirrors the source's lock state
                 plot.setRerollsPerCopy(img.local(), srcReroll);
+                plot.setCopyScope(img.local(), srcScope);
                 stampMirrorBase(level, tgtWorld, reflected.get(0).state());
             }
             changed = true;
@@ -109,6 +111,7 @@ public final class EditorVariantMirror {
                     List<VariantState> masterPool = plot.statesAt(masterLocal);
                     int masterLockId = plot.lockIdAt(masterLocal);
                     boolean masterReroll = plot.rerollsPerCopy(masterLocal);
+                    VariantCopyScope masterScope = plot.copyScopeAt(masterLocal);
                     for (EditorMirror.Image img : EditorMirror.imagesOf(masterLocal, f, mx, my, mz)) {
                         if (masterPool == null || masterPool.isEmpty()) {
                             // No master pool — drop any stale far entry; the
@@ -120,6 +123,7 @@ public final class EditorVariantMirror {
                             plot.put(img.local(), reflected);
                             plot.setLockId(img.local(), masterLockId); // join the master's lock group
                             plot.setRerollsPerCopy(img.local(), masterReroll);
+                            plot.setCopyScope(img.local(), masterScope);
                             BlockPos tgtWorld = origin.offset(
                                 img.local().getX(), img.local().getY(), img.local().getZ());
                             stampMirrorBase(level, tgtWorld, reflected.get(0).state());

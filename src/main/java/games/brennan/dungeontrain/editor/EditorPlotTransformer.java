@@ -95,6 +95,12 @@ public final class EditorPlotTransformer {
         /** Set it. A no-op for the sidecars that cannot repeat and so have nowhere to store it. */
         default void setRerollsPerCopy(BlockPos localPos, boolean reroll) {}
 
+        /** The v10 per-cell copy scope. {@code BOTH} everywhere but a portal room. */
+        default VariantCopyScope copyScopeAt(BlockPos localPos) { return VariantCopyScope.BOTH; }
+
+        /** Set it. A no-op for the sidecars that cannot repeat. */
+        default void setCopyScope(BlockPos localPos, VariantCopyScope scope) {}
+
         void save() throws IOException;
     }
 
@@ -203,7 +209,8 @@ public final class EditorPlotTransformer {
         if (sidecar == null) return 0;
         Vec3i size = region.size();
 
-        record Moved(BlockPos to, List<VariantState> states, int lockId, boolean reroll) {}
+        record Moved(BlockPos to, List<VariantState> states, int lockId, boolean reroll,
+                     VariantCopyScope scope) {}
         List<Moved> moved = new ArrayList<>();
         List<BlockPos> sources = List.copyOf(sidecar.positions());
         for (BlockPos from : sources) {
@@ -215,7 +222,8 @@ public final class EditorPlotTransformer {
             if (outside(from, size)) continue;
             moved.add(new Moved(
                 transform.destination(from.getX(), from.getY(), from.getZ(), size),
-                transform.variants(states), sidecar.lockIdAt(from), sidecar.rerollsPerCopy(from)));
+                transform.variants(states), sidecar.lockIdAt(from), sidecar.rerollsPerCopy(from),
+                sidecar.copyScopeAt(from)));
         }
         if (moved.isEmpty()) return 0;
 
@@ -231,6 +239,7 @@ public final class EditorPlotTransformer {
             if (m.lockId() > 0) sidecar.setLockId(m.to(), m.lockId());
             // Not geometry either — a cell that varied per copy still varies after the move.
             if (m.reroll()) sidecar.setRerollsPerCopy(m.to(), true);
+            if (!m.scope().isDefault()) sidecar.setCopyScope(m.to(), m.scope());
         }
         sidecar.save();
         return moved.size();
@@ -303,6 +312,8 @@ public final class EditorPlotTransformer {
         @Override public void setLockId(BlockPos l, int id) { plot.setLockId(l, id); }
         @Override public boolean rerollsPerCopy(BlockPos l) { return plot.rerollsPerCopy(l); }
         @Override public void setRerollsPerCopy(BlockPos l, boolean r) { plot.setRerollsPerCopy(l, r); }
+        @Override public VariantCopyScope copyScopeAt(BlockPos l) { return plot.copyScopeAt(l); }
+        @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { plot.setCopyScope(l, s); }
         @Override public void save() throws IOException { plot.save(); }
     }
 
@@ -332,6 +343,8 @@ public final class EditorPlotTransformer {
         @Override public void setLockId(BlockPos l, int id) { blocks.setLockId(l, id); }
         @Override public boolean rerollsPerCopy(BlockPos l) { return blocks.rerollsPerCopy(l); }
         @Override public void setRerollsPerCopy(BlockPos l, boolean r) { blocks.setRerollsPerCopy(l, r); }
+        @Override public VariantCopyScope copyScopeAt(BlockPos l) { return blocks.copyScopeAt(l); }
+        @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { blocks.setCopyScope(l, s); }
         @Override public void save() throws IOException {
             blocks.save(kind, name);
             if (EditorDevMode.isEnabled()) {

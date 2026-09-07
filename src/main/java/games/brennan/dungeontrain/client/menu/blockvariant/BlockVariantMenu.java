@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
+import games.brennan.dungeontrain.editor.VariantCopyScope;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
@@ -59,6 +60,7 @@ public final class BlockVariantMenu {
         CLEAR,
         LOCK,
         REROLL,
+        COPY_SCOPE,
         CLOSE,
         ENTRY_NAME,
         ENTRY_WEIGHT,
@@ -96,6 +98,7 @@ public final class BlockVariantMenu {
     private static int lockId = 0;
     private static boolean rerollPerCopy;
     private static boolean rerollSupported;
+    private static VariantCopyScope copyScope = VariantCopyScope.BOTH;
     private static Vec3 anchorPos = Vec3.ZERO;
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
     private static Vec3 anchorUp = new Vec3(0, 1, 0);
@@ -149,8 +152,11 @@ public final class BlockVariantMenu {
     /** True when this cell rolls again in each copy of the repeating room it belongs to. */
     public static boolean rerollPerCopy() { return rerollPerCopy; }
 
-    /** True when this plot's template repeats at all — only then is the Reroll cell drawn. */
+    /** True when this plot's template repeats at all — only then are the two copy cells drawn. */
     public static boolean rerollSupported() { return rerollSupported; }
+
+    /** Which tiles of a repeating room this cell applies in. */
+    public static VariantCopyScope copyScope() { return copyScope; }
 
     /**
      * The toolbar's cells, left to right — the one list the renderer draws and the raycaster
@@ -163,9 +169,11 @@ public final class BlockVariantMenu {
             return List.of(CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK,
                 CellKind.REMOVE, CellKind.CLEAR, CellKind.CLOSE);
         }
-        // Beside Lock, which is the other per-cell setting on this toolbar.
+        // Beside Lock, which is the other per-cell setting on this toolbar, and next to each
+        // other because the two answer one question between them: where the cell is, and how it
+        // rolls once it is there.
         return List.of(CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK, CellKind.REROLL,
-            CellKind.REMOVE, CellKind.CLEAR, CellKind.CLOSE);
+            CellKind.COPY_SCOPE, CellKind.REMOVE, CellKind.CLEAR, CellKind.CLOSE);
     }
     public static Vec3 anchorPos() { return anchorPos; }
     public static Vec3 anchorRight() { return anchorRight; }
@@ -222,6 +230,7 @@ public final class BlockVariantMenu {
             lockId = 0;
             rerollPerCopy = false;
             rerollSupported = false;
+            copyScope = VariantCopyScope.BOTH;
             screen = Screen.ROOT;
             removeMode = false;
             searchBuffer = "";
@@ -242,6 +251,7 @@ public final class BlockVariantMenu {
         lockId = packet.lockId();
         rerollPerCopy = packet.rerollPerCopy();
         rerollSupported = packet.rerollSupported();
+        copyScope = VariantCopyScope.fromOrdinal(packet.copyScope());
         anchorPos = packet.anchorPos();
         anchorRight = packet.anchorRight();
         anchorUp = packet.anchorUp();

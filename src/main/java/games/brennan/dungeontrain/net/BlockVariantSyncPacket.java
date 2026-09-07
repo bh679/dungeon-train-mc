@@ -41,7 +41,8 @@ public record BlockVariantSyncPacket(
     Vec3 anchorRight,
     Vec3 anchorUp,
     boolean rerollPerCopy,
-    boolean rerollSupported
+    boolean rerollSupported,
+    byte copyScope
 ) implements CustomPacketPayload {
 
     /**
@@ -51,7 +52,8 @@ public record BlockVariantSyncPacket(
      */
     public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
                                   int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp) {
-        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp, false, false);
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp, false, false,
+            (byte) games.brennan.dungeontrain.editor.VariantCopyScope.BOTH.ordinal());
     }
 
     /**
@@ -174,6 +176,9 @@ public record BlockVariantSyncPacket(
         // out — only the server knows which template the plot is a view of.
         buf.writeBoolean(rerollPerCopy);
         buf.writeBoolean(rerollSupported);
+        // The scope's ordinal. Out-of-range on the read side is BOTH, so a client and server that
+        // disagree about the enum draw the default rather than an exception.
+        buf.writeByte(copyScope);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -212,6 +217,7 @@ public record BlockVariantSyncPacket(
         int lockId = buf.readVarInt();
         boolean reroll = buf.readBoolean();
         boolean rerollSupported = buf.readBoolean();
+        byte copyScope = buf.readByte();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -237,7 +243,7 @@ public record BlockVariantSyncPacket(
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
-            reroll, rerollSupported);
+            reroll, rerollSupported, copyScope);
     }
 
     @Override

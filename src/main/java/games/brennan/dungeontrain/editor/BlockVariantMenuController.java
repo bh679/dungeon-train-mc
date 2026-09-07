@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -343,7 +344,8 @@ public final class BlockVariantMenuController {
                 s.groupRef(), refLive));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
-            plot.rerollsPerCopy(localPos), plot.supportsPerCopyReroll());
+            plot.rerollsPerCopy(localPos), plot.supportsCopySettings(),
+            (byte) plot.copyScopeAt(localPos).ordinal());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -393,6 +395,10 @@ public final class BlockVariantMenuController {
         }
         if (packet.op() == BlockVariantEditPacket.Op.TOGGLE_REROLL) {
             toggleRerollPerCopy(player, plot, localPos);
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE) {
+            cycleCopyScope(player, plot, localPos);
             return;
         }
         if (packet.op() == BlockVariantEditPacket.Op.COPY) {
@@ -920,7 +926,7 @@ public final class BlockVariantMenuController {
      * of.</p>
      */
     private static void toggleRerollPerCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
-        if (!plot.supportsPerCopyReroll()) {
+        if (!plot.supportsCopySettings()) {
             actionBar(player, "Only a dimensional carriage room repeats — nothing to reroll against",
                 ChatFormatting.YELLOW);
             return;
@@ -947,6 +953,44 @@ public final class BlockVariantMenuController {
         actionBar(player, next
             ? "Cell rerolls in every copy of the room"
             : "Cell repeats the room's roll", ChatFormatting.AQUA);
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * Cycle which tiles of a repeating room the cell applies in: both → copies only → not copies.
+     *
+     * <p>Where the cell does not apply it is skipped at stamp time, so the block the room's own
+     * template laid stands there instead — see {@link VariantCopyScope}.</p>
+     *
+     * <p><b>The lock group is left alone</b>, which is the opposite of what
+     * {@link #toggleRerollPerCopy} does, and deliberately: a group exists so its cells draw the
+     * same index, and that promise is about the roll, not about where the cells are. A group whose
+     * members live in different tiles still agrees with itself in every tile any of them is in.</p>
+     */
+    private static void cycleCopyScope(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        if (!plot.supportsCopySettings()) {
+            actionBar(player, "Only a dimensional carriage room has copies to scope a cell to",
+                ChatFormatting.YELLOW);
+            return;
+        }
+        if (plot.statesAt(localPos) == null) {
+            actionBar(player, "Add at least one variant first", ChatFormatting.YELLOW);
+            return;
+        }
+        VariantCopyScope next = plot.copyScopeAt(localPos).next();
+        plot.setCopyScope(localPos, next);
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] BlockVariantMenu copy-scope save failed for {}: {}",
+                plot.key(), e.toString());
+            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+        }
+        actionBar(player, switch (next) {
+            case BOTH -> "Cell applies in the room and in every copy";
+            case COPIES -> "Cell applies in the copies only";
+            case NOT_COPIES -> "Cell applies in this room only, not its copies";
+        }, ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
     }
 
@@ -1123,13 +1167,21 @@ public final class BlockVariantMenuController {
         int lockId = plot.lockIdAt(localPos);
         ContainerContentsPool pool = ContainerContentsStore.loadFor(plot.key()).poolAt(localPos);
         boolean poolCaptured = !pool.isEmpty() || !pool.isDefaultRange();
+        // The two repeating-room settings ride along with the lock-id: they are authored on the
+        // cell, so a copy that dropped them handed back a cell that read the same in the menu and
+        // stamped differently down the hall.
+        boolean reroll = plot.rerollsPerCopy(localPos);
+        VariantCopyScope scope = plot.copyScopeAt(localPos);
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
         CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
-            poolCaptured ? pool : null);
+            poolCaptured ? pool : null, reroll, scope);
         VariantClipboardItem.writeClipboardTag(stack, tag);
         String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
         String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";
-        return new Clipboard(stack, current.size() + " variants" + lockSuffix + poolSuffix);
+        String rerollSuffix = reroll ? " +vary" : "";
+        String scopeSuffix = scope.isDefault() ? "" : " +" + scope.displayName().toLowerCase(Locale.ROOT);
+        return new Clipboard(stack, current.size() + " variants" + lockSuffix + poolSuffix
+            + rerollSuffix + scopeSuffix);
     }
 
     /**

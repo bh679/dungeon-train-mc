@@ -67,6 +67,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       menu does not draw the button there. A cell in a lock group takes the
  *       whole group with it: the group shares one roll, and a member rerolling
  *       on its own is the thing a lock exists to prevent.</li>
+ *   <li>{@link Op#CYCLE_COPY_SCOPE} — cycle which tiles of a repeating room
+ *       the cell applies in ({@code VariantCopyScope}: both → copies → not
+ *       copies → both). Refused, like {@link Op#TOGGLE_REROLL}, where the
+ *       template does not repeat. Unlike it, a lock group is NOT dragged along:
+ *       a group shares a roll, not a footprint, and two cells of one group
+ *       living in different tiles is a legitimate build.</li>
  *   <li>{@link Op#BUMP_DIFF_MIN} / {@link Op#BUMP_DIFF_MAX} — adjust a mob
  *       entry's difficulty band ({@code entryIndex} = row, {@code delta}
  *       signed). The server cycles the value the same way the
@@ -90,7 +96,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
                      PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
                      OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX,
-                     TOGGLE_REROLL }
+                     TOGGLE_REROLL, CYCLE_COPY_SCOPE }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

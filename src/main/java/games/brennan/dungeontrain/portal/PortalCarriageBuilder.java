@@ -1768,10 +1768,18 @@ public final class PortalCarriageBuilder {
         // structure, and the cap only has to be approximately right — it is a backstop against a
         // badly-weighted room, not an exact quota.
         int live = liveMobCount;
+        // The arrival room, as opposed to one of the copies the tiler appends around it. It is
+        // what a cell's VariantCopyScope is asked about, and the one thing about this stamp the
+        // scope can distinguish.
+        boolean baseTile = PortalRoomTiling.Tile.BASE.equals(tile);
         for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
             BlockPos local = entry.localPos();
             BlockPos world = roomOrigin.offset(local);
             if (mask.covers(world)) continue;
+            // Scoped out of this tile: leave the cell completely alone, so what the room's own
+            // template stamped there stands. Skipped BEFORE the roll, the eviction and the write —
+            // "does not apply here" has to mean untouched, not cleared and then not refilled.
+            if (!sidecar.copyScopeAt(local).appliesTo(baseTile)) continue;
 
             // A cell the author flagged rolls against this copy's own identity instead of the
             // room's, so it varies from tile to tile in a room every other cell of which repeats.

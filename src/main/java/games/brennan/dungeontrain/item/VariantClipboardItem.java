@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.editor.ContainerContentsEntry;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EditorVariantMirror;
+import games.brennan.dungeontrain.editor.VariantCopyScope;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.editor.VariantState;
@@ -73,6 +74,19 @@ public final class VariantClipboardItem extends Item {
 
     /** Top-level NBT key carrying the cell-level lock-id (≥1) — absent / 0 means unlocked. */
     public static final String NBT_LOCK_ID = "dt_lockId";
+
+    /**
+     * Top-level NBT key carrying the source cell's per-copy reroll flag. Absent → false, which is
+     * what every clipboard minted before the setting existed says, and what it always meant.
+     */
+    public static final String NBT_REROLL = "dt_reroll";
+
+    /**
+     * Top-level NBT key carrying the source cell's {@link VariantCopyScope} id. Absent → {@code
+     * both}. Written as the id rather than the ordinal so a reordered enum cannot silently
+     * repurpose an old clipboard.
+     */
+    public static final String NBT_COPY_SCOPE = "dt_copyScope";
 
     /**
      * Top-level NBT key carrying the source cell's container contents pool
@@ -146,6 +160,8 @@ public final class VariantClipboardItem extends Item {
         List<VariantState> states = decodeStates(tag);
         int lockId = decodeLockId(tag);
         ContainerContentsPool pool = decodePool(tag);
+        boolean reroll = decodeReroll(tag);
+        VariantCopyScope copyScope = decodeCopyScope(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             sendActionBar(player, "Clipboard needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants", ChatFormatting.YELLOW);
@@ -247,6 +263,38 @@ public final class VariantClipboardItem extends Item {
      */
     public static CompoundTag encodeStates(List<VariantState> states, int lockId) {
         return encodeStates(states, lockId, null);
+    }
+
+    /**
+     * Encode a variant list + lock-id + pool <b>and the cell's two repeating-room settings</b>.
+     *
+     * <p>Copy is a snapshot of a cell, and these are authored on the cell exactly as the lock-id
+     * is — a paste that dropped them handed back something that looked identical in the menu and
+     * stamped differently down the hall. Both are written only when they are not their default, so
+     * a clipboard from an ordinary cell is byte-identical to what this produced before.</p>
+     */
+    public static CompoundTag encodeStates(List<VariantState> states, int lockId,
+                                           @Nullable ContainerContentsPool pool,
+                                           boolean rerollPerCopy, VariantCopyScope scope) {
+        CompoundTag root = encodeStates(states, lockId, pool);
+        if (rerollPerCopy) {
+            root.putBoolean(NBT_REROLL, true);
+        }
+        if (scope != null && !scope.isDefault()) {
+            root.putString(NBT_COPY_SCOPE, scope.id());
+        }
+        return root;
+    }
+
+    /** The captured per-copy reroll flag; false for a clipboard that carries none. */
+    public static boolean decodeReroll(@Nullable CompoundTag tag) {
+        return tag != null && tag.getBoolean(NBT_REROLL);
+    }
+
+    /** The captured copy scope; {@link VariantCopyScope#BOTH} for a clipboard that carries none. */
+    public static VariantCopyScope decodeCopyScope(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(NBT_COPY_SCOPE)) return VariantCopyScope.BOTH;
+        return VariantCopyScope.parse(tag.getString(NBT_COPY_SCOPE));
     }
 
     /**
@@ -475,6 +523,9 @@ public final class VariantClipboardItem extends Item {
         StringBuilder suffix = new StringBuilder(" (").append(states.size());
         if (lockId > 0) suffix.append(", lock ").append(lockId);
         if (pool != null && !pool.isEmpty()) suffix.append(", pool ").append(pool.size());
+        if (decodeReroll(tag)) suffix.append(", vary");
+        VariantCopyScope scope = decodeCopyScope(tag);
+        if (!scope.isDefault()) suffix.append(", ").append(scope.displayName().toLowerCase(java.util.Locale.ROOT));
         suffix.append(")");
         return Component.literal(super.getName(stack).getString() + suffix);
     }

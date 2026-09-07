@@ -76,6 +76,15 @@ public final class TrackVariantBlocks {
      */
     private final java.util.Set<BlockPos> rerollPerCopy;
 
+    /**
+     * Which tiles of a repeating room each cell applies in — the v10 {@code "scope"} field.
+     *
+     * <p>Only the cells that are not {@link games.brennan.dungeontrain.editor.VariantCopyScope#BOTH}
+     * appear here, for the same reason {@link #rerollPerCopy} is a set: the default is the answer
+     * for all but a handful of cells in any room, and absent is that default.</p>
+     */
+    private final Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyScope> copyScopes;
+
     /** v9 lock-group reference resolution over {@link #entries} / {@link #lockIds}. */
     private final games.brennan.dungeontrain.editor.VariantGroupResolver groupRefs;
 
@@ -100,15 +109,19 @@ public final class TrackVariantBlocks {
 
     private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
                                TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
-        this(entries, lockIds, new java.util.LinkedHashSet<>(), kind, mirrorX, mirrorY, mirrorZ, mirrorVariants);
+        this(entries, lockIds, new java.util.LinkedHashSet<>(), new LinkedHashMap<>(),
+            kind, mirrorX, mirrorY, mirrorZ, mirrorVariants);
     }
 
     private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
-                               java.util.Set<BlockPos> rerollPerCopy, TrackKind kind,
+                               java.util.Set<BlockPos> rerollPerCopy,
+                               Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyScope> copyScopes,
+                               TrackKind kind,
                                boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
         this.entries = entries;
         this.lockIds = lockIds;
         this.rerollPerCopy = rerollPerCopy;
+        this.copyScopes = copyScopes;
         this.groupRefs = new games.brennan.dungeontrain.editor.VariantGroupResolver(entries, lockIds);
         this.kind = kind;
         this.mirrorX = mirrorX;
@@ -149,7 +162,7 @@ public final class TrackVariantBlocks {
     public static synchronized TrackVariantBlocks copyOf(TrackVariantBlocks source) {
         return new TrackVariantBlocks(
             new LinkedHashMap<>(source.entries), new LinkedHashMap<>(source.lockIds),
-            new java.util.LinkedHashSet<>(source.rerollPerCopy),
+            new java.util.LinkedHashSet<>(source.rerollPerCopy), new LinkedHashMap<>(source.copyScopes),
             source.kind, source.mirrorX, source.mirrorY, source.mirrorZ, source.mirrorVariants);
     }
 
@@ -276,6 +289,7 @@ public final class TrackVariantBlocks {
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
         java.util.Set<BlockPos> outReroll = new java.util.LinkedHashSet<>();
+        Map<BlockPos, games.brennan.dungeontrain.editor.VariantCopyScope> outScopes = new LinkedHashMap<>();
         String contextId = kindId + ":" + name;
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = CarriageVariantBlocks.parsePos(field.getKey());
@@ -301,10 +315,12 @@ public final class TrackVariantBlocks {
             out.put(posI, List.copyOf(cell.states()));
             if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
             if (cell.rerollPerCopy()) outReroll.add(posI);
+            if (!cell.scope().isDefault()) outScopes.put(posI, cell.scope());
         }
         LOGGER.info("[DungeonTrain] Loaded {} track variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new TrackVariantBlocks(out, outLocks, outReroll, kind, mirrorX, mirrorY, mirrorZ, mirrorVariants);
+        return new TrackVariantBlocks(out, outLocks, outReroll, outScopes, kind,
+            mirrorX, mirrorY, mirrorZ, mirrorVariants);
     }
 
     private static boolean inBounds(BlockPos p, Vec3i size) {
@@ -349,6 +365,7 @@ public final class TrackVariantBlocks {
     public synchronized boolean remove(BlockPos localPos) {
         lockIds.remove(localPos);
         rerollPerCopy.remove(localPos);
+        copyScopes.remove(localPos);
         groupRefs.invalidate();
         return entries.remove(localPos) != null;
     }
@@ -389,6 +406,28 @@ public final class TrackVariantBlocks {
         }
         if (reroll) rerollPerCopy.add(localPos.immutable());
         else rerollPerCopy.remove(localPos);
+    }
+
+    /**
+     * Which tiles of a repeating room the cell at {@code localPos} applies in.
+     * {@link games.brennan.dungeontrain.editor.VariantCopyScope#BOTH} for every cell that has not
+     * been given a scope, and for every template that does not repeat.
+     */
+    public synchronized games.brennan.dungeontrain.editor.VariantCopyScope copyScopeAt(BlockPos localPos) {
+        return copyScopes.getOrDefault(localPos, games.brennan.dungeontrain.editor.VariantCopyScope.BOTH);
+    }
+
+    /**
+     * Set that scope. Refuses a position with no cell, like {@link #setLockId} and
+     * {@link #setRerollsPerCopy}: a setting on nothing has no cell to be written beside.
+     */
+    public synchronized void setCopyScope(BlockPos localPos,
+                                          games.brennan.dungeontrain.editor.VariantCopyScope scope) {
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (scope == null || scope.isDefault()) copyScopes.remove(localPos);
+        else copyScopes.put(localPos.immutable(), scope);
     }
 
     /** Snapshot of every cell flagged to reroll per copy. Defensive copy. */
@@ -522,7 +561,8 @@ public final class TrackVariantBlocks {
             firstEntry = false;
             int lockId = lockIds.getOrDefault(e.getKey(), 0);
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
-            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId, rerollPerCopy.contains(e.getKey()));
+            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId,
+                rerollPerCopy.contains(e.getKey()), copyScopeAt(e.getKey()));
         }
         sb.append("\n  }\n}\n");
         return sb.toString();

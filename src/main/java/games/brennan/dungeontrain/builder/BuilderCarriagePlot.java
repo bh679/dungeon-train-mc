@@ -222,7 +222,7 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
      * sub-type rather than a property of this class.
      */
     @Override
-    public boolean supportsPerCopyReroll() {
+    public boolean supportsCopySettings() {
         return BuilderOpenRequest.PORTAL_ROOM_SUB_TYPE.equals(
             DungeonTrainWorldData.get(level).builderSubType());
     }
@@ -235,6 +235,16 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
     @Override
     public void setRerollsPerCopy(BlockPos localPos, boolean reroll) {
         doc().setRerollsPerCopy(localPos, reroll);
+    }
+
+    @Override
+    public games.brennan.dungeontrain.editor.VariantCopyScope copyScopeAt(BlockPos localPos) {
+        return doc().copyScopeAt(localPos);
+    }
+
+    @Override
+    public void setCopyScope(BlockPos localPos, games.brennan.dungeontrain.editor.VariantCopyScope scope) {
+        doc().setCopyScope(localPos, scope);
     }
 
     @Override
