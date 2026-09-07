@@ -40,6 +40,7 @@ import games.brennan.dungeontrain.portal.PortalRoomTiling;
 import games.brennan.dungeontrain.portal.PortalSever;
 import games.brennan.dungeontrain.portal.PortalStampRecord;
 import games.brennan.dungeontrain.portal.PortalSwapDiagnostics;
+import games.brennan.dungeontrain.portal.PortalSwapDrift;
 import games.brennan.dungeontrain.portal.PortalStructure;
 import games.brennan.dungeontrain.portal.PortalTrainFreeze;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
@@ -54,6 +55,7 @@ import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.net.PortalTrainAudioPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.ShipAabbs;
+import games.brennan.dungeontrain.ship.sable.SableEntityCarry;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.template.GateContext;
 import net.minecraft.ChatFormatting;
@@ -130,7 +132,13 @@ public final class PortalCarriageEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** All five axes relative: velocity and the render interpolation baseline both survive the move. */
+    /**
+     * All five axes relative: the render interpolation baseline survives the move, so the camera
+     * does not smear across the jump, and so does the player's own momentum — an absolute axis
+     * would zero both. The carriage's motion is not in that velocity at all; Sable keeps it
+     * elsewhere on the entity, and it is shed separately after the teleport. See
+     * {@code SableEntityCarry}.
+     */
     private static final Set<RelativeMovement> RELATIVE_ALL = EnumSet.allOf(RelativeMovement.class);
 
     /**
@@ -632,6 +640,7 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.PortalRoomLibrarian.clear();
         games.brennan.dungeontrain.narrative.PortalLibraryGreeter.clear();
         ACTIVE_PAIRS.clear();
+        PortalSwapDrift.clear();
         LAST_FOG.clear();
         games.brennan.dungeontrain.portal.PlayerSkyRegions.clearAll();
         LAST_CROSSING.clear();
@@ -703,6 +712,10 @@ public final class PortalCarriageEvents {
             level, DungeonTrainWorldData.get(level).dims(), PortalCarriageEvents::liveStructure);
 
         List<ServerPlayer> players = level.players();
+
+        // Anyone put down in a twin in the last couple of seconds: is anything still moving them?
+        // Free unless somebody has just swapped.
+        PortalSwapDrift.tick(players, SableEntityCarry::carrierName);
         // Both of these stop the freeze rule being asked at all, so anything it stopped has to be
         // let go here — a train held frozen by a verdict nobody is restating would sit still with
         // nothing counting the ticks it spends doing it. Cheap: a no-op unless something is frozen.
@@ -2067,11 +2080,30 @@ public final class PortalCarriageEvents {
             }
             player.connection.teleport(move.x(), targetY, move.z(),
                 player.getYRot(), player.getXRot(), RELATIVE_ALL);
+            // Off the train and into a room that is not moving: the carriage's own motion is no
+            // longer theirs to keep. Sable holds it on the entity outside deltaMovement (an
+            // inherited velocity plus a tracking sub-level — see SableEntityCarry), so their own
+            // walking is untouched by this. Shed here for the server's view; the client sheds its
+            // own copy on the packet below, which is the one the player actually feels. Nothing is
+            // done on the way back — Sable picks a player up again by itself (client/SpawnDeckHold
+            // waits for exactly that).
+            boolean leftCarrier = move.toFrame() == PortalFrames.FRAME_TWIN;
+            String shed = leftCarrier ? SableEntityCarry.shed(player) : "-";
+            if (leftCarrier) {
+                // And watch what happens next: a twin is stamped into the static world, so anything
+                // still moving them after this instant is something the swap has not accounted for.
+                // See PortalSwapDrift.
+                PortalSwapDrift.noteArrival(player, carriageIndex);
+            } else {
+                // Back on the train, being carried is the point — close the window before it counts.
+                PortalSwapDrift.noteDeparture(player);
+            }
             // Straight after the position, so the client's renderer knows this frame is the one to
-            // finish its occlusion rebuild on. Without it the twin's sections — culled behind sealed
-            // bedrock — are missing from the frame the player arrives in, and it flashes. See
-            // client/portal/ClientPortalSwap.
-            PacketDistributor.sendToPlayer(player, new PortalSwapPacket());
+            // finish its occlusion rebuild on — without it the twin's sections, culled behind sealed
+            // bedrock, are missing from the frame the player arrives in and it flashes (see
+            // client/portal/ClientPortalSwap) — and so the client sheds the carry after
+            // handleMovePlayer has kept the momentum the relative teleport preserved.
+            PacketDistributor.sendToPlayer(player, new PortalSwapPacket(leftCarrier));
             COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
             LAST_SWAP.put(player.getUUID(), level.getGameTime());
 
@@ -2083,10 +2115,12 @@ public final class PortalCarriageEvents {
             String runway = move.toFrame() != PortalFrames.FRAME_TWIN || stampedAt == null
                 ? ""
                 : " twin standing " + (level.getGameTime() - stampedAt) + " ticks";
-            LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={}{} → {} ({}, {}, {}) → ({}, {}, {}){}",
+            // What was shed is logged alongside the move for the same reason: the correction is
+            // invisible when it works and indistinguishable from never having run when it does not.
+            LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={}{} → {} ({}, {}, {}) → ({}, {}, {}){} shed carrier {}",
                 player.getName().getString(), carriageIndex, copyOnly ? " (exit copy)" : "",
                 move.toFrame() == PortalFrames.FRAME_TWIN ? "TWIN" : "CARRIAGE",
-                fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()), runway);
+                fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()), runway, shed);
         }
     }
 

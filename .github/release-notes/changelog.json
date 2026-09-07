@@ -11752,8 +11752,20 @@
       "released_at": null
     },
     {
-      "id": "sodium-shader-arrival",
+      "id": "portal-carriage-velocity-carry",
       "version": "0.822.0",
+      "type": "fix",
+      "title": "Dimensional carriages no longer nudge you on the way in",
+      "summary": "Stepping into a dimensional carriage could give you a small unwanted shove. It doesn't any more.",
+      "pr": 1336,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sodium-shader-arrival",
+      "version": "0.823.0",
       "type": "fix",
       "title": "Shader compatibility fixes",
       "summary": "Fixed a crash on launch when Sodium or Iris is installed, and a flash when stepping into a dimensional carriage with shaders on.",
