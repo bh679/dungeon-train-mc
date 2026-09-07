@@ -1895,6 +1895,9 @@ public final class PortalCarriageEvents {
                 // still moving them after this instant is something the swap has not accounted for.
                 // See PortalSwapDrift.
                 PortalSwapDrift.noteArrival(player, carriageIndex);
+            } else {
+                // Back on the train, being carried is the point — close the window before it counts.
+                PortalSwapDrift.noteDeparture(player);
             }
             // Straight after the position, so the client's renderer knows this frame is the one to
             // finish its occlusion rebuild on — without it the twin's sections, culled behind sealed

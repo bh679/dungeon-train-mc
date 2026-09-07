@@ -12,20 +12,27 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * Watches a player for a moment after a portal swap and reports whether anything is still moving
- * them.
+ * Watches a player for a moment after a portal swap and reports, in one line, whether anything
+ * went on moving them.
  *
  * <p>A dimensional carriage's twin is stamped into the static world, so a player who arrives in one
  * and stands still should stay exactly where they landed. In the 0.817.1 dev session they did not:
  * standing in the twin and turning on the spot walked them down the corridor. The swap log alone
  * could not say why, because it only sees the two instants either side of a teleport — what was
  * needed was the ticks in between, and whether Sable still had them attached to the carriage they
- * had just left.</p>
+ * had just left. Sampled that way, the answer was unambiguous: 0.100, 0.069, 0.048, 0.033 blocks a
+ * tick — the train's speed decaying at Sable's drag constant — with no sub-level carrying them. See
+ * {@code ship.sable.SableEntityCarry} for what that turned out to be and what now sheds it.</p>
  *
- * <p>So this samples the arriving player once a tick for a short window and logs any tick they moved
- * without asking to, alongside the sub-level Sable thinks is carrying them. One line naming a live
- * sub-level in the twin is the whole diagnosis; a run of lines naming none says something else is
- * moving them and the search goes elsewhere.</p>
+ * <p><b>One line per arrival, not one per tick.</b> The per-tick form that found the bug logged a
+ * few hundred lines a session, most of them a player simply walking. What is kept is the summary
+ * that would have caught it just as well: how far they moved over the window, the biggest single
+ * tick, and who Sable said was carrying them on the first two ticks — the second of which is where
+ * a carry that outlived the swap would show. A walker reads as a few blocks with no carrier; a
+ * player standing still should read as nothing at all.</p>
+ *
+ * <p>The window ends early when the player leaves the twin again, so nothing on the train side —
+ * where being carried at track speed is the whole point — is counted against the swap.</p>
  *
  * <p>Costs nothing when nobody has swapped: the map is empty and the sampler returns on its first
  * line.</p>
@@ -37,10 +44,24 @@ public final class PortalSwapDrift {
     /** How long after a swap to keep watching — two seconds, well past the swap cooldown. */
     private static final int WATCH_TICKS = 40;
 
-    /** Movement below this in a tick is float noise, not a carry, and is not worth a line. */
-    private static final double REPORT_THRESHOLD = 0.001;
+    /** Movement below this in a tick is float noise, not a carry, and is not counted. */
+    private static final double COUNT_THRESHOLD = 0.001;
 
-    private record Watch(Vec3 last, int remaining, int carriageIndex) {}
+    private static final class Watch {
+        final int carriageIndex;
+        Vec3 last;
+        int elapsed;
+        int movedTicks;
+        double total;
+        double maxTick;
+        String carrierT1 = "?";
+        String carrierT2 = "?";
+
+        Watch(Vec3 start, int carriageIndex) {
+            this.last = start;
+            this.carriageIndex = carriageIndex;
+        }
+    }
 
     private static final Map<UUID, Watch> WATCHING = new HashMap<>();
 
@@ -48,8 +69,13 @@ public final class PortalSwapDrift {
 
     /** Start watching {@code player}, who has just been put down in a twin corridor. */
     public static void noteArrival(ServerPlayer player, int carriageIndex) {
-        WATCHING.put(player.getUUID(),
-            new Watch(player.position(), WATCH_TICKS, carriageIndex));
+        WATCHING.put(player.getUUID(), new Watch(player.position(), carriageIndex));
+    }
+
+    /** {@code player} has gone back to the train: close their window now and report it. */
+    public static void noteDeparture(ServerPlayer player) {
+        Watch watch = WATCHING.remove(player.getUUID());
+        if (watch != null) report(player, watch, "left for the train");
     }
 
     /**
@@ -73,22 +99,21 @@ public final class PortalSwapDrift {
             }
 
             Watch watch = entry.getValue();
+            watch.elapsed++;
             Vec3 now = player.position();
-            Vec3 moved = now.subtract(watch.last());
-            if (moved.length() > REPORT_THRESHOLD) {
-                LOGGER.info("[DungeonTrain] Portal swap drift: player={} carriage={} t+{} moved ({}, {}, {}) |{}| known=({}, {}, {}) carriedBy={}",
-                    player.getName().getString(), watch.carriageIndex(),
-                    WATCH_TICKS - watch.remaining() + 1,
-                    fmt(moved.x), fmt(moved.y), fmt(moved.z), fmt(moved.length()),
-                    fmt(player.getKnownMovement().x), fmt(player.getKnownMovement().y),
-                    fmt(player.getKnownMovement().z),
-                    carrierName.apply(player));
+            double moved = now.subtract(watch.last).length();
+            watch.last = now;
+            if (moved > COUNT_THRESHOLD) {
+                watch.movedTicks++;
+                watch.total += moved;
+                watch.maxTick = Math.max(watch.maxTick, moved);
             }
+            if (watch.elapsed == 1) watch.carrierT1 = carrierName.apply(player);
+            if (watch.elapsed == 2) watch.carrierT2 = carrierName.apply(player);
 
-            if (watch.remaining() <= 1) {
+            if (watch.elapsed >= WATCH_TICKS) {
                 it.remove();
-            } else {
-                entry.setValue(new Watch(now, watch.remaining() - 1, watch.carriageIndex()));
+                report(player, watch, "window over");
             }
         }
     }
@@ -98,7 +123,14 @@ public final class PortalSwapDrift {
         WATCHING.clear();
     }
 
+    private static void report(ServerPlayer player, Watch watch, String why) {
+        LOGGER.info("[DungeonTrain] Portal swap drift: player={} carriage={} over {} ticks moved {} blocks in {} ticks (max {}/tick) carriedBy t+1={} t+2={} — {}",
+            player.getName().getString(), watch.carriageIndex, watch.elapsed,
+            fmt(watch.total), watch.movedTicks, fmt(watch.maxTick),
+            watch.carrierT1, watch.carrierT2, why);
+    }
+
     private static String fmt(double v) {
-        return String.format("%.4f", v);
+        return String.format("%.3f", v);
     }
 }
