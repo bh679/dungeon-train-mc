@@ -11755,13 +11755,8 @@
       "id": "portal-carriage-velocity-carry",
       "version": "0.822.0",
       "type": "fix",
-      "title": "Stepping through a dimensional carriage no longer carries the train's speed with you",
-      "summary": "Walking from a dimensional carriage into the room beyond used to bring the train's motion along for the ride: stand still on the far side and you slid off down the corridor anyway, and turning on the spot could walk you along it. The train's share of your movement now stays on the train. Your own walking, sprinting and jumping carry across exactly as before, and stepping back aboard picks you up as it always did. Villagers you lead through and pearls you throw through behave the same way.",
-      "highlights": [
-        "Arrive standing still if you were standing still",
-        "Your own momentum still carries across \u2014 only the train's is left behind",
-        "Applies to the room's extra exits and to mobs and thrown items too"
-      ],
+      "title": "Dimensional carriages no longer nudge you on the way in",
+      "summary": "Stepping into a dimensional carriage could give you a small unwanted shove. It doesn't any more.",
       "pr": 1336,
       "date": "2026-09-07",
       "released": false,
