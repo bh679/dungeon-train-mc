@@ -70,6 +70,18 @@ public final class CarriageBlockSnapshot {
      */
     public record Captured(CompoundTag tag, String text) {}
 
+    /**
+     * The plot a capture reads from. Captures run on live ships resolved from {@code findAll()} that
+     * same tick, so a collected sub-level here is a caller bug, not a state to paper over.
+     */
+    private static LevelPlot plotOf(SableManagedShip ship) {
+        dev.ryanhcode.sable.sublevel.ServerSubLevel subLevel = ship.subLevel();
+        if (subLevel == null) {
+            throw new IllegalStateException("Cannot capture carriage " + ship.subLevelId() + ": its sub-level is gone");
+        }
+        return subLevel.getPlot();
+    }
+
     // ---- capture (read from a live sub-level's plot) ----
 
     /**
@@ -82,7 +94,7 @@ public final class CarriageBlockSnapshot {
     public static Captured capture(SableManagedShip ship, ServerLevel level, BlockPos origin,
                                    CarriageDims dims, int maxEntities) {
         HolderLookup.Provider registries = level.registryAccess();
-        LevelPlot plot = ship.subLevel().getPlot();
+        LevelPlot plot = plotOf(ship);
         ListTag cells = new ListTag();
         StringBuilder text = new StringBuilder();
         for (int dx = 0; dx < dims.length(); dx++) {
@@ -197,7 +209,7 @@ public final class CarriageBlockSnapshot {
                                         CarriageDims dims, java.util.Collection<BlockPos> positions,
                                         int maxEntities) {
         HolderLookup.Provider registries = level.registryAccess();
-        LevelPlot plot = ship.subLevel().getPlot();
+        LevelPlot plot = plotOf(ship);
         ListTag set = new ListTag();
         ListTag del = new ListTag();
         StringBuilder text = new StringBuilder();

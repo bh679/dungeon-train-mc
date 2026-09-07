@@ -123,6 +123,7 @@ public final class VillagerJobSiteAssigner {
             BlockPos center = BlockPos.containing(localV.x, localV.y, localV.z);
 
             ServerSubLevel subLevel = sableShip.subLevel();
+            if (subLevel == null) continue;
             LevelPlot plot = subLevel.getPlot();
             Map<Long, LevelChunk> chunks = new HashMap<>();
             for (PlotChunkHolder holder : plot.getLoadedChunks()) {

@@ -118,6 +118,10 @@ public final class WorldLifecycleEvents {
         // With the registry, for the same reason: a singleplayer world switch reuses the JVM, so
         // world A's held sub-level ids would otherwise answer isHeld for world B.
         games.brennan.dungeontrain.ship.sable.SableHoldingIndex.clear();
+        // The shipyard cache holds each ServerLevel strongly and the driver map holds one provider
+        // per group ever spawned; neither may outlive the world it describes.
+        games.brennan.dungeontrain.ship.Shipyards.clear();
+        games.brennan.dungeontrain.ship.sable.SableManagedShip.clearDrivers();
         games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
         PillarTemplateStore.clearCache();
         TrackTemplateStore.clearCache();

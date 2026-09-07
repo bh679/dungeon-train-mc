@@ -121,18 +121,54 @@ public final class PortalPairIndex {
     /** Carriage index → its live pairing. Written on the server thread, read from the Sable hook. */
     private static final Map<Integer, Entry> ENTRIES = new ConcurrentHashMap<>();
 
+    /**
+     * The sweep generation each entry was last published in. An entry holds the carriage's
+     * {@link LevelPlot} — every chunk of the carriage — so one that stops being republished must
+     * leave, or every portal carriage the train ever passed stays on the heap.
+     */
+    private static final Map<Integer, Long> PUBLISHED_IN = new ConcurrentHashMap<>();
+    private static long generation;
+
     private PortalPairIndex() {}
 
     public static void publish(int carriageIndex, Entry entry) {
         ENTRIES.put(carriageIndex, entry);
+        PUBLISHED_IN.put(carriageIndex, generation);
+    }
+
+    /**
+     * Close the current publishing generation: drop every entry that was not republished since the
+     * previous sweep, then open the next one. The tick walk republishes each live corridor every
+     * tick, so an entry missing from a whole generation belongs to a carriage that is no longer
+     * being walked — culled, or rolled away from. Returns how many were dropped.
+     */
+    public static int sweep() {
+        long current = generation;
+        int dropped = 0;
+        for (Map.Entry<Integer, Long> stamp : PUBLISHED_IN.entrySet()) {
+            if (stamp.getValue() != current) {
+                ENTRIES.remove(stamp.getKey());
+                PUBLISHED_IN.remove(stamp.getKey());
+                dropped++;
+            }
+        }
+        generation++;
+        return dropped;
     }
 
     public static void forget(int carriageIndex) {
         ENTRIES.remove(carriageIndex);
+        PUBLISHED_IN.remove(carriageIndex);
     }
 
     public static void clear() {
         ENTRIES.clear();
+        PUBLISHED_IN.clear();
+    }
+
+    /** How many pairings are published — diagnostics and tests. */
+    public static int size() {
+        return ENTRIES.size();
     }
 
     public static boolean isEmpty() {

@@ -174,7 +174,8 @@ public record ContentsEntitySnapshot(
         ManagedShip ship = carriage.ship();
         TrainTransformProvider provider = carriage.provider();
         if (!ship.isResident()) return -1;
-        if (!force && ship instanceof SableManagedShip sable && PhysicsFreeze.isFrozen(sable.subLevel())) {
+        if (!force && ship instanceof SableManagedShip sable && sable.subLevel() != null
+            && PhysicsFreeze.isFrozen(sable.subLevel())) {
             return -1;
         }
 
