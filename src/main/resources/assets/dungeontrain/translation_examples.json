@@ -4118,5 +4118,21 @@
         "discord.gg/dungeontrain"
       ]
     }
+  },
+  "gui.dungeontrain.number_input.range": {
+    "1": {
+      "label": "the lowest value this field accepts",
+      "examples": [
+        "0",
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the highest value this field accepts",
+      "examples": [
+        "100",
+        "1000"
+      ]
+    }
   }
 }

@@ -11644,6 +11644,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "weight-cmd-click-input",
+      "version": "0.816.0",
+      "type": "feat",
+      "title": "Type a weight instead of clicking it up",
+      "summary": "Weights in the editor were click-for-plus-one, shift-click-for-minus-one, so getting one from 1 to 40 meant thirty-nine clicks. Cmd-click a weight (Ctrl on Windows and Linux) and a small box opens with the current value ready to type over.",
+      "highlights": [
+        "Works on block variants, loot pools, template weights and the plot panel's weight arrows",
+        "Plain click and shift-click still step the value as before"
+      ],
+      "pr": 1329,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
