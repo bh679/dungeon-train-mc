@@ -11629,6 +11629,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "new-dimensional-carriages-sept",
+      "version": "0.815.0",
+      "type": "content",
+      "title": "Four new dimensional carriages",
+      "summary": "A handful of new dimensional carriages have joined the rotation, and one older one has stepped aside.",
+      "highlights": [
+        "A few new carriage variants to find behind the portals"
+      ],
+      "pr": 1327,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

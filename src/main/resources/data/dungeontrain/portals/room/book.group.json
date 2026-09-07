@@ -20,6 +20,10 @@
       "id": "moria",
       "weight": 1,
       "minLevel": 11
+    },
+    {
+      "id": "woodpillars",
+      "weight": 1
     }
   ]
 }

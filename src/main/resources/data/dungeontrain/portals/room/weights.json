@@ -38,7 +38,7 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 2,
+    "weight": 3,
     "minLevel": 3,
     "mode": "endless_repetition"
   },
@@ -157,7 +157,7 @@
     "mode": "bedrock_lock/exact/off/off/off/day"
   },
   "outsidethebox": {
-    "weight": 1,
+    "weight": 0,
     "mode": "endless_open/single:minecraft:stone"
   },
   "parkour": {
@@ -176,6 +176,10 @@
   "peateargriffin": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/off/day"
+  },
+  "pistons": {
+    "weight": 1,
+    "mode": "endless_open"
   },
   "pretty": {
     "weight": 1,
@@ -215,6 +219,10 @@
     "weight": 1,
     "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
   },
+  "slime": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/day/repeated/0/1"
+  },
   "sloped": {
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on/off/nether"
@@ -249,6 +257,10 @@
   "window_contents": {
     "weight": 1,
     "mode": "bedrockless/exact/fit"
+  },
+  "woodpillars": {
+    "weight": 1,
+    "mode": "endless_repetition"
   },
   "zombies": {
     "weight": 1,
