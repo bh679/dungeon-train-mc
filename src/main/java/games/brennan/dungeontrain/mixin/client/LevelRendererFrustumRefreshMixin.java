@@ -1,11 +1,16 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import games.brennan.dungeontrain.client.ClientPortalSeal;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
 import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
+import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.culling.Frustum;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Re-derives which sections are visible on every frame of a portal arrival, which is what moving the
@@ -49,6 +54,27 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererFrustumRefreshMixin {
+
+    /**
+     * Recompute the seal from the camera this frame's frustum is about to be built from.
+     *
+     * <p>{@code ClientPortalSeal.beginFrame} runs from {@code ViewportEvent.ComputeCameraAngles}, and
+     * on the frame a portal swap lands that event sees the camera before it has moved. The cut it
+     * leaves behind is the on-train one — hide everything at or below bedrock — while the camera is
+     * already below bedrock, so {@code applyFrustum} throws away precisely the room the player is
+     * standing in, for exactly one frame. Measured: {@code cut=32..MAX} with {@code camY=-51.4},
+     * every one of the frame's frustum rejections the seal's, and none on the frame after.</p>
+     *
+     * <p>This is the same {@link Camera} object, read at the point that matters. Unconditional and
+     * every frame: it is the once-a-frame work the camera event already does, and doing it twice on
+     * an ordinary frame costs a config read and four comparisons.</p>
+     */
+    @Inject(method = "setupRender", at = @At("HEAD"), require = 0)
+    private void dungeontrain$sealFromThisFramesCamera(Camera camera, Frustum frustum,
+                                                       boolean hasCapturedFrustum, boolean isSpectator,
+                                                       CallbackInfo ci) {
+        ClientPortalSeal.beginFrame(camera.getPosition().x, camera.getPosition().y);
+    }
 
     @ModifyExpressionValue(
         method = "setupRender",
