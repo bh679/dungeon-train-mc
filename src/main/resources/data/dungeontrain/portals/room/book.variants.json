@@ -1,6 +1,12 @@
 {
-  "schemaVersion": 10,
+  "schemaVersion": 9,
+  "mirror": { "x": true, "y": true, "z": true, "v": true },
   "variants": {
+    "6,1,11": ["minecraft:bookshelf", "minecraft:air"],
+    "6,2,11": ["minecraft:bookshelf", "minecraft:air"],
+    "6,3,11": ["minecraft:bookshelf", "minecraft:air"],
+    "6,4,11": ["minecraft:bookshelf", "minecraft:air"],
+    "6,5,11": ["minecraft:bookshelf", "minecraft:air"],
     "5,2,5": { "lockId": 1, "states": ["minecraft:polished_blackstone", "minecraft:bookshelf"] },
     "5,4,5": { "lockId": 1, "states": ["minecraft:polished_blackstone", "minecraft:bookshelf"] },
     "5,3,5": { "lockId": 1, "states": ["minecraft:polished_blackstone", "minecraft:bookshelf"] },
@@ -125,7 +131,6 @@
     "7,3,9": { "lockId": 2, "states": ["minecraft:polished_blackstone", "minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "7,3,1": { "lockId": 2, "states": ["minecraft:polished_blackstone", "minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["south"]}}] },
     "3,3,9": { "lockId": 2, "states": ["minecraft:polished_blackstone", "minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
-    "3,3,1": { "lockId": 2, "states": ["minecraft:polished_blackstone", "minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["south"]}}] },
-    "6,1,6": { "reroll": true, "states": ["minecraft:polished_blackstone", "minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["south"]}}] }
+    "3,3,1": { "lockId": 2, "states": ["minecraft:polished_blackstone", "minecraft:bookshelf", {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["south"]}}] }
   }
 }
