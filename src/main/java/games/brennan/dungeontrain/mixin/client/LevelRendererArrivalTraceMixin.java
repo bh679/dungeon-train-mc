@@ -44,6 +44,7 @@ public abstract class LevelRendererArrivalTraceMixin {
         if (!ClientPortalSwap.inArrivalWindow()) return;
         boolean forced = PortalArrivalTrace.consumeForced();
         int listed = PortalArrivalTrace.consumeListed();
+        String reasons = PortalArrivalTrace.consumeReasons();
         if (!PortalArrivalTrace.claimFrame()) return;
 
         // The three eases beside the list: a room drawn but black is a lift still climbing, and a
@@ -51,11 +52,11 @@ public abstract class LevelRendererArrivalTraceMixin {
         // count can see.
         LogUtils.getLogger().info(
             "[DungeonTrain] Portal arrival frame: forced={} visible={} listed={} sealed={} camY={} "
-                + "sky={} crossing={} fog={}",
+                + "sky={} crossing={} fog={} [{}]",
             forced, this.visibleSections.size(), listed, ClientPortalSeal.sealed(),
             String.format("%.1f", camera.getPosition().y),
             String.format("%.2f", ClientPortalRoomSky.applied()),
             String.format("%.2f", ClientPortalCrossing.current()),
-            String.format("%.1f", ClientPortalRoomFog.current()));
+            String.format("%.1f", ClientPortalRoomFog.current()), reasons);
     }
 }

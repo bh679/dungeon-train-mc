@@ -52,6 +52,20 @@ public final class PortalArrivalTrace {
         return was;
     }
 
+    /**
+     * Why the listing turned each section away this frame — the six ways it can, counted separately
+     * because {@code listed=0} on every frame of a run said only that it did.
+     */
+    public static volatile int entered, noSpan, noArea, nullSection, uncompiled, culled;
+
+    /** The reasons as one string, clearing them for the next frame. */
+    public static String consumeReasons() {
+        String out = "entered=" + entered + " noSpan=" + noSpan + " noArea=" + noArea
+            + " null=" + nullSection + " uncompiled=" + uncompiled + " culled=" + culled;
+        entered = noSpan = noArea = nullSection = uncompiled = culled = 0;
+        return out;
+    }
+
     /** Frames traced since this arrival began, so a long window cannot flood the log. */
     private static volatile int frames;
 

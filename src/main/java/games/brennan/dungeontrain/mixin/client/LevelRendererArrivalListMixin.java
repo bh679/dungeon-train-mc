@@ -61,8 +61,10 @@ public abstract class LevelRendererArrivalListMixin {
     @Inject(method = "applyFrustum", at = @At("TAIL"), require = 0)
     private void dungeontrain$listDestinationOnArrival(Frustum frustum, CallbackInfo ci) {
         if (!ClientPortalSwap.inArrivalWindow()) return;
+        PortalArrivalTrace.entered++;
         long[] span = ClientPortalPrewarm.span();
-        if (span.length == 0 || this.viewArea == null) return;
+        if (span.length == 0) { PortalArrivalTrace.noSpan++; return; }
+        if (this.viewArea == null) { PortalArrivalTrace.noArea++; return; }
 
         // Identity, not equals: RenderSection has no equals override worth paying for, and the list is
         // hundreds long on a normal frame — a per-section linear scan would be the expensive part.
@@ -76,12 +78,13 @@ public abstract class LevelRendererArrivalListMixin {
             SectionRenderDispatcher.RenderSection section = area.dungeontrain$getRenderSectionAt(
                 SectionPos.of(ClientPortalPrewarm.sectionX(packed), ClientPortalPrewarm.sectionY(packed),
                     ClientPortalPrewarm.sectionZ(packed)).origin());
-            if (section == null || listed.contains(section)) continue;
+            if (section == null) { PortalArrivalTrace.nullSection++; continue; }
+            if (listed.contains(section)) continue;
 
             SectionRenderDispatcher.CompiledSection compiled = section.getCompiled();
             if (compiled == SectionRenderDispatcher.CompiledSection.UNCOMPILED
-                || compiled.hasNoRenderableLayers()) continue;
-            if (!frustum.isVisible(section.getBoundingBox())) continue;
+                || compiled.hasNoRenderableLayers()) { PortalArrivalTrace.uncompiled++; continue; }
+            if (!frustum.isVisible(section.getBoundingBox())) { PortalArrivalTrace.culled++; continue; }
 
             this.visibleSections.add(section);
             listed.add(section);
