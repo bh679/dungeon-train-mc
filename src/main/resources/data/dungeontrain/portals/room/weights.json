@@ -98,6 +98,10 @@
     "weight": 1,
     "mode": "endless_open/single:minecraft:stone"
   },
+  "deserter_2": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/-2/0"
+  },
   "distantenemies": {
     "weight": 2,
     "minLevel": 1,
