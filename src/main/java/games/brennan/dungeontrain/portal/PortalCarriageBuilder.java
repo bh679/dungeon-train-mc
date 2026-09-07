@@ -644,13 +644,13 @@ public final class PortalCarriageBuilder {
     /**
      * True if the pair this carriage belongs to has had its portal severed.
      *
-     * <p>Asked of the group's anchor, which is a pair-level question however the break was made:
-     * {@link PortalSever} records the broken corridor <i>and</i> its partner, and one of those two is
-     * always the anchor.</p>
+     * <p>Asked of the group's anchor, which is the pair's own key and the one frame
+     * {@link PortalSever} records a severing in — however the break was made, and at whichever end
+     * of the pair.</p>
      */
     private static boolean isPairSevered(ServerLevel level, int carriageIndex) {
         int pairKey = PortalCarriageRole.entryIndexOf(carriageIndex, DungeonTrainConfig.getGroupSize());
-        return PortalRegistry.get(level).isSevered(pairKey);
+        return PortalRegistry.get(level).isPairSevered(pairKey);
     }
 
     /**

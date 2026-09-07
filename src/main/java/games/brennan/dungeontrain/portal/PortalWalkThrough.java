@@ -17,11 +17,21 @@ import java.util.Map;
  * simply not working, without recording anything, so the next re-stamp closes it again and the
  * portal gets another chance.</p>
  *
- * <p><b>Fed by refusals, never by presence.</b> The caller reports one bit per corridor per tick:
+ * <p><b>Fed by refusals, never by presence.</b> The caller reports one bit per pair per tick:
  * whether this tick's swap was <i>wanted and refused</i> for a reason that will not clear on its own.
  * A player merely standing in a working corridor never counts, because a refusal is only reachable
  * once the facing rule has asked for a move. That is what keeps this from opening a plate on a
  * portal that works.</p>
+ *
+ * <p><b>Per pair, not per corridor — and the pair gives up together.</b> The refusals that reach
+ * here are about a role's <i>own</i> destination: an entry twin and an exit twin are different
+ * places, so one end can be refusing while the other is fine. Keyed per corridor, that read as a
+ * dimensional carriage whose entrance was a dead end while its exit still took people in — half a
+ * portal, which is worse than none, because the way in a player finds is the one that is broken.
+ * So both corridors feed one episode, and while it is open <b>neither end takes anyone in</b>
+ * ({@code PortalSwapDiagnostics.Reason.PAIR_GAVE_UP}). The way out is untouched at both ends and
+ * through every exit copy an endless room scatters, exactly as it is for a severed pair
+ * ({@link PortalSever#blocksMove}) — nothing here can strand anybody.</p>
  *
  * <p><b>Gap-tolerant.</b> A player at the far door who glances back toward the train gets no move
  * that tick, and a naive "consecutive refusals" count would reset every time they turned their
@@ -33,8 +43,8 @@ import java.util.Map;
  * {@link #REOPEN_PERIOD_TICKS} for as long as refusals keep arriving — but only the first open of
  * an episode is worth a log line.</p>
  *
- * <p>No Minecraft types, so it unit-tests without a NeoForge bootstrap. Keyed by carriage index,
- * which is a fixed place along the track; state lives for the server session only.</p>
+ * <p>No Minecraft types, so it unit-tests without a NeoForge bootstrap. Keyed by pair key — the
+ * group's anchor, a fixed place along the track; state lives for the server session only.</p>
  */
 public final class PortalWalkThrough {
 
@@ -57,7 +67,7 @@ public final class PortalWalkThrough {
     /** How often an open plate is re-asserted while the refusals continue. */
     public static final int REOPEN_PERIOD_TICKS = 20;
 
-    /** One corridor's episode. */
+    /** One pair's episode. */
     private static final class Streak {
         long start;
         long lastRefused;
@@ -75,25 +85,25 @@ public final class PortalWalkThrough {
     private PortalWalkThrough() {}
 
     /**
-     * Report this tick for one corridor and learn whether to open its plate.
+     * Report this tick for one pair and learn whether to open its plate.
      *
-     * @param carriageIndex the corridor's index along the track
-     * @param now           the level's game time
-     * @param refused       {@code true} if a swap was wanted and refused this tick for a reason that
-     *                      does not clear on its own
+     * @param pairKey  the pair's key — its group's anchor along the track
+     * @param now      the level's game time
+     * @param refused  {@code true} if a swap was wanted and refused this tick, at <i>either</i> of
+     *                 the pair's corridors, for a reason that does not clear on its own
      */
-    public static synchronized Decision noteTick(int carriageIndex, long now, boolean refused) {
-        Streak streak = STREAKS.get(carriageIndex);
+    public static synchronized Decision noteTick(int pairKey, long now, boolean refused) {
+        Streak streak = STREAKS.get(pairKey);
         if (!refused) {
             if (streak != null && now - streak.lastRefused > STREAK_GAP_TICKS) {
-                STREAKS.remove(carriageIndex);
+                STREAKS.remove(pairKey);
             }
             return Decision.NONE;
         }
 
         if (streak == null || now - streak.lastRefused > STREAK_GAP_TICKS) {
             streak = new Streak(now);
-            STREAKS.put(carriageIndex, streak);
+            STREAKS.put(pairKey, streak);
         }
         streak.lastRefused = now;
 
@@ -110,21 +120,24 @@ public final class PortalWalkThrough {
         return Decision.NONE;
     }
 
-    /** True while this corridor's plate has been opened by an episode that has not ended. */
-    public static synchronized boolean isOpen(int carriageIndex) {
-        Streak streak = STREAKS.get(carriageIndex);
+    /**
+     * True while this pair's plate has been opened by an episode that has not ended — which is also
+     * the answer to "does this pair still take anyone in", at both of its corridors.
+     */
+    public static synchronized boolean isOpen(int pairKey) {
+        Streak streak = STREAKS.get(pairKey);
         return streak != null && streak.lastOpened != null;
     }
 
-    /** Game time this corridor's episode began, for {@code /dungeontrain portal diagnose}. */
-    public static synchronized Long episodeStart(int carriageIndex) {
-        Streak streak = STREAKS.get(carriageIndex);
+    /** Game time this pair's episode began, for {@code /dungeontrain portal diagnose}. */
+    public static synchronized Long episodeStart(int pairKey) {
+        Streak streak = STREAKS.get(pairKey);
         return streak == null ? null : streak.start;
     }
 
-    /** End a corridor's episode — nobody is near it any more. The next one logs afresh. */
-    public static synchronized void forget(int carriageIndex) {
-        STREAKS.remove(carriageIndex);
+    /** End a pair's episode — nobody is near either of its corridors. The next one logs afresh. */
+    public static synchronized void forget(int pairKey) {
+        STREAKS.remove(pairKey);
     }
 
     /** Drop everything — called when the server stops. */
