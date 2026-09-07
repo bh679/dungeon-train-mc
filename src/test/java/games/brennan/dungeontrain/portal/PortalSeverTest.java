@@ -102,9 +102,9 @@ final class PortalSeverTest {
         int entry = 24;                                        // a group anchor, as in a live run
         int exit = entry + PortalCarriageSelection.SLOT_EXIT;
 
-        // What PortalSever.onCarriageBlockChanged severs, whichever corridor was mined. Both
-        // directions must name the same two carriages, or a hole in the exit corridor would sever a
-        // different pair from a hole in the entry one.
+        // The pair a break resolves to, whichever corridor was mined. Both directions must name the
+        // same two carriages, or a hole in the exit corridor would name a different pair from a hole
+        // in the entry one.
         assertEquals(exit, PortalCarriageRole.partnerIndex(entry, groupSize));
         assertEquals(entry, PortalCarriageRole.partnerIndex(exit, groupSize));
 
@@ -120,17 +120,19 @@ final class PortalSeverTest {
     }
 
     /**
-     * The property the walk-through leans on.
+     * The property everything downstream leans on.
      *
-     * <p>{@code PortalSever.onCarriageBlockChanged} severs the broken corridor <b>and</b> its
-     * partner, and {@code PortalCarriageBuilder.stampMiddle} then asks a single question — "is this
-     * group's anchor severed?" — to decide whether to stamp the wall between the pair's doors open.
-     * That one question is only a correct pair-level answer if the anchor lands in the set whichever
-     * end was broken, which it does because the anchor <i>is</i> the entry's index.</p>
+     * <p>{@code PortalSever.onCarriageBlockChanged} records one entry, against the group's anchor,
+     * whichever corridor was mined; {@code PortalCarriageBuilder.stampMiddle} and the swap both ask
+     * that one question — "is this group's anchor severed?" — to decide whether the wall between the
+     * pair's doors stands open and whether either end takes anyone in.</p>
      *
-     * <p>Were that to stop holding, a pair broken from its exit end would record two indices, neither
-     * of them the anchor, and the wall would stamp shut again on the next pass of the rolling window —
-     * closing the way out from under a player walking through it.</p>
+     * <p>It is a correct pair-level answer only because the anchor is reachable from both ends: the
+     * entry corridor <i>is</i> the anchor, and the exit's partner is. Were that to stop holding, a
+     * pair broken from its exit end would be filed under an index nothing asks about — the wall would
+     * stamp shut again on the next pass of the rolling window, closing the way out from under a
+     * player walking through it, and the pair would go on swallowing people at the end that still
+     * worked.</p>
      */
     @Test
     @DisplayName("severing either end always marks the group's anchor")

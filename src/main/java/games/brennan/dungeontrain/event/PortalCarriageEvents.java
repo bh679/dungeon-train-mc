@@ -383,9 +383,15 @@ public final class PortalCarriageEvents {
     private static final Map<UUID, BlockPos> PREWARM_THIS_TICK = new HashMap<>();
 
     /**
-     * Carriage indices whose swap was wanted and refused this tick for a reason that does not clear
-     * on its own — what {@link PortalWalkThrough} is fed. Rebuilt from empty every tick, like
+     * Pair keys whose swap was wanted and refused this tick for a reason that does not clear on its
+     * own — what {@link PortalWalkThrough} is fed. Rebuilt from empty every tick, like
      * {@link #CROSSING_THIS_TICK}: it describes this tick's refusals and nothing older.
+     *
+     * <p><b>Per pair, so a refusal at either corridor speaks for both.</b> Every reason that lands
+     * here is about one role's own destination — the entry twin and the exit twin are different
+     * places — so keyed per corridor this let a pair's entrance die while its exit went on taking
+     * people in. The first refusal of a tick wins; a second one from the other end has nothing to
+     * add, since the decision is only "was this pair refused at all".</p>
      */
     private static final Map<Integer, PortalSwapDiagnostics.Reason> REFUSED_THIS_TICK = new HashMap<>();
 
@@ -837,6 +843,11 @@ public final class PortalCarriageEvents {
                                     int anchorPIdx, ManagedShip ship,
                                     double minX, double minY, double minZ,
                                     int groupSize, int padLen, PortalPuppets.Session puppets) {
+        // The pair's corridors that actually ran this tick, in slot order. Collected rather than
+        // acted on inside the loop because the give-up decision below is the PAIR's — see
+        // decideWalkThrough — and it cannot be made until both ends have had their say.
+        List<CorridorSite> ran = new ArrayList<>();
+
         for (int slot = 0; slot < groupSize; slot++) {
             int carriageIndex = anchorPIdx + slot;
             // The record again, not the lottery — see the walk above. The slot arithmetic that
@@ -860,11 +871,35 @@ public final class PortalCarriageEvents {
             double anchorX = corridorOriginX(minX, padLen, PortalCarriageSelection.SLOT_ENTRY, dims,
                 PortalCarriageRole.ENTRY, kind);
 
-            handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
-                ship, corridorOriginX(minX, padLen, slot, dims, role, kind), minY, minZ,
-                anchorX, groupSize, puppets);
+            double originX = corridorOriginX(minX, padLen, slot, dims, role, kind);
+            if (handlePortalCarriage(level, players, layout, dims, carriageIndex, role, pairKey,
+                    ship, originX, minY, minZ, anchorX, groupSize, puppets)) {
+                ran.add(new CorridorSite(role, layout, kind, originX));
+            }
         }
+
+        if (ran.isEmpty()) {
+            // Nobody was near either end. Drop the pair's walk-through episode, if it had one: the
+            // next player to be refused here starts a fresh one and gets the line in the log.
+            PortalWalkThrough.forget(anchorPIdx);
+            return;
+        }
+
+        // Last: everything above has had its say about whether this tick's swap was refused, at
+        // either end.
+        decideWalkThrough(level, players, ship, dims, anchorPIdx, ran, minY, minZ,
+            REFUSED_THIS_TICK.get(anchorPIdx));
     }
+
+    /**
+     * One portal corridor that ran this tick, as the pair-wide give-up decision needs it: which end
+     * it is, the shape it was built with, and where it starts in world X.
+     *
+     * <p>{@code originY} and {@code originZ} are the group's own and shared by both corridors, so
+     * they stay with the caller rather than being repeated per site.</p>
+     */
+    private record CorridorSite(PortalCarriageRole role, PortalCarriageLayout layout,
+                                PortalCorridorKind kind, double originX) {}
 
     /**
      * Where one carriage's corridor starts, in world X.
@@ -1544,7 +1579,12 @@ public final class PortalCarriageEvents {
         return occupied;
     }
 
-    private static void handlePortalCarriage(ServerLevel level, List<ServerPlayer> players,
+    /**
+     * @return true if this corridor ran — somebody was near enough for it to matter. False means
+     *         nobody is here, which is what lets {@link #handleGroup} tell an idle pair from one
+     *         that is being walked into and refusing.
+     */
+    private static boolean handlePortalCarriage(ServerLevel level, List<ServerPlayer> players,
                                              PortalCarriageLayout layout, CarriageDims dims,
                                              int carriageIndex, PortalCarriageRole role, int pairKey,
                                              ManagedShip ship,
@@ -1592,10 +1632,10 @@ public final class PortalCarriageEvents {
             // Deliberately does not mark the pair active: an unvisited structure sheds its room
             // copies, which is what lets it be re-stamped when the train has rolled on.
             PortalPuppets.forget(carriageIndex);
-            // And its walk-through episode, if it had one: the next player to be refused here
-            // starts a fresh one and gets the line in the log.
-            PortalWalkThrough.forget(carriageIndex);
-            return;
+            // The pair's walk-through episode is dropped by handleGroup once BOTH ends report this,
+            // not here: one corridor going quiet while a player stands in the other is not the end
+            // of the pair's episode.
+            return false;
         }
         ACTIVE_PAIRS.add(pairKey);
 
@@ -1646,12 +1686,13 @@ public final class PortalCarriageEvents {
             }
             PortalPuppets.forget(carriageIndex);
             // A corridor that is a portal and does nothing is exactly what the walk-through is for.
-            // Counted only with somebody in it — the plate is opened for a player, not for a pair.
-            decideWalkThrough(level, players, ship, layout, dims, role, carriageIndex, pairKey,
-                originX, originY, originZ,
-                anyPlayerInCorridor(players, layout, originX, originY, originZ)
-                    ? PortalSwapDiagnostics.Reason.NO_TWIN_STRUCTURE : null);
-            return;
+            // Counted only with somebody in it — the plate is opened for a player, not for a pair —
+            // and recorded against the PAIR, which is who gives up. handleGroup decides.
+            if (anyPlayerInCorridor(players, layout, originX, originY, originZ)) {
+                REFUSED_THIS_TICK.putIfAbsent(pairKey,
+                    PortalSwapDiagnostics.Reason.NO_TWIN_STRUCTURE);
+            }
+            return true;
         }
 
         // The entry twin sits at the structure's origin; the exit twin one corridor and one room
@@ -1701,7 +1742,7 @@ public final class PortalCarriageEvents {
         // The override is what keeps a led villager with its player: whoever is in this carriage's
         // corridor decides where things walking IN out of it end up, so a player bound to a copy
         // eight rooms out takes their followers there rather than leaving them at the original twin.
-        PortalEntityTransit.run(level, frames, occupants, carriageIndex,
+        PortalEntityTransit.run(level, frames, occupants, carriageIndex, disconnected(level, pairKey),
             PortalExitBindings.followerTwinFor(level, built, dims, pairKey, role,
                 level.getGameTime()));
 
@@ -1719,14 +1760,26 @@ public final class PortalCarriageEvents {
                 built, dims, layout, role, frames.carriage(), players)) {
             swapPlayers(level, players, copy.frames(), carriageIndex, pairKey, built, dims, role,
                 copy.site().tile(), /*copyOnly*/ true);
+            // A copy is a way OUT and nothing else, so the pair's verdict never blocks it: false.
             PortalEntityTransit.run(level, copy.frames(),
                 inCopyOnly(copy.frames(), PortalCorridorEntities.inCorridors(level, copy.frames())),
-                carriageIndex);
+                carriageIndex, /*disconnected*/ false);
         }
 
-        // Last: everything above has had its say about whether this tick's swap was refused.
-        decideWalkThrough(level, players, ship, layout, dims, role, carriageIndex, pairKey,
-            originX, originY, originZ, REFUSED_THIS_TICK.get(carriageIndex));
+        return true;
+    }
+
+    /**
+     * True when this pair takes nobody in any more — the two ways that can happen, in one place.
+     *
+     * <p>{@link PortalSever} is the permanent-ish one: a hole in a corridor's shell, recorded until
+     * the group is re-stamped. {@link PortalWalkThrough} is the transient one: a run of refusals
+     * this tick's walk could do nothing about, which opens the plate between the pair's doors. Both
+     * close the way <b>in</b> at <i>both</i> corridors and neither touches the way out — see
+     * {@link PortalSever#blocksMove}.</p>
+     */
+    private static boolean disconnected(ServerLevel level, int pairKey) {
+        return PortalSever.isSevered(level, pairKey) || PortalWalkThrough.isOpen(pairKey);
     }
 
     /**
@@ -1738,34 +1791,47 @@ public final class PortalCarriageEvents {
      * the portal gets another chance. What a player sees is the door at the corridor's far end
      * opening onto the other corridor instead of onto a wall, two seconds after they first reached
      * it, with a line on the action bar saying why.</p>
+     *
+     * <p><b>Once per pair, after both ends have reported.</b> Called from {@link #handleGroup}
+     * rather than from the per-corridor pass: the refusals that reach here are about one role's own
+     * destination, and a pair whose entrance has given up while its exit still takes people in is
+     * half a portal. While the episode is open {@link #swapPlayers} refuses inbound swaps at both
+     * corridors ({@code PAIR_GAVE_UP}); every way out keeps working.</p>
      */
     private static void decideWalkThrough(ServerLevel level, List<ServerPlayer> players,
-                                          ManagedShip ship, PortalCarriageLayout layout,
-                                          CarriageDims dims, PortalCarriageRole role,
-                                          int carriageIndex, int pairKey,
-                                          double originX, double originY, double originZ,
+                                          ManagedShip ship, CarriageDims dims, int pairKey,
+                                          List<CorridorSite> sites,
+                                          double originY, double originZ,
                                           PortalSwapDiagnostics.Reason refused) {
         PortalWalkThrough.Decision decision =
-            PortalWalkThrough.noteTick(carriageIndex, level.getGameTime(), refused != null);
+            PortalWalkThrough.noteTick(pairKey, level.getGameTime(), refused != null);
         if (decision == PortalWalkThrough.Decision.NONE) return;
 
-        // The standing structure's kind when one stands, the planned one otherwise — the same
-        // answer handleGroup built this corridor's layout from.
-        PortalCorridorKind kind = kindFor(level, pairKey);
-        PortalSever.openCentreWall(level, ship, new Vec3(originX, originY, originZ),
-            dims, kind, role);
+        // One opening for the pair, from whichever of its corridors ran. The two roles address the
+        // same cells of the cart between them — PortalCentreWall.doorwayCellsFromCorridor carries
+        // the shift — so opening it from either end opens the one plate there is.
+        CorridorSite site = sites.get(0);
+        PortalSever.openCentreWall(level, ship, new Vec3(site.originX(), originY, originZ),
+            dims, site.kind(), site.role());
 
         if (decision != PortalWalkThrough.Decision.OPEN_AND_LOG) return;
         String reason = refused == null ? "UNKNOWN" : refused.name();
-        LOGGER.warn("[DungeonTrain] Portal carriage {} ({}) has refused every swap for {} ticks "
-                + "[{}] — opening the plate between the pair's doors so the group can be walked "
-                + "through. Not recorded: the next re-stamp closes it.",
-            carriageIndex, role, PortalWalkThrough.OPEN_AFTER_TICKS, reason);
+        LOGGER.warn("[DungeonTrain] Portal pair {} has refused every swap for {} ticks [{}] — "
+                + "opening the plate between its two doors so the group can be walked through, and "
+                + "closing BOTH ends to entry until the refusals stop. Ways out are unaffected. "
+                + "Not recorded: the next re-stamp closes it.",
+            pairKey, PortalWalkThrough.OPEN_AFTER_TICKS, reason);
+        // Said to whoever is in EITHER corridor: the pair gave up at both ends, and the player who
+        // is about to meet the open plate may be standing in the end that was working.
         for (ServerPlayer player : players) {
-            if (layout.insideCorridor(player.getX() - originX, player.getY() - originY,
-                    player.getZ() - originZ)) {
+            for (CorridorSite each : sites) {
+                if (!each.layout().insideCorridor(player.getX() - each.originX(),
+                        player.getY() - originY, player.getZ() - originZ)) {
+                    continue;
+                }
                 // The breakage this life's tally reports at death, once per door per player.
-                PortalConnectionStats.noteBroken(player.getUUID(), carriageIndex, reason);
+                PortalConnectionStats.noteBroken(player.getUUID(),
+                    PortalCarriageRole.corridorIndexOf(pairKey, each.role()), reason);
                 player.displayClientMessage(Component.translatable(WALK_THROUGH_MESSAGE), true);
             }
         }
@@ -1847,11 +1913,11 @@ public final class PortalCarriageEvents {
                 continue;
             }
 
-            // A corridor whose shell has been broken open past the midpoint no longer takes anyone
-            // in. Only inbound: a move back to the carriage is never gated, so nobody who is already
-            // in the room can be shut out of the train. See PortalSever.
+            // A pair whose shell has been broken open past the midpoint no longer takes anyone in,
+            // at EITHER of its corridors. Only inbound: a move back to the carriage is never gated,
+            // so nobody who is already in the room can be shut out of the train. See PortalSever.
             if (PortalSever.blocksMove(move.toFrame(),
-                PortalSever.isSevered(level, carriageIndex))) {
+                PortalSever.isSevered(level, pairKey))) {
                 // A breakage the player sees, whatever the design says about it — once per door.
                 if (!copyOnly) {
                     PortalConnectionStats.noteBroken(id, carriageIndex,
@@ -1864,6 +1930,33 @@ public final class PortalCarriageEvents {
                             + " — the two blocks between the pair's doors are open instead, so the "
                             + "group can be walked straight through; '/dungeontrain portal severed "
                             + "clear' repairs it");
+                }
+                continue;
+            }
+
+            // Nor does one that has given up — the transient twin of the above. Something this
+            // pair's swap could not do anything about kept refusing, so PortalWalkThrough opened
+            // the plate between its doors and the group is a walk-through for now. Closing BOTH
+            // ends is the point: the refusal that started the episode is about one role's own
+            // destination, and letting the other end go on taking people into a room whose way in
+            // is a dead end is the half-working portal this exists to remove. It lapses on its own
+            // once the refusals stop, and nothing is recorded.
+            if (PortalSever.blocksMove(move.toFrame(), PortalWalkThrough.isOpen(pairKey))) {
+                if (!copyOnly) {
+                    PortalConnectionStats.noteBroken(id, carriageIndex,
+                        PortalSwapDiagnostics.Reason.PAIR_GAVE_UP.name());
+                    // Re-armed, or the episode would lapse the moment it started refusing on its
+                    // own behalf: with the swap gated here, the reasons that opened it never get
+                    // asked again while the player keeps walking into it.
+                    REFUSED_THIS_TICK.putIfAbsent(pairKey,
+                        PortalSwapDiagnostics.Reason.PAIR_GAVE_UP);
+                }
+                if (PortalSwapDiagnostics.due(level, PortalSwapDiagnostics.Reason.PAIR_GAVE_UP, id)) {
+                    PortalSwapDiagnostics.refused(PortalSwapDiagnostics.Reason.PAIR_GAVE_UP,
+                        player.getName().getString(),
+                        "carriage=" + carriageIndex + " pair=" + pairKey
+                            + " — walk the group straight through; it reconnects by itself when "
+                            + "whatever was refusing stops, or when the group is next re-stamped");
                 }
                 continue;
             }
@@ -1887,7 +1980,8 @@ public final class PortalCarriageEvents {
                             + fmt(frames.carriage().y()) + ", " + fmt(frames.carriage().z()) + ")");
                 }
                 if (!copyOnly) {
-                    REFUSED_THIS_TICK.put(carriageIndex, PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED);
+                    REFUSED_THIS_TICK.putIfAbsent(pairKey,
+                        PortalSwapDiagnostics.Reason.TWIN_NOT_LOADED);
                 }
                 continue;
             }
@@ -1921,7 +2015,7 @@ public final class PortalCarriageEvents {
                             + " blocks down. Leaving them where they are.");
                 }
                 if (!copyOnly) {
-                    REFUSED_THIS_TICK.put(carriageIndex, PortalSwapDiagnostics.Reason.NO_LANDING);
+                    REFUSED_THIS_TICK.putIfAbsent(pairKey, PortalSwapDiagnostics.Reason.NO_LANDING);
                 }
                 continue;
             }
@@ -2514,10 +2608,23 @@ public final class PortalCarriageEvents {
 
         int pairKey = PortalCarriageRole.entryIndexOf(anchor, groupSize);
         PortalStructure structure = STRUCTURES.get(pairKey);
-        out.add("  pair " + pairKey + ": " + (registry.isSevered(pairKey)
-            ? "SEVERED — the way in is closed; the two blocks between its doors are open so you can "
-                + "walk the group through. '/dungeontrain portal severed clear' repairs it."
+        out.add("  pair " + pairKey + ": " + (registry.isPairSevered(pairKey)
+            ? "SEVERED at both ends — the way in is closed; the two blocks between its doors are "
+                + "open so you can walk the group through. The ways out still work. It repairs "
+                + "itself when the rolling window next re-stamps the group; "
+                + "'/dungeontrain portal severed clear' does it now."
             : "not severed"));
+        Long gaveUpAt = PortalWalkThrough.episodeStart(pairKey);
+        if (PortalWalkThrough.isOpen(pairKey)) {
+            out.add("  pair " + pairKey + ": GAVE UP after " + (level.getGameTime() - gaveUpAt)
+                + " ticks of refused swaps — both ends are closed to entry and the plate between "
+                + "its doors is open. Transient: it reconnects by itself once whatever was refusing "
+                + "stops. See the [" + PortalSwapDiagnostics.Reason.PAIR_GAVE_UP.name()
+                + "] lines above it in the log for the reason.");
+        } else if (gaveUpAt != null) {
+            out.add("  pair " + pairKey + ": refusals began at tick " + gaveUpAt + " — the plate "
+                + "opens at " + PortalWalkThrough.OPEN_AFTER_TICKS + " ticks if they keep coming.");
+        }
 
         if (structure == null) {
             out.add("  structure: NONE placed yet — walk within " + (int) APPROACH_RANGE
@@ -2604,13 +2711,8 @@ public final class PortalCarriageEvents {
                     + fmt(horizontalDistance(structure.origin(), anchorX, originZ))
                     + " (restamps past " + fmt(TWIN_MAX_DRIFT) + ")");
             }
-            Long episode = PortalWalkThrough.episodeStart(carriageIndex);
-            if (episode != null) {
-                out.add("    walk-through: " + (PortalWalkThrough.isOpen(carriageIndex)
-                        ? "plate OPEN" : "refusals counting")
-                    + " since tick " + episode + " (opens after "
-                    + PortalWalkThrough.OPEN_AFTER_TICKS + " ticks of refusals; a re-stamp closes it)");
-            }
+            // The walk-through episode is not reported per corridor: it belongs to the pair and is
+            // said once, above, alongside the severed verdict it sits beside.
         }
 
         if (player.isPassenger()) {

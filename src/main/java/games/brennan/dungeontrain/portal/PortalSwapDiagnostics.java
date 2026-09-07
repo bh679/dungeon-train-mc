@@ -70,8 +70,22 @@ public final class PortalSwapDiagnostics {
         /** Swapped moments ago and still inside the settling window. Ordinary, and self-clearing. */
         COOLDOWN(true, "player swapped within the last second — waiting for the client to acknowledge it"),
 
-        /** The shell was broken past the midpoint. Permanent until {@code portal severed clear}. */
-        SEVERED("this pair's corridor shell was broken open — the way IN is closed for good"),
+        /** The shell was broken past the midpoint. Lasts until the group is re-stamped. */
+        SEVERED("this pair's corridor shell was broken open — the way IN is closed until the group is re-stamped"),
+
+        /**
+         * The pair has given up: one of its corridors kept being refused, so
+         * {@link PortalWalkThrough} opened the plate between the two doors and closed both ends to
+         * entry until the refusals stop.
+         *
+         * <p>Both ends, deliberately. The refusal that started the episode is about one role's own
+         * destination, so the other corridor may well still be able to swap — and a pair whose
+         * entrance is a dead end while its exit takes people in is half a portal, which is the
+         * state this refuses to leave anybody in. Transient and unrecorded: it lapses once the
+         * refusals stop, and the next re-stamp seals the plate again.</p>
+         */
+        PAIR_GAVE_UP("this pair gave up after a run of refused swaps — both ends are closed to entry "
+            + "and the group can be walked straight through"),
 
         /**
          * The destination corridor's chunks are not present.

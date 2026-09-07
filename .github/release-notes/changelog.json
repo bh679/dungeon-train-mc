@@ -11691,6 +11691,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriages-repair-themselves",
+      "version": "0.819.0",
+      "type": "fix",
+      "title": "Dimensional carriage fixes",
+      "summary": "Some fixes to dimensional carriages.",
+      "highlights": [],
+      "pr": 1328,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
