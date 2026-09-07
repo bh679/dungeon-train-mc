@@ -23,6 +23,7 @@ import games.brennan.dungeontrain.portal.PortalExitTransit;
 import games.brennan.dungeontrain.portal.PortalFacing;
 import games.brennan.dungeontrain.portal.PortalFrames;
 import games.brennan.dungeontrain.portal.PortalPrewarmHints;
+import games.brennan.dungeontrain.portal.PortalTwinDrift;
 import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
 import games.brennan.dungeontrain.portal.PortalOccupants;
@@ -135,11 +136,22 @@ public final class PortalCarriageEvents {
 
     /**
      * Stamp the twin once a player is this close to the portal carriage — near enough to be about to
-     * walk in. Deliberately tight: with a portal every few carriages, a generous range would keep
+     * walk in. Deliberately bounded: with a portal every few carriages, a generous range would keep
      * several twins alive at once and re-stamp each of them every time the train rolled on, which is
      * thousands of block writes a second for corridors nobody is walking into.
+     *
+     * <p><b>12 was too tight once the destination had to be BUILT, not merely written.</b> At 12 the
+     * stamp landed about two seconds before the crossing, and a {@code chunk_dimension} room spends
+     * most of that sampling its terrain on a background thread — so the client was still receiving the
+     * room's blocks as the player walked through the door, and arrived in sections that had never been
+     * meshed. Measured on 2026-09-07: stamp at 50.045, room decorated at 50.37, swap at 51.53, which
+     * left {@code ClientPortalPrewarm} 0.77s of a walk to build a room that was still arriving.</p>
+     *
+     * <p>32 is about five seconds of approach at a sprint — enough for the room to be written, settle,
+     * and reach the client before anybody is close enough to cross. Not larger, because the cost above
+     * is real and rises with the range.</p>
      */
-    private static final double APPROACH_RANGE = 12.0;
+    private static final double APPROACH_RANGE = 32.0;
 
     /**
      * How near a player must be for an unrecorded group to be asked to prove it holds a corridor.
@@ -157,8 +169,23 @@ public final class PortalCarriageEvents {
      * the chunks the client already has, or the swap would land the player in unloaded space — the
      * one thing this whole approach exists to avoid. 24 blocks keeps it within a chunk or two of the
      * carriage even at the smallest render distances.
+     *
+     * <p>What an <b>unoccupied</b> pair tolerates. A corridor with somebody in it is allowed more, so
+     * that a client already building the far end is not made to start again seconds before the
+     * crossing — see {@link PortalTwinDrift}.</p>
      */
-    private static final double TWIN_MAX_DRIFT = 24.0;
+    private static final double TWIN_MAX_DRIFT = PortalTwinDrift.BASE;
+
+    /**
+     * Pair key → the game time its twin was last stamped, for the one number that says whether a
+     * destination had time to be built before it was walked into.
+     *
+     * <p>Kept because it cannot be reconstructed afterwards: a swap that flashed and a swap that did
+     * not look identical in a log, and the difference between them is how long the room had been
+     * standing. Reported on the swap line itself rather than gated behind a debug flag, for the same
+     * reason the swap is logged at all.</p>
+     */
+    private static final Map<Integer, Long> STAMPED_AT = new HashMap<>();
 
     /**
      * Keep the twin this far below the build ceiling. Shared with {@link PortalTwinSpace}, which folds
@@ -578,6 +605,7 @@ public final class PortalCarriageEvents {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         STRUCTURES.clear();
+        STAMPED_AT.clear();
         // Each pairing holds its carriage's plot; a pair key names a different carriage next world.
         games.brennan.dungeontrain.portal.PortalPairIndex.clear();
         // The author each locked room settled on, and the catalogues behind them. Keyed by pair key
@@ -1598,9 +1626,16 @@ public final class PortalCarriageEvents {
         //
         // PINNED still wins: relocating the ground out from under somebody in the room is never
         // right, whichever corridor noticed the drift.
+        //
+        // And how far this pair's twin may drift before it is re-laid: more while somebody is
+        // standing in the corridor, because their client has been building the far end since they
+        // walked in and a re-stamp throws all of it away. See PortalTwinDrift.
+        double maxDrift = PortalTwinDrift.allowance(occupied,
+            level.getServer().getPlayerList().getViewDistance());
         PortalStructure built = structure != null && pinned
             ? structure
-            : ensureStructure(level, dims, pairKey, structureAnchorX, originY, originZ, groupSize);
+            : ensureStructure(level, dims, pairKey, structureAnchorX, originY, originZ, groupSize,
+                maxDrift);
         if (built == null) {
             // No twin — a world too shallow to hold one. With only half a pair there is no opposite
             // corridor for a puppet to stand in.
@@ -1942,10 +1977,18 @@ public final class PortalCarriageEvents {
             COOLDOWNS.put(player.getUUID(), level.getGameTime() + SWAP_COOLDOWN_TICKS);
             LAST_SWAP.put(player.getUUID(), level.getGameTime());
 
-            LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={}{} → {} ({}, {}, {}) → ({}, {}, {})",
+            // The runway on the end: how many ticks the destination had been standing when somebody
+            // walked into it. A swap that flashed and one that did not read identically otherwise, and
+            // this is the difference between them — the client cannot build a room that was still
+            // being written. Only meaningful going IN; the carriage was never stamped for this trip.
+            Long stampedAt = STAMPED_AT.get(pairKey);
+            String runway = move.toFrame() != PortalFrames.FRAME_TWIN || stampedAt == null
+                ? ""
+                : " twin standing " + (level.getGameTime() - stampedAt) + " ticks";
+            LOGGER.info("[DungeonTrain] Portal carriage swap: player={} carriage={}{} → {} ({}, {}, {}) → ({}, {}, {}){}",
                 player.getName().getString(), carriageIndex, copyOnly ? " (exit copy)" : "",
                 move.toFrame() == PortalFrames.FRAME_TWIN ? "TWIN" : "CARRIAGE",
-                fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()));
+                fmt(px), fmt(py), fmt(pz), fmt(move.x()), fmt(targetY), fmt(move.z()), runway);
         }
     }
 
@@ -2051,7 +2094,7 @@ public final class PortalCarriageEvents {
      */
     private static PortalStructure ensureStructure(ServerLevel level, CarriageDims dims, int pairKey,
                                                    double originX, double originY, double originZ,
-                                                   int groupSize) {
+                                                   int groupSize, double maxDrift) {
         PortalStructure existing = STRUCTURES.get(pairKey);
 
         // Same chunk columns as the carriage — that is what keeps the destination loaded — but in the
@@ -2133,9 +2176,10 @@ public final class PortalCarriageEvents {
         // height. A carriage crossing into (or out of) the upside-down band changes regions without
         // moving an inch horizontally, and a structure left in the old region is a structure hanging
         // in the open — so a lane change is as good a reason to re-stamp as a drift.
+        double drift = existing == null ? 0.0 : horizontalDistance(existing.origin(), originX, originZ);
         if (existing != null
             && existing.origin().getY() == wanted.getY()
-            && horizontalDistance(existing.origin(), originX, originZ) <= TWIN_MAX_DRIFT) {
+            && drift <= maxDrift) {
             return existing;
         }
 
@@ -2181,8 +2225,20 @@ public final class PortalCarriageEvents {
             PortalCarriageBuilder.eraseTwin(level, existing, dims);
         }
 
+        // How long the outgoing one had been standing, before the record of it is replaced. A
+        // relocation is where a prewarmed destination is thrown away, so a pair that keeps re-laying
+        // itself under an approaching player is the first thing to look at when a swap flashes.
+        Long stampedAt = STAMPED_AT.get(pairKey);
+        if (existing != null) {
+            LOGGER.info("[DungeonTrain] Portal pair {} twin relocated: drift {} > {} after {} ticks "
+                    + "standing — its blocks are written again, and any client building it starts over",
+                pairKey, fmt(drift), fmt(maxDrift),
+                stampedAt == null ? -1 : level.getGameTime() - stampedAt);
+        }
+
         PortalCarriageBuilder.stampPairStructure(level, planned, dims, pairKey);
         STRUCTURES.put(pairKey, planned);
+        STAMPED_AT.put(pairKey, level.getGameTime());
         // Where the exit stands, but only when it is not the ordinary place. A pair that moved it
         // (PortalRoomExits) is a portal a player has to search, and that is worth being able to see
         // in a log without walking the room — it is also the only outward sign the setting fired.
