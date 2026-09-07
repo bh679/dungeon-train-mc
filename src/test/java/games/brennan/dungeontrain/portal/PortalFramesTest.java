@@ -652,4 +652,72 @@ final class PortalFramesTest {
         assertEquals(PortalFrames.FRAME_TWIN,
             f.frameAt(TWIN_X + LAYOUT.length() + 0.3, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z));
     }
+
+    // ---- the approach ---------------------------------------------------------
+
+    /**
+     * The ramp begins <b>outside</b> the train-side door, in the carriage a player walks through to
+     * reach it — so a swap fired from one block inside the doorway ({@code PortalFacing}) lands with
+     * the transition already half made rather than in the dark.
+     */
+    @Test
+    @DisplayName("the approach to the train door already carries the ramp")
+    void approachCarriesTheRamp() {
+        PortalFrames f = frames();
+        int lead = PortalCrossingLight.LEAD_IN_BLOCKS;
+
+        // Walking up to an ENTRY corridor: from nothing at the far end of the approach, rising.
+        double previous = -1.0;
+        for (int step = 0; step <= lead; step++) {
+            double t = f.crossingIntensityAt(
+                CAR_X - lead + step + 0.5, CAR_Y + FEET_Y, CAR_Z + WALK_Z);
+            assertTrue(t >= previous, "fell in the approach, " + step + " blocks along");
+            previous = t;
+        }
+        assertEquals(PortalCrossingLight.OFF,
+            f.crossingIntensityAt(CAR_X - lead + 0.5, CAR_Y + FEET_Y, CAR_Z + WALK_Z), 1e-9);
+        assertTrue(previous > 0.4, "the doorway should be well under way, was " + previous);
+    }
+
+    /** Beyond the approach, and beside the corridor, there is still nothing. */
+    @Test
+    @DisplayName("the approach is a slab in front of the door, not a halo around the carriage")
+    void approachIsBoundedInEveryDirection() {
+        PortalFrames f = frames();
+        int lead = PortalCrossingLight.LEAD_IN_BLOCKS;
+
+        assertEquals(PortalCrossingLight.OFF,
+            f.crossingIntensityAt(CAR_X - lead - 2.0, CAR_Y + FEET_Y, CAR_Z + WALK_Z), 1e-9,
+            "further out than the lead-in");
+        assertEquals(PortalCrossingLight.OFF,
+            f.crossingIntensityAt(CAR_X - 1.5, CAR_Y + FEET_Y, CAR_Z + 40), 1e-9,
+            "beside the corridor, not in front of the door");
+        assertEquals(PortalCrossingLight.OFF,
+            f.crossingIntensityAt(CAR_X - 1.5, CAR_Y + 40, CAR_Z + WALK_Z), 1e-9,
+            "above the corridor");
+
+        // And the twin has no approach at all: its train-side door is a plugged dummy with the
+        // sealed basement behind it, so nobody is ever walking up to one.
+        assertEquals(PortalCrossingLight.OFF,
+            f.crossingIntensityAt(TWIN_X - 1.5, TWIN_Y + FEET_Y, TWIN_Z + WALK_Z), 1e-9);
+    }
+
+    /** EXIT mirrors it: the train is at high local X, so its approach is beyond the far end. */
+    @Test
+    @DisplayName("an EXIT corridor's approach sits at the other end")
+    void exitApproachMirrors() {
+        PortalFrames f = exitFrames();
+        int lead = PortalCrossingLight.LEAD_IN_BLOCKS;
+        double beyond = CAR_X + LAYOUT.length();
+
+        assertEquals(PortalCrossingLight.OFF,
+            f.crossingIntensityAt(beyond + lead - 0.5, CAR_Y + FEET_Y, CAR_Z + WALK_Z), 1e-9,
+            "far end of the EXIT approach");
+        assertTrue(
+            f.crossingIntensityAt(beyond + 0.5, CAR_Y + FEET_Y, CAR_Z + WALK_Z) > 0.2,
+            "just outside the EXIT train door");
+        assertEquals(PortalCrossingLight.OFF,
+            f.crossingIntensityAt(CAR_X - 1.5, CAR_Y + FEET_Y, CAR_Z + WALK_Z), 1e-9,
+            "the ENTRY end of an EXIT corridor is the ROOM end — no approach there");
+    }
 }

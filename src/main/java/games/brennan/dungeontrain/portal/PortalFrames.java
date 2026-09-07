@@ -137,8 +137,24 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
      */
     public double crossingIntensityAt(double wx, double wy, double wz) {
         int frame = frameAt(wx, wy, wz);
-        if (frame == FRAME_NONE) return PortalCrossingLight.OFF;
-        return PortalCrossingLight.intensityAt(wx - originOf(frame).x(), layout, role);
+        if (frame != FRAME_NONE) {
+            return PortalCrossingLight.intensityAt(wx - originOf(frame).x(), layout, role);
+        }
+
+        // Not in either corridor — but possibly walking up to this one. The ramp starts outside the
+        // train-side door (PortalCrossingLight.LEAD_IN_BLOCKS), so that a player swapped one block
+        // inside it arrives with the transition already under way rather than in the dark.
+        //
+        // The CARRIAGE frame only: the twin's train-side door is a plugged dummy with the sealed
+        // basement behind it, so there is no approach to that one and nobody standing in it.
+        Origin carriage = originOf(FRAME_CARRIAGE);
+        double localX = wx - carriage.x();
+        if (!layout.insideApproach(localX, wy - carriage.y(), wz - carriage.z(),
+                role, PortalCrossingLight.LEAD_IN_BLOCKS)) {
+            return PortalCrossingLight.OFF;
+        }
+        return PortalCrossingLight.intensityAtDepth(
+            PortalCrossingLight.depthWithLeadIn(localX, layout.length(), role), layout.length());
     }
 
     private boolean insideFrame(int frame, double wx, double wy, double wz) {
