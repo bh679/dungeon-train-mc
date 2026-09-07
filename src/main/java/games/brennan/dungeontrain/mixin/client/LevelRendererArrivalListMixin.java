@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.portal.ClientPortalPrewarm;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
+import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.ViewArea;
@@ -70,6 +71,7 @@ public abstract class LevelRendererArrivalListMixin {
         listed.addAll(this.visibleSections);
 
         ViewAreaPrewarmInvoker area = (ViewAreaPrewarmInvoker) this.viewArea;
+        int added = 0;
         for (long packed : span) {
             SectionRenderDispatcher.RenderSection section = area.dungeontrain$getRenderSectionAt(
                 SectionPos.of(ClientPortalPrewarm.sectionX(packed), ClientPortalPrewarm.sectionY(packed),
@@ -83,6 +85,8 @@ public abstract class LevelRendererArrivalListMixin {
 
             this.visibleSections.add(section);
             listed.add(section);
+            added++;
         }
+        PortalArrivalTrace.noteListed(added);
     }
 }

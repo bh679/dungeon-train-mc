@@ -32,10 +32,25 @@ package games.brennan.dungeontrain.client.portal;
 public final class PortalArrivalTrace {
 
     /** Whether to say what each arrival frame did. Off ships; on diagnoses. */
-    public static final boolean TRACE = false;
+    public static final boolean TRACE = true;
 
     /** Set by the frustum mixin when it forced a re-derive this frame; read and cleared by the trace. */
     private static volatile boolean forced;
+
+    /** Sections the arrival listing appended this frame; read and cleared by the trace. */
+    private static volatile int listed;
+
+    /** The arrival listing appended {@code count} sections on this frame. */
+    public static void noteListed(int count) {
+        listed += count;
+    }
+
+    /** How many sections the listing appended this frame, clearing it for the next. */
+    public static int consumeListed() {
+        int was = listed;
+        listed = 0;
+        return was;
+    }
 
     /** Frames traced since this arrival began, so a long window cannot flood the log. */
     private static volatile int frames;
@@ -68,5 +83,6 @@ public final class PortalArrivalTrace {
     public static void beginArrival() {
         frames = 0;
         forced = false;
+        listed = 0;
     }
 }

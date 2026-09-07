@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.ClientPortalCrossing;
+import games.brennan.dungeontrain.client.ClientPortalRoomFog;
+import games.brennan.dungeontrain.client.ClientPortalRoomSky;
 import games.brennan.dungeontrain.client.ClientPortalSeal;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
 import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
@@ -40,11 +43,19 @@ public abstract class LevelRendererArrivalTraceMixin {
                                                 CallbackInfo ci) {
         if (!ClientPortalSwap.inArrivalWindow()) return;
         boolean forced = PortalArrivalTrace.consumeForced();
+        int listed = PortalArrivalTrace.consumeListed();
         if (!PortalArrivalTrace.claimFrame()) return;
 
+        // The three eases beside the list: a room drawn but black is a lift still climbing, and a
+        // room hidden behind sky colour is a far plane still opening — neither of which the list
+        // count can see.
         LogUtils.getLogger().info(
-            "[DungeonTrain] Portal arrival frame: forced={} visible={} sealed={} camY={}",
-            forced, this.visibleSections.size(), ClientPortalSeal.sealed(),
-            String.format("%.1f", camera.getPosition().y));
+            "[DungeonTrain] Portal arrival frame: forced={} visible={} listed={} sealed={} camY={} "
+                + "sky={} crossing={} fog={}",
+            forced, this.visibleSections.size(), listed, ClientPortalSeal.sealed(),
+            String.format("%.1f", camera.getPosition().y),
+            String.format("%.2f", ClientPortalRoomSky.applied()),
+            String.format("%.2f", ClientPortalCrossing.current()),
+            String.format("%.1f", ClientPortalRoomFog.current()));
     }
 }
