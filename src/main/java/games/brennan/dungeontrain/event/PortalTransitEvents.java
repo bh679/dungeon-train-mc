@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.PortalSwapPacket;
 import games.brennan.dungeontrain.portal.PortalGeometry;
+import games.brennan.dungeontrain.portal.PortalPrewarmHints;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -87,6 +88,15 @@ public final class PortalTransitEvents {
 
                 if (!geo.insideCorridor(px, py, pz)) continue;
                 occupied = true;
+
+                // Where the swap would put them, the whole time they are in the corridor rather than
+                // on the tick it fires — the client needs the destination while there is still a walk
+                // left to build it in. See net/PortalPrewarmPacket.
+                int mirrored = geo.mirrorShift(px, py, pz);
+                if (mirrored != 0) {
+                    PortalPrewarmHints.send(player, BlockPos.containing(px, py + mirrored, pz),
+                        level.getGameTime());
+                }
 
                 int shift = geo.requiredShift(px, py, pz);
                 if (shift == 0) continue;

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
+import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.SectionOcclusionGraph;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
@@ -67,7 +68,7 @@ public abstract class SectionOcclusionGraphPortalSwapMixin {
                                                           Frustum frustum,
                                                           List<SectionRenderDispatcher.RenderSection> sections,
                                                           CallbackInfo ci) {
-        if (!ClientPortalSwap.claimGraphWait()) return;
+        if (!ClientPortalSwap.inArrivalWindow()) return;
         if (ClientPortalSwap.claimFirstTrace()) {
             LogUtils.getLogger().info(
                 "[DungeonTrain] Portal swap: renderer is waiting out the occlusion rebuild before drawing");
@@ -78,8 +79,13 @@ public abstract class SectionOcclusionGraphPortalSwapMixin {
         // than vanilla cares about, or a previous frame's rebuild covered it. Either way, no wait.
         if (task == null || task.isDone()) return;
 
+        long startedAt = System.nanoTime();
         try {
             task.get(DUNGEONTRAIN$WAIT_MILLIS, TimeUnit.MILLISECONDS);
+            if (PortalArrivalTrace.TRACE) {
+                LogUtils.getLogger().info("[DungeonTrain] Portal arrival: occlusion rebuild waited {} ms",
+                    (System.nanoTime() - startedAt) / 1_000_000L);
+            }
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
         } catch (Exception failed) {
@@ -88,9 +94,10 @@ public abstract class SectionOcclusionGraphPortalSwapMixin {
             // says why in its log. The logger is fetched here rather than held in a field: a mixin's
             // static field would have to be merged into the target's initialiser, and this path is
             // rare enough not to be worth that.
-            LogUtils.getLogger().debug(
-                "[DungeonTrain] Portal swap: occlusion graph rebuild not ready in {} ms",
-                DUNGEONTRAIN$WAIT_MILLIS, failed);
+            LogUtils.getLogger().info(
+                "[DungeonTrain] Portal arrival: occlusion rebuild NOT ready in {} ms — the frame will "
+                    + "draw from the graph walked at the old camera",
+                DUNGEONTRAIN$WAIT_MILLIS);
         }
     }
 }

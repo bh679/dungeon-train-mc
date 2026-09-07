@@ -96,6 +96,14 @@ public final class ClientPortalRoomFog {
      * @param crossing   how far through a portal corridor the camera is, {@code 0}..{@code 1}, or
      *                   {@code 0} when it is in none — see {@link ClientPortalCrossing#current}
      */
+    /**
+     * The far plane currently applied, {@code 0} for "vanilla's own", <em>without</em> advancing the
+     * ease — for the arrival trace, which wants to watch it rather than drive it.
+     */
+    public static float current() {
+        return applied;
+    }
+
     public static float fogDistanceAt(double x, double y, double z, float vanillaFar,
                                       float crossing) {
         if (vanillaFar <= 0.0f) return 0.0f;
