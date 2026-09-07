@@ -29,6 +29,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <p>Diagnostic, not a fix: no behaviour of any kind, and budgeted to twenty frames per arrival so a
  * long window cannot flood a log.</p>
+ *
+ * <p><b>Gated on Sodium being absent</b>, in {@code dungeontrain.vanillarenderer.mixins.json}: it
+ * targets {@code setupRender}, which Sodium merges, and injecting into a merged method is a fatal
+ * {@code InvalidInjectionException} rather than the quiet no-op {@code require = 0} suggests. See
+ * {@code VanillaRendererMixinPlugin}.</p>
  */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererArrivalTraceMixin {

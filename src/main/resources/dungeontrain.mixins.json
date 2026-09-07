@@ -114,8 +114,6 @@
     "client.SubLevelSealCullMixin",
     "client.SectionOcclusionGraphPortalSwapMixin",
     "client.LevelRendererPortalSwapCompileMixin",
-    "client.LevelRendererFrustumRefreshMixin",
-    "client.LevelRendererArrivalTraceMixin",
     "client.LevelRendererArrivalListMixin",
     "client.LevelRendererPrewarmAccessor",
     "client.ViewAreaPrewarmInvoker",
