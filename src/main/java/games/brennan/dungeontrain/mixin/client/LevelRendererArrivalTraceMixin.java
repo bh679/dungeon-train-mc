@@ -52,11 +52,12 @@ public abstract class LevelRendererArrivalTraceMixin {
         // count can see.
         LogUtils.getLogger().info(
             "[DungeonTrain] Portal arrival frame: forced={} visible={} listed={} sealed={} camY={} "
-                + "sky={} crossing={} fog={} [{}]",
+                + "sky={} crossing={} fog={} cut={}..{} [{}]",
             forced, this.visibleSections.size(), listed, ClientPortalSeal.sealed(),
             String.format("%.1f", camera.getPosition().y),
             String.format("%.2f", ClientPortalRoomSky.applied()),
             String.format("%.2f", ClientPortalCrossing.current()),
-            String.format("%.1f", ClientPortalRoomFog.current()), reasons);
+            String.format("%.1f", ClientPortalRoomFog.current()),
+            ClientPortalSeal.cut().floorY(), ClientPortalSeal.cut().roofY(), reasons);
     }
 }

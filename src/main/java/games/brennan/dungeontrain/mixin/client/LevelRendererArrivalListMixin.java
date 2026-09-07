@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin.client;
 
+import games.brennan.dungeontrain.client.ClientPortalSeal;
 import games.brennan.dungeontrain.client.portal.ClientPortalPrewarm;
 import games.brennan.dungeontrain.client.portal.ClientPortalSwap;
 import games.brennan.dungeontrain.client.portal.PortalArrivalTrace;
@@ -84,7 +85,15 @@ public abstract class LevelRendererArrivalListMixin {
             SectionRenderDispatcher.CompiledSection compiled = section.getCompiled();
             if (compiled == SectionRenderDispatcher.CompiledSection.UNCOMPILED
                 || compiled.hasNoRenderableLayers()) { PortalArrivalTrace.uncompiled++; continue; }
-            if (!frustum.isVisible(section.getBoundingBox())) { PortalArrivalTrace.culled++; continue; }
+            if (!frustum.isVisible(section.getBoundingBox())) {
+                PortalArrivalTrace.culled++;
+                // The seal or the planes: the one thing Dungeon Train adds inside isVisible, asked
+                // separately so a cull on the arrival frame can be blamed on the right half.
+                if (ClientPortalSeal.hides(section.getBoundingBox().minY, section.getBoundingBox().maxY)) {
+                    PortalArrivalTrace.sealCulled++;
+                }
+                continue;
+            }
 
             this.visibleSections.add(section);
             listed.add(section);
