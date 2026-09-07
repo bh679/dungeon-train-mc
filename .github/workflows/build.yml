@@ -153,6 +153,7 @@ jobs:
           python3 scripts/localization/test_stamp_narrative_provenance.py
           python3 scripts/localization/test_provenance_io.py
           python3 scripts/localization/test_import_approved_translations.py
+          python3 scripts/localization/test_import_english_edits.py
           python3 scripts/localization/test_lang_format.py
           python3 scripts/localization/test_book_format.py
           python3 scripts/localization/test_check_book_placeholders.py

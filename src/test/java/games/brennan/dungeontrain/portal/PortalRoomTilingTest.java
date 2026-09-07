@@ -176,7 +176,15 @@ class PortalRoomTilingTest {
      * window of 121 — the regime where the add rule and the retire rule can disagree about which
      * tiles the resident set should be.
      */
-    private static final int BIG_ROOM_BLOCKS = 11 * 70 * 13;
+    /**
+     * A room big enough that its budget is smaller than its window — the case the budget exists
+     * for. Derived from the resident ceiling rather than written as a number, so raising the room
+     * bounds (which raises the ceiling with them, by design) cannot quietly turn this into a room
+     * the window swallows whole and make every test here vacuous. Sized for a budget of 92 tiles —
+     * what the original 11×70×13 fixture got under the old ceiling — under the 121-tile window,
+     * and over the rings the wobble and shed tests walk.
+     */
+    private static final int BIG_ROOM_BLOCKS = PortalRoomTiling.MAX_RESIDENT_BLOCKS / 92;
 
     /**
      * One tick of {@code PortalRoomTiler#tick}'s geometry: stamp if it can, otherwise retire if it

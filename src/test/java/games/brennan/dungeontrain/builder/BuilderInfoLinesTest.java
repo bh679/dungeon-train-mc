@@ -28,12 +28,41 @@ final class BuilderInfoLinesTest {
     private static final UnaryOperator<String> T = key -> switch (key) {
         case "gui.dungeontrain.builder.info.size" -> "%1$s x %2$s x %3$s";
         case "gui.dungeontrain.builder.info.weight" -> "weight %1$s";
+        case "gui.dungeontrain.builder.info.creator" -> "Built by %1$s";
         default -> key.substring(key.lastIndexOf('.') + 1);
     };
 
     private static Data carriage(String name, boolean dirty, String stage, int[] dims, int weight) {
         return new Data(name, dirty, BuilderMode.TRAIN_OUTSIDE, SubType.WHOLE_CARRIAGE, "",
                 stage, dims, weight);
+    }
+
+    /** The same carriage, downloaded from somebody rather than built here. */
+    private static Data byCreator(String name, String creator) {
+        return new Data(name, false, BuilderMode.TRAIN_OUTSIDE, SubType.WHOLE_CARRIAGE, "",
+                "", null, -1, "", creator);
+    }
+
+    @Test
+    @DisplayName("A build downloaded from another player names them")
+    void creatorIsNamed() {
+        List<String> lines = BuilderInfoLines.identity(byCreator("crate_car", "Edda"), T);
+        assertEquals("Built by Edda", lines.get(lines.size() - 1));
+    }
+
+    @Test
+    @DisplayName("A build with no recorded creator has no byline at all — not a blank one")
+    void noCreatorNoLine() {
+        List<String> lines = BuilderInfoLines.identity(carriage("crate_car", false, "", null, -1), T);
+        assertFalse(lines.stream().anyMatch(line -> line.startsWith("Built by")));
+    }
+
+    @Test
+    @DisplayName("A draft carries a byline too — the blocks came from somewhere even unnamed")
+    void draftKeepsItsByline() {
+        List<String> lines = BuilderInfoLines.identity(byCreator("", "Edda"), T);
+        assertEquals("draft", lines.get(0));
+        assertEquals("Built by Edda", lines.get(lines.size() - 1));
     }
 
     @Test

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 8,
+  "schemaVersion": 9,
   "variants": {
     "7,1,2": ["minecraft:command_block[conditional=false,facing=south]", {"entity": "minecraft:witch", "difficulty": {"min": 15, "max": "all"}}, {"entity": "minecraft:vindicator", "difficulty": {"min": 34, "max": "all"}}, {"entity": "minecraft:pillager", "weight": 4, "difficulty": {"min": 4, "max": "all"}}, {"entity": "minecraft:zombie", "difficulty": {"min": 0, "max": 2}}],
     "7,1,10": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:witch", "difficulty": {"min": 25, "max": "all"}}, {"entity": "minecraft:vindicator", "difficulty": {"min": 50, "max": "all"}}, {"entity": "minecraft:pillager", "weight": 4, "difficulty": {"min": 5, "max": "all"}}, {"entity": "minecraft:zombie", "difficulty": {"min": 0, "max": 2}}],

@@ -63,6 +63,24 @@ final class PlacedCarriageFactsTest {
     }
 
     @Test
+    @DisplayName("a relay build reports no flip — it is stamped verbatim, never rolled")
+    void relayBuild_recordsNoFlip() {
+        PlacedCarriageFacts.recordRelayBuild(7, CarriageVariant.of(CarriagePlacer.CarriageType.STANDARD));
+
+        assertEquals(ContentsFlip.LABEL_NONE, PlacedCarriageFacts.get(7).flip());
+    }
+
+    @Test
+    @DisplayName("the flip label round-trips onto the facts the F3+4 panel reads")
+    void flip_roundTrips() {
+        PlacedCarriageFacts.Facts facts = new PlacedCarriageFacts.Facts("std", "maze", "", "X+Z");
+        assertEquals("X+Z", facts.flip());
+        // The back-compat 3-arg form is an unknown flip, which the panel renders as its dash.
+        assertEquals("", new PlacedCarriageFacts.Facts("std", "maze", "").flip());
+        assertEquals("", new PlacedCarriageFacts.Facts(null, null, null, null).flip());
+    }
+
+    @Test
     @DisplayName("negative carriage indices are kept distinct from their positive twins")
     void negativeIndices_areDistinct() {
         PlacedCarriageFacts.recordRelayBuild(-4, CarriageVariant.of(CarriagePlacer.CarriageType.STANDARD));

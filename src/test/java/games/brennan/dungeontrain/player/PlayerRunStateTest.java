@@ -123,11 +123,11 @@ final class PlayerRunStateTest {
         state.addTrainTimeTicks(10L);
         state.addTrainTimeTicks(10L);
         assertEquals(20L, state.trainTimeTicks());
-        // Negative / zero deltas are ignored (mirrors addRunTicks / addDistance guards).
+        // Negative / zero deltas are ignored (mirrors the addDistance guard).
         state.addTrainTimeTicks(0L);
         state.addTrainTimeTicks(-5L);
         assertEquals(20L, state.trainTimeTicks());
-        // Death resets single-life time, just like distanceBlocks / runTicks.
+        // Death resets single-life time, just like distanceBlocks.
         state.resetDeathStats();
         assertEquals(0L, state.trainTimeTicks());
     }
@@ -140,7 +140,7 @@ final class PlayerRunStateTest {
             new BlockPos(-5, 70, 15)
         );
         // Constructor signature: chests, cartsSinceDeath, cartsBackwardSinceDeath,
-        // travelledCarriageIndex, mobKills, distanceBlocks, runTicks,
+        // travelledCarriageIndex, mobKills, distanceBlocks,
         // containersOpened, booksReadCount, weaponKills, playerKills,
         // damageDealt, damageTaken, encounteredMobs, befriendedMobs, trainTimeTicks.
         List<UUID> encountered = List.of(
@@ -150,7 +150,7 @@ final class PlayerRunStateTest {
         List<UUID> befriended = List.of(
             UUID.fromString("00000000-0000-0000-0000-00000000000a")
         );
-        PlayerRunState original = new PlayerRunState(chests, 11, 4, 17, 0, 0.0, 0L, 0, 0, Map.of(),
+        PlayerRunState original = new PlayerRunState(chests, 11, 4, 17, 0, 0.0, 0, 0, Map.of(),
             3, 12.5, 7.0, encountered, befriended, 99000L);
 
         DataResult<Tag> encoded = PlayerRunState.CODEC.encodeStart(NbtOps.INSTANCE, original);

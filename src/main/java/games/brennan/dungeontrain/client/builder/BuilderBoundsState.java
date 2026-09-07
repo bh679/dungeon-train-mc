@@ -48,6 +48,8 @@ public final class BuilderBoundsState {
     private static volatile String trackKindId = "";
     /** Pick weight of the saved template; negative when it doesn't apply (a draft, or a non-carriage). */
     private static volatile int weight = -1;
+    /** Who originally built this template, when it came from another player; empty otherwise. */
+    private static volatile String creator = "";
 
     /** What this world does with the structures around the build — the pause-menu control's state. */
     private static volatile BuilderStructureMode structureMode = BuilderStructureMode.DEFAULT;
@@ -72,6 +74,7 @@ public final class BuilderBoundsState {
         stageId = orEmpty(packet.stageId());
         trackKindId = orEmpty(packet.trackKindId());
         weight = packet.weight();
+        creator = orEmpty(packet.creator());
         structureMode = BuilderStructureMode.orDefault(packet.structureModeId());
         structureRefresh = BuilderStructureRefresh.orDefault(packet.structureRefreshId());
         parked = packet.parked();
@@ -101,6 +104,11 @@ public final class BuilderBoundsState {
 
     public static int weight() {
         return weight;
+    }
+
+    /** Whose work the open build is, when it is not this player's; empty when nothing is recorded. */
+    public static String creator() {
+        return creator;
     }
 
     /** What the pause-menu structure control is showing — the server's answer, never a local guess. */
@@ -221,6 +229,18 @@ public final class BuilderBoundsState {
         return modeId;
     }
 
+    /**
+     * Whether the client is in a Train Builder world at all.
+     *
+     * <p>What the authoring hotkeys gate on down here, in place of {@code EditorStatusHudOverlay}'s
+     * "am I standing in an editor plot?" — that status is pushed by the editor's per-player sweep,
+     * which is gated on plot height and so never runs at builder altitude. This is the equivalent
+     * question, answered by the packet the builder does send.</p>
+     */
+    public static boolean isInBuilderWorld() {
+        return !modeId.isEmpty();
+    }
+
     public static List<BoundingBox> volumes() {
         return volumes;
     }
@@ -235,6 +255,7 @@ public final class BuilderBoundsState {
         stageId = "";
         trackKindId = "";
         weight = -1;
+        creator = "";
         structureMode = BuilderStructureMode.DEFAULT;
         structureRefresh = BuilderStructureRefresh.DEFAULT;
         parked = 0;

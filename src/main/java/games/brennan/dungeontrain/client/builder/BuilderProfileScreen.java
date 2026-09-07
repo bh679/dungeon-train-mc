@@ -472,7 +472,8 @@ public final class BuilderProfileScreen extends Screen {
         if (entry == null) return;
         this.lastResolution = BuilderRelayInstall.Resolution.AS_IS;
         this.lastChosenName = "";
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid, BuilderProfileState.live()));
+        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid,
+                creditedName(entry), BuilderProfileState.live()));
         this.downloadButton.active = false;
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
     }
@@ -595,19 +596,11 @@ public final class BuilderProfileScreen extends Screen {
      * download from restamping the world around someone who only wanted the file.</p>
      */
     private void openInEditor(BuilderPhotoPaths.Kind kind, BuilderProfileDownloadResultPacket packet) {
-        String target = EditorTemplateJump.categoryIdFor(kind, packet.subKind());
         // Nothing in the editor holds a carriage group, and a player without the editor's commands
         // can't be sent anywhere — either way the build is installed and the menu is done.
-        if (target == null || !canRunEditorCommands()) return;
-        String enter = EditorTemplateJump.enterCommandFor(kind, packet.id(), packet.subKind());
-
-        String current = EditorStatusHudOverlay.category().toLowerCase(java.util.Locale.ROOT);
-        if (target.equals(current)) {
-            if (enter != null) CommandRunner.run(enter);
-            return;
-        }
-        CommandRunner.run("dungeontrain editor " + target);
-        if (enter != null) CommandRunner.run(enter);
+        if (!canRunEditorCommands()) return;
+        EditorTemplateJump.go(kind, packet.id(), packet.subKind(),
+                EditorStatusHudOverlay.category().toLowerCase(java.util.Locale.ROOT));
     }
 
     /**
@@ -636,9 +629,23 @@ public final class BuilderProfileScreen extends Screen {
         this.lastResolution = resolution;
         this.lastChosenName = name == null ? "" : name;
         DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid,
-                BuilderProfileState.live(), overwriteUnsaved));
+                creditedName(selectedBuild()), BuilderProfileState.live(), overwriteUnsaved));
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
         if (this.downloadButton != null) this.downloadButton.active = false;
+    }
+
+    /**
+     * Whose work the build about to be downloaded is, as this screen has been captioning it.
+     *
+     * <p>Sent so the install can file a byline for somebody this world has never seen — the relay's
+     * fetch answers with blocks and a name for the <em>build</em>, never one for its author. The
+     * row's own name first (a favourite spans owners), then the profile being viewed.</p>
+     */
+    private String creditedName(BuilderProfilePacket.Entry entry) {
+        if (entry != null && entry.ownerName() != null && !entry.ownerName().isEmpty()) {
+            return entry.ownerName();
+        }
+        return viewedName;
     }
 
     /**
@@ -664,7 +671,7 @@ public final class BuilderProfileScreen extends Screen {
     }
 
     /** The line to show for an outcome — each sends the player somewhere different. */
-    static String noteKeyFor(BuilderRelayDownload.Outcome outcome) {
+    public static String noteKeyFor(BuilderRelayDownload.Outcome outcome) {
         return switch (outcome) {
             case INSTALLED -> "gui.dungeontrain.builder.profile.downloaded";
             case ALREADY_HERE -> "gui.dungeontrain.builder.profile.download_already_here";

@@ -78,6 +78,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
+    private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -91,6 +92,16 @@ public final class DungeonTrainWorldData extends SavedData {
      * before the flag existed keeps the full clear; only {@link #createDefault()} starts it false.
      */
     private boolean editorPlotsStamped = true;
+    /**
+     * Where each portal-room plot was last stamped, by room name: {@code [x, y, z, sx, sy, sz]}.
+     *
+     * <p>The layout predicts where a plot <em>should</em> be from the sizes it knows; this records
+     * where one <em>is</em>. The two disagree whenever a size is learned after a stamp — a template
+     * read for the first time this session, a sub-variant deeper than its parent — and a clear that
+     * erases the predicted box leaves the real one standing in the sky. Persisted, because the
+     * blocks are.</p>
+     */
+    private final java.util.Map<String, int[]> editorPortalPlotBoxes = new java.util.LinkedHashMap<>();
     private long generationSeed;
     private StartingDimension startingDimension;
     /** Per-world override of the PlayerMob 1-in-N spawn rate; null = use the global COMMON default. */
@@ -453,6 +464,15 @@ public final class DungeonTrainWorldData extends SavedData {
         // dropped by loadFrom, so a save that outlived its grants comes back granting nothing.
         data.debugGrants.loadFrom(
                 tag.getList(TAG_DEBUG_GRANTS, net.minecraft.nbt.Tag.TAG_COMPOUND));
+        // Absent on every world saved before plot boxes were recorded; those clear at the predicted
+        // layout, as they always did, until their next stamp records where things really are.
+        if (tag.contains(TAG_EDITOR_PORTAL_PLOT_BOXES, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag boxes = tag.getCompound(TAG_EDITOR_PORTAL_PLOT_BOXES);
+            for (String name : boxes.getAllKeys()) {
+                int[] box = boxes.getIntArray(name);
+                if (box.length == 6) data.editorPortalPlotBoxes.put(name, box);
+            }
+        }
         // Absent in every non-builder world (and in builder worlds saved before the stamp ran).
         if (tag.contains(TAG_BUILDER_MODE)) {
             data.builderMode = tag.getString(TAG_BUILDER_MODE);
@@ -543,6 +563,13 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (!debugGrants.isEmpty()) {
             tag.put(TAG_DEBUG_GRANTS, debugGrants.toTag());
+        }
+        if (!editorPortalPlotBoxes.isEmpty()) {
+            CompoundTag boxes = new CompoundTag();
+            for (java.util.Map.Entry<String, int[]> e : editorPortalPlotBoxes.entrySet()) {
+                boxes.putIntArray(e.getKey(), e.getValue());
+            }
+            tag.put(TAG_EDITOR_PORTAL_PLOT_BOXES, boxes);
         }
         if (builderMode != null) {
             tag.putString(TAG_BUILDER_MODE, builderMode);
@@ -739,6 +766,34 @@ public final class DungeonTrainWorldData extends SavedData {
     /** Whether any editor plot has ever been stamped here — false only on a world made since the flag existed and never edited. */
     public boolean editorPlotsStamped() {
         return editorPlotsStamped;
+    }
+
+    /** Where {@code name}'s portal-room plot was last stamped, or null when nothing records one. */
+    public int[] portalPlotBox(String name) {
+        int[] box = editorPortalPlotBoxes.get(name);
+        return box == null ? null : box.clone();
+    }
+
+    /** Every recorded portal-room plot box, by name. A copy — write through the methods below. */
+    public java.util.Map<String, int[]> portalPlotBoxes() {
+        java.util.Map<String, int[]> out = new java.util.LinkedHashMap<>();
+        for (java.util.Map.Entry<String, int[]> e : editorPortalPlotBoxes.entrySet()) {
+            out.put(e.getKey(), e.getValue().clone());
+        }
+        return out;
+    }
+
+    /** {@code name}'s plot now stands at this box. */
+    public void recordPortalPlotBox(String name, int x, int y, int z, int sx, int sy, int sz) {
+        if (name == null || name.isEmpty()) return;
+        int[] box = {x, y, z, sx, sy, sz};
+        int[] was = editorPortalPlotBoxes.put(name, box);
+        if (was == null || !java.util.Arrays.equals(was, box)) setDirty();
+    }
+
+    /** {@code name}'s plot has been erased — or was never there. */
+    public void forgetPortalPlotBox(String name) {
+        if (name != null && editorPortalPlotBoxes.remove(name) != null) setDirty();
     }
 
     /** Record that plots may now hold blocks; from here on every clear has to actually erase them. */

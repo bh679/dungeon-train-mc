@@ -17,7 +17,7 @@ import games.brennan.dungeontrain.portal.PortalRoomSettings;
  * is standing in rather than taking a model id — so nothing spliced into these strings can go
  * stale.</p>
  */
-final class EditorMenuPortalRows {
+public final class EditorMenuPortalRows {
 
     private EditorMenuPortalRows() {}
 
@@ -28,7 +28,7 @@ final class EditorMenuPortalRows {
      * them is at most two taps away, and staying open lets the player tap past the one they do not
      * want.</p>
      */
-    static CommandMenuEntry wallsModeRowFor(String currentMode) {
+    public static CommandMenuEntry wallsModeRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.modeLabel(currentMode),
@@ -36,10 +36,26 @@ final class EditorMenuPortalRows {
     }
 
     /**
+     * The Lock row, or null unless the walls seal — the only case where there is a shell for the
+     * block to describe.
+     *
+     * <p>A picker, not a cycle, for the reason {@link #copiesBlockRowFor} is one: the value is any
+     * block in the registry, so tapping the row takes whatever the author is holding. An empty hand
+     * means no shell at all. No Edit half — a seal of mixed blocks is not what a seal is for.</p>
+     */
+    public static CommandMenuEntry lockRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!EditorPlotLabelsRenderer.hasLockRowFor(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.lockLabel(currentMode) + "  (+ held)",
+            "dungeontrain editor portals lock held");
+    }
+
+    /**
      * The Copies row, or null unless the walls are set to one of the two endless modes — the only
      * ones that append tiles for the setting to describe.
      */
-    static CommandMenuEntry copiesRowFor(String currentMode) {
+    public static CommandMenuEntry copiesRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!PortalRoomSettings.parse(currentMode).copiesApply()) return null;
         return new CommandMenuEntry.Stay(
@@ -57,7 +73,7 @@ final class EditorMenuPortalRows {
      * the block itself. <b>Edit</b> opens the Block Variant menu on that plane, which is how one
      * block becomes a variant of several.</p>
      */
-    static CommandMenuEntry copiesBlockRowFor(String currentMode, PortalRoomCopiesVariant.Plane plane) {
+    public static CommandMenuEntry copiesBlockRowFor(String currentMode, PortalRoomCopiesVariant.Plane plane) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!EditorPlotLabelsRenderer.hasCopiesBlockRowFor(currentMode)) return null;
         // Value on the left, a way into its editor on the right — the same Split the Books row uses.
@@ -77,7 +93,7 @@ final class EditorMenuPortalRows {
      * made of. Off by default, so a room that has never been given the setting shows "Sealed" and
      * behaves exactly as it always did.</p>
      */
-    static CommandMenuEntry doorWallRowFor(String currentMode) {
+    public static CommandMenuEntry doorWallRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!EditorPlotLabelsRenderer.hasDoorWallRow(currentMode)) return null;
         return new CommandMenuEntry.Stay(
@@ -92,7 +108,7 @@ final class EditorMenuPortalRows {
      * <p>Shown for every portal room, unlike Copies: furnishing is not a property of the walls, so a
      * sealed room can take one as readily as a repeating one.</p>
      */
-    static CommandMenuEntry roomContentsRowFor(String currentMode) {
+    public static CommandMenuEntry roomContentsRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomContentsLabel(currentMode),
@@ -107,7 +123,7 @@ final class EditorMenuPortalRows {
      * on the room being furnished: a room can hold books without drawing a contents template, since
      * its own template may have shelves stamped into it.</p>
      */
-    static CommandMenuEntry roomBooksRowFor(String currentMode) {
+    public static CommandMenuEntry roomBooksRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         CommandMenuEntry cycle = new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomBooksLabel(currentMode),
@@ -130,7 +146,7 @@ final class EditorMenuPortalRows {
      * stands under is a statement about the place it is pretending to be, not about how it seals or
      * what is furnished into it.</p>
      */
-    static CommandMenuEntry roomSkyRowFor(String currentMode) {
+    public static CommandMenuEntry roomSkyRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomSkyLabel(currentMode),
@@ -146,7 +162,7 @@ final class EditorMenuPortalRows {
      * of the walls, so an Endless Open room is asked the question too — it just answers Off by
      * default.</p>
      */
-    static CommandMenuEntry exitsRowFor(String currentMode) {
+    public static CommandMenuEntry exitsRowFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!PortalRoomSettings.parse(currentMode).exitsApply()) return null;
         return new CommandMenuEntry.Stay(
@@ -162,7 +178,7 @@ final class EditorMenuPortalRows {
      * laid is a control with nothing on the other end of it — the same reason the Copies row is
      * absent rather than dimmed under a mode that makes no copies.</p>
      */
-    static CommandMenuEntry exitEveryTripleFor(String currentMode) {
+    public static CommandMenuEntry exitEveryTripleFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         PortalRoomSettings settings = PortalRoomSettings.parse(currentMode);
         if (!settings.exitsApply() || !settings.exits().lays()) return null;
@@ -182,7 +198,7 @@ final class EditorMenuPortalRows {
      * unpredictable to go and find. Under the lattice a player could work out the walk in advance,
      * and under Off it would wall the only way onward there is.</p>
      */
-    static CommandMenuEntry exitMoveTripleFor(String currentMode) {
+    public static CommandMenuEntry exitMoveTripleFor(String currentMode) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         PortalRoomSettings settings = PortalRoomSettings.parse(currentMode);
         if (!settings.exitsApply() || !settings.exits().movesApply()) return null;
@@ -204,7 +220,7 @@ final class EditorMenuPortalRows {
      * go below what the corridor mouth needs to stay sealed, and height cannot reach into the next
      * portal pair's Y lane. Tapping {@code −} past the floor simply stops.</p>
      */
-    static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
+    public static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
         if (current == EditorStatusPacket.NO_SIZE) return null;
         String prefix = "dungeontrain editor portals " + axis;
         CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");

@@ -9,6 +9,14 @@
     {
       "id": "blocks",
       "weight": 1
+    },
+    {
+      "id": "bigger",
+      "weight": 1
+    },
+    {
+      "id": "smallpat",
+      "weight": 0
     }
   ]
 }

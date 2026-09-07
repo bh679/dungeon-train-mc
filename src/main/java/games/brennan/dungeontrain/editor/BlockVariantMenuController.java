@@ -107,8 +107,8 @@ public final class BlockVariantMenuController {
         if (open == null) return;
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null || !plot.key().equals(open.variantId())) return;
+        BlockVariantPlot plot = resolvePlotFor(player, dims, open.variantId());
+        if (plot == null) return;
         sendSync(player, plot, open.localPos(), plot.origin().offset(open.localPos()),
             open.face(), open.up());
     }
@@ -136,18 +136,20 @@ public final class BlockVariantMenuController {
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null) {
-            actionBar(player, "Not in a block-variant editor plot", ChatFormatting.YELLOW);
-            return;
-        }
-
         HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
         if (!(hit instanceof BlockHitResult bhit) || bhit.getType() == HitResult.Type.MISS) {
             actionBar(player, "Look at a block to open the menu", ChatFormatting.YELLOW);
             return;
         }
         BlockPos worldPos = bhit.getBlockPos();
+        // The plot the targeted block is in, not the one the player's feet are in. Authoring into a
+        // plot from outside it is ordinary — you back off a carriage to see the wall you are
+        // filling, and in a Train Builder world you stand on the platform beside the build.
+        BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, worldPos, dims);
+        if (plot == null) {
+            actionBar(player, "That block isn't in a block-variant editor plot", ChatFormatting.YELLOW);
+            return;
+        }
         BlockPos localPos = worldPos.subtract(plot.origin());
         // Tolerant check (1-block cage margin) so clicking a cage wall
         // adjacent to the part still opens the menu — clamp to in-bounds
@@ -271,16 +273,18 @@ public final class BlockVariantMenuController {
     @Nullable
     private static BlockVariantPlot resolvePlotFor(ServerPlayer player, CarriageDims dims,
                                                    String variantId) {
-        BlockVariantPlot positional = BlockVariantPlot.resolveAt(player, dims);
+        ServerLevel level = player.serverLevel();
         String room = games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.roomOf(variantId);
-        if (room == null) return positional;
-        if (positional == null) return null;
+        if (room == null) {
+            return BlockVariantPlot.resolveByKey(level, variantId, dims);
+        }
         String roomKey = ContainerContentsStore.trackPlotKey(
             games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, room);
-        if (!positional.key().equals(roomKey)) return null;
+        BlockVariantPlot roomPlot = BlockVariantPlot.resolveByKey(level, roomKey, dims);
+        if (roomPlot == null) return null;
         return copiesPlotFor(room,
             games.brennan.dungeontrain.portal.PortalRoomCopiesPlot.planeOf(variantId),
-            positional.origin());
+            roomPlot.origin());
     }
 
     private static void sendSync(ServerPlayer player, BlockVariantPlot plot,
@@ -350,10 +354,20 @@ public final class BlockVariantMenuController {
         }
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        // Authorised against the menu the server itself opened for this player, rather than against
+        // where they are standing now. That key came from the server at open time, so it is a
+        // stronger check than the positional one it replaces — and it is what lets the author step
+        // off the plot, or stand outside the carriage they are building, with the menu still up.
+        OpenMenu open = OPEN.get(player.getUUID());
+        if (open == null || !open.variantId().equals(packet.variantId())) {
+            LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: player {} has no open menu for '{}'",
+                player.getName().getString(), packet.variantId());
+            return;
+        }
         BlockVariantPlot plot = resolvePlotFor(player, dims, packet.variantId());
         if (plot == null || !plot.key().equals(packet.variantId())) {
-            LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: player {} not in plot for '{}'",
-                player.getName().getString(), packet.variantId());
+            LOGGER.warn("[DungeonTrain] BlockVariantMenu edit rejected: no plot for '{}'",
+                packet.variantId());
             return;
         }
         BlockPos localPos = packet.localPos();
@@ -1011,15 +1025,16 @@ public final class BlockVariantMenuController {
         ServerLevel level = player.serverLevel();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
-        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null) {
-            actionBar(player, "Not in a block-variant editor plot", ChatFormatting.YELLOW);
-            return;
-        }
-
         HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
         if (!(hit instanceof BlockHitResult bhit) || bhit.getType() == HitResult.Type.MISS) {
             actionBar(player, "Look at a block to copy its variants", ChatFormatting.YELLOW);
+            return;
+        }
+        // From the targeted block, as the menu itself now resolves — copying a cell you can see but
+        // are not standing in is the same gesture.
+        BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, bhit.getBlockPos(), dims);
+        if (plot == null) {
+            actionBar(player, "That block isn't in a block-variant editor plot", ChatFormatting.YELLOW);
             return;
         }
         BlockPos localPos = bhit.getBlockPos().subtract(plot.origin());

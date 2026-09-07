@@ -33,6 +33,15 @@ public final class DungeonTrainClient {
         // the same log-collection path the death screen uses.
         SurveySubmitClientHook.register(BugLogReporter::maybeReport);
 
+        // Distant Horizons draws its own LODs of the real world: it never sees the upside-down band's
+        // block flip, and it never sees that a dimensional carriage is meant to be somewhere other
+        // than the coordinates it is stamped at. Bind the per-frame suppression for both — behind the
+        // ModList check, because DistantHorizonsSuppression is the one DT class that names DH types
+        // and must not be loaded when DH isn't installed.
+        if (GraphicsCapabilities.distantHorizonsActive()) {
+            DistantHorizonsSuppression.register();
+        }
+
         // Skybox blocks mask each variant's sky with the stencil buffer, which Minecraft's
         // main render target does not allocate by default. enqueueWork because this setup
         // event runs on a parallel mod-loading thread while enableStencil() re-creates the

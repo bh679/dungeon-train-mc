@@ -86,6 +86,23 @@
         "END",
         "UPSIDE_DOWN"
       ]
+    },
+    {
+      "id": "seatingnew",
+      "weight": 1
+    },
+    {
+      "id": "booth",
+      "weight": 3
+    },
+    {
+      "id": "moreseats",
+      "weight": 1,
+      "minLevel": 5
+    },
+    {
+      "id": "double",
+      "weight": 3
     }
   ]
 }

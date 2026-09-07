@@ -232,10 +232,31 @@ public final class TrackSidePlots {
      */
     public static int slotZ(TrackKind kind, String name, CarriageDims dims) {
         int base = kind.dims(dims).getZ() + EditorLayout.GAP;
-        int needed = footprint(kind, name, dims).getZ() + SLOT_MIN_CLEARANCE;
+        int needed = deepestZ(kind, name, dims) + SLOT_MIN_CLEARANCE;
         if (needed <= base) return base;
         int steps = (needed - base + SLOT_STEP - 1) / SLOT_STEP;
         return base + steps * SLOT_STEP;
+    }
+
+    /**
+     * The Z a top-level name's row has to hold: its own depth, or a member's when one is deeper.
+     *
+     * <p>A group's members sit on their parent's Z line, {@code +X} of it, so the slot the parent
+     * reserves along the row is the slot every member stands in too. Sizing it from the parent alone
+     * is how an eleven-deep House with a forty-eight-deep member let that member reach twenty-odd
+     * blocks into the row below — the row was packed against a number nothing in the group was
+     * bounded by.</p>
+     */
+    static int deepestZ(TrackKind kind, String name, CarriageDims dims) {
+        int deepest = footprint(kind, name, dims).getZ();
+        if (!kind.freeSizeAboveFloor()) return deepest;
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
+            TrackVariantGroupStore.get(kind, name);
+        if (group.isEmpty()) return deepest;
+        for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member member : group.get().members()) {
+            deepest = Math.max(deepest, footprint(kind, member.id(), dims).getZ());
+        }
+        return deepest;
     }
 
     /**

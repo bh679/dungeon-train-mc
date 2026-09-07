@@ -58,7 +58,11 @@ public final class PortalTestTicker {
         if (trips.isEmpty()) return;
 
         MinecraftServer server = level.getServer();
-        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        DungeonTrainWorldData worldData = DungeonTrainWorldData.get(server.overworld());
+        CarriageDims dims = worldData.dims();
+        // What the debug screen's Y disguise is measured against, exactly as the live path measures
+        // it — a test room read at a different depth from a live one is a room inspected wrong.
+        int groundY = worldData.getTrainY();
 
         for (Map.Entry<UUID, PortalTestSession.Session> trip : trips) {
             ServerPlayer player = server.getPlayerList().getPlayer(trip.getKey());
@@ -83,9 +87,10 @@ public final class PortalTestTicker {
                     next.roomName(), player.getName().getString(), next.tiling().tiles().size());
             }
 
-            // The same fog, sky and train audio a live room sends its occupants, through the same
-            // senders — a room inspected under different light is a room inspected wrong.
-            PortalCarriageEvents.sendRoomAmbience(dims, layout, next, List.of(player));
+            // The same fog, sky, train audio and depth disguise a live room sends its occupants,
+            // through the same senders — a room inspected under different light is a room inspected
+            // wrong.
+            PortalCarriageEvents.sendRoomAmbience(dims, layout, next, groundY, List.of(player));
         }
     }
 

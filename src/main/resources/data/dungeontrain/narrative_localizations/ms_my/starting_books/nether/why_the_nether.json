@@ -5,8 +5,8 @@
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Ini tak mungkin betul?\n Adakah ini betul?\n\nMungkin ia satu pepijat?\nIni bukan dunia yang aku kenali.\n\nWell... semoga berjaya!",
+    "Ini tak mungkin betul?\n Adakah ini betul?\n%PAGE%\nMungkin ia satu pepijat?\nIni bukan dunia yang aku kenali.\n%PAGE%\nWell... semoga berjaya!",
     "Sebuah kereta api tak terhingga, melompat antara dimensi, dunia, dan realiti.",
-    "Selamat datang ke Dungeon Train\nApakah kereta api itu?\nMengapa kau di sini?\nApa yang kau sepatutnya lakukan?\nIni semua soalan yang baik\n\nWalaupun...\n\nMengapa kau di sini, di dalam Nether, secara khususnya?\n\nKau bermula di neraka.\n\nSengaja?\n\n...Berani.\n\nAda kereta api di hadapan. Naiklah.\nCepat, sebelum sesuatu perasan akan kau."
+    "Selamat datang ke Dungeon Train\nApakah kereta api itu?\nMengapa kau di sini?\nApa yang kau sepatutnya lakukan?\nIni semua soalan yang baik\n%PAGE%\nWalaupun...\n%PAGE%\nMengapa kau di sini, di dalam Nether, secara khususnya?\n%PAGE%\nKau bermula di neraka.\n%PAGE%\nSengaja?\n%PAGE%\n...Berani.\n%PAGE%\nAda kereta api di hadapan. Naiklah.\nCepat, sebelum sesuatu perasan akan kau."
   ]
 }

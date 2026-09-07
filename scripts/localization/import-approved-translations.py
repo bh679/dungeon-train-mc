@@ -515,6 +515,12 @@ def import_books(rows: list[dict], narrative_dir: Path, english_dir: Path, dry_r
             if english is not None:
                 source = pio.book_field_value(english, row["field"])
                 broken = book_format.mismatch(row["value"], source) if source is not None else None
+                # Page-break parity is checked HERE rather than in the repo-wide sweep: this is the
+                # one place both sides are the same book at the same moment, so a difference is the
+                # translation's, not an author's re-pagination that the translation hasn't caught
+                # up with yet.
+                if not broken and source is not None:
+                    broken = book_format.page_break_mismatch(row["value"], source)
                 if broken:
                     deferred.append(f"{locale} {book_path}#{row['field']}: {broken} — the text "
                                     "needs fixing at the relay before it can be imported")

@@ -53,6 +53,10 @@ public final class UiAnalytics {
     // title_screen so the funnel can tell a mid-run tap from a main-menu one — they are very
     // different moments. Same lock-step rule with ui-events.js SURFACES.
     public static final String SURFACE_PAUSE_MENU = "pause_menu";
+    // The Shaders page, reached from the title screen — its own surface so the shader funnel
+    // (opened → picked a pack → downloaded → applied) does not have to be teased back out of the
+    // title screen's traffic.
+    public static final String SURFACE_SHADERS = "shaders";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
@@ -96,6 +100,14 @@ public final class UiAnalytics {
     // Same whitelist caveat as above: until the relay knows "video_tools_reset" this 400s silently,
     // which costs a funnel row and nothing else.
     public static final String TARGET_VIDEO_TOOLS_RESET = "video_tools_reset";
+    // The title-screen Shaders button, and the three things done on the page it opens. Same
+    // whitelist caveat as the two above: until the relay's ui-events.js TARGETS knows these they
+    // 400 silently, which costs a funnel row and nothing else.
+    public static final String TARGET_SHADERS = "shaders";
+    public static final String TARGET_SHADER_DOWNLOAD = "shader_download";
+    public static final String TARGET_SHADER_APPLY = "shader_apply";
+    public static final String TARGET_SHADERS_OFF = "shaders_off";
+    public static final String TARGET_SHADER_SETTINGS = "shader_settings";
     // Death-screen button targets (see NarrativeDeathScreen). Lock-step with ui-events.js TARGETS.
     public static final String TARGET_CONTRIBUTE = "contribute"; // "Contribute" opens the donate-options window
     public static final String TARGET_BOARD_ANEW = "board_anew";  // "Board anew" — start the next run
@@ -126,7 +138,50 @@ public final class UiAnalytics {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
+    /**
+     * The A/B experiment + arm this client is in, stamped on every death-screen event so the whole
+     * funnel — not just the final click — is comparable per arm. Set once per death screen from the
+     * relay-published experiment (see {@code DonateExperiment}); null when none applies, which is
+     * every jar's state until an experiment is running and is what the relay reads as "no
+     * dimension".
+     *
+     * <p>Static rather than a parameter on all sixteen call sites: the assignment is a property of
+     * the session, and threading it through every {@code click}/{@code pageOpen} would put a
+     * chance to forget it at each one — a silently unlabelled event is indistinguishable from a
+     * player who was never in the experiment.</p>
+     *
+     * <p>Both fields are validated relay-side against {@code ^[a-z0-9_]{1,32}$} and simply dropped
+     * when malformed, so a bad value costs the breakdown rather than the event.</p>
+     */
+    private static volatile String experimentId = null;
+    private static volatile String variant = null;
+    // Which card pair was on screen. Only the rotating arm sets this — a fixed arm's id already
+    // says what it drew — and it is a SEPARATE dimension from `variant` on purpose: the arm is the
+    // treatment being compared, the pair is a detail inside one arm's rows. Folding the pair into
+    // the variant would create five phantom arms nobody was assigned to.
+    private static volatile String pair = null;
+
     private UiAnalytics() {}
+
+    /**
+     * Record which experiment arm this client drew, for every subsequent event. Passing null for
+     * either clears the dimension — an experiment that has ended stops labelling events rather
+     * than continuing to claim an arm that no longer exists.
+     */
+    public static void setVariant(String experiment, String arm) {
+        setVariant(experiment, arm, null);
+    }
+
+    /**
+     * As {@link #setVariant(String, String)}, additionally recording which card {@code pair} was
+     * drawn — set by the rotating arm, whose own id cannot say what was on screen. Null for every
+     * fixed arm.
+     */
+    public static void setVariant(String experiment, String arm, String cardPair) {
+        experimentId = experiment == null || experiment.isBlank() ? null : experiment;
+        variant = arm == null || arm.isBlank() ? null : arm;
+        pair = cardPair == null || cardPair.isBlank() ? null : cardPair;
+    }
 
     /** A button/link was pressed (before any confirm screen). */
     public static void click(String surface, String target) {
@@ -216,7 +271,7 @@ public final class UiAnalytics {
             String player = mc.getUser() != null ? mc.getUser().getName() : null;
             JsonObject payload = buildPayload(
                     noDashes(uuid), player, VersionInfo.VERSION, surface, target, action, durationMs,
-                    page, questionId, score, scoreMax);
+                    page, questionId, score, scoreMax, experimentId, variant, pair);
             HttpRequest req = HttpRequest.newBuilder(
                             URI.create(DungeonTrain.relayBaseUrl() + "/telemetry/ui-event"))
                     .timeout(REQUEST_TIMEOUT)
@@ -244,6 +299,14 @@ public final class UiAnalytics {
                 null, null, -1, -1);
     }
 
+    /** The pre-experiment overload: no A/B dimension, which is what an unlabelled event carries. */
+    static JsonObject buildPayload(String uuid, String player, String modVersion,
+                                   String surface, String target, String action, long durationMs,
+                                   String page, String questionId, int score, int scoreMax) {
+        return buildPayload(uuid, player, modVersion, surface, target, action, durationMs,
+                page, questionId, score, scoreMax, null, null, null);
+    }
+
     /**
      * The full {@code /telemetry/ui-event} payload (see dp-relay {@code ui-events.js}). Pure — no
      * Minecraft bootstrap — so it unit-tests directly. Optional fields are omitted when unset:
@@ -253,7 +316,8 @@ public final class UiAnalytics {
      */
     static JsonObject buildPayload(String uuid, String player, String modVersion,
                                    String surface, String target, String action, long durationMs,
-                                   String page, String questionId, int score, int scoreMax) {
+                                   String page, String questionId, int score, int scoreMax,
+                                   String exp, String arm, String cardPair) {
         JsonObject payload = new JsonObject();
         payload.addProperty("uuid", uuid);
         if (player != null && !player.isBlank()) {
@@ -279,6 +343,19 @@ public final class UiAnalytics {
         }
         if (scoreMax >= 0) {
             payload.addProperty("scoreMax", scoreMax);
+        }
+        // The arm rides along only WITH its experiment: two experiments could both name an arm
+        // `control`, so a bare variant is unattributable and the relay drops it anyway.
+        if (exp != null && !exp.isBlank()) {
+            payload.addProperty("exp", exp);
+            if (arm != null && !arm.isBlank()) {
+                payload.addProperty("variant", arm);
+                // The pair is meaningless without the arm it sits inside, so it rides on the same
+                // condition rather than on one of its own.
+                if (cardPair != null && !cardPair.isBlank()) {
+                    payload.addProperty("pair", cardPair);
+                }
+            }
         }
         return payload;
     }

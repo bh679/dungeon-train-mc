@@ -1,7 +1,11 @@
 {
   "abandonedroom": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
+  },
+  "author_new": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/mix:2:1:0:1:5:0"
   },
   "backrooms": {
     "weight": 1,
@@ -21,6 +25,10 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "bigger": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/end"
+  },
   "biggerlibrary": {
     "weight": 1,
     "mode": "bedrock_lock"
@@ -30,13 +38,29 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 4,
+    "weight": 2,
     "minLevel": 3,
     "mode": "endless_repetition"
   },
+  "chess": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_end"
+  },
+  "chunk_dimension": {
+    "weight": 4,
+    "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9"
+  },
+  "chunk_dimension_end": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/end/sealed/0/9"
+  },
+  "chunk_dimension_nether": {
+    "weight": 1,
+    "mode": "chunk_dimension/exact/off/off/off/nether/sealed/0/9"
+  },
   "cubes": {
     "weight": 1,
-    "mode": "endless_repetition"
+    "mode": "endless_repetition/exact/off/on/off/end"
   },
   "cvspharmacy": {
     "weight": 1,
@@ -83,18 +107,34 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "ender": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "foundation": {
+    "weight": 1,
+    "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30"
+  },
   "house": {
     "weight": 1,
     "mode": "bedrock_lock"
   },
+  "icebears": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/end"
+  },
   "labrynth": {
-    "weight": 3,
+    "weight": 2,
     "mode": "endless_repetition/dynamic"
   },
   "library_dimension": {
     "weight": 3,
     "minLevel": 5,
     "mode": "endless_repetition/dynamic/off/on/off/none/repeated"
+  },
+  "man": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/end"
   },
   "midlibrary": {
     "weight": 1,
@@ -104,13 +144,24 @@
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/off/day"
   },
+  "moria": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
   "nobeam": {
     "weight": 1,
     "mode": "bedrockless"
   },
-  "parkour": {
+  "nostalgia": {
     "weight": 1,
-    "minLevel": 10,
+    "mode": "bedrock_lock/exact/off/off/off/day"
+  },
+  "outsidethebox": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone"
+  },
+  "parkour": {
+    "weight": 3,
     "mode": "bedrockless"
   },
   "paths": {
@@ -122,6 +173,10 @@
     "minLevel": 5,
     "mode": "endless_repetition"
   },
+  "peateargriffin": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
+  },
   "pretty": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
@@ -129,6 +184,14 @@
   "randomized": {
     "weight": 1,
     "mode": "endless_repetition/dynamic/fit"
+  },
+  "romanhuge": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "romanpillars": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
   },
   "sanemaze": {
     "weight": 1,
@@ -140,9 +203,34 @@
     "maxLevel": 40,
     "mode": "endless_open"
   },
+  "singlepillar2": {
+    "weight": 1,
+    "mode": "endless_open"
+  },
+  "singlesomething": {
+    "weight": 1,
+    "mode": "endless_open"
+  },
+  "skymaze": {
+    "weight": 1,
+    "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
+  },
+  "sloped": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/nether"
+  },
   "smalllibrary": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
+  },
+  "smallpat": 1,
+  "suspiciousfurniturestore": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day"
+  },
+  "terrarium": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/day/sealed/0/73/0/19"
   },
   "trap": {
     "weight": 1,
@@ -151,10 +239,10 @@
   },
   "upsidedown": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
   },
   "window": {
-    "weight": 2,
+    "weight": 1,
     "maxLevel": 10,
     "mode": "bedrockless"
   },

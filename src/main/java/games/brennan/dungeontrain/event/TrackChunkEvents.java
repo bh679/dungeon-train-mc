@@ -47,8 +47,10 @@ public final class TrackChunkEvents {
         int chunkMaxZ = chunkMinZ + 15;
         long chunkKey = ChunkPos.asLong(cx, cz);
 
-        for (ManagedShip ship : Shipyards.of(level).findAll()) {
-            if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
+        // Only each train's TAIL provider is ever drained (TrainTickEvents → fillRenderDistance on
+        // Trains.tail), so offering to every carriage just grew every other provider's queue for
+        // the whole session — one boxed key per corridor chunk load per carriage, never popped.
+        for (TrainTransformProvider provider : tailProviders(Shipyards.of(level).findAll())) {
             TrackGeometry g = provider.getTrackGeometry();
             if (g == null) continue;
             // Fast Z-corridor prefilter — skip chunks clearly outside this train's strip.
@@ -62,5 +64,21 @@ public final class TrackChunkEvents {
             // matches load order ≈ spatial proximity to the player.
             provider.getPendingChunks().offer(chunkKey);
         }
+    }
+
+    /**
+     * The provider with the lowest pIdx per train — what {@code Trains.tail} resolves to — among
+     * {@code ships}. Package-private and free of level access so the selection is unit-testable.
+     */
+    static java.util.Collection<TrainTransformProvider> tailProviders(java.util.List<ManagedShip> ships) {
+        java.util.Map<java.util.UUID, TrainTransformProvider> tails = new java.util.HashMap<>();
+        for (ManagedShip ship : ships) {
+            if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
+            TrainTransformProvider current = tails.get(provider.getTrainId());
+            if (current == null || provider.getPIdx() < current.getPIdx()) {
+                tails.put(provider.getTrainId(), provider);
+            }
+        }
+        return tails.values();
     }
 }

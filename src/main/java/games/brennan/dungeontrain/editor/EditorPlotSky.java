@@ -1,8 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
+import games.brennan.dungeontrain.portal.PlayerSkyRegions;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.portal.PortalRoomSky;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -10,9 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Light a portal room's editor plot with the room's own Sky, the way the room will be lit once it is
@@ -25,12 +22,14 @@ import java.util.UUID;
  * light it will not ship with is a room authored wrong, and two implementations of the lift would be
  * two answers to what it looks like.</p>
  *
- * <p><b>Its own dedup map, deliberately.</b> {@code PortalCarriageEvents} keeps a {@code LAST_SKY}
- * of its own and sweeps it every overworld tick, taking the daylight back off anyone who is not
- * inside a live structure. Writing plot sends into that map would have the sweep clear them the tick
- * after they went out, forever. The two never describe the same player: editor plots stand in the
- * sky at {@link EditorLayout#PLOT_Y} and live rooms and test sessions are in the basement far below,
- * so two streams into one client cache cannot disagree.</p>
+ * <p><b>One dedup memory, shared.</b> This and {@code PortalCarriageEvents} both describe the
+ * client's single lit region, so both write through
+ * {@link games.brennan.dungeontrain.portal.PlayerSkyRegions}. They were once assumed never to
+ * describe the same player — plots stand in the sky at {@link EditorLayout#PLOT_Y}, live rooms and
+ * test sessions in the basement far below — but the moment between them is real: teleporting into a
+ * {@code /dt portal test} leaves the build area, so this sender took its light back <i>after</i> the
+ * test's had gone out, and the test's own map still read "already sent" and never sent again.
+ * Sharing the memory is what makes the order between them stop mattering.</p>
  *
  * <p><b>Optional, and only here.</b> The packet is flagged {@code editor}, which is what lets
  * {@code ClientDisplayConfig.isEditorPlotLighting} switch the plot's lift off from the editor's
@@ -39,13 +38,6 @@ import java.util.UUID;
  * the editor, held per author, with no server state to keep in step.</p>
  */
 public final class EditorPlotSky {
-
-    /**
-     * Last region sent to each player, so a player standing still on a plot costs one comparison a
-     * tick rather than a packet. Cleared through {@link #forget} on the way out of the build area
-     * and wholesale when the server stops.
-     */
-    private static final Map<UUID, PortalRoomSkyPacket> LAST = new HashMap<>();
 
     private EditorPlotSky() {}
 
@@ -61,10 +53,7 @@ public final class EditorPlotSky {
             clear(player);
             return;
         }
-        UUID id = player.getUUID();
-        if (region.equals(LAST.get(id))) return;
-        LAST.put(id, region);
-        DungeonTrainNet.sendTo(player, region);
+        PlayerSkyRegions.send(player, region);
     }
 
     /**
@@ -107,12 +96,11 @@ public final class EditorPlotSky {
     }
 
     private static void clear(ServerPlayer player) {
-        if (LAST.remove(player.getUUID()) == null) return;
-        DungeonTrainNet.sendTo(player, PortalRoomSkyPacket.none());
+        PlayerSkyRegions.clear(player);
     }
 
     /** Wipe every player's dedup state — the integrated server has stopped. */
     public static void clearAll() {
-        LAST.clear();
+        PlayerSkyRegions.clearAll();
     }
 }

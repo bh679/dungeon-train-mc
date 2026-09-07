@@ -86,6 +86,13 @@ public final class EditorStatusHudOverlay {
     private static boolean mirrorZ = false;
     private static boolean mirrorVariants = false;
     /**
+     * Which axes the active CONTENTS template may be randomly flipped along at spawn, plus the
+     * portal-room scope flag, as an {@link EditorStatusPacket} bitmask. The Current tab's Flip quad
+     * reads these. {@link EditorStatusPacket#NO_FLIP} out of context and for every other category —
+     * which is why the quad is only rendered for contents, where the mask is meaningful.
+     */
+    private static int flipMask = EditorStatusPacket.NO_FLIP;
+    /**
      * Content ids the active carriage variant has explicitly disallowed. Empty
      * for non-carriage statuses and for carriages with no exclusions. The
      * Contents drilldown screen reads this for per-row red/green toggle state.
@@ -122,7 +129,7 @@ public final class EditorStatusHudOverlay {
                                  boolean newPartMenuEnabled, boolean newMirrorX, boolean newMirrorY, boolean newMirrorZ,
                                  boolean newMirrorVariants, Set<String> newExcludedContents, String newStageId,
                                  int newRoomLength, int newRoomWidth, int newRoomHeight,
-                                 String newRoomMode) {
+                                 String newRoomMode, int newFlipMask) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
         modelId = newModelId == null ? "" : newModelId;
@@ -145,6 +152,20 @@ public final class EditorStatusHudOverlay {
         roomWidth = newRoomWidth;
         roomHeight = newRoomHeight;
         roomMode = newRoomMode == null ? EditorStatusPacket.NO_MODE : newRoomMode;
+        flipMask = newFlipMask;
+    }
+
+    /** Back-compat overload from before contents carried flip options. */
+    public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName,
+                                 boolean newDevmode, int newWeight, int newMinLevel, int newMaxLevel, int newPhaseMask,
+                                 boolean newPartMenuEnabled, boolean newMirrorX, boolean newMirrorY, boolean newMirrorZ,
+                                 boolean newMirrorVariants, Set<String> newExcludedContents, String newStageId,
+                                 int newRoomLength, int newRoomWidth, int newRoomHeight,
+                                 String newRoomMode) {
+        setStatus(newCategory, newModel, newModelId, newModelName, newDevmode, newWeight, newMinLevel,
+            newMaxLevel, newPhaseMask, newPartMenuEnabled, newMirrorX, newMirrorY, newMirrorZ,
+            newMirrorVariants, newExcludedContents, newStageId, newRoomLength, newRoomWidth, newRoomHeight,
+            newRoomMode, EditorStatusPacket.NO_FLIP);
     }
 
     /**
@@ -290,6 +311,14 @@ public final class EditorStatusHudOverlay {
     public static boolean mirrorVariants() {
         return mirrorVariants;
     }
+
+    /** Random-flip axis flags for the active contents template (Current tab's Flip quad state). */
+    public static boolean flipX() { return (flipMask & EditorStatusPacket.FLIP_X) != 0; }
+    public static boolean flipY() { return (flipMask & EditorStatusPacket.FLIP_Y) != 0; }
+    public static boolean flipZ() { return (flipMask & EditorStatusPacket.FLIP_Z) != 0; }
+
+    /** Whether the active contents template's flip roll also applies to portal-room furnishing. */
+    public static boolean flipRooms() { return (flipMask & EditorStatusPacket.FLIP_ROOMS) != 0; }
 
     /**
      * Content ids the active carriage variant currently has disallowed.

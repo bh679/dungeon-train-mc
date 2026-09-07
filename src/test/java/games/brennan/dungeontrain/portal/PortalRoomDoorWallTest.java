@@ -11,21 +11,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The Door Wall setting: whether the copies standing against the portal carriages carry their own end
  * wall through the corridor mouth's plane.
  *
- * <p>The property that matters most here is the <b>default</b>. Turning this on changes what is
- * standing in a world that already exists, so every tag ever written — and every tag that names the
- * setting badly — has to come back as {@link PortalRoomDoorWall#SEALED}.</p>
+ * <p>The property that matters most here is the <b>default</b>: {@link PortalRoomDoorWall#REPEATED}
+ * since 2026-09-05, so every tag with no seventh segment — and every tag that names the setting
+ * badly — tiles the room exactly as its author built it. Merged is the opt-in.</p>
  */
 class PortalRoomDoorWallTest {
 
     @Test
-    @DisplayName("An absent, blank or unreadable segment is Sealed — never the new behaviour")
-    void parseIsTotalAndDefaultsToSealed() {
-        assertEquals(PortalRoomDoorWall.SEALED, PortalRoomDoorWall.parse(null));
-        assertEquals(PortalRoomDoorWall.SEALED, PortalRoomDoorWall.parse(""));
-        assertEquals(PortalRoomDoorWall.SEALED, PortalRoomDoorWall.parse("   "));
-        assertEquals(PortalRoomDoorWall.SEALED, PortalRoomDoorWall.parse("repeeted"));
-        assertEquals(PortalRoomDoorWall.SEALED, PortalRoomDoorWall.parse("on"));
-        assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomDoorWall.parse("REPEATED"));
+    @DisplayName("An absent, blank or unreadable segment is Kept — the default — and Merged must be named")
+    void parseIsTotalAndDefaultsToKept() {
+        assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomDoorWall.DEFAULT);
+        assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomDoorWall.parse(null));
+        assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomDoorWall.parse(""));
+        assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomDoorWall.parse("   "));
+        assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomDoorWall.parse("seeled"));
+        assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomDoorWall.parse("on"));
+        assertEquals(PortalRoomDoorWall.SEALED, PortalRoomDoorWall.parse("SEALED"));
+        assertEquals(PortalRoomDoorWall.SEALED, PortalRoomDoorWall.parse(" sealed "));
         assertEquals(PortalRoomDoorWall.REPEATED, PortalRoomDoorWall.parse(" repeated "));
     }
 
@@ -57,9 +59,11 @@ class PortalRoomDoorWallTest {
             }
             // Endless Open writes no walls, and the two sealed modes append no tiles at all — a copy
             // handed that plane there has nothing to fill it with, which is a hole in the one
-            // boundary that may not have one.
+            // boundary that may not have one. Pinned to SEALED by name: it is no longer the default,
+            // and Endless Open's faces are only opened because its walls do not "repeat".
             assertFalse(settings.doorWallApplies(), mode.id() + " does not apply");
             assertEquals(PortalRoomDoorWall.SEALED, settings.effectiveDoorWall(), mode.id());
+            assertFalse(settings.effectiveDoorWall().repeats(), mode.id() + " must not repeat");
         }
     }
 

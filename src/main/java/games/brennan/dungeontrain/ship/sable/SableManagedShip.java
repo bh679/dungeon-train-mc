@@ -19,12 +19,27 @@ import org.joml.primitives.AABBd;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
+import java.lang.ref.WeakReference;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Sable adapter for {@link ManagedShip}. Wraps a {@link ServerSubLevel} and
  * forwards transform queries through {@link Pose3dc#transformPosition}.
+ *
+ * <p><b>The sub-level is held weakly.</b> Registries keep these handles long after Sable has culled
+ * the group (the train registry, portal residency, last-spawned bookkeeping), and a removed
+ * {@code ServerSubLevel} still pins every chunk of its plot — Sable's {@code LevelPlot.onRemove}
+ * never drops its chunk holders. A strong reference here therefore kept every carriage the train
+ * ever left behind on the heap, for the whole session (~0.5 MB each, ≈400 MB/h). The stable facts
+ * a stale handle is ever asked for — the id and a last-known pose — are cached in the wrapper, so
+ * the object itself can go.</p>
+ *
+ * <p>Contract once the sub-level is gone: {@link #subLevel()} returns {@code null},
+ * {@link #isResident()} is false, {@link #id()} / {@link #subLevelId()} still answer, the pose and
+ * AABB queries answer from {@link LastKnownPose} (the same frozen cull-time pose a removed
+ * sub-level reported before), and every mutating call is a no-op. Callers that read a live pose off
+ * a registry handle already gate on {@link #isResident()}.</p>
  *
  * <p>Kinematic application: the train code (specifically
  * {@link games.brennan.dungeontrain.train.TrainWindowManager}) already calls
@@ -48,62 +63,112 @@ public final class SableManagedShip implements ManagedShip {
      * reference than the one we set the driver on. The {@link SableShipyard}
      * wrapper map is keyed on those references and so creates a fresh
      * wrapper without our driver. Pinning kinematic drivers in a static map
-     * by stable {@link SubLevel#getUniqueId()} survives that re-creation —
+     * by stable {@link ServerSubLevel#getUniqueId()} survives that re-creation —
      * any wrapper for the same UUID picks the driver back up.
+     *
+     * <p>Entries leave when a group is torn down for good ({@link #forgetDriver}) and on server
+     * stop ({@link #clearDrivers}); a merely culled group keeps its driver so a reload re-attaches.</p>
      */
     private static final java.util.Map<UUID, KinematicDriver> DRIVERS_BY_UUID = new ConcurrentHashMap<>();
 
-    private final ServerSubLevel subLevel;
+    private final WeakReference<ServerSubLevel> ref;
+    private final UUID uuid;
+    private final long id;
+    private final LastKnownPose last = new LastKnownPose();
+    /** Sticky: once Sable has written the sub-level to disk it stays reloadable. */
+    private boolean hadSerializationPointer;
 
     public SableManagedShip(ServerSubLevel subLevel) {
-        this.subLevel = subLevel;
+        this(new WeakReference<>(subLevel), subLevel.getUniqueId());
+        snapshot(subLevel);
     }
 
-    /** Internal accessor for {@link SableShipyard} (and the kinematic ticker once chunk 3 lands). */
+    /** For tests: a wrapper over an already-collected (or never-present) sub-level. */
+    SableManagedShip(WeakReference<ServerSubLevel> ref, UUID uuid) {
+        this.ref = ref;
+        this.uuid = uuid;
+        // UUID's most-significant 64 bits — collision-resistant enough for
+        // per-level use (we only compare ids against ships in the same level).
+        this.id = uuid.getMostSignificantBits();
+    }
+
+    /**
+     * The live sub-level, or {@code null} once Sable has dropped it and the collector has taken it.
+     * A removed-but-uncollected sub-level is still returned (as before); gate on
+     * {@link #isResident()} for "is this carriage in play".
+     */
+    @Nullable
     public ServerSubLevel subLevel() {
-        return subLevel;
+        return ref.get();
+    }
+
+    /** Read the live pose and box into the last-known snapshot. No allocation. */
+    private void snapshot(ServerSubLevel sl) {
+        Pose3dc pose = sl.logicalPose();
+        last.recordPose(pose.position(), pose.orientation(), pose.rotationPoint());
+        BoundingBox3dc b = sl.boundingBox();
+        last.recordAabb(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ());
+        if (sl.getLastSerializationPointer() != null) hadSerializationPointer = true;
+    }
+
+    /** For tests: seed the last-known snapshot of a wrapper that has no live sub-level. */
+    void seedLastKnown(Vector3dc position, Quaterniondc orientation, Vector3dc rotationPoint, AABBdc box) {
+        last.recordPose(position, orientation, rotationPoint);
+        last.recordAabb(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ());
     }
 
     @Override
     public long id() {
-        // UUID's most-significant 64 bits — collision-resistant enough for
-        // per-level use (we only compare ids against ships in the same level).
-        return subLevel.getUniqueId().getMostSignificantBits();
+        return id;
     }
 
     @Override
     public UUID subLevelId() {
-        return subLevel.getUniqueId();
+        return uuid;
     }
 
     @Override
     public Vector3d worldToShip(Vector3d worldPos) {
-        return subLevel.logicalPose().transformPositionInverse(worldPos);
+        ServerSubLevel sl = ref.get();
+        if (sl == null) return last.worldToShip(worldPos);
+        return sl.logicalPose().transformPositionInverse(worldPos);
     }
 
     @Override
     public Vector3d shipToWorld(Vector3d modelPos) {
-        return subLevel.logicalPose().transformPosition(modelPos);
+        ServerSubLevel sl = ref.get();
+        if (sl == null) return last.shipToWorld(modelPos);
+        return sl.logicalPose().transformPosition(modelPos);
     }
 
     @Override
     public Vector3dc currentWorldPosition() {
-        return subLevel.logicalPose().position();
+        ServerSubLevel sl = ref.get();
+        if (sl == null) return last.position();
+        snapshot(sl);
+        return sl.logicalPose().position();
     }
 
     @Override
     public Quaterniondc currentRotation() {
-        return subLevel.logicalPose().orientation();
+        ServerSubLevel sl = ref.get();
+        if (sl == null) return last.orientation();
+        return sl.logicalPose().orientation();
     }
 
     @Override
     public Vector3dc currentPositionInModel() {
-        return subLevel.logicalPose().rotationPoint();
+        ServerSubLevel sl = ref.get();
+        if (sl == null) return last.rotationPoint();
+        return sl.logicalPose().rotationPoint();
     }
 
     @Override
     public AABBdc worldAABB() {
-        BoundingBox3dc b = subLevel.boundingBox();
+        ServerSubLevel sl = ref.get();
+        if (sl == null) return last.aabb();
+        BoundingBox3dc b = sl.boundingBox();
+        last.recordAabb(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ());
         return new AABBd(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ());
     }
 
@@ -112,7 +177,8 @@ public final class SableManagedShip implements ManagedShip {
         // A removed sub-level may still answer boundingBox()/logicalPose() with
         // a stale last-known pose, so registry-edge reference resolution must
         // treat it as non-resident and reload from holding instead.
-        return !subLevel.isRemoved();
+        ServerSubLevel sl = ref.get();
+        return sl != null && !sl.isRemoved();
     }
 
     @Override
@@ -121,21 +187,30 @@ public final class SableManagedShip implements ManagedShip {
         // autosave / chunk save). Until then a cull yields a null-pointer
         // holding entry that snatchAndLoad can't revive — so DT holds the group
         // force-loaded until this is non-null. See ManagedShip#hasSerializationPointer.
-        return subLevel.getLastSerializationPointer() != null;
+        if (hadSerializationPointer) return true;
+        ServerSubLevel sl = ref.get();
+        if (sl != null) {
+            if (sl.getLastSerializationPointer() != null) hadSerializationPointer = true;
+            return hadSerializationPointer;
+        }
+        // The pointer Sable writes during the cull itself is the one this wrapper never saw; the
+        // holding index records exactly that filing.
+        return SableHoldingIndex.contains(uuid);
     }
 
     @Override
     @Nullable
     public KinematicDriver getKinematicDriver() {
-        UUID id = subLevel.getUniqueId();
-        KinematicDriver d = DRIVERS_BY_UUID.get(id);
+        KinematicDriver d = DRIVERS_BY_UUID.get(uuid);
         if (d != null) return d;
+        ServerSubLevel sl = ref.get();
+        if (sl == null) return null;
         // Sable's FloatingBlockController can split a sub-level into pieces
         // (e.g. when carriages aren't fully connected by blocks). The split
         // pieces inherit the original sub-level's UUID via getSplitFromSubLevel().
         // Walk that chain to find the driver of the originally-driven sub-level
         // and cache it locally so subsequent lookups skip the chain walk.
-        UUID origin = subLevel.getSplitFromSubLevel();
+        UUID origin = sl.getSplitFromSubLevel();
         while (origin != null && d == null) {
             d = DRIVERS_BY_UUID.get(origin);
             if (d != null) break;
@@ -144,7 +219,7 @@ public final class SableManagedShip implements ManagedShip {
             // if an origin chain ever cycles.
             origin = null;
         }
-        if (d != null) DRIVERS_BY_UUID.put(id, d);
+        if (d != null) DRIVERS_BY_UUID.put(uuid, d);
         return d;
     }
 
@@ -152,7 +227,7 @@ public final class SableManagedShip implements ManagedShip {
      * True if {@code subLevel} (or the sub-level it was split from) is a
      * DT-driven carriage group — i.e. DT has registered a {@link KinematicDriver}
      * for it. Every group gets a driver at assembly ({@code TrainAssembler}), and a
-     * sub-level reloaded from holding keeps the same {@link SubLevel#getUniqueId()}
+     * sub-level reloaded from holding keeps the same {@link ServerSubLevel#getUniqueId()}
      * key, so this stays true across culls within a server session.
      *
      * <p>Used by {@link games.brennan.dungeontrain.mixin.SubLevelHeatMapSplitMixin}
@@ -191,13 +266,37 @@ public final class SableManagedShip implements ManagedShip {
         return origin == null ? null : DRIVERS_BY_UUID.get(origin);
     }
 
+    /**
+     * Drop the driver pinned for {@code subLevelId}. Only for a group that is gone for good — a
+     * reload from holding re-attaches by this very key, so a merely culled group must keep it.
+     */
+    public static void forgetDriver(@Nullable UUID subLevelId) {
+        if (subLevelId != null) DRIVERS_BY_UUID.remove(subLevelId);
+    }
+
+    /** Server stop: a single-player world switch reuses the JVM, and every driver here is that world's. */
+    public static void clearDrivers() {
+        DRIVERS_BY_UUID.clear();
+    }
+
+    /** How many drivers are pinned — diagnostics. */
+    public static int driverCount() {
+        return DRIVERS_BY_UUID.size();
+    }
+
     @Override
     public void setKinematicDriver(KinematicDriver driver) {
-        UUID id = subLevel.getUniqueId();
         if (driver == null) {
-            DRIVERS_BY_UUID.remove(id);
+            DRIVERS_BY_UUID.remove(uuid);
         } else {
-            DRIVERS_BY_UUID.put(id, driver);
+            DRIVERS_BY_UUID.put(uuid, driver);
+        }
+        // Attaching a train driver is the one place DT claims a sub-level as a carriage, so it is
+        // where the rotation lock goes on: from here the carriage's orientation is clamped to
+        // identity on every physics substep, not just on the per-tick teleport below. See
+        // DtRotationLockable.
+        if (ref.get() instanceof DtRotationLockable lockable) {
+            lockable.dt$setRotationLocked(TrainRotationLock.locksFor(driver));
         }
     }
 
@@ -211,6 +310,12 @@ public final class SableManagedShip implements ManagedShip {
 
     @Override
     public void applyTickOutput(KinematicDriver.TickOutput output) {
+        ServerSubLevel subLevel = ref.get();
+        if (subLevel == null) {
+            LOGGER.trace("[Sable] applyTickOutput: sub-level {} is gone", uuid);
+            return;
+        }
+
         // Pin the model-space pivot FIRST, before either early return below can skip it.
         //
         // Sable's MassTracker recomputes this sub-level's centre of mass on every block change and
@@ -226,6 +331,13 @@ public final class SableManagedShip implements ManagedShip {
         // on real drift) three double stores. The freeze's saving is the per-body Rapier work
         // below, none of which this touches. See CarriagePivotPin.
         CarriagePivotPin.pin(subLevel, output.positionInModel());
+
+        // The last-known snapshot is what a registry handle answers from once this sub-level is
+        // culled and collected; the driver's output IS the pose the body is about to take, so
+        // recording it here keeps the snapshot one tick fresh at zero allocation.
+        last.recordPose(output.position(), output.rotation(), output.positionInModel());
+        BoundingBox3dc b = subLevel.boundingBox();
+        last.recordAabb(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ());
 
         // A DT-frozen carriage (#646 soft-freeze) has been parked: its body stays in the physics
         // scene, but DT stops teleporting it here so it sits at rest while Sable does no per-body work
@@ -247,8 +359,7 @@ public final class SableManagedShip implements ManagedShip {
 
         RigidBodyHandle handle = RigidBodyHandle.of(subLevel);
         if (handle == null || !handle.isValid()) {
-            LOGGER.trace("[Sable] applyTickOutput: handle invalid for sub-level {}",
-                subLevel.getUniqueId());
+            LOGGER.trace("[Sable] applyTickOutput: handle invalid for sub-level {}", uuid);
             return;
         }
 
@@ -304,6 +415,8 @@ public final class SableManagedShip implements ManagedShip {
     @Override
     @Nullable
     public InertiaSnapshot captureInertia() {
+        ServerSubLevel subLevel = ref.get();
+        if (subLevel == null) return null;
         MassData mass = subLevel.getMassTracker();
         if (mass.isInvalid()) {
             return null;
@@ -325,5 +438,10 @@ public final class SableManagedShip implements ManagedShip {
         // It is because the defence moved: CarriagePivotPin re-pins Pose3d.rotationPoint both on
         // Sable's per-block-change choke point and at the top of applyTickOutput, which covers
         // frozen and handle-less carriages that this API never reached anyway.
+    }
+
+    @Override
+    public String toString() {
+        return "SableManagedShip{" + uuid + (isResident() ? ", resident" : ", stale") + '}';
     }
 }

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.builder.relay;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import games.brennan.dungeontrain.editor.TemplateSidecars;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
@@ -51,7 +52,7 @@ public final class BuilderRelayDownload {
      * <p>{@link #UNSAVED_EDITS} is a question rather than a refusal, and the only one raised before
      * anything is read off the wire is written: the template this build would land on has in-world
      * edits nobody has saved, and installing would put them beyond reach. The player answers it and
-     * presses again — see {@link #download(ServerPlayer, ServerLevel, int, BuilderRelayInstall.Resolution, String, String, boolean, boolean)}.</p>
+     * presses again — see {@link #download(ServerPlayer, ServerLevel, int, BuilderRelayInstall.Resolution, String, String, String, boolean, boolean)}.</p>
      */
     public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
 
@@ -89,7 +90,7 @@ public final class BuilderRelayDownload {
      * is not asked to accept them coming down either.</p>
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId) {
-        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", false, false);
+        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", "", false, false);
     }
 
     /**
@@ -103,8 +104,8 @@ public final class BuilderRelayDownload {
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
                                                      BuilderRelayInstall.Resolution resolution,
-                                                     String newName, String ownerUuid, boolean live,
-                                                     boolean overwriteUnsaved) {
+                                                     String newName, String ownerUuid, String ownerName,
+                                                     boolean live, boolean overwriteUnsaved) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
@@ -116,7 +117,8 @@ public final class BuilderRelayDownload {
                     case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
                     case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
-                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName, mine,
+                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName,
+                            new BuildCredits.Credit(owner, ownerName, System.currentTimeMillis()), mine,
                             overwriteUnsaved));
                 });
     }
@@ -130,8 +132,8 @@ public final class BuilderRelayDownload {
      * as it is now.</p>
      */
     private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build,
-                                  BuilderRelayInstall.Resolution resolution, String newName, boolean mine,
-                                  boolean overwriteUnsaved) {
+                                  BuilderRelayInstall.Resolution resolution, String newName,
+                                  BuildCredits.Credit credit, boolean mine, boolean overwriteUnsaved) {
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
             // A kind this build of the mod does not know, or a build the relay never named. Neither
@@ -200,7 +202,39 @@ public final class BuilderRelayDownload {
         if (resolution != BuilderRelayInstall.Resolution.LOAD_AS_NEW && mine) {
             remember(level, build, kind);
         }
+        credit(kind, build.subKind(), installedAs, credit, mine,
+                TemplateSidecars.hasCredit(build.sidecars()));
         return new Result(Outcome.INSTALLED, kind, installedAs, build.subKind());
+    }
+
+    /**
+     * File whose work this build is, under the name it actually landed under.
+     *
+     * <p>Under {@code installedAs} rather than the relay's own name, because {@code Load as new}
+     * installs the build as something else and a byline filed against a name this install does not
+     * hold is a byline nothing will ever read.</p>
+     *
+     * <p>The player's OWN build is the opposite case and clears instead: fetching your work back
+     * onto a fresh save is not somebody else handing it to you, and a stale credit left over from
+     * whatever held that name before would caption it with a stranger. Unless the build itself
+     * arrived carrying a byline — one of their builds that is a copy of somebody else's work — in
+     * which case that name is the only record of who made it and stands.</p>
+     *
+     * <p>Somebody else's build never overwrites either: {@link BuildCredits#put} keeps the first
+     * credit filed, and the sidecars have already laid theirs down by the time this runs. That is
+     * what stops a build passing through a second player's profile from being re-attributed to
+     * them.</p>
+     */
+    private static void credit(BuilderPhotoPaths.Kind kind, String subKind, String installedAs,
+                               BuildCredits.Credit credit, boolean mine, boolean carriesCredit) {
+        if (mine) {
+            if (!carriesCredit) BuildCredits.forget(kind, subKind, installedAs);
+            return;
+        }
+        if (BuildCredits.put(kind, subKind, installedAs, credit)) {
+            LOGGER.info("[DungeonTrain] Builder relay download: '{}' is credited to {}",
+                    installedAs, credit.display());
+        }
     }
 
     /**
@@ -249,7 +283,7 @@ public final class BuilderRelayDownload {
     }
 
     /** Fold the build's delta log onto its base blob — the lease path's rule, on a fetched build. */
-    private static CompoundTag fold(CompoundTag base, SharedCarriageClient.BuildFetch build) {
+    static CompoundTag fold(CompoundTag base, SharedCarriageClient.BuildFetch build) {
         List<SharedCarriageClient.DeltaRec> pending =
                 SharedCarriageClient.pendingDeltas(build.deltas(), build.baseSeq());
         CompoundTag folded = base;

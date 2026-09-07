@@ -39,7 +39,11 @@ public final class UpsideDownSkyRenderer {
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
         double t = ClientUpsideDownBand.upsideDownIntensityAt(camera.getPosition().x);
         if (t <= 0.0) return;
-        drawAll(frustumMatrix, partialTick, (float) Math.min(1.0, t));
+        float alpha = (float) Math.min(1.0, t);
+        drawAll(frustumMatrix, partialTick, alpha);
+        if (ShaderDiagnostics.recording()) {
+            ShaderDiagnostics.recordBandSky(ShaderDiagnostics.BandSky.UPSIDE_DOWN, alpha);
+        }
     }
 
     /**

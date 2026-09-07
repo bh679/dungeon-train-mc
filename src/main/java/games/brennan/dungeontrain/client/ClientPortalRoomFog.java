@@ -56,6 +56,14 @@ public final class ClientPortalRoomFog {
         region = packet == null ? PortalRoomFogPacket.none() : packet;
     }
 
+    /** The fog box the server last named, for the diagnostics panel. See the sky cache's twin. */
+    public static String describeRegion() {
+        PortalRoomFogPacket r = region;
+        if (r.minX() == 0 && r.maxX() == 0 && r.minY() == 0 && r.maxY() == 0) return "none";
+        return "[" + r.minX() + ".." + r.maxX() + ", " + r.minY() + ".." + r.maxY()
+            + ", " + r.minZ() + ".." + r.maxZ() + "] r=" + r.radius();
+    }
+
     /** Forget everything. Wired to logging out, so a room never leaks into the next world. */
     public static void reset() {
         region = PortalRoomFogPacket.none();

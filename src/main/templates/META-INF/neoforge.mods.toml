@@ -190,3 +190,10 @@ logoFile="logo.png"
 # Sable already pins the compatible Sodium range, and the mixin no-ops when Sodium is absent.
 [[mixins]]
     config="${mod_id}.sodium.mixins.json"
+
+# Iris picks a shader pack's per-dimension program set from Iris.getCurrentDimension() every frame.
+# dungeontrain.iris.mixins.json (gated by IrisMixinPlugin) lets Dungeon Train report the Nether or
+# the End while the train is in a Nether/End band or a dimensional carriage, so the pack renders its
+# own Nether/End atmosphere, fog and lighting there. No-ops without Iris; no dependency declared.
+[[mixins]]
+    config="${mod_id}.iris.mixins.json"

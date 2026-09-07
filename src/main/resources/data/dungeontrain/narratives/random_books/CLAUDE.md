@@ -4,6 +4,8 @@ Authoritative instruction set for drafting Dungeon Train **random books** — sc
 
 Follow this guide when writing random-book content.
 
+> **Previewing while you write:** `python3 scripts/books-editor/serve.py` opens a local editor that renders any book on the vanilla page — same paginator, same 256-char budget, same ~19×14 visible page — and writes your edits straight back to these files. It is the fastest way to see where the page breaks actually land. See `scripts/books-editor/README.md`.
+
 > **What a random book is:** A standalone in-world book that spawns in chests / item rolls. Unlike narrative letters there is no letter sequence and no per-player story progression. Each file is one logical book, and each variant inside that file is one complete take on it. The runtime picks ONE variant per spawn, deterministically per `(worldSeed, carriageIndex, localPos, slot)`, and tracks unseen `(book, variantIndex)` tuples so a player never sees the same combo twice until they've exhausted the corpus.
 
 ---

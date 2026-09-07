@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 9,
+  "variants": {
+    "3,0,2": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "5,0,3": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "8,0,1": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "9,0,4": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "7,0,6": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "9,0,8": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "4,0,7": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "2,0,9": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "1,0,7": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "3,0,6": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "2,0,4": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "0,0,2": [{"state": "minecraft:smooth_quartz", "weight": 19}, "minecraft:quartz_bricks", "minecraft:quartz_block"],
+    "5,2,5": { "lockId": 1, "states": [{"state": "minecraft:quartz_pillar[axis=y]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}] },
+    "5,3,5": { "lockId": 1, "states": [{"state": "minecraft:quartz_pillar[axis=y]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}] },
+    "5,4,5": { "lockId": 1, "states": [{"state": "minecraft:quartz_pillar[axis=y]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}] },
+    "7,1,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 55}, {"entity": "minecraft:iron_golem"}]
+  }
+}
