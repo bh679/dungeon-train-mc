@@ -23,7 +23,6 @@ import games.brennan.dungeontrain.portal.PortalExitTransit;
 import games.brennan.dungeontrain.portal.PortalFacing;
 import games.brennan.dungeontrain.portal.PortalFrames;
 import games.brennan.dungeontrain.portal.PortalPrewarmHints;
-import games.brennan.dungeontrain.portal.PortalTwinDrift;
 import games.brennan.dungeontrain.portal.PortalCorridorEntities;
 import games.brennan.dungeontrain.portal.PortalEntityTransit;
 import games.brennan.dungeontrain.portal.PortalOccupants;
@@ -136,22 +135,18 @@ public final class PortalCarriageEvents {
 
     /**
      * Stamp the twin once a player is this close to the portal carriage — near enough to be about to
-     * walk in. Deliberately bounded: with a portal every few carriages, a generous range would keep
+     * walk in. Deliberately tight: with a portal every few carriages, a generous range would keep
      * several twins alive at once and re-stamp each of them every time the train rolled on, which is
      * thousands of block writes a second for corridors nobody is walking into.
      *
-     * <p><b>12 was too tight once the destination had to be BUILT, not merely written.</b> At 12 the
-     * stamp landed about two seconds before the crossing, and a {@code chunk_dimension} room spends
-     * most of that sampling its terrain on a background thread — so the client was still receiving the
-     * room's blocks as the player walked through the door, and arrived in sections that had never been
-     * meshed. Measured on 2026-09-07: stamp at 50.045, room decorated at 50.37, swap at 51.53, which
-     * left {@code ClientPortalPrewarm} 0.77s of a walk to build a room that was still arriving.</p>
-     *
-     * <p>32 is about five seconds of approach at a sprint — enough for the room to be written, settle,
-     * and reach the client before anybody is close enough to cross. Not larger, because the cost above
-     * is real and rises with the range.</p>
+     * <p><b>Tried at 32 (2026-09-07) and put back.</b> The reasoning was that a destination stamped
+     * two seconds before a crossing had not had time to be built on the client; measured, the client
+     * builds it fine in that time, and the wider range made every pair ACTIVE — fog, sky and
+     * crossing ramps included — three carriages early, which showed up as the lighting fade running
+     * backwards on the approach. The runway is reported on the swap line for the next time this is
+     * suspected.</p>
      */
-    private static final double APPROACH_RANGE = 32.0;
+    private static final double APPROACH_RANGE = 12.0;
 
     /**
      * How near a player must be for an unrecorded group to be asked to prove it holds a corridor.
@@ -169,12 +164,8 @@ public final class PortalCarriageEvents {
      * the chunks the client already has, or the swap would land the player in unloaded space — the
      * one thing this whole approach exists to avoid. 24 blocks keeps it within a chunk or two of the
      * carriage even at the smallest render distances.
-     *
-     * <p>What an <b>unoccupied</b> pair tolerates. A corridor with somebody in it is allowed more, so
-     * that a client already building the far end is not made to start again seconds before the
-     * crossing — see {@link PortalTwinDrift}.</p>
      */
-    private static final double TWIN_MAX_DRIFT = PortalTwinDrift.BASE;
+    private static final double TWIN_MAX_DRIFT = 24.0;
 
     /**
      * Pair key → the game time its twin was last stamped, for the one number that says whether a
@@ -1626,16 +1617,9 @@ public final class PortalCarriageEvents {
         //
         // PINNED still wins: relocating the ground out from under somebody in the room is never
         // right, whichever corridor noticed the drift.
-        //
-        // And how far this pair's twin may drift before it is re-laid: more while somebody is
-        // standing in the corridor, because their client has been building the far end since they
-        // walked in and a re-stamp throws all of it away. See PortalTwinDrift.
-        double maxDrift = PortalTwinDrift.allowance(occupied,
-            level.getServer().getPlayerList().getViewDistance());
         PortalStructure built = structure != null && pinned
             ? structure
-            : ensureStructure(level, dims, pairKey, structureAnchorX, originY, originZ, groupSize,
-                maxDrift);
+            : ensureStructure(level, dims, pairKey, structureAnchorX, originY, originZ, groupSize);
         if (built == null) {
             // No twin — a world too shallow to hold one. With only half a pair there is no opposite
             // corridor for a puppet to stand in.
@@ -2094,7 +2078,7 @@ public final class PortalCarriageEvents {
      */
     private static PortalStructure ensureStructure(ServerLevel level, CarriageDims dims, int pairKey,
                                                    double originX, double originY, double originZ,
-                                                   int groupSize, double maxDrift) {
+                                                   int groupSize) {
         PortalStructure existing = STRUCTURES.get(pairKey);
 
         // Same chunk columns as the carriage — that is what keeps the destination loaded — but in the
@@ -2179,7 +2163,7 @@ public final class PortalCarriageEvents {
         double drift = existing == null ? 0.0 : horizontalDistance(existing.origin(), originX, originZ);
         if (existing != null
             && existing.origin().getY() == wanted.getY()
-            && drift <= maxDrift) {
+            && drift <= TWIN_MAX_DRIFT) {
             return existing;
         }
 
@@ -2232,7 +2216,7 @@ public final class PortalCarriageEvents {
         if (existing != null) {
             LOGGER.info("[DungeonTrain] Portal pair {} twin relocated: drift {} > {} after {} ticks "
                     + "standing — its blocks are written again, and any client building it starts over",
-                pairKey, fmt(drift), fmt(maxDrift),
+                pairKey, fmt(drift), fmt(TWIN_MAX_DRIFT),
                 stampedAt == null ? -1 : level.getGameTime() - stampedAt);
         }
 

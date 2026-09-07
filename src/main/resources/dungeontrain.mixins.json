@@ -116,6 +116,7 @@
     "client.LevelRendererPortalSwapCompileMixin",
     "client.LevelRendererFrustumRefreshMixin",
     "client.LevelRendererArrivalTraceMixin",
+    "client.LevelRendererArrivalListMixin",
     "client.LevelRendererPrewarmAccessor",
     "client.ViewAreaPrewarmInvoker",
     "client.LanguageSelectEntryAccessor",

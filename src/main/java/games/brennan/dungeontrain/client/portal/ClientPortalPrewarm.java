@@ -139,6 +139,17 @@ public final class ClientPortalPrewarm {
     }
 
     /**
+     * Every section of the live destination's span, nearest first — or nothing when none is live.
+     *
+     * <p>For the arrival, which wants all of them at once rather than a tick's worth: the room a
+     * player has just landed in is listed for drawing straight from this, without waiting for the
+     * occlusion graph to find it. The array is shared, not copied, and must not be written to.</p>
+     */
+    public static long[] span() {
+        return live() ? pending : new long[0];
+    }
+
+    /**
      * True exactly once per game session, for the first section a prewarm actually queues.
      *
      * <p>Same reason {@link ClientPortalSwap#claimFirstTrace} exists: the accessors this rides on can
@@ -193,15 +204,15 @@ public final class ClientPortalPrewarm {
         return ((long) (x & 0x3FFFFF) << 42) | ((long) (y & 0xFFFFF) << 22) | (z & 0x3FFFFFL);
     }
 
-    static int sectionX(long packed) {
+    public static int sectionX(long packed) {
         return (int) (packed >> 42);
     }
 
-    static int sectionY(long packed) {
+    public static int sectionY(long packed) {
         return (int) (packed << 22 >> 44);
     }
 
-    static int sectionZ(long packed) {
+    public static int sectionZ(long packed) {
         return (int) (packed << 42 >> 42);
     }
 }
