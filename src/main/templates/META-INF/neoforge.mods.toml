@@ -191,6 +191,16 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.sodium.mixins.json"
 
+# The portal-arrival renderer hooks inject into LevelRenderer.setupRender, which Sodium MERGES into
+# its own LevelRendererMixin. Mixin refuses to inject into a method another mixin merged at equal
+# priority, and that refusal is FATAL — it aborts mod loading, not just the injection. `require = 0`
+# does NOT cover it (that only suppresses "no injection point matched"), which is how a crash on
+# every Sodium/Iris install shipped on 2026-09-08. So the two setupRender mixins live in their own
+# config, gated by VanillaRendererMixinPlugin to apply only when Sodium is ABSENT. Nothing is lost:
+# Sodium replaces that path outright, and what it needs is in dungeontrain.sodium.mixins.json.
+[[mixins]]
+    config="${mod_id}.vanillarenderer.mixins.json"
+
 # Iris picks a shader pack's per-dimension program set from Iris.getCurrentDimension() every frame.
 # dungeontrain.iris.mixins.json (gated by IrisMixinPlugin) lets Dungeon Train report the Nether or
 # the End while the train is in a Nether/End band or a dimensional carriage, so the pack renders its

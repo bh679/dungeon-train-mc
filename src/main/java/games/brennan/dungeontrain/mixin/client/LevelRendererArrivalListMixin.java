@@ -46,8 +46,15 @@ import java.util.Set;
  * eight blocks of train travel, so a second seed is as incomplete as the arrival walk. Listing the
  * sections directly is the same idea one step further along, and it cannot be late.</p>
  *
- * <p>Cost: a few dozen sections checked per frame for 400 ms, once per swap. {@code require = 0}
- * like its siblings — Sodium replaces this path wholesale and vanishing quietly is right there.</p>
+ * <p>Cost: a few dozen sections checked per frame for 400 ms, once per swap.</p>
+ *
+ * <p><b>Sodium.</b> Safe ungated: Sodium's {@code LevelRendererMixin} merges only
+ * {@code setupRender}, so this target is untouched. The distinction matters —
+ * {@code require = 0} suppresses "no injection point matched" and <b>nothing else</b>; injecting into
+ * a MERGED method is a fatal {@code InvalidInjectionException} that aborts mod loading. The hooks
+ * that do target {@code setupRender} are gated on Sodium's absence in
+ * {@code dungeontrain.vanillarenderer.mixins.json}. Under Sodium this simply never runs, because the
+ * path around it has been replaced.</p>
  */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererArrivalListMixin {

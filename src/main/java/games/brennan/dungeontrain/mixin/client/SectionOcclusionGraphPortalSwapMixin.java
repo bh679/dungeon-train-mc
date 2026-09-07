@@ -45,10 +45,14 @@ import javax.annotation.Nullable;
  * anyway, just on this thread: a few milliseconds, once per swap, in exchange for the flash.</p>
  *
  * <p><b>Bounded.</b> The wait has a timeout, so a saturated background executor degrades to the old
- * behaviour — a possible flash — rather than to a frozen client. {@code require = 0} for the same
- * shape of reason: a mod that replaces the chunk renderer wholesale (Sodium, which Sable ships
- * pipeline compatibility for) leaves this with nothing to attach to, and vanishing quietly is the
- * right outcome there.</p>
+ * behaviour — a possible flash — rather than to a frozen client.</p>
+ *
+ * <p><b>Sodium.</b> Safe ungated, and for a stronger reason than its siblings: this is a different
+ * class entirely, which Sodium's {@code LevelRendererMixin} never touches. Worth stating because the
+ * sibling hooks on {@code LevelRenderer.setupRender} are NOT safe — Sodium merges that method, and
+ * injecting into a merged method is a fatal {@code InvalidInjectionException} that aborts mod
+ * loading, which {@code require = 0} does not prevent (it covers only "no injection point matched").
+ * Those two are gated on Sodium's absence in {@code dungeontrain.vanillarenderer.mixins.json}.</p>
  */
 @Mixin(SectionOcclusionGraph.class)
 public abstract class SectionOcclusionGraphPortalSwapMixin {

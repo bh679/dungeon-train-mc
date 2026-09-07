@@ -49,8 +49,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * {@code needsFrustumUpdate} exactly as it would have. This only adds frames on which the list is
  * refreshed; it never skips one.</p>
  *
- * <p>{@code require = 0} like its siblings — a mod that replaces the chunk renderer (Sodium) leaves
- * this nothing to attach to, and vanishing quietly is the right outcome there.</p>
+ * <h2>Gated on Sodium being absent, and why that is not optional</h2>
+ * <p>Sodium's {@code core.render.world.LevelRendererMixin} <b>merges</b> {@code setupRender}. Mixin
+ * refuses to inject into a method merged by another mixin of equal priority, and that refusal is an
+ * {@code InvalidInjectionException} raised during INJECT_PREPARE — <b>fatal</b>, aborting mod
+ * loading before the client reaches the title screen. {@code require = 0} does not help: it
+ * suppresses "no injection point matched" and nothing else. This class shipped briefly without that
+ * gate and crashed every Sodium and Iris install; {@code VanillaRendererMixinPlugin} is what stands
+ * it down now, and nothing is lost by it — Sodium replaces this whole path anyway.</p>
  */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererFrustumRefreshMixin {
