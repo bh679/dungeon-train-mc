@@ -111,12 +111,22 @@ class PortalRoomMobsTest {
             int mobCells = 0;
             for (Map.Entry<String, com.google.gson.JsonElement> cell
                     : json.getAsJsonObject("variants").entrySet()) {
-                // A cell is either a bare list of states, or an object wrapping `states` with the
-                // lock id that ties several cells to one roll. Mob entries only appear in the list.
+                // A cell is either a bare list of states, or an object wrapping `states` with
+                // whatever cell-level settings it carries — the lock id that ties several cells to
+                // one roll, and the v10 copy roll / scope. Both shapes hold the same list, so both
+                // are read: this used to skip every object-form cell, which meant a warden that
+                // was still authored read as missing the moment its cell gained a setting.
                 com.google.gson.JsonElement value = cell.getValue();
-                if (!value.isJsonArray()) continue;
-                for (com.google.gson.JsonElement state : value.getAsJsonArray()) {
-                    if (state.getAsJsonObject().has("entity")) mobCells++;
+                com.google.gson.JsonArray states;
+                if (value.isJsonArray()) {
+                    states = value.getAsJsonArray();
+                } else if (value.isJsonObject() && value.getAsJsonObject().has("states")) {
+                    states = value.getAsJsonObject().getAsJsonArray("states");
+                } else {
+                    continue;
+                }
+                for (com.google.gson.JsonElement state : states) {
+                    if (state.isJsonObject() && state.getAsJsonObject().has("entity")) mobCells++;
                 }
             }
             assertEquals(1, mobCells, "distantenemies is authored with one mob cell");

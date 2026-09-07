@@ -50,6 +50,12 @@ public final class BlockVariantMenuInputHandler {
     private static boolean pressArmed;
     private static boolean pressShift;
 
+    /**
+     * Ceiling for a typed weight. The stepper has no cap of its own — this is a sanity bound on
+     * the number pad so a mistyped digit run can't drown every other entry in the pool.
+     */
+    private static final int TYPED_WEIGHT_MAX = 1000;
+
     private BlockVariantMenuInputHandler() {}
 
     @SubscribeEvent
@@ -173,9 +179,17 @@ public final class BlockVariantMenuInputHandler {
             case CLOSE -> DungeonTrainNet.sendToServer(new BlockVariantMenuTogglePacket(false));
             case ENTRY_WEIGHT -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                int row = hit.index();
+                // Cmd-click types the weight instead of stepping it — a walk from 1 to 40 is
+                // otherwise thirty-nine clicks.
+                if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) {
+                    openWeightEntry(variantId, local, row,
+                        BlockVariantMenu.entries().get(row).weight());
+                    return;
+                }
                 int delta = shift ? -1 : 1;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.BUMP_WEIGHT, variantId, local, hit.index(), "", delta));
+                    BlockVariantEditPacket.Op.BUMP_WEIGHT, variantId, local, row, "", delta));
             }
             case ENTRY_DIFF_MIN -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
@@ -278,6 +292,21 @@ public final class BlockVariantMenuInputHandler {
                 }
             }
         }
+    }
+
+    /**
+     * Open the typed-weight pad for one row. Returns to the panel screen when the menu is
+     * screen-space and to the world when it is world-space — same rule as the Save cell, whose
+     * panel is a HUD overlay that is still drawn behind the modal.
+     */
+    private static void openWeightEntry(String variantId, net.minecraft.core.BlockPos local,
+                                        int row, int currentWeight) {
+        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
+            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.weight"),
+            currentWeight, 1, TYPED_WEIGHT_MAX,
+            value -> DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                BlockVariantEditPacket.Op.SET_WEIGHT, variantId, local, row, "", value)),
+            BlockVariantMenu.space().isScreenspace() ? new BlockVariantMenuScreen() : null));
     }
 
     private static VariantRotation.Mode decodeMode(byte raw) {

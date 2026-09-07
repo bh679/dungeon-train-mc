@@ -432,6 +432,17 @@ public final class ContainerContentsMenuController {
                 next = current.replaced(idx, e.withWeight(newWeight));
                 dirty = true;
             }
+            // Typed weight from the cmd-click number pad. Same clamp as the stepper,
+            // so typing can't reach a value the arrows couldn't.
+            case SET_WEIGHT -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                int newWeight = Math.max(1, packet.delta());
+                if (newWeight == e.weight()) return;
+                next = current.replaced(idx, e.withWeight(newWeight));
+                dirty = true;
+            }
             case BUMP_COUNT -> {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= current.size()) return;

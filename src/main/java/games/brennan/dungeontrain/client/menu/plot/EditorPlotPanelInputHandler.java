@@ -140,8 +140,10 @@ public final class EditorPlotPanelInputHandler {
 
         switch (hit.cell()) {
             case NAME -> dispatchTeleport(entry);
-            case WEIGHT_DEC -> dispatchWeight(entry, "dec");
-            case WEIGHT_INC -> dispatchWeight(entry, "inc");
+            // Cmd-click either arrow types the weight instead of stepping it — a walk from 1 to
+            // 40 is otherwise thirty-nine clicks. Both arrows open the same pad.
+            case WEIGHT_DEC -> { if (!openWeightEntry(entry)) dispatchWeight(entry, "dec"); }
+            case WEIGHT_INC -> { if (!openWeightEntry(entry)) dispatchWeight(entry, "inc"); }
             case LENGTH_DEC -> dispatchDimension(entry, "length", "dec");
             case LENGTH_INC -> dispatchDimension(entry, "length", "inc");
             case WIDTH_DEC -> dispatchDimension(entry, "width", "dec");
@@ -347,6 +349,29 @@ public final class EditorPlotPanelInputHandler {
         CommandRunner.run(cmd);
     }
 
+    /**
+     * Open the typed-weight pad for this row, or return false when the click was not a cmd-click
+     * (or the row has no weight to type) so the caller steps the arrow as usual.
+     *
+     * <p>Range: every weight pool behind these cells is 0-100 and the command tree rejects
+     * anything outside it, so the pad offers exactly that window.</p>
+     */
+    private static boolean openWeightEntry(EditorPlotLabelsPacket.Entry entry) {
+        if (!games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) return false;
+        if (entry.weight() == EditorPlotLabelsPacket.NO_WEIGHT) return false;
+        if (EditorPlotTeleport.weightCommandFor(
+                entry.plotCategory(), entry.modelId(), entry.modelName(), "inc") == null) {
+            return false;
+        }
+        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
+            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.weight"),
+            entry.weight(), 0, 100,
+            value -> dispatchWeight(entry, Integer.toString(value)),
+            null));
+        return true;
+    }
+
+    /** Step or set this row's weight — {@code dir} is {@code inc}, {@code dec} or a number. */
     private static void dispatchWeight(EditorPlotLabelsPacket.Entry entry, String dir) {
         String cmd = EditorPlotTeleport.weightCommandFor(entry.plotCategory(), entry.modelId(), entry.modelName(), dir);
         if (cmd == null) return;

@@ -697,6 +697,17 @@ public final class BlockVariantMenuController {
                 mutated.set(idx, mutated.get(idx).withWeight(newWeight));
                 dirty = true;
             }
+            // Typed weight from the cmd-click number pad. Same clamp as the stepper,
+            // so typing can't reach a value the arrows couldn't.
+            case SET_WEIGHT -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                int newWeight = Math.max(1, packet.delta());
+                if (newWeight == mutated.get(idx).weight()) return;
+                mutated.set(idx, mutated.get(idx).withWeight(newWeight));
+                dirty = true;
+            }
             case SET_ROTATION_MODE -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
