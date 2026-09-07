@@ -61,6 +61,9 @@ public final class EditorVariantMirror {
         // Mirror the source cell's lock-id too so the reflected cells join the
         // same lock group (a pasted lock-group cell stays grouped on both sides).
         int srcLockId = plot.lockIdAt(localEdited);
+        // And its per-copy reroll flag, for the same reason: a reflected cell that repeated while
+        // its source varied would make the two halves of a mirrored room disagree copy by copy.
+        boolean srcReroll = plot.rerollsPerCopy(localEdited);
         boolean changed = false;
         for (EditorMirror.Image img : EditorMirror.imagesOf(localEdited, f, mx, my, mz)) {
             BlockPos tgtWorld = origin.offset(img.local().getX(), img.local().getY(), img.local().getZ());
@@ -72,6 +75,7 @@ public final class EditorVariantMirror {
                     EditorMirror.reflectStates(updatedOrNull, img.flipX(), img.flipY(), img.flipZ());
                 plot.put(img.local(), reflected);
                 plot.setLockId(img.local(), srcLockId); // 0 clears — mirrors the source's lock state
+                plot.setRerollsPerCopy(img.local(), srcReroll);
                 stampMirrorBase(level, tgtWorld, reflected.get(0).state());
             }
             changed = true;
@@ -104,6 +108,7 @@ public final class EditorVariantMirror {
                     BlockPos masterLocal = new BlockPos(dx, dy, dz);
                     List<VariantState> masterPool = plot.statesAt(masterLocal);
                     int masterLockId = plot.lockIdAt(masterLocal);
+                    boolean masterReroll = plot.rerollsPerCopy(masterLocal);
                     for (EditorMirror.Image img : EditorMirror.imagesOf(masterLocal, f, mx, my, mz)) {
                         if (masterPool == null || masterPool.isEmpty()) {
                             // No master pool — drop any stale far entry; the
@@ -114,6 +119,7 @@ public final class EditorVariantMirror {
                                 EditorMirror.reflectStates(masterPool, img.flipX(), img.flipY(), img.flipZ());
                             plot.put(img.local(), reflected);
                             plot.setLockId(img.local(), masterLockId); // join the master's lock group
+                            plot.setRerollsPerCopy(img.local(), masterReroll);
                             BlockPos tgtWorld = origin.offset(
                                 img.local().getX(), img.local().getY(), img.local().getZ());
                             stampMirrorBase(level, tgtWorld, reflected.get(0).state());

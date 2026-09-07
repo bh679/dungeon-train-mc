@@ -182,6 +182,14 @@ public final class VariantClipboardItem extends Item {
         plot.put(localPos, states);
         if (lockId > 0) {
             plot.setLockId(localPos, lockId);
+            // Joining a group means taking its per-copy reroll answer with it: every cell in a
+            // group draws one index, so a new member that repeated while the rest varied would
+            // show a different block from its siblings in every copy but the first.
+            for (net.minecraft.core.BlockPos sibling : plot.positionsWithLockId(lockId)) {
+                if (sibling.equals(localPos)) continue;
+                plot.setRerollsPerCopy(localPos, plot.rerollsPerCopy(sibling));
+                break;
+            }
         }
         try {
             plot.save();

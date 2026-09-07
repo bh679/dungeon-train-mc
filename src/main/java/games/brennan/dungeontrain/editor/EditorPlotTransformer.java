@@ -88,6 +88,13 @@ public final class EditorPlotTransformer {
         void remove(BlockPos localPos);
         void put(BlockPos localPos, List<VariantState> states);
         void setLockId(BlockPos localPos, int lockId);
+
+        /** The v10 per-copy reroll flag. False everywhere but a portal room, which is why it defaults. */
+        default boolean rerollsPerCopy(BlockPos localPos) { return false; }
+
+        /** Set it. A no-op for the sidecars that cannot repeat and so have nowhere to store it. */
+        default void setRerollsPerCopy(BlockPos localPos, boolean reroll) {}
+
         void save() throws IOException;
     }
 
@@ -196,7 +203,7 @@ public final class EditorPlotTransformer {
         if (sidecar == null) return 0;
         Vec3i size = region.size();
 
-        record Moved(BlockPos to, List<VariantState> states, int lockId) {}
+        record Moved(BlockPos to, List<VariantState> states, int lockId, boolean reroll) {}
         List<Moved> moved = new ArrayList<>();
         List<BlockPos> sources = List.copyOf(sidecar.positions());
         for (BlockPos from : sources) {
@@ -208,7 +215,7 @@ public final class EditorPlotTransformer {
             if (outside(from, size)) continue;
             moved.add(new Moved(
                 transform.destination(from.getX(), from.getY(), from.getZ(), size),
-                transform.variants(states), sidecar.lockIdAt(from)));
+                transform.variants(states), sidecar.lockIdAt(from), sidecar.rerollsPerCopy(from)));
         }
         if (moved.isEmpty()) return 0;
 
@@ -222,6 +229,8 @@ public final class EditorPlotTransformer {
             // Lock ids are group membership, not geometry — they ride along
             // unchanged, so a locked pair stays a locked pair after the move.
             if (m.lockId() > 0) sidecar.setLockId(m.to(), m.lockId());
+            // Not geometry either — a cell that varied per copy still varies after the move.
+            if (m.reroll()) sidecar.setRerollsPerCopy(m.to(), true);
         }
         sidecar.save();
         return moved.size();
@@ -292,6 +301,8 @@ public final class EditorPlotTransformer {
         @Override public void remove(BlockPos l) { plot.remove(l); }
         @Override public void put(BlockPos l, List<VariantState> s) { plot.put(l, s); }
         @Override public void setLockId(BlockPos l, int id) { plot.setLockId(l, id); }
+        @Override public boolean rerollsPerCopy(BlockPos l) { return plot.rerollsPerCopy(l); }
+        @Override public void setRerollsPerCopy(BlockPos l, boolean r) { plot.setRerollsPerCopy(l, r); }
         @Override public void save() throws IOException { plot.save(); }
     }
 
@@ -319,6 +330,8 @@ public final class EditorPlotTransformer {
         @Override public void remove(BlockPos l) { blocks.remove(l); }
         @Override public void put(BlockPos l, List<VariantState> s) { blocks.put(l, s); }
         @Override public void setLockId(BlockPos l, int id) { blocks.setLockId(l, id); }
+        @Override public boolean rerollsPerCopy(BlockPos l) { return blocks.rerollsPerCopy(l); }
+        @Override public void setRerollsPerCopy(BlockPos l, boolean r) { blocks.setRerollsPerCopy(l, r); }
         @Override public void save() throws IOException {
             blocks.save(kind, name);
             if (EditorDevMode.isEnabled()) {
