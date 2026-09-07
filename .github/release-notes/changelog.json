@@ -11681,13 +11681,9 @@
       "id": "dimensional-carriage-train-time",
       "version": "0.818.0",
       "type": "fix",
-      "title": "Time aboard keeps counting inside dimensional carriages",
-      "summary": "Stepping through a portal into a dimensional carriage no longer stops your time aboard. It used to freeze after ten minutes inside \u2014 and stay frozen for a while after you came back out \u2014 because the game only saw you moving through carriages, not the room. Being inside the room now counts as riding the train, doorways included.",
-      "highlights": [
-        "Time aboard keeps running for the whole visit to a dimensional carriage, however long you stay.",
-        "The corridor between the portal and the room counts too.",
-        "Walking away from the keyboard still pauses the clock, in the room as on the train."
-      ],
+      "title": "Time aboard fix",
+      "summary": "Time aboard now keeps counting inside dimensional carriages.",
+      "highlights": [],
       "pr": 1332,
       "date": "2026-09-07",
       "released": false,
