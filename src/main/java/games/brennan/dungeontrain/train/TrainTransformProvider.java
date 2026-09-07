@@ -51,7 +51,7 @@ public final class TrainTransformProvider implements KinematicDriver {
     // so each call represents 1/20 s of game time. canonicalPos must advance
     // by velocity * 1/20 per call so its motion matches what the rendered
     // body shows over a server-tick interval.
-    private static final double PHYSICS_DT = 1.0 / 20.0;
+private static final double PHYSICS_DT = 1.0 / 20.0;
     private static final Vector3dc ZERO_OMEGA = new Vector3d();
 
     // Jitter instrumentation constants.

@@ -11750,6 +11750,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-carriage-velocity-carry",
+      "version": "0.822.0",
+      "type": "fix",
+      "title": "Dimensional carriages no longer nudge you on the way in",
+      "summary": "Stepping into a dimensional carriage could give you a small unwanted shove. It doesn't any more.",
+      "pr": 1336,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
