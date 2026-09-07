@@ -38,7 +38,7 @@
     "mode": "endless_repetition"
   },
   "book": {
-    "weight": 2,
+    "weight": 3,
     "minLevel": 3,
     "mode": "endless_repetition"
   },
@@ -214,6 +214,10 @@
   "skymaze": {
     "weight": 1,
     "mode": "bedrockless/exact/off/off/off/none/sealed/0/5"
+  },
+  "slime": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/day/repeated/0/1"
   },
   "sloped": {
     "weight": 1,
