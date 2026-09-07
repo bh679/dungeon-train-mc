@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.core.SectionPos;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
@@ -80,10 +81,22 @@ public final class PortalPrewarmTicker {
     private static int sinceTrace;
     private static boolean tallied;
 
+    /**
+     * Whether Sodium is drawing the world, in which case this ticker has nothing to build for.
+     *
+     * <p>Sodium 0.8 leaves vanilla's {@code viewArea} and dispatcher in place, so without this the
+     * ticker happily runs its synchronous builds — main-thread meshing of sections Sodium never draws,
+     * three a tick, for nothing. Measured on 2026-09-08: the ticker's first-build line fired under
+     * Sodium while the arrival still popped in. {@code RenderSectionManagerPrewarmMixin} is the
+     * Sodium-side prewarm; this one stands down. Resolved once: mod presence is fixed for the JVM.</p>
+     */
+    private static final boolean SODIUM_RENDERS = ModList.get().isLoaded("sodium");
+
     private PortalPrewarmTicker() {}
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        if (SODIUM_RENDERS) return;
         if (!ClientPortalPrewarm.live()) {
             // The hint has gone quiet — say what the last of it did before the counters are reused,
             // so an approach that ended in a swap is reported rather than rolled into the next one.

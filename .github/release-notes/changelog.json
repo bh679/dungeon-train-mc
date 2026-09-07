@@ -11762,6 +11762,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sodium-shader-arrival",
+      "version": "0.823.0",
+      "type": "fix",
+      "title": "Shader compatibility fixes",
+      "summary": "Fixed a crash on launch when Sodium or Iris is installed, and a flash when stepping into a dimensional carriage with shaders on.",
+      "highlights": [
+        "No more crash at launch with Sodium or Iris",
+        "Dimensional carriages arrive cleanly with shaders on"
+      ],
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
