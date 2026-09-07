@@ -11611,6 +11611,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-text-clarity",
+      "version": "0.814.0",
+      "type": "fix",
+      "title": "Clearer wording across the editor and Train Builder",
+      "summary": "Editor text now says plainly what is true and what to do about it. Messages that stated things sideways \u2014 a build with no stage \"suits no stretch of the line\", a build \"out on someone's train\" \u2014 now name the state and the next step.",
+      "highlights": [
+        "A build with no stage now says it won't spawn and to pick a stage before submitting",
+        "Upload, review and restore messages rewritten to plain wording",
+        "Save-name collision dialogs spell out exactly which build gets kept and which is deleted",
+        "Editor Settings menu tooltips tightened"
+      ],
+      "pr": 1325,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
