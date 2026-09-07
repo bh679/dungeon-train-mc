@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
+import games.brennan.dungeontrain.editor.VariantCopyRoll;
 import games.brennan.dungeontrain.editor.VariantCopyScope;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
 import net.minecraft.client.Minecraft;
@@ -59,7 +60,7 @@ public final class BlockVariantMenu {
         REMOVE,
         CLEAR,
         LOCK,
-        REROLL,
+        COPY_ROLL,
         COPY_SCOPE,
         CLOSE,
         ENTRY_NAME,
@@ -96,8 +97,8 @@ public final class BlockVariantMenu {
     @Nullable private static BlockPos localPos;
     private static List<BlockVariantSyncPacket.Entry> entries = Collections.emptyList();
     private static int lockId = 0;
-    private static boolean rerollPerCopy;
-    private static boolean rerollSupported;
+    private static VariantCopyRoll copyRoll = VariantCopyRoll.DEFAULT;
+    private static boolean copySettingsSupported;
     private static VariantCopyScope copyScope = VariantCopyScope.BOTH;
     private static Vec3 anchorPos = Vec3.ZERO;
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
@@ -149,11 +150,11 @@ public final class BlockVariantMenu {
     public static List<BlockVariantSyncPacket.Entry> entries() { return entries; }
     public static int lockId() { return lockId; }
 
-    /** True when this cell rolls again in each copy of the repeating room it belongs to. */
-    public static boolean rerollPerCopy() { return rerollPerCopy; }
+    /** How this cell rolls across the copies of the repeating room it belongs to. */
+    public static VariantCopyRoll copyRoll() { return copyRoll; }
 
     /** True when this plot's template repeats at all — only then are the two copy cells drawn. */
-    public static boolean rerollSupported() { return rerollSupported; }
+    public static boolean copySettingsSupported() { return copySettingsSupported; }
 
     /** Which tiles of a repeating room this cell applies in. */
     public static VariantCopyScope copyScope() { return copyScope; }
@@ -165,14 +166,14 @@ public final class BlockVariantMenu {
      * drift.
      */
     public static List<CellKind> toolbarCells() {
-        if (!rerollSupported) {
+        if (!copySettingsSupported) {
             return List.of(CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK,
                 CellKind.REMOVE, CellKind.CLEAR, CellKind.CLOSE);
         }
         // Beside Lock, which is the other per-cell setting on this toolbar, and next to each
         // other because the two answer one question between them: where the cell is, and how it
         // rolls once it is there.
-        return List.of(CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK, CellKind.REROLL,
+        return List.of(CellKind.COPY, CellKind.SAVE, CellKind.ADD, CellKind.LOCK, CellKind.COPY_ROLL,
             CellKind.COPY_SCOPE, CellKind.REMOVE, CellKind.CLEAR, CellKind.CLOSE);
     }
     public static Vec3 anchorPos() { return anchorPos; }
@@ -228,8 +229,8 @@ public final class BlockVariantMenu {
             localPos = null;
             entries = Collections.emptyList();
             lockId = 0;
-            rerollPerCopy = false;
-            rerollSupported = false;
+            copyRoll = VariantCopyRoll.DEFAULT;
+            copySettingsSupported = false;
             copyScope = VariantCopyScope.BOTH;
             screen = Screen.ROOT;
             removeMode = false;
@@ -249,8 +250,8 @@ public final class BlockVariantMenu {
         localPos = packet.localPos();
         entries = List.copyOf(packet.entries());
         lockId = packet.lockId();
-        rerollPerCopy = packet.rerollPerCopy();
-        rerollSupported = packet.rerollSupported();
+        copyRoll = VariantCopyRoll.fromOrdinal(packet.copyRoll());
+        copySettingsSupported = packet.copySettingsSupported();
         copyScope = VariantCopyScope.fromOrdinal(packet.copyScope());
         anchorPos = packet.anchorPos();
         anchorRight = packet.anchorRight();

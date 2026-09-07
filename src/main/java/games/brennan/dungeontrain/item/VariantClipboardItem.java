@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.editor.ContainerContentsEntry;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EditorVariantMirror;
+import games.brennan.dungeontrain.editor.VariantCopyRoll;
 import games.brennan.dungeontrain.editor.VariantCopyScope;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.editor.VariantRotation;
@@ -46,8 +47,10 @@ import java.util.List;
  * Custom mod item produced by the block-variant menu's Copy button.
  * Visually mimics a vanilla command block (model JSON parents
  * {@code minecraft:block/command_block}). Carries a snapshot of a variant
- * cell's candidate list AND its cell-level lock-id in ItemStack NBT under
- * {@link #NBT_ROOT_KEY} / {@link #NBT_LOCK_ID}.
+ * cell's candidate list, its cell-level lock-id, and — for a dimensional
+ * carriage room — the two settings for how the cell behaves across the room's
+ * copies, in ItemStack NBT under {@link #NBT_ROOT_KEY} / {@link #NBT_LOCK_ID} /
+ * {@link #NBT_COPY_ROLL} / {@link #NBT_COPY_SCOPE}.
  *
  * <p>On {@link #useOn} the item:
  * <ol>
@@ -76,10 +79,18 @@ public final class VariantClipboardItem extends Item {
     public static final String NBT_LOCK_ID = "dt_lockId";
 
     /**
-     * Top-level NBT key carrying the source cell's per-copy reroll flag. Absent → false, which is
-     * what every clipboard minted before the setting existed says, and what it always meant.
+     * Top-level NBT key carrying the source cell's {@link VariantCopyRoll} id. Absent → {@code
+     * default} (follow the room), which is what every clipboard minted before the setting existed
+     * says, and what it always meant.
      */
-    public static final String NBT_REROLL = "dt_reroll";
+    public static final String NBT_COPY_ROLL = "dt_copyRoll";
+
+    /**
+     * The boolean this setting first shipped as on the branch, before it grew a third state. Read
+     * as {@link VariantCopyRoll#VARY}, never written — a clipboard already sitting in a dev
+     * world's hotbar keeps meaning what it meant.
+     */
+    public static final String NBT_LEGACY_REROLL = "dt_reroll";
 
     /**
      * Top-level NBT key carrying the source cell's {@link VariantCopyScope} id. Absent → {@code
@@ -160,7 +171,7 @@ public final class VariantClipboardItem extends Item {
         List<VariantState> states = decodeStates(tag);
         int lockId = decodeLockId(tag);
         ContainerContentsPool pool = decodePool(tag);
-        boolean reroll = decodeReroll(tag);
+        VariantCopyRoll copyRoll = decodeCopyRoll(tag);
         VariantCopyScope copyScope = decodeCopyScope(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             sendActionBar(player, "Clipboard needs at least "
@@ -196,15 +207,19 @@ public final class VariantClipboardItem extends Item {
         // Write to the sidecar (states first, then lockId so setLockId's
         // "cell must exist" precondition is satisfied).
         plot.put(localPos, states);
+        // The two repeating-room settings the copy captured. Both are no-ops on a plot that cannot
+        // repeat, so a room cell pasted into a carriage simply arrives without them — which is what
+        // they mean there.
+        plot.setCopyRoll(localPos, copyRoll);
+        plot.setCopyScope(localPos, copyScope);
         if (lockId > 0) {
             plot.setLockId(localPos, lockId);
-            // Joining a group means taking its per-copy reroll answer with it: every cell in a
-            // group draws one index, so a new member that repeated while the rest varied would
-            // show a different block from its siblings in every copy but the first.
+            // Every cell in a lock group draws one index, so they must agree about how they roll:
+            // a member that repeated while the rest varied would show a different block from its
+            // siblings in every copy but the first. The pasted value wins and the group follows
+            // it — the same thing the menu's own button does.
             for (net.minecraft.core.BlockPos sibling : plot.positionsWithLockId(lockId)) {
-                if (sibling.equals(localPos)) continue;
-                plot.setRerollsPerCopy(localPos, plot.rerollsPerCopy(sibling));
-                break;
+                if (!sibling.equals(localPos)) plot.setCopyRoll(sibling, copyRoll);
             }
         }
         try {
@@ -275,10 +290,10 @@ public final class VariantClipboardItem extends Item {
      */
     public static CompoundTag encodeStates(List<VariantState> states, int lockId,
                                            @Nullable ContainerContentsPool pool,
-                                           boolean rerollPerCopy, VariantCopyScope scope) {
+                                           VariantCopyRoll roll, VariantCopyScope scope) {
         CompoundTag root = encodeStates(states, lockId, pool);
-        if (rerollPerCopy) {
-            root.putBoolean(NBT_REROLL, true);
+        if (roll != null && !roll.isDefault()) {
+            root.putString(NBT_COPY_ROLL, roll.id());
         }
         if (scope != null && !scope.isDefault()) {
             root.putString(NBT_COPY_SCOPE, scope.id());
@@ -286,9 +301,12 @@ public final class VariantClipboardItem extends Item {
         return root;
     }
 
-    /** The captured per-copy reroll flag; false for a clipboard that carries none. */
-    public static boolean decodeReroll(@Nullable CompoundTag tag) {
-        return tag != null && tag.getBoolean(NBT_REROLL);
+    /** The captured copy roll; {@link VariantCopyRoll#DEFAULT} for a clipboard that carries none. */
+    public static VariantCopyRoll decodeCopyRoll(@Nullable CompoundTag tag) {
+        if (tag == null) return VariantCopyRoll.DEFAULT;
+        if (tag.contains(NBT_COPY_ROLL)) return VariantCopyRoll.parse(tag.getString(NBT_COPY_ROLL));
+        // The superseded boolean, still honoured so an older clipboard pastes what it captured.
+        return tag.getBoolean(NBT_LEGACY_REROLL) ? VariantCopyRoll.VARY : VariantCopyRoll.DEFAULT;
     }
 
     /** The captured copy scope; {@link VariantCopyScope#BOTH} for a clipboard that carries none. */
@@ -523,7 +541,8 @@ public final class VariantClipboardItem extends Item {
         StringBuilder suffix = new StringBuilder(" (").append(states.size());
         if (lockId > 0) suffix.append(", lock ").append(lockId);
         if (pool != null && !pool.isEmpty()) suffix.append(", pool ").append(pool.size());
-        if (decodeReroll(tag)) suffix.append(", vary");
+        VariantCopyRoll roll = decodeCopyRoll(tag);
+        if (!roll.isDefault()) suffix.append(", ").append(roll.displayName().toLowerCase(java.util.Locale.ROOT));
         VariantCopyScope scope = decodeCopyScope(tag);
         if (!scope.isDefault()) suffix.append(", ").append(scope.displayName().toLowerCase(java.util.Locale.ROOT));
         suffix.append(")");

@@ -117,21 +117,21 @@ public interface BlockVariantPlot {
     }
 
     /**
-     * True when the cell at {@code localPos} rolls again in each copy of a
-     * repeating room rather than repeating the room's one roll. Always false
-     * where {@link #supportsPerCopyReroll} is.
+     * How the cell at {@code localPos} rolls across a repeating room's copies.
+     * Always {@link VariantCopyRoll#DEFAULT} — follow the room — where
+     * {@link #supportsCopySettings} is false.
      */
-    default boolean rerollsPerCopy(BlockPos localPos) {
-        return false;
+    default VariantCopyRoll copyRollAt(BlockPos localPos) {
+        return VariantCopyRoll.DEFAULT;
     }
 
     /**
-     * Set that flag. A no-op where the plot does not repeat — the menu never
+     * Set that override. A no-op where the plot does not repeat — the menu never
      * offers the button there, and the server re-checks
-     * {@link #supportsPerCopyReroll} before calling this, so reaching the no-op
+     * {@link #supportsCopySettings} before calling this, so reaching the no-op
      * means a hand-crafted packet rather than a state worth failing over.
      */
-    default void setRerollsPerCopy(BlockPos localPos, boolean reroll) {
+    default void setCopyRoll(BlockPos localPos, VariantCopyRoll roll) {
     }
 
     /**
@@ -143,7 +143,7 @@ public interface BlockVariantPlot {
         return VariantCopyScope.BOTH;
     }
 
-    /** Set it. A no-op for the plots that cannot repeat, like {@link #setRerollsPerCopy}. */
+    /** Set it. A no-op for the plots that cannot repeat, like {@link #setCopyRoll}. */
     default void setCopyScope(BlockPos localPos, VariantCopyScope scope) {
     }
 
@@ -639,8 +639,8 @@ public interface BlockVariantPlot {
         @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
         // A portal room is the one track template that repeats — see PortalRoomCopies.
         @Override public boolean supportsCopySettings() { return kind == TrackKind.PORTAL_ROOM; }
-        @Override public boolean rerollsPerCopy(BlockPos l) { return sidecar.rerollsPerCopy(l); }
-        @Override public void setRerollsPerCopy(BlockPos l, boolean r) { sidecar.setRerollsPerCopy(l, r); }
+        @Override public VariantCopyRoll copyRollAt(BlockPos l) { return sidecar.copyRollAt(l); }
+        @Override public void setCopyRoll(BlockPos l, VariantCopyRoll r) { sidecar.setCopyRoll(l, r); }
         @Override public VariantCopyScope copyScopeAt(BlockPos l) { return sidecar.copyScopeAt(l); }
         @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { sidecar.setCopyScope(l, s); }
     }

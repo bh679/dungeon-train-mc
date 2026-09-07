@@ -72,9 +72,9 @@ final class PortalRoomResizeSlabs {
             BlockPos local = e.getKey().subtract(PortalRoomResize.along(axis, step.slabIndex()));
             slabSidecar.put(local, sidecar.statesAt(e.getKey()));
             if (e.getValue() > 0) slabSidecar.setLockId(local, e.getValue());
-            // The flag is authored on the cell, so it travels with the row a shrink files away —
-            // otherwise growing the room back returns cells that no longer vary.
-            if (sidecar.rerollsPerCopy(e.getKey())) slabSidecar.setRerollsPerCopy(local, true);
+            // Authored on the cell, so they travel with the row a shrink files away — otherwise
+            // growing the room back returns cells that have forgotten what they were set to.
+            slabSidecar.setCopyRoll(local, sidecar.copyRollAt(e.getKey()));
             slabSidecar.setCopyScope(local, sidecar.copyScopeAt(e.getKey()));
             sidecar.remove(e.getKey());
             cells++;
@@ -155,7 +155,7 @@ final class PortalRoomResizeSlabs {
             sidecar.put(target, e.states());
             int lock = slabSidecar.lockIdAt(e.localPos());
             if (lock > 0) sidecar.setLockId(target, lock);
-            if (slabSidecar.rerollsPerCopy(e.localPos())) sidecar.setRerollsPerCopy(target, true);
+            sidecar.setCopyRoll(target, slabSidecar.copyRollAt(e.localPos()));
             sidecar.setCopyScope(target, slabSidecar.copyScopeAt(e.localPos()));
         }
 
@@ -192,23 +192,23 @@ final class PortalRoomResizeSlabs {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeAfter);
         Map<BlockPos, List<VariantState>> moved = new LinkedHashMap<>();
         Map<BlockPos, Integer> movedLocks = new LinkedHashMap<>();
-        java.util.Set<BlockPos> movedRerolls = new java.util.LinkedHashSet<>();
+        Map<BlockPos, VariantCopyRoll> movedRolls = new LinkedHashMap<>();
         Map<BlockPos, VariantCopyScope> movedScopes = new LinkedHashMap<>();
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
             BlockPos target = e.localPos().offset(shift);
             int lock = sidecar.lockIdAt(e.localPos());
-            boolean reroll = sidecar.rerollsPerCopy(e.localPos());
+            VariantCopyRoll roll = sidecar.copyRollAt(e.localPos());
             VariantCopyScope scope = sidecar.copyScopeAt(e.localPos());
             sidecar.remove(e.localPos());
             if (!inBounds(target, sizeAfter)) continue;
             moved.put(target, e.states());
             if (lock > 0) movedLocks.put(target, lock);
-            if (reroll) movedRerolls.add(target);
+            if (!roll.isDefault()) movedRolls.put(target, roll);
             if (!scope.isDefault()) movedScopes.put(target, scope);
         }
         moved.forEach(sidecar::put);
         movedLocks.forEach(sidecar::setLockId);
-        movedRerolls.forEach(pos -> sidecar.setRerollsPerCopy(pos, true));
+        movedRolls.forEach(sidecar::setCopyRoll);
         movedScopes.forEach(sidecar::setCopyScope);
 
         ContainerContentsStore store = ContainerContentsStore.loadFor(plotKey(name));

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.track.variant;
 
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.VariantCopyRoll;
 import games.brennan.dungeontrain.editor.VariantCopyScope;
 import games.brennan.dungeontrain.editor.VariantState;
 import net.minecraft.SharedConstants;
@@ -24,9 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Coverage for the two v10 per-cell copy settings — the pair that lets one cell behave differently
- * from the rest of a dimensional carriage room that otherwise repeats one roll exactly, in every
- * tile. {@code reroll} says the cell rolls again in each copy; {@link VariantCopyScope} says which
- * tiles it applies in at all.
+ * from the rest of a dimensional carriage room. {@link VariantCopyRoll} says how the cell rolls
+ * across the room's copies (follow the room, one roll for all of them, or a fresh roll in each);
+ * {@link VariantCopyScope} says which tiles it applies in at all.
  *
  * <p>Three things carry it. <b>It survives the file</b>, or an author sets it and loses it on the
  * next load. <b>A cell without it writes what it always wrote</b> — the bare-array form — so every
@@ -60,35 +61,91 @@ final class TrackVariantBlocksCopySettingsTest {
         TrackVariantBlocks doc = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
         doc.put(VARYING, states());
         doc.put(REPEATING, states());
-        doc.setRerollsPerCopy(VARYING, true);
+        doc.setCopyRoll(VARYING, VariantCopyRoll.VARY);
         return doc;
     }
 
     @Test
-    @DisplayName("the flag round-trips through the sidecar file")
+    @DisplayName("the roll override round-trips through the sidecar file")
     void roundTrips() {
         TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
             authored().asJsonText(), TrackKind.PORTAL_ROOM, "room", ROOM);
 
-        assertTrue(reloaded.rerollsPerCopy(VARYING), "flagged cell lost its flag on reload");
-        assertFalse(reloaded.rerollsPerCopy(REPEATING), "unflagged cell gained one");
+        assertEquals(VariantCopyRoll.VARY, reloaded.copyRollAt(VARYING),
+            "the cell lost its override on reload");
+        assertEquals(VariantCopyRoll.DEFAULT, reloaded.copyRollAt(REPEATING),
+            "a cell that never overrode its room must still follow it");
     }
 
     @Test
-    @DisplayName("only a flagged cell takes the object form — everything else writes as before")
+    @DisplayName("'default' is never written, and a cycled-back cell writes what it always wrote")
+    void defaultRollWritesNothing() {
+        TrackVariantBlocks doc = authored();
+        doc.setCopyRoll(VARYING, VariantCopyRoll.DEFAULT);
+
+        assertEquals(VariantCopyRoll.DEFAULT, doc.copyRollAt(VARYING));
+        assertFalse(doc.asJsonText().contains("\"roll\""),
+            "the default roll must never reach the file: " + doc.asJsonText());
+    }
+
+    @Test
+    @DisplayName("'exact' round-trips too — the override that holds a cell still in a Dynamic room")
+    void exactRollRoundTrips() {
+        TrackVariantBlocks doc = authored();
+        doc.setCopyRoll(REPEATING, VariantCopyRoll.EXACT);
+
+        String json = doc.asJsonText();
+        assertTrue(json.contains("\"roll\": \"exact\""), "exact not written: " + json);
+
+        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+            json, TrackKind.PORTAL_ROOM, "room", ROOM);
+        assertEquals(VariantCopyRoll.EXACT, reloaded.copyRollAt(REPEATING));
+    }
+
+    @Test
+    @DisplayName("a file carrying the superseded boolean still reads as 'vary'")
+    void legacyRerollBooleanStillReads() {
+        // The shape this setting first took on the branch. Rooms authored between the two carry it,
+        // and reading one as "follows the room" would silently undo what the author chose.
+        String legacy = """
+            {
+              "schemaVersion": 10,
+              "variants": {
+                "1,2,3": { "reroll": true, "states": ["minecraft:stone_bricks", "minecraft:mossy_stone_bricks"] }
+              }
+            }
+            """;
+        TrackVariantBlocks reloaded = TrackVariantBlocks.fromJsonText(
+            legacy, TrackKind.PORTAL_ROOM, "room", ROOM);
+
+        assertEquals(VariantCopyRoll.VARY, reloaded.copyRollAt(VARYING));
+        assertFalse(reloaded.asJsonText().contains("reroll"),
+            "the old key is read, never written back: " + reloaded.asJsonText());
+    }
+
+    @Test
+    @DisplayName("the roll cycle visits every state and comes back")
+    void rollCycles() {
+        assertEquals(VariantCopyRoll.EXACT, VariantCopyRoll.DEFAULT.next());
+        assertEquals(VariantCopyRoll.VARY, VariantCopyRoll.EXACT.next());
+        assertEquals(VariantCopyRoll.DEFAULT, VariantCopyRoll.VARY.next());
+    }
+
+    @Test
+    @DisplayName("only an overriding cell takes the object form — everything else writes as before")
     void unflaggedCellsStayDiffClean() {
         String json = authored().asJsonText();
 
-        assertTrue(json.contains("\"reroll\": true"), "flag not written: " + json);
-        assertEquals(1, json.split("\"reroll\"", -1).length - 1,
-            "the unflagged cell must not carry the field at all: " + json);
+        assertTrue(json.contains("\"roll\": \"vary\""), "override not written: " + json);
+        assertEquals(1, json.split("\"roll\"", -1).length - 1,
+            "the cell that follows its room must not carry the field at all: " + json);
         assertTrue(json.contains("\"" + REPEATING.getX() + "," + REPEATING.getY() + ","
                 + REPEATING.getZ() + "\": ["),
             "an unflagged, unlocked cell must still write the bare-array form: " + json);
     }
 
     @Test
-    @DisplayName("the flag rides along with a lock id when both are set")
+    @DisplayName("the override rides along with a lock id when both are set")
     void coexistsWithALockId() {
         TrackVariantBlocks doc = authored();
         doc.setLockId(VARYING, 4);
@@ -97,19 +154,19 @@ final class TrackVariantBlocksCopySettingsTest {
             doc.asJsonText(), TrackKind.PORTAL_ROOM, "room", ROOM);
 
         assertEquals(4, reloaded.lockIdAt(VARYING));
-        assertTrue(reloaded.rerollsPerCopy(VARYING));
+        assertEquals(VariantCopyRoll.VARY, reloaded.copyRollAt(VARYING));
     }
 
     @Test
-    @DisplayName("copyOf carries the flag, and removing a cell drops it")
+    @DisplayName("copyOf carries the override, and removing a cell drops it")
     void copiedAndCleared() {
         TrackVariantBlocks doc = authored();
-        assertTrue(TrackVariantBlocks.copyOf(doc).rerollsPerCopy(VARYING),
-            "a duplicated room must keep what its source repeated");
+        assertEquals(VariantCopyRoll.VARY, TrackVariantBlocks.copyOf(doc).copyRollAt(VARYING),
+            "a duplicated room must keep what its source was set to");
 
         doc.remove(VARYING);
-        assertFalse(doc.rerollsPerCopy(VARYING),
-            "a flag left behind would reattach itself to whatever cell is authored here next");
+        assertEquals(VariantCopyRoll.DEFAULT, doc.copyRollAt(VARYING),
+            "an override left behind would reattach to whatever cell is authored here next");
     }
 
     @Test
@@ -117,7 +174,7 @@ final class TrackVariantBlocksCopySettingsTest {
     void refusesAnEmptyCell() {
         TrackVariantBlocks doc = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
         assertThrows(IllegalArgumentException.class,
-            () -> doc.setRerollsPerCopy(VARYING, true));
+            () -> doc.setCopyRoll(VARYING, VariantCopyRoll.VARY));
         assertThrows(IllegalArgumentException.class,
             () -> doc.setCopyScope(VARYING, VariantCopyScope.COPIES));
     }
@@ -152,7 +209,7 @@ final class TrackVariantBlocksCopySettingsTest {
             doc.asJsonText(), TrackKind.PORTAL_ROOM, "room", ROOM);
 
         assertEquals(3, reloaded.lockIdAt(VARYING));
-        assertTrue(reloaded.rerollsPerCopy(VARYING));
+        assertEquals(VariantCopyRoll.VARY, reloaded.copyRollAt(VARYING));
         assertEquals(VariantCopyScope.NOT_COPIES, reloaded.copyScopeAt(VARYING));
     }
 
@@ -213,11 +270,11 @@ final class TrackVariantBlocksCopySettingsTest {
     }
 
     @Test
-    @DisplayName("the per-copy index varies across tiles where the room's own index does not")
+    @DisplayName("the per-copy index varies across tiles where the base tile's own index does not")
     void perCopyIndexVariesPerTile() {
-        // What PortalCarriageBuilder hands the picker for a flagged cell, mirrored here: the room's
-        // index mixed with the copy's place on the tiling grid. The unflagged case is the room's
-        // index unchanged, which is what makes an Exact room's copies agree.
+        // What PortalCarriageBuilder hands the picker for a VARY cell, mirrored here: the base
+        // tile's index mixed with the copy's place on the tiling grid. An EXACT cell gets that
+        // base index unchanged, which is what makes every copy agree whatever the room does.
         int roomIndex = Objects.hash("crypt".hashCode(), 42);
         int[][] tiles = { {0, 0}, {1, 0}, {0, 1}, {-1, 2}, {3, -1} };
         List<VariantState> states = states();

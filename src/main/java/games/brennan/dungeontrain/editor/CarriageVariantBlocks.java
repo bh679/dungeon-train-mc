@@ -140,21 +140,31 @@ public final class CarriageVariantBlocks {
      *       entries round-trip diff-clean. See {@link VariantGroupRefs}.</li>
      *   <li>v10 — adds two optional per-<b>cell</b> fields inside the v4 cell
      *       object, both about a room that repeats and both meaningless to
-     *       every other sidecar. {@code "reroll": true} says the cell may roll
-     *       again in each copy instead of repeating the room's one roll — the
-     *       per-cell escape hatch from {@code PortalRoomCopies.Kind#EXACT}.
-     *       {@code "scope"} ({@link VariantCopyScope}) says which tiles the cell
-     *       applies in at all: {@code both} (the default, omitted),
-     *       {@code copies} or {@code not_copies}. Both are absent-is-default, so
-     *       v9 files round-trip diff-clean. See
-     *       {@code TrackVariantBlocks#rerollsPerCopy} /
+     *       every other sidecar. {@code "roll"} ({@link VariantCopyRoll}) says
+     *       how the cell rolls across the room's copies: {@code default} (the
+     *       default, omitted — whatever the room's own Copies setting says),
+     *       {@code exact} or {@code vary}. {@code "scope"}
+     *       ({@link VariantCopyScope}) says which tiles the cell applies in at
+     *       all: {@code both} (the default, omitted), {@code copies} or
+     *       {@code not_copies}. Both are absent-is-default, so v9 files
+     *       round-trip diff-clean. A short-lived boolean {@code "reroll": true}
+     *       predates {@code "roll"} on the same branch and still reads, as
+     *       {@code vary}. See {@code TrackVariantBlocks#copyRollAt} /
      *       {@code TrackVariantBlocks#copyScopeAt}.</li>
      * </ul>
      */
     public static final int CURRENT_SCHEMA_VERSION = 10;
 
-    /** The v10 per-cell reroll field's key, shared by the cell reader and writer. */
-    static final String REROLL_KEY = "reroll";
+    /** The v10 per-cell {@link VariantCopyRoll} field's key. Absent means {@code default}. */
+    static final String ROLL_KEY = "roll";
+
+    /**
+     * The boolean this setting first shipped as on the branch, before it grew a third state.
+     * Read as {@link VariantCopyRoll#VARY}, never written. Kept because rooms authored between the
+     * two carry it, and re-reading one as "follows the room" would silently undo the author's
+     * choice.
+     */
+    static final String LEGACY_REROLL_KEY = "reroll";
 
     /** The v10 per-cell {@link VariantCopyScope} field's key. Absent means {@code both}. */
     static final String SCOPE_KEY = "scope";
@@ -972,20 +982,21 @@ public final class CarriageVariantBlocks {
      * Parsed cell — what {@link #parseCellValue} returns. {@code states}
      * is the candidate list, {@code lockId} is the v4 cell-level lock-id
      * (0 when unlocked or for v1/v2/v3 array-form cells), and
-     * {@code rerollPerCopy} / {@code scope} are the two v10 repeating-room
-     * fields, at their defaults for every cell that does not carry them —
-     * which is every cell authored before v10.
+     * {@code roll} / {@code scope} are the two v10 repeating-room fields, at
+     * their defaults for every cell that does not carry them — which is every
+     * cell authored before v10.
      */
-    public record ParsedCell(List<VariantState> states, int lockId, boolean rerollPerCopy,
+    public record ParsedCell(List<VariantState> states, int lockId, VariantCopyRoll roll,
                              VariantCopyScope scope) {
 
         public ParsedCell {
+            if (roll == null) roll = VariantCopyRoll.DEFAULT;
             if (scope == null) scope = VariantCopyScope.BOTH;
         }
 
         /** Two-arg form for the cells that cannot repeat — every sidecar but a portal room's. */
         public ParsedCell(List<VariantState> states, int lockId) {
-            this(states, lockId, false, VariantCopyScope.BOTH);
+            this(states, lockId, VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH);
         }
     }
 
@@ -996,11 +1007,12 @@ public final class CarriageVariantBlocks {
      *   <li>v3 / pre-v4 — bare array of state elements; {@code lockId = 0}.</li>
      *   <li>v4 — object {@code {"lockId":N, "states":[...]}}; lockId is read
      *       from the object (≥0; negatives clamped to 0).</li>
-     *   <li>v10 — the same object may carry {@code "reroll": true} (the
-     *       per-copy reroll flag) and {@code "scope"} (which tiles of a
-     *       repeating room the cell applies in). Both absent read as their
-     *       defaults, so every cell written before v10 keeps the one roll its
-     *       room repeats, in every tile.</li>
+     *   <li>v10 — the same object may carry {@code "roll"} (how the cell rolls
+     *       across a repeating room's copies) and {@code "scope"} (which tiles
+     *       of that room it applies in). Both absent read as their defaults, so
+     *       every cell written before v10 keeps following its room, in every
+     *       tile. The superseded {@code "reroll": true} reads as
+     *       {@code roll: vary}.</li>
      * </ul>
      * Returns {@code null} when the value is malformed (caller logs).
      * Used by all four block-variant sidecars
@@ -1013,7 +1025,7 @@ public final class CarriageVariantBlocks {
                                             String contextId, BlockPos contextPos) {
         JsonArray arr;
         int lockId = 0;
-        boolean reroll = false;
+        VariantCopyRoll roll = VariantCopyRoll.DEFAULT;
         VariantCopyScope scope = VariantCopyScope.BOTH;
         if (value.isJsonArray()) {
             arr = value.getAsJsonArray();
@@ -1030,9 +1042,15 @@ public final class CarriageVariantBlocks {
                 int raw = cellObj.get("lockId").getAsInt();
                 lockId = raw < 0 ? 0 : raw;
             }
-            if (cellObj.has(REROLL_KEY) && cellObj.get(REROLL_KEY).isJsonPrimitive()
-                && cellObj.get(REROLL_KEY).getAsJsonPrimitive().isBoolean()) {
-                reroll = cellObj.get(REROLL_KEY).getAsBoolean();
+            if (cellObj.has(LEGACY_REROLL_KEY) && cellObj.get(LEGACY_REROLL_KEY).isJsonPrimitive()
+                && cellObj.get(LEGACY_REROLL_KEY).getAsJsonPrimitive().isBoolean()) {
+                // The boolean this setting first shipped as: true meant "reroll per copy".
+                if (cellObj.get(LEGACY_REROLL_KEY).getAsBoolean()) roll = VariantCopyRoll.VARY;
+            }
+            // Read after the legacy key so an explicit "roll" always wins over it.
+            if (cellObj.has(ROLL_KEY) && cellObj.get(ROLL_KEY).isJsonPrimitive()
+                && cellObj.get(ROLL_KEY).getAsJsonPrimitive().isString()) {
+                roll = VariantCopyRoll.parse(cellObj.get(ROLL_KEY).getAsString());
             }
             if (cellObj.has(SCOPE_KEY) && cellObj.get(SCOPE_KEY).isJsonPrimitive()
                 && cellObj.get(SCOPE_KEY).getAsJsonPrimitive().isString()) {
@@ -1050,7 +1068,7 @@ public final class CarriageVariantBlocks {
             VariantState parsed = parseVariantElement(el, blocks, contextId, contextPos);
             if (parsed != null) states.add(parsed);
         }
-        return new ParsedCell(states, lockId, reroll, scope);
+        return new ParsedCell(states, lockId, roll, scope);
     }
 
     /**
@@ -1060,7 +1078,7 @@ public final class CarriageVariantBlocks {
      * Used by all four sidecars to keep on-disk output identical.
      */
     public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId) {
-        appendCellJson(sb, states, lockId, false);
+        appendCellJson(sb, states, lockId, VariantCopyRoll.DEFAULT);
     }
 
     /**
@@ -1071,24 +1089,27 @@ public final class CarriageVariantBlocks {
      * v10 re-saves byte-identical.
      */
     public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId,
-                                      boolean rerollPerCopy) {
-        appendCellJson(sb, states, lockId, rerollPerCopy, VariantCopyScope.BOTH);
+                                      VariantCopyRoll roll) {
+        appendCellJson(sb, states, lockId, roll, VariantCopyScope.BOTH);
     }
 
     /**
-     * {@link #appendCellJson(StringBuilder, List, int, boolean)} plus the v10
-     * {@link VariantCopyScope}. Both v10 fields behave the same way: they force
-     * the object form when set, because they have nowhere else to live, and are
-     * omitted entirely at their defaults so a cell that never used them writes
-     * exactly what it always wrote.
+     * {@link #appendCellJson(StringBuilder, List, int, VariantCopyRoll)} plus the
+     * v10 {@link VariantCopyScope}. Both v10 fields behave the same way: they
+     * force the object form when set, because they have nowhere else to live,
+     * and are omitted entirely at their defaults so a cell that never used them
+     * writes exactly what it always wrote.
      */
     public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId,
-                                      boolean rerollPerCopy, VariantCopyScope scope) {
+                                      VariantCopyRoll roll, VariantCopyScope scope) {
+        if (roll == null) roll = VariantCopyRoll.DEFAULT;
         if (scope == null) scope = VariantCopyScope.BOTH;
-        if (lockId > 0 || rerollPerCopy || !scope.isDefault()) {
+        if (lockId > 0 || !roll.isDefault() || !scope.isDefault()) {
             sb.append("{ ");
             if (lockId > 0) sb.append("\"lockId\": ").append(lockId).append(", ");
-            if (rerollPerCopy) sb.append('"').append(REROLL_KEY).append("\": true, ");
+            if (!roll.isDefault()) {
+                sb.append('"').append(ROLL_KEY).append("\": \"").append(roll.id()).append("\", ");
+            }
             if (!scope.isDefault()) {
                 sb.append('"').append(SCOPE_KEY).append("\": \"").append(scope.id()).append("\", ");
             }

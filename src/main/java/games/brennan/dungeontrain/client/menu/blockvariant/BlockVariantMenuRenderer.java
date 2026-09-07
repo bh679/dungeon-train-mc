@@ -91,7 +91,7 @@ public final class BlockVariantMenuRenderer {
 
     /** The minimum width this opening of the panel draws at — see {@link #COPY_SETTINGS_MIN_PANEL_WIDTH}. */
     static double minPanelWidth() {
-        return BlockVariantMenu.rerollSupported() ? COPY_SETTINGS_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
+        return BlockVariantMenu.copySettingsSupported() ? COPY_SETTINGS_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
     }
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
@@ -233,7 +233,7 @@ public final class BlockVariantMenuRenderer {
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
         List<BlockVariantMenu.CellKind> toolbar = BlockVariantMenu.toolbarCells();
-        boolean reroll = BlockVariantMenu.rerollPerCopy();
+        games.brennan.dungeontrain.editor.VariantCopyRoll copyRoll = BlockVariantMenu.copyRoll();
         games.brennan.dungeontrain.editor.VariantCopyScope copyScope = BlockVariantMenu.copyScope();
         double cellW = panelW / toolbar.size();
         for (int i = 0; i < toolbar.size(); i++) {
@@ -257,12 +257,12 @@ public final class BlockVariantMenuRenderer {
                 } else {
                     tint = isHover ? 0xC0AAAAAA : 0x60777777;
                 }
-            } else if (cellKind == BlockVariantMenu.CellKind.REROLL) {
-                // Same two-state treatment as Lock: lit when the cell is doing something other
-                // than what every other cell does, grey when it is following the room.
-                tint = reroll
-                    ? (isHover ? 0xC066DDFF : 0x803388AA)
-                    : (isHover ? 0xC0AAAAAA : 0x60777777);
+            } else if (cellKind == BlockVariantMenu.CellKind.COPY_ROLL) {
+                // Same treatment as Lock: lit when the cell overrides its room, grey when it is
+                // simply following it — which is the thing worth seeing from across the panel.
+                tint = copyRoll.isDefault()
+                    ? (isHover ? 0xC0AAAAAA : 0x60777777)
+                    : (isHover ? 0xC066DDFF : 0x803388AA);
             } else if (cellKind == BlockVariantMenu.CellKind.COPY_SCOPE) {
                 // Lit in either restricted scope — the cell is somewhere other than everywhere,
                 // which is the thing worth seeing at a glance from across the panel.
@@ -284,7 +284,7 @@ public final class BlockVariantMenuRenderer {
                 case LOCK -> cellLockId > 0 ? Integer.toString(cellLockId) : "-";
                 // "Exact" is the word the room's own Copies setting uses for repeating one roll,
                 // so the cell says whether it is following that or breaking from it.
-                case REROLL -> reroll ? "Vary" : "Exact";
+                case COPY_ROLL -> copyRoll.displayName();
                 case COPY_SCOPE -> copyScope.displayName();
                 case REMOVE -> removeMode ? "Cancel" : "Remove";
                 case CLEAR -> "Clear";

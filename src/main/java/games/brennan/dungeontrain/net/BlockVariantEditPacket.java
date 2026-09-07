@@ -61,15 +61,17 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       the container-contents menu anchored on the same face. Edits in
  *       that menu route to {@code LootPrefabStore.save} as usual for a
  *       linked cell, propagating to every linked container.</li>
- *   <li>{@link Op#TOGGLE_REROLL} — flip the cell's per-copy reroll flag. Only
- *       a dimensional carriage room repeats, so the server rejects this
- *       anywhere else ({@code BlockVariantPlot.supportsPerCopyReroll}) and the
- *       menu does not draw the button there. A cell in a lock group takes the
- *       whole group with it: the group shares one roll, and a member rerolling
- *       on its own is the thing a lock exists to prevent.</li>
+ *   <li>{@link Op#CYCLE_COPY_ROLL} — cycle how the cell rolls across a
+ *       repeating room's copies ({@code VariantCopyRoll}: default → exact →
+ *       vary → default). Only a dimensional carriage room repeats, so the
+ *       server rejects this anywhere else
+ *       ({@code BlockVariantPlot.supportsCopySettings}) and the menu does not
+ *       draw the button there. A cell in a lock group takes the whole group
+ *       with it: the group shares one roll, and a member rolling differently
+ *       from its siblings is the thing a lock exists to prevent.</li>
  *   <li>{@link Op#CYCLE_COPY_SCOPE} — cycle which tiles of a repeating room
  *       the cell applies in ({@code VariantCopyScope}: both → copies → not
- *       copies → both). Refused, like {@link Op#TOGGLE_REROLL}, where the
+ *       copies → both). Refused, like {@link Op#CYCLE_COPY_ROLL}, where the
  *       template does not repeat. Unlike it, a lock group is NOT dragged along:
  *       a group shares a roll, not a footprint, and two cells of one group
  *       living in different tiles is a legitimate build.</li>
@@ -96,7 +98,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
                      PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
                      OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX,
-                     TOGGLE_REROLL, CYCLE_COPY_SCOPE }
+                     CYCLE_COPY_ROLL, CYCLE_COPY_SCOPE }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

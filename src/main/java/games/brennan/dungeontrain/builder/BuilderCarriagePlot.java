@@ -228,13 +228,13 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
     }
 
     @Override
-    public boolean rerollsPerCopy(BlockPos localPos) {
-        return doc().rerollsPerCopy(localPos);
+    public games.brennan.dungeontrain.editor.VariantCopyRoll copyRollAt(BlockPos localPos) {
+        return doc().copyRollAt(localPos);
     }
 
     @Override
-    public void setRerollsPerCopy(BlockPos localPos, boolean reroll) {
-        doc().setRerollsPerCopy(localPos, reroll);
+    public void setCopyRoll(BlockPos localPos, games.brennan.dungeontrain.editor.VariantCopyRoll roll) {
+        doc().setCopyRoll(localPos, roll);
     }
 
     @Override

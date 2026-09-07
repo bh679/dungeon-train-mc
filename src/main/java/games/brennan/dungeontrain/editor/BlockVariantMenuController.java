@@ -344,7 +344,7 @@ public final class BlockVariantMenuController {
                 s.groupRef(), refLive));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
-            plot.rerollsPerCopy(localPos), plot.supportsCopySettings(),
+            (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal());
     }
 
@@ -393,8 +393,8 @@ public final class BlockVariantMenuController {
                 .trigger(player, "used_block_variant_lock");
             return;
         }
-        if (packet.op() == BlockVariantEditPacket.Op.TOGGLE_REROLL) {
-            toggleRerollPerCopy(player, plot, localPos);
+        if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_ROLL) {
+            cycleCopyRoll(player, plot, localPos);
             return;
         }
         if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE) {
@@ -911,23 +911,27 @@ public final class BlockVariantMenuController {
     }
 
     /**
-     * Flip the cell's per-copy reroll flag — whether it rolls again in each copy
-     * of a repeating dimensional carriage room, or repeats the room's one roll
-     * like everything else under {@code PortalRoomCopies.Kind#EXACT}.
+     * Cycle how the cell rolls across a repeating room's copies: follow the room
+     * → one roll for every copy → a fresh roll in each.
+     *
+     * <p>{@link VariantCopyRoll#DEFAULT} is the room's own Copies setting, which
+     * is why it is a state and not the absence of one: it repeats the cell in an
+     * Exact room and varies it in a Dynamic one, and the other two override that
+     * in either direction.</p>
      *
      * <p><b>A lock group moves as one.</b> Every cell in a group draws a single
-     * index, so a member that rerolled while its siblings did not would show a
-     * different block from them in every copy but the base — the exact thing the
-     * lock exists to prevent. Flipping any member flips the group.</p>
+     * index, so a member rolling differently from its siblings would show a
+     * different block from them — the exact thing the lock exists to prevent.
+     * Setting any member sets the group.</p>
      *
      * <p>Refused where the template does not repeat, and where the cell has no
-     * candidates yet, for the same reasons {@link #cycleLockId} refuses: a flag
-     * with nothing to apply to is a setting the author cannot see the effect
+     * candidates yet, for the same reasons {@link #cycleLockId} refuses: a
+     * setting with nothing to apply to is one the author cannot see the effect
      * of.</p>
      */
-    private static void toggleRerollPerCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+    private static void cycleCopyRoll(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         if (!plot.supportsCopySettings()) {
-            actionBar(player, "Only a dimensional carriage room repeats — nothing to reroll against",
+            actionBar(player, "Only a dimensional carriage room has copies to roll across",
                 ChatFormatting.YELLOW);
             return;
         }
@@ -935,24 +939,26 @@ public final class BlockVariantMenuController {
             actionBar(player, "Add at least one variant first", ChatFormatting.YELLOW);
             return;
         }
-        boolean next = !plot.rerollsPerCopy(localPos);
-        plot.setRerollsPerCopy(localPos, next);
+        VariantCopyRoll next = plot.copyRollAt(localPos).next();
+        plot.setCopyRoll(localPos, next);
         int lockId = plot.lockIdAt(localPos);
         if (lockId > 0) {
             for (BlockPos sibling : plot.positionsWithLockId(lockId)) {
-                if (!sibling.equals(localPos)) plot.setRerollsPerCopy(sibling, next);
+                if (!sibling.equals(localPos)) plot.setCopyRoll(sibling, next);
             }
         }
         try {
             plot.save();
         } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] BlockVariantMenu reroll save failed for {}: {}",
+            LOGGER.error("[DungeonTrain] BlockVariantMenu copy-roll save failed for {}: {}",
                 plot.key(), e.toString());
             actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
         }
-        actionBar(player, next
-            ? "Cell rerolls in every copy of the room"
-            : "Cell repeats the room's roll", ChatFormatting.AQUA);
+        actionBar(player, switch (next) {
+            case DEFAULT -> "Cell rolls the way the room does";
+            case EXACT -> "Cell holds one roll across every copy";
+            case VARY -> "Cell rolls again in every copy";
+        }, ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
     }
 
@@ -1170,18 +1176,18 @@ public final class BlockVariantMenuController {
         // The two repeating-room settings ride along with the lock-id: they are authored on the
         // cell, so a copy that dropped them handed back a cell that read the same in the menu and
         // stamped differently down the hall.
-        boolean reroll = plot.rerollsPerCopy(localPos);
+        VariantCopyRoll roll = plot.copyRollAt(localPos);
         VariantCopyScope scope = plot.copyScopeAt(localPos);
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
         CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
-            poolCaptured ? pool : null, reroll, scope);
+            poolCaptured ? pool : null, roll, scope);
         VariantClipboardItem.writeClipboardTag(stack, tag);
         String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
         String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";
-        String rerollSuffix = reroll ? " +vary" : "";
+        String rollSuffix = roll.isDefault() ? "" : " +" + roll.displayName().toLowerCase(Locale.ROOT);
         String scopeSuffix = scope.isDefault() ? "" : " +" + scope.displayName().toLowerCase(Locale.ROOT);
         return new Clipboard(stack, current.size() + " variants" + lockSuffix + poolSuffix
-            + rerollSuffix + scopeSuffix);
+            + rollSuffix + scopeSuffix);
     }
 
     /**

@@ -40,8 +40,8 @@ public record BlockVariantSyncPacket(
     Vec3 anchorPos,
     Vec3 anchorRight,
     Vec3 anchorUp,
-    boolean rerollPerCopy,
-    boolean rerollSupported,
+    byte copyRoll,
+    boolean copySettingsSupported,
     byte copyScope
 ) implements CustomPacketPayload {
 
@@ -52,7 +52,8 @@ public record BlockVariantSyncPacket(
      */
     public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
                                   int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp) {
-        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp, false, false,
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            (byte) games.brennan.dungeontrain.editor.VariantCopyRoll.DEFAULT.ordinal(), false,
             (byte) games.brennan.dungeontrain.editor.VariantCopyScope.BOTH.ordinal());
     }
 
@@ -171,13 +172,13 @@ public record BlockVariantSyncPacket(
         buf.writeVarInt(localPos.getY());
         buf.writeVarInt(localPos.getZ());
         buf.writeVarInt(lockId);
-        // Two flags rather than one: the cell's state, and whether the plot repeats at all. The
-        // second is what decides whether the menu draws the button, and the client cannot work it
-        // out — only the server knows which template the plot is a view of.
-        buf.writeBoolean(rerollPerCopy);
-        buf.writeBoolean(rerollSupported);
-        // The scope's ordinal. Out-of-range on the read side is BOTH, so a client and server that
-        // disagree about the enum draw the default rather than an exception.
+        // The cell's two repeating-room settings, plus whether the plot repeats at all. The last
+        // is what decides whether the menu draws the two buttons, and the client cannot work it
+        // out — only the server knows which template the plot is a view of. Both settings ride as
+        // ordinals; out of range on the read side is the default, so a client and server that
+        // disagree about an enum draw the default rather than throwing.
+        buf.writeByte(copyRoll);
+        buf.writeBoolean(copySettingsSupported);
         buf.writeByte(copyScope);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
@@ -215,8 +216,8 @@ public record BlockVariantSyncPacket(
         }
         BlockPos local = new BlockPos(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
         int lockId = buf.readVarInt();
-        boolean reroll = buf.readBoolean();
-        boolean rerollSupported = buf.readBoolean();
+        byte copyRoll = buf.readByte();
+        boolean copySettingsSupported = buf.readBoolean();
         byte copyScope = buf.readByte();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
@@ -243,7 +244,7 @@ public record BlockVariantSyncPacket(
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
-            reroll, rerollSupported, copyScope);
+            copyRoll, copySettingsSupported, copyScope);
     }
 
     @Override

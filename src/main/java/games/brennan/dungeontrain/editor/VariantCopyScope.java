@@ -20,10 +20,10 @@ import java.util.Locale;
  * empty-placeholder candidate inside the cell.</p>
  *
  * <h2>Independent of the reroll flag</h2>
- * <p>This answers <i>whether the cell is there</i>; {@code TrackVariantBlocks#rerollsPerCopy}
- * answers <i>how it rolls</i> once it is. The two compose freely — a cell can apply only in the
- * copies and reroll in each of them — which is why they are two settings and two buttons rather
- * than one cycle through their product.</p>
+ * <p>This answers <i>whether the cell is there</i>; {@link VariantCopyRoll} answers <i>how it
+ * rolls</i> once it is. The two compose freely — a cell can apply only in the copies and reroll in
+ * each of them — which is why they are two settings and two buttons rather than one cycle through
+ * their product.</p>
  *
  * <p>Stored per cell as {@code "scope"} inside the sidecar's cell object, and omitted entirely for
  * {@link #BOTH} so a cell that never touched the setting round-trips byte-identical.</p>
