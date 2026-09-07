@@ -51,13 +51,7 @@ public final class TrainTransformProvider implements KinematicDriver {
     // so each call represents 1/20 s of game time. canonicalPos must advance
     // by velocity * 1/20 per call so its motion matches what the rendered
     // body shows over a server-tick interval.
-    /**
-     * Seconds of game time one server tick covers — the factor between a target velocity (blocks per
-     * second, the frame the physics integrator and {@link #travelDistance} work in) and an entity's
-     * {@code deltaMovement} (blocks per tick). Public because callers outside this class have to
-     * cross that boundary too; see {@code PortalCarriageEvents.carrierVelocity}.
-     */
-    public static final double PHYSICS_DT = 1.0 / 20.0;
+private static final double PHYSICS_DT = 1.0 / 20.0;
     private static final Vector3dc ZERO_OMEGA = new Vector3d();
 
     // Jitter instrumentation constants.
