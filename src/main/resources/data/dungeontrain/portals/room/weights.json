@@ -232,6 +232,10 @@
     "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
   },
   "smallpat": 1,
+  "statues": {
+    "weight": 1,
+    "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
+  },
   "suspiciousfurniturestore": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/off/day"
