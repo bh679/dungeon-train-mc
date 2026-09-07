@@ -913,6 +913,7 @@ public final class PortalCarriageBuilder {
 
         stampRoomAt(level, roomOrigin, dims, structure.roomName(), roomSize, /*relight*/ true,
             PortalCorridorMask.NONE, PortalCorridorMask.NONE,
+            structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey),
             structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
             PortalRoomTiling.Tile.BASE,
             PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
@@ -1598,6 +1599,12 @@ public final class PortalCarriageBuilder {
      * <p>{@code variantIndex} is what makes one pair's room differ from another pair's, and what makes
      * one copy of a room differ from another under {@link PortalRoomCopies.Kind#DYNAMIC} and identical
      * under {@link PortalRoomCopies.Kind#EXACT} — see {@code PortalStructure.variantIndexFor}.</p>
+     *
+     * <p>{@code exactIndex} is the <b>base tile's</b> index — the one number every copy of this room
+     * computes identically, whatever the room's Copies setting is. A cell that overrides its room
+     * ({@code VariantCopyRoll}) rolls from it rather than from {@code variantIndex}: under Dynamic
+     * the room's index has the tile mixed into it irreversibly, so "the same roll in every copy"
+     * cannot be recovered from it and has to be handed in.</p>
      */
     /**
      * {@link #stampRoomAt} with the two jobs a mask does held apart.
@@ -1620,7 +1627,8 @@ public final class PortalCarriageBuilder {
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask clearMask, PortalCorridorMask writeMask,
-                                   int variantIndex, int pairKey, PortalRoomTiling.Tile tile,
+                                   int variantIndex, int exactIndex, int pairKey,
+                                   PortalRoomTiling.Tile tile,
                                    int liveMobCount, PortalRoomContents contents,
                                    PortalRoomBooks books) {
         stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask);
@@ -1636,8 +1644,8 @@ public final class PortalCarriageBuilder {
         // explicit entry is the one that should stand — and applyRoomVariants evicts a live block
         // entity before it writes, so a chest this pass just filled cannot spill when it does.
         applyRoomContents(level, roomOrigin, size, roomName, writeMask, variantIndex, pairKey, contents);
-        applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey, tile,
-            liveMobCount);
+        applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, exactIndex,
+            pairKey, tile, liveMobCount);
         // Last, and only a registration: the shelves are stocked by PortalRoomLibrarian on a later
         // tick, because the relay has not said who has written what by the time a room is stamped.
         PortalRoomLibrarian.register(pairKey, roomOrigin, size, books);
@@ -1753,7 +1761,7 @@ public final class PortalCarriageBuilder {
      */
     private static void applyRoomVariants(ServerLevel level, BlockPos roomOrigin, String roomName,
                                           Vec3i size, PortalCorridorMask mask, int variantIndex,
-                                          int pairKey, PortalRoomTiling.Tile tile,
+                                          int exactIndex, int pairKey, PortalRoomTiling.Tile tile,
                                           int liveMobCount) {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, roomName, size);
         if (sidecar.isEmpty()) return;
@@ -1768,12 +1776,28 @@ public final class PortalCarriageBuilder {
         // structure, and the cap only has to be approximately right — it is a backstop against a
         // badly-weighted room, not an exact quota.
         int live = liveMobCount;
+        // The arrival room, as opposed to one of the copies the tiler appends around it. It is
+        // what a cell's VariantCopyScope is asked about, and the one thing about this stamp the
+        // scope can distinguish.
+        boolean baseTile = PortalRoomTiling.Tile.BASE.equals(tile);
         for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
             BlockPos local = entry.localPos();
             BlockPos world = roomOrigin.offset(local);
             if (mask.covers(world)) continue;
+            // Scoped out of this tile: leave the cell completely alone, so what the room's own
+            // template stamped there stands. Skipped BEFORE the roll, the eviction and the write —
+            // "does not apply here" has to mean untouched, not cleared and then not refilled.
+            if (!sidecar.copyScopeAt(local).appliesTo(baseTile)) continue;
 
-            VariantState picked = sidecar.resolve(local, worldSeed, variantIndex);
+            // Which index this cell rolls at: the room's own (follow it), the base tile's (one
+            // roll every copy shares, whatever the room does), or the base tile's mixed with this
+            // copy's place on the grid (a fresh roll per copy, whatever the room does).
+            int cellIndex = switch (sidecar.copyRollAt(local)) {
+                case DEFAULT -> variantIndex;
+                case EXACT -> exactIndex;
+                case VARY -> perCopyIndex(exactIndex, tile);
+            };
+            VariantState picked = sidecar.resolve(local, worldSeed, cellIndex);
             if (picked == null) continue;
             if (picked.isMob()) {
                 // The cell itself still has to go: a mob entry carries a COMMAND_BLOCK sentinel as
@@ -1811,10 +1835,29 @@ public final class PortalCarriageBuilder {
             // promotes a PENDING block entity to live before dropping it, which is the whole point of
             // the eviction here — a freshly stamped chest's NBT has not been promoted yet.
             SilentBlockOps.evictBlockEntity(level.getChunkAt(world), world);
+            // The same index the block was picked at, so a flagged chest's contents vary with the
+            // block rather than the block changing over identical loot. Still the pair-and-copy
+            // frame, never the difficulty one — pairKey stays that, see the javadoc above.
             ContainerContentsPlacement.place(level, world, picked.state(), picked.blockEntityNbt(),
-                plotKey, local, worldSeed, variantIndex, /*diffIndex*/ pairKey,
+                plotKey, local, worldSeed, cellIndex, /*diffIndex*/ pairKey,
                 picked.linkedLootPrefabId());
         }
+    }
+
+    /**
+     * The variant index a per-copy cell rolls at: the room's index mixed with the copy's place on
+     * the tiling grid.
+     *
+     * <p>Deliberately the same expression {@code PortalStructure.variantIndexFor} uses for a
+     * {@link PortalRoomCopies.Kind#DYNAMIC} room — a flagged cell is asking for exactly what
+     * Dynamic gives every cell, so it should be given it by the same mix rather than by a second
+     * one that happens to also vary. It stays a pure function of <i>where</i>: the pair's key and a
+     * grid cell, never the stamp. So a copy that retires as the window slides and is stamped again
+     * comes back with the block the player left, which is the promise the whole tiling path is
+     * written around.</p>
+     */
+    private static int perCopyIndex(int variantIndex, PortalRoomTiling.Tile tile) {
+        return java.util.Objects.hash(variantIndex, tile.x(), tile.z());
     }
 
     /**

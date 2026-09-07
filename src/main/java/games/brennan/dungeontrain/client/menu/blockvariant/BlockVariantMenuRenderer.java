@@ -76,8 +76,23 @@ public final class BlockVariantMenuRenderer {
     static final double TOOLBAR_HEIGHT = 0.32;
     /** A grid column = name cell + weight + (optional) X. */
     static final double COLUMN_WIDTH = 1.7;
-    /** Six-cell toolbar (Copy/Add/Lock/Remove/Clear/X) needs more width. */
+    /** Multi-cell toolbar (Copy/Save/Add/Lock/Remove/Clear/X) needs more width. */
     static final double MIN_PANEL_WIDTH = 3.2;
+
+    /**
+     * Wider minimum for a repeating room, where the toolbar carries two more cells and one of
+     * them reads "Not copies". At 3.2 the nine labels run into each other.
+     *
+     * <p>Read through {@link #minPanelWidth()} rather than directly, so the renderer and the
+     * raycaster cannot end up sizing the same panel differently — the failure that would put every
+     * click one cell off. Same shape as {@code PartPositionMenuRenderer.DOOR_MIN_PANEL_WIDTH}.</p>
+     */
+    static final double COPY_SETTINGS_MIN_PANEL_WIDTH = 4.6;
+
+    /** The minimum width this opening of the panel draws at — see {@link #COPY_SETTINGS_MIN_PANEL_WIDTH}. */
+    static double minPanelWidth() {
+        return BlockVariantMenu.copySettingsSupported() ? COPY_SETTINGS_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
+    }
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
     /** Per-cell width for a mob row's difficulty min / max cells (matches the weight cell). */
@@ -162,7 +177,7 @@ public final class BlockVariantMenuRenderer {
                 BlockVariantMenu.ROWS_PER_COLUMN * 4);
         }
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        double panelW = Math.max(minPanelWidth(), colCount * COLUMN_WIDTH);
         int displayedRows = Math.max(1, Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN));
         return new PanelSize(panelW, HEADER_HEIGHT + TOOLBAR_HEIGHT + displayedRows * ROW_HEIGHT);
     }
@@ -188,7 +203,7 @@ public final class BlockVariantMenuRenderer {
         List<BlockVariantSyncPacket.Entry> entries = BlockVariantMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        double panelW = Math.max(minPanelWidth(), colCount * COLUMN_WIDTH);
         int displayedRows = Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * ROW_HEIGHT;
@@ -212,23 +227,19 @@ public final class BlockVariantMenuRenderer {
             : "Block Variants @ " + local.getX() + "," + local.getY() + "," + local.getZ() + lockLabel;
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFFFFEEBB);
 
-        // Toolbar — 7 cells: Copy | Save | Add | Lock | Remove | Clear | X.
+        // Toolbar — Copy | Save | Add | Lock | (Reroll) | Remove | Clear | X. The Reroll cell is
+        // there only for a template that repeats; see BlockVariantMenu.toolbarCells().
         double toolbarTop = halfH - HEADER_HEIGHT;
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
-        double cellW = panelW / 7.0;
-        for (int i = 0; i < 7; i++) {
+        List<BlockVariantMenu.CellKind> toolbar = BlockVariantMenu.toolbarCells();
+        games.brennan.dungeontrain.editor.VariantCopyRoll copyRoll = BlockVariantMenu.copyRoll();
+        games.brennan.dungeontrain.editor.VariantCopyScope copyScope = BlockVariantMenu.copyScope();
+        double cellW = panelW / toolbar.size();
+        for (int i = 0; i < toolbar.size(); i++) {
             double xL = -halfW + i * cellW;
             double xR = xL + cellW;
-            BlockVariantMenu.CellKind cellKind = switch (i) {
-                case 0 -> BlockVariantMenu.CellKind.COPY;
-                case 1 -> BlockVariantMenu.CellKind.SAVE;
-                case 2 -> BlockVariantMenu.CellKind.ADD;
-                case 3 -> BlockVariantMenu.CellKind.LOCK;
-                case 4 -> BlockVariantMenu.CellKind.REMOVE;
-                case 5 -> BlockVariantMenu.CellKind.CLEAR;
-                default -> BlockVariantMenu.CellKind.CLOSE;
-            };
+            BlockVariantMenu.CellKind cellKind = toolbar.get(i);
             boolean isHover = hovered.kind() == cellKind;
             int tint;
             if (cellKind == BlockVariantMenu.CellKind.REMOVE && removeMode) {
@@ -246,6 +257,18 @@ public final class BlockVariantMenuRenderer {
                 } else {
                     tint = isHover ? 0xC0AAAAAA : 0x60777777;
                 }
+            } else if (cellKind == BlockVariantMenu.CellKind.COPY_ROLL) {
+                // Same treatment as Lock: lit when the cell overrides its room, grey when it is
+                // simply following it — which is the thing worth seeing from across the panel.
+                tint = copyRoll.isDefault()
+                    ? (isHover ? 0xC0AAAAAA : 0x60777777)
+                    : (isHover ? 0xC066DDFF : 0x803388AA);
+            } else if (cellKind == BlockVariantMenu.CellKind.COPY_SCOPE) {
+                // Lit in either restricted scope — the cell is somewhere other than everywhere,
+                // which is the thing worth seeing at a glance from across the panel.
+                tint = copyScope.isDefault()
+                    ? (isHover ? 0xC0AAAAAA : 0x60777777)
+                    : (isHover ? 0xC0CC99FF : 0x80775599);
             } else {
                 tint = isHover ? 0xB0FFCC33 : 0x30FFFFFF;
             }
@@ -259,6 +282,10 @@ public final class BlockVariantMenuRenderer {
                 // the digit (e.g. "2") when locked. Cycles to next free
                 // when 0, back to 0 when set.
                 case LOCK -> cellLockId > 0 ? Integer.toString(cellLockId) : "-";
+                // "Exact" is the word the room's own Copies setting uses for repeating one roll,
+                // so the cell says whether it is following that or breaking from it.
+                case COPY_ROLL -> copyRoll.displayName();
+                case COPY_SCOPE -> copyScope.displayName();
                 case REMOVE -> removeMode ? "Cancel" : "Remove";
                 case CLEAR -> "Clear";
                 case CLOSE -> "X";
@@ -683,7 +710,7 @@ public final class BlockVariantMenuRenderer {
         int maxRows = BlockVariantMenu.ROWS_PER_COLUMN * 4;
         int n = Math.min(filtered.size(), maxRows);
         int colCount = Math.max(1, (n + BlockVariantMenu.ROWS_PER_COLUMN - 1) / BlockVariantMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        double panelW = Math.max(minPanelWidth(), colCount * COLUMN_WIDTH);
         int displayedRows = Math.min(n, BlockVariantMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * ROW_HEIGHT;

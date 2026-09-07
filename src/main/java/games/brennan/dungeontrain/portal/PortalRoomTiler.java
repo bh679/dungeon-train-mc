@@ -227,6 +227,9 @@ public final class PortalRoomTiler {
             writeMaskFor(structure, clearMask, origin, size, !single.isEmpty());
         PortalCarriageBuilder.stampRoomAt(level, origin, dims, structure.roomName(), size,
             /*relight*/ true, clearMask, writeMask, structure.variantIndexFor(tile, pairKey),
+            // The base tile's index, which every copy computes the same — what a cell that
+            // overrides its room's Copies setting rolls from. See stampRoomAt.
+            structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey),
             pairKey, tile,
             PortalRoomMobs.liveCount(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey),
             // The structure's own setting, not a fresh read of the variant: a portal already standing
