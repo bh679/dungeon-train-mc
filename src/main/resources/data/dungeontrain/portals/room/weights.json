@@ -157,7 +157,7 @@
     "mode": "bedrock_lock/exact/off/off/off/day"
   },
   "outsidethebox": {
-    "weight": 1,
+    "weight": 0,
     "mode": "endless_open/single:minecraft:stone"
   },
   "parkour": {
@@ -176,6 +176,10 @@
   "peateargriffin": {
     "weight": 1,
     "mode": "bedrock_lock/exact/off/off/off/day"
+  },
+  "pistons": {
+    "weight": 1,
+    "mode": "endless_open"
   },
   "pretty": {
     "weight": 1,
