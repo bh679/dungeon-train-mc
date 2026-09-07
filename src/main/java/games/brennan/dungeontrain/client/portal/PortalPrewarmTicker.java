@@ -53,7 +53,7 @@ public final class PortalPrewarmTicker {
      * <p>On while the shape of this is still being settled. It is one line a second and only while a
      * player is walking into a portal, which is the moment somebody reading the log cares about.</p>
      */
-    private static final boolean TRACE = false;
+    private static final boolean TRACE = true;
 
     /** Ticks between tally lines — a second, so the shape of an approach is readable. */
     private static final int TRACE_PERIOD_TICKS = 20;
@@ -137,14 +137,17 @@ public final class PortalPrewarmTicker {
             }
 
             if (regions == null) regions = new RenderRegionCache();
-            // Scheduled, and the dirty flag deliberately LEFT ALONE. Vanilla clears it here because
-            // vanilla only ever does this for sections it is about to draw; ours are on the far side
-            // of a portal, and if the build does not land, clearing it tells the renderer nobody owes
-            // this section a rebuild any more. It is then neither dirty nor compiled — invisible to
-            // the rebuild path and impassable to the occlusion graph, whose BFS can only walk through
-            // sections that have been compiled. That is what left an arrival with an empty graph and
-            // a screen that filled in over 300ms. Leaving it dirty costs at worst one extra build.
-            target.rebuildSectionAsync(dispatcher, regions);
+            // SYNCHRONOUS, on purpose, and the whole lesson of this file. The async form
+            // (rebuildSectionAsync) begins with cancelTasks(): a span that cycles and re-schedules
+            // every still-dirty section cancels its own previous task before it reaches the front
+            // of the queue, and an uncompiled section's task is always LOW priority — a FIFO behind
+            // the train's continuous re-meshing — so it never got there. Five arrivals into one
+            // room, and the room was uncompiled on every one of them. This is what vanilla's own
+            // NEARBY setting does for sections by the camera: build it here, now, and be done. It
+            // cannot be cancelled and cannot be starved. A section takes about a millisecond, and
+            // SECTIONS_PER_TICK bounds the frame.
+            dispatcher.rebuildSectionSync(target, regions);
+            target.setNotDirty();
             built++;
 
             if (ClientPortalPrewarm.claimFirstTrace()) {

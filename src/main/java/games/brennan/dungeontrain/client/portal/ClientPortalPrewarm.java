@@ -51,14 +51,16 @@ public final class ClientPortalPrewarm {
     static final int RADIUS_SECTIONS_Y = 1;
 
     /**
-     * Sections handed to the chunk builder per client tick.
+     * Sections built per client tick — built, not queued: the ticker compiles them synchronously on
+     * the render thread, the way vanilla's NEARBY setting does for sections beside the camera.
      *
-     * <p>The point of doing this early is that it need not be fast. Six a tick walks the whole
-     * {@link #RADIUS_SECTIONS_XZ} × {@link #RADIUS_SECTIONS_Y} span in about half a second — well
-     * inside the walk down a corridor — while never queueing enough at once to be felt as a hitch.
-     * </p>
+     * <p>Three, because each is on the order of a millisecond and this runs while the player is
+     * walking, so it has to stay inside a frame's spare time. It still walks the whole
+     * {@link #RADIUS_SECTIONS_XZ} × {@link #RADIUS_SECTIONS_Y} span in about a second, which is
+     * inside the walk down a corridor, and most of the span costs a field read: only a dirty section
+     * is built.</p>
      */
-    static final int SECTIONS_PER_TICK = 6;
+    static final int SECTIONS_PER_TICK = 3;
 
     /**
      * How long an armed destination stays worth acting on.
