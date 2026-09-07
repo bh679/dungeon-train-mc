@@ -59,6 +59,15 @@ public final class EditorTypeMenuInputHandler {
     /** Captured at press time so the release knows whether it was a shift-click. */
     private static boolean pressShift;
 
+    /**
+     * Range offered by the typed-weight pad. Every weight pool behind these cells is 0-100
+     * ({@code CarriageWeights}, {@code CarriageContentsWeights}, {@code TrackVariantWeights} and
+     * both group pools), and the command tree rejects anything outside it, so the pad offers
+     * exactly that window.
+     */
+    private static final int TYPED_WEIGHT_MIN = 0;
+    private static final int TYPED_WEIGHT_MAX = 100;
+
     private EditorTypeMenuInputHandler() {}
 
     @SubscribeEvent
@@ -299,31 +308,14 @@ public final class EditorTypeMenuInputHandler {
                 CommandRunner.run(cmd);
             }
             case WEIGHT -> {
-                String dir = shift ? "dec" : "inc";
-                // Sub-variants companion menu: weight cells reference per-member
-                // weights (and the parent's editable selfWeight on row 0) inside
-                // the parent's .group.json sidecar — route to the group-member
-                // weight command, not the top-level contents weight pool (which
-                // the spawn pipeline ignores for members). The same command
-                // path handles the (default) row by passing parent == child;
-                // the server interprets that as a selfWeight edit.
-                boolean isSubVariants = games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
-                    .equals(menu.typeName());
-                if (isSubVariants) {
-                    String parentId = menu.variants().get(0).modelId();
-                    String memberId = variant.modelId();
-                    // Portal rooms carry the same panel one template layer up — same parent/member
-                    // shape, different command prefix.
-                    String cmd = isPortalRoom(variant)
-                        ? EditorPlotTeleport.portalRoomGroupWeightCommandFor(parentId, memberId, dir)
-                        : EditorPlotTeleport.groupMemberWeightCommandFor(parentId, memberId, dir);
-                    LOGGER.debug("[DungeonTrain] EditorTypeMenu weight (group {}): {}",
-                        parentId.equals(memberId) ? "self" : "member", cmd);
-                    CommandRunner.run(cmd);
+                // Cmd-click types the weight instead of stepping it. The commands take a literal
+                // value in the same slot as inc / dec, so only the token changes.
+                if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()
+                    && variant.weight() != games.brennan.dungeontrain.net.EditorPlotLabelsPacket.NO_WEIGHT) {
+                    openWeightEntry(menu, variant);
                     return;
                 }
-                String cmd = EditorPlotTeleport.weightCommandFor(
-                    variant.plotCategory(), variant.modelId(), variant.modelName(), dir);
+                String cmd = weightCommandFor(menu, variant, shift ? "dec" : "inc");
                 if (cmd == null) return;
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu weight: {}", cmd);
                 CommandRunner.run(cmd);
@@ -506,6 +498,51 @@ public final class EditorTypeMenuInputHandler {
      * share the panel and its cells but not their command prefixes, so every group-edit dispatch has
      * to pick one. Category is the discriminator the server already sets on the row.
      */
+    /**
+     * The weight command for one row, with {@code token} in the slot that takes {@code inc},
+     * {@code dec} or an outright number — the command tree accepts all three there, so stepping
+     * and typing differ only in what is spliced in.
+     *
+     * <p>Sub-variants companion menu: weight cells reference per-member weights (and the parent's
+     * editable selfWeight on row 0) inside the parent's .group.json sidecar — route to the
+     * group-member weight command, not the top-level contents weight pool (which the spawn
+     * pipeline ignores for members). The same command path handles the (default) row by passing
+     * parent == child; the server interprets that as a selfWeight edit. Portal rooms carry the
+     * same panel one template layer up — same parent/member shape, different command prefix.</p>
+     */
+    private static String weightCommandFor(EditorTypeMenusPacket.Menu menu,
+                                           EditorTypeMenusPacket.Variant variant, String token) {
+        if (games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
+                .equals(menu.typeName())) {
+            if (menu.variants().isEmpty()) return null;
+            String parentId = menu.variants().get(0).modelId();
+            String memberId = variant.modelId();
+            return isPortalRoom(variant)
+                ? EditorPlotTeleport.portalRoomGroupWeightCommandFor(parentId, memberId, token)
+                : EditorPlotTeleport.groupMemberWeightCommandFor(parentId, memberId, token);
+        }
+        return EditorPlotTeleport.weightCommandFor(
+            variant.plotCategory(), variant.modelId(), variant.modelName(), token);
+    }
+
+    /**
+     * Open the typed-weight pad for one row. The world-space panel is a HUD overlay drawn behind
+     * the modal, so closing returns to the world with the menu still up.
+     */
+    private static void openWeightEntry(EditorTypeMenusPacket.Menu menu,
+                                        EditorTypeMenusPacket.Variant variant) {
+        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
+            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.weight"),
+            variant.weight(), TYPED_WEIGHT_MIN, TYPED_WEIGHT_MAX,
+            value -> {
+                String cmd = weightCommandFor(menu, variant, Integer.toString(value));
+                if (cmd == null) return;
+                LOGGER.debug("[DungeonTrain] EditorTypeMenu weight (typed): {}", cmd);
+                CommandRunner.run(cmd);
+            },
+            null));
+    }
+
     private static boolean isPortalRoom(EditorTypeMenusPacket.Variant variant) {
         return variant.plotCategory() == PlotCategory.PORTALS;
     }

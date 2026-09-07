@@ -27,6 +27,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *   <li>{@link Op#CLEAR} — drop the whole cell (sidecar entry).</li>
  *   <li>{@link Op#BUMP_WEIGHT} — adjust entry's weight by {@code delta}
  *       (signed; clamped ≥ 1 server-side).</li>
+ *   <li>{@link Op#SET_WEIGHT} — set entry's weight to {@code delta} outright
+ *       (clamped ≥ 1 server-side). Sent when the author cmd-clicks the weight
+ *       cell and types a value instead of stepping it.</li>
  *   <li>{@link Op#CYCLE_LOCK_ID} — advance the cell's lock-id. From 0
  *       (unlocked), goes to {@code nextFreeLockId()} — the smallest
  *       positive integer not currently used by any cell in this template.
@@ -76,9 +79,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                                      int entryIndex, String stateString, int delta) implements CustomPacketPayload {
 
+    // Ordinals are the wire encoding — append new ops, never reorder.
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
                      PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
-                     OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX }
+                     OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX,
+                     SET_WEIGHT }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
