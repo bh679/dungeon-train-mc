@@ -9,7 +9,9 @@
   "client": [
     "client.sodium.BlockRendererUpsideDownMixin",
     "client.sodium.ViewportPortalSealMixin",
-    "client.sodium.SodiumWorldRendererPortalSealMixin"
+    "client.sodium.SodiumWorldRendererPortalSealMixin",
+    "client.sodium.RenderSectionPrewarmMixin",
+    "client.sodium.RenderSectionManagerPrewarmMixin"
   ],
   "server": [],
   "injectors": {
