@@ -102,6 +102,52 @@ public interface BlockVariantPlot {
     java.util.Set<BlockPos> positionsWithLockId(int lockId);
 
     /**
+     * True when this plot's template is one that <b>repeats</b> — a dimensional
+     * carriage room, whose endless modes stamp copy after copy of it. Only there
+     * do the two per-cell copy settings mean anything (which tiles a cell applies
+     * in, and whether it rerolls in each), so only there does the menu offer
+     * them.
+     *
+     * <p>False for every other plot, which is why this is a default: a carriage,
+     * a part and a contents plot are stamped once and have no copies to differ
+     * from.</p>
+     */
+    default boolean supportsCopySettings() {
+        return false;
+    }
+
+    /**
+     * How the cell at {@code localPos} rolls across a repeating room's copies.
+     * Always {@link VariantCopyRoll#DEFAULT} — follow the room — where
+     * {@link #supportsCopySettings} is false.
+     */
+    default VariantCopyRoll copyRollAt(BlockPos localPos) {
+        return VariantCopyRoll.DEFAULT;
+    }
+
+    /**
+     * Set that override. A no-op where the plot does not repeat — the menu never
+     * offers the button there, and the server re-checks
+     * {@link #supportsCopySettings} before calling this, so reaching the no-op
+     * means a hand-crafted packet rather than a state worth failing over.
+     */
+    default void setCopyRoll(BlockPos localPos, VariantCopyRoll roll) {
+    }
+
+    /**
+     * Which tiles of a repeating room the cell at {@code localPos} applies in.
+     * Always {@link VariantCopyScope#BOTH} where {@link #supportsCopySettings}
+     * is false — a plot stamped once applies everywhere it is, by definition.
+     */
+    default VariantCopyScope copyScopeAt(BlockPos localPos) {
+        return VariantCopyScope.BOTH;
+    }
+
+    /** Set it. A no-op for the plots that cannot repeat, like {@link #setCopyRoll}. */
+    default void setCopyScope(BlockPos localPos, VariantCopyScope scope) {
+    }
+
+    /**
      * This plot's v9 lock-group reference resolver. The menu uses it to tell
      * live references from dead ones when composing a sync, to reject an Add
      * that would close a cycle, and to preview what a reference row actually
@@ -591,6 +637,12 @@ public interface BlockVariantPlot {
         @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
         @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
         @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
+        // A portal room is the one track template that repeats — see PortalRoomCopies.
+        @Override public boolean supportsCopySettings() { return kind == TrackKind.PORTAL_ROOM; }
+        @Override public VariantCopyRoll copyRollAt(BlockPos l) { return sidecar.copyRollAt(l); }
+        @Override public void setCopyRoll(BlockPos l, VariantCopyRoll r) { sidecar.setCopyRoll(l, r); }
+        @Override public VariantCopyScope copyScopeAt(BlockPos l) { return sidecar.copyScopeAt(l); }
+        @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { sidecar.setCopyScope(l, s); }
     }
 
     /**

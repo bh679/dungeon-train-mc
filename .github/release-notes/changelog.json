@@ -11631,12 +11631,75 @@
       "released_at": null
     },
     {
-      "id": "dimensional-carriages-repair-themselves",
+      "id": "new-dimensional-carriages-sept",
       "version": "0.815.0",
+      "type": "content",
+      "title": "Four new dimensional carriages",
+      "summary": "A handful of new dimensional carriages have joined the rotation, and one older one has stepped aside.",
+      "highlights": [
+        "A few new carriage variants to find behind the portals"
+      ],
+      "pr": 1327,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "weight-cmd-click-input",
+      "version": "0.816.0",
+      "type": "feat",
+      "title": "Type a weight instead of clicking it up",
+      "summary": "Weights in the editor were click-for-plus-one, shift-click-for-minus-one, so getting one from 1 to 40 meant thirty-nine clicks. Cmd-click a weight (Ctrl on Windows and Linux) and a small box opens with the current value ready to type over.",
+      "highlights": [
+        "Works on block variants, loot pools, template weights and the plot panel's weight arrows",
+        "Plain click and shift-click still step the value as before"
+      ],
+      "pr": 1329,
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "per-cell-copy-settings",
+      "version": "0.817.0",
+      "type": "feat",
+      "title": "Dimensional carriage rooms can vary block by block",
+      "summary": "A repeating dimensional carriage room used to be all or nothing: every copy identical, or every copy freshly rolled. Now a room's author can decide that cell by cell \u2014 a torch that flickers between copies in a hall that is otherwise the same, a doorway that belongs to the room you arrive in and is not repeated down the hall, a chest whose block and contents differ every time. Five of the shipped rooms already use it.",
+      "highlights": [
+        "Each block in a room can hold one roll across every copy, roll again in each, or simply follow the room",
+        "A block can also be set to appear only in the repeated copies, or only in the room you walk into",
+        "Copying a block variant to the hotbar now carries these settings, so pasting one really does duplicate the cell"
+      ],
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-arrival",
+      "version": "0.818.0",
+      "type": "fix",
+      "title": "Dimensional carriages arrive cleanly",
+      "summary": "Stepping through a dimensional carriage no longer flashes the world for a moment as you arrive, and the lighting now carries you across the doorway instead of dropping dark on the other side.",
+      "highlights": [
+        "No more flash when you step through a dimensional carriage",
+        "Lighting eases across the doorway rather than snapping"
+      ],
+      "date": "2026-09-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriages-repair-themselves",
+      "version": "0.819.0",
       "type": "fix",
       "title": "Dimensional carriage fixes",
       "summary": "Dimensional carriages that stopped working now recover on their own.",
       "highlights": [],
+      "pr": 1328,
       "date": "2026-09-07",
       "released": false,
       "released_in": null,

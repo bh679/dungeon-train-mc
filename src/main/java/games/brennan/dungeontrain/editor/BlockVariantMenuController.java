@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -342,7 +343,9 @@ public final class BlockVariantMenuController {
                 s.difficulty().min(), s.difficulty().max(),
                 s.groupRef(), refLive));
         }
-        return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
+        return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
+            (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
+            (byte) plot.copyScopeAt(localPos).ordinal());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -388,6 +391,14 @@ public final class BlockVariantMenuController {
             cycleLockId(player, plot, localPos);
             games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
                 .trigger(player, "used_block_variant_lock");
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_ROLL) {
+            cycleCopyRoll(player, plot, localPos);
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.CYCLE_COPY_SCOPE) {
+            cycleCopyScope(player, plot, localPos);
             return;
         }
         if (packet.op() == BlockVariantEditPacket.Op.COPY) {
@@ -686,6 +697,17 @@ public final class BlockVariantMenuController {
                 mutated.set(idx, mutated.get(idx).withWeight(newWeight));
                 dirty = true;
             }
+            // Typed weight from the cmd-click number pad. Same clamp as the stepper,
+            // so typing can't reach a value the arrows couldn't.
+            case SET_WEIGHT -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                int newWeight = Math.max(1, packet.delta());
+                if (newWeight == mutated.get(idx).weight()) return;
+                mutated.set(idx, mutated.get(idx).withWeight(newWeight));
+                dirty = true;
+            }
             case SET_ROTATION_MODE -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
@@ -900,6 +922,96 @@ public final class BlockVariantMenuController {
     }
 
     /**
+     * Cycle how the cell rolls across a repeating room's copies: follow the room
+     * → one roll for every copy → a fresh roll in each.
+     *
+     * <p>{@link VariantCopyRoll#DEFAULT} is the room's own Copies setting, which
+     * is why it is a state and not the absence of one: it repeats the cell in an
+     * Exact room and varies it in a Dynamic one, and the other two override that
+     * in either direction.</p>
+     *
+     * <p><b>A lock group moves as one.</b> Every cell in a group draws a single
+     * index, so a member rolling differently from its siblings would show a
+     * different block from them — the exact thing the lock exists to prevent.
+     * Setting any member sets the group.</p>
+     *
+     * <p>Refused where the template does not repeat, and where the cell has no
+     * candidates yet, for the same reasons {@link #cycleLockId} refuses: a
+     * setting with nothing to apply to is one the author cannot see the effect
+     * of.</p>
+     */
+    private static void cycleCopyRoll(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        if (!plot.supportsCopySettings()) {
+            actionBar(player, "Only a dimensional carriage room has copies to roll across",
+                ChatFormatting.YELLOW);
+            return;
+        }
+        if (plot.statesAt(localPos) == null) {
+            actionBar(player, "Add at least one variant first", ChatFormatting.YELLOW);
+            return;
+        }
+        VariantCopyRoll next = plot.copyRollAt(localPos).next();
+        plot.setCopyRoll(localPos, next);
+        int lockId = plot.lockIdAt(localPos);
+        if (lockId > 0) {
+            for (BlockPos sibling : plot.positionsWithLockId(lockId)) {
+                if (!sibling.equals(localPos)) plot.setCopyRoll(sibling, next);
+            }
+        }
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] BlockVariantMenu copy-roll save failed for {}: {}",
+                plot.key(), e.toString());
+            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+        }
+        actionBar(player, switch (next) {
+            case DEFAULT -> "Cell rolls the way the room does";
+            case EXACT -> "Cell holds one roll across every copy";
+            case VARY -> "Cell rolls again in every copy";
+        }, ChatFormatting.AQUA);
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * Cycle which tiles of a repeating room the cell applies in: both → copies only → not copies.
+     *
+     * <p>Where the cell does not apply it is skipped at stamp time, so the block the room's own
+     * template laid stands there instead — see {@link VariantCopyScope}.</p>
+     *
+     * <p><b>The lock group is left alone</b>, which is the opposite of what
+     * {@link #toggleRerollPerCopy} does, and deliberately: a group exists so its cells draw the
+     * same index, and that promise is about the roll, not about where the cells are. A group whose
+     * members live in different tiles still agrees with itself in every tile any of them is in.</p>
+     */
+    private static void cycleCopyScope(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        if (!plot.supportsCopySettings()) {
+            actionBar(player, "Only a dimensional carriage room has copies to scope a cell to",
+                ChatFormatting.YELLOW);
+            return;
+        }
+        if (plot.statesAt(localPos) == null) {
+            actionBar(player, "Add at least one variant first", ChatFormatting.YELLOW);
+            return;
+        }
+        VariantCopyScope next = plot.copyScopeAt(localPos).next();
+        plot.setCopyScope(localPos, next);
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] BlockVariantMenu copy-scope save failed for {}: {}",
+                plot.key(), e.toString());
+            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+        }
+        actionBar(player, switch (next) {
+            case BOTH -> "Cell applies in the room and in every copy";
+            case COPIES -> "Cell applies in the copies only";
+            case NOT_COPIES -> "Cell applies in this room only, not its copies";
+        }, ChatFormatting.AQUA);
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /**
      * PREVIEW_ENTRY: replace the world block at {@code localPos} (and any
      * lock-group siblings) with the entry at {@code entryIndex}. The
      * sidecar — state list, weights, lockId — is untouched. Lock-group
@@ -1072,13 +1184,21 @@ public final class BlockVariantMenuController {
         int lockId = plot.lockIdAt(localPos);
         ContainerContentsPool pool = ContainerContentsStore.loadFor(plot.key()).poolAt(localPos);
         boolean poolCaptured = !pool.isEmpty() || !pool.isDefaultRange();
+        // The two repeating-room settings ride along with the lock-id: they are authored on the
+        // cell, so a copy that dropped them handed back a cell that read the same in the menu and
+        // stamped differently down the hall.
+        VariantCopyRoll roll = plot.copyRollAt(localPos);
+        VariantCopyScope scope = plot.copyScopeAt(localPos);
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
         CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
-            poolCaptured ? pool : null);
+            poolCaptured ? pool : null, roll, scope);
         VariantClipboardItem.writeClipboardTag(stack, tag);
         String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
         String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";
-        return new Clipboard(stack, current.size() + " variants" + lockSuffix + poolSuffix);
+        String rollSuffix = roll.isDefault() ? "" : " +" + roll.displayName().toLowerCase(Locale.ROOT);
+        String scopeSuffix = scope.isDefault() ? "" : " +" + scope.displayName().toLowerCase(Locale.ROOT);
+        return new Clipboard(stack, current.size() + " variants" + lockSuffix + poolSuffix
+            + rollSuffix + scopeSuffix);
     }
 
     /**

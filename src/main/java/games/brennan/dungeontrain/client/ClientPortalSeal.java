@@ -65,6 +65,11 @@ public final class ClientPortalSeal {
         cut = PortalSealPlane.Cut.NONE;
     }
 
+    /** The cut in force this frame, for the arrival trace — which of the two cuts, not just whether. */
+    public static PortalSealPlane.Cut cut() {
+        return cut;
+    }
+
     /** Whether anything is being hidden at all — the early-out every hook opens with. */
     public static boolean sealed() {
         return cut.sealed();

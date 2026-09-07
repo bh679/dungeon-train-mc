@@ -27,6 +27,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *   <li>{@link Op#CLEAR} — drop the whole cell (sidecar entry).</li>
  *   <li>{@link Op#BUMP_WEIGHT} — adjust entry's weight by {@code delta}
  *       (signed; clamped ≥ 1 server-side).</li>
+ *   <li>{@link Op#SET_WEIGHT} — set entry's weight to {@code delta} outright
+ *       (clamped ≥ 1 server-side). Sent when the author cmd-clicks the weight
+ *       cell and types a value instead of stepping it.</li>
  *   <li>{@link Op#CYCLE_LOCK_ID} — advance the cell's lock-id. From 0
  *       (unlocked), goes to {@code nextFreeLockId()} — the smallest
  *       positive integer not currently used by any cell in this template.
@@ -61,6 +64,20 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       the container-contents menu anchored on the same face. Edits in
  *       that menu route to {@code LootPrefabStore.save} as usual for a
  *       linked cell, propagating to every linked container.</li>
+ *   <li>{@link Op#CYCLE_COPY_ROLL} — cycle how the cell rolls across a
+ *       repeating room's copies ({@code VariantCopyRoll}: default → exact →
+ *       vary → default). Only a dimensional carriage room repeats, so the
+ *       server rejects this anywhere else
+ *       ({@code BlockVariantPlot.supportsCopySettings}) and the menu does not
+ *       draw the button there. A cell in a lock group takes the whole group
+ *       with it: the group shares one roll, and a member rolling differently
+ *       from its siblings is the thing a lock exists to prevent.</li>
+ *   <li>{@link Op#CYCLE_COPY_SCOPE} — cycle which tiles of a repeating room
+ *       the cell applies in ({@code VariantCopyScope}: both → copies → not
+ *       copies → both). Refused, like {@link Op#CYCLE_COPY_ROLL}, where the
+ *       template does not repeat. Unlike it, a lock group is NOT dragged along:
+ *       a group shares a roll, not a footprint, and two cells of one group
+ *       living in different tiles is a legitimate build.</li>
  *   <li>{@link Op#BUMP_DIFF_MIN} / {@link Op#BUMP_DIFF_MAX} — adjust a mob
  *       entry's difficulty band ({@code entryIndex} = row, {@code delta}
  *       signed). The server cycles the value the same way the
@@ -76,9 +93,15 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                                      int entryIndex, String stateString, int delta) implements CustomPacketPayload {
 
+    /**
+     * The wire format is the ordinal, so a new op goes on the <b>end</b>:
+     * inserting one would renumber every op after it, and an old client's
+     * clicks would land on a different edit entirely.
+     */
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
                      PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
-                     OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX }
+                     OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX,
+                     SET_WEIGHT, CYCLE_COPY_ROLL, CYCLE_COPY_SCOPE }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

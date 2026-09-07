@@ -17,6 +17,10 @@
     {
       "id": "smallpat",
       "weight": 0
+    },
+    {
+      "id": "pistons",
+      "weight": 0
     }
   ]
 }

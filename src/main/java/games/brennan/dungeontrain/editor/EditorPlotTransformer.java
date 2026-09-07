@@ -88,6 +88,19 @@ public final class EditorPlotTransformer {
         void remove(BlockPos localPos);
         void put(BlockPos localPos, List<VariantState> states);
         void setLockId(BlockPos localPos, int lockId);
+
+        /** The v10 per-cell copy roll. {@code DEFAULT} everywhere but a portal room. */
+        default VariantCopyRoll copyRollAt(BlockPos localPos) { return VariantCopyRoll.DEFAULT; }
+
+        /** Set it. A no-op for the sidecars that cannot repeat and so have nowhere to store it. */
+        default void setCopyRoll(BlockPos localPos, VariantCopyRoll roll) {}
+
+        /** The v10 per-cell copy scope. {@code BOTH} everywhere but a portal room. */
+        default VariantCopyScope copyScopeAt(BlockPos localPos) { return VariantCopyScope.BOTH; }
+
+        /** Set it. A no-op for the sidecars that cannot repeat. */
+        default void setCopyScope(BlockPos localPos, VariantCopyScope scope) {}
+
         void save() throws IOException;
     }
 
@@ -196,7 +209,8 @@ public final class EditorPlotTransformer {
         if (sidecar == null) return 0;
         Vec3i size = region.size();
 
-        record Moved(BlockPos to, List<VariantState> states, int lockId) {}
+        record Moved(BlockPos to, List<VariantState> states, int lockId, VariantCopyRoll roll,
+                     VariantCopyScope scope) {}
         List<Moved> moved = new ArrayList<>();
         List<BlockPos> sources = List.copyOf(sidecar.positions());
         for (BlockPos from : sources) {
@@ -208,7 +222,8 @@ public final class EditorPlotTransformer {
             if (outside(from, size)) continue;
             moved.add(new Moved(
                 transform.destination(from.getX(), from.getY(), from.getZ(), size),
-                transform.variants(states), sidecar.lockIdAt(from)));
+                transform.variants(states), sidecar.lockIdAt(from), sidecar.copyRollAt(from),
+                sidecar.copyScopeAt(from)));
         }
         if (moved.isEmpty()) return 0;
 
@@ -222,6 +237,9 @@ public final class EditorPlotTransformer {
             // Lock ids are group membership, not geometry — they ride along
             // unchanged, so a locked pair stays a locked pair after the move.
             if (m.lockId() > 0) sidecar.setLockId(m.to(), m.lockId());
+            // Not geometry either — a cell that varied per copy still varies after the move.
+            if (!m.roll().isDefault()) sidecar.setCopyRoll(m.to(), m.roll());
+            if (!m.scope().isDefault()) sidecar.setCopyScope(m.to(), m.scope());
         }
         sidecar.save();
         return moved.size();
@@ -292,6 +310,10 @@ public final class EditorPlotTransformer {
         @Override public void remove(BlockPos l) { plot.remove(l); }
         @Override public void put(BlockPos l, List<VariantState> s) { plot.put(l, s); }
         @Override public void setLockId(BlockPos l, int id) { plot.setLockId(l, id); }
+        @Override public VariantCopyRoll copyRollAt(BlockPos l) { return plot.copyRollAt(l); }
+        @Override public void setCopyRoll(BlockPos l, VariantCopyRoll r) { plot.setCopyRoll(l, r); }
+        @Override public VariantCopyScope copyScopeAt(BlockPos l) { return plot.copyScopeAt(l); }
+        @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { plot.setCopyScope(l, s); }
         @Override public void save() throws IOException { plot.save(); }
     }
 
@@ -319,6 +341,10 @@ public final class EditorPlotTransformer {
         @Override public void remove(BlockPos l) { blocks.remove(l); }
         @Override public void put(BlockPos l, List<VariantState> s) { blocks.put(l, s); }
         @Override public void setLockId(BlockPos l, int id) { blocks.setLockId(l, id); }
+        @Override public VariantCopyRoll copyRollAt(BlockPos l) { return blocks.copyRollAt(l); }
+        @Override public void setCopyRoll(BlockPos l, VariantCopyRoll r) { blocks.setCopyRoll(l, r); }
+        @Override public VariantCopyScope copyScopeAt(BlockPos l) { return blocks.copyScopeAt(l); }
+        @Override public void setCopyScope(BlockPos l, VariantCopyScope s) { blocks.setCopyScope(l, s); }
         @Override public void save() throws IOException {
             blocks.save(kind, name);
             if (EditorDevMode.isEnabled()) {

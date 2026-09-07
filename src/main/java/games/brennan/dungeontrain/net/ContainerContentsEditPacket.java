@@ -23,6 +23,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *   <li>{@link Op#CLEAR} — drop the whole pool.</li>
  *   <li>{@link Op#BUMP_WEIGHT} / {@link Op#BUMP_COUNT} — adjust by
  *       {@code delta} (signed; clamped server-side).</li>
+ *   <li>{@link Op#SET_WEIGHT} — set the entry's weight to {@code delta}
+ *       outright (clamped ≥ 1 server-side). Sent when the author cmd-clicks
+ *       the weight cell and types a value instead of stepping it.</li>
  *   <li>{@link Op#UNLINK} — clear the loot-prefab link at this cell. No
  *       payload fields used.</li>
  *   <li>{@link Op#TOGGLE_RAND_DUR} / {@link Op#TOGGLE_RAND_ENCH} — flip the
@@ -36,10 +39,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localPos,
                                           int entryIndex, String itemId, int delta) implements CustomPacketPayload {
 
+    // Ordinals are the wire encoding — append new ops, never reorder.
     public enum Op {
         ADD, REMOVE, CLEAR, BUMP_WEIGHT, BUMP_COUNT, BUMP_FILL_MIN, BUMP_FILL_MAX, UNLINK,
         TOGGLE_RAND_DUR, BUMP_DUR_CHANCE, TOGGLE_RAND_ENCH, BUMP_ENCH_CHANCE,
-        CYCLE_SLOT_ASSIGN
+        CYCLE_SLOT_ASSIGN, SET_WEIGHT
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =
