@@ -258,7 +258,7 @@
   },
   "statues": {
     "weight": 1,
-    "maxLevel": 0,
+    "maxLevel": -1,
     "phases": [
       "OVERWORLD",
       "UPSIDE_DOWN",
