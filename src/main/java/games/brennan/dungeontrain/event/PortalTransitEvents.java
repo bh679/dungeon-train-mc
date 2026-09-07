@@ -102,7 +102,8 @@ public final class PortalTransitEvents {
                 // this frame or the copy is not drawn on the one the player arrives in. Harmless when
                 // the shift is small enough that vanilla never invalidated the graph in the first
                 // place. See client/portal/ClientPortalSwap.
-                PacketDistributor.sendToPlayer(player, new PortalSwapPacket());
+                // none(): this is a shift within one frame, so the momentum is all the player's own.
+                PacketDistributor.sendToPlayer(player, PortalSwapPacket.none());
 
                 // Logged because the swap is meant to be invisible: without a trace there is no
                 // way to tell "it worked perfectly" from "it never fired" after the fact, in a

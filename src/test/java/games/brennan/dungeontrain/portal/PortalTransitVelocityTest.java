@@ -19,6 +19,14 @@ class PortalTransitVelocityTest {
     /** A train doing 0.4 blocks a tick down +X, the shape of DT's constant-velocity trains. */
     private static final Vec3 TRAIN = new Vec3(0.4, 0.0, 0.0);
 
+    /**
+     * The real thing: DT's default train is 2.0 blocks per second, which is 0.1 per tick — and the
+     * per-tick frame is the only one this class may be given. Passing the per-second value made the
+     * clamp twenty times too generous and took a walking player's own speed away with the train's,
+     * which is the bug this case is here to keep out. See {@code TrainTransformProvider.PHYSICS_DT}.
+     */
+    private static final Vec3 REAL_TRAIN = new Vec3(2.0 / 20.0, 0.0, 0.0);
+
     private static void assertVec(Vec3 expected, Vec3 actual) {
         assertEquals(expected.x, actual.x, 1e-9, "x");
         assertEquals(expected.y, actual.y, 1e-9, "y");
@@ -64,6 +72,15 @@ class PortalTransitVelocityTest {
     void neverOverRemoves() {
         Vec3 delta = new Vec3(0.1, 0.0, 0.0);
         assertVec(new Vec3(0.0, 0.0, 0.0), PortalTransitVelocity.withoutCarrier(delta, TRAIN));
+    }
+
+    @Test
+    @DisplayName("at the real train speed, a walking player keeps their own walk")
+    void realTrainSpeedKeepsInput() {
+        // 0.18/tick is what the dev client logged for a player walking into the corridor.
+        Vec3 delta = new Vec3(0.18, 0.0, 0.0);
+        assertVec(new Vec3(0.08, 0.0, 0.0),
+            PortalTransitVelocity.withoutCarrier(delta, REAL_TRAIN));
     }
 
     @Test
