@@ -53,7 +53,7 @@ public final class PortalPrewarmTicker {
      * <p>On while the shape of this is still being settled. It is one line a second and only while a
      * player is walking into a portal, which is the moment somebody reading the log cares about.</p>
      */
-    private static final boolean TRACE = true;
+    private static final boolean TRACE = false;
 
     /** Ticks between tally lines — a second, so the shape of an approach is readable. */
     private static final int TRACE_PERIOD_TICKS = 20;
