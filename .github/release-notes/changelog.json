@@ -11792,9 +11792,9 @@
         "Brighter portal carriages: the lantern corners in the lit and portal interiors are now always lit rather than sometimes."
       ],
       "date": "2026-09-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.824.0",
+      "released_at": "2026-09-08T16:01:03Z"
     }
   ]
 }
