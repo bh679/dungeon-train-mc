@@ -11777,6 +11777,24 @@
       "released": true,
       "released_in": "v0.823.0",
       "released_at": "2026-09-07T17:34:58Z"
+    },
+    {
+      "id": "crafting-stations-and-parkour-carriages",
+      "version": "0.824.0",
+      "type": "content",
+      "title": "Crafting stations, new dimensional carriages, and parkour that scales with you",
+      "summary": "Nine new carriage interiors built around crafting \u2014 workbenches, shrines, a fishing spot and a bunk room \u2014 plus four new dimensional carriages. Parkour rooms now arrive in step with your run instead of all at once.",
+      "highlights": [
+        "Nine new carriage interiors: four crafting rooms, two craft shrines, a fishing spot, a bunk room and a new barrel store.",
+        "Four new dimensional carriages: a geometric walk, an endless path, a ninth statue hall and a superflat expanse.",
+        "Parkour carriages are now level-gated \u2014 the sky maze from level 4, the geometric walk from 6, and the jump course from 10.",
+        "Craft shrines appear from the copper stage; the fishing and bunk rooms are tied to particular phases of the run.",
+        "Brighter portal carriages: the lantern corners in the lit and portal interiors are now always lit rather than sometimes."
+      ],
+      "date": "2026-09-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

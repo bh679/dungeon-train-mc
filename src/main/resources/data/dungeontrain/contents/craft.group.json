@@ -1,42 +1,93 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 2,
+  "selfWeight": 4,
   "variants": [
     {
       "id": "enchant",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "kitchen",
-      "weight": 3
+      "weight": 5
     },
     {
       "id": "smelt",
-      "weight": 3
+      "weight": 6
     },
     {
       "id": "upgrade",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "dressing",
-      "weight": 3
+      "weight": 6
     },
     {
       "id": "sleeping",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "trimming",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "craft2",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "enchant2",
+      "weight": 2
+    },
+    {
+      "id": "craft3",
       "weight": 1
+    },
+    {
+      "id": "craftshrine",
+      "weight": 4,
+      "stage": "copper"
+    },
+    {
+      "id": "craftshrine2",
+      "weight": 2,
+      "minLevel": 5
+    },
+    {
+      "id": "crafting",
+      "weight": 2,
+      "stages": [
+        "obsidian",
+        "quartz"
+      ]
+    },
+    {
+      "id": "crafting2",
+      "weight": 1
+    },
+    {
+      "id": "fishing",
+      "weight": 2,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS"
+      ]
+    },
+    {
+      "id": "beds2",
+      "weight": 1,
+      "phases": [
+        "NETHER",
+        "VOID",
+        "UPSIDE_DOWN",
+        "CHUNCKS"
+      ]
+    },
+    {
+      "id": "craft4",
+      "weight": 3
     }
   ]
 }

@@ -47,7 +47,7 @@
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_end"
   },
   "chunk_dimension": {
-    "weight": 4,
+    "weight": 1,
     "mode": "chunk_dimension/exact/off/off/off/day/sealed/0/9"
   },
   "chunk_dimension_end": {
@@ -115,6 +115,10 @@
     "weight": 1,
     "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30"
   },
+  "gemotricwalk": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/none/repeated/-1/7"
+  },
   "house": {
     "weight": 1,
     "mode": "bedrock_lock"
@@ -162,9 +166,14 @@
   },
   "parkour": {
     "weight": 3,
+    "minLevel": 4,
     "mode": "bedrockless"
   },
   "paths": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "pathsforever": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
@@ -258,13 +267,16 @@
   },
   "statues": {
     "weight": 1,
-    "maxLevel": -1,
     "phases": [
       "OVERWORLD",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
+  },
+  "superflat": {
+    "weight": 1,
+    "mode": "endless_repetition/exact/off/on:20/off/none/repeated/0/1"
   },
   "suspiciousfurniturestore": {
     "weight": 1,

@@ -45,6 +45,10 @@
     {
       "id": "barrelsvert2",
       "weight": 4
+    },
+    {
+      "id": "barrels3",
+      "weight": 2
     }
   ]
 }

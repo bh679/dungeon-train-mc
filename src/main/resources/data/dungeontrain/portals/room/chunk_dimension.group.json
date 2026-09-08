@@ -11,6 +11,10 @@
       "id": "chunk_dimension_end",
       "weight": 2,
       "minLevel": 5
+    },
+    {
+      "id": "superflat",
+      "weight": 1
     }
   ]
 }
