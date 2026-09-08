@@ -84,6 +84,10 @@
         "UPSIDE_DOWN",
         "CHUNCKS"
       ]
+    },
+    {
+      "id": "craft4",
+      "weight": 3
     }
   ]
 }
