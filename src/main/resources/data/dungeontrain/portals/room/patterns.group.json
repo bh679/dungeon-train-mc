@@ -21,6 +21,10 @@
     {
       "id": "pistons",
       "weight": 0
+    },
+    {
+      "id": "pathsforever",
+      "weight": 0
     }
   ]
 }

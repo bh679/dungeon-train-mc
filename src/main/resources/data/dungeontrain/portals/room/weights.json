@@ -115,6 +115,10 @@
     "weight": 1,
     "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30"
   },
+  "gemotricwalk": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic/off/on/off/none/repeated/-1/7"
+  },
   "house": {
     "weight": 1,
     "mode": "bedrock_lock"
@@ -165,6 +169,10 @@
     "mode": "bedrockless"
   },
   "paths": {
+    "weight": 1,
+    "mode": "endless_repetition/dynamic"
+  },
+  "pathsforever": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
@@ -258,13 +266,16 @@
   },
   "statues": {
     "weight": 1,
-    "maxLevel": -1,
     "phases": [
       "OVERWORLD",
       "UPSIDE_DOWN",
       "CHUNCKS"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
+  },
+  "superflat": {
+    "weight": 1,
+    "mode": "endless_repetition/exact/off/on:20/off/none/repeated/0/1"
   },
   "suspiciousfurniturestore": {
     "weight": 1,

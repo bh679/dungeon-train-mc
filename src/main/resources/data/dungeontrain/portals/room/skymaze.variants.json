@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "mirror": { "x": false, "y": false, "z": false, "v": true },
   "variants": {
     "0,5,10": { "lockId": 1, "states": ["minecraft:light_blue_concrete", "minecraft:white_concrete", "minecraft:cyan_concrete", "minecraft:magenta_concrete", "minecraft:lime_concrete", "minecraft:weathered_copper", "minecraft:cut_copper", "minecraft:oxidized_copper", "minecraft:tinted_glass", "minecraft:quartz_block"] },
