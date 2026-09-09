@@ -185,8 +185,9 @@ public final class CreditsScreen extends Screen {
     private void onRenamed(String from, String to) {
         TranslatorRenames.record(from, to);
         TranslatorName.set(to);
-        TranslationCoverageClient.clear();
-        TranslationCoverageClient.fetchOnce();
+        // Refetch WITHOUT clearing: the alias above already renders the new name from the cached
+        // credits, and an empty cache while the answer is in flight would drop them from the page.
+        TranslationCoverageClient.refetch();
         Set<String> names = new java.util.HashSet<>(ownNames);
         names.remove(from);
         names.add(to);
