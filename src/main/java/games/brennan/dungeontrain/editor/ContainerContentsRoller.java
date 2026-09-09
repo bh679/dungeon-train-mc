@@ -220,12 +220,12 @@ public final class ContainerContentsRoller {
      * potion.</p>
      */
     private static final List<List<ResourceLocation>> POTION_EFFECT_TIERS = List.of(
-        tierIds("weakness", "healing", "night_vision"),                      // T0 — carts 0–49
-        tierIds("slowness", "swiftness", "water_breathing"),                 // T1 — carts 50–99
-        tierIds("poison", "fire_resistance", "leaping"),                     // T2 — carts 100–149
-        tierIds("harming", "strength", "invisibility"),                      // T3 — carts 150–199
-        tierIds("strong_poison", "strong_healing", "slow_falling"),          // T4 — carts 200–249
-        tierIds("strong_harming", "strong_regeneration", "strong_strength")  // T5 — carts 250+
+        tierIds("weakness", "healing", "night_vision", "water_breathing"),                       // T0 — carts 0–49
+        tierIds("slowness", "swiftness", "leaping", "fire_resistance"),                          // T1 — carts 50–99
+        tierIds("poison", "regeneration", "invisibility", "slow_falling"),                       // T2 — carts 100–149
+        tierIds("harming", "strength", "infested", "luck"),                                      // T3 — carts 150–199
+        tierIds("strong_poison", "strong_healing", "strong_swiftness", "weaving"),               // T4 — carts 200–249
+        tierIds("strong_harming", "strong_regeneration", "strong_strength", "oozing", "strong_leaping") // T5 — carts 250+
     );
 
     /** Test seam: read-only view of the configured potion-effect tiers. */
@@ -237,16 +237,15 @@ public final class ContainerContentsRoller {
      * Ordered, escalating tiers of <b>beneficial</b> vanilla potions for the
      * {@code dungeontrain:random_good_potion} placeholder. Same invariants as
      * {@link #POTION_EFFECT_TIERS} (no {@code long_*}, no id shared across
-     * adjacent tiers). With the entry's scale-with-distance toggle off the
-     * pick is uniform across the flattened table instead of tier-locked.
+     * adjacent tiers). Every tier carries four ids so several good potions in
+     * one chest are usually different. With the entry's scale-with-distance
+     * toggle off the pick is uniform across the flattened table instead.
      */
     private static final List<List<ResourceLocation>> GOOD_POTION_TIERS = List.of(
-        tierIds("healing", "night_vision"),                                     // T0 — carts 0–49
-        tierIds("swiftness", "water_breathing"),                                // T1 — carts 50–99
-        tierIds("fire_resistance", "leaping"),                                  // T2 — carts 100–149
-        tierIds("strength", "invisibility"),                                    // T3 — carts 150–199
-        tierIds("strong_healing", "slow_falling"),                              // T4 — carts 200–249
-        tierIds("strong_regeneration", "strong_strength", "strong_swiftness")   // T5 — carts 250+
+        tierIds("healing", "night_vision", "water_breathing", "leaping"),               // T0 — carts 0–49
+        tierIds("swiftness", "fire_resistance", "slow_falling", "invisibility"),        // T1 — carts 50–99
+        tierIds("regeneration", "strength", "strong_leaping", "luck"),                  // T2 — carts 100–149
+        tierIds("strong_healing", "strong_swiftness", "strong_regeneration", "strong_strength") // T3 — carts 150+
     );
 
     /** Test seam: read-only view of the good-potion tiers. */
@@ -256,16 +255,16 @@ public final class ContainerContentsRoller {
 
     /**
      * Harmful twin of {@link #GOOD_POTION_TIERS} for
-     * {@code dungeontrain:random_bad_potion}. The top tier uses the 1.21
-     * ominous-trial potions so it stays distinct from the level-II tier below it.
+     * {@code dungeontrain:random_bad_potion}. Vanilla has few harmful potions, so
+     * the 1.21 ominous-trial potions (infested / weaving / oozing / wind_charged)
+     * pad every tier to three ids — a chest that drops several bad potions should
+     * rarely drop the same one twice.
      */
     private static final List<List<ResourceLocation>> BAD_POTION_TIERS = List.of(
-        tierIds("weakness"),                        // T0 — carts 0–49
-        tierIds("slowness"),                        // T1 — carts 50–99
-        tierIds("poison"),                          // T2 — carts 100–149
-        tierIds("harming"),                         // T3 — carts 150–199
-        tierIds("strong_poison", "strong_slowness"),// T4 — carts 200–249
-        tierIds("strong_harming", "weaving", "oozing") // T5 — carts 250+
+        tierIds("weakness", "slowness", "infested"),            // T0 — carts 0–49
+        tierIds("poison", "weaving", "oozing"),                 // T1 — carts 50–99
+        tierIds("harming", "strong_slowness", "wind_charged"),  // T2 — carts 100–149
+        tierIds("strong_poison", "strong_harming", "weaving")   // T3 — carts 150+ (weaving is two tiers back, so no adjacent repeat)
     );
 
     /** Test seam: read-only view of the bad-potion tiers. */
