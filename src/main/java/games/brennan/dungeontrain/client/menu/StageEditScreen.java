@@ -15,9 +15,6 @@ import java.util.List;
  */
 public final class StageEditScreen implements MenuScreen {
 
-    private static final String[] PHASE_TOKENS = {"overworld", "nether", "void", "end"};
-    private static final String[] PHASE_LABELS = {"Overworld", "Nether", "Void", "End"};
-
     private final String stageId;
 
     public StageEditScreen(String stageId) {
@@ -41,15 +38,16 @@ public final class StageEditScreen implements MenuScreen {
         out.add(levelTriple("minlevel", "Min Lv (" + minLevel + ")", "0-1000"));
         out.add(levelTriple("maxlevel", "Max Lv (" + (maxLevel < 0 ? "all" : Integer.toString(maxLevel)) + ")", "-1..1000"));
 
-        // Dimension toggles — plain click flips one, shift-click "toggle all but that one".
-        for (int i = 0; i < PHASE_TOKENS.length; i++) {
-            boolean on = (phaseMask & (1 << i)) != 0;
+        // Dimension toggles — one per TrainPhase; plain click flips one, shift-click "toggle all
+        // but that one".
+        for (TrainPhase p : TrainPhase.values()) {
+            boolean on = (phaseMask & p.bit()) != 0;
             out.add(new CommandMenuEntry.Toggle(
-                PHASE_LABELS[i], on,
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, PHASE_TOKENS[i], "on"),
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, PHASE_TOKENS[i], "off"),
+                p.displayName(), on,
+                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "on"),
+                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "off"),
                 true,
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, PHASE_TOKENS[i], "others")));
+                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), "others")));
         }
 
         out.add(new CommandMenuEntry.DrillIn("Delete Stage",

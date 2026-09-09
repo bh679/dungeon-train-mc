@@ -55,6 +55,26 @@ public enum TrainPhase {
         return set;
     }
 
+    /**
+     * Single-letter label for compact phase pickers/indicators — the first letter of the constant
+     * name, so the six phases read {@code O N V E U C}. A new phase is picked up automatically.
+     */
+    public String letter() {
+        return String.valueOf(name().charAt(0));
+    }
+
+    /** Human-readable name for editor phase toggles ({@code "Upside Down"}, …). Exhaustive on purpose: a new phase must add its label here. */
+    public String displayName() {
+        return switch (this) {
+            case OVERWORLD -> "Overworld";
+            case NETHER -> "Nether";
+            case VOID -> "Void";
+            case END -> "End";
+            case UPSIDE_DOWN -> "Upside Down";
+            case CHUNCKS -> "Chuncks";
+        };
+    }
+
     /** Lower-cased command token for this phase ({@code overworld}, {@code nether}, …). */
     public String token() {
         return name().toLowerCase(java.util.Locale.ROOT);
