@@ -2062,6 +2062,7 @@
   "chat.dungeontrain.book_burns_author": "Das Buch von %s verbrennt",
   "chat.dungeontrain.book_burns_author.copy": "Klicke, um den Namen des Autors zu kopieren",
   "item.dungeontrain.stats_book": "Statistikbuch",
+  "item.dungeontrain.random_potion": "Zufälliger Trank",
   "item.dungeontrain.random_good_potion": "Zufälliger guter Trank",
   "item.dungeontrain.random_bad_potion": "Zufälliger schlechter Trank",
   "gui.dungeontrain.options.book_author_chat": "Autorenhinweis im Chat",

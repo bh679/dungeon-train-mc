@@ -2062,6 +2062,7 @@
   "chat.dungeontrain.book_burns_author": "Le livre de %s brûle",
   "chat.dungeontrain.book_burns_author.copy": "Clique pour copier le nom de l'auteur",
   "item.dungeontrain.stats_book": "Livre de statistiques",
+  "item.dungeontrain.random_potion": "Potion aléatoire",
   "item.dungeontrain.random_good_potion": "Potion bénéfique aléatoire",
   "item.dungeontrain.random_bad_potion": "Potion néfaste aléatoire",
   "gui.dungeontrain.options.book_author_chat": "Auteur du livre dans le chat",

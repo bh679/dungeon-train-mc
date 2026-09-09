@@ -2030,6 +2030,7 @@
   "chat.dungeontrain.book_burns_author": "Nasusunog ang aklat ni %s",
   "chat.dungeontrain.book_burns_author.copy": "I-click para kopyahin ang pangalan ng may-akda",
   "item.dungeontrain.stats_book": "Aklat ng Estadistika",
+  "item.dungeontrain.random_potion": "Random na Gayuma",
   "item.dungeontrain.random_good_potion": "Random na Mabuting Gayuma",
   "item.dungeontrain.random_bad_potion": "Random na Masamang Gayuma",
   "gui.dungeontrain.options.book_author_chat": "May-akda ng aklat sa chat",

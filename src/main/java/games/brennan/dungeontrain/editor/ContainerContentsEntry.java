@@ -30,12 +30,13 @@ import javax.annotation.Nullable;
  * drinkable / splash / lingering potion entry, captured from the stack the
  * author added from their hand so the exact potion ("Potion of Healing",
  * "Splash Potion of Poison") is what the chest spawns. {@code null} for every
- * other item and for potion entries added by id alone. Which stored potions
- * are kept and which are randomised is {@code ContainerContentsPotions}'
- * call.</p>
+ * other item and for potion entries added by id alone, which spawn vanilla's
+ * "Uncraftable Potion". Potion entries are never randomised; that is what the
+ * random-potion placeholder items are for.</p>
  *
  * <p>{@code scaleWithDistance} applies to the random-potion placeholder
- * entries ({@code dungeontrain:random_good_potion} / {@code random_bad_potion}):
+ * entries ({@code dungeontrain:random_potion} / {@code random_good_potion} /
+ * {@code random_bad_potion}):
  * {@code true} (the default) picks the potion's power tier from carriages
  * travelled, {@code false} draws uniformly from every tier regardless of
  * distance. Ignored by every other item.</p>

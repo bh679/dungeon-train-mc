@@ -130,6 +130,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_LEADERBOARD_BOOK.get());
                 output.accept(ModItems.RANDOM_STAT_BOOK.get());
                 output.accept(ModItems.STATS_BOOK.get());
+                output.accept(ModItems.RANDOM_POTION.get());
                 output.accept(ModItems.RANDOM_GOOD_POTION.get());
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());

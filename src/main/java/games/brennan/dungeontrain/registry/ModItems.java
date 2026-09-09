@@ -108,12 +108,23 @@ public final class ModItems {
     );
 
     /**
-     * Editor-only placeholder for "a random beneficial potion". Substituted at chest spawn
+     * Editor-only placeholder for "a random potion of any kind". Substituted at chest spawn
      * time by {@code ContainerContentsRoller.bakeRandomPotion} for a real drinkable / splash /
-     * lingering bottle drawn from the good-potion tier table. The entry's
+     * lingering bottle drawn from the shared potion tier table. The entry's
      * {@code scaleWithDistance} toggle decides whether the tier follows carriages travelled or
      * the pick is flat across every tier. Stacks normally so an entry's count spawns that many.
+     *
+     * <p>These three placeholders are the ONLY way loot randomises a potion. A plain
+     * {@code minecraft:potion} entry (drinkable / splash / lingering) spawns exactly the potion
+     * it stores — a Water Bottle stays a Water Bottle, an Awkward Potion stays awkward, and an
+     * entry with no stored potion is vanilla's "Uncraftable Potion".</p>
      */
+    public static final DeferredItem<Item> RANDOM_POTION = ITEMS.register(
+        "random_potion",
+        () -> new Item(new Item.Properties())
+    );
+
+    /** Beneficial-only sibling of {@link #RANDOM_POTION}, drawn from the good-potion tier table. */
     public static final DeferredItem<Item> RANDOM_GOOD_POTION = ITEMS.register(
         "random_good_potion",
         () -> new Item(new Item.Properties())

@@ -2094,6 +2094,7 @@
   "chat.dungeontrain.book_burns_author": "Книга %s сгорает",
   "chat.dungeontrain.book_burns_author.copy": "Нажмите, чтобы скопировать имя автора",
   "item.dungeontrain.stats_book": "Книга статистики",
+  "item.dungeontrain.random_potion": "Случайное зелье",
   "item.dungeontrain.random_good_potion": "Случайное хорошее зелье",
   "item.dungeontrain.random_bad_potion": "Случайное плохое зелье",
   "gui.dungeontrain.options.book_author_chat": "Автор книги в чате",

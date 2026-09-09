@@ -2030,6 +2030,7 @@
   "chat.dungeontrain.book_burns_author": "Cuốn sách của %s bốc cháy",
   "chat.dungeontrain.book_burns_author.copy": "Nhấp để sao chép tên tác giả",
   "item.dungeontrain.stats_book": "Sách thống kê",
+  "item.dungeontrain.random_potion": "Thuốc Ngẫu nhiên",
   "item.dungeontrain.random_good_potion": "Thuốc Tốt Ngẫu nhiên",
   "item.dungeontrain.random_bad_potion": "Thuốc Xấu Ngẫu nhiên",
   "gui.dungeontrain.options.book_author_chat": "Hiện tác giả sách trong khung chat",

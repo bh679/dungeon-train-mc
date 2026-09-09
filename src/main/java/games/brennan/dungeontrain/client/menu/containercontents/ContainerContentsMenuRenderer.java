@@ -577,13 +577,15 @@ public final class ContainerContentsMenuRenderer {
     }
 
     /**
-     * True for the {@code dungeontrain:random_good_potion} / {@code random_bad_potion}
-     * placeholders — the only entries that carry the scale-with-distance toggle.
+     * True for the {@code dungeontrain:random_potion} / {@code random_good_potion} /
+     * {@code random_bad_potion} placeholders — the only entries that carry the
+     * scale-with-distance toggle.
      */
     static boolean isRandomPotionPlaceholder(String itemId) {
         Item item = resolveItem(itemId);
         return item != null
-            && (item == games.brennan.dungeontrain.registry.ModItems.RANDOM_GOOD_POTION.get()
+            && (item == games.brennan.dungeontrain.registry.ModItems.RANDOM_POTION.get()
+                || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_GOOD_POTION.get()
                 || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_BAD_POTION.get());
     }
 

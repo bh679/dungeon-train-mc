@@ -2062,6 +2062,7 @@
   "chat.dungeontrain.book_burns_author": "Het boek van %s verbrandt",
   "chat.dungeontrain.book_burns_author.copy": "Klik om de naam van de auteur te kopiëren",
   "item.dungeontrain.stats_book": "Statistiekenboek",
+  "item.dungeontrain.random_potion": "Willekeurig drankje",
   "item.dungeontrain.random_good_potion": "Willekeurig goed drankje",
   "item.dungeontrain.random_bad_potion": "Willekeurig slecht drankje",
   "gui.dungeontrain.options.book_author_chat": "Boekauteur in de chat",

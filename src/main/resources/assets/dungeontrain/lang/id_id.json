@@ -2030,6 +2030,7 @@
   "chat.dungeontrain.book_burns_author": "Buku karya %s terbakar",
   "chat.dungeontrain.book_burns_author.copy": "Klik untuk menyalin nama penulisnya",
   "item.dungeontrain.stats_book": "Buku Statistik",
+  "item.dungeontrain.random_potion": "Ramuan Acak",
   "item.dungeontrain.random_good_potion": "Ramuan Baik Acak",
   "item.dungeontrain.random_bad_potion": "Ramuan Buruk Acak",
   "gui.dungeontrain.options.book_author_chat": "Penulis buku di obrolan",

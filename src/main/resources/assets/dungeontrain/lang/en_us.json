@@ -1384,6 +1384,7 @@
   "item.dungeontrain.random_playerbook": "Random Player Book",
   "item.dungeontrain.random_leaderboard_book": "Random Leaderboard Book",
   "item.dungeontrain.stats_book": "Stats Book",
+  "item.dungeontrain.random_potion": "Random Potion",
   "item.dungeontrain.random_good_potion": "Random Good Potion",
   "item.dungeontrain.random_bad_potion": "Random Bad Potion",
   "gui.dungeontrain.prefab_tab.variants": "Block Variants",

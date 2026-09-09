@@ -14,46 +14,20 @@ import net.minecraft.world.item.alchemy.PotionContents;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * The potion side of a {@link ContainerContentsEntry}: reading the vanilla potion off a stack
- * an author adds from their hand, putting it back on the stack the roller spawns, and the
- * rule for which potion entries the roller randomises.
+ * an author adds from their hand, and putting it back on the stack the roller spawns.
  *
- * <p>The rule: a potion with a real effect (Healing, Poison, ...) is placed exactly as
- * authored. An effectless base — mundane, thick, awkward, water — or a bottle with no potion
- * at all is randomised into a tiered potion of random form, exactly as every potion entry
- * was before entries could store a potion. The baking itself lives in
+ * <p>Nothing here randomises. A potion entry spawns exactly the potion it stores — Water,
+ * Awkward, Healing, whatever was held — and an entry with no stored potion spawns vanilla's
+ * "Uncraftable Potion". Random potions are the {@code dungeontrain:random_potion} /
+ * {@code random_good_potion} / {@code random_bad_potion} placeholders, baked by
  * {@code ContainerContentsRoller}.</p>
  */
 public final class ContainerContentsPotions {
 
     private ContainerContentsPotions() {}
-
-    /** Effectless vanilla bases that a loot entry treats as "give me a random potion". */
-    private static final Set<ResourceLocation> RANDOMISED_BASES = Set.of(
-        ResourceLocation.withDefaultNamespace("water"),
-        ResourceLocation.withDefaultNamespace("mundane"),
-        ResourceLocation.withDefaultNamespace("thick"),
-        ResourceLocation.withDefaultNamespace("awkward"));
-
-    /**
-     * True when a potion entry storing {@code potionId} should be randomised: no potion at
-     * all (an empty "Uncraftable" bottle, or an entry added by id alone) or one of the
-     * effectless bases. Any other potion is kept as authored.
-     */
-    public static boolean isRandomisedBase(@Nullable ResourceLocation potionId) {
-        return potionId == null || RANDOMISED_BASES.contains(potionId);
-    }
-
-    /**
-     * True when the rolled entry becomes a random potion: a potion-form item whose stored
-     * potion {@link #isRandomisedBase} accepts.
-     */
-    public static boolean isRandomisedEntry(Item item, @Nullable ResourceLocation potionId) {
-        return isPotionForm(item) && isRandomisedBase(potionId);
-    }
 
     /** True for the three drinkable / splash / lingering potion item types. */
     public static boolean isPotionForm(Item item) {

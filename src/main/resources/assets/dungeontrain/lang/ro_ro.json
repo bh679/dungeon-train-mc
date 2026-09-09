@@ -1411,6 +1411,7 @@
   "item.dungeontrain.random_playerbook": "Carte aleatorie de jucător",
   "item.dungeontrain.random_leaderboard_book": "Carte aleatorie de clasament",
   "item.dungeontrain.stats_book": "Carnetul de statistici",
+  "item.dungeontrain.random_potion": "Poțiune aleatorie",
   "item.dungeontrain.random_good_potion": "Poțiune bună aleatorie",
   "item.dungeontrain.random_bad_potion": "Poțiune rea aleatorie",
   "gui.dungeontrain.prefab_tab.variants": "Variante de bloc",

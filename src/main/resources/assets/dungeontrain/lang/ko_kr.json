@@ -2030,6 +2030,7 @@
   "chat.dungeontrain.book_burns_author": "%s 님의 책이 타오릅니다",
   "chat.dungeontrain.book_burns_author.copy": "클릭하면 지은이의 이름을 복사합니다",
   "item.dungeontrain.stats_book": "통계의 책",
+  "item.dungeontrain.random_potion": "무작위 물약",
   "item.dungeontrain.random_good_potion": "무작위 좋은 물약",
   "item.dungeontrain.random_bad_potion": "무작위 나쁜 물약",
   "gui.dungeontrain.options.book_author_chat": "책 지은이 채팅 표시",

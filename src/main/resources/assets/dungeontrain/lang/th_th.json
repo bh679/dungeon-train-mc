@@ -2030,6 +2030,7 @@
   "chat.dungeontrain.book_burns_author": "หนังสือของ %s กำลังลุกไหม้",
   "chat.dungeontrain.book_burns_author.copy": "คลิกเพื่อคัดลอกชื่อผู้เขียน",
   "item.dungeontrain.stats_book": "หนังสือสถิติ",
+  "item.dungeontrain.random_potion": "ยาสุ่ม",
   "item.dungeontrain.random_good_potion": "ยาดีสุ่ม",
   "item.dungeontrain.random_bad_potion": "ยาร้ายสุ่ม",
   "gui.dungeontrain.options.book_author_chat": "แสดงชื่อผู้เขียนหนังสือในแชท",

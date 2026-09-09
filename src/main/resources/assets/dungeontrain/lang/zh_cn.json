@@ -2044,6 +2044,7 @@
   "chat.dungeontrain.book_burns_author": "%s 写的书燃烧起来",
   "chat.dungeontrain.book_burns_author.copy": "点击复制作者名字",
   "item.dungeontrain.stats_book": "统计之书",
+  "item.dungeontrain.random_potion": "随机药水",
   "item.dungeontrain.random_good_potion": "随机有益药水",
   "item.dungeontrain.random_bad_potion": "随机有害药水",
   "gui.dungeontrain.options.book_author_chat": "聊天栏显示书的作者",

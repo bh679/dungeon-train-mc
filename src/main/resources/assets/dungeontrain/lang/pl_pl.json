@@ -2094,6 +2094,7 @@
   "chat.dungeontrain.book_burns_author": "Książka autorstwa %s płonie",
   "chat.dungeontrain.book_burns_author.copy": "Kliknij, aby skopiować imię autora",
   "item.dungeontrain.stats_book": "Księga statystyk",
+  "item.dungeontrain.random_potion": "Losowa mikstura",
   "item.dungeontrain.random_good_potion": "Losowa dobra mikstura",
   "item.dungeontrain.random_bad_potion": "Losowa zła mikstura",
   "gui.dungeontrain.options.book_author_chat": "Autor książki na czacie",

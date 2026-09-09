@@ -145,13 +145,15 @@ public final class ContainerContentsRoller {
 
     // ------------------------------------------------------------------
     // Epoch effects: random vanilla potions whose power escalates as the run
-    // progresses. Effectless tipped arrows and effectless potions found in
-    // loot share the level/tier/index math below but each carries its own
-    // tier table and a decorrelating salt:
-    //   • effectless tipped arrows                    → ARROW_EFFECT_TIERS  (offensive)
-    //   • effectless / base / empty potion entries    → POTION_EFFECT_TIERS (broad)
-    // A potion entry storing a real effect (Healing, Poison, ...) is NOT
-    // randomised — it spawns as authored (ContainerContentsPotions).
+    // progresses. Effectless tipped arrows and the random-potion placeholders
+    // share the level/tier/index math below but each carries its own tier
+    // table and a decorrelating salt:
+    //   • effectless tipped arrows            → ARROW_EFFECT_TIERS  (offensive)
+    //   • dungeontrain:random_potion          → POTION_EFFECT_TIERS (broad)
+    //   • dungeontrain:random_good_potion     → GOOD_POTION_TIERS
+    //   • dungeontrain:random_bad_potion      → BAD_POTION_TIERS
+    // A minecraft:potion entry is NEVER randomised — it spawns the potion it
+    // stores (ContainerContentsPotions), or "Uncraftable" when none is stored.
     // Suspicious stews (below, STEW_EFFECTS) are the one exception: vanilla
     // stew effects don't escalate with anything, so they skip the
     // level/tier machinery and roll uniformly from a single flat pool.
@@ -204,8 +206,8 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * Ordered, escalating tiers of vanilla potions applied to otherwise-
-     * effectless / base / empty potion entries found in loot. Unlike
+     * Ordered, escalating tiers of vanilla potions for the
+     * {@code dungeontrain:random_potion} placeholder found in loot. Unlike
      * the offensive arrow table these span ALL effect kinds (beneficial +
      * offensive + utility), arranged by rough potency: a 50-carriage block
      * sticky-picks one id from its tier, and deeper blocks unlock stronger /
@@ -966,9 +968,14 @@ public final class ContainerContentsRoller {
             return bakeStatsBook(localPos, worldSeed, carriageIndex, slot);
         }
 
-        // Editor placeholders dungeontrain:random_good_potion / random_bad_potion — a
-        // beneficial or harmful vanilla potion in a random bottle form. The entry's
-        // scale toggle decides whether the power tier follows carriages travelled.
+        // Editor placeholders dungeontrain:random_potion / random_good_potion /
+        // random_bad_potion — the ONLY entries that randomise a potion: any / beneficial /
+        // harmful vanilla potion in a random bottle form. The entry's scale toggle decides
+        // whether the power tier follows carriages travelled or the pick is flat.
+        if (item == ModItems.RANDOM_POTION.get()) {
+            return bakeRandomPotion(POTION_EFFECT_TIERS, picked.scaleWithDistance(),
+                localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
+        }
         if (item == ModItems.RANDOM_GOOD_POTION.get()) {
             return bakeRandomPotion(GOOD_POTION_TIERS, picked.scaleWithDistance(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
@@ -1052,15 +1059,9 @@ public final class ContainerContentsRoller {
         // localPos/slot — so every arrow in the same 50-carriage block matches.
         applyEpochArrowEffect(stack, item, worldSeed, carriageIndex, registries);
 
-        // Potions: an entry whose stored potion is a base with no effect (mundane /
-        // thick / awkward / water) or none at all becomes a random tiered potion in a
-        // random bottle form, as every potion entry did before entries could store a
-        // potion. One with a real effect (Healing, Poison, ...) is placed as authored.
-        if (ContainerContentsPotions.isRandomisedEntry(item, picked.potionId())) {
-            stack = bakeRandomPotion(POTION_EFFECT_TIERS, true,
-                localPos, worldSeed, carriageIndex, slot, stack.getCount(), registries);
-            if (stack.isEmpty()) return stack;
-        }
+        // Potions are never randomised here: a minecraft:potion entry spawns exactly the
+        // potion it stores (Water, Awkward, Healing, ...; none stored → "Uncraftable").
+        // Random potions are the dungeontrain:random_*_potion placeholders handled above.
 
         // Otherwise-effectless suspicious stews found in loot get a real
         // potion effect. There's no alternate "form" to swap to, so this
@@ -1138,9 +1139,8 @@ public final class ContainerContentsRoller {
 
     /**
      * Bake a random vanilla potion from {@code tiers} in a drinkable / splash / lingering
-     * bottle. Used for the potion entries {@link ContainerContentsPotions#isRandomisedEntry}
-     * says to randomise (effectless bases and empty bottles, always scaled) and for the
-     * {@code random_good_potion} / {@code random_bad_potion} placeholders.
+     * bottle, for the {@code random_potion} / {@code random_good_potion} /
+     * {@code random_bad_potion} placeholders.
      *
      * <p>With {@code scale} the TIER (the pool of allowed effects) escalates with travelled
      * distance; without it the pick is uniform across every tier's ids, so a chest near the

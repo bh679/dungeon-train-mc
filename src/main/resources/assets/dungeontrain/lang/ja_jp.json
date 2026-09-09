@@ -2030,6 +2030,7 @@
   "chat.dungeontrain.book_burns_author": "%s の本が燃える",
   "chat.dungeontrain.book_burns_author.copy": "クリックで著者の名前をコピー",
   "item.dungeontrain.stats_book": "統計の本",
+  "item.dungeontrain.random_potion": "ランダムなポーション",
   "item.dungeontrain.random_good_potion": "ランダムな良いポーション",
   "item.dungeontrain.random_bad_potion": "ランダムな悪いポーション",
   "gui.dungeontrain.options.book_author_chat": "本の著者をチャットに表示",

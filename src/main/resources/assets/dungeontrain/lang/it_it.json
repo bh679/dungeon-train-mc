@@ -2062,6 +2062,7 @@
   "chat.dungeontrain.book_burns_author": "Il libro di %s brucia",
   "chat.dungeontrain.book_burns_author.copy": "Clicca per copiare il nome dell'autore",
   "item.dungeontrain.stats_book": "Libro delle statistiche",
+  "item.dungeontrain.random_potion": "Pozione casuale",
   "item.dungeontrain.random_good_potion": "Pozione buona casuale",
   "item.dungeontrain.random_bad_potion": "Pozione cattiva casuale",
   "gui.dungeontrain.options.book_author_chat": "Autore del libro in chat",
