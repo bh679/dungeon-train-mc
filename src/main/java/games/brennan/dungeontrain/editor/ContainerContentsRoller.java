@@ -145,14 +145,13 @@ public final class ContainerContentsRoller {
 
     // ------------------------------------------------------------------
     // Epoch effects: random vanilla potions whose power escalates as the run
-    // progresses. Tipped arrows found effectless in loot, and the explicit
-    // dungeontrain:random_potion placeholder, share the level/tier/index math
-    // below but each carries its own tier table and a decorrelating salt:
-    //   • effectless tipped arrows           → ARROW_EFFECT_TIERS  (offensive)
-    //   • dungeontrain:random_potion         → POTION_EFFECT_TIERS (broad)
-    // A minecraft:potion entry joins the random_potion path only when its stored
-    // potion is an effectless base (mundane / thick / awkward / water) or absent;
-    // one with a real effect spawns as authored (ContainerContentsPotions).
+    // progresses. Effectless tipped arrows and effectless potions found in
+    // loot share the level/tier/index math below but each carries its own
+    // tier table and a decorrelating salt:
+    //   • effectless tipped arrows                    → ARROW_EFFECT_TIERS  (offensive)
+    //   • effectless / base / empty potion entries    → POTION_EFFECT_TIERS (broad)
+    // A potion entry storing a real effect (Healing, Poison, ...) is NOT
+    // randomised — it spawns as authored (ContainerContentsPotions).
     // Suspicious stews (below, STEW_EFFECTS) are the one exception: vanilla
     // stew effects don't escalate with anything, so they skip the
     // level/tier machinery and roll uniformly from a single flat pool.
@@ -206,7 +205,7 @@ public final class ContainerContentsRoller {
 
     /**
      * Ordered, escalating tiers of vanilla potions applied to otherwise-
-     * {@code dungeontrain:random_potion} placeholders found in loot. Unlike
+     * effectless / base / empty potion entries found in loot. Unlike
      * the offensive arrow table these span ALL effect kinds (beneficial +
      * offensive + utility), arranged by rough potency: a 50-carriage block
      * sticky-picks one id from its tier, and deeper blocks unlock stronger /
@@ -994,10 +993,10 @@ public final class ContainerContentsRoller {
         // localPos/slot — so every arrow in the same 50-carriage block matches.
         applyEpochArrowEffect(stack, item, worldSeed, carriageIndex, registries);
 
-        // Potions: the dungeontrain:random_potion placeholder, and any potion entry whose
-        // stored potion is a base with no effect (mundane / thick / awkward / water) or
-        // none at all, become a random tiered potion in a random bottle form. A potion
-        // with a real effect (Healing, Poison, ...) is placed exactly as authored.
+        // Potions: an entry whose stored potion is a base with no effect (mundane /
+        // thick / awkward / water) or none at all becomes a random tiered potion in a
+        // random bottle form, as every potion entry did before entries could store a
+        // potion. One with a real effect (Healing, Poison, ...) is placed as authored.
         if (ContainerContentsPotions.isRandomisedEntry(item, picked.potionId())) {
             stack = bakeRandomPotion(localPos, worldSeed, carriageIndex, slot, stack.getCount(), registries);
             if (stack.isEmpty()) return stack;
@@ -1079,9 +1078,9 @@ public final class ContainerContentsRoller {
 
     /**
      * Bake a random vanilla potion: an effect from {@link #POTION_EFFECT_TIERS} in a
-     * drinkable / splash / lingering bottle. Used for the {@code dungeontrain:random_potion}
-     * placeholder and for potion entries {@link ContainerContentsPotions#isRandomisedEntry}
-     * says to randomise (effectless bases and empty bottles).
+     * drinkable / splash / lingering bottle, for the potion entries
+     * {@link ContainerContentsPotions#isRandomisedEntry} says to randomise (effectless bases
+     * and empty bottles).
      *
      * <p>The TIER (the pool of allowed effects) escalates with travelled distance; WITHIN the
      * tier the effect and the bottle form are each independently random, keyed on the full

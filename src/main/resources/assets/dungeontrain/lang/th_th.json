@@ -2030,7 +2030,6 @@
   "chat.dungeontrain.book_burns_author": "หนังสือของ %s กำลังลุกไหม้",
   "chat.dungeontrain.book_burns_author.copy": "คลิกเพื่อคัดลอกชื่อผู้เขียน",
   "item.dungeontrain.stats_book": "หนังสือสถิติ",
-  "item.dungeontrain.random_potion": "ยาสุ่ม",
   "gui.dungeontrain.options.book_author_chat": "แสดงชื่อผู้เขียนหนังสือในแชท",
   "gui.dungeontrain.options.book_author_chat.tip": "พิมพ์ข้อความหนึ่งบรรทัดในแชทระบุชื่อผู้เขียนทุกครั้งที่หนังสือของ Dungeon Train ลุกไหม้ — \"หนังสือของ X กำลังลุกไหม้\" หนังสือที่คุณอ่าน ที่ทิ้ง หรือที่ร่วงตอนตาย ล้วนติดไฟทั้งนั้น และตรงนี้เป็นที่เดียวที่ให้เครดิตคนเขียน ปิดไว้ตั้งแต่แรก",
   "chat.dungeontrain.free_play.cause.keep_inventory": "โลกนี้เปิด \"เก็บของในกระเป๋าไว้\" อยู่",

@@ -2062,7 +2062,6 @@
   "chat.dungeontrain.book_burns_author": "El libro de %s arde",
   "chat.dungeontrain.book_burns_author.copy": "Haz clic para copiar el nombre del autor",
   "item.dungeontrain.stats_book": "Libro de estadísticas",
-  "item.dungeontrain.random_potion": "Poción aleatoria",
   "gui.dungeontrain.options.book_author_chat": "Autor del libro en el chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Escribe en el chat una línea con el nombre del autor cada vez que arde un libro de Dungeon Train: «El libro de X arde». Los libros que lees, tiras o sueltas al morir acaban todos en llamas, y este es el único sitio donde se acredita a quien los escribió. Desactivado por defecto.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "En este mundo está activado «Conservar inventario».",

@@ -108,22 +108,6 @@ public final class ModItems {
     );
 
     /**
-     * Editor-only placeholder for "a random potion". Substituted at chest spawn time by
-     * {@code ContainerContentsRoller.bakeRandomPotion} for a real vanilla potion — a
-     * drinkable / splash / lingering bottle of a tiered effect that escalates as the run travels.
-     *
-     * <p>A plain {@code minecraft:potion} entry (or splash / lingering) with a real effect spawns
-     * exactly the potion the author added, so "Potion of Healing" stays a Potion of Healing; an
-     * effectless base (mundane / thick / awkward / water) or empty bottle takes this same random
-     * path — see {@code ContainerContentsPotions.isRandomisedEntry}. Stacks normally so an entry
-     * with a count spawns that many.</p>
-     */
-    public static final DeferredItem<Item> RANDOM_POTION = ITEMS.register(
-        "random_potion",
-        () -> new Item(new Item.Properties())
-    );
-
-    /**
      * The loot-facing book, and the only one of these five that ordinary loot tables place: a
      * coin-flip between the two above. Half the time the slot becomes a tall
      * {@link #RANDOM_LEADERBOARD_BOOK} — a ranked board of the whole server — and half the time a

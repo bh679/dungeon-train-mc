@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponents;
@@ -24,8 +23,8 @@ import java.util.Set;
  *
  * <p>The rule: a potion with a real effect (Healing, Poison, ...) is placed exactly as
  * authored. An effectless base — mundane, thick, awkward, water — or a bottle with no potion
- * at all is randomised into a tiered potion of random form, as is the explicit
- * {@code dungeontrain:random_potion} placeholder. The baking itself lives in
+ * at all is randomised into a tiered potion of random form, exactly as every potion entry
+ * was before entries could store a potion. The baking itself lives in
  * {@code ContainerContentsRoller}.</p>
  */
 public final class ContainerContentsPotions {
@@ -49,12 +48,10 @@ public final class ContainerContentsPotions {
     }
 
     /**
-     * True when the rolled entry becomes a random potion: the
-     * {@code dungeontrain:random_potion} placeholder, or a potion-form item whose stored
+     * True when the rolled entry becomes a random potion: a potion-form item whose stored
      * potion {@link #isRandomisedBase} accepts.
      */
     public static boolean isRandomisedEntry(Item item, @Nullable ResourceLocation potionId) {
-        if (item == ModItems.RANDOM_POTION.get()) return true;
         return isPotionForm(item) && isRandomisedBase(potionId);
     }
 

@@ -32,8 +32,7 @@ import javax.annotation.Nullable;
  * "Splash Potion of Poison") is what the chest spawns. {@code null} for every
  * other item and for potion entries added by id alone. Which stored potions
  * are kept and which are randomised is {@code ContainerContentsPotions}'
- * call; the explicit random entry is the {@code dungeontrain:random_potion}
- * placeholder item, not a flag here.</p>
+ * call.</p>
  */
 public record ContainerContentsEntry(
     ResourceLocation itemId,
