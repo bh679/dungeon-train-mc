@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.structure.BuilderOpenTemplate;
 import games.brennan.dungeontrain.builder.structure.BuilderStructure;
@@ -80,6 +81,12 @@ public final class BuilderStructureStamp {
      * switch and reopen, plus the control itself. Cheap when there is nothing to do.</p>
      */
     public static void apply(ServerLevel level) {
+        // Flag-3 writes over the whole scene; guarded so standing a structure up (or clearing it)
+        // cannot pulse an observer in the build next to it — see CarriageStampGuard.
+        CarriageStampGuard.run(() -> applyGuarded(level));
+    }
+
+    private static void applyGuarded(ServerLevel level) {
         if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
             return;
         }

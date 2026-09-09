@@ -1,8 +1,14 @@
 package games.brennan.dungeontrain.train;
 
 /**
- * Marks the current thread as being inside a Dungeon Train <b>carriage stamp</b> — a template being
- * written into the world, whether for a spawning train carriage or an editor preview plot.
+ * Marks the current thread as being inside a Dungeon Train <b>system block write</b> — a template
+ * being stamped into the world, whether for a spawning train carriage (place, Sable lift, contents),
+ * an editor preview plot, or a loader restoring a saved carriage, tunnel, track or pillar.
+ *
+ * <p><b>Consumers.</b> {@code CropBlockCarriageSurviveMixin} relaxes the crop light check while the
+ * guard is held (the original reason for it, below), and {@code ObserverBlockStampMixin} keeps
+ * observers from pulsing at our own placement — only a player or a gameplay cause should fire one.
+ * Any loader that writes a template with a cascading flag belongs inside this guard.</p>
  *
  * <p><b>Why:</b> a template is authoritative. Whatever the author saved into the {@code .nbt} is what
  * should stand in the carriage. But a carriage is written a cell at a time across several passes, and

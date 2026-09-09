@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -1043,8 +1044,8 @@ public final class BuilderWorldSetup {
         if (stored.isEmpty()) {
             return false;
         }
-        stored.get().placeInWorld(level, origin, origin,
-                new StructurePlaceSettings().setIgnoreEntities(true), level.getRandom(), 3);
+        CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin,
+                new StructurePlaceSettings().setIgnoreEntities(true), level.getRandom(), 3));
         return true;
     }
 

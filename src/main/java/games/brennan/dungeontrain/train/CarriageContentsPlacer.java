@@ -231,7 +231,7 @@ public final class CarriageContentsPlacer {
         // Editor preview / template flows have no real seed — pass 0 so the
         // entity-variant lookup behaves deterministically for previews too
         // (sidecar.resolve handles any seed value the same way).
-        placeAtInternal(level, carriageOrigin, contents, dims, /*seed*/ 0L, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true);
+        CarriageStampGuard.run(() -> placeAtInternal(level, carriageOrigin, contents, dims, /*seed*/ 0L, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true));
     }
 
     /**
@@ -250,14 +250,16 @@ public final class CarriageContentsPlacer {
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                CarriageDims dims, long seed, int carriageIndex) {
-        Flip flip = carriageFlip(contents, seed, carriageIndex);
-        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
-        applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
-        applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
-        applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            seed, carriageIndex, PortalCorridorMask.NONE, flip);
+        CarriageStampGuard.run(() -> {
+            Flip flip = carriageFlip(contents, seed, carriageIndex);
+            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
+            applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+            applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+            applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                seed, carriageIndex, PortalCorridorMask.NONE, flip);
+        });
     }
 
     /**
@@ -324,14 +326,16 @@ public final class CarriageContentsPlacer {
      */
     public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                         CarriageDims dims, long seed, int carriageIndex) {
-        Flip flip = carriageFlip(contents, seed, carriageIndex);
-        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
-        applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
-        applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
-        applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-            seed, carriageIndex, PortalCorridorMask.NONE, flip);
+        CarriageStampGuard.run(() -> {
+            Flip flip = carriageFlip(contents, seed, carriageIndex);
+            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
+            applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+            applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+            applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
+                seed, carriageIndex, PortalCorridorMask.NONE, flip);
+        });
     }
 
     /**
@@ -365,10 +369,12 @@ public final class CarriageContentsPlacer {
         if (stored.isEmpty()) return;
 
         Flip flip = roomFlip(contents, seed, carriageIndex);
-        stampTemplateBlocks(level, anchor, stored.get(), safeMask, flip);
-        clearBakedNarrativeLecternBooks(level, anchor, box);
-        applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
-        applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+        CarriageStampGuard.run(() -> {
+            stampTemplateBlocks(level, anchor, stored.get(), safeMask, flip);
+            clearBakedNarrativeLecternBooks(level, anchor, box);
+            applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+            applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+        });
         LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored box={}x{}x{} target=portal_room",
             contents.id(), anchor, box.getX(), box.getY(), box.getZ());
     }
