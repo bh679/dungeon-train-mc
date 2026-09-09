@@ -11795,6 +11795,22 @@
       "released": true,
       "released_in": "v0.824.0",
       "released_at": "2026-09-08T16:01:03Z"
+    },
+    {
+      "id": "translator-credits-rename",
+      "version": "0.825.0",
+      "type": "feat",
+      "title": "Translators can rename themselves on the Credits page",
+      "summary": "If you have sent in translations, the Credits page now shows an Edit button beside your name. Change it and every place your translations are credited picks up the new name \u2014 other players see it on their next launch, and the game's own credits list catches up with the next release.",
+      "highlights": [
+        "Edit button beside your own name on the Credits page",
+        "Renames apply to all your past translations at once",
+        "A name another translator already uses is refused"
+      ],
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
