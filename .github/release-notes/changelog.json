@@ -11916,6 +11916,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "traps-group-level-gating",
+      "version": "0.828.0",
+      "type": "content",
+      "title": "Traps arrive in order, and one more joins them",
+      "summary": "The traps carriages used to all be in play from the moment their stretch of the line began. Each one now has a level floor, so the gentler traps greet you early and the nastier ones wait until you have a few carriages behind you. A new trap carriage joins the group \u2014 designed and built by FireFly in the in-game editor, and our thanks go to them for it \u2014 and the group itself now rides the Overworld stretch as well as the Void and Upside Down.",
+      "highlights": [
+        "A new trap carriage joins the rotation, designed and built by FireFly \u2014 thank you!",
+        "Every trap carriage is level-gated \u2014 the harshest ones no longer turn up on your first run",
+        "Traps now appear in the Overworld stretch, and no longer in Chunks"
+      ],
+      "pr": 1345,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
