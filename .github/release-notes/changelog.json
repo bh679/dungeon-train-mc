@@ -11882,6 +11882,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "observers-silent-on-placement",
+      "version": "0.827.0",
+      "type": "fix",
+      "title": "Observers no longer fire when the train builds around them",
+      "summary": "An observer saved into a carriage pulsed every time Dungeon Train placed that carriage: when a template opened in the editor, when the carriage spawned onto the train, and again as its contents and parts were filled in. Redstone contraptions fired themselves on load. Observers now stay quiet while the mod is doing its own building and only react to real causes: you breaking or placing a block, a piston, a door.",
+      "highlights": [
+        "Observers stay silent while a carriage is placed, lifted onto the train, and furnished",
+        "Also applies when a template opens in the editor or builder, and when a saved train reloads",
+        "Player and gameplay triggers on a running carriage are unchanged"
+      ],
+      "pr": 1345,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
