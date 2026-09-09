@@ -2,6 +2,10 @@ package games.brennan.dungeontrain.client.credits;
 
 import games.brennan.dungeontrain.client.localization.TranslationContributor;
 import games.brennan.dungeontrain.client.localization.TranslationCreditsMerge;
+import games.brennan.dungeontrain.client.localization.edit.TranslationCoverageClient;
+import games.brennan.dungeontrain.client.localization.edit.TranslatorName;
+import games.brennan.dungeontrain.client.localization.edit.TranslatorOwnNames;
+import games.brennan.dungeontrain.client.localization.edit.TranslatorRenames;
 import games.brennan.dungeontrain.client.menu.AiPolicyIconButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
@@ -23,7 +27,9 @@ import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The <b>Credits</b> page, opened from the title-screen book icon (see
@@ -36,7 +42,9 @@ import java.util.List;
  *   <li><b>Translations</b> — every translator credit from {@link TranslationCreditsMerge} (the
  *       build-time list plus anyone the relay has approved since), each name clickable when the
  *       credit carries a URL. The whole card is omitted on stock installs where no credits exist,
- *       which is the normal en_us release-build path rather than an edge case.</li>
+ *       which is the normal en_us release-build path rather than an edge case. A name this
+ *       player submitted under carries an <b>Edit</b> button (see {@link TranslatorOwnNames}) that
+ *       opens {@link TranslatorRenameScreen}.</li>
  * </ol>
  *
  * <p>Scrolling, clipping, the card/rule/photo draw order, inline-link hit-testing and the palette
@@ -69,8 +77,25 @@ public final class CreditsScreen extends Screen {
     private static final ResourceLocation WILSON_PHOTO =
             ResourceLocation.fromNamespaceAndPath("dungeontrain", "textures/gui/credits/wilson.png");
 
+    /** The Edit button beside a translator's own name: a compact row-height button. */
+    private static final int EDIT_W = 34;
+    private static final int EDIT_H = 14;
+    /** Space kept between a wrapped name line and its Edit button. */
+    private static final int EDIT_GAP = 6;
+
+    /**
+     * An Edit button and the canvas Y of the line it belongs to. The button is a real widget for
+     * input, but is drawn by hand after the canvas so it scrolls with its line and sits on top of
+     * the card rather than under it — see {@link #render}.
+     */
+    private record EditSlot(DarkTintedButton button, int canvasY) {}
+
     private final Screen parent;
     private final CardCanvas canvas;
+    /** Names this player submitted translations under; empty until the relay answers. */
+    private Set<String> ownNames = Set.of();
+    private boolean askedForOwnNames;
+    private final List<EditSlot> editSlots = new ArrayList<>();
 
     public CreditsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.credits.title"));
@@ -80,6 +105,7 @@ public final class CreditsScreen extends Screen {
 
     @Override
     protected void init() {
+        editSlots.clear();
         int colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
         canvas.beginLayout((this.width - colW) / 2, colW);
 
@@ -135,6 +161,40 @@ public final class CreditsScreen extends Screen {
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(rowX + supportW + gap + policyW + gap, rowY, doneW, 20)
                 .build());
+
+        // Once per screen: which of these names are this player's. The answer arrives later on
+        // the render thread and re-lays the page with Edit buttons beside them — the same shape
+        // as the submit screen's history list. Consent off answers "none", so nothing appears.
+        if (!askedForOwnNames) {
+            askedForOwnNames = true;
+            TranslatorOwnNames.fetch(names -> {
+                if (!names.equals(ownNames) && Minecraft.getInstance().screen == this) {
+                    ownNames = names;
+                    rebuildWidgets();
+                }
+            });
+        }
+    }
+
+    /**
+     * The relay accepted a rename. Remember it locally so the page folds the old name into the
+     * new one at once (the jar and the cached relay credits still carry the old one — see
+     * {@link TranslatorRenames}), make the next submission use it, refresh the live credits, and
+     * come back to a freshly laid-out page. The cached relay credits are kept — see below.
+     */
+    private void onRenamed(String from, String to) {
+        TranslatorRenames.record(from, to);
+        TranslatorName.set(to);
+        // Refetch WITHOUT clearing: the alias above already renders the new name from the cached
+        // credits, and an empty cache while the answer is in flight would drop them from the page.
+        TranslationCoverageClient.refetch();
+        Set<String> names = new java.util.HashSet<>(ownNames);
+        names.remove(from);
+        names.add(to);
+        CreditsScreen fresh = new CreditsScreen(parent);
+        fresh.ownNames = Set.copyOf(names);
+        fresh.askedForOwnNames = true;
+        Minecraft.getInstance().setScreen(fresh);
     }
 
     /** The "Made by" card: heading, accent bar, then the two people separated by a hairline. */
@@ -202,8 +262,23 @@ public final class CreditsScreen extends Screen {
                 innerX, innerW, y, CardCanvas.COLOUR_DESC);
         y += DESC_GAP;
         for (TranslationContributor contributor : contributors) {
-            y = canvas.addWrappedAt(personLine(contributor), innerX, innerW, y,
-                    CardCanvas.COLOUR_DESC);
+            if (!ownNames.contains(contributor.name())) {
+                y = canvas.addWrappedAt(personLine(contributor), innerX, innerW, y,
+                        CardCanvas.COLOUR_DESC);
+                continue;
+            }
+            // This player's own line: the text wraps short of the button's column so the two
+            // never overlap, and the button rides the first line of the entry.
+            String name = contributor.name();
+            DarkTintedButton edit = new DarkTintedButton(innerX + innerW - EDIT_W, 0, EDIT_W, EDIT_H,
+                    Component.translatable("gui.dungeontrain.credits.translations.edit"),
+                    b -> Minecraft.getInstance().setScreen(
+                            new TranslatorRenameScreen(this, name, this::onRenamed)));
+            edit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.credits.rename.title")));
+            addWidget(edit);
+            editSlots.add(new EditSlot(edit, y));
+            y = canvas.addWrappedAt(personLine(contributor), innerX,
+                    Math.max(1, innerW - EDIT_W - EDIT_GAP), y, CardCanvas.COLOUR_DESC);
         }
 
         y += CardCanvas.CARD_PAD;
@@ -301,6 +376,33 @@ public final class CreditsScreen extends Screen {
         // Draws the background (with our panel) and the button row.
         super.render(g, mouseX, mouseY, partialTick);
         canvas.render(g, this.width);
+        renderEditButtons(g, mouseX, mouseY, partialTick);
+    }
+
+    /**
+     * The Edit buttons, placed against their lines at the current scroll and clipped to the
+     * viewport like the canvas's own content. A button scrolled out of view is also hidden so it
+     * cannot be clicked through the button row or the title.
+     */
+    private void renderEditButtons(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (editSlots.isEmpty()) {
+            return;
+        }
+        int top = canvas.viewportTop();
+        int bottom = canvas.viewportBottom();
+        g.enableScissor(canvas.colX() - CardCanvas.PANEL_PAD, top,
+                canvas.colX() + canvas.colW() + CardCanvas.PANEL_PAD, bottom);
+        for (EditSlot slot : editSlots) {
+            // Centred on the 9px text line: the button is 14 tall, so it starts 2-3px above it.
+            int y = canvas.screenY(slot.canvasY()) - (EDIT_H - canvas.lineHeight()) / 2;
+            slot.button().setY(y);
+            boolean visible = y + EDIT_H > top && y < bottom;
+            slot.button().visible = visible;
+            if (visible) {
+                slot.button().render(g, mouseX, mouseY, partialTick);
+            }
+        }
+        g.disableScissor();
     }
 
     @Override

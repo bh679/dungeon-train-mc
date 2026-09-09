@@ -26,6 +26,44 @@ final class TemplateMetaMergeTest {
     private static final TemplateGate NETHER_GATE =
         new TemplateGate(3, 40, EnumSet.of(TrainPhase.NETHER));
 
+    // ---------- mergeName ----------
+
+    @Test
+    @DisplayName("mergeName keeps weight, inline gate, Stage link, mode and flip — a rename never retunes")
+    void mergeName_keepsEverySpawnRule() {
+        TemplateMeta prev = new TemplateMeta(4, NETHER_GATE, "nether", "bedrock_lock",
+            FlipOptions.DEFAULT.with("x", true));
+        TemplateMeta next = TemplateMeta.mergeName(prev, "Hell Hall", 1);
+
+        assertEquals("Hell Hall", next.name());
+        assertEquals(4, next.weight());
+        assertEquals(NETHER_GATE, next.gate());
+        assertEquals("nether", next.stageId());
+        assertEquals("bedrock_lock", next.mode());
+        assertEquals(prev.flip(), next.flip());
+    }
+
+    @Test
+    @DisplayName("mergeName on a missing entry creates a default-weight, unlinked one carrying the label")
+    void mergeName_nullPrevCreatesDefault() {
+        TemplateMeta next = TemplateMeta.mergeName(null, "Tome", 7);
+        assertEquals("Tome", next.name());
+        assertEquals(7, next.weight());
+        assertNull(next.stageId());
+        assertEquals(TemplateGate.DEFAULT, next.gate());
+    }
+
+    @Test
+    @DisplayName("mergeName with a blank label clears it; the other merges keep an existing label")
+    void mergeName_blankClearsAndOthersKeep() {
+        TemplateMeta labelled = TemplateMeta.mergeName(new TemplateMeta(4, NETHER_GATE, "nether"), "Tome", 1);
+        assertNull(TemplateMeta.mergeName(labelled, "   ", 1).name());
+        assertEquals("Tome", TemplateMeta.mergeWeight(labelled, 9).name());
+        assertEquals("Tome", TemplateMeta.mergeGate(labelled, TemplateGate.DEFAULT, 1).name());
+        assertEquals("Tome", TemplateMeta.mergeFlip(labelled, FlipOptions.DEFAULT, 1).name());
+        assertEquals("Tome", labelled.withStage(null).withMode("x").name());
+    }
+
     // ---------- mergeWeight ----------
 
     @Test

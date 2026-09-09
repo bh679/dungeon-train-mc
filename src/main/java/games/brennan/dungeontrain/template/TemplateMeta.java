@@ -24,11 +24,21 @@ package games.brennan.dungeontrain.template;
  * means {@link FlipOptions#DEFAULT} — the entry has no authored {@code flip} block — so a store
  * that never sets it behaves exactly as it did before the option existed.</p>
  *
- * <p>An id with the {@link TemplateGate#DEFAULT default} gate, no stage link, no mode <b>and</b> no
- * flip block serialises back to the legacy bare-int form (see {@link TemplateWeightCodec}), so
- * existing {@code weights.json} files are unaffected.</p>
+ * <p><b>{@link #name()} is the editor's display label</b> — the one thing on this record that is
+ * not a spawn rule. A template's id is its file basename and can never change without moving files
+ * (and, for a bundled template, cannot change at all), so a rename edits this label instead, exactly
+ * as a {@link Stage} keeps a stable {@code id} beside a free-text {@code name}. {@code null} means
+ * "show the id". Nothing at spawn time reads it.</p>
+ *
+ * <p>An id with the {@link TemplateGate#DEFAULT default} gate, no stage link, no mode, no flip block
+ * <b>and</b> no label serialises back to the legacy bare-int form (see {@link TemplateWeightCodec}),
+ * so existing {@code weights.json} files are unaffected.</p>
  */
-public record TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip) {
+public record TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip,
+                           String name) {
+
+    /** Longest label the editor accepts — matches the wire field it travels in. */
+    public static final int NAME_MAX = 32;
 
     public TemplateMeta {
         if (gate == null) gate = TemplateGate.DEFAULT;
@@ -39,26 +49,33 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
         // An explicit default flip block is the same thing as no flip block; normalise so the two
         // never diverge on disk (and a default-flip entry keeps its legacy bare-int form).
         if (FlipOptions.DEFAULT.equals(flip)) flip = null;
+        // A blank label is "no label"; whitespace around one is never meaningful.
+        name = normaliseName(name);
+    }
+
+    /** Back-compat 5-arg form — no display label. */
+    public TemplateMeta(int weight, TemplateGate gate, String stageId, String mode, FlipOptions flip) {
+        this(weight, gate, stageId, mode, flip, null);
     }
 
     /** Back-compat 4-arg form — no flip block ({@link FlipOptions#DEFAULT}). */
     public TemplateMeta(int weight, TemplateGate gate, String stageId, String mode) {
-        this(weight, gate, stageId, mode, null);
+        this(weight, gate, stageId, mode, null, null);
     }
 
     /** Back-compat 3-arg form — no mode tag. */
     public TemplateMeta(int weight, TemplateGate gate, String stageId) {
-        this(weight, gate, stageId, null, null);
+        this(weight, gate, stageId, null, null, null);
     }
 
     /** Back-compat 2-arg form — an unlinked (Custom) entry with the given inline gate. */
     public TemplateMeta(int weight, TemplateGate gate) {
-        this(weight, gate, null, null, null);
+        this(weight, gate, null, null, null, null);
     }
 
     /** A weight-only, unlinked entry with the default (eligible-everywhere) gate. */
     public static TemplateMeta of(int weight) {
-        return new TemplateMeta(weight, TemplateGate.DEFAULT, null, null, null);
+        return new TemplateMeta(weight, TemplateGate.DEFAULT, null, null, null, null);
     }
 
     /** This entry's flip options, resolving an absent block to {@link FlipOptions#DEFAULT}. */
@@ -66,19 +83,35 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
         return flip == null ? FlipOptions.DEFAULT : flip;
     }
 
-    /** Copy with {@code weight} replaced, keeping the inline gate, stage link, mode and flip. */
-    public TemplateMeta withWeight(int newWeight) {
-        return new TemplateMeta(newWeight, gate, stageId, mode, flip);
+    /** True when this entry carries a display label distinct from its id. */
+    public boolean hasName() {
+        return name != null;
     }
 
-    /** Copy with the inline {@code gate} replaced, keeping the weight, stage link, mode and flip. */
+    /**
+     * {@code raw} as a stored label: trimmed, {@code null} when blank, cut to {@link #NAME_MAX}.
+     * Shared by the constructor and the command layer so "what counts as no label" has one answer.
+     */
+    public static String normaliseName(String raw) {
+        if (raw == null) return null;
+        String s = raw.trim();
+        if (s.isEmpty()) return null;
+        return s.length() > NAME_MAX ? s.substring(0, NAME_MAX) : s;
+    }
+
+    /** Copy with {@code weight} replaced, keeping the inline gate, stage link, mode, flip and label. */
+    public TemplateMeta withWeight(int newWeight) {
+        return new TemplateMeta(newWeight, gate, stageId, mode, flip, name);
+    }
+
+    /** Copy with the inline {@code gate} replaced, keeping the weight, stage link, mode, flip and label. */
     public TemplateMeta withGate(TemplateGate newGate) {
-        return new TemplateMeta(weight, newGate, stageId, mode, flip);
+        return new TemplateMeta(weight, newGate, stageId, mode, flip, name);
     }
 
     /** Copy with the {@code flip} block replaced ({@code null} / default = no block), keeping everything else. */
     public TemplateMeta withFlip(FlipOptions newFlip) {
-        return new TemplateMeta(weight, gate, stageId, mode, newFlip);
+        return new TemplateMeta(weight, gate, stageId, mode, newFlip, name);
     }
 
     /**
@@ -87,12 +120,28 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
      * gate reflects what the row was showing.
      */
     public TemplateMeta withStage(String newStageId) {
-        return new TemplateMeta(weight, gate, newStageId, mode, flip);
+        return new TemplateMeta(weight, gate, newStageId, mode, flip, name);
     }
 
     /** Copy with the {@code mode} tag replaced (null = this kind's default), keeping everything else. */
     public TemplateMeta withMode(String newMode) {
-        return new TemplateMeta(weight, gate, stageId, newMode, flip);
+        return new TemplateMeta(weight, gate, stageId, newMode, flip, name);
+    }
+
+    /** Copy with the display label replaced ({@code null} / blank = show the id), keeping everything else. */
+    public TemplateMeta withName(String newName) {
+        return new TemplateMeta(weight, gate, stageId, mode, flip, newName);
+    }
+
+    /**
+     * The entry a weight store should store when a label edit lands on {@code prev} ({@code null} =
+     * no existing entry, created unlinked at {@code defaultWeight} with the default gate). Preserves
+     * every spawn rule — a rename must never change how often a template comes up.
+     */
+    public static TemplateMeta mergeName(TemplateMeta prev, String name, int defaultWeight) {
+        return prev == null
+            ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, null, name)
+            : prev.withName(name);
     }
 
     /** True when this entry is linked live to a named Stage (vs. an inline Custom gate). */
@@ -134,7 +183,7 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
      */
     public static TemplateMeta mergeFlip(TemplateMeta prev, FlipOptions flip, int defaultWeight) {
         return prev == null
-            ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, flip)
+            ? new TemplateMeta(defaultWeight, TemplateGate.DEFAULT, null, null, flip, null)
             : prev.withFlip(flip);
     }
 }
