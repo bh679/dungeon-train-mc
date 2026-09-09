@@ -395,8 +395,17 @@ public final class LootPrefabStore {
                 int slotOverride = e.has("slot") && e.get("slot").isJsonPrimitive()
                     ? e.get("slot").getAsInt()
                     : ContainerContentsEntry.SLOT_AUTO;
+                ResourceLocation potionId = e.has("potion") && e.get("potion").isJsonPrimitive()
+                    ? ResourceLocation.tryParse(e.get("potion").getAsString())
+                    : null;
+                boolean scale = e.has("scale") && e.get("scale").isJsonPrimitive()
+                    ? e.get("scale").getAsBoolean()
+                    : ContainerContentsEntry.DEFAULT_SCALE_WITH_DISTANCE;
+                PotionForm form = e.has("form") && e.get("form").isJsonPrimitive()
+                    ? PotionForm.parse(e.get("form").getAsString())
+                    : ContainerContentsEntry.DEFAULT_POTION_FORM;
                 entries.add(new ContainerContentsEntry(rl, count, weight,
-                    randDur, durChance, randEnch, enchChance, slotOverride));
+                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form));
             }
         }
         return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax)));
@@ -428,6 +437,15 @@ public final class LootPrefabStore {
                 .append(" \"enchChance\": ").append(e.enchantmentChance());
             if (e.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
                 sb.append(", \"slot\": ").append(e.slotOverride());
+            }
+            if (e.potionId() != null) {
+                sb.append(", \"potion\": \"").append(e.potionId()).append("\"");
+            }
+            if (!e.scaleWithDistance()) {
+                sb.append(", \"scale\": false");
+            }
+            if (e.potionForm() != PotionForm.ANY) {
+                sb.append(", \"form\": \"").append(e.potionForm().id()).append("\"");
             }
             sb.append(" }");
             first = false;

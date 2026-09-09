@@ -516,6 +516,15 @@ public final class ContainerContentsStore {
                 if (ce.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
                     sb.append(", \"slot\": ").append(ce.slotOverride());
                 }
+                if (ce.potionId() != null) {
+                    sb.append(", \"potion\": \"").append(ce.potionId()).append("\"");
+                }
+                if (!ce.scaleWithDistance()) {
+                    sb.append(", \"scale\": false");
+                }
+                if (ce.potionForm() != PotionForm.ANY) {
+                    sb.append(", \"form\": \"").append(ce.potionForm().id()).append("\"");
+                }
                 sb.append(" }");
                 firstEntry = false;
             }
@@ -643,8 +652,17 @@ public final class ContainerContentsStore {
                         int slotOverride = eo.has("slot")
                             ? eo.get("slot").getAsInt()
                             : ContainerContentsEntry.SLOT_AUTO;
+                        ResourceLocation potionId = eo.has("potion") && eo.get("potion").isJsonPrimitive()
+                            ? ResourceLocation.tryParse(eo.get("potion").getAsString())
+                            : null;
+                        boolean scale = eo.has("scale") && eo.get("scale").isJsonPrimitive()
+                            ? eo.get("scale").getAsBoolean()
+                            : ContainerContentsEntry.DEFAULT_SCALE_WITH_DISTANCE;
+                        PotionForm form = eo.has("form") && eo.get("form").isJsonPrimitive()
+                            ? PotionForm.parse(eo.get("form").getAsString())
+                            : ContainerContentsEntry.DEFAULT_POTION_FORM;
                         entries.add(new ContainerContentsEntry(id, count, weight,
-                            randDur, durChance, randEnch, enchChance, slotOverride));
+                            randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));
