@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.localization;
 
 import games.brennan.dungeontrain.client.localization.edit.TranslationCoverageClient;
+import games.brennan.dungeontrain.client.localization.edit.TranslatorRenames;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +40,8 @@ public final class TranslationCreditsMerge {
     public static List<TranslationContributor> merged() {
         return merge(TranslationContributorsRegistry.all(),
             TranslationCoverageClient.allCredits(),
-            TranslationCreditsMerge::totalKeysFor);
+            TranslationCreditsMerge::totalKeysFor,
+            TranslatorRenames.snapshot());
     }
 
     /**
@@ -50,11 +52,31 @@ public final class TranslationCreditsMerge {
     public static List<TranslationContributor> merge(List<TranslationContributor> baked,
                                                      Map<String, List<TranslationCoverageClient.Credit>> relay,
                                                      ToIntFunction<String> totalForLocale) {
+        return merge(baked, relay, totalForLocale, Map.of());
+    }
+
+    /**
+     * As {@link #merge(List, Map, ToIntFunction)}, with {@code aliases} (old name → new name)
+     * applied to every name from BOTH sources before they are folded.
+     *
+     * <p>This is how a translator who renamed themself on the Credits page sees one line at once.
+     * The jar still carries their old name until the next release, and this client's cached relay
+     * credits until the next fetch; without the fold the page would thank the same person twice —
+     * the exact bug this class exists to prevent. Two baked entries resolving to one name (a
+     * rename onto an earlier name of one's own) fold by language, the first keeping its shares.</p>
+     */
+    public static List<TranslationContributor> merge(List<TranslationContributor> baked,
+                                                     Map<String, List<TranslationCoverageClient.Credit>> relay,
+                                                     ToIntFunction<String> totalForLocale,
+                                                     Map<String, String> aliases) {
         // Keyed by name so the two sources fold into one person. Whatever order the map ends up
         // holding them in does not survive ranked() below.
         Map<String, TranslationContributor> byName = new LinkedHashMap<>();
         for (TranslationContributor person : baked) {
-            byName.put(person.name(), person);
+            String name = TranslatorRenames.resolve(aliases, person.name());
+            TranslationContributor renamed = name.equals(person.name()) ? person
+                : new TranslationContributor(name, person.url(), person.languages());
+            byName.merge(name, renamed, TranslationCreditsMerge::foldLanguages);
         }
         if (relay == null) {
             return ranked(byName.values());
@@ -70,7 +92,7 @@ public final class TranslationCreditsMerge {
                 if (credit == null || credit.name() == null || credit.name().isBlank()) {
                     continue;
                 }
-                byName.compute(credit.name(),
+                byName.compute(TranslatorRenames.resolve(aliases, credit.name()),
                     (name, existing) -> withShare(name, existing, locale, credit.units(), total));
             }
         }
@@ -120,6 +142,17 @@ public final class TranslationCreditsMerge {
             .toList();
         return ordered.equals(person.languages()) ? person
             : new TranslationContributor(person.name(), person.url(), ordered);
+    }
+
+    /** Two entries for one person: the first keeps its shares and its link, the second adds languages. */
+    private static TranslationContributor foldLanguages(TranslationContributor first,
+                                                        TranslationContributor second) {
+        TranslationContributor out = first.url().isPresent() || second.url().isEmpty() ? first
+            : new TranslationContributor(first.name(), second.url(), first.languages());
+        for (TranslationContributor.LanguageShare share : second.languages()) {
+            out = withShare(out.name(), out, share.locale(), share.contributed(), share.total());
+        }
+        return out;
     }
 
     /**

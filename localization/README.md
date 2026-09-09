@@ -112,6 +112,23 @@ To use a new model or translator name, add it to `authors.json` first —
 the sidecars. Name future models `<Model> (Claude)` etc., and humans by their
 preferred credited name.
 
+### Renames
+
+A translator can change the name they are credited under from the in-game **Credits** page (an
+**Edit** button appears beside any name they have submitted under). The relay rewrites their rows
+on the spot and logs the rename; the repo catches up on the next translation import, where
+`apply-translator-renames.py` runs *before* `import-approved-translations.py` and renames the
+`authors.json` key (keeping the object form and `url`) and every `author`/`reviewer` string in
+the sidecars, after which `stamp-provenance.py --sync` regenerates the shipped credits. It will
+not merge onto a name already in `authors.json`, and cannot rename a name the repo never credited;
+both are reported in the import PR's body for a person to resolve. Translators who delivered a zip
+rather than using the editor have no relay rows and are renamed by hand.
+
+```bash
+python3 scripts/localization/apply-translator-renames.py --dry-run          # what would change
+python3 scripts/localization/apply-translator-renames.py --from-file r.json  # a saved log
+```
+
 ## Sibling-mod namespaces
 
 AdventureItemNames, PlayerMob and DiscordPresence are separate mods whose *source* repos are

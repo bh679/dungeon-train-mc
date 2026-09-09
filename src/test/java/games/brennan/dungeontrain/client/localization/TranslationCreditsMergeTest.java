@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import games.brennan.dungeontrain.client.localization.edit.TranslatorRenames;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -150,5 +151,45 @@ class TranslationCreditsMergeTest {
         List<TranslationContributor> baked = List.of(baked("Ada", "de_de", 1, 10));
         assertEquals(baked, TranslationCreditsMerge.merge(baked, Map.of(), (l) -> 10));
         assertEquals(baked, TranslationCreditsMerge.merge(baked, null, (l) -> 10));
+    }
+
+    @Test
+    @DisplayName("a renamed translator is one line under the new name, from both sources")
+    void aliasFoldsOldNameIntoNew() {
+        // The jar and the cached relay credits both still carry the old name after a rename; the
+        // alias folds them into the new one so the page never thanks the same person twice.
+        List<TranslationContributor> out = TranslationCreditsMerge.merge(
+            List.of(baked("Old", "de_de", 900, 1200)),
+            Map.of("de_de", List.of(new Credit("Old", 12)), "fr_fr", List.of(new Credit("New", 30))),
+            (l) -> 1200, Map.of("Old", "New"));
+        assertEquals(List.of("New"), names(out));
+        TranslationContributor person = find(out, "New");
+        assertEquals(900, person.languages().get(0).contributed(), "the baked share still wins");
+        assertEquals(2, person.languages().size(), "and the relay-only language joins them");
+        assertTrue(person.url().isPresent(), "keeping the link the old entry had");
+    }
+
+    @Test
+    @DisplayName("a chain of renames resolves to the last name, and a cycle stops")
+    void aliasChains() {
+        Map<String, String> chain = Map.of("A", "B", "B", "C");
+        assertEquals("C", TranslatorRenames.resolve(chain, "A"));
+        assertEquals("C", TranslatorRenames.resolve(chain, "C"));
+        assertEquals("Z", TranslatorRenames.resolve(chain, "Z"));
+        // A cycle terminates and comes back to where it started (record() never stores one).
+        assertEquals("A", TranslatorRenames.resolve(Map.of("A", "B", "B", "A"), "A"));
+        List<TranslationContributor> out = TranslationCreditsMerge.merge(
+            List.of(baked("A", "de_de", 10, 100), baked("B", "fr_fr", 5, 100)),
+            Map.of(), (l) -> 100, chain);
+        assertEquals(List.of("C"), names(out));
+        assertEquals(2, find(out, "C").languages().size(), "both old entries' languages fold in");
+    }
+
+    @Test
+    @DisplayName("without aliases the three-argument merge is unchanged")
+    void noAliasesIsIdentity() {
+        List<TranslationContributor> out = TranslationCreditsMerge.merge(
+            List.of(baked("Ada", "de_de", 900, 1200)), Map.of(), (l) -> 1200);
+        assertEquals(List.of("Ada"), names(out));
     }
 }
