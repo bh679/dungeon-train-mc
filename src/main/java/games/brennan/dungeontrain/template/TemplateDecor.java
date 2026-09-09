@@ -48,9 +48,10 @@ import java.util.function.Consumer;
  *
  * <h2>What a template carries</h2>
  * {@link #carries} is the one membership rule: the three wall-hung {@link #DECOR_TYPES}, the
- * {@link #VEHICLE_TYPES} an author parks in a plot — boats and minecarts — plus every <b>living</b>
- * entity: the mobs an author stands in a plot, and armor stands. Not dropped items, arrows or the
- * rest of the inert {@code MISC} traffic, which is a plot's litter rather than its content.
+ * {@link #VEHICLE_TYPES} an author parks in a plot — minecarts — plus every <b>living</b> entity:
+ * the mobs an author stands in a plot, and armor stands. Not boats (refused, see
+ * {@link #VEHICLE_TYPES}), dropped items, arrows or the rest of the inert {@code MISC} traffic,
+ * which is a plot's litter rather than its content.
  *
  * <p>Mobs used to be excluded here on the grounds that the per-cell variant sidecar rolls and spawns
  * them, so carrying one would spawn it twice. That is not true of an editor plot: variant mobs are
@@ -96,17 +97,21 @@ public final class TemplateDecor {
         "minecraft:painting");
 
     /**
-     * The vehicles a template carries — a boat pulled up on a carriage's deck, a minecart parked on
-     * a siding. Inert like the pictures, with no {@code Health} to announce themselves by, so they
-     * need naming too.
+     * The vehicles a template carries — the minecarts an author parks in a build. Inert like the
+     * pictures, with no {@code Health} to announce themselves by, so they need naming too.
+     *
+     * <p><b>No boats.</b> A boat stamped onto a moving carriage does not behave: Sable carries it
+     * as loose cargo and it never sits right. Rather than save something that is broken on
+     * arrival, the editor refuses it where the author can see — {@code VehiclePlacementNotice}
+     * tells them on placement that the boat will not be saved — and this set leaves it out so
+     * the save agrees. A minecart works off the rails aboard a carriage (on rails it does not run,
+     * which the same notice warns about), so it stays.</p>
      *
      * <p><b>No {@code command_block_minecart}.</b> A shared carriage is downloaded from the relay
      * and stamped into somebody else's world; a command block on wheels would be remote command
      * execution, and no build needs one.</p>
      */
     public static final Set<String> VEHICLE_TYPES = Set.of(
-        "minecraft:boat",
-        "minecraft:chest_boat",
         "minecraft:minecart",
         "minecraft:chest_minecart",
         "minecraft:furnace_minecart",
@@ -123,9 +128,9 @@ public final class TemplateDecor {
      * {@link StructureTemplate#fillFromWorld} with the decoration kept.
      *
      * <p>Drop-in for the {@code includeEntities = false} call every editor used to make: entities are
-     * pulled in, then everything {@link #carries} turns down is filtered back out, so the arrows
-     * and dropped items littering a plot are not baked into the saved template while the mob, the
-     * boat and the minecart the author placed in it are.</p>
+     * pulled in, then everything {@link #carries} turns down is filtered back out, so the arrows,
+     * dropped items and boats in a plot are not baked into the saved template while the mob and
+     * the minecart the author placed in it are.</p>
      *
      * @param voidBlock the block {@code fillFromWorld} treats as "not part of this template"
      *                  ({@code STRUCTURE_VOID} or {@code AIR}, per the caller's existing choice)
@@ -355,8 +360,8 @@ public final class TemplateDecor {
         // Stale motion would make a freshly stamped frame lurch; there is no meaningful velocity to
         // carry across a save/load anyway.
         nbt.remove("Motion");
-        // A boat's rider was captured as an entry of its own, standing where it sat; the copy the
-        // vehicle's tag carries would be a second one. EntityType.create ignores the list anyway —
+        // A minecart's rider was captured as an entry of its own, standing where it sat; the copy
+        // the vehicle's tag carries would be a second one. EntityType.create ignores the list anyway —
         // it is loadEntityRecursive that reads it — but the tag should not promise what no stamp
         // path delivers.
         nbt.remove("Passengers");
@@ -399,8 +404,8 @@ public final class TemplateDecor {
      * <p>Scoped to {@link #DECOR_TYPES} and <b>empty</b> {@link #VEHICLE_TYPES}, so a player's pet,
      * a dropped item, an authored mob or the boat somebody is sitting in is left alone — the callers
      * that want those gone have their own, wider sweeps ({@code EditorPlotEntityClearer},
-     * {@code clearIntruders}). Vehicles are in because two boats stamped into one spot do what two
-     * paintings do not: collide, and shove each other across the deck, once more per pass.</p>
+     * {@code clearIntruders}). Vehicles are in because two minecarts stamped into one spot do what
+     * two paintings do not: collide, and shove each other across the deck, once more per pass.</p>
      *
      * @return how many were removed
      */

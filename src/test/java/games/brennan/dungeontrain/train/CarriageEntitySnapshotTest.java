@@ -40,19 +40,24 @@ class CarriageEntitySnapshotTest {
     }
 
     @Test
-    void parkingAVehicleChangesTheFingerprintAndAWanderingMobDoesNot() {
+    void parkingAMinecartChangesTheFingerprintAndAWanderingMobOrBoatDoesNot() {
         ListTag before = ents(ent("minecraft:item_frame", 3.5, 2.5, 0.06, null));
-        ListTag boat = ents(
+        ListTag minecart = ents(
             ent("minecraft:item_frame", 3.5, 2.5, 0.06, null),
-            ent("minecraft:boat", 1.5, 0, 4.5, null));
+            ent("minecraft:chest_minecart", 1.5, 0, 4.5, null));
         ListTag villager = ents(
             ent("minecraft:item_frame", 3.5, 2.5, 0.06, null),
             ent("minecraft:villager", 1.5, 0, 4.5, null));
+        ListTag boat = ents(
+            ent("minecraft:item_frame", 3.5, 2.5, 0.06, null),
+            ent("minecraft:boat", 1.5, 0, 4.5, null));
 
         assertNotEquals(CarriageEntitySnapshot.decorFingerprint(before),
-            CarriageEntitySnapshot.decorFingerprint(boat), "a boat is an authoring decision");
+            CarriageEntitySnapshot.decorFingerprint(minecart), "a minecart is an authoring decision");
         assertEquals(CarriageEntitySnapshot.decorFingerprint(before),
             CarriageEntitySnapshot.decorFingerprint(villager), "a villager is its own business");
+        assertEquals(CarriageEntitySnapshot.decorFingerprint(before),
+            CarriageEntitySnapshot.decorFingerprint(boat), "a boat is never saved, so it is not an edit");
     }
 
     @Test
