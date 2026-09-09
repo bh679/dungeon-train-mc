@@ -3,6 +3,8 @@
   "books": 11,
   "cows": 15,
   "craft": 7,
+  "dangerous": 1,
+  "dangerous_1": 1,
   "default": 1,
   "dirt": 2,
   "dirt2": 2,
@@ -11,11 +13,17 @@
   "enemies": 7,
   "fire": 4,
   "maze": 4,
+  "mild": 1,
+  "mild_1": 1,
+  "mild_3": 1,
+  "mild_4": 1,
   "narrative": 3,
   "portal": 0,
   "portal_short": 0,
   "sand": 0,
   "shop": 8,
   "statue": 1,
-  "vase": 1
+  "traps": 1,
+  "vase": 1,
+  "very_dangeours": 1
 }
