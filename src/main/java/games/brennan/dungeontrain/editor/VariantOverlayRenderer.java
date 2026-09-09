@@ -259,7 +259,10 @@ public final class VariantOverlayRenderer {
         boolean builderLevel = level.dimensionTypeRegistration().is(
             games.brennan.dungeontrain.builder.BuilderWorldLayout.BUILDER_DIMENSION_TYPE);
 
+        long tickStart = System.nanoTime();
+        int atPlots = 0;
         for (ServerPlayer player : players) {
+            if (EditorLayout.isAtPlotHeight(player.getBlockY())) atPlots++;
             // The two snapshots the block-variant menu draws itself against, and nothing else: the
             // rest of the cascade below is about editor plots — a plot grid, per-plot labels, type
             // menus, a plot sky — none of which a builder world has. Both are plot-driven and
@@ -393,6 +396,39 @@ public final class VariantOverlayRenderer {
             // Outside every plot — clear any stale HUD state.
             clearHoverIfStale(player);
         }
+        recordEditorTiming(level, System.nanoTime() - tickStart, atPlots);
+    }
+
+    // ---- [editor.timing] -------------------------------------------------------------------
+
+    /** Ticks folded into one {@code [editor.timing]} line — once a second at 20 TPS. */
+    private static final int EDITOR_TIMING_PERIOD_TICKS = 20;
+    private static long editorTimingSumNanos;
+    private static long editorTimingMaxNanos;
+    private static int editorTimingTicks;
+
+    /**
+     * Rolling cost of the per-player cascade above, logged at DEBUG once a second while someone is
+     * up at the plots. The {@code [stuck.timing] overlay=} bucket in {@code TrainTickEvents} never
+     * reaches the log in the editor world (it returns early with no train), so without this the
+     * editor's tick cost is invisible. Steady state with nobody at plot height records nothing.
+     */
+    private static void recordEditorTiming(ServerLevel level, long elapsedNanos, int playersAtPlots) {
+        if (playersAtPlots == 0 || !LOGGER.isDebugEnabled()) return;
+        editorTimingSumNanos += elapsedNanos;
+        editorTimingMaxNanos = Math.max(editorTimingMaxNanos, elapsedNanos);
+        editorTimingTicks++;
+        if (level.getGameTime() % EDITOR_TIMING_PERIOD_TICKS != 0) return;
+        double avgMs = editorTimingSumNanos / 1_000_000.0 / editorTimingTicks;
+        double maxMs = editorTimingMaxNanos / 1_000_000.0;
+        LOGGER.debug("[editor.timing] overlay avg={}ms max={}ms ticks={} players={} stamped={}",
+            String.format(java.util.Locale.ROOT, "%.2f", avgMs),
+            String.format(java.util.Locale.ROOT, "%.2f", maxMs),
+            editorTimingTicks, playersAtPlots,
+            EditorStampedCategoryState.current().map(Enum::name).orElse("none"));
+        editorTimingSumNanos = 0;
+        editorTimingMaxNanos = 0;
+        editorTimingTicks = 0;
     }
 
     /**

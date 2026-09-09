@@ -223,6 +223,7 @@ public final class CarriageContentsStore {
         CompoundTag tag = template.save(new CompoundTag());
         NbtIo.writeCompressed(tag, file);
         CACHE.put(contents.id(), Optional.of(template));
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved contents template {} to {}", contents.id(), file);
     }
 
@@ -272,6 +273,7 @@ public final class CarriageContentsStore {
         Path file = fileFor(contents);
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(contents.id(), Optional.empty());
+        ProvenanceCache.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted contents template {} ({})", contents.id(), file);
         return existed;
     }
@@ -296,6 +298,7 @@ public final class CarriageContentsStore {
         Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
         Optional<StructureTemplate> cached = CACHE.remove(sourceId);
         if (cached != null) CACHE.put(targetId, cached);
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Renamed contents template file {} -> {}", src, dst);
         return true;
     }

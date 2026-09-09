@@ -11864,6 +11864,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-tick-rate-provenance-cache-registry-snapshots",
+      "version": "0.827.0",
+      "type": "perf",
+      "title": "Train Editor no longer drags the tick rate down",
+      "summary": "Standing at a plot in the Train Editor, especially a Contents group parent, used to cost the server most of its tick budget: the editor was re-checking which pack every template came from on disk every tick, and rebuilding the whole contents registry for every plot lookup. Both are now cached, so the editor ticks at full speed with hundreds of plots stamped. A new \"traps\" contents group with four members rides along, gated to the Void, Upside Down and Chunks stretches of the line.",
+      "highlights": [
+        "Editor overlay cost at a Contents group plot: 85\u2013180 ms per tick \u2192 about 3 ms",
+        "Template provenance (yours / imported / bundled) is cached and refreshes immediately on save, delete, rename, import or pack switch",
+        "New \"traps\" contents group (mild_1, tntbarrel, mild_3, mild_4) in the Void, Upside Down and Chunks phases",
+        "Dev builds log a 1 Hz [editor.timing] line so editor tick cost is visible"
+      ],
+      "pr": 1344,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
