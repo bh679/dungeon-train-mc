@@ -460,25 +460,33 @@ public final class CarriagePlacer {
         // forced to the COMMAND_BLOCK sentinel by the canonical
         // VariantState constructor). Subject to the same 48-block player-
         // distance gate that wraps this entity pass.
-        // Decoration first, and deliberately BEFORE the portal early-return below. That return is a
-        // rule about MOBS, and decor inverts it: a corridor's twin stands in the world and so hangs
-        // its template's pictures at stamp time, which is precisely why the corridor riding the train
-        // has to hang the same ones here. A picture that appeared on one side of the crossing and not
-        // the other would break the illusion the twin exists to keep.
-        spawnShellAndPartsDecor(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
-
-        // No part of a portal takes either pass — not the shell/parts mob spawn above, and not the
-        // contents entities below. A mob standing in one corridor and not its twin is exactly the
-        // difference a player would see at the crossing, and a mob in the cart between them would
-        // spend its life in a sealed room.
-        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return;
-
-        spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
-        if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+        // Decoration runs on EVERY exit of this pass, including the portal early-return below. That
+        // return is a rule about MOBS, and decor inverts it: a corridor's twin stands in the world and
+        // so hangs its template's pictures at stamp time, which is precisely why the corridor riding
+        // the train has to hang the same ones here. A picture that appeared on one side of the
+        // crossing and not the other would break the illusion the twin exists to keep.
+        //
+        // But it runs LAST, after the contents pass — not first, as it once did. The contents pass
+        // opens with {@code CarriageContentsPlacer.discardEntitiesAt}, a sweep of every non-player
+        // entity in the interior, meant for a previous carriage's leftovers at this shipyard slot.
+        // Sable lifts a plot entity out to the carriage's world pose on the entity's first TICK, not
+        // when it is added, so decor spawned a moment before that sweep was still standing at plot
+        // coordinates and went with the leftovers: a template's boat, minecart, armor stand or mob was
+        // logged as spawned and never seen. Spawning after the sweep is what lets it reach the deck.
+        // No part of a portal takes the mob or contents pass — a mob standing in one corridor and not
+        // its twin is exactly the difference a player would see at the crossing, and a mob in the cart
+        // between them would spend its life in a sealed room — so for those the decor is all there is.
+        if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) {
+            spawnShellAndPartsDecor(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
             return;
         }
-        applyContents(level, origin, variant, dims, config, carriageIndex,
-            /*placeBlocks*/ false, /*spawnEntities*/ true, groupAnchorWorldX);
+
+        spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
+        if (!(variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED)) {
+            applyContents(level, origin, variant, dims, config, carriageIndex,
+                /*placeBlocks*/ false, /*spawnEntities*/ true, groupAnchorWorldX);
+        }
+        spawnShellAndPartsDecor(level, origin, variant, dims, config.seed(), carriageIndex, groupAnchorWorldX);
     }
 
     /**
@@ -511,8 +519,18 @@ public final class CarriagePlacer {
             // neither the contents pass nor the mob pass.
             if (PortalCarriageSelection.isPortalMiddle(level, carriageIndex)) return;
 
-            CarriageTemplateStore.get(level, variant, variantDims(variant, dims))
-                .ifPresent(t -> TemplateDecor.spawn(level, origin, t, contentsMark(level, carriageIndex)));
+            Optional<StructureTemplate> shell =
+                CarriageTemplateStore.get(level, variant, variantDims(variant, dims));
+            if (shell.isPresent()) {
+                int spawned = TemplateDecor.spawn(level, origin, shell.get(), contentsMark(level, carriageIndex));
+                // The contents pass reports what it spawned; the shell pass is the only other
+                // entity-placing stamp on a carriage and used to say nothing, so a boat missing
+                // from a deck could not be told apart from one never carried.
+                if (spawned > 0) {
+                    LOGGER.info("[DungeonTrain] Shell decor: spawned {} entities for variant={} pIdx={} at origin={}",
+                        spawned, variant.id(), carriageIndex, origin);
+                }
+            }
             spawnPartsDecor(level, origin, variant, dims, seed, carriageIndex, groupAnchorWorldX);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] template decor: shell/parts pass failed at origin={} pIdx={}: {}",
