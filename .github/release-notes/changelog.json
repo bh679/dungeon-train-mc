@@ -11848,6 +11848,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "trade-anything-fixes-update",
+      "version": "0.826.0",
+      "type": "fix",
+      "title": "Trade Anything: sharper value display and previewed-item fill",
+      "summary": "The villager Trade Anything slot got a round of polish: value comparison popups for pairs like leather/hide and logs/sticks now close properly instead of lingering, foods with status effects show their result instead of a blank slot, and clicking the Trade Anything row now fills it straight from the previewed item.",
+      "highlights": [
+        "Value comparison popups (leather/hide, logs/sticks) close correctly",
+        "Foods with status effects show a proper result slot",
+        "Clicking the Trade Anything row fills it with the previewed item"
+      ],
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
