@@ -3,7 +3,12 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.EditorDoorGhostsPacket;
 import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
+import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageDoorCells;
+import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,10 +22,17 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Where the two corridor doors fall in every portal-room editor plot, so the client can paint an
- * amber ghost on them.
+ * Where a plot's two doorways fall, so the client can name them — for the portal rooms, the
+ * carriages, and the contents plots alike.
  *
  * <h2>Why an author needs this</h2>
+ * <p>Two different reasons, which is why one class answers for three categories. A portal room's
+ * doorways are <b>invisible</b> in the plot; a carriage's are visible but <b>anonymous</b> — the two
+ * ends look alike, and nothing in the plot says which one a player arrives through. Both are the
+ * same question ("which end is which?") asked of the same geometry, so both are answered from the
+ * plot's own box.</p>
+ *
+ * <h2>The portal case</h2>
  * <p>A room plot holds the room and nothing else — {@link PortalRoomEditor#stampPlot} never lays a
  * corridor, because a corridor belongs to a live twin structure rather than to the template. The two
  * openings are therefore invisible while the room is being built, and a wall authored across the
@@ -86,6 +98,80 @@ public final class EditorDoorGhosts {
      * template is read — so the ghosts always agree with the box the author can see.</p>
      */
     public static List<EditorDoorGhostsPacket.Door> snapshot(CarriageDims dims) {
+        return portalSnapshot(dims);
+    }
+
+    /**
+     * The door markers for whichever category is stamped — the portal rooms' corridor mouths, or a
+     * carriage / contents row's two end doorways.
+     *
+     * <p>Empty for any other category: tracks and architecture have no two ends to name, and a
+     * marker painted over one of those plots would stand on a line nothing is ever cut on.</p>
+     */
+    public static List<EditorDoorGhostsPacket.Door> snapshot(EditorCategory category, CarriageDims dims) {
+        if (category == null) return List.of();
+        return switch (category) {
+            case PORTALS -> portalSnapshot(dims);
+            case CARRIAGES -> carriageSnapshot(dims);
+            case CONTENTS -> contentsSnapshot(dims);
+            default -> List.of();
+        };
+    }
+
+    /**
+     * The two end doorways of every carriage variant's plot.
+     *
+     * <p>Each plot is measured with its own {@link CarriageEditor#plotDims} rather than the world's
+     * dims — the portal-corridor variant's plot is the longer of the two, and the world figure would
+     * put its exit marker several blocks short of the end the doorway is actually cut in.</p>
+     */
+    private static List<EditorDoorGhostsPacket.Door> carriageSnapshot(CarriageDims dims) {
+        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
+        List<EditorDoorGhostsPacket.Door> out =
+            new ArrayList<>(variants.size() * CarriageDoorCells.DOORS_PER_CARRIAGE);
+        for (CarriageVariant variant : variants) {
+            BlockPos origin = CarriageEditor.plotOrigin(variant, dims);
+            if (origin == null) continue;
+            addCarriageDoors(out, origin, CarriageEditor.plotDims(variant, dims));
+        }
+        return out;
+    }
+
+    /**
+     * The two end doorways of every contents plot — group parents in the {@code +X} row and their
+     * sub-variants in the {@code +Z} columns alike, since {@link CarriageContentsEditor#plotOrigin}
+     * resolves both.
+     */
+    private static List<EditorDoorGhostsPacket.Door> contentsSnapshot(CarriageDims dims) {
+        List<CarriageContents> all = CarriageContentsRegistry.allContents();
+        List<EditorDoorGhostsPacket.Door> out =
+            new ArrayList<>(all.size() * CarriageDoorCells.DOORS_PER_CARRIAGE);
+        for (CarriageContents contents : all) {
+            BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
+            if (origin == null) continue;
+            addCarriageDoors(out, origin, CarriageContentsEditor.plotDims(contents, dims));
+        }
+        return out;
+    }
+
+    /**
+     * Append one plot's pair of markers. {@code model} is false: a carriage doorway is authored by
+     * the person standing in the plot, so what is added is the naming — outline and word — not a
+     * ghost door standing in their own blocks.
+     *
+     * <p>{@link CarriageDoorCells#doorBases} returns the {@code -X} end first, which is the end a
+     * player walking the train arrives through — the same "entry mouth is the near column" order
+     * {@link PortalRoomDoorCells#doorBases} uses, so one tag means one thing everywhere.</p>
+     */
+    private static void addCarriageDoors(List<EditorDoorGhostsPacket.Door> out, BlockPos origin,
+                                         CarriageDims box) {
+        List<BlockPos> bases = CarriageDoorCells.doorBases(origin, box);
+        for (int i = 0; i < bases.size(); i++) {
+            out.add(new EditorDoorGhostsPacket.Door(bases.get(i), /*entry*/ i == 0, /*model*/ false));
+        }
+    }
+
+    private static List<EditorDoorGhostsPacket.Door> portalSnapshot(CarriageDims dims) {
         List<String> names = PortalRoomEditor.names();
         List<EditorDoorGhostsPacket.Door> out = new ArrayList<>(names.size() * 2);
         for (String name : names) {
@@ -116,7 +202,7 @@ public final class EditorDoorGhosts {
             List<BlockPos> bases = PortalRoomDoorCells.doorBases(origin, size, offset, heightOffset,
                 exitOffset, exitHeightOffset);
             for (int i = 0; i < bases.size(); i++) {
-                out.add(new EditorDoorGhostsPacket.Door(bases.get(i), /*entry*/ i == 0));
+                out.add(new EditorDoorGhostsPacket.Door(bases.get(i), /*entry*/ i == 0, /*model*/ true));
             }
         }
         return out;
@@ -137,6 +223,57 @@ public final class EditorDoorGhosts {
      * or the far ghost would never be re-sent.</p>
      */
     public static String key(CarriageDims dims) {
+        return portalKey(dims);
+    }
+
+    /**
+     * Dedup key for whichever category is stamped. Prefixed with the category name, so stepping
+     * from the carriage row to the contents row always re-pushes even in the unlikely event the two
+     * grids hash to the same string.
+     *
+     * <p>Carriage and contents plots key on {@code origin/box} alone — they have no authored door
+     * offset to fold in, the doorway line being a function of the box the same way the plot grid is.
+     * Both editors resolve an origin through a memoised slot-index map, so this stays a map lookup
+     * per plot on the tick it is compared.</p>
+     */
+    public static String key(EditorCategory category, CarriageDims dims) {
+        if (category == null) return "";
+        return switch (category) {
+            case PORTALS -> "portals/" + portalKey(dims);
+            case CARRIAGES -> "carriages/" + carriageKey(dims);
+            case CONTENTS -> "contents/" + contentsKey(dims);
+            default -> "";
+        };
+    }
+
+    private static String carriageKey(CarriageDims dims) {
+        StringBuilder sb = new StringBuilder();
+        for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
+            BlockPos origin = CarriageEditor.plotOrigin(variant, dims);
+            if (origin == null) continue;
+            appendBox(sb, origin, CarriageEditor.plotDims(variant, dims));
+        }
+        return sb.toString();
+    }
+
+    private static String contentsKey(CarriageDims dims) {
+        StringBuilder sb = new StringBuilder();
+        for (CarriageContents contents : CarriageContentsRegistry.allContents()) {
+            BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
+            if (origin == null) continue;
+            appendBox(sb, origin, CarriageContentsEditor.plotDims(contents, dims));
+        }
+        return sb.toString();
+    }
+
+    private static void appendBox(StringBuilder sb, BlockPos origin, CarriageDims box) {
+        sb.append(origin.getX()).append(',').append(origin.getY()).append(',')
+          .append(origin.getZ()).append('/')
+          .append(box.length()).append(',').append(box.height()).append(',')
+          .append(box.width()).append(';');
+    }
+
+    private static String portalKey(CarriageDims dims) {
         StringBuilder sb = new StringBuilder();
         for (String name : PortalRoomEditor.names()) {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
