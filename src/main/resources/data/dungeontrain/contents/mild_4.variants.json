@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 9,
+  "variants": {
+    "0,4,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 6}, {"entity": "minecraft:creeper"}],
+    "6,4,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 6}, {"entity": "minecraft:creeper"}]
+  }
+}

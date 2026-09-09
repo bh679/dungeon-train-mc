@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "mild_1",
+      "weight": 1
+    },
+    {
+      "id": "dangerous_1",
+      "weight": 1
+    },
+    {
+      "id": "mild_3",
+      "weight": 0
+    },
+    {
+      "id": "mild_4",
+      "weight": 0
+    }
+  ]
+}

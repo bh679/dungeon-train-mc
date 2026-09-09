@@ -118,6 +118,7 @@ public final class CarriagePartTemplateStore {
         NbtIo.writeCompressed(tag, file);
         CACHE.put(key(kind, name), Optional.of(template));
         StageBlockIndex.invalidateAll();
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved part template {}:{} to {}", kind.id(), name, file);
     }
 
@@ -157,6 +158,7 @@ public final class CarriagePartTemplateStore {
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(key(kind, name), Optional.empty());
         StageBlockIndex.invalidateAll();
+        ProvenanceCache.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted part template {}:{} ({})", kind.id(), name, file);
         return existed;
     }
@@ -177,6 +179,7 @@ public final class CarriagePartTemplateStore {
         Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
         Optional<StructureTemplate> cached = CACHE.remove(key(kind, sourceName));
         if (cached != null) CACHE.put(key(kind, targetName), cached);
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Renamed part template {}:{} -> {}:{}", kind.id(), sourceName,
                 kind.id(), targetName);
         return true;

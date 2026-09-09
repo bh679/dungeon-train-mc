@@ -320,6 +320,7 @@ public final class TemplateSidecars {
         }
         // The stores cache what they read; a file written underneath them has to be announced.
         invalidateCaches(kind, subKind, id);
+        ProvenanceCache.invalidateAll();
     }
 
     private static void applyWeights(BuilderPhotoPaths.Kind kind, String subKind, String id,

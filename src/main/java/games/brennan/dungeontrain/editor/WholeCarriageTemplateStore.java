@@ -108,6 +108,7 @@ public final class WholeCarriageTemplateStore {
         CompoundTag tag = template.save(new CompoundTag());
         NbtIo.writeCompressed(tag, file);
         CACHE.put(wholeCarriage.id(), Optional.of(template));
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved whole carriage {} to {}", wholeCarriage.id(), file);
     }
 
@@ -115,6 +116,7 @@ public final class WholeCarriageTemplateStore {
         Path file = fileFor(wholeCarriage);
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(wholeCarriage.id(), Optional.empty());
+        ProvenanceCache.invalidateAll();
         if (existed) {
             LOGGER.info("[DungeonTrain] Deleted whole carriage {} ({})", wholeCarriage.id(), file);
         }
@@ -137,6 +139,7 @@ public final class WholeCarriageTemplateStore {
         Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
         Optional<StructureTemplate> cached = CACHE.remove(sourceId);
         if (cached != null) CACHE.put(targetId, cached);
+        ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Renamed whole-carriage file {} -> {}", src, dst);
         return true;
     }
