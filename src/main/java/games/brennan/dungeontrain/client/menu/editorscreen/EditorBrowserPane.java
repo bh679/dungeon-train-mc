@@ -532,7 +532,7 @@ public final class EditorBrowserPane {
         TemplateArt art = TemplateArt.of(key);
         float yaw = spin.advance(art == null ? key.toString() : art.spinKey(), hov, seconds);
         int weight = asSelf ? tile.selfWeight() : v.weight();
-        String name = asSelf ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, v.name()) : v.name();
+        String name = asSelf ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, v.displayName()) : v.displayName();
         TemplateTilePainter.draw(g, font, art, name, weight, x, y, size, yaw,
             new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup(), ghost));
     }
@@ -575,7 +575,9 @@ public final class EditorBrowserPane {
 
     private static String tooltipFor(EditorRosterIndex.Tile tile, boolean asSelf) {
         StringBuilder sb = new StringBuilder(asSelf
-            ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, tile.variant().name()) : tile.variant().name());
+            ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, tile.variant().displayName()) : tile.variant().displayName());
+        // A labelled tile keeps its id in reach — it is what every command and file is named by.
+        if (tile.variant().isLabelled()) sb.append("  ·  ").append(tile.variant().name());
         int weight = asSelf ? tile.selfWeight() : tile.variant().weight();
         if (weight >= 0) sb.append("  ·  ").append(EditorScreenLang.text(EditorScreenLang.WEIGHT_READ_ONLY, weight));
         if (!asSelf && tile.isGroup()) {
