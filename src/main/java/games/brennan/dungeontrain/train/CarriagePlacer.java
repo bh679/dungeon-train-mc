@@ -859,7 +859,8 @@ public final class CarriagePlacer {
             // Without this pre-clear, the base filter alone leaves whatever
             // was previously in those cells untouched.
             filter.ifPresent(p -> p.clearClaimedCellsSilently(level));
-            stampTemplate(level, origin, stored.get(), filter.orElse(null), relight, /*decorBox*/ null);
+            stampTemplate(level, origin, stored.get(), filter.orElse(null), relight, /*decorBox*/ null,
+                TemplateDecor.Rule.CARRIAGE);
             return "stored";
         }
         if (variant instanceof CarriageVariant.Builtin b) {
@@ -1514,17 +1515,22 @@ public final class CarriagePlacer {
      */
     public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
                                        boolean relight) {
-        stampTemplate(level, origin, template, null, relight, /*decorBox*/ null);
+        stampTemplate(level, origin, template, null, relight, /*decorBox*/ null, TemplateDecor.Rule.CARRIAGE);
     }
 
     /**
      * {@link #stampTemplateAt} with a {@link StructureProcessor} in front of the write, so a caller
      * can drop cells it must not touch. Used by the portal room to stamp copies around the twin
      * corridors rather than through them.
+     *
+     * @param decorRule which entities the template's decoration pass puts back —
+     *                  {@link TemplateDecor.Rule#ROOM} for a dimensional carriage, whose boats are
+     *                  kept because the room never moves
      */
     public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
-                                       StructureProcessor processor, boolean relight) {
-        stampTemplate(level, origin, template, processor, relight, /*decorBox*/ null);
+                                       StructureProcessor processor, boolean relight,
+                                       TemplateDecor.Rule decorRule) {
+        stampTemplate(level, origin, template, processor, relight, /*decorBox*/ null, decorRule);
     }
 
     /**
@@ -1537,13 +1543,13 @@ public final class CarriagePlacer {
      */
     public static void stampTemplateAt(ServerLevel level, BlockPos origin, StructureTemplate template,
                                        StructureProcessor processor, boolean relight,
-                                       BoundingBox decorBox) {
-        stampTemplate(level, origin, template, processor, relight, decorBox);
+                                       BoundingBox decorBox, TemplateDecor.Rule decorRule) {
+        stampTemplate(level, origin, template, processor, relight, decorBox, decorRule);
     }
 
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
                                       StructureProcessor processor, boolean relight,
-                                      BoundingBox decorBox) {
+                                      BoundingBox decorBox, TemplateDecor.Rule decorRule) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         if (processor != null) settings.addProcessor(processor);
         if (relight) {
@@ -1561,7 +1567,7 @@ public final class CarriagePlacer {
         if (relight) {
             StructurePlaceSettings decorSettings = new StructurePlaceSettings();
             if (decorBox != null) decorSettings.setBoundingBox(decorBox);
-            TemplateDecor.replace(level, origin, template, decorSettings, /*mark*/ null);
+            TemplateDecor.replace(level, origin, template, decorSettings, /*mark*/ null, decorRule);
         }
     }
 

@@ -104,6 +104,13 @@ class TemplateDecorTest {
         assertFalse(TemplateDecor.isDecor(entry("minecraft:boat", 1, 2, 3, 1, 2, 3)));
         assertFalse(TemplateDecor.isDecor(entry("minecraft:chest_boat", 1, 2, 3, 1, 2, 3)));
 
+        // ...except in a dimensional carriage, which never moves. Same rule otherwise.
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:boat", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:chest_boat", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:minecart", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:command_block_minecart", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:item", 1, 2, 3, 1, 2, 3), TemplateDecor.Rule.ROOM));
+
         // A plot's litter, not its content: none of these save a Health value.
         assertFalse(TemplateDecor.isDecor(entry("minecraft:item", 1, 2, 3, 1, 2, 3)));
         assertFalse(TemplateDecor.isDecor(entry("minecraft:arrow", 1, 2, 3, 1, 2, 3)));
@@ -149,6 +156,22 @@ class TemplateDecorTest {
         assertFalse(nbt.contains("Passengers"), "the rider was captured standing where it sat");
         assertFalse(nbt.contains("Motion"));
         assertTrue(e.getCompound("nbt").contains("Passengers"), "the saved entry is left as it was");
+    }
+
+    @Test
+    void aRoomKeepsItsBoatWhereACarriageDropsIt() {
+        CompoundTag carriage = saved(
+            entry("minecraft:boat", 5, 0, 3, 5, 0, 3),
+            entry("minecraft:minecart", 3, 0, 3, 3, 0, 3));
+        CompoundTag room = saved(
+            entry("minecraft:boat", 5, 0, 3, 5, 0, 3),
+            entry("minecraft:minecart", 3, 0, 3, 3, 0, 3));
+
+        assertTrue(TemplateDecor.filterEntities(carriage), "the carriage save drops the boat");
+        assertEquals(1, carriage.getList("entities", Tag.TAG_COMPOUND).size());
+        assertFalse(TemplateDecor.filterEntities(room, TemplateDecor.Rule.ROOM),
+            "the room keeps both, so nothing needs reloading");
+        assertEquals(2, room.getList("entities", Tag.TAG_COMPOUND).size());
     }
 
     @Test

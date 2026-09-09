@@ -97,15 +97,16 @@ public final class TemplateDecor {
         "minecraft:painting");
 
     /**
-     * The vehicles a template carries — the minecarts an author parks in a build. Inert like the
-     * pictures, with no {@code Health} to announce themselves by, so they need naming too.
+     * The vehicles every template carries — the minecarts an author parks in a build. Inert like
+     * the pictures, with no {@code Health} to announce themselves by, so they need naming too.
      *
-     * <p><b>No boats.</b> A boat stamped onto a moving carriage does not behave: Sable carries it
-     * as loose cargo and it never sits right. Rather than save something that is broken on
-     * arrival, the editor refuses it where the author can see — {@code VehiclePlacementNotice}
+     * <p><b>No boats here.</b> A boat stamped onto a moving carriage does not behave: Sable carries
+     * it as loose cargo and it never sits right. Rather than save something that is broken on
+     * arrival, the editor refuses it where the author can see — {@code VehiclePlacementRules}
      * tells them on placement that the boat will not be saved — and this set leaves it out so
-     * the save agrees. A minecart works off the rails aboard a carriage (on rails it does not run,
-     * which the same notice warns about), so it stays.</p>
+     * the save agrees. A dimensional carriage does not move, and there a boat is fine: see
+     * {@link #BOAT_TYPES} and {@link Rule#ROOM}. A minecart works off the rails aboard a carriage
+     * (on rails it does not run, which the same notice warns about), so it stays.</p>
      *
      * <p><b>No {@code command_block_minecart}.</b> A shared carriage is downloaded from the relay
      * and stamped into somebody else's world; a command block on wheels would be remote command
@@ -118,6 +119,42 @@ public final class TemplateDecor {
         "minecraft:tnt_minecart",
         "minecraft:hopper_minecart",
         "minecraft:spawner_minecart");
+
+    /**
+     * The boats a template carries only under {@link Rule#ROOM} — a dimensional carriage stands
+     * still in its own dimension, so a boat moored in one behaves exactly as it would anywhere.
+     */
+    public static final Set<String> BOAT_TYPES = Set.of(
+        "minecraft:boat",
+        "minecraft:chest_boat");
+
+    /**
+     * Which entities a template of a given kind carries. The one difference is boats: a template
+     * that rides the train ({@link #CARRIAGE} — carriage shells, parts, corridors, and the
+     * tunnels, tracks and pillars that share the rule for want of a reason not to) leaves them
+     * out; a dimensional carriage's room ({@link #ROOM}) keeps them.
+     */
+    public enum Rule {
+        /** The default: vehicles are minecarts only. */
+        CARRIAGE(false),
+        /** A dimensional carriage: minecarts and boats. */
+        ROOM(true);
+
+        private final boolean boats;
+
+        Rule(boolean boats) {
+            this.boats = boats;
+        }
+
+        /** Whether a template under this rule carries {@link #BOAT_TYPES}. */
+        public boolean boats() {
+            return boats;
+        }
+
+        boolean vehicle(String id) {
+            return VEHICLE_TYPES.contains(id) || (boats && BOAT_TYPES.contains(id));
+        }
+    }
 
 
     private TemplateDecor() {}
@@ -137,9 +174,15 @@ public final class TemplateDecor {
      */
     public static StructureTemplate capture(ServerLevel level, BlockPos origin, Vec3i size,
                                             @Nullable Block voidBlock) {
+        return capture(level, origin, size, voidBlock, Rule.CARRIAGE);
+    }
+
+    /** {@link #capture} under an explicit {@link Rule} — {@link Rule#ROOM} for a dimensional carriage. */
+    public static StructureTemplate capture(ServerLevel level, BlockPos origin, Vec3i size,
+                                            @Nullable Block voidBlock, Rule rule) {
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, origin, size, /*includeEntities*/ true, voidBlock);
-        return keepOnlyDecor(level, template);
+        return keepOnlyDecor(level, template, rule);
     }
 
     /**
@@ -150,8 +193,13 @@ public final class TemplateDecor {
      * entity list is already clean, so the common case pays nothing.</p>
      */
     public static StructureTemplate keepOnlyDecor(ServerLevel level, StructureTemplate template) {
+        return keepOnlyDecor(level, template, Rule.CARRIAGE);
+    }
+
+    /** {@link #keepOnlyDecor} under an explicit {@link Rule}. */
+    public static StructureTemplate keepOnlyDecor(ServerLevel level, StructureTemplate template, Rule rule) {
         CompoundTag tag = template.save(new CompoundTag());
-        if (!filterEntities(tag)) return template;
+        if (!filterEntities(tag, rule)) return template;
 
         HolderGetter<Block> blocks = level.holderLookup(Registries.BLOCK);
         StructureTemplate filtered = new StructureTemplate();
@@ -165,12 +213,16 @@ public final class TemplateDecor {
      * @return whether anything was removed — i.e. whether {@code tag} needs reloading
      */
     static boolean filterEntities(CompoundTag tag) {
+        return filterEntities(tag, Rule.CARRIAGE);
+    }
+
+    static boolean filterEntities(CompoundTag tag, Rule rule) {
         if (!tag.contains("entities", Tag.TAG_LIST)) return false;
         ListTag entities = tag.getList("entities", Tag.TAG_COMPOUND);
         ListTag kept = new ListTag();
         for (int i = 0; i < entities.size(); i++) {
             CompoundTag entry = entities.getCompound(i);
-            if (isDecor(entry)) kept.add(entry);
+            if (isDecor(entry, rule)) kept.add(entry);
         }
         if (kept.size() == entities.size()) return false;
         tag.put("entities", kept);
@@ -179,7 +231,11 @@ public final class TemplateDecor {
 
     /** Whether one saved-template {@code entities} entry is decoration this class owns. */
     static boolean isDecor(CompoundTag entry) {
-        return carries(entry.getCompound("nbt"));
+        return isDecor(entry, Rule.CARRIAGE);
+    }
+
+    static boolean isDecor(CompoundTag entry, Rule rule) {
+        return carries(entry.getCompound("nbt"), rule);
     }
 
     /**
@@ -202,10 +258,15 @@ public final class TemplateDecor {
      * author places on purpose. That rule was written, and the villager is what caught it.</p>
      */
     public static boolean carries(CompoundTag entityNbt) {
+        return carries(entityNbt, Rule.CARRIAGE);
+    }
+
+    /** {@link #carries} under an explicit {@link Rule}. */
+    public static boolean carries(CompoundTag entityNbt, Rule rule) {
         if (entityNbt == null) return false;
         String id = entityNbt.getString("id");
         return DECOR_TYPES.contains(id)
-            || VEHICLE_TYPES.contains(id)
+            || rule.vehicle(id)
             || entityNbt.contains("Health", Tag.TAG_FLOAT);
     }
 
@@ -239,6 +300,13 @@ public final class TemplateDecor {
      */
     public static int spawn(ServerLevelAccessor level, BlockPos origin, StructureTemplate template,
                             @Nullable StructurePlaceSettings settings, @Nullable Consumer<Entity> mark) {
+        return spawn(level, origin, template, settings, mark, Rule.CARRIAGE);
+    }
+
+    /** {@link #spawn} under an explicit {@link Rule} — the stamp gates what it puts back the same way the save did. */
+    public static int spawn(ServerLevelAccessor level, BlockPos origin, StructureTemplate template,
+                            @Nullable StructurePlaceSettings settings, @Nullable Consumer<Entity> mark,
+                            Rule rule) {
         CompoundTag saved = template.save(new CompoundTag());
         if (!saved.contains("entities", Tag.TAG_LIST)) return 0;
         ListTag entries = saved.getList("entities", Tag.TAG_COMPOUND);
@@ -255,7 +323,7 @@ public final class TemplateDecor {
         int spawned = 0;
         for (int i = 0; i < entries.size(); i++) {
             CompoundTag entry = entries.getCompound(i);
-            if (!isDecor(entry)) continue;
+            if (!isDecor(entry, rule)) continue;
             try {
                 if (spawnOne(level, origin, entry, mirror, rotation, pivot, clip, mark)) spawned++;
             } catch (Throwable t) {
@@ -389,8 +457,15 @@ public final class TemplateDecor {
      */
     public static int replace(ServerLevelAccessor level, BlockPos origin, StructureTemplate template,
                               @Nullable StructurePlaceSettings settings, @Nullable Consumer<Entity> mark) {
-        discard(level, origin, template, settings);
-        return spawn(level, origin, template, settings, mark);
+        return replace(level, origin, template, settings, mark, Rule.CARRIAGE);
+    }
+
+    /** {@link #replace} under an explicit {@link Rule}. */
+    public static int replace(ServerLevelAccessor level, BlockPos origin, StructureTemplate template,
+                              @Nullable StructurePlaceSettings settings, @Nullable Consumer<Entity> mark,
+                              Rule rule) {
+        discard(level, origin, template, settings, rule);
+        return spawn(level, origin, template, settings, mark, rule);
     }
 
     /**
@@ -411,6 +486,12 @@ public final class TemplateDecor {
      */
     public static int discard(ServerLevelAccessor level, BlockPos origin, StructureTemplate template,
                               @Nullable StructurePlaceSettings settings) {
+        return discard(level, origin, template, settings, Rule.CARRIAGE);
+    }
+
+    /** {@link #discard} under an explicit {@link Rule}. */
+    public static int discard(ServerLevelAccessor level, BlockPos origin, StructureTemplate template,
+                              @Nullable StructurePlaceSettings settings, Rule rule) {
         Vec3i size = template.getSize();
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return 0;
         Mirror mirror = settings == null ? Mirror.NONE : settings.getMirror();
@@ -437,7 +518,7 @@ public final class TemplateDecor {
             if (box.getXsize() <= 0 || box.getYsize() <= 0 || box.getZsize() <= 0) return 0;
         }
 
-        List<Entity> doomed = level.getEntities((Entity) null, box, TemplateDecor::isRestamped);
+        List<Entity> doomed = level.getEntities((Entity) null, box, e -> isRestamped(e, rule));
         for (Entity entity : doomed) entity.discard();
         return doomed.size();
     }
@@ -450,8 +531,13 @@ public final class TemplateDecor {
      * template placed, or a room's mobs are spawned once per copy and taken away never.</p>
      */
     public static boolean carried(Entity entity) {
+        return carried(entity, Rule.CARRIAGE);
+    }
+
+    /** {@link #carried} under an explicit {@link Rule}. */
+    public static boolean carried(Entity entity, Rule rule) {
         // The live form of the three questions {@link #carries} asks of a tag.
-        return entity instanceof LivingEntity || isWallDecor(entity) || isVehicle(entity);
+        return entity instanceof LivingEntity || isWallDecor(entity) || isVehicle(entity, rule);
     }
 
     /**
@@ -469,8 +555,13 @@ public final class TemplateDecor {
 
     /** Whether a live entity is one of the {@link #VEHICLE_TYPES}. */
     public static boolean isVehicle(Entity entity) {
+        return isVehicle(entity, Rule.CARRIAGE);
+    }
+
+    /** Whether a live entity is a vehicle {@code rule} carries — the minecarts, plus boats under {@link Rule#ROOM}. */
+    public static boolean isVehicle(Entity entity, Rule rule) {
         return entity != null
-            && VEHICLE_TYPES.contains(EntityType.getKey(entity.getType()).toString());
+            && rule.vehicle(EntityType.getKey(entity.getType()).toString());
     }
 
     /**
@@ -478,8 +569,8 @@ public final class TemplateDecor {
      * carried vehicle nobody is sitting in. The occupied one is spared for the same reason the
      * pet is — it is a player's, not the stamp's.
      */
-    static boolean isRestamped(Entity entity) {
+    static boolean isRestamped(Entity entity, Rule rule) {
         return isWallDecor(entity)
-            || (isVehicle(entity) && entity.getPassengers().isEmpty());
+            || (isVehicle(entity, rule) && entity.getPassengers().isEmpty());
     }
 }

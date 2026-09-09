@@ -554,7 +554,7 @@ public final class PortalRoomEditor {
 
         BlockPos origin = plotOrigin(name, dims);
         Vec3i size = plotSize(name, dims);
-        StructureTemplate template = TemplateDecor.capture(overworld, origin, size, Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(overworld, origin, size, Blocks.STRUCTURE_VOID, TemplateDecor.Rule.ROOM);
         PortalRoomTemplateStore.save(name, template);
 
         // Fresh baseline, or the brand-new plot reads as already edited.
@@ -695,7 +695,7 @@ public final class PortalRoomEditor {
      */
     private static StructureTemplate captureLive(ServerLevel overworld, String name, PlotBox box) {
         if (!EditorPlotSnapshots.has(snapshotKey(name))) return null;
-        StructureTemplate template = TemplateDecor.capture(overworld, box.origin(), box.size(), Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(overworld, box.origin(), box.size(), Blocks.STRUCTURE_VOID, TemplateDecor.Rule.ROOM);
         return template;
     }
 
@@ -864,7 +864,7 @@ public final class PortalRoomEditor {
         // Through TemplateDecor, not a bare fillFromWorld: the raw call passes includeEntities=false
         // and so drops the room's item frames and paintings. Folded in here rather than at the
         // caller so the Train Builder's save keeps them too.
-        StructureTemplate template = TemplateDecor.capture(level, origin, size, Blocks.STRUCTURE_VOID);
+        StructureTemplate template = TemplateDecor.capture(level, origin, size, Blocks.STRUCTURE_VOID, TemplateDecor.Rule.ROOM);
 
         PortalRoomTemplateStore.save(name, template);
 
