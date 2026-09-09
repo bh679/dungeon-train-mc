@@ -11829,6 +11829,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "random-potion-loot-entries",
+      "version": "0.826.0",
+      "type": "feat",
+      "title": "Random potion loot entries, and potions that spawn as authored",
+      "summary": "Chest and barrel loot on the train now uses three new random potion entries: any potion, a good potion, or a bad potion. Each can scale its strength with how far you have travelled or pick flat from the whole range, and can be pinned to a drinkable, splash or lingering bottle. Potions authored into a loot pool now spawn exactly as placed, so a Water Bottle stays a Water Bottle and a Potion of Healing stays healing. The train's brewing chests, potion barrels and end loot roll from wider pools, so a chest that drops several potions is much less likely to repeat the same one.",
+      "highlights": [
+        "New loot entries: Random Potion, Random Good Potion, Random Bad Potion",
+        "Per-entry Scale toggle: strength follows distance, or flat across every tier",
+        "Per-entry Form toggle: Any / Potion / Splash / Lingering",
+        "Authored potions in loot pools spawn exactly as placed",
+        "Wider potion pools so several drops in one chest rarely repeat"
+      ],
+      "pr": 1342,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
