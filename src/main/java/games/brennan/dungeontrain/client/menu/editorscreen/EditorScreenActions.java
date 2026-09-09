@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
+import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
@@ -113,6 +114,9 @@ public final class EditorScreenActions {
         out.add(new Icon("rename", EditorScreenLang.ICON_RENAME, renameEntry(ctx),
             EditorScreenLang.DISABLED_BUILTIN));
 
+        out.add(new Icon("move", EditorScreenLang.ICON_MOVE, moveEntry(ctx),
+            EditorScreenLang.DISABLED_NO_GROUPS));
+
         out.add(new Icon("remove", EditorScreenLang.ICON_REMOVE, removeEntry(ctx),
             EditorScreenLang.DISABLED_NOT_HERE));
 
@@ -177,41 +181,48 @@ public final class EditorScreenActions {
     /**
      * Rename the selected template, from wherever the player is standing.
      *
-     * <p>Addressed by id rather than by position, so it renames what the pane is showing rather
-     * than whatever plot the author happens to be in. The server still refuses when the template's
-     * category is not the stamped one — its plots are cleared then, and the rename captures blocks
-     * from the plot.</p>
+     * <p>A rename here is a <b>display label</b> ({@code … label <id> <name>}): the id — the file
+     * name everything else is keyed by — stays what it is, so the label works on built-ins,
+     * bundled rooms and sub-variants alike, and nothing on disk moves. The typed field starts on
+     * the current label; clearing it returns the row to its id. The id-changing {@code rename}
+     * verbs still exist for the command line.</p>
      *
-     * <p>Null for built-ins and for the categories with no rename verb. Sub-variants are refused per
-     * category rather than up front: a carriage or contents sub-variant is addressed through its
-     * parent and has no rename of its own, while a portal room in a group is an ordinary room that
-     * happens to be listed under one — renaming it rewrites the membership, which is exactly what
-     * the server-side rename does.</p>
+     * <p>Null only for the categories with no label verb: parts and tracks have no pane selection
+     * to address it with yet.</p>
      */
     static CommandMenuEntry renameEntry(Ctx ctx) {
         if (!ctx.hasSelection()) return null;
-        if (ctx.isSubVariant() && ctx.category() != PlotCategory.PORTALS) return null;
         VariantKey sel = ctx.selection();
         String id = sel.modelId();
         String label = EditorScreenLang.text(EditorScreenLang.ICON_RENAME);
+        String current = ctx.variant().displayName();
         return switch (sel.category()) {
-            case CARRIAGES -> EditorMenuScreen.isReservedCarriageBuiltin(id) ? null
-                : new CommandMenuEntry.TypeArg(label, "new_name",
-                    "dungeontrain editor rename " + id, "", id);
-            case CONTENTS -> EditorMenuScreen.isReservedContentsBuiltin(id) ? null
-                : new CommandMenuEntry.TypeArg(label, "new_name",
-                    "dungeontrain editor contents rename " + id, "", id);
+            case CARRIAGES -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor label " + id, "", current);
+            case CONTENTS -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor contents label " + id, "", current);
             // A room is a track variant under the hood and its key is spelled like one: modelId is
             // the KIND token (portal_room) and modelName is the room — the same pair the weight and
-            // phase commands beside this one send. Naming the room with modelId is what produced
-            // "Unknown portal_room 'portal_room'". The typed field starts on the current name.
-            case PORTALS -> new CommandMenuEntry.TypeArg(label, "new_name",
-                "dungeontrain editor portals rename " + id + " " + sel.modelName(),
-                "", sel.modelName());
-            // Parts rename through their own kind:name verb; tracks have the command but no pane
-            // selection to address it with yet.
+            // phase commands beside this one send.
+            case PORTALS -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor portals label " + id + " " + sel.modelName(), "", current);
             case PARTS, TRACKS, ARCHITECTURE -> null;
         };
+    }
+
+    /**
+     * Move the selected template in the sub-variant tree: under another parent, up to top level, or
+     * down under one. Opens {@link GroupParentPickerScreen}; null for the categories that have no
+     * groups (the icon shows why).
+     */
+    static CommandMenuEntry moveEntry(Ctx ctx) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        if (!GroupParentPickerScreen.supports(sel.category())) return null;
+        // Contents groups are keyed by the contents id; a room by its name under the portal kind.
+        String childId = sel.category() == PlotCategory.PORTALS ? sel.modelName() : sel.modelId();
+        return new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.ICON_MOVE),
+            new GroupParentPickerScreen(sel.category(), childId, sel.parentId()));
     }
 
     /**

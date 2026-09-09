@@ -114,6 +114,16 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         return m == null ? null : m.stageId();
     }
 
+    /**
+     * The editor label for {@code id} — its display name when one is set, else the id itself. Never
+     * null. See {@link TemplateMeta#name()}.
+     */
+    public String nameFor(String id) {
+        if (id == null) return "";
+        TemplateMeta m = byId.get(id);
+        return m == null || m.name() == null ? id : m.name();
+    }
+
     public static int clamp(int value) {
         if (value < MIN) return MIN;
         if (value > MAX) return MAX;
@@ -235,6 +245,25 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         LOGGER.info("[DungeonTrain] Set carriage contents flip {}={} (persisted to {}).",
                 key, value, configPath());
         return value;
+    }
+
+    /**
+     * Set the editor display label for {@code id} ({@code null} / blank clears it back to the id),
+     * preserving weight, inline gate, Stage link, mode and flip, and persist. Returns the stored
+     * label, or {@code null} when cleared. See {@link CarriageWeights#setName}.
+     */
+    public static synchronized String setName(String id, String name) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        String label = TemplateMeta.normaliseName(name);
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        next.put(key, TemplateMeta.mergeName(prev, label, DEFAULT));
+        current = new CarriageContentsWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage contents label {}={} (persisted to {}).",
+                key, label == null ? "<id>" : label, configPath());
+        return label;
     }
 
     /**

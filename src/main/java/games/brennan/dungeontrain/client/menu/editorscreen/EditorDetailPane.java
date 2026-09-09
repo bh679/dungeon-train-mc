@@ -177,7 +177,7 @@ public final class EditorDetailPane {
                        float yaw, int mouseX, int mouseY) {
         hovered = hitTest(mouseX, mouseY);
         drawHeader(g, font, theme);
-        String name = tile == null ? "" : tile.variant().name();
+        String name = tile == null ? "" : tile.variant().displayName();
         PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
         versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
         sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,

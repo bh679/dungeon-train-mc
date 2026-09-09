@@ -123,6 +123,13 @@ public final class EditorScreenLang {
     public static final String ICON_RESET = PREFIX + "icon.reset";
     public static final String ICON_CLEAR = PREFIX + "icon.clear";
     public static final String ICON_PACKAGE = PREFIX + "icon.package";
+    public static final String ICON_MOVE = PREFIX + "icon.move";
+    public static final String SHEET_ID = PREFIX + "sheet.id";
+    public static final String DISABLED_NO_GROUPS = PREFIX + "disabled.no_groups";
+    public static final String MOVE_TITLE = PREFIX + "move.title";
+    public static final String MOVE_TOP_LEVEL = PREFIX + "move.top_level";
+    public static final String MOVE_NO_TARGETS = PREFIX + "move.no_targets";
+    public static final String MOVE_BACK = PREFIX + "move.back";
     /** The submit icon wears My Builds' own two words, so one decision reads the same in both. */
     public static final String ICON_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
     public static final String ICON_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
