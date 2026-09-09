@@ -150,8 +150,9 @@ public final class ContainerContentsRoller {
     // below but each carries its own tier table and a decorrelating salt:
     //   • effectless tipped arrows           → ARROW_EFFECT_TIERS  (offensive)
     //   • dungeontrain:random_potion         → POTION_EFFECT_TIERS (broad)
-    // A plain minecraft:potion entry is NEVER randomised — it spawns the potion
-    // the author stored on the entry (ContainerContentsPotions).
+    // A minecraft:potion entry joins the random_potion path only when its stored
+    // potion is an effectless base (mundane / thick / awkward / water) or absent;
+    // one with a real effect spawns as authored (ContainerContentsPotions).
     // Suspicious stews (below, STEW_EFFECTS) are the one exception: vanilla
     // stew effects don't escalate with anything, so they skip the
     // level/tier machinery and roll uniformly from a single flat pool.
@@ -919,12 +920,6 @@ public final class ContainerContentsRoller {
             return bakeStatsBook(localPos, worldSeed, carriageIndex, slot);
         }
 
-        // Editor placeholder dungeontrain:random_potion — the ONLY entry that randomises a
-        // potion. A tiered effect (escalating per 50-carriage band) in a random bottle form.
-        if (item == ModItems.RANDOM_POTION.get()) {
-            return bakeRandomPotion(localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
-        }
-
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
             if (SharedBookGate.canDiscover()) {
                 // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
@@ -946,8 +941,8 @@ public final class ContainerContentsRoller {
         int maxStack = new ItemStack(item).getMaxStackSize();
         ItemStack stack = new ItemStack(item, Math.max(1, Math.min(maxStack, rolledCount)));
 
-        // A potion entry spawns exactly the potion the author added (Healing, Water, ...).
-        // Entries with no stored potion stay vanilla's component-less "Uncraftable Potion".
+        // A potion entry carries the potion the author added from their hand. Whether
+        // that potion is kept or randomised is decided further down.
         ContainerContentsPotions.applyStoredPotion(stack, picked.potionId(), registries);
 
         if (picked.randomDurability() && stack.isDamageableItem()
@@ -999,8 +994,14 @@ public final class ContainerContentsRoller {
         // localPos/slot — so every arrow in the same 50-carriage block matches.
         applyEpochArrowEffect(stack, item, worldSeed, carriageIndex, registries);
 
-        // Potions are NOT randomised here — see the dungeontrain:random_potion
-        // placeholder branch above. A minecraft:potion entry is placed as authored.
+        // Potions: the dungeontrain:random_potion placeholder, and any potion entry whose
+        // stored potion is a base with no effect (mundane / thick / awkward / water) or
+        // none at all, become a random tiered potion in a random bottle form. A potion
+        // with a real effect (Healing, Poison, ...) is placed exactly as authored.
+        if (ContainerContentsPotions.isRandomisedEntry(item, picked.potionId())) {
+            stack = bakeRandomPotion(localPos, worldSeed, carriageIndex, slot, stack.getCount(), registries);
+            if (stack.isEmpty()) return stack;
+        }
 
         // Otherwise-effectless suspicious stews found in loot get a real
         // potion effect. There's no alternate "form" to swap to, so this
@@ -1077,8 +1078,10 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * Bake the {@code dungeontrain:random_potion} placeholder into a real vanilla potion: an
-     * effect from {@link #POTION_EFFECT_TIERS} in a drinkable / splash / lingering bottle.
+     * Bake a random vanilla potion: an effect from {@link #POTION_EFFECT_TIERS} in a
+     * drinkable / splash / lingering bottle. Used for the {@code dungeontrain:random_potion}
+     * placeholder and for potion entries {@link ContainerContentsPotions#isRandomisedEntry}
+     * says to randomise (effectless bases and empty bottles).
      *
      * <p>The TIER (the pool of allowed effects) escalates with travelled distance; WITHIN the
      * tier the effect and the bottle form are each independently random, keyed on the full

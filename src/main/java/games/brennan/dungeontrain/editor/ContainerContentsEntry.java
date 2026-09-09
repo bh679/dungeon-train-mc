@@ -29,10 +29,11 @@ import javax.annotation.Nullable;
  * <p>{@code potionId} is the vanilla potion registry id carried by a
  * drinkable / splash / lingering potion entry, captured from the stack the
  * author added from their hand so the exact potion ("Potion of Healing",
- * "Water Bottle") is what the chest spawns. {@code null} for every other item
- * and for potion entries added by id alone, which spawn as vanilla's
- * component-less "Uncraftable Potion". Random potions are a separate
- * placeholder item ({@code dungeontrain:random_potion}), not a flag here.</p>
+ * "Splash Potion of Poison") is what the chest spawns. {@code null} for every
+ * other item and for potion entries added by id alone. Which stored potions
+ * are kept and which are randomised is {@code ContainerContentsPotions}'
+ * call; the explicit random entry is the {@code dungeontrain:random_potion}
+ * placeholder item, not a flag here.</p>
  */
 public record ContainerContentsEntry(
     ResourceLocation itemId,
