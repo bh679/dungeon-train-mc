@@ -339,7 +339,7 @@ public final class ContainerContentsMenuRenderer {
                 drawQuad(ps, buffer, iconL + 0.01, rowBottom + 0.005,
                     iconR - 0.005, rowTop - 0.005, 0x60FFCC33);
             }
-            MenuBlockIcons.drawItemIcon(ps, buffer, entry.itemId(),
+            MenuBlockIcons.drawItemIcon(ps, buffer, entryIconId(entry),
                 iconL + ICON_CELL_WIDTH / 2.0, rowCY, ICON_SIZE, icons);
             if (ContainerContentsMenu.isExpanded(i)) {
                 drawLeftText(ps, buffer, font, entryLabel(entry),
@@ -584,6 +584,17 @@ public final class ContainerContentsMenuRenderer {
     static boolean isEnchantable(String itemId) {
         Item item = resolveItem(itemId);
         return item != null && new ItemStack(item).isEnchantable();
+    }
+
+    /**
+     * Icon id for an entry row. A random-potion placeholder whose Form is pinned shows the
+     * pinned vanilla bottle (potion / splash / lingering) so the row reads at a glance;
+     * everything else shows its own item.
+     */
+    static String entryIconId(ContainerContentsSyncPacket.Entry entry) {
+        if (!isRandomPotionPlaceholder(entry.itemId())) return entry.itemId();
+        Item pinned = games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).item();
+        return pinned == null ? entry.itemId() : BuiltInRegistries.ITEM.getKey(pinned).toString();
     }
 
     /**
