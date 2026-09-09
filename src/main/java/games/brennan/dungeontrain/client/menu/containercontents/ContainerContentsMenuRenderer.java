@@ -339,10 +339,10 @@ public final class ContainerContentsMenuRenderer {
                 drawQuad(ps, buffer, iconL + 0.01, rowBottom + 0.005,
                     iconR - 0.005, rowTop - 0.005, 0x60FFCC33);
             }
-            MenuBlockIcons.drawItemIcon(ps, buffer, entry.itemId(),
+            MenuBlockIcons.drawItemIcon(ps, buffer, entryIconId(entry),
                 iconL + ICON_CELL_WIDTH / 2.0, rowCY, ICON_SIZE, icons);
             if (ContainerContentsMenu.isExpanded(i)) {
-                drawLeftText(ps, buffer, font, shortenItemLabel(entry.itemId()),
+                drawLeftText(ps, buffer, font, entryLabel(entry),
                     iconL + ICON_CELL_WIDTH + NAME_PAD / 2.0, rowCY,
                     iconHover ? 0xFF000000 : 0xFFFFFFFF);
             }
@@ -398,7 +398,8 @@ public final class ContainerContentsMenuRenderer {
             // drawn.
             boolean showDur = layout.showDur[i];
             boolean showEnch = layout.showEnch[i];
-            if (!showDur && !showEnch) continue;
+            boolean showScale = layout.showScale[i];
+            if (!showDur && !showEnch && !showScale) continue;
 
             double subTop = rowBottom;
             double subBottom = subTop - SUB_ROW_HEIGHT;
@@ -416,6 +417,31 @@ public final class ContainerContentsMenuRenderer {
             double ench1R = ench1L + subCellW;
             double ench2L = ench1R;
             double ench2R = colXR - 0.01;
+
+            if (showScale) {
+                // Random-potion placeholder: scale-with-distance toggle. Potions are
+                // neither damageable nor enchantable, so this is the sub-row's only cell.
+                boolean scaleHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_SCALE_TOGGLE && hovered.index() == i;
+                boolean scaleOn = entry.scaleWithDistance();
+                int scaleTint = scaleHover
+                    ? (scaleOn ? 0xC0FFCC99 : 0xC0AAAAAA)
+                    : (scaleOn ? 0x60CC8833 : 0x40555555);
+                drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
+                    dur2R - 0.005, subTop - 0.005, scaleTint);
+                drawCenteredText(ps, buffer, font, scaleOn ? "Scale ✓" : "Scale ✗",
+                    (dur1L + dur2R) / 2.0, subCY,
+                    scaleHover ? 0xFF000000 : 0xFFFFFFFF);
+
+                // Bottle form cell: Any / Potion / Splash / Lingering, click to step.
+                boolean formHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_POTION_FORM && hovered.index() == i;
+                int formTint = formHover ? 0xC0FFCC33 : 0x40FFFFFF;
+                drawQuad(ps, buffer, ench1L + 0.005, subBottom + 0.005,
+                    ench2R - 0.005, subTop - 0.005, formTint);
+                drawCenteredText(ps, buffer, font,
+                    "Form: " + games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).label(),
+                    (ench1L + ench2R) / 2.0, subCY,
+                    formHover ? 0xFF000000 : 0xFFFFFFFF);
+            }
 
             if (showDur) {
                 // Random-durability toggle.
@@ -482,8 +508,14 @@ public final class ContainerContentsMenuRenderer {
      * the same record so hover and render never disagree about where a cell
      * is.</p>
      */
-    record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, double gridHeight,
-                       double[] colWidth, double[] colLeft, double panelWidth) {}
+    record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, boolean[] showScale,
+                       double gridHeight, double[] colWidth, double[] colLeft, double panelWidth) {
+
+        /** True when entry {@code i} draws a sub-row (any of its per-entry options applies). */
+        boolean hasSubRow(int i) {
+            return showDur[i] || showEnch[i] || showScale[i];
+        }
+    }
 
     static EntryLayout computeLayout(List<ContainerContentsSyncPacket.Entry> entries, int colCount) {
         int n = entries.size();
@@ -491,6 +523,7 @@ public final class ContainerContentsMenuRenderer {
         double[] rowDispTop = new double[n];
         boolean[] showDur = new boolean[n];
         boolean[] showEnch = new boolean[n];
+        boolean[] showScale = new boolean[n];
         double[] colTotalH = new double[cols];
         // Extra width each column needs for the longest name revealed inside it.
         double[] colNameW = new double[cols];
@@ -500,7 +533,8 @@ public final class ContainerContentsMenuRenderer {
             String id = entries.get(i).itemId();
             showDur[i] = isDamageable(id);
             showEnch[i] = isEnchantable(id);
-            double h = (showDur[i] || showEnch[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
+            showScale[i] = isRandomPotionPlaceholder(id);
+            double h = (showDur[i] || showEnch[i] || showScale[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
             rowDispTop[i] = colTotalH[col];
             colTotalH[col] += h;
             if (ContainerContentsMenu.isExpanded(i)) {
@@ -530,7 +564,7 @@ public final class ContainerContentsMenuRenderer {
         }
         double[] colLeft = new double[cols];
         for (int c = 1; c < cols; c++) colLeft[c] = colLeft[c - 1] + colWidth[c - 1];
-        return new EntryLayout(rowDispTop, showDur, showEnch, gridH, colWidth, colLeft, sumW);
+        return new EntryLayout(rowDispTop, showDur, showEnch, showScale, gridH, colWidth, colLeft, sumW);
     }
 
     /**
@@ -550,6 +584,30 @@ public final class ContainerContentsMenuRenderer {
     static boolean isEnchantable(String itemId) {
         Item item = resolveItem(itemId);
         return item != null && new ItemStack(item).isEnchantable();
+    }
+
+    /**
+     * Icon id for an entry row. A random-potion placeholder whose Form is pinned shows the
+     * pinned vanilla bottle (potion / splash / lingering) so the row reads at a glance;
+     * everything else shows its own item.
+     */
+    static String entryIconId(ContainerContentsSyncPacket.Entry entry) {
+        if (!isRandomPotionPlaceholder(entry.itemId())) return entry.itemId();
+        Item pinned = games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).item();
+        return pinned == null ? entry.itemId() : BuiltInRegistries.ITEM.getKey(pinned).toString();
+    }
+
+    /**
+     * True for the {@code dungeontrain:random_potion} / {@code random_good_potion} /
+     * {@code random_bad_potion} placeholders — the only entries that carry the
+     * scale-with-distance toggle.
+     */
+    static boolean isRandomPotionPlaceholder(String itemId) {
+        Item item = resolveItem(itemId);
+        return item != null
+            && (item == games.brennan.dungeontrain.registry.ModItems.RANDOM_POTION.get()
+                || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_GOOD_POTION.get()
+                || item == games.brennan.dungeontrain.registry.ModItems.RANDOM_BAD_POTION.get());
     }
 
     private static Item resolveItem(String itemId) {
@@ -620,6 +678,16 @@ public final class ContainerContentsMenuRenderer {
             int textColour = isHover ? 0xFF000000 : 0xFFFFFFFF;
             drawLeftText(ps, buffer, font, filtered.get(i), colXL + 0.04, rowCY, textColour);
         }
+    }
+
+    /**
+     * Row label for an entry: the short item id, plus the stored potion in parentheses for a
+     * potion entry so "potion (healing)" and "potion (water)" are told apart at a glance.
+     */
+    static String entryLabel(ContainerContentsSyncPacket.Entry entry) {
+        String base = shortenItemLabel(entry.itemId());
+        if (!entry.hasPotion()) return base;
+        return base + " (" + shortenItemLabel(entry.potionId()) + ")";
     }
 
     /** Drop {@code modid:} prefix for the row label. */
