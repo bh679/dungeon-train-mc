@@ -519,6 +519,9 @@ public final class ContainerContentsStore {
                 if (ce.potionId() != null) {
                     sb.append(", \"potion\": \"").append(ce.potionId()).append("\"");
                 }
+                if (!ce.scaleWithDistance()) {
+                    sb.append(", \"scale\": false");
+                }
                 sb.append(" }");
                 firstEntry = false;
             }
@@ -649,8 +652,11 @@ public final class ContainerContentsStore {
                         ResourceLocation potionId = eo.has("potion") && eo.get("potion").isJsonPrimitive()
                             ? ResourceLocation.tryParse(eo.get("potion").getAsString())
                             : null;
+                        boolean scale = eo.has("scale") && eo.get("scale").isJsonPrimitive()
+                            ? eo.get("scale").getAsBoolean()
+                            : ContainerContentsEntry.DEFAULT_SCALE_WITH_DISTANCE;
                         entries.add(new ContainerContentsEntry(id, count, weight,
-                            randDur, durChance, randEnch, enchChance, slotOverride, potionId));
+                            randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));

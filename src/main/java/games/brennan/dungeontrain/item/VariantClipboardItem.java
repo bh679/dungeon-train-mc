@@ -134,6 +134,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_POOL_ENTRY_WEIGHT = "w";
     /** Stored vanilla potion id of a potion entry; absent when the entry has none. */
     private static final String NBT_POOL_ENTRY_POTION = "p";
+    /** Random-potion scale-with-distance toggle; absent means the default (on). */
+    private static final String NBT_POOL_ENTRY_SCALE = "s";
 
     public VariantClipboardItem(Properties properties) {
         super(properties);
@@ -393,6 +395,7 @@ public final class VariantClipboardItem extends Item {
             et.putInt(NBT_POOL_ENTRY_COUNT, e.count());
             et.putInt(NBT_POOL_ENTRY_WEIGHT, e.weight());
             if (e.potionId() != null) et.putString(NBT_POOL_ENTRY_POTION, e.potionId().toString());
+            if (!e.scaleWithDistance()) et.putBoolean(NBT_POOL_ENTRY_SCALE, false);
             entries.add(et);
         }
         tag.put(NBT_POOL_ENTRIES, entries);
@@ -427,7 +430,10 @@ public final class VariantClipboardItem extends Item {
                     ? et.getInt(NBT_POOL_ENTRY_WEIGHT) : 1;
                 ResourceLocation potionId = et.contains(NBT_POOL_ENTRY_POTION, Tag.TAG_STRING)
                     ? ResourceLocation.tryParse(et.getString(NBT_POOL_ENTRY_POTION)) : null;
-                entries.add(new ContainerContentsEntry(id, count, weight).withPotion(potionId));
+                boolean scale = !et.contains(NBT_POOL_ENTRY_SCALE, Tag.TAG_BYTE)
+                    || et.getBoolean(NBT_POOL_ENTRY_SCALE);
+                entries.add(new ContainerContentsEntry(id, count, weight)
+                    .withPotion(potionId).withScaleWithDistance(scale));
             }
         }
         return new ContainerContentsPool(entries, fillMin, fillMax);

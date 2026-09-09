@@ -43,7 +43,9 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
     public enum Op {
         ADD, REMOVE, CLEAR, BUMP_WEIGHT, BUMP_COUNT, BUMP_FILL_MIN, BUMP_FILL_MAX, UNLINK,
         TOGGLE_RAND_DUR, BUMP_DUR_CHANCE, TOGGLE_RAND_ENCH, BUMP_ENCH_CHANCE,
-        CYCLE_SLOT_ASSIGN, SET_WEIGHT
+        CYCLE_SLOT_ASSIGN, SET_WEIGHT,
+        /** Flip a random-potion placeholder entry's scale-with-distance toggle. */
+        TOGGLE_SCALE
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =

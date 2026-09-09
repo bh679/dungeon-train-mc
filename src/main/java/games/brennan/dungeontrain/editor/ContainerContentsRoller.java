@@ -232,6 +232,46 @@ public final class ContainerContentsRoller {
     }
 
     /**
+     * Ordered, escalating tiers of <b>beneficial</b> vanilla potions for the
+     * {@code dungeontrain:random_good_potion} placeholder. Same invariants as
+     * {@link #POTION_EFFECT_TIERS} (no {@code long_*}, no id shared across
+     * adjacent tiers). With the entry's scale-with-distance toggle off the
+     * pick is uniform across the flattened table instead of tier-locked.
+     */
+    private static final List<List<ResourceLocation>> GOOD_POTION_TIERS = List.of(
+        tierIds("healing", "night_vision"),                                     // T0 — carts 0–49
+        tierIds("swiftness", "water_breathing"),                                // T1 — carts 50–99
+        tierIds("fire_resistance", "leaping"),                                  // T2 — carts 100–149
+        tierIds("strength", "invisibility"),                                    // T3 — carts 150–199
+        tierIds("strong_healing", "slow_falling"),                              // T4 — carts 200–249
+        tierIds("strong_regeneration", "strong_strength", "strong_swiftness")   // T5 — carts 250+
+    );
+
+    /** Test seam: read-only view of the good-potion tiers. */
+    static List<List<ResourceLocation>> goodPotionTiersView() {
+        return GOOD_POTION_TIERS;
+    }
+
+    /**
+     * Harmful twin of {@link #GOOD_POTION_TIERS} for
+     * {@code dungeontrain:random_bad_potion}. The top tier uses the 1.21
+     * ominous-trial potions so it stays distinct from the level-II tier below it.
+     */
+    private static final List<List<ResourceLocation>> BAD_POTION_TIERS = List.of(
+        tierIds("weakness"),                        // T0 — carts 0–49
+        tierIds("slowness"),                        // T1 — carts 50–99
+        tierIds("poison"),                          // T2 — carts 100–149
+        tierIds("harming"),                         // T3 — carts 150–199
+        tierIds("strong_poison", "strong_slowness"),// T4 — carts 200–249
+        tierIds("strong_harming", "weaving", "oozing") // T5 — carts 250+
+    );
+
+    /** Test seam: read-only view of the bad-potion tiers. */
+    static List<List<ResourceLocation>> badPotionTiersView() {
+        return BAD_POTION_TIERS;
+    }
+
+    /**
      * The complete, flat set of vanilla {@link MobEffect}s a suspicious stew
      * can normally carry — exactly the 9 distinct effects vanilla's own
      * flowers assign via {@code Blocks} (dandelion/blue_orchid → saturation,
@@ -257,6 +297,13 @@ public final class ContainerContentsRoller {
 
     /** Flat duration applied to every rolled stew effect, in ticks (400 = 20s). */
     private static final int STEW_EFFECT_DURATION_TICKS = 400;
+
+    /** Every id of every tier, in tier order — the unscaled pick space. Test seam. */
+    static List<ResourceLocation> flattenTiers(List<List<ResourceLocation>> tiers) {
+        List<ResourceLocation> out = new ArrayList<>();
+        for (List<ResourceLocation> tier : tiers) out.addAll(tier);
+        return out;
+    }
 
     private static List<ResourceLocation> tierIds(String... potionPaths) {
         List<ResourceLocation> ids = new ArrayList<>(potionPaths.length);
@@ -919,6 +966,18 @@ public final class ContainerContentsRoller {
             return bakeStatsBook(localPos, worldSeed, carriageIndex, slot);
         }
 
+        // Editor placeholders dungeontrain:random_good_potion / random_bad_potion — a
+        // beneficial or harmful vanilla potion in a random bottle form. The entry's
+        // scale toggle decides whether the power tier follows carriages travelled.
+        if (item == ModItems.RANDOM_GOOD_POTION.get()) {
+            return bakeRandomPotion(GOOD_POTION_TIERS, picked.scaleWithDistance(),
+                localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
+        }
+        if (item == ModItems.RANDOM_BAD_POTION.get()) {
+            return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(),
+                localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
+        }
+
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
             if (SharedBookGate.canDiscover()) {
                 // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
@@ -998,7 +1057,8 @@ public final class ContainerContentsRoller {
         // random bottle form, as every potion entry did before entries could store a
         // potion. One with a real effect (Healing, Poison, ...) is placed as authored.
         if (ContainerContentsPotions.isRandomisedEntry(item, picked.potionId())) {
-            stack = bakeRandomPotion(localPos, worldSeed, carriageIndex, slot, stack.getCount(), registries);
+            stack = bakeRandomPotion(POTION_EFFECT_TIERS, true,
+                localPos, worldSeed, carriageIndex, slot, stack.getCount(), registries);
             if (stack.isEmpty()) return stack;
         }
 
@@ -1077,25 +1137,28 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * Bake a random vanilla potion: an effect from {@link #POTION_EFFECT_TIERS} in a
-     * drinkable / splash / lingering bottle, for the potion entries
-     * {@link ContainerContentsPotions#isRandomisedEntry} says to randomise (effectless bases
-     * and empty bottles).
+     * Bake a random vanilla potion from {@code tiers} in a drinkable / splash / lingering
+     * bottle. Used for the potion entries {@link ContainerContentsPotions#isRandomisedEntry}
+     * says to randomise (effectless bases and empty bottles, always scaled) and for the
+     * {@code random_good_potion} / {@code random_bad_potion} placeholders.
      *
-     * <p>The TIER (the pool of allowed effects) escalates with travelled distance; WITHIN the
-     * tier the effect and the bottle form are each independently random, keyed on the full
-     * {@code (localPos, worldSeed, carriageIndex, slot)} so two random potions in the same
-     * 50-carriage band can differ, yet a fixed chest/slot stays deterministic (re-opens
-     * identical).</p>
+     * <p>With {@code scale} the TIER (the pool of allowed effects) escalates with travelled
+     * distance; without it the pick is uniform across every tier's ids, so a chest near the
+     * engine can hold a level-II potion. Either way the effect and the bottle form are each
+     * independently random, keyed on the full {@code (localPos, worldSeed, carriageIndex,
+     * slot)} so two random potions in the same 50-carriage band can differ, yet a fixed
+     * chest/slot stays deterministic (re-opens identical).</p>
      *
-     * <p>Returns {@link ItemStack#EMPTY} only when no tier potion resolves (a stripped or
-     * modded potion registry), so the slot is skipped rather than filled with a blank bottle.</p>
+     * <p>Returns {@link ItemStack#EMPTY} only when no potion resolves (a stripped or modded
+     * potion registry), so the slot is skipped rather than filled with a blank bottle.</p>
      */
-    static ItemStack bakeRandomPotion(BlockPos localPos, long worldSeed, int carriageIndex,
+    static ItemStack bakeRandomPotion(List<List<ResourceLocation>> tiers, boolean scale,
+                                      BlockPos localPos, long worldSeed, int carriageIndex,
                                       int slot, int count, HolderLookup.Provider registries) {
         int level = epochLevel(carriageIndex);
-        int tier = potionEffectTierIndex(level);
-        List<Holder<Potion>> pool = resolvePotions(POTION_EFFECT_TIERS.get(tier), registries);
+        int tier = scale ? epochTierIndex(level, tiers.size()) : -1;
+        List<ResourceLocation> ids = scale ? tiers.get(tier) : flattenTiers(tiers);
+        List<Holder<Potion>> pool = resolvePotions(ids, registries);
         if (pool.isEmpty()) return ItemStack.EMPTY;
 
         int effIdx = potionEffectIndex(localPos, worldSeed, carriageIndex, slot, pool.size());
@@ -1108,7 +1171,7 @@ public final class ContainerContentsRoller {
 
         if (DebugFlags.logLootRolls()) {
             LOGGER.info("[DT-potion] level={} tier={} potion={} form={} carriageIdx={} localPos={}",
-                level, tier,
+                level, scale ? String.valueOf(tier) : "flat",
                 potion.unwrapKey().map(k -> k.location().toString()).orElse("?"),
                 net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(formItem),
                 carriageIndex, localPos);

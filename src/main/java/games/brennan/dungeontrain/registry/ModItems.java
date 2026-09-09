@@ -108,6 +108,24 @@ public final class ModItems {
     );
 
     /**
+     * Editor-only placeholder for "a random beneficial potion". Substituted at chest spawn
+     * time by {@code ContainerContentsRoller.bakeRandomPotion} for a real drinkable / splash /
+     * lingering bottle drawn from the good-potion tier table. The entry's
+     * {@code scaleWithDistance} toggle decides whether the tier follows carriages travelled or
+     * the pick is flat across every tier. Stacks normally so an entry's count spawns that many.
+     */
+    public static final DeferredItem<Item> RANDOM_GOOD_POTION = ITEMS.register(
+        "random_good_potion",
+        () -> new Item(new Item.Properties())
+    );
+
+    /** Harmful twin of {@link #RANDOM_GOOD_POTION}, drawn from the bad-potion tier table. */
+    public static final DeferredItem<Item> RANDOM_BAD_POTION = ITEMS.register(
+        "random_bad_potion",
+        () -> new Item(new Item.Properties())
+    );
+
+    /**
      * The loot-facing book, and the only one of these five that ordinary loot tables place: a
      * coin-flip between the two above. Half the time the slot becomes a tall
      * {@link #RANDOM_LEADERBOARD_BOOK} — a ranked board of the whole server — and half the time a

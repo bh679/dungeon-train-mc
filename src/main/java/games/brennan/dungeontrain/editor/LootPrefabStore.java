@@ -398,8 +398,11 @@ public final class LootPrefabStore {
                 ResourceLocation potionId = e.has("potion") && e.get("potion").isJsonPrimitive()
                     ? ResourceLocation.tryParse(e.get("potion").getAsString())
                     : null;
+                boolean scale = e.has("scale") && e.get("scale").isJsonPrimitive()
+                    ? e.get("scale").getAsBoolean()
+                    : ContainerContentsEntry.DEFAULT_SCALE_WITH_DISTANCE;
                 entries.add(new ContainerContentsEntry(rl, count, weight,
-                    randDur, durChance, randEnch, enchChance, slotOverride, potionId));
+                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale));
             }
         }
         return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax)));
@@ -434,6 +437,9 @@ public final class LootPrefabStore {
             }
             if (e.potionId() != null) {
                 sb.append(", \"potion\": \"").append(e.potionId()).append("\"");
+            }
+            if (!e.scaleWithDistance()) {
+                sb.append(", \"scale\": false");
             }
             sb.append(" }");
             first = false;

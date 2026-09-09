@@ -2094,6 +2094,8 @@
   "chat.dungeontrain.book_burns_author": "Książka autorstwa %s płonie",
   "chat.dungeontrain.book_burns_author.copy": "Kliknij, aby skopiować imię autora",
   "item.dungeontrain.stats_book": "Księga statystyk",
+  "item.dungeontrain.random_good_potion": "Losowa dobra mikstura",
+  "item.dungeontrain.random_bad_potion": "Losowa zła mikstura",
   "gui.dungeontrain.options.book_author_chat": "Autor książki na czacie",
   "gui.dungeontrain.options.book_author_chat.tip": "Wypisuje na czacie linijkę z nazwą autora za każdym razem, gdy płonie książka z Dungeon Train — „Książka autorstwa X płonie”. Książki, które czytasz, wyrzucasz albo upuszczasz po śmierci, wszystkie zajmują się ogniem, a to jedyne miejsce, w którym wymieniany jest ich autor. Domyślnie wyłączone.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "W tym świecie włączone jest „Zachowaj ekwipunek”.",

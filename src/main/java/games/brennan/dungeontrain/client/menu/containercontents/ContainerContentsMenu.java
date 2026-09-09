@@ -53,6 +53,8 @@ public final class ContainerContentsMenu {
         ENTRY_DUR_CHANCE,
         /** Per-entry sub-row checkbox: flip random-enchantment master toggle. */
         ENTRY_RAND_ENCH_TOGGLE,
+        /** Per-entry sub-row checkbox on random-potion placeholders: flip scale-with-distance. */
+        ENTRY_SCALE_TOGGLE,
         /** Per-entry sub-row %NN cell: bump random-enchantment chance (0-100). */
         ENTRY_ENCH_CHANCE,
         /** Per-entry main-row cell: cycle slot override (auto / in / fuel / out). */

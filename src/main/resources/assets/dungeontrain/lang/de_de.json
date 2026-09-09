@@ -2062,6 +2062,8 @@
   "chat.dungeontrain.book_burns_author": "Das Buch von %s verbrennt",
   "chat.dungeontrain.book_burns_author.copy": "Klicke, um den Namen des Autors zu kopieren",
   "item.dungeontrain.stats_book": "Statistikbuch",
+  "item.dungeontrain.random_good_potion": "Zufälliger guter Trank",
+  "item.dungeontrain.random_bad_potion": "Zufälliger schlechter Trank",
   "gui.dungeontrain.options.book_author_chat": "Autorenhinweis im Chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Gibt jedes Mal, wenn ein Dungeon-Train-Buch verbrennt, eine Chatzeile mit dem Namen des Autors aus — „Das Buch von X verbrennt“. Die Bücher, die du liest, wegwirfst oder beim Tod fallen lässt, fangen alle Feuer, und dies ist die einzige Stelle, an der ihre Verfasser genannt werden. Standardmäßig aus.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In dieser Welt ist „Inventar behalten“ aktiviert.",

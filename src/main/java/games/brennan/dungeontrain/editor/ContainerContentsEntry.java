@@ -33,6 +33,12 @@ import javax.annotation.Nullable;
  * other item and for potion entries added by id alone. Which stored potions
  * are kept and which are randomised is {@code ContainerContentsPotions}'
  * call.</p>
+ *
+ * <p>{@code scaleWithDistance} applies to the random-potion placeholder
+ * entries ({@code dungeontrain:random_good_potion} / {@code random_bad_potion}):
+ * {@code true} (the default) picks the potion's power tier from carriages
+ * travelled, {@code false} draws uniformly from every tier regardless of
+ * distance. Ignored by every other item.</p>
  */
 public record ContainerContentsEntry(
     ResourceLocation itemId,
@@ -43,7 +49,8 @@ public record ContainerContentsEntry(
     boolean randomEnchantment,
     int enchantmentChance,
     int slotOverride,
-    @Nullable ResourceLocation potionId
+    @Nullable ResourceLocation potionId,
+    boolean scaleWithDistance
 ) {
 
     public static final ResourceLocation AIR_ID = ResourceLocation.fromNamespaceAndPath("minecraft", "air");
@@ -52,6 +59,7 @@ public record ContainerContentsEntry(
     public static final int DEFAULT_DURABILITY_CHANCE = 100;
     public static final boolean DEFAULT_RANDOM_ENCHANTMENT = true;
     public static final int DEFAULT_ENCHANTMENT_CHANCE = 25;
+    public static final boolean DEFAULT_SCALE_WITH_DISTANCE = true;
 
     /**
      * {@link #slotOverride} sentinel for "no explicit slot — use the
@@ -81,29 +89,38 @@ public record ContainerContentsEntry(
         if (slotOverride > MAX_SLOT_OVERRIDE) slotOverride = SLOT_AUTO;
     }
 
-    /** Back-compat constructor — no stored potion. */
+    /** Back-compat constructor — stored potion, default scaling. */
+    public ContainerContentsEntry(ResourceLocation itemId, int count, int weight,
+                                  boolean randomDurability, int durabilityChance,
+                                  boolean randomEnchantment, int enchantmentChance,
+                                  int slotOverride, @Nullable ResourceLocation potionId) {
+        this(itemId, count, weight, randomDurability, durabilityChance,
+            randomEnchantment, enchantmentChance, slotOverride, potionId, DEFAULT_SCALE_WITH_DISTANCE);
+    }
+
+    /** Back-compat constructor — no stored potion, default scaling. */
     public ContainerContentsEntry(ResourceLocation itemId, int count, int weight,
                                   boolean randomDurability, int durabilityChance,
                                   boolean randomEnchantment, int enchantmentChance,
                                   int slotOverride) {
         this(itemId, count, weight, randomDurability, durabilityChance,
-            randomEnchantment, enchantmentChance, slotOverride, null);
+            randomEnchantment, enchantmentChance, slotOverride, null, DEFAULT_SCALE_WITH_DISTANCE);
     }
 
-    /** Back-compat constructor — no slot override, no stored potion. */
+    /** Back-compat constructor — no slot override, no stored potion, default scaling. */
     public ContainerContentsEntry(ResourceLocation itemId, int count, int weight,
                                   boolean randomDurability, int durabilityChance,
                                   boolean randomEnchantment, int enchantmentChance) {
         this(itemId, count, weight, randomDurability, durabilityChance,
-            randomEnchantment, enchantmentChance, SLOT_AUTO, null);
+            randomEnchantment, enchantmentChance, SLOT_AUTO, null, DEFAULT_SCALE_WITH_DISTANCE);
     }
 
-    /** Convenience constructor — supplies the four random-effect fields and slot override with defaults. */
+    /** Convenience constructor — supplies every optional field with its default. */
     public ContainerContentsEntry(ResourceLocation itemId, int count, int weight) {
         this(itemId, count, weight,
             DEFAULT_RANDOM_DURABILITY, DEFAULT_DURABILITY_CHANCE,
             DEFAULT_RANDOM_ENCHANTMENT, DEFAULT_ENCHANTMENT_CHANCE,
-            SLOT_AUTO, null);
+            SLOT_AUTO, null, DEFAULT_SCALE_WITH_DISTANCE);
     }
 
     public static ContainerContentsEntry of(Item item, int count, int weight) {
@@ -132,42 +149,56 @@ public record ContainerContentsEntry(
 
     public ContainerContentsEntry withWeight(int newWeight) {
         return new ContainerContentsEntry(itemId, count, newWeight,
-            randomDurability, durabilityChance, randomEnchantment, enchantmentChance, slotOverride, potionId);
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
+            slotOverride, potionId, scaleWithDistance);
     }
 
     public ContainerContentsEntry withCount(int newCount) {
         return new ContainerContentsEntry(itemId, newCount, weight,
-            randomDurability, durabilityChance, randomEnchantment, enchantmentChance, slotOverride, potionId);
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
+            slotOverride, potionId, scaleWithDistance);
     }
 
     public ContainerContentsEntry withRandomDurability(boolean v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            v, durabilityChance, randomEnchantment, enchantmentChance, slotOverride, potionId);
+            v, durabilityChance, randomEnchantment, enchantmentChance,
+            slotOverride, potionId, scaleWithDistance);
     }
 
     public ContainerContentsEntry withDurabilityChance(int v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            randomDurability, v, randomEnchantment, enchantmentChance, slotOverride, potionId);
+            randomDurability, v, randomEnchantment, enchantmentChance,
+            slotOverride, potionId, scaleWithDistance);
     }
 
     public ContainerContentsEntry withRandomEnchantment(boolean v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            randomDurability, durabilityChance, v, enchantmentChance, slotOverride, potionId);
+            randomDurability, durabilityChance, v, enchantmentChance,
+            slotOverride, potionId, scaleWithDistance);
     }
 
     public ContainerContentsEntry withEnchantmentChance(int v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            randomDurability, durabilityChance, randomEnchantment, v, slotOverride, potionId);
+            randomDurability, durabilityChance, randomEnchantment, v,
+            slotOverride, potionId, scaleWithDistance);
     }
 
     public ContainerContentsEntry withSlotOverride(int v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            randomDurability, durabilityChance, randomEnchantment, enchantmentChance, v, potionId);
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
+            v, potionId, scaleWithDistance);
     }
 
     public ContainerContentsEntry withPotion(@Nullable ResourceLocation v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            randomDurability, durabilityChance, randomEnchantment, enchantmentChance, slotOverride, v);
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
+            slotOverride, v, scaleWithDistance);
+    }
+
+    public ContainerContentsEntry withScaleWithDistance(boolean v) {
+        return new ContainerContentsEntry(itemId, count, weight,
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
+            slotOverride, potionId, v);
     }
 
     /**

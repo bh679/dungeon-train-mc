@@ -38,6 +38,19 @@ final class ContainerContentsEntryPotionTest {
     }
 
     @Test
+    void scaleWithDistance_defaultsOnAndSurvivesCopies() {
+        ContainerContentsEntry e = new ContainerContentsEntry(POTION_ITEM, 1, 1);
+        assertTrue(e.scaleWithDistance());
+        ContainerContentsEntry off = e.withScaleWithDistance(false);
+        assertFalse(off.scaleWithDistance());
+        assertFalse(off.withWeight(3).scaleWithDistance());
+        assertFalse(off.withCount(3).scaleWithDistance());
+        assertFalse(off.withPotion(HEALING).scaleWithDistance());
+        assertFalse(off.cycleSlotOverride().scaleWithDistance());
+        assertTrue(off.withScaleWithDistance(true).scaleWithDistance());
+    }
+
+    @Test
     void withCopies_carryPotionThrough() {
         ContainerContentsEntry e = new ContainerContentsEntry(POTION_ITEM, 1, 1).withPotion(HEALING);
         assertEquals(HEALING, e.withWeight(9).potionId());

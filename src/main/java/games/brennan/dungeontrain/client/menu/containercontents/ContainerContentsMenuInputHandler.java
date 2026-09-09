@@ -226,6 +226,11 @@ public final class ContainerContentsMenuInputHandler {
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.TOGGLE_RAND_ENCH, plotKey, local, hit.index(), "", 0));
             }
+            case ENTRY_SCALE_TOGGLE -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.TOGGLE_SCALE, plotKey, local, hit.index(), "", 0));
+            }
             case ENTRY_DUR_CHANCE -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
                 int delta = shift ? -5 : 5;
