@@ -11904,12 +11904,12 @@
       "id": "editor-six-phase-letters",
       "version": "0.828.0",
       "type": "fix",
-      "title": "Editor dimension gates show all six phases",
-      "summary": "The Train Editor's dimension gates only ever showed the first four phases \u2014 Overworld, Nether, Void and End \u2014 so the Upside Down and Chunks stretches of the line were invisible and impossible to toggle. Every phase picker in the editor now shows one letter per phase (O N V E U C): the floating type menu, the Stages panel, the parts position menu, the Stage edit screen and the gate summary line. Templates you had already gated to Upside Down or Chunks were spawning correctly all along \u2014 the editor just could not show or change that gate.",
+      "title": "Editor phase gates cover the whole line",
+      "summary": "The Train Editor's phase gates only ever showed the first four phases, so the later stretches of the line were invisible and impossible to toggle. Every phase picker in the editor now shows one letter per phase: the floating type menu, the Stages panel, the parts position menu, the Stage edit screen and the gate summary line. Templates you had already gated to a later phase were spawning correctly all along \u2014 the editor just could not show or change that gate.",
       "highlights": [
-        "All six phases now appear in every editor dimension gate, not just the first four",
-        "Upside Down and Chunks gates can be toggled from the world-space menus instead of only by command",
-        "Gate summaries list every enabled phase, so a template gated to Upside Down or Chunks no longer reads as ungated"
+        "Every phase now appears in the editor's gate cells, not just the first four",
+        "Later-phase gates can be toggled from the world-space menus instead of only by command",
+        "Gate summaries list every enabled phase, so a template gated to a later phase no longer reads as ungated"
       ],
       "pr": 1346,
       "date": "2026-09-09",
