@@ -149,13 +149,23 @@ public final class EditorRosterIndex {
             if (gc == null || !g.typeName().equals(typeName)) continue;
             boolean onPage = gc == page || (page == PlotCategory.CARRIAGES && gc == PlotCategory.PARTS);
             if (!onPage) continue;
-            List<Tile> out = new ArrayList<>(g.entries().size());
-            for (EditorRosterPacket.Entry e : g.entries()) {
-                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight(), e.relayId()));
-            }
-            return out;
+            return tiles(g);
         }
         return List.of();
+    }
+
+    /** Every roster group in the server's order — what the Layout tab walks, one section each. */
+    public List<EditorRosterPacket.Group> groups() {
+        return groups;
+    }
+
+    /** One group's entries as tiles, in roster order. */
+    public static List<Tile> tiles(EditorRosterPacket.Group g) {
+        List<Tile> out = new ArrayList<>(g.entries().size());
+        for (EditorRosterPacket.Entry e : g.entries()) {
+            out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight(), e.relayId()));
+        }
+        return out;
     }
 
     /**

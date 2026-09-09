@@ -48,7 +48,7 @@ public final class EditorBrowserPane {
     static final int SUB_HEADER_BG = 0xD0000000;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, CHIP, STRIP, TILE, NEW, SUB_TILE, NEW_SUB, CREATOR_TILE, CREATOR_STAR, LOAD_ALL }
+    public enum HitKind { NONE, CHIP, CATEGORY, STRIP, TILE, NEW, SUB_TILE, NEW_SUB, CREATOR_TILE, CREATOR_STAR, LOAD_ALL }
 
     /** Where Load all was drawn this frame, or null when the page has nothing to load. */
     private InventoryEditorLayout.Rect loadAllRect;
@@ -90,10 +90,29 @@ public final class EditorBrowserPane {
     /** One cell of the type strip. */
     private record StripCell(EditorRosterIndex.TypeStrip strip, int x, int w) {}
 
+    /** One cell of the category strip above it. */
+    private record CategoryCell(EditorCategoryFilter filter, int x, int w) {}
+
+    /** Equal cells across a row, the last one taking the remainder; {@code reserve} is left free at the right. */
+    private record Cells(int x, int w) {
+        static List<Cells> across(InventoryEditorLayout.Rect row, int count, int reserve) {
+            List<Cells> out = new ArrayList<>(count);
+            if (count == 0) return out;
+            int cellW = Math.max(1, (row.w() - reserve) / count);
+            for (int i = 0; i < count; i++) {
+                int x = row.x() + i * cellW;
+                int w = i == count - 1 ? row.right() - reserve - x : cellW - 1;
+                out.add(new Cells(x, w));
+            }
+            return out;
+        }
+    }
+
     private final BuilderTileSpin spin = new BuilderTileSpin();
 
     private int scroll;
     private List<Chip> chips = List.of();
+    private List<CategoryCell> categoryCells = List.of();
     private List<StripCell> stripCells = List.of();
     private List<EditorRosterIndex.Tile> tiles = List.of();
     /** True when {@link #tiles}' first entry survived only because the author stands in it. */
@@ -107,6 +126,7 @@ public final class EditorBrowserPane {
     private TemplateTileGridLayout subGrid;
     private InventoryEditorLayout.Rect gridRect;
     private InventoryEditorLayout.Rect filterRect;
+    private InventoryEditorLayout.Rect categoryRect;
     private InventoryEditorLayout.Rect stripRect;
     private int contentHeight;
     private Hit hovered = Hit.NONE;
@@ -116,6 +136,7 @@ public final class EditorBrowserPane {
     public List<EditorRosterIndex.Tile> subTiles() { return subTiles; }
     public EditorRosterIndex.Tile subParent() { return subParent; }
     public EditorRosterIndex.TypeStrip stripAt(int i) { return i >= 0 && i < stripCells.size() ? stripCells.get(i).strip() : null; }
+    public EditorCategoryFilter categoryAt(int i) { return i >= 0 && i < categoryCells.size() ? categoryCells.get(i).filter() : null; }
     /** Apply the click on chip {@code i} to the current filters, or return them unchanged. */
     public EditorRosterIndex.Filters applyChip(int i, EditorRosterIndex.Filters current) {
         if (i < 0 || i >= chips.size()) return current;
@@ -262,6 +283,7 @@ public final class EditorBrowserPane {
     /** Lay the pane out for this frame from the roster and the remembered state. */
     public void layout(InventoryEditorLayout layout, Font font, EditorRosterIndex index) {
         filterRect = layout.filter();
+        categoryRect = layout.categoryStrip();
         stripRect = layout.typeStrip();
         gridRect = layout.grid();
 
@@ -295,20 +317,26 @@ public final class EditorBrowserPane {
         }
         chips = c;
 
-        // Type strip: equal cells across the row. The All page has none — fifteen strips would not
-        // fit the row, and its whole point is the roster without one.
-        PlotCategory page = EditorScreenState.page().category();
+        // Category strip: one cell per filter, All first, always the same five.
+        EditorCategoryFilter[] filters_ = EditorCategoryFilter.values();
+        List<Cells> cc = Cells.across(categoryRect, filters_.length, 0);
+        List<CategoryCell> cat = new ArrayList<>(filters_.length);
+        for (int i = 0; i < filters_.length; i++) {
+            cat.add(new CategoryCell(filters_[i], cc.get(i).x(), cc.get(i).w()));
+        }
+        categoryCells = cat;
+
+        // Type strip: equal cells across the row. All has none — fifteen strips would not fit the
+        // row, and its whole point is the roster without one.
+        PlotCategory page = EditorScreenState.category().category();
         List<EditorRosterIndex.TypeStrip> strips = page == null || creatorMode
             ? List.of() : index.typeStrips(page);
         List<StripCell> sc = new ArrayList<>();
         if (!strips.isEmpty()) {
-            int reserve = page == null ? 0
-                : font.width(EditorScreenLang.text(EditorScreenLang.LOAD_ALL)) + CHIP_PAD * 2 + CHIP_GAP;
-            int cellW = Math.max(1, (stripRect.w() - reserve) / strips.size());
+            int reserve = font.width(EditorScreenLang.text(EditorScreenLang.LOAD_ALL)) + CHIP_PAD * 2 + CHIP_GAP;
+            List<Cells> cells = Cells.across(stripRect, strips.size(), reserve);
             for (int i = 0; i < strips.size(); i++) {
-                int x = stripRect.x() + i * cellW;
-                int w = i == strips.size() - 1 ? stripRect.right() - reserve - x : cellW - 1;
-                sc.add(new StripCell(strips.get(i), x, w));
+                sc.add(new StripCell(strips.get(i), cells.get(i).x(), cells.get(i).w()));
             }
         }
         stripCells = sc;
@@ -317,15 +345,14 @@ public final class EditorBrowserPane {
         // type strip to sit under and no sub-variants to open, so every other list goes empty for
         // the duration rather than being drawn against a roster this grid is not showing.
         creatorTiles = creatorMode
-            ? EditorCreatorBuilds.forPage(EditorScreenState.page(), EditorScreenState.text(),
+            ? EditorCreatorBuilds.forCategory(EditorScreenState.category(), EditorScreenState.text(),
                 EditorScreenState.creatorReview(), EditorScreenState.creatorStarred())
             : List.of();
 
         // Tiles of the active strip, filtered.
         String typeName = EditorScreenState.effectiveTypeName(index);
-        List<EditorRosterIndex.Tile> all = creatorMode ? List.of() : (page == null
-            ? (EditorScreenState.page() == EditorScreenPage.ALL ? index.allTiles() : List.of())
-            : index.tiles(page, typeName));
+        List<EditorRosterIndex.Tile> all = creatorMode ? List.of()
+            : (page == null ? index.allTiles() : index.tiles(page, typeName));
         // The plot under the author's feet is never filtered away — see EditorRosterIndex.standingFirst.
         EditorRosterIndex.Shown shown = EditorRosterIndex.standingFirst(
             EditorRosterIndex.filter(all, EditorScreenState.filters(), EditorScreenState.text()),
@@ -341,8 +368,8 @@ public final class EditorBrowserPane {
             EditorRosterIndex.Tile selTile = index.find(sel);
             EditorRosterIndex.Tile parent = selTile == null ? null
                 : (selTile.key().isSubVariant() ? index.parentOf(selTile.key()) : (selTile.isGroup() ? selTile : null));
-            // On All there is no type strip to agree with — every category is in one grid — so a
-            // group opens wherever it is shown. Elsewhere it opens only under its own strip, or a
+            // Under All there is no type strip to agree with — every category is in one grid — so
+            // a group opens wherever it is shown. Elsewhere it opens only under its own strip, or a
             // click would open sub-variants beneath a row that does not hold them.
             boolean underItsStrip = page == null
                 || (parent != null && index.groupOf(parent.key()) != null
@@ -411,10 +438,30 @@ public final class EditorBrowserPane {
                 filterRect.y() + (filterRect.h() - font.lineHeight) / 2 + 1, hov ? 0xFF000000 : 0xFFFFFFFF, false);
         }
 
+        // Category strip. The cell of the plot the author stands in wears the green mark the tab
+        // used to, so the category is readable from any other cell.
+        EditorCategoryFilter activeCell = EditorScreenState.category();
+        VariantKey standingKey = EditorScreenState.standingIn();
+        EditorCategoryFilter hereCell = standingKey == null ? null : EditorCategoryFilter.forCategory(standingKey.category());
+        for (int i = 0; i < categoryCells.size(); i++) {
+            CategoryCell cell = categoryCells.get(i);
+            boolean on = cell.filter() == activeCell;
+            boolean hov = hovered.kind() == HitKind.CATEGORY && hovered.index() == i;
+            g.fill(cell.x(), categoryRect.y(), cell.x() + cell.w(), categoryRect.bottom(),
+                hov ? CELL_HOVER : (on ? CELL_ON : CELL_IDLE));
+            String label = font.plainSubstrByWidth(EditorScreenLang.text(cell.filter().langKey()), cell.w() - 4);
+            int ty = categoryRect.y() + (categoryRect.h() - font.lineHeight) / 2 + 1;
+            g.drawString(font, label, cell.x() + (cell.w() - font.width(label)) / 2, ty,
+                hov ? 0xFF000000 : 0xFFFFFFFF, false);
+            if (cell.filter() == hereCell) {
+                g.fill(cell.x() + cell.w() - 6, ty + 1, cell.x() + cell.w() - 3, ty + 4, TemplateTilePainter.HERE);
+            }
+        }
+
         // Load all — at the right end of the strip row, which a builder's uploads leave empty and a
-        // category page can spare the end of. The whole page into the world, plots cleared first.
+        // category can spare the end of. The whole category into the world, plots cleared first.
         loadAllRect = null;
-        if (!creatorMode && EditorScreenState.page().category() != null) {
+        if (!creatorMode && EditorScreenState.category().category() != null) {
             String label = EditorScreenLang.text(EditorScreenLang.LOAD_ALL);
             int w = font.width(label) + CHIP_PAD * 2;
             loadAllRect = new InventoryEditorLayout.Rect(stripRect.right() - w, stripRect.y(), w, stripRect.h());
@@ -592,6 +639,13 @@ public final class EditorBrowserPane {
             for (int i = 0; i < chips.size(); i++) {
                 Chip c = chips.get(i);
                 if (mx >= c.x() && mx < c.x() + c.w()) return new Hit(HitKind.CHIP, i);
+            }
+            return Hit.NONE;
+        }
+        if (categoryRect != null && categoryRect.contains(mx, my)) {
+            for (int i = 0; i < categoryCells.size(); i++) {
+                CategoryCell c = categoryCells.get(i);
+                if (mx >= c.x() && mx < c.x() + c.w()) return new Hit(HitKind.CATEGORY, i);
             }
             return Hit.NONE;
         }

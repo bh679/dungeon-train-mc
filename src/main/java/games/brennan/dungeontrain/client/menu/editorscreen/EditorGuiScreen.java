@@ -41,9 +41,10 @@ import java.util.List;
  * The inventory-style editor X menu.
  *
  * <p>Opened by {@link games.brennan.dungeontrain.client.menu.CommandMenuState#open()} in place of
- * the row-list panel whenever the player is standing in an editor plot with the X menu set to
- * screen space. The world keeps running underneath and the hotbar keeps working — the same
- * contract as the panel it replaces.</p>
+ * the row-list panel anywhere in the editor world — and in an editor plot elsewhere — with the X
+ * menu set to screen space. Between plots nothing is "here", so no template is selected on the way
+ * in; everything else reads the same. The world keeps running underneath and the hotbar keeps
+ * working — the same contract as the panel it replaces.</p>
  */
 public final class EditorGuiScreen extends Screen {
 
@@ -66,6 +67,8 @@ public final class EditorGuiScreen extends Screen {
     private final EditorBrowserPane browser = new EditorBrowserPane();
     private final EditorDetailPane detail = new EditorDetailPane();
     private final EditorCreatorPane creatorPane = new EditorCreatorPane();
+    private final EditorSettingsPane settingsPane = new EditorSettingsPane();
+    private final EditorLayoutPane layoutPane = new EditorLayoutPane(this::selectOrEnter);
     private final OrbitState orbit = new OrbitState();
     private final InlineEdit inlineEdit = new InlineEdit();
     private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
@@ -80,7 +83,6 @@ public final class EditorGuiScreen extends Screen {
     private long lastClickMillis;
     private VariantKey previewKey;
     private int refreshTicks;
-    private int settingsScroll;
     /** What the last press of Load came back with, already worded for the player. */
     private String creatorNote;
     /** Whether the next press should bring the build down under a name this install is not using. */
@@ -233,11 +235,13 @@ public final class EditorGuiScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);   // background + the filter box
 
         drawPanel(g, theme);
-        tabs = EditorTabBar.layout(layout.tabs(), this.font::width, tabLabels());
+        tabs = EditorTabBar.layout(layout.tabs(), this.font::width, p -> EditorScreenLang.text(p.langKey()));
         hoveredTab = modal.isOpen() || search.isOpen() ? null
             : EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
+        // The standing plot's category is a cell of the Templates tab now, so that is the tab that
+        // wears the dot; the browser pane marks the cell itself.
         EditorTabBar.draw(g, this.font, layout.tabs(), tabs, EditorScreenState.page(),
-            EditorScreenPage.forCategory(ctx.standing() == null ? null : ctx.standing().category()),
+            ctx.standing() == null ? null : EditorScreenPage.TEMPLATES,
             ctx.dirty(), hoveredTab, theme);
 
         boolean covered = modal.isOpen() || search.isOpen();
@@ -247,8 +251,10 @@ public final class EditorGuiScreen extends Screen {
             browser.layout(layout, this.font, index);
             browser.render(g, this.font, theme, seconds, mx, my);
             drawFilterBox(g, mouseX, mouseY, partialTick);
-        } else {
-            drawSettingsPage(g, theme, mx, my);
+        } else if (EditorScreenState.page() == EditorScreenPage.SETTINGS) {
+            settingsPane.render(g, this.font, theme, layout, mx, my);
+        } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
+            layoutPane.render(g, this.font, theme, layout, index, ctx.selection(), ctx.standing(), mx, my);
         }
 
         if (EditorCreatorBuilds.active()) {
@@ -298,35 +304,6 @@ public final class EditorGuiScreen extends Screen {
         g.fill(h.x() - 1, h.y() - 1, h.right() + 1, t.bottom() + 1, theme.subPanel());
     }
 
-    private List<String> tabLabels() {
-        return List.of(
-            EditorScreenLang.text(EditorScreenLang.TAB_ALL),
-            EditorScreenLang.text(EditorScreenLang.TAB_CARRIAGES),
-            EditorScreenLang.text(EditorScreenLang.TAB_CONTENTS),
-            EditorScreenLang.text(EditorScreenLang.TAB_TRACKS),
-            EditorScreenLang.text(EditorScreenLang.TAB_DIMENSIONS),
-            EditorScreenLang.text(EditorScreenLang.TAB_SETTINGS));
-    }
-
-    private void drawSettingsPage(GuiGraphics g, EditorScreenTheme theme, int mouseX, int mouseY) {
-        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(
-            layout.filter().x(), layout.filter().y(), layout.filter().w(),
-            layout.grid().bottom() - layout.filter().y());
-        g.fill(r.x() - 1, r.y() - 1, r.right() + 1, r.bottom() + 1, theme.subPanel());
-        List<CommandMenuEntry> rows = settingsRows();
-        int rowH = EditorDetailPane.ROW_H;
-        int visible = Math.max(1, r.h() / rowH);
-        settingsScroll = Math.max(0, Math.min(settingsScroll, Math.max(0, rows.size() - visible)));
-        int hoveredRow = settingsRowAt(mouseX, mouseY, r, rows, visible);
-        int hoveredSub = hoveredRow < 0 ? 0
-            : MenuRowPainter.hitCell(rows.get(hoveredRow), mouseX, r.x(), r.right());
-        for (int k = 0; k < visible && settingsScroll + k < rows.size(); k++) {
-            int idx = settingsScroll + k;
-            MenuRowPainter.drawRow(g, this.font, rows.get(idx), r.x(), r.y() + k * rowH, r.right(), rowH - 1,
-                idx, idx == hoveredRow, hoveredSub, null);
-        }
-    }
-
     /**
      * The filter box, drawn inside its own rectangle and nowhere else.
      *
@@ -345,22 +322,6 @@ public final class EditorGuiScreen extends Screen {
         g.enableScissor(x, y, x + w, y + h);
         filterBox.render(g, mouseX, mouseY, partialTick);
         g.disableScissor();
-    }
-
-    private List<CommandMenuEntry> settingsRows() {
-        VariantKey standing = EditorScreenState.standingIn();
-        PlotCategory cat = standing == null ? null : standing.category();
-        String name = standing == null ? "" : standing.displayName();
-        return EditorSettingsPage.rows(cat, name, ClientDisplayConfig.getEditorScreenTheme(),
-            ClientDisplayConfig::setEditorScreenTheme);
-    }
-
-    private int settingsRowAt(double mx, double my, InventoryEditorLayout.Rect r,
-                              List<CommandMenuEntry> rows, int visible) {
-        if (!r.contains(mx, my)) return -1;
-        int k = (int) ((my - r.y()) / EditorDetailPane.ROW_H);
-        int idx = settingsScroll + k;
-        return k < visible && idx < rows.size() ? idx : -1;
     }
 
     /** Why the grid is empty, or null when it is not: six answers that mean different things. */
@@ -506,15 +467,15 @@ public final class EditorGuiScreen extends Screen {
     }
 
     /**
-     * Load all: every template on this page into the world, the plots cleared first.
+     * Load all: every template of the chosen category into the world, the plots cleared first.
      *
      * <p>The category switch is exactly that — it tears down every plot of every category and
      * stamps this one's models — so this is the button for it rather than a second way to do the
-     * same writes. Only on a category page: the All page is four categories at once, which the
-     * editor stamps one of, and a builder's uploads are not this world's to stamp.</p>
+     * same writes. Only under a category cell: All is four categories at once, which the editor
+     * stamps one of, and a builder's uploads are not this world's to stamp.</p>
      */
-    private void loadAllOnThisPage() {
-        PlotCategory category = EditorScreenState.page().category();
+    private void loadAllInCategory() {
+        PlotCategory category = EditorScreenState.category().category();
         if (category == null) return;
         CommandRunner.run("dungeontrain editor " + category.owner().id());
         afterCommand();
@@ -532,6 +493,8 @@ public final class EditorGuiScreen extends Screen {
             tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
         } else if (EditorScreenState.page().isBrowser()) {
             tip = browser.tooltipAt(browser.hovered());
+        } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
+            tip = layoutPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
         }
         if (tip != null) {
             g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
@@ -608,9 +571,19 @@ public final class EditorGuiScreen extends Screen {
                 onBrowserHit(hit);
                 return true;
             }
-        } else if (onSettingsClick(mouseX, mouseY)) {
-            click();
-            return true;
+        } else if (EditorScreenState.page() == EditorScreenPage.SETTINGS) {
+            EditorSettingsPane.Hit hit = settingsPane.hitTest(layout, mouseX, mouseY);
+            if (hit != null) {
+                click();
+                dispatchAt(hit.entry(), hit.sub());
+                return true;
+            }
+        } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
+            if (layoutPane.mouseClicked(layout, EditorRosterClient.index(), mouseX, mouseY, modal, inlineEdit)) {
+                click();
+                setFocused(null);
+                return true;
+            }
         }
         if (EditorCreatorBuilds.active()) {
             switch (creatorPane.hitTest(mouseX, mouseY)) {
@@ -690,13 +663,18 @@ public final class EditorGuiScreen extends Screen {
                 EditorScreenState.setFilters(browser.applyChip(hit.index(), EditorScreenState.filters()));
                 browser.resetScroll();
             }
+            case CATEGORY -> {
+                EditorCategoryFilter cell = browser.categoryAt(hit.index());
+                if (cell != null) EditorScreenState.setCategory(cell);
+                browser.resetScroll();
+            }
             case STRIP -> {
                 EditorRosterIndex.TypeStrip strip = browser.stripAt(hit.index());
                 if (strip != null) EditorScreenState.setTypeName(strip.typeName());
                 browser.resetScroll();
             }
             case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
-            case LOAD_ALL -> loadAllOnThisPage();
+            case LOAD_ALL -> loadAllInCategory();
             case CREATOR_TILE -> {
                 EditorCreatorBuilds.select(browser.creatorTiles().get(hit.index()).relayId());
                 goingTo = null;
@@ -711,7 +689,7 @@ public final class EditorGuiScreen extends Screen {
                 else selectOrEnter(browser.subTiles().get(hit.index()).key());
             }
             case NEW -> {
-                PlotCategory page = EditorScreenState.page().category();
+                PlotCategory page = EditorScreenState.category().category();
                 EditorRosterIndex.TypeStrip strip = stripByName(index, page, EditorScreenState.effectiveTypeName(index));
                 if (strip == null) return;
                 List<EditorRosterIndex.Tile> all = index.tiles(page, strip.typeName());
@@ -825,20 +803,6 @@ public final class EditorGuiScreen extends Screen {
         }
     }
 
-    private boolean onSettingsClick(double mouseX, double mouseY) {
-        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(
-            layout.filter().x(), layout.filter().y(), layout.filter().w(),
-            layout.grid().bottom() - layout.filter().y());
-        List<CommandMenuEntry> rows = settingsRows();
-        int visible = Math.max(1, r.h() / EditorDetailPane.ROW_H);
-        int idx = settingsRowAt(mouseX, mouseY, r, rows, visible);
-        if (idx < 0) return false;
-        int sub = MenuRowPainter.hitCell(rows.get(idx), (int) mouseX, r.x(), r.right());
-        if (sub < 0) return false;
-        dispatchAt(rows.get(idx), sub);
-        return true;
-    }
-
     /** A click on a data-sheet cell: type over it, run its command, or open its picker. */
     private boolean onSheetCell(TemplateDataSheet.Placed placed) {
         TemplateDataSheet.Action action = placed.cell().action();
@@ -902,9 +866,15 @@ public final class EditorGuiScreen extends Screen {
         if (EditorScreenState.page().isBrowser() && browser.overGrid(mouseX, mouseY)) {
             if (browser.scrollBy(dir)) return true;
         }
-        if (!EditorScreenState.page().isBrowser() && layout != null && layout.grid().contains(mouseX, mouseY)) {
-            settingsScroll = Math.max(0, settingsScroll + dir);
-            return true;
+        if (EditorScreenState.page() == EditorScreenPage.SETTINGS && layout != null
+                && EditorSettingsPane.rect(layout).contains(mouseX, mouseY)) {
+            return settingsPane.scrollBy(dir);
+        }
+        if (EditorScreenState.page() == EditorScreenPage.LAYOUT && layout != null
+                && layoutPane.over(layout, mouseX, mouseY)) {
+            // A half-typed value must not float over a list that just moved under it.
+            inlineEdit.cancel();
+            return layoutPane.scrollBy(dir);
         }
         if (detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) return true;
         if (HotbarPassthrough.scroll(this.minecraft, scrollY)) return true;

@@ -3,6 +3,10 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileFilters;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.net.EditorRosterPacket;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * What the inventory-style editor screen remembers between openings.
@@ -13,11 +17,15 @@ import games.brennan.dungeontrain.editor.PlotCategory;
  */
 public final class EditorScreenState {
 
-    private static EditorScreenPage page = EditorScreenPage.CARRIAGES;
+    private static EditorScreenPage page = EditorScreenPage.TEMPLATES;
+    /** The category strip's cell. Carriages to start with: the grid the old first tab opened on. */
+    private static EditorCategoryFilter category = EditorCategoryFilter.CARRIAGES;
     private static String typeName = "";
     private static EditorRosterIndex.Filters filters = EditorRosterIndex.Filters.DEFAULT;
     private static String text = "";
     private static VariantKey selection;
+    /** The Layout tab's folded sections, by {@code EditorLayoutPage.sectionId}. Replaced, never mutated. */
+    private static Set<String> collapsedSections = Set.of();
 
     /**
      * The two narrowings creator mode adds: where a build stands with a reviewer, and whether it is
@@ -43,10 +51,12 @@ public final class EditorScreenState {
     private EditorScreenState() {}
 
     public static EditorScreenPage page() { return page; }
+    public static EditorCategoryFilter category() { return category; }
     public static String typeName() { return typeName; }
     public static EditorRosterIndex.Filters filters() { return filters; }
     public static String text() { return text; }
     public static VariantKey selection() { return selection; }
+    public static Set<String> collapsedSections() { return collapsedSections; }
     public static String creatorReview() { return creatorReview; }
     public static boolean creatorStarred() { return creatorStarred; }
 
@@ -58,9 +68,16 @@ public final class EditorScreenState {
         creatorStarred = next;
     }
 
+    /** Change tab. The type strip is left alone: it belongs to the category, not the page. */
     public static void setPage(EditorScreenPage next) {
         if (next == null || next == page) return;
         page = next;
+    }
+
+    /** Change category cell; the remembered type strip goes with the old one. */
+    public static void setCategory(EditorCategoryFilter next) {
+        if (next == null || next == category) return;
+        category = next;
         typeName = "";
     }
 
@@ -80,6 +97,14 @@ public final class EditorScreenState {
         selection = key;
     }
 
+    /** Fold or unfold a Layout section. A new set each time, so a cache keyed by identity refreshes. */
+    public static void toggleSection(String sectionId) {
+        if (sectionId == null) return;
+        Set<String> next = new HashSet<>(collapsedSections);
+        if (!next.remove(sectionId)) next.add(sectionId);
+        collapsedSections = Set.copyOf(next);
+    }
+
     /** The plot the player stands in right now, or null outside a plot. */
     public static VariantKey standingIn() {
         return VariantKey.fromStatus(EditorStatusHudOverlay.category(),
@@ -92,7 +117,7 @@ public final class EditorScreenState {
     }
 
     /**
-     * Show the plot the player stands in: select it and jump the browser to its page and type
+     * Show the plot the player stands in: select it and jump the browser to its category and type
      * strip, clearing the filters so its tile is certainly visible. The Current tab, in effect.
      */
     public static void showStandingIn(EditorRosterIndex index) {
@@ -106,19 +131,25 @@ public final class EditorScreenState {
     public static void revealSelection(EditorRosterIndex index) {
         if (selection == null) return;
         var group = index.groupOf(selection);
-        EditorScreenPage target = EditorScreenPage.forCategory(selection.category());
-        if (target != null) page = target;
-        typeName = group != null ? group.typeName() : "";
+        browseTo(selection, group);
         filters = EditorRosterIndex.Filters.NONE;
         text = "";
     }
 
-    /** The roster group whose tiles the browser shows, by the remembered type or the page's first. */
+    /** Put the browser on the Templates tab, at the category and type strip a key lives under. */
+    private static void browseTo(VariantKey key, EditorRosterPacket.Group group) {
+        EditorCategoryFilter target = EditorCategoryFilter.forCategory(key.category());
+        if (target != null) category = target;
+        page = EditorScreenPage.TEMPLATES;
+        typeName = group != null ? group.typeName() : "";
+    }
+
+    /** The roster group whose tiles the browser shows, by the remembered type or the category's first. */
     public static String effectiveTypeName(EditorRosterIndex index) {
-        PlotCategory category = page.category();
-        if (category == null) return "";
-        if (!typeName.isEmpty() && !index.tiles(category, typeName).isEmpty()) return typeName;
-        EditorRosterIndex.TypeStrip first = index.firstStrip(category);
+        PlotCategory cat = category.category();
+        if (cat == null) return "";
+        if (!typeName.isEmpty() && !index.tiles(cat, typeName).isEmpty()) return typeName;
+        EditorRosterIndex.TypeStrip first = index.firstStrip(cat);
         return first == null ? "" : first.typeName();
     }
 
@@ -132,13 +163,10 @@ public final class EditorScreenState {
             VariantKey here = standingIn();
             if (here != null) {
                 selection = index.find(here) != null ? index.find(here).key() : here;
-                // The page and strip move to it, but the FILTERS stay: the browser now keeps the
-                // standing template at the front of the grid however they are set, so clearing them
-                // would throw away the author's narrowing to solve a problem it no longer has.
-                var group = index.groupOf(selection);
-                EditorScreenPage target = EditorScreenPage.forCategory(selection.category());
-                if (target != null) page = target;
-                typeName = group != null ? group.typeName() : "";
+                // The category and strip move to it, but the FILTERS stay: the browser now keeps
+                // the standing template at the front of the grid however they are set, so clearing
+                // them would throw away the author's narrowing to solve a problem it no longer has.
+                browseTo(selection, index.groupOf(selection));
             }
         }
         if (selection == null || index.find(selection) == null) {

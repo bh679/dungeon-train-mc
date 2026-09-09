@@ -10,7 +10,7 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
  */
 public record InventoryEditorLayout(
     Rect tabs, Rect panel,
-    Rect filter, Rect typeStrip, Rect grid,
+    Rect filter, Rect categoryStrip, Rect typeStrip, Rect grid,
     Rect header, Rect preview, Rect sheet, Rect icons, Rect settings, Rect test,
     int tile
 ) {
@@ -64,7 +64,10 @@ public record InventoryEditorLayout(
         Rect right = new Rect(inner.right() - rightW, inner.y(), rightW, inner.h());
 
         Rect filter = new Rect(left.x(), left.y(), left.w(), FILTER_H);
-        Rect strip = new Rect(left.x(), filter.bottom() + 2, left.w(), STRIP_H);
+        // Category cells, then the type strip of the chosen category. The type row is kept even
+        // when it is empty (All, a builder's uploads) so the grid does not jump between cells.
+        Rect category = new Rect(left.x(), filter.bottom() + 2, left.w(), STRIP_H);
+        Rect strip = new Rect(left.x(), category.bottom() + 2, left.w(), STRIP_H);
         Rect grid = new Rect(left.x(), strip.bottom() + 2, left.w(), Math.max(0, left.bottom() - strip.bottom() - 2));
 
         // Header, then the tools, then what they act on. The icon row sits above the model rather
@@ -81,7 +84,7 @@ public record InventoryEditorLayout(
             Math.max(0, test.y() - 2 - sheet.bottom() - 2));
 
         int tile = panel.h() < 210 ? TILE_SMALL : TILE_LARGE;
-        return new InventoryEditorLayout(tabs, panel, filter, strip, grid,
+        return new InventoryEditorLayout(tabs, panel, filter, category, strip, grid,
             header, preview, sheet, icons, settings, test, tile);
     }
 

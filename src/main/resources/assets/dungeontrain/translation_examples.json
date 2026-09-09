@@ -3296,6 +3296,22 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.layout.section": {
+    "1": {
+      "label": "the template type this section lists (Carriages, Floor, Walls…)",
+      "examples": [
+        "Carriages",
+        "Floor"
+      ]
+    },
+    "2": {
+      "label": "how many templates the section holds",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sheet.entities": {
     "1": {
       "label": "how many entities (mobs, item frames…) the template contains",

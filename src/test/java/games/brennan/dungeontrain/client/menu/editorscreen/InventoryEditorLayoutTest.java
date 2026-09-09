@@ -29,7 +29,7 @@ final class InventoryEditorLayoutTest {
     void regionsNest() {
         for (int[] s : SIZES) {
             InventoryEditorLayout l = InventoryEditorLayout.of(s[0], s[1]);
-            List<Rect> regions = List.of(l.filter(), l.typeStrip(), l.grid(), l.header(), l.preview(),
+            List<Rect> regions = List.of(l.filter(), l.categoryStrip(), l.typeStrip(), l.grid(), l.header(), l.preview(),
                 l.sheet(), l.icons(), l.settings(), l.test());
             for (Rect r : regions) assertTrue(inside(r, l.panel()), s[0] + "x" + s[1] + " " + r);
             for (int i = 0; i < regions.size(); i++) {
@@ -62,6 +62,19 @@ final class InventoryEditorLayoutTest {
         assertTrue(large.preview().h() <= InventoryEditorLayout.PREVIEW_MAX_H);
         assertEquals(InventoryEditorLayout.TILE_SMALL, small.tile());
         assertEquals(InventoryEditorLayout.TILE_LARGE, large.tile());
+    }
+
+    @Test
+    @DisplayName("the category strip sits between the filter row and the type strip, full width")
+    void categoryStripBetweenFilterAndTypes() {
+        for (int[] s : SIZES) {
+            InventoryEditorLayout l = InventoryEditorLayout.of(s[0], s[1]);
+            assertEquals(l.filter().bottom() + 2, l.categoryStrip().y());
+            assertEquals(l.categoryStrip().bottom() + 2, l.typeStrip().y());
+            assertEquals(l.filter().x(), l.categoryStrip().x());
+            assertEquals(l.filter().w(), l.categoryStrip().w());
+            assertEquals(InventoryEditorLayout.STRIP_H, l.categoryStrip().h());
+        }
     }
 
     @Test
