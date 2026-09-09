@@ -146,7 +146,7 @@ public final class BuilderPhotoPaths {
      * directory with a dot in it (or a package directory named after a version) would otherwise take
      * the cut and produce a path that isn't in the template directory at all.</p>
      */
-    static Path withPng(Path templateFile) {
+    public static Path withPng(Path templateFile) {
         String name = templateFile.getFileName().toString();
         int dot = name.lastIndexOf('.');
         String base = dot <= 0 ? name : name.substring(0, dot);

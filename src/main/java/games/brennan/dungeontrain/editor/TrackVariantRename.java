@@ -230,7 +230,7 @@ public final class TrackVariantRename {
 
     /** {@code src/main/resources/data/dungeontrain/<subdir>}, or null when there is no source tree. */
     @Nullable
-    private static Path sourceDir(String subdir) {
+    static Path sourceDir(String subdir) {
         Path gameDir = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get();
         Path projectRoot = gameDir == null ? null : gameDir.getParent();
         if (projectRoot == null) return null;

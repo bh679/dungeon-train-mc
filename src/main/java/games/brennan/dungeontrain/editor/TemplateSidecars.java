@@ -369,7 +369,7 @@ public final class TemplateSidecars {
      * underneath it, and the build would look like it installed without its variants. Per template
      * rather than a cache-wide clear — nothing else on this install changed.</p>
      */
-    private static void invalidateCaches(BuilderPhotoPaths.Kind kind, String subKind, String id) {
+    static void invalidateCaches(BuilderPhotoPaths.Kind kind, String subKind, String id) {
         TrackKind trackKind = trackKindOf(kind, subKind);
         if (trackKind != null) {
             TrackVariantBlocks.invalidate(trackKind, id);

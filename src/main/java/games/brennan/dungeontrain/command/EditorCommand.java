@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.TemplateDelete;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
@@ -3845,17 +3846,36 @@ public final class EditorCommand {
         return 1;
     }
 
+    /**
+     * After a Remove: every open world-space editor panel and Stage panel re-reads the world, so a
+     * deleted template drops out of them without a reopen. Console sources have no panels of their
+     * own, but the shared Stage panels still need the nudge.
+     */
+    private static void resyncEditorMenus(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player != null) {
+            games.brennan.dungeontrain.editor.EditorMenuResync.afterHistoryStep(player);
+        } else {
+            games.brennan.dungeontrain.editor.StagePanelController.resyncAllOpen(source.getServer());
+        }
+    }
+
     private static int runReset(CommandSourceStack source, String raw) {
         if (isTunnelInput(raw)) {
             TunnelVariant v = parseTunnelVariant(source, raw);
             if (v == null) return 0;
             try {
-                boolean deleted = TunnelTemplateStore.delete(v);
+                TemplateDelete.Report report = TemplateDelete.track(
+                    TunnelTemplateStore.tunnelKind(v),
+                    games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME);
+                resyncEditorMenus(source);
                 final TunnelVariant tv = v;
                 source.sendSuccess(() -> Component.literal(
-                    deleted
-                        ? "Editor: deleted '" + TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT) + "' template."
-                        : "Editor: no '" + TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT) + "' template to delete."
+                    report.nbtDeleted()
+                        ? "Editor: deleted '" + TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT) + "' template"
+                            + report.describe() + "."
+                        : "Editor: no '" + TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT) + "' template to delete"
+                            + report.describe() + "."
                 ), true);
                 return 1;
             } catch (Throwable t) {
@@ -3885,19 +3905,16 @@ public final class EditorCommand {
             int oldCount = rowBefore.size();
 
             CarriageEditor.clearPlot(overworld, variant, dims);
-            boolean deleted = CarriageTemplateStore.delete(variant);
-            boolean wasCustom = !variant.isBuiltin();
-            if (wasCustom) {
-                CarriageVariantRegistry.unregister(variant.id());
-                if (oldIdx >= 0) {
-                    CarriageEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
-                }
+            TemplateDelete.Report report = TemplateDelete.carriage(variant);
+            if (report.unregistered() && oldIdx >= 0) {
+                CarriageEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
             }
+            resyncEditorMenus(source);
             source.sendSuccess(() -> Component.literal(
-                deleted
-                    ? ("Editor: deleted '" + variant.id() + "' template"
-                        + (wasCustom ? " and removed from registry." : "."))
-                    : ("Editor: no '" + variant.id() + "' template to delete.")
+                report.nbtDeleted()
+                    ? ("Editor: deleted '" + variant.id() + "' template" + report.describe()
+                        + (report.unregistered() ? " and removed from registry." : " — bundled copy remains."))
+                    : ("Editor: no '" + variant.id() + "' template to delete" + report.describe() + ".")
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -4797,19 +4814,16 @@ public final class EditorCommand {
             int oldCount = rowBefore.size();
 
             CarriageContentsEditor.clearPlot(overworld, contents, dims);
-            boolean deleted = CarriageContentsStore.delete(contents);
-            boolean wasCustom = !contents.isBuiltin();
-            if (wasCustom) {
-                CarriageContentsRegistry.unregister(contents.id());
-                if (oldIdx >= 0) {
-                    CarriageContentsEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
-                }
+            TemplateDelete.Report report = TemplateDelete.contents(contents);
+            if (report.unregistered() && oldIdx >= 0) {
+                CarriageContentsEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
             }
+            resyncEditorMenus(source);
             source.sendSuccess(() -> Component.literal(
-                deleted
-                    ? ("Editor: deleted contents '" + contents.id() + "' template"
-                        + (wasCustom ? " and removed from registry." : "."))
-                    : ("Editor: no contents '" + contents.id() + "' template to delete.")
+                report.nbtDeleted()
+                    ? ("Editor: deleted contents '" + contents.id() + "' template" + report.describe()
+                        + (report.unregistered() ? " and removed from registry." : " — bundled copy remains."))
+                    : ("Editor: no contents '" + contents.id() + "' template to delete" + report.describe() + ".")
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -5441,18 +5455,16 @@ public final class EditorCommand {
             int oldCount = rowBefore.size();
 
             CarriagePartEditor.clearPlot(overworld, kind, name, dims);
-            boolean deleted = CarriagePartTemplateStore.delete(kind, name);
-            boolean stillBundled = CarriagePartTemplateStore.bundled(kind, name);
-            if (!stillBundled) {
-                CarriagePartRegistry.unregister(kind, name);
-                if (oldIdx >= 0) {
-                    CarriagePartEditor.restampRowAfterDeletion(overworld, kind, oldIdx, oldCount, dims);
-                }
+            TemplateDelete.Report report = TemplateDelete.part(kind, name);
+            boolean stillBundled = report.bundledRemains();
+            if (report.unregistered() && oldIdx >= 0) {
+                CarriagePartEditor.restampRowAfterDeletion(overworld, kind, oldIdx, oldCount, dims);
             }
-            final String msg = deleted
-                ? ("Editor: deleted part '" + kind.id() + ":" + name + "' (config-dir copy)"
+            resyncEditorMenus(source);
+            final String msg = report.nbtDeleted()
+                ? ("Editor: deleted part '" + kind.id() + ":" + name + "' (config-dir copy)" + report.describe()
                     + (stillBundled ? " — bundled default remains." : " — no bundled fallback, registry entry removed."))
-                : ("Editor: no config-dir part '" + kind.id() + ":" + name + "' to delete.");
+                : ("Editor: no config-dir part '" + kind.id() + ":" + name + "' to delete" + report.describe() + ".");
             source.sendSuccess(() -> Component.literal(msg), true);
             return 1;
         } catch (Throwable t) {
@@ -7557,24 +7569,24 @@ public final class EditorCommand {
             clearPlotForVariant(overworld, kind, name, dims);
         }
 
+        // Sidecars, group slot, weights entry, photo, credit, room size and the registry entry all
+        // go with the template — and, when a bundled copy remains, only the config overlay does.
+        TemplateDelete.Report report;
         try {
-            games.brennan.dungeontrain.track.variant.TrackVariantStore.delete(kind, name);
+            report = TemplateDelete.track(kind, name);
         } catch (java.io.IOException e) {
             source.sendFailure(Component.literal("Delete failed: " + e.getMessage()));
             return 0;
         }
-        games.brennan.dungeontrain.track.variant.TrackVariantRegistry.unregister(kind, name);
-        // Drop the removed room's cached size, or re-creating the same name later would silently
-        // inherit the dead variant's dimensions.
-        if (kind.hasBuiltInFallback()) {
-            games.brennan.dungeontrain.portal.PortalRoomSizes.forget(name);
-        }
         restampPlotForKind(overworld, kind, dims);
         teleportToPlot(player, overworld, kind,
             games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
+        resyncEditorMenus(source);
 
         source.sendSuccess(() -> Component.literal(
-            "Removed " + kind.id() + ":" + name + " — teleported back to default."
+            "Removed " + kind.id() + ":" + name + report.describe()
+                + (report.unregistered() ? "" : " (bundled copy remains)")
+                + " — teleported back to default."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
