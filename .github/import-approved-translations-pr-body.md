@@ -13,6 +13,11 @@ absent below. The same guards (`check-provenance.py`, `check-narrative-provenanc
 `validate-locale.py`) ran in the import job that opened this PR; push an empty commit to this
 branch if you want the full CI suite on it too.
 
+A translator who renamed themself from the in-game Credits page is renamed here too — in
+`localization/authors.json` and every provenance sidecar — before the import, so their newly
+approved work lands under the name they chose rather than registering it as a second person.
+When that happened, the names are listed below.
+
 A translator who is new to the repo is registered in `localization/authors.json` as part of
 this diff rather than in a hand-written PR merged first — the import only adds people whose work
 actually landed here, and never a name the registry already calls `"ai"`. When it registered

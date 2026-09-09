@@ -63,6 +63,20 @@ jobs:
       # names every one of them in the PR body, and still HARD-FAILS on a submission credited to a
       # name registered as "ai". Profile URLs are the one thing a bot cannot supply, so the PR body
       # asks for them instead of blocking on them (none of the first eight names had one anyway).
+      # A translator can rename themself from the in-game Credits page; the relay rewrites their
+      # rows at once and logs it. Applied here FIRST, to authors.json and the provenance sidecars,
+      # because the approved rows below already carry the new name — imported against a registry
+      # still holding the old one, --register-new would add the new name as a second, unknown
+      # person and the old one would keep the credit. Never merges onto a name the registry
+      # already has; those are listed in the PR body for a human instead.
+      - name: Apply credited-name changes
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          python3 scripts/localization/apply-translator-renames.py \
+            --report-out "$RUNNER_TEMP/renames.json" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+
       - name: Import approved units
         env:
           DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
@@ -144,6 +158,33 @@ jobs:
           names = json.loads(report.read_text(encoding='utf-8')) if report.is_file() else []
           skipped = temp / 'deferred.json'
           left = json.loads(skipped.read_text(encoding='utf-8')) if skipped.is_file() else []
+          renamed = temp / 'renames.json'
+          renames = (json.loads(renamed.read_text(encoding='utf-8')) if renamed.is_file()
+                     else {'applied': [], 'skipped': []})
+          if renames['applied'] or renames['skipped']:
+              # Names are player-supplied text: fenced, never inline, for the same reason as the
+              # registrations below. A skipped rename is the one outcome that needs a person.
+              lines = [f'  {json.dumps(r["from"], ensure_ascii=False)} -> '
+                       f'{json.dumps(r["to"], ensure_ascii=False)}' for r in renames['applied']]
+              section = f'## {len(renames["applied"])} credited-name change(s) applied\n\n'
+              if lines:
+                  section += ('Translators who renamed themselves from the in-game Credits page. '
+                              'The relay already serves the new name; this diff renames them in '
+                              '`localization/authors.json` and every provenance sidecar, and the '
+                              'regenerated credits follow:\n\n```\n' + '\n'.join(lines) + '\n```\n\n')
+              if renames['skipped']:
+                  held = [f'  {json.dumps(r["from"], ensure_ascii=False)} -> '
+                          f'{json.dumps(r["to"], ensure_ascii=False)}  # {r["reason"]}'
+                          for r in renames['skipped']]
+                  section += (f'### {len(held)} rename(s) NOT applied\n\n'
+                              'The importer will not merge one person\'s credit into another\'s, '
+                              'and cannot rename a name the repo never credited. Each stays in the '
+                              'relay\'s log and is retried on every run until a human resolves it '
+                              '(rename by hand, or register the name):\n\n```\n'
+                              + '\n'.join(held) + '\n```\n\n')
+              trailer = 'Opened by `.github/workflows/import-approved-translations.yml`.'
+              body = (body.replace(trailer, section + trailer) if trailer in body
+                      else body + '\n' + section)
           if names:
               # Rendered as the authors.json lines themselves: a name is arbitrary player-supplied
               # text, and inside a fence it cannot break the page's markdown the way a backtick or
