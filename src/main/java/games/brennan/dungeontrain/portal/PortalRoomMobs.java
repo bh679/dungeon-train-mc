@@ -152,7 +152,7 @@ public final class PortalRoomMobs {
         int marked = 0;
         int live = liveCount;
         int refused = 0;
-        for (Entity entity : level.getEntities((Entity) null, box, TemplateDecor::carried)) {
+        for (Entity entity : level.getEntities((Entity) null, box, e -> TemplateDecor.carried(e, TemplateDecor.Rule.ROOM))) {
             if (entity.getPersistentData().contains(NBT_PAIR)) continue;
             if (entity instanceof LivingEntity) {
                 if (!withinCap(live)) {

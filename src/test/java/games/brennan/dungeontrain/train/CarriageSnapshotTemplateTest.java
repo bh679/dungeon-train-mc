@@ -127,21 +127,25 @@ final class CarriageSnapshotTemplateTest {
     @DisplayName("a downloaded build holds what a local save holds — the mobs, not the litter")
     void carriesWhatALocalSaveWouldKeep() {
         // The same rule TemplateDecor.keepOnlyDecor applies as a template is written. A mob the
-        // author placed is part of the build; a minecart left parked in the plot is not, and a
-        // downloaded template that kept it would hold something the author's own file never did.
+        // author placed is part of the build, and so is the minecart they parked; an item dropped
+        // in the plot is not, nor is a boat (refused at the editor), and a downloaded template that
+        // kept either would hold something the author's own file never did.
         CompoundTag snapshot = snapshot(4, 4, 4);
         snapshot.put("ents", ents(
                 ent("minecraft:parrot", 1.0, 1.0, 1.0),
                 ent("minecraft:minecart", 2.0, 1.0, 2.0),
+                ent("minecraft:item", 2.5, 1.0, 2.5),
+                ent("minecraft:boat", 2.5, 1.0, 1.5),
                 ent("minecraft:glow_item_frame", 3.0, 1.0, 3.0)));
 
         ListTag entities = CarriageSnapshotTemplate.toTemplateTag(snapshot)
                 .getList("entities", Tag.TAG_COMPOUND);
 
-        assertEquals(2, entities.size(), "the parrot and the frame; not the minecart");
+        assertEquals(3, entities.size(), "the parrot, the minecart and the frame; not the item or the boat");
         assertEquals("minecraft:parrot", entities.getCompound(0).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:minecart", entities.getCompound(1).getCompound("nbt").getString("id"));
         assertEquals("minecraft:glow_item_frame",
-                entities.getCompound(1).getCompound("nbt").getString("id"));
+                entities.getCompound(2).getCompound("nbt").getString("id"));
     }
 
     // ---- the way back up: template NBT into a snapshot ----

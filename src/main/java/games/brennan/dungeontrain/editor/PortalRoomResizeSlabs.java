@@ -63,7 +63,7 @@ final class PortalRoomResizeSlabs {
         Vec3i slabSize = PortalRoomResize.with(sizeBefore, axis, 1);
         BlockPos slabOrigin = origin.offset(PortalRoomResize.along(axis, step.slabIndex()));
 
-        StructureTemplate blocks = TemplateDecor.capture(overworld, slabOrigin, slabSize, Blocks.STRUCTURE_VOID);
+        StructureTemplate blocks = TemplateDecor.capture(overworld, slabOrigin, slabSize, Blocks.STRUCTURE_VOID, TemplateDecor.Rule.ROOM);
 
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeBefore);
         TrackVariantBlocks slabSidecar = TrackVariantBlocks.emptyFor(TrackKind.PORTAL_ROOM);
@@ -143,7 +143,7 @@ final class PortalRoomResizeSlabs {
         blocks.placeInWorld(overworld, at, at, settings, overworld.getRandom(), 3);
         // The row's own decoration comes back with it — a picture the author hung on the wall a
         // shrink took away is part of the row, not of the box it was cut from.
-        TemplateDecor.replace(overworld, at, blocks, settings, null);
+        TemplateDecor.replace(overworld, at, blocks, settings, null, TemplateDecor.Rule.ROOM);
 
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, sizeAfter);
         TrackVariantBlocks slabSidecar = TrackVariantBlocks.fromJsonText(

@@ -11811,6 +11811,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "minecarts-in-templates",
+      "version": "0.826.0",
+      "type": "feat",
+      "title": "Minecarts in your builds, boats in dimensional carriages",
+      "summary": "Minecarts you park inside a carriage, part, track, tunnel or dimensional carriage are now saved with the build and put back every time it is stamped \u2014 chest contents included. Boats are kept only in dimensional carriages, which stand still; on a carriage the editor tells you straight away that a boat won't be saved. In the editor a minecart can be placed on any block without laying rails first, and you get a heads-up when you put one on rails, since carts don't run on rails aboard a moving carriage but ride along fine off them. Also fixes a long-standing bug where pictures, mobs and stands saved in a carriage template never appeared on the running train.",
+      "highlights": [
+        "Minecarts (all but command-block carts) are saved in templates and restored on stamp",
+        "Boats are saved in dimensional carriages only; the editor warns when a boat won't be kept",
+        "Place minecarts anywhere inside a build, no rails needed",
+        "Fix: entities saved in carriage templates now actually spawn on the running train"
+      ],
+      "pr": 1341,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

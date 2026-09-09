@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -25,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The free ENTITIES of a shared carriage — armor stands, item frames, paintings, end crystals, the mobs
@@ -358,13 +361,19 @@ public final class CarriageEntitySnapshot {
      * The entity types whose position is an authoring decision rather than a mob's own business. Only
      * these count towards the fingerprint below: a villager pacing a carriage must not re-upload the
      * build every sweep, but hanging a new item frame is exactly the edit that has to reach the pool.
+     * The vehicles a template carries ({@link TemplateDecor#VEHICLE_TYPES}) count for the same
+     * reason: a boat dragged to the other side of the deck is an edit, and the only one that could
+     * ever queue an upload for it is this.
      */
-    private static final Set<String> DECOR_TYPES = Set.of(
-            "minecraft:armor_stand",
-            "minecraft:item_frame",
-            "minecraft:glow_item_frame",
-            "minecraft:painting",
-            "minecraft:end_crystal");
+    private static final Set<String> DECOR_TYPES = Stream.concat(
+            Stream.of(
+                "minecraft:armor_stand",
+                "minecraft:item_frame",
+                "minecraft:glow_item_frame",
+                "minecraft:painting",
+                "minecraft:end_crystal"),
+            TemplateDecor.VEHICLE_TYPES.stream())
+        .collect(Collectors.toUnmodifiableSet());
 
     /**
      * A cheap value summarising which decor entities stand where in a carriage. The shared-carriage sweep

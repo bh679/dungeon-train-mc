@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
@@ -1894,7 +1895,7 @@ public final class PortalCarriageBuilder {
 
         if (stored.get().getSize().equals(size)) {
             CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
-                writeMask.isEmpty() ? null : writeMask.asProcessor(), relight);
+                writeMask.isEmpty() ? null : writeMask.asProcessor(), relight, TemplateDecor.Rule.ROOM);
             return;
         }
 
@@ -1917,7 +1918,7 @@ public final class PortalCarriageBuilder {
         warnSizeMismatch(roomName, size, stored.get().getSize());
         stampRoomBuiltIn(level, roomOrigin, size, relight, writeMask);
         CarriagePlacer.stampTemplateAt(level, roomOrigin, stored.get(),
-            clipTo(roomOrigin, size, writeMask), relight, boxOf(roomOrigin, size));
+            clipTo(roomOrigin, size, writeMask), relight, boxOf(roomOrigin, size), TemplateDecor.Rule.ROOM);
     }
 
     /**
@@ -1961,7 +1962,7 @@ public final class PortalCarriageBuilder {
 
         stampRoomBuiltIn(level, roomOrigin, size, relight, blank);
         CarriagePlacer.stampTemplateAt(level, roomOrigin.offset(shift), live,
-            clipTo(roomOrigin, size, blank), relight, boxOf(roomOrigin, size));
+            clipTo(roomOrigin, size, blank), relight, boxOf(roomOrigin, size), TemplateDecor.Rule.ROOM);
     }
 
     /**
