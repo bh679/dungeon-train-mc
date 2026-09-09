@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsEntry;
+import games.brennan.dungeontrain.editor.PotionForm;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EditorVariantMirror;
@@ -136,6 +137,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_POOL_ENTRY_POTION = "p";
     /** Random-potion scale-with-distance toggle; absent means the default (on). */
     private static final String NBT_POOL_ENTRY_SCALE = "s";
+    /** Random-potion bottle form id; absent means Any. */
+    private static final String NBT_POOL_ENTRY_FORM = "f";
 
     public VariantClipboardItem(Properties properties) {
         super(properties);
@@ -396,6 +399,7 @@ public final class VariantClipboardItem extends Item {
             et.putInt(NBT_POOL_ENTRY_WEIGHT, e.weight());
             if (e.potionId() != null) et.putString(NBT_POOL_ENTRY_POTION, e.potionId().toString());
             if (!e.scaleWithDistance()) et.putBoolean(NBT_POOL_ENTRY_SCALE, false);
+            if (e.potionForm() != PotionForm.ANY) et.putString(NBT_POOL_ENTRY_FORM, e.potionForm().id());
             entries.add(et);
         }
         tag.put(NBT_POOL_ENTRIES, entries);
@@ -432,8 +436,10 @@ public final class VariantClipboardItem extends Item {
                     ? ResourceLocation.tryParse(et.getString(NBT_POOL_ENTRY_POTION)) : null;
                 boolean scale = !et.contains(NBT_POOL_ENTRY_SCALE, Tag.TAG_BYTE)
                     || et.getBoolean(NBT_POOL_ENTRY_SCALE);
+                PotionForm form = et.contains(NBT_POOL_ENTRY_FORM, Tag.TAG_STRING)
+                    ? PotionForm.parse(et.getString(NBT_POOL_ENTRY_FORM)) : PotionForm.ANY;
                 entries.add(new ContainerContentsEntry(id, count, weight)
-                    .withPotion(potionId).withScaleWithDistance(scale));
+                    .withPotion(potionId).withScaleWithDistance(scale).withPotionForm(form));
             }
         }
         return new ContainerContentsPool(entries, fillMin, fillMax);

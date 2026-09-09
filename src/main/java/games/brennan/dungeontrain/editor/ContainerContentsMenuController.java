@@ -283,7 +283,8 @@ public final class ContainerContentsMenuController {
                 e.randomEnchantment(), e.enchantmentChance(),
                 e.slotOverride(),
                 e.potionId() == null ? "" : e.potionId().toString(),
-                e.scaleWithDistance()));
+                e.scaleWithDistance(),
+                e.potionForm().ordinal()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link);
@@ -542,6 +543,13 @@ public final class ContainerContentsMenuController {
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx, e.withScaleWithDistance(!e.scaleWithDistance()));
+                dirty = true;
+            }
+            case CYCLE_POTION_FORM -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx, e.cyclePotionForm());
                 dirty = true;
             }
             case UNLINK -> {

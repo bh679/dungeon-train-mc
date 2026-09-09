@@ -431,6 +431,16 @@ public final class ContainerContentsMenuRenderer {
                 drawCenteredText(ps, buffer, font, scaleOn ? "Scale ✓" : "Scale ✗",
                     (dur1L + dur2R) / 2.0, subCY,
                     scaleHover ? 0xFF000000 : 0xFFFFFFFF);
+
+                // Bottle form cell: Any / Potion / Splash / Lingering, click to step.
+                boolean formHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_POTION_FORM && hovered.index() == i;
+                int formTint = formHover ? 0xC0FFCC33 : 0x40FFFFFF;
+                drawQuad(ps, buffer, ench1L + 0.005, subBottom + 0.005,
+                    ench2R - 0.005, subTop - 0.005, formTint);
+                drawCenteredText(ps, buffer, font,
+                    "Form: " + games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).label(),
+                    (ench1L + ench2R) / 2.0, subCY,
+                    formHover ? 0xFF000000 : 0xFFFFFFFF);
             }
 
             if (showDur) {

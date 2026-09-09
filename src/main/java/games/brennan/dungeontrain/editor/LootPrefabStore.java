@@ -401,8 +401,11 @@ public final class LootPrefabStore {
                 boolean scale = e.has("scale") && e.get("scale").isJsonPrimitive()
                     ? e.get("scale").getAsBoolean()
                     : ContainerContentsEntry.DEFAULT_SCALE_WITH_DISTANCE;
+                PotionForm form = e.has("form") && e.get("form").isJsonPrimitive()
+                    ? PotionForm.parse(e.get("form").getAsString())
+                    : ContainerContentsEntry.DEFAULT_POTION_FORM;
                 entries.add(new ContainerContentsEntry(rl, count, weight,
-                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale));
+                    randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form));
             }
         }
         return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax)));
@@ -440,6 +443,9 @@ public final class LootPrefabStore {
             }
             if (!e.scaleWithDistance()) {
                 sb.append(", \"scale\": false");
+            }
+            if (e.potionForm() != PotionForm.ANY) {
+                sb.append(", \"form\": \"").append(e.potionForm().id()).append("\"");
             }
             sb.append(" }");
             first = false;

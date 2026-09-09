@@ -45,7 +45,9 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         TOGGLE_RAND_DUR, BUMP_DUR_CHANCE, TOGGLE_RAND_ENCH, BUMP_ENCH_CHANCE,
         CYCLE_SLOT_ASSIGN, SET_WEIGHT,
         /** Flip a random-potion placeholder entry's scale-with-distance toggle. */
-        TOGGLE_SCALE
+        TOGGLE_SCALE,
+        /** Step a random-potion placeholder entry's bottle form (Any → Potion → Splash → Lingering). */
+        CYCLE_POTION_FORM
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =

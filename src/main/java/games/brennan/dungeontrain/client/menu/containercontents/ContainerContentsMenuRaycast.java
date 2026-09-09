@@ -170,10 +170,10 @@ public final class ContainerContentsMenuRaycast {
             double dur2R = dur1R + subCellW;
             double ench1R = dur2R + subCellW;
             if (showScale) {
-                // Random-potion placeholder: the scale toggle spans the two left cells.
+                // Random-potion placeholder: scale toggle on the left half, bottle form on the right.
                 return hitX <= dur2R
                     ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_SCALE_TOGGLE, idx)
-                    : ContainerContentsMenu.Hit.NONE;
+                    : new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_POTION_FORM, idx);
             }
             if (hitX <= dur1R) {
                 return showDur

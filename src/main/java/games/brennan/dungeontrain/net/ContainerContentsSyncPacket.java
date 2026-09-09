@@ -44,12 +44,14 @@ public record ContainerContentsSyncPacket(
      * and their 0-100 % chances.
      * {@code count} is a max — roll-time produces a uniform-random value in {@code [1, count]}.
      * {@code potionId} is the stored vanilla potion id for a potion entry, or {@code ""} when none.
-     * {@code scaleWithDistance} is the random-potion placeholder's tier toggle.
+     * {@code scaleWithDistance} is the random-potion placeholder's tier toggle and
+     * {@code potionForm} its bottle-form ordinal ({@code PotionForm}).
      */
     public record Entry(String itemId, int count, int weight,
                         boolean randomDurability, int durabilityChance,
                         boolean randomEnchantment, int enchantmentChance,
-                        int slotOverride, String potionId, boolean scaleWithDistance) {
+                        int slotOverride, String potionId, boolean scaleWithDistance,
+                        int potionForm) {
 
         /** Back-compat: entry with no stored potion, default scaling. */
         public Entry(String itemId, int count, int weight,
@@ -57,7 +59,7 @@ public record ContainerContentsSyncPacket(
                      boolean randomEnchantment, int enchantmentChance,
                      int slotOverride) {
             this(itemId, count, weight, randomDurability, durabilityChance,
-                randomEnchantment, enchantmentChance, slotOverride, "", true);
+                randomEnchantment, enchantmentChance, slotOverride, "", true, 0);
         }
 
         public boolean hasPotion() {
@@ -108,6 +110,7 @@ public record ContainerContentsSyncPacket(
             buf.writeVarInt(e.slotOverride());
             buf.writeUtf(e.potionId() == null ? "" : e.potionId(), 256);
             buf.writeBoolean(e.scaleWithDistance());
+            buf.writeByte(e.potionForm());
         }
         if (linkedPrefabId == null || linkedPrefabId.isEmpty()) {
             buf.writeBoolean(false);
@@ -145,7 +148,8 @@ public record ContainerContentsSyncPacket(
             int slotOverride = buf.readVarInt();
             String potionId = buf.readUtf(256);
             boolean scale = buf.readBoolean();
-            entries.add(new Entry(id, count, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale));
+            int form = buf.readByte();
+            entries.add(new Entry(id, count, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form));
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
         return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up, link);

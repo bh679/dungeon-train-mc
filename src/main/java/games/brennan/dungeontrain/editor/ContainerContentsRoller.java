@@ -973,15 +973,15 @@ public final class ContainerContentsRoller {
         // harmful vanilla potion in a random bottle form. The entry's scale toggle decides
         // whether the power tier follows carriages travelled or the pick is flat.
         if (item == ModItems.RANDOM_POTION.get()) {
-            return bakeRandomPotion(POTION_EFFECT_TIERS, picked.scaleWithDistance(),
+            return bakeRandomPotion(POTION_EFFECT_TIERS, picked.scaleWithDistance(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
         if (item == ModItems.RANDOM_GOOD_POTION.get()) {
-            return bakeRandomPotion(GOOD_POTION_TIERS, picked.scaleWithDistance(),
+            return bakeRandomPotion(GOOD_POTION_TIERS, picked.scaleWithDistance(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
         if (item == ModItems.RANDOM_BAD_POTION.get()) {
-            return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(),
+            return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
 
@@ -1149,10 +1149,13 @@ public final class ContainerContentsRoller {
      * slot)} so two random potions in the same 50-carriage band can differ, yet a fixed
      * chest/slot stays deterministic (re-opens identical).</p>
      *
+     * <p>{@code form} pins the bottle (drinkable / splash / lingering); {@link PotionForm#ANY}
+     * rolls it per spawn.</p>
+     *
      * <p>Returns {@link ItemStack#EMPTY} only when no potion resolves (a stripped or modded
      * potion registry), so the slot is skipped rather than filled with a blank bottle.</p>
      */
-    static ItemStack bakeRandomPotion(List<List<ResourceLocation>> tiers, boolean scale,
+    static ItemStack bakeRandomPotion(List<List<ResourceLocation>> tiers, boolean scale, PotionForm form,
                                       BlockPos localPos, long worldSeed, int carriageIndex,
                                       int slot, int count, HolderLookup.Provider registries) {
         int level = epochLevel(carriageIndex);
@@ -1164,7 +1167,9 @@ public final class ContainerContentsRoller {
         int effIdx = potionEffectIndex(localPos, worldSeed, carriageIndex, slot, pool.size());
         Holder<Potion> potion = pool.get(effIdx);
 
-        Item formItem = potionFormItem(potionFormIndex(localPos, worldSeed, carriageIndex, slot));
+        Item formItem = form.item() != null
+            ? form.item()
+            : potionFormItem(potionFormIndex(localPos, worldSeed, carriageIndex, slot));
         int maxStack = new ItemStack(formItem).getMaxStackSize();
         ItemStack result = new ItemStack(formItem, Math.max(1, Math.min(maxStack, count)));
         result.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));

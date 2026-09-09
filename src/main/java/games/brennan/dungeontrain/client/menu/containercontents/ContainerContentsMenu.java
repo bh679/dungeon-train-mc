@@ -55,6 +55,8 @@ public final class ContainerContentsMenu {
         ENTRY_RAND_ENCH_TOGGLE,
         /** Per-entry sub-row checkbox on random-potion placeholders: flip scale-with-distance. */
         ENTRY_SCALE_TOGGLE,
+        /** Per-entry sub-row cell on random-potion placeholders: step the bottle form. */
+        ENTRY_POTION_FORM,
         /** Per-entry sub-row %NN cell: bump random-enchantment chance (0-100). */
         ENTRY_ENCH_CHANCE,
         /** Per-entry main-row cell: cycle slot override (auto / in / fuel / out). */
