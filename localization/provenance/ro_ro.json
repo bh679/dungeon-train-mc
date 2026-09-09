@@ -1411,6 +1411,7 @@
   "item.dungeontrain.random_playerbook": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "item.dungeontrain.random_leaderboard_book": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "item.dungeontrain.stats_book": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "item.dungeontrain.random_potion": {"author": "Fable 5.1 (Claude)", "reviewer": ""},
   "gui.dungeontrain.prefab_tab.variants": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.prefab_tab.loot": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.prefab_tab.loot_entity": {"author": "Opus 5 (Claude)", "reviewer": ""},

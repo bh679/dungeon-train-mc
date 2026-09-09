@@ -144,14 +144,14 @@ public final class ContainerContentsRoller {
     private static final String NBT_POT_ITEM = "item";
 
     // ------------------------------------------------------------------
-    // Epoch effects: an otherwise-effectless item found in loot gains a
-    // random vanilla potion, rolled once per 50-carriage block (sticky
-    // within the block) and escalating in power as the run progresses.
-    // Tipped arrows and drinkable/splash/lingering potions share the
-    // level/tier/index math below but each carries its own tier table and
-    // a decorrelating salt:
-    //   • tipped arrows                       → ARROW_EFFECT_TIERS  (offensive)
-    //   • drinkable / splash / lingering pots → POTION_EFFECT_TIERS (broad)
+    // Epoch effects: random vanilla potions whose power escalates as the run
+    // progresses. Tipped arrows found effectless in loot, and the explicit
+    // dungeontrain:random_potion placeholder, share the level/tier/index math
+    // below but each carries its own tier table and a decorrelating salt:
+    //   • effectless tipped arrows           → ARROW_EFFECT_TIERS  (offensive)
+    //   • dungeontrain:random_potion         → POTION_EFFECT_TIERS (broad)
+    // A plain minecraft:potion entry is NEVER randomised — it spawns the potion
+    // the author stored on the entry (ContainerContentsPotions).
     // Suspicious stews (below, STEW_EFFECTS) are the one exception: vanilla
     // stew effects don't escalate with anything, so they skip the
     // level/tier machinery and roll uniformly from a single flat pool.
@@ -205,7 +205,7 @@ public final class ContainerContentsRoller {
 
     /**
      * Ordered, escalating tiers of vanilla potions applied to otherwise-
-     * effectless drinkable / splash / lingering potions found in loot. Unlike
+     * {@code dungeontrain:random_potion} placeholders found in loot. Unlike
      * the offensive arrow table these span ALL effect kinds (beneficial +
      * offensive + utility), arranged by rough potency: a 50-carriage block
      * sticky-picks one id from its tier, and deeper blocks unlock stronger /
@@ -919,6 +919,12 @@ public final class ContainerContentsRoller {
             return bakeStatsBook(localPos, worldSeed, carriageIndex, slot);
         }
 
+        // Editor placeholder dungeontrain:random_potion — the ONLY entry that randomises a
+        // potion. A tiered effect (escalating per 50-carriage band) in a random bottle form.
+        if (item == ModItems.RANDOM_POTION.get()) {
+            return bakeRandomPotion(localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
+        }
+
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
             if (SharedBookGate.canDiscover()) {
                 // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
@@ -939,6 +945,10 @@ public final class ContainerContentsRoller {
 
         int maxStack = new ItemStack(item).getMaxStackSize();
         ItemStack stack = new ItemStack(item, Math.max(1, Math.min(maxStack, rolledCount)));
+
+        // A potion entry spawns exactly the potion the author added (Healing, Water, ...).
+        // Entries with no stored potion stay vanilla's component-less "Uncraftable Potion".
+        ContainerContentsPotions.applyStoredPotion(stack, picked.potionId(), registries);
 
         if (picked.randomDurability() && stack.isDamageableItem()
             && rollChance(picked.durabilityChance(), localPos, worldSeed,
@@ -989,16 +999,12 @@ public final class ContainerContentsRoller {
         // localPos/slot — so every arrow in the same 50-carriage block matches.
         applyEpochArrowEffect(stack, item, worldSeed, carriageIndex, registries);
 
-        // Effectless drinkable / splash / lingering potions get a real effect +
-        // bottle form. The TIER escalates per 50-carriage band, but the specific
-        // effect + form are per-instance random (keyed on localPos/slot), so
-        // potions in the same band vary. May return a NEW stack when the rolled
-        // form differs from the found item, so reassign.
-        stack = applyEpochPotionEffect(stack, item, localPos, worldSeed, carriageIndex, slot, registries);
+        // Potions are NOT randomised here — see the dungeontrain:random_potion
+        // placeholder branch above. A minecraft:potion entry is placed as authored.
 
         // Otherwise-effectless suspicious stews found in loot get a real
-        // potion effect. Unlike potions there's no alternate "form" to swap
-        // to, so this mutates stack in place rather than reassigning.
+        // potion effect. There's no alternate "form" to swap to, so this
+        // mutates stack in place rather than reassigning.
         applyEpochStewEffect(stack, item, localPos, worldSeed, carriageIndex, slot, registries);
 
         long nameSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_NAME);
@@ -1071,43 +1077,31 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * Turn an otherwise-effectless drinkable / splash / lingering potion found
-     * in loot into a real one: a vanilla potion effect from
-     * {@link #POTION_EFFECT_TIERS} plus a (possibly different) bottle form, both
-     * rolled once per 50-carriage block so every effectless potion in the block
-     * matches and the pair escalates with travel.
+     * Bake the {@code dungeontrain:random_potion} placeholder into a real vanilla potion: an
+     * effect from {@link #POTION_EFFECT_TIERS} in a drinkable / splash / lingering bottle.
      *
-     * <p>Returns the input stack unchanged for non-potion items and for potions
-     * that already carry a real effect. When the rolled form differs from the
-     * found item the result is a <b>new</b> stack of that form (a found
-     * "Uncraftable Potion" can come back as a "Splash Potion of Poison"), so the
-     * caller must use the returned reference.</p>
+     * <p>The TIER (the pool of allowed effects) escalates with travelled distance; WITHIN the
+     * tier the effect and the bottle form are each independently random, keyed on the full
+     * {@code (localPos, worldSeed, carriageIndex, slot)} so two random potions in the same
+     * 50-carriage band can differ, yet a fixed chest/slot stays deterministic (re-opens
+     * identical).</p>
      *
-     * <p><b>Determinism exception</b> (as with the arrow path): the effect + form
-     * are keyed on {@code (worldSeed, level)} ONLY — deliberately not
-     * {@code localPos}/{@code slot} — which makes every effectless potion within
-     * one 50-carriage block resolve identically.</p>
+     * <p>Returns {@link ItemStack#EMPTY} only when no tier potion resolves (a stripped or
+     * modded potion registry), so the slot is skipped rather than filled with a blank bottle.</p>
      */
-    static ItemStack applyEpochPotionEffect(ItemStack stack, Item item, BlockPos localPos,
-                                            long worldSeed, int carriageIndex, int slot,
-                                            HolderLookup.Provider registries) {
-        if (!isPotionFormItem(item)) return stack;
-        if (!isEffectlessPotion(stack)) return stack; // leave real-effect potions alone
-
-        // The TIER (the pool of allowed effects) escalates with travelled
-        // distance; WITHIN the tier each potion is independently random — keyed
-        // on the full position so two potions in the same 50-carriage band can
-        // differ, yet a fixed chest/slot stays deterministic (re-opens identical).
+    static ItemStack bakeRandomPotion(BlockPos localPos, long worldSeed, int carriageIndex,
+                                      int slot, int count, HolderLookup.Provider registries) {
         int level = epochLevel(carriageIndex);
         int tier = potionEffectTierIndex(level);
         List<Holder<Potion>> pool = resolvePotions(POTION_EFFECT_TIERS.get(tier), registries);
-        if (pool.isEmpty()) return stack;
+        if (pool.isEmpty()) return ItemStack.EMPTY;
 
         int effIdx = potionEffectIndex(localPos, worldSeed, carriageIndex, slot, pool.size());
         Holder<Potion> potion = pool.get(effIdx);
 
         Item formItem = potionFormItem(potionFormIndex(localPos, worldSeed, carriageIndex, slot));
-        ItemStack result = item == formItem ? stack : new ItemStack(formItem, stack.getCount());
+        int maxStack = new ItemStack(formItem).getMaxStackSize();
+        ItemStack result = new ItemStack(formItem, Math.max(1, Math.min(maxStack, count)));
         result.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));
 
         if (DebugFlags.logLootRolls()) {
@@ -1124,7 +1118,7 @@ public final class ContainerContentsRoller {
      * Give an otherwise-effectless {@code minecraft:suspicious_stew} found in
      * loot a real {@link net.minecraft.world.item.component.SuspiciousStewEffects}
      * component. No-op for any other item, and never overwrites a stew that
-     * already carries an effect. Unlike {@link #applyEpochPotionEffect} there's
+     * already carries an effect. Unlike {@link #bakeRandomPotion} there's
      * no alternate item "form" to swap to, so this mutates {@code stack} in
      * place rather than returning a new one.
      *
@@ -1165,13 +1159,6 @@ public final class ContainerContentsRoller {
         return existing == null || existing.effects().isEmpty();
     }
 
-    /** True for the three drinkable / splash / lingering potion item types. */
-    private static boolean isPotionFormItem(Item item) {
-        return item == Items.POTION
-            || item == Items.SPLASH_POTION
-            || item == Items.LINGERING_POTION;
-    }
-
     /** Map a {@link #potionFormIndex} result to its potion item (0/1/2 → drink/splash/lingering). */
     private static Item potionFormItem(int formIndex) {
         return switch (formIndex) {
@@ -1179,18 +1166,6 @@ public final class ContainerContentsRoller {
             case 2 -> Items.LINGERING_POTION;
             default -> Items.POTION;
         };
-    }
-
-    /**
-     * True when {@code stack} carries no potion effect — absent contents, or a
-     * no-effect base potion (water / mundane / thick / awkward) with no custom
-     * effects. A potion with any real effect returns false so it is never
-     * overwritten. {@link PotionContents#hasEffects()} is false for exactly the
-     * effectless bases (and the empty "Uncraftable" contents).
-     */
-    private static boolean isEffectlessPotion(ItemStack stack) {
-        PotionContents pc = stack.get(DataComponents.POTION_CONTENTS);
-        return pc == null || !pc.hasEffects();
     }
 
     // ---- Shared epoch math (arrows + potions) -----------------------------

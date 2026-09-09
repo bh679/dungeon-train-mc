@@ -516,6 +516,9 @@ public final class ContainerContentsStore {
                 if (ce.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
                     sb.append(", \"slot\": ").append(ce.slotOverride());
                 }
+                if (ce.potionId() != null) {
+                    sb.append(", \"potion\": \"").append(ce.potionId()).append("\"");
+                }
                 sb.append(" }");
                 firstEntry = false;
             }
@@ -643,8 +646,11 @@ public final class ContainerContentsStore {
                         int slotOverride = eo.has("slot")
                             ? eo.get("slot").getAsInt()
                             : ContainerContentsEntry.SLOT_AUTO;
+                        ResourceLocation potionId = eo.has("potion") && eo.get("potion").isJsonPrimitive()
+                            ? ResourceLocation.tryParse(eo.get("potion").getAsString())
+                            : null;
                         entries.add(new ContainerContentsEntry(id, count, weight,
-                            randDur, durChance, randEnch, enchChance, slotOverride));
+                            randDur, durChance, randEnch, enchChance, slotOverride, potionId));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));

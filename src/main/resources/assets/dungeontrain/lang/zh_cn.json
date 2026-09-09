@@ -2044,6 +2044,7 @@
   "chat.dungeontrain.book_burns_author": "%s 写的书燃烧起来",
   "chat.dungeontrain.book_burns_author.copy": "点击复制作者名字",
   "item.dungeontrain.stats_book": "统计之书",
+  "item.dungeontrain.random_potion": "随机药水",
   "gui.dungeontrain.options.book_author_chat": "聊天栏显示书的作者",
   "gui.dungeontrain.options.book_author_chat.tip": "每当一本《地牢列车》的书燃烧时，在聊天栏打出一行写明作者的字——「X 写的书燃烧起来」。你读过的、丢掉的、死时掉落的书都会起火，而这里是唯一署上执笔者名字的地方。默认关闭。",
   "chat.dungeontrain.free_play.cause.keep_inventory": "本世界开启了「保留物品栏」。",

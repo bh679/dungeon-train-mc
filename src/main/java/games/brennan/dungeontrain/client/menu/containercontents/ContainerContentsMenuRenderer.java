@@ -342,7 +342,7 @@ public final class ContainerContentsMenuRenderer {
             MenuBlockIcons.drawItemIcon(ps, buffer, entry.itemId(),
                 iconL + ICON_CELL_WIDTH / 2.0, rowCY, ICON_SIZE, icons);
             if (ContainerContentsMenu.isExpanded(i)) {
-                drawLeftText(ps, buffer, font, shortenItemLabel(entry.itemId()),
+                drawLeftText(ps, buffer, font, entryLabel(entry),
                     iconL + ICON_CELL_WIDTH + NAME_PAD / 2.0, rowCY,
                     iconHover ? 0xFF000000 : 0xFFFFFFFF);
             }
@@ -620,6 +620,16 @@ public final class ContainerContentsMenuRenderer {
             int textColour = isHover ? 0xFF000000 : 0xFFFFFFFF;
             drawLeftText(ps, buffer, font, filtered.get(i), colXL + 0.04, rowCY, textColour);
         }
+    }
+
+    /**
+     * Row label for an entry: the short item id, plus the stored potion in parentheses for a
+     * potion entry so "potion (healing)" and "potion (water)" are told apart at a glance.
+     */
+    static String entryLabel(ContainerContentsSyncPacket.Entry entry) {
+        String base = shortenItemLabel(entry.itemId());
+        if (!entry.hasPotion()) return base;
+        return base + " (" + shortenItemLabel(entry.potionId()) + ")";
     }
 
     /** Drop {@code modid:} prefix for the row label. */

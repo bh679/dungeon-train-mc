@@ -1411,6 +1411,7 @@
   "item.dungeontrain.random_playerbook": "Carte aleatorie de jucător",
   "item.dungeontrain.random_leaderboard_book": "Carte aleatorie de clasament",
   "item.dungeontrain.stats_book": "Carnetul de statistici",
+  "item.dungeontrain.random_potion": "Poțiune aleatorie",
   "gui.dungeontrain.prefab_tab.variants": "Variante de bloc",
   "gui.dungeontrain.prefab_tab.loot": "Containere / Pradă",
   "gui.dungeontrain.prefab_tab.loot_entity": "Suporturi de armură / Rame de obiect",

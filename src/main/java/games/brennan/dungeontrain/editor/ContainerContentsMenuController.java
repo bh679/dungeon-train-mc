@@ -281,7 +281,8 @@ public final class ContainerContentsMenuController {
                 e.itemId().toString(), e.count(), e.weight(),
                 e.randomDurability(), e.durabilityChance(),
                 e.randomEnchantment(), e.enchantmentChance(),
-                e.slotOverride()));
+                e.slotOverride(),
+                e.potionId() == null ? "" : e.potionId().toString()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link);
@@ -385,6 +386,7 @@ public final class ContainerContentsMenuController {
             case ADD -> {
                 ResourceLocation id;
                 int count;
+                ResourceLocation potionId = null;
                 if (packet.itemId() != null && !packet.itemId().isEmpty()) {
                     id = ResourceLocation.tryParse(packet.itemId());
                     if (id == null) {
@@ -403,13 +405,16 @@ public final class ContainerContentsMenuController {
                     Item item = held.getItem();
                     id = BuiltInRegistries.ITEM.getKey(item);
                     count = held.getCount();
+                    // A potion added from the hand keeps its exact potion — a Potion of
+                    // Healing spawns as one, not as a bare bottle for the roller to reinterpret.
+                    potionId = ContainerContentsPotions.potionIdOf(held);
                 }
                 if (current.size() >= ContainerContentsPool.MAX_ENTRIES) {
                     actionBar(player, "Pool full (max " + ContainerContentsPool.MAX_ENTRIES + ")",
                         ChatFormatting.YELLOW);
                     return;
                 }
-                next = current.added(new ContainerContentsEntry(id, count, 1));
+                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId));
                 dirty = true;
             }
             case REMOVE -> {
