@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -29,6 +30,7 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.slf4j.Logger;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -161,13 +163,25 @@ public final class EditorTypeMenuRenderer {
     /** Fraction of panel width allocated to the weight cell on rows that have one. */
     static final double WEIGHT_CELL_FRACTION = 0.25;
     /**
-     * Fraction of panel width allocated to the gate area (weight | min | max | phase) on rows that
-     * carry a per-template spawn gate. Wider than {@link #WEIGHT_CELL_FRACTION} to fit the four
-     * cells; the name fills the remaining {@code 1 - GATE_AREA_FRACTION}.
+     * Fraction of panel width allocated to the gate area (weight | [stage] | min | max | phase) on
+     * rows that carry a per-template spawn gate. Wider than {@link #WEIGHT_CELL_FRACTION} to fit
+     * the cells — including one letter per {@link TrainPhase}; the name fills the remaining
+     * {@code 1 - GATE_AREA_FRACTION}.
      */
-    static final double GATE_AREA_FRACTION = 0.62;
-    /** Phase-cell letter labels, indexed by {@code TrainPhase} ordinal (OVERWORLD/NETHER/VOID/END). */
-    static final String[] PHASE_LETTERS = {"O", "N", "V", "E"};
+    static final double GATE_AREA_FRACTION = 0.68;
+    /**
+     * Phase-cell letter labels, indexed by {@link TrainPhase} ordinal ({@code O N V E U C}) — derived
+     * from {@link TrainPhase#letter()} so a new phase shows up without touching the renderer.
+     */
+    static final String[] PHASE_LETTERS = Arrays.stream(TrainPhase.values())
+        .map(TrainPhase::letter).toArray(String[]::new);
+    /** Gate-area layout units per phase letter (the min/max cells are 1 unit each). */
+    static final double PHASE_LETTER_UNITS = 0.4;
+
+    /** Gate-area layout units of the whole phase cell — one {@link #PHASE_LETTER_UNITS} per phase. */
+    static double phaseUnits() {
+        return PHASE_LETTER_UNITS * PHASE_LETTERS.length;
+    }
     /** Visible gap (panel-local units) between the per-plot panel and a companion type menu. */
     static final double COMPANION_GAP = 0.15;
     /** Minimum width of a collapsed tab column — keeps single-character type names readable. */
@@ -992,7 +1006,7 @@ public final class EditorTypeMenuRenderer {
         if (rc.showStage() && hitX < rc.stageR()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
-        // Phase cell — resolve which of the 4 letters was hit.
+        // Phase cell — resolve which phase letter was hit.
         double subW = rc.phaseSubW(colRight);
         int slot = subW > 0 ? (int) ((hitX - rc.maxR()) / subW) : 0;
         if (slot < 0) slot = 0;
@@ -1364,23 +1378,24 @@ public final class EditorTypeMenuRenderer {
         }
         double gateLeft = rowRight - colW * GATE_AREA_FRACTION;
         if (showStage && linked) {
-            // weight | Stage chip (spans the rest). No min/max/phase cells.
-            double unit = (rowRight - gateLeft) / 4.6;
+            // weight | Stage chip (spans the rest). No min/max/phase cells; the weight cell keeps the
+            // legacy gate row's width so it lines up with unlinked rows.
+            double unit = (rowRight - gateLeft) / (3.0 + phaseUnits());
             double weightR = gateLeft + unit;
             return new RightCells(true, true, true, true, gateLeft, gateLeft, weightR,
                 rowRight, rowRight, rowRight);
         }
         if (showStage) {
-            // weight | stage | min | max | phase. Units: 1 | 1.1 | 1 | 1 | 1.6 = 5.7.
-            double unit = (rowRight - gateLeft) / 5.7;
+            // weight | stage | min | max | phase. Units: 1 | 1.1 | 1 | 1 | phaseUnits().
+            double unit = (rowRight - gateLeft) / (4.1 + phaseUnits());
             double weightR = gateLeft + unit;
             double stageR = weightR + 1.1 * unit;
             double minR = stageR + unit;
             double maxR = minR + unit;
             return new RightCells(true, true, true, false, gateLeft, gateLeft, weightR, stageR, minR, maxR);
         }
-        // Legacy gate row (no stage selector): weight | min | max | phase = 4.6 units.
-        double unit = (rowRight - gateLeft) / 4.6;
+        // Legacy gate row (no stage selector): weight | min | max | phase = 1 | 1 | 1 | phaseUnits().
+        double unit = (rowRight - gateLeft) / (3.0 + phaseUnits());
         double weightR = gateLeft + unit;
         double minR = weightR + unit;
         double maxR = minR + unit;
@@ -1500,7 +1515,7 @@ public final class EditorTypeMenuRenderer {
         // Phase letters — one per phase, bright when enabled.
         double subW = rc.phaseSubW(rowRight);
         for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
-            boolean on = (variant.phaseMask() & (1 << slot)) != 0;
+            boolean on = (variant.phaseMask() & TrainPhase.values()[slot].bit()) != 0;
             double cx = rc.maxR() + (slot + 0.5) * subW;
             drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY,
                 on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
@@ -1544,7 +1559,7 @@ public final class EditorTypeMenuRenderer {
     private static StageRowCells stageRowCells(double rowLeft, double rowRight) {
         double colW = rowRight - rowLeft;
         double gateLeft = rowRight - colW * GATE_AREA_FRACTION;
-        double unit = (rowRight - gateLeft) / 3.6; // min | max | phase = 1 | 1 | 1.6
+        double unit = (rowRight - gateLeft) / (2.0 + phaseUnits()); // min | max | phase = 1 | 1 | phaseUnits()
         double minR = gateLeft + unit;
         double maxR = minR + unit;
         return new StageRowCells(gateLeft - STAGE_ICON_STRIP_W, gateLeft, minR, maxR);
@@ -1618,7 +1633,7 @@ public final class EditorTypeMenuRenderer {
             drawCenteredText(ps, buffer, font, v.maxLevel() < 0 ? "≤∞" : "≤" + v.maxLevel(), maxCX, rowCY, LEVEL_COLOR);
             double subW = rc.phaseSubW(halfW);
             for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
-                boolean on = (v.phaseMask() & (1 << slot)) != 0;
+                boolean on = (v.phaseMask() & TrainPhase.values()[slot].bit()) != 0;
                 double cx = rc.maxR() + (slot + 0.5) * subW;
                 drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY, on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
             }
