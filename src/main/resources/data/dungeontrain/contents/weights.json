@@ -24,6 +24,13 @@
   "sand": 0,
   "shop": 8,
   "statue": 1,
-  "traps": 1,
+  "traps": {
+    "weight": 1,
+    "phases": [
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
   "vase": 1
 }
