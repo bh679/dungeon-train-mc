@@ -11882,6 +11882,57 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "observers-silent-on-placement",
+      "version": "0.827.0",
+      "type": "fix",
+      "title": "Observers no longer fire when the train builds around them",
+      "summary": "An observer saved into a carriage pulsed every time Dungeon Train placed that carriage: when a template opened in the editor, when the carriage spawned onto the train, and again as its contents and parts were filled in. Redstone contraptions fired themselves on load. Observers now stay quiet while the mod is doing its own building and only react to real causes: you breaking or placing a block, a piston, a door.",
+      "highlights": [
+        "Observers stay silent while a carriage is placed, lifted onto the train, and furnished",
+        "Also applies when a template opens in the editor or builder, and when a saved train reloads",
+        "Player and gameplay triggers on a running carriage are unchanged"
+      ],
+      "pr": 1345,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-six-phase-letters",
+      "version": "0.828.0",
+      "type": "fix",
+      "title": "Editor phase gates cover the whole line",
+      "summary": "The Train Editor's phase gates only ever showed the first four phases, so the later stretches of the line were invisible and impossible to toggle. Every phase picker in the editor now shows one letter per phase: the floating type menu, the Stages panel, the parts position menu, the Stage edit screen and the gate summary line. Templates you had already gated to a later phase were spawning correctly all along \u2014 the editor just could not show or change that gate.",
+      "highlights": [
+        "Every phase now appears in the editor's gate cells, not just the first four",
+        "Later-phase gates can be toggled from the world-space menus instead of only by command",
+        "Gate summaries list every enabled phase, so a template gated to a later phase no longer reads as ungated"
+      ],
+      "pr": 1346,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "traps-group-level-gating",
+      "version": "0.828.0",
+      "type": "content",
+      "title": "Traps arrive in order, and one more joins them",
+      "summary": "The traps carriages used to all be in play from the moment their stretch of the line began. Each one now has a level floor, so the gentler traps greet you early and the nastier ones wait until you have a few carriages behind you. A new trap carriage joins the group \u2014 designed and built by FireFly in the in-game editor, and our thanks go to them for it \u2014 and the group itself now rides the Overworld stretch as well as the Void and Upside Down.",
+      "highlights": [
+        "A new trap carriage joins the rotation, designed and built by FireFly \u2014 thank you!",
+        "Every trap carriage is level-gated \u2014 the harshest ones no longer turn up on your first run",
+        "Traps now appear in the Overworld stretch, and no longer in Chunks"
+      ],
+      "pr": 1345,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

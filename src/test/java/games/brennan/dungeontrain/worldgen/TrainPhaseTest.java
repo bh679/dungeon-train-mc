@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import java.util.EnumSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /** Pure tests for the TrainPhase bitmask + token helpers (phaseAt is covered by in-game tests). */
@@ -42,5 +44,24 @@ final class TrainPhaseTest {
         assertEquals(TrainPhase.CHUNCKS, TrainPhase.byToken("CHUNCKS"));
         assertNull(TrainPhase.byToken("nonsense"));
         assertNull(TrainPhase.byToken(null));
+    }
+
+    @Test
+    @DisplayName("letter() yields O N V E U C in ordinal order")
+    void letters() {
+        StringBuilder sb = new StringBuilder();
+        for (TrainPhase p : TrainPhase.values()) sb.append(p.letter());
+        assertEquals("ONVEUC", sb.toString());
+    }
+
+    @Test
+    @DisplayName("displayName() is non-blank and distinct for every phase")
+    void displayNames() {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (TrainPhase p : TrainPhase.values()) {
+            assertFalse(p.displayName().isBlank(), p.name());
+            assertTrue(seen.add(p.displayName()), "duplicate label " + p.displayName());
+        }
+        assertEquals("Upside Down", TrainPhase.UPSIDE_DOWN.displayName());
     }
 }

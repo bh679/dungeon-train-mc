@@ -46,9 +46,11 @@ public final class CarriageGroupPlacer {
                     group.id(), carriages);
             return false;
         }
-        eraseAt(level, origin, dims, carriages);
-        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-        template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_ALL);
+        CarriageStampGuard.run(() -> {
+            eraseAt(level, origin, dims, carriages);
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_ALL);
+        });
         return true;
     }
 

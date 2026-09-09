@@ -1,22 +1,30 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 0,
   "variants": [
     {
       "id": "mild_1",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 2
     },
     {
       "id": "dangerous_1",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 15
     },
     {
       "id": "mild_3",
-      "weight": 0
+      "weight": 1,
+      "minLevel": 3
     },
     {
       "id": "mild_4",
-      "weight": 0
+      "weight": 1,
+      "minLevel": 10
+    },
+    {
+      "id": "mild_2",
+      "weight": 1
     }
   ]
 }

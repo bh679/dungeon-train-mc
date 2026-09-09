@@ -84,6 +84,16 @@ public final class CarriagePartPlacer {
     public static void placeAtPerPlacement(ServerLevel level, BlockPos carriageOrigin,
                                            CarriagePartKind kind, List<String> names, CarriageDims dims,
                                            long seed, int carriageIndex, boolean relight) {
+        // Guarded so the relight (flag 3) stamp and the sidecar pass cannot pulse an observer in the
+        // part or the carriage next to it — see CarriageStampGuard. Nested inside placeAt on the
+        // spawn path (already held) and the outermost holder for an in-carriage part swap.
+        CarriageStampGuard.run(() -> placeAtPerPlacementGuarded(
+            level, carriageOrigin, kind, names, dims, seed, carriageIndex, relight));
+    }
+
+    private static void placeAtPerPlacementGuarded(ServerLevel level, BlockPos carriageOrigin,
+                                                   CarriagePartKind kind, List<String> names, CarriageDims dims,
+                                                   long seed, int carriageIndex, boolean relight) {
         List<CarriagePartKind.Placement> placements = kind.placements(dims);
         Vec3i placementSize = kind.dims(dims);
         for (int i = 0; i < placements.size(); i++) {

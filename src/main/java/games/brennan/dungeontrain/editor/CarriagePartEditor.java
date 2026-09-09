@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.CarriagePartTemplateId;
 import games.brennan.dungeontrain.template.TemplateDecor;
@@ -346,7 +347,7 @@ public final class CarriagePartEditor {
         CarriagePartPlacer.eraseAt(overworld, targetOrigin, kind, dims);
         if (seed != null) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            seed.placeInWorld(overworld, targetOrigin, targetOrigin, settings, overworld.getRandom(), 3);
+            CarriageStampGuard.run(() -> seed.placeInWorld(overworld, targetOrigin, targetOrigin, settings, overworld.getRandom(), 3));
             TemplateDecor.replace(overworld, targetOrigin, seed, settings, null);
         } else {
             stampStarter(overworld, targetOrigin, kind, dims);
@@ -670,7 +671,7 @@ public final class CarriagePartEditor {
         Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(level, kind, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
             TemplateDecor.replace(level, origin, stored.get(), settings, null);
         }
         if (plotIsEmpty(level, origin, kind, dims)) {
