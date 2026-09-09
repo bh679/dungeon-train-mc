@@ -47,10 +47,10 @@ import java.util.function.Consumer;
  * other template kind.
  *
  * <h2>What a template carries</h2>
- * {@link #carries} is the one membership rule: the three wall-hung {@link #DECOR_TYPES}, plus every
- * <b>living</b> entity — the mobs an author stands in a plot, and armor stands. Not minecarts,
- * boats, dropped items, arrows or the rest of the inert {@code MISC} traffic, which is a plot's
- * litter rather than its content.
+ * {@link #carries} is the one membership rule: the three wall-hung {@link #DECOR_TYPES}, the
+ * {@link #VEHICLE_TYPES} an author parks in a plot — boats and minecarts — plus every <b>living</b>
+ * entity: the mobs an author stands in a plot, and armor stands. Not dropped items, arrows or the
+ * rest of the inert {@code MISC} traffic, which is a plot's litter rather than its content.
  *
  * <p>Mobs used to be excluded here on the grounds that the per-cell variant sidecar rolls and spawns
  * them, so carrying one would spawn it twice. That is not true of an editor plot: variant mobs are
@@ -95,6 +95,25 @@ public final class TemplateDecor {
         "minecraft:glow_item_frame",
         "minecraft:painting");
 
+    /**
+     * The vehicles a template carries — a boat pulled up on a carriage's deck, a minecart parked on
+     * a siding. Inert like the pictures, with no {@code Health} to announce themselves by, so they
+     * need naming too.
+     *
+     * <p><b>No {@code command_block_minecart}.</b> A shared carriage is downloaded from the relay
+     * and stamped into somebody else's world; a command block on wheels would be remote command
+     * execution, and no build needs one.</p>
+     */
+    public static final Set<String> VEHICLE_TYPES = Set.of(
+        "minecraft:boat",
+        "minecraft:chest_boat",
+        "minecraft:minecart",
+        "minecraft:chest_minecart",
+        "minecraft:furnace_minecart",
+        "minecraft:tnt_minecart",
+        "minecraft:hopper_minecart",
+        "minecraft:spawner_minecart");
+
 
     private TemplateDecor() {}
 
@@ -104,9 +123,9 @@ public final class TemplateDecor {
      * {@link StructureTemplate#fillFromWorld} with the decoration kept.
      *
      * <p>Drop-in for the {@code includeEntities = false} call every editor used to make: entities are
-     * pulled in, then everything {@link #carries} turns down is filtered back out, so the minecart
-     * an author left parked in a plot is not baked into the saved template while the mob they placed
-     * in it is.</p>
+     * pulled in, then everything {@link #carries} turns down is filtered back out, so the arrows
+     * and dropped items littering a plot are not baked into the saved template while the mob, the
+     * boat and the minecart the author placed in it are.</p>
      *
      * @param voidBlock the block {@code fillFromWorld} treats as "not part of this template"
      *                  ({@code STRUCTURE_VOID} or {@code AIR}, per the caller's existing choice)
@@ -161,14 +180,15 @@ public final class TemplateDecor {
     /**
      * Whether a template carries the entity this saved NBT describes — see the class javadoc.
      *
-     * <p>Two questions, answered off the tag alone so this works wherever an entity list does:
+     * <p>Three questions, answered off the tag alone so this works wherever an entity list does:
      * during a capture, during a stamp, and on a relay blob with no world in sight.</p>
      *
      * <ol>
      *   <li>Is it one of the three wall-hung {@link #DECOR_TYPES}?</li>
+     *   <li>Is it one of the {@link #VEHICLE_TYPES}?</li>
      *   <li>Is it <b>living</b>? {@code LivingEntity.addAdditionalSaveData} writes {@code Health},
      *       and nothing else does — so the tag says so itself, for modded mobs as readily as vanilla
-     *       ones. A minecart, a boat, a dropped item, an arrow and an experience orb all lack it.</li>
+     *       ones. A dropped item, an arrow and an experience orb all lack it.</li>
      * </ol>
      *
      * <p><b>Not {@link MobCategory}.</b> The obvious rule — "carried unless it is {@code MISC}" — is
@@ -178,7 +198,9 @@ public final class TemplateDecor {
      */
     public static boolean carries(CompoundTag entityNbt) {
         if (entityNbt == null) return false;
-        return DECOR_TYPES.contains(entityNbt.getString("id"))
+        String id = entityNbt.getString("id");
+        return DECOR_TYPES.contains(id)
+            || VEHICLE_TYPES.contains(id)
             || entityNbt.contains("Health", Tag.TAG_FLOAT);
     }
 
@@ -333,6 +355,11 @@ public final class TemplateDecor {
         // Stale motion would make a freshly stamped frame lurch; there is no meaningful velocity to
         // carry across a save/load anyway.
         nbt.remove("Motion");
+        // A boat's rider was captured as an entry of its own, standing where it sat; the copy the
+        // vehicle's tag carries would be a second one. EntityType.create ignores the list anyway —
+        // it is loadEntityRecursive that reads it — but the tag should not promise what no stamp
+        // path delivers.
+        nbt.remove("Passengers");
         nbt.putUUID("UUID", UUID.randomUUID());
 
         if (anchor != null && nbt.contains("TileX", Tag.TAG_INT)) {
@@ -369,9 +396,11 @@ public final class TemplateDecor {
      * stamp's blocks at <b>negative</b> local X, so a box measured forwards from {@code origin} would
      * clear the wrong side of the stamp entirely.</p>
      *
-     * <p>Scoped to {@link #DECOR_TYPES}, so a player's pet, a dropped item or an authored mob
-     * standing in the same box is left alone — the callers that want those gone have their own,
-     * wider sweeps ({@code EditorPlotEntityClearer}, {@code clearIntruders}).</p>
+     * <p>Scoped to {@link #DECOR_TYPES} and <b>empty</b> {@link #VEHICLE_TYPES}, so a player's pet,
+     * a dropped item, an authored mob or the boat somebody is sitting in is left alone — the callers
+     * that want those gone have their own, wider sweeps ({@code EditorPlotEntityClearer},
+     * {@code clearIntruders}). Vehicles are in because two boats stamped into one spot do what two
+     * paintings do not: collide, and shove each other across the deck, once more per pass.</p>
      *
      * @return how many were removed
      */
@@ -403,7 +432,7 @@ public final class TemplateDecor {
             if (box.getXsize() <= 0 || box.getYsize() <= 0 || box.getZsize() <= 0) return 0;
         }
 
-        List<Entity> doomed = level.getEntities((Entity) null, box, TemplateDecor::isWallDecor);
+        List<Entity> doomed = level.getEntities((Entity) null, box, TemplateDecor::isRestamped);
         for (Entity entity : doomed) entity.discard();
         return doomed.size();
     }
@@ -416,20 +445,36 @@ public final class TemplateDecor {
      * template placed, or a room's mobs are spawned once per copy and taken away never.</p>
      */
     public static boolean carried(Entity entity) {
-        // The live form of the two questions {@link #carries} asks of a tag.
-        return entity instanceof LivingEntity || isWallDecor(entity);
+        // The live form of the three questions {@link #carries} asks of a tag.
+        return entity instanceof LivingEntity || isWallDecor(entity) || isVehicle(entity);
     }
 
     /**
      * Whether a live entity is one of the three wall-hung {@link #DECOR_TYPES}.
      *
-     * <p>Deliberately narrower than {@link #carried} and NOT to be merged with it. This is what
-     * {@link #discard} clears before a re-stamp, and widening it to every carried type would have a
-     * re-stamp delete the mob an author just placed in the plot — and a player's pet standing in
-     * the same box with it.</p>
+     * <p>Deliberately narrower than {@link #carried} and NOT to be merged with it. This is half of
+     * what {@link #discard} clears before a re-stamp, and widening it to every carried type would
+     * have a re-stamp delete the mob an author just placed in the plot — and a player's pet standing
+     * in the same box with it.</p>
      */
     public static boolean isWallDecor(Entity entity) {
         return entity != null
             && DECOR_TYPES.contains(EntityType.getKey(entity.getType()).toString());
+    }
+
+    /** Whether a live entity is one of the {@link #VEHICLE_TYPES}. */
+    public static boolean isVehicle(Entity entity) {
+        return entity != null
+            && VEHICLE_TYPES.contains(EntityType.getKey(entity.getType()).toString());
+    }
+
+    /**
+     * What a re-stamp takes away before it hangs the template's own: the wall decor, and any
+     * carried vehicle nobody is sitting in. The occupied one is spared for the same reason the
+     * pet is — it is a player's, not the stamp's.
+     */
+    static boolean isRestamped(Entity entity) {
+        return isWallDecor(entity)
+            || (isVehicle(entity) && entity.getPassengers().isEmpty());
     }
 }

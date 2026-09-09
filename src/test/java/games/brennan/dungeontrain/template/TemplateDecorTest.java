@@ -88,9 +88,20 @@ class TemplateDecorTest {
         assertTrue(TemplateDecor.isDecor(living("minecraft:armor_stand", 1, 2, 3)),
             "an armor stand is MISC, and still authored content");
 
+        // The vehicles an author parks in a build. No Health value to announce them, so they are
+        // named, like the pictures.
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:boat", 1, 2, 3, 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:chest_boat", 1, 2, 3, 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:minecart", 1, 2, 3, 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:chest_minecart", 1, 2, 3, 1, 2, 3)));
+        assertTrue(TemplateDecor.isDecor(entry("minecraft:hopper_minecart", 1, 2, 3, 1, 2, 3)));
+
+        // A shared build is stamped into other people's worlds; a command block on wheels is not
+        // decoration, it is remote command execution.
+        assertFalse(TemplateDecor.isDecor(entry("minecraft:command_block_minecart", 1, 2, 3, 1, 2, 3)),
+            "a command block minecart is never carried");
+
         // A plot's litter, not its content: none of these save a Health value.
-        assertFalse(TemplateDecor.isDecor(entry("minecraft:minecart", 1, 2, 3, 1, 2, 3)));
-        assertFalse(TemplateDecor.isDecor(entry("minecraft:boat", 1, 2, 3, 1, 2, 3)));
         assertFalse(TemplateDecor.isDecor(entry("minecraft:item", 1, 2, 3, 1, 2, 3)));
         assertFalse(TemplateDecor.isDecor(entry("minecraft:arrow", 1, 2, 3, 1, 2, 3)));
         assertFalse(TemplateDecor.isDecor(entry("minecraft:experience_orb", 1, 2, 3, 1, 2, 3)));
@@ -106,16 +117,34 @@ class TemplateDecorTest {
         CompoundTag tag = saved(
             entry("minecraft:item_frame", 1, 2, 3, 1, 2, 3),
             living("minecraft:villager", 4, 0, 4),
-            entry("minecraft:minecart", 2, 0, 2, 2, 0, 2),
+            entry("minecraft:item", 2, 0, 2, 2, 0, 2),
+            entry("minecraft:minecart", 3, 0, 3, 3, 0, 3),
             entry("minecraft:painting", 0, 3, 5, 0, 3, 5));
 
         assertTrue(TemplateDecor.filterEntities(tag),
-            "a minecart was present, so the tag needs reloading");
+            "a dropped item was present, so the tag needs reloading");
         ListTag kept = tag.getList("entities", Tag.TAG_COMPOUND);
-        assertEquals(3, kept.size(), "the mob stays; only the minecart goes");
+        assertEquals(4, kept.size(), "the mob and the minecart stay; only the dropped item goes");
         assertEquals("minecraft:item_frame", kept.getCompound(0).getCompound("nbt").getString("id"));
         assertEquals("minecraft:villager", kept.getCompound(1).getCompound("nbt").getString("id"));
-        assertEquals("minecraft:painting", kept.getCompound(2).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:minecart", kept.getCompound(2).getCompound("nbt").getString("id"));
+        assertEquals("minecraft:painting", kept.getCompound(3).getCompound("nbt").getString("id"));
+    }
+
+    @Test
+    void rebaseDropsAVehiclesPassengersBecauseTheRiderIsAnEntryOfItsOwn() {
+        CompoundTag e = entry("minecraft:boat", 1.5, 0.0, 1.5, 1, 0, 1);
+        ListTag passengers = new ListTag();
+        CompoundTag rider = new CompoundTag();
+        rider.putString("id", "minecraft:villager");
+        passengers.add(rider);
+        e.getCompound("nbt").put("Passengers", passengers);
+        e.getCompound("nbt").put("Motion", new ListTag());
+
+        CompoundTag nbt = TemplateDecor.rebase(e, new Vec3(11, 12, 13), null);
+        assertFalse(nbt.contains("Passengers"), "the rider was captured standing where it sat");
+        assertFalse(nbt.contains("Motion"));
+        assertTrue(e.getCompound("nbt").contains("Passengers"), "the saved entry is left as it was");
     }
 
     @Test

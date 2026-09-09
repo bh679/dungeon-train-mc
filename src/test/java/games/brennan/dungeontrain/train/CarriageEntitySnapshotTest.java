@@ -40,6 +40,22 @@ class CarriageEntitySnapshotTest {
     }
 
     @Test
+    void parkingAVehicleChangesTheFingerprintAndAWanderingMobDoesNot() {
+        ListTag before = ents(ent("minecraft:item_frame", 3.5, 2.5, 0.06, null));
+        ListTag boat = ents(
+            ent("minecraft:item_frame", 3.5, 2.5, 0.06, null),
+            ent("minecraft:boat", 1.5, 0, 4.5, null));
+        ListTag villager = ents(
+            ent("minecraft:item_frame", 3.5, 2.5, 0.06, null),
+            ent("minecraft:villager", 1.5, 0, 4.5, null));
+
+        assertNotEquals(CarriageEntitySnapshot.decorFingerprint(before),
+            CarriageEntitySnapshot.decorFingerprint(boat), "a boat is an authoring decision");
+        assertEquals(CarriageEntitySnapshot.decorFingerprint(before),
+            CarriageEntitySnapshot.decorFingerprint(villager), "a villager is its own business");
+    }
+
+    @Test
     void anEmptyOrNullListIsTheSameFingerprint() {
         assertEquals(CarriageEntitySnapshot.decorFingerprint(null),
             CarriageEntitySnapshot.decorFingerprint(new ListTag()));
