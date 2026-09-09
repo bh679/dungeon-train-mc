@@ -16,7 +16,10 @@
   "fire": 4,
   "maze": 4,
   "mild_1": 1,
-  "mild_2": 1,
+  "mild_2": {
+    "weight": 1,
+    "name": "wishingwell"
+  },
   "mild_3": 1,
   "mild_4": 1,
   "narrative": 3,
@@ -28,9 +31,9 @@
   "traps": {
     "weight": 1,
     "phases": [
+      "OVERWORLD",
       "VOID",
-      "UPSIDE_DOWN",
-      "CHUNCKS"
+      "UPSIDE_DOWN"
     ]
   },
   "vase": 1

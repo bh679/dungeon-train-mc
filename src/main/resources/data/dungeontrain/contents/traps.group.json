@@ -4,7 +4,8 @@
   "variants": [
     {
       "id": "mild_1",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 2
     },
     {
       "id": "dangerous_1",
@@ -13,7 +14,8 @@
     },
     {
       "id": "mild_3",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 3
     },
     {
       "id": "mild_4",
