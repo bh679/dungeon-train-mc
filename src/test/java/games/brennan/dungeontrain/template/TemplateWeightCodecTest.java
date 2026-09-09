@@ -201,6 +201,62 @@ final class TemplateWeightCodecTest {
         assertNull(moded.withMode(null).mode());
     }
 
+    // ---- Display label ("name") — the editor's rename without a file move ----
+
+    @Test
+    @DisplayName("name key parses trimmed, case kept; blank is normalised to null; absent is null")
+    void parseName() {
+        assertEquals("The Tome", TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"name\":\"  The Tome \"}"), CLAMP).name());
+        assertNull(TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"name\":\"   \"}"), CLAMP).name());
+        assertNull(TemplateWeightCodec.parseEntry(JsonParser.parseString("20"), CLAMP).name());
+    }
+
+    @Test
+    @DisplayName("a name alone forces the object form; nothing else is emitted with it")
+    void emitNameOnly() {
+        JsonObject out = TemplateWeightCodec.toJson(Map.of("book", TemplateMeta.of(3).withName("Tome")));
+        assertTrue(out.get("book").isJsonObject());
+        JsonObject o = out.getAsJsonObject("book");
+        assertEquals(3, o.get("weight").getAsInt());
+        assertEquals("Tome", o.get("name").getAsString());
+        assertFalse(o.has("minLevel"));
+        assertFalse(o.has("stage"));
+        assertFalse(o.has("mode"));
+        assertFalse(o.has("flip"));
+    }
+
+    @Test
+    @DisplayName("clearing the name returns an otherwise-default entry to the bare int")
+    void emitClearedNameStaysBareInt() {
+        JsonObject out = TemplateWeightCodec.toJson(Map.of(
+            "book", TemplateMeta.of(3).withName("Tome").withName(null)));
+        assertTrue(out.get("book").isJsonPrimitive());
+        assertEquals(3, out.get("book").getAsInt());
+    }
+
+    @Test
+    @DisplayName("round-trip preserves the name alongside gate, stage link and mode")
+    void roundTripName() {
+        TemplateMeta original = new TemplateMeta(
+            6, new TemplateGate(1, 12, EnumSet.of(TrainPhase.VOID)), "endgame", "bedrock_lock")
+            .withName("Endgame Library");
+        JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
+        TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
+        assertEquals("Endgame Library", back.name());
+        assertEquals("bedrock_lock", back.mode());
+        assertEquals("endgame", back.stageId());
+        assertEquals(original.gate(), back.gate());
+    }
+
+    @Test
+    @DisplayName("a label longer than NAME_MAX is cut, not rejected")
+    void nameIsCappedAtMax() {
+        String longName = "x".repeat(TemplateMeta.NAME_MAX + 10);
+        assertEquals(TemplateMeta.NAME_MAX, TemplateMeta.of(1).withName(longName).name().length());
+    }
+
     // ---- Multi Stage links (v3 — optional "stages" array, sub-variant members) ----
 
     @Test

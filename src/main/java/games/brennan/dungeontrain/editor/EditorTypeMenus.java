@@ -223,7 +223,7 @@ public final class EditorTypeMenus {
                 v.id(), weights.weightFor(v.id()),
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, v.id(), v.id(), p.isUser(), p.isImported(),
-                stageId == null ? "" : stageId));
+                stageId == null ? "" : stageId).withDisplayName(weights.nameFor(v.id())));
         }
         return rows;
     }
@@ -267,7 +267,8 @@ public final class EditorTypeMenus {
                 c.id(), weights.weightFor(c.id()),
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, c.id(), c.id(), p.isUser(), p.isImported(),
-                subVariantsFor(c.id(), cat), stageId == null ? "" : stageId));
+                subVariantsFor(c.id(), cat), stageId == null ? "" : stageId)
+                .withDisplayName(weights.nameFor(c.id())));
         }
         return rows;
     }
@@ -287,7 +288,8 @@ public final class EditorTypeMenus {
                 name, TrackVariantWeights.weightFor(kind, name),
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, modelId, name, p.isUser(), p.isImported(),
-                subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId));
+                subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId)
+                .withDisplayName(TrackVariantWeights.nameFor(kind, name)));
         }
         return rows;
     }
@@ -396,12 +398,13 @@ public final class EditorTypeMenus {
         List<games.brennan.dungeontrain.train.CarriageContentsGroup.Member> members = group.get().members();
         if (members.isEmpty()) return java.util.Collections.emptyList();
         List<EditorTypeMenusPacket.Variant> out = new ArrayList<>(members.size());
+        CarriageContentsWeights weights = CarriageContentsWeights.current();
         for (games.brennan.dungeontrain.train.CarriageContentsGroup.Member m : members) {
             EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
                 games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(m.id()));
             out.add(new EditorTypeMenusPacket.Variant(
                 m.id(), m.weight(), category, m.id(), m.id(),
-                prov.isUser(), prov.isImported()));
+                prov.isUser(), prov.isImported()).withDisplayName(weights.nameFor(m.id())));
         }
         return out;
     }
@@ -437,7 +440,7 @@ public final class EditorTypeMenus {
                 games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
                 category, modelId, m.id(),
                 prov.isUser(), prov.isImported(),
-                java.util.List.of(), m.stageIds()));
+                java.util.List.of(), m.stageIds()).withDisplayName(TrackVariantWeights.nameFor(kind, m.id())));
         }
         return out;
     }

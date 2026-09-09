@@ -173,6 +173,11 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
      * hue so the player can tell at a glance which variants arrived from
      * a shared package vs which they authored themselves. Takes precedence
      * over {@code isUser} when both are true.</p>
+     *
+     * <p>{@code displayName} is the text a row <b>draws</b>; {@code name} / {@code modelName} are
+     * what its commands <b>send</b>. They differ only when the author has labelled the template
+     * (see {@code TemplateMeta#name()}), so every builder that does not know about labels still
+     * produces a row that reads as its id — the constructors default it to {@code name}.</p>
      */
     public record Variant(
         String name,
@@ -186,7 +191,8 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         boolean isUser,
         boolean isImported,
         List<Variant> subVariants,
-        List<String> stageIds
+        List<String> stageIds,
+        String displayName
     ) {
         /**
          * {@code phaseMask == NO_GATE} marks a row with no per-template spawn gate (sub-variants /
@@ -197,6 +203,26 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
 
         public Variant {
             stageIds = stageIds == null ? List.of() : List.copyOf(stageIds);
+            if (displayName == null || displayName.isBlank()) displayName = name;
+        }
+
+        /** The 12-field shape every existing builder used — label defaults to the name. */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported,
+                       List<Variant> subVariants, List<String> stageIds) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, name);
+        }
+
+        /** Copy with the drawn label replaced; {@code null} / blank falls back to the name. */
+        public Variant withDisplayName(String label) {
+            return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, label);
+        }
+
+        /** True when this row is drawn under a label other than its id. */
+        public boolean isLabelled() {
+            return !displayName.equals(name);
         }
 
         /**
@@ -344,6 +370,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         for (String s : v.stageIds()) {
             buf.writeUtf(s == null ? "" : s, 64);
         }
+        buf.writeUtf(v.displayName(), 128);
     }
 
     static Variant decodeVariant(FriendlyByteBuf buf) {
@@ -367,8 +394,9 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         for (int k = 0; k < stageCount; k++) {
             stageIds.add(buf.readUtf(64));
         }
+        String displayName = buf.readUtf(128);
         return new Variant(name, weight, minLevel, maxLevel, phaseMask,
-            category, modelId, modelName, isUser, isImported, subs, stageIds);
+            category, modelId, modelName, isUser, isImported, subs, stageIds, displayName);
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {

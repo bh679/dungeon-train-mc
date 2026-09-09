@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.ConfirmScreen;
+import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.editor.PlotCategory;
@@ -64,10 +65,13 @@ final class EditorScreenActionsTest {
         VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
         EditorScreenActions.Ctx c = ctx(k, gated("CARRIAGES", "windowed", "windowed", 20, List.of()), k, PlotCategory.CARRIAGES);
         Map<String, EditorScreenActions.Icon> icons = iconsById(c, new ArrayList<>());
-        assertEquals(List.of("save", "rename", "remove", "undo", "redo", "reset", "clear", "submit"),
+        assertEquals(List.of("save", "rename", "move", "remove", "undo", "redo", "reset", "clear", "submit"),
             new ArrayList<>(icons.keySet()));
         assertEquals("dungeontrain save", command(icons.get("save").entry()));
         assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
+        // Carriages have no sub-variant groups, so there is nowhere to move one.
+        assertFalse(icons.get("move").enabled());
+        assertEquals(EditorScreenLang.DISABLED_NO_GROUPS, icons.get("move").disabledKey());
         assertEquals("dungeontrain reset", command(icons.get("reset").entry()));
         // Undo and Redo follow the server's history stack, which is empty here — see historyIcon.
         assertFalse(icons.get("undo").enabled());
@@ -92,9 +96,11 @@ final class EditorScreenActionsTest {
         assertFalse(icons.get("undo").enabled());
         assertFalse(icons.get("redo").enabled());
         assertEquals(EditorScreenLang.UNDO_NOTHING, icons.get("undo").disabledKey());
-        // Rename is addressed by id now, so it acts on the selection from anywhere.
+        // Rename is addressed by id and is a display label, so it acts on the selection from anywhere
+        // and the typed field starts on what the row currently shows.
         CommandMenuEntry.TypeArg rename = assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
-        assertEquals("dungeontrain editor rename pen", rename.commandPrefix());
+        assertEquals("dungeontrain editor label pen", rename.commandPrefix());
+        assertEquals("pen", rename.initialBuffer());
         for (String id : List.of("save", "reset", "clear")) {
             CommandMenuEntry.ClientAction a = assertInstanceOf(CommandMenuEntry.ClientAction.class, icons.get(id).entry(), id);
             a.action().run();
@@ -124,13 +130,36 @@ final class EditorScreenActionsTest {
     }
 
     @Test
-    @DisplayName("a built-in carriage cannot be renamed even when standing in it")
+    @DisplayName("a built-in carriage can be labelled — the rename is a label, not a file move")
     void builtinRename() {
         VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "standard", "standard");
+        EditorTypeMenusPacket.Variant labelled = gated("CARRIAGES", "standard", "standard", 19, List.of())
+            .withDisplayName("The Standard");
         Map<String, EditorScreenActions.Icon> icons = iconsById(
-            ctx(k, gated("CARRIAGES", "standard", "standard", 19, List.of()), k, PlotCategory.CARRIAGES), new ArrayList<>());
-        assertFalse(icons.get("rename").enabled(), "a protected built-in has no rename verb");
-        assertEquals(EditorScreenLang.DISABLED_BUILTIN, icons.get("rename").disabledKey());
+            ctx(k, labelled, k, PlotCategory.CARRIAGES), new ArrayList<>());
+        CommandMenuEntry.TypeArg rename = assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
+        assertEquals("dungeontrain editor label standard", rename.commandPrefix());
+        assertEquals("The Standard", rename.initialBuffer(), "the field starts on the current label");
+    }
+
+    @Test
+    @DisplayName("contents and dimensional carriages get Move to…, keyed by the id the group commands use")
+    void moveEntryForGroupedKinds() {
+        VariantKey contents = VariantKey.of(PlotCategory.CONTENTS, "copper", "copper");
+        Map<String, EditorScreenActions.Icon> icons = iconsById(
+            ctx(contents, gated("CONTENTS", "copper", "copper", 3, List.of()), null, PlotCategory.CARRIAGES), new ArrayList<>());
+        CommandMenuEntry.DrillIn move = assertInstanceOf(CommandMenuEntry.DrillIn.class, icons.get("move").entry());
+        GroupParentPickerScreen picker = assertInstanceOf(GroupParentPickerScreen.class, move.target());
+        // Top-level today: a pick demotes it under the chosen parent.
+        assertEquals("dungeontrain editor contents group add maze copper", picker.moveCommand("maze"));
+
+        VariantKey room = new VariantKey(PlotCategory.PORTALS, "portal_room", "evilhouse", "house");
+        icons = iconsById(ctx(room, gated("PORTALS", "portal_room", "evilhouse", 1, List.of()), null, PlotCategory.CARRIAGES),
+            new ArrayList<>());
+        picker = assertInstanceOf(GroupParentPickerScreen.class,
+            assertInstanceOf(CommandMenuEntry.DrillIn.class, icons.get("move").entry()).target());
+        assertEquals("dungeontrain editor portals group move evilhouse book", picker.moveCommand("book"));
+        assertEquals("dungeontrain editor portals group remove house evilhouse", picker.promoteCommand());
     }
 
     @Test

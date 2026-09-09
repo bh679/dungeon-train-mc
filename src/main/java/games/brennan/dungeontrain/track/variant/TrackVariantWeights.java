@@ -95,6 +95,35 @@ public final class TrackVariantWeights {
     }
 
     /**
+     * The editor label for {@code (kind, name)} — its display name when one is set, else the name
+     * itself. Never null. See {@link TemplateMeta#name()}.
+     */
+    public static synchronized String nameFor(TrackKind kind, String name) {
+        if (name == null) return "";
+        TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
+        return m == null || m.name() == null ? name : m.name();
+    }
+
+    /**
+     * Set the editor display label for {@code (kind, name)} ({@code null} / blank clears it back to
+     * the name), preserving weight, inline gate, Stage link and mode. Persists. Returns the stored
+     * label, or {@code null} when cleared. See {@link games.brennan.dungeontrain.train.CarriageWeights#setName}.
+     */
+    public static synchronized String setName(TrackKind kind, String name, String label) throws IOException {
+        String key = name.toLowerCase(Locale.ROOT);
+        String stored = TemplateMeta.normaliseName(label);
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        TemplateMeta prev = next.get(key);
+        next.put(key, TemplateMeta.mergeName(prev, stored, DEFAULT));
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Set track label {}:{}={} (persisted to {}).",
+            kind.id(), key, stored == null ? "<name>" : stored, configPath(kind));
+        return stored;
+    }
+
+    /**
      * The raw per-kind mode tag for {@code (kind, name)}, or {@code null} when the entry sets none.
      *
      * <p>Opaque here — what a mode means belongs to the owning kind. Today only
@@ -162,7 +191,11 @@ public final class TrackVariantWeights {
         if (link == null && prev != null && prev.stageId() != null) {
             inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, prev.stageId());
         }
-        next.put(key, new TemplateMeta(weight, inline, link, prev == null ? null : prev.mode()));
+        // Rebuild from `prev` so the mode tag, flip block and display label all survive a
+        // link/detach — constructing from parts would drop whichever slot this line forgot.
+        next.put(key, prev == null
+            ? new TemplateMeta(weight, inline, link)
+            : prev.withGate(inline).withStage(link));
         CURRENT.put(kind, next);
         writeConfig(kind, next);
         trySaveToSource(kind, next);

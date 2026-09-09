@@ -134,8 +134,10 @@ public final class EditorPlotLabels {
             if (origin == null) continue;
             int w = weights.weightFor(v.id());
             Provenance p = provenanceOf(CarriageTemplateStore.fileForId(v.id()));
+            // `name` is the sign's text and nothing else reads it as an id (parts already put
+            // "kind:name" there), so the display label goes straight in; modelName stays the id.
             out.add(new Label(anchorAbove(origin, carriageFootprint),
-                v.id(), w, category, v.id(), v.id(), false, p.isUser, p.isImported));
+                weights.nameFor(v.id()), w, category, v.id(), v.id(), false, p.isUser, p.isImported));
         }
 
         addPartLabels(out, CarriagePartKind.FLOOR, floors, dims);
@@ -179,7 +181,7 @@ public final class EditorPlotLabels {
             int w = weights.weightFor(c.id());
             Provenance p = provenanceOf(CarriageContentsStore.fileForId(c.id()));
             out.add(new Label(anchorAbove(origin, footprint),
-                c.id(), w, category, c.id(), c.id(), false, p.isUser, p.isImported));
+                weights.nameFor(c.id()), w, category, c.id(), c.id(), false, p.isUser, p.isImported));
         }
         return out;
     }
@@ -261,7 +263,8 @@ public final class EditorPlotLabels {
             Provenance p = provenanceOf(
                 games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, name));
             out.add(new Label(anchorAbove(origin, footprint),
-                name, w, category, modelId, name, false, p.isUser, p.isImported));
+                TrackVariantWeights.nameFor(kind, name), w, category, modelId, name,
+                false, p.isUser, p.isImported));
         }
     }
 
