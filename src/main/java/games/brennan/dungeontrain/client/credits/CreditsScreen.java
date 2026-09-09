@@ -180,7 +180,7 @@ public final class CreditsScreen extends Screen {
      * The relay accepted a rename. Remember it locally so the page folds the old name into the
      * new one at once (the jar and the cached relay credits still carry the old one — see
      * {@link TranslatorRenames}), make the next submission use it, refresh the live credits, and
-     * come back to a freshly laid-out page.
+     * come back to a freshly laid-out page. The cached relay credits are kept — see below.
      */
     private void onRenamed(String from, String to) {
         TranslatorRenames.record(from, to);
