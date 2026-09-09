@@ -45,10 +45,10 @@ import java.util.Map;
  * the same rule {@code TemplateDecor.keepOnlyDecor} applies as a template is written. Dropping them entirely would produce a template
  * unlike anything a save writes: a picture the author hung, and saved, and uploaded, absent on the
  * way back. Keeping the rest would be the same mistake in the other direction, because a local save
- * does not keep it — {@code TemplateDecor.keepOnlyDecor} strips every other entity as the template
- * is written, on the grounds that mobs are authored as per-cell variant entries and the contents
- * pass owns armour stands and end crystals. A downloaded template must hold what a saved one holds,
- * or a build gains on the way back something its own author's file never had.</p>
+ * does not keep it — {@code TemplateDecor.keepOnlyDecor} strips every other entity (the dropped
+ * items, the arrows) as the template is written, keeping the pictures, the vehicles and the mobs
+ * an author placed. A downloaded template must hold what a saved one holds, or a build gains on the
+ * way back something its own author's file never had.</p>
  *
  * <p>The <b>blob</b> still carries them all, and should: the same {@code ents} list is what an
  * in-play lease spawns through {@link CarriageEntitySnapshot#spawn}, and what the web viewer draws

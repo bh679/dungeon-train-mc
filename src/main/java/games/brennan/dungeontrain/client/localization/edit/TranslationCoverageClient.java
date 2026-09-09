@@ -105,6 +105,17 @@ public final class TranslationCoverageClient {
         return Map.copyOf(CREDITS);
     }
 
+    /**
+     * Fetch again, keeping what is cached until the answer lands. For the Credits page after a
+     * rename: clearing first would empty the page of everybody the jar does not know — including
+     * the person who just renamed themself — for the seconds the refetch takes, and a re-laid-out
+     * page would read that as "my name is gone". Never throws, never blocks.
+     */
+    public static void refetch() {
+        FETCHED.set(true);
+        fetchAsync();
+    }
+
     /** For tests, and for a client that has changed relay. */
     public static synchronized void clear() {
         COVERAGE.clear();

@@ -57,6 +57,12 @@ public final class TemplateWeightCodec {
      */
     public static final String K_FLIP = "flip";
     /** String accepted (and never emitted — absence means the same) for {@link TemplateGate#ALL}. */
+    /**
+     * Optional editor display label — see {@link TemplateMeta#name()}. Free text, not an id: it is
+     * never lowercased or validated against a name pattern, only trimmed.
+     */
+    public static final String K_NAME = "name";
+
     public static final String MAX_ALL = "all";
 
     /**
@@ -77,7 +83,16 @@ public final class TemplateWeightCodec {
             Integer w = finiteRound(we);
             if (w == null) return null;
             return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o), parseMode(o),
-                parseFlip(o));
+                parseFlip(o), parseName(o));
+        }
+        return null;
+    }
+
+    /** The optional display label on an entry object; {@code null} when absent or blank. */
+    public static String parseName(JsonObject o) {
+        JsonElement el = o.get(K_NAME);
+        if (el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+            return TemplateMeta.normaliseName(el.getAsString());
         }
         return null;
     }
@@ -239,9 +254,10 @@ public final class TemplateWeightCodec {
         for (Map.Entry<String, TemplateMeta> e : new TreeMap<>(byId).entrySet()) {
             TemplateMeta meta = e.getValue();
             // Bare-int only when every axis is at its no-op default: default inline gate, no Stage
-            // link, no mode tag AND no flip block. An entry carrying any of those takes the object form.
+            // link, no mode tag, no flip block AND no display label. An entry carrying any of those
+            // takes the object form.
             if (meta.gate().isDefault() && meta.stageId() == null && meta.mode() == null
-                    && meta.flip() == null) {
+                    && meta.flip() == null && meta.name() == null) {
                 out.addProperty(e.getKey(), meta.weight());
             } else {
                 out.add(e.getKey(), entryObject(meta));
@@ -257,6 +273,7 @@ public final class TemplateWeightCodec {
         if (meta.stageId() != null) o.addProperty(K_STAGE, meta.stageId());
         if (meta.mode() != null) o.addProperty(K_MODE, meta.mode());
         writeFlip(o, meta.flip());
+        if (meta.name() != null) o.addProperty(K_NAME, meta.name());
         return o;
     }
 

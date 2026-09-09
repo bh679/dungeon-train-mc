@@ -117,6 +117,16 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
         return m == null ? null : m.stageId();
     }
 
+    /**
+     * The editor label for {@code id} — its display name when one is set, else the id itself. Never
+     * null, so a row builder can print it without branching. See {@link TemplateMeta#name()}.
+     */
+    public String nameFor(String id) {
+        if (id == null) return "";
+        TemplateMeta m = byId.get(id);
+        return m == null || m.name() == null ? id : m.name();
+    }
+
     public static int clamp(int value) {
         if (value < MIN) return MIN;
         if (value > MAX) return MAX;
@@ -203,13 +213,37 @@ public record CarriageWeights(Map<String, TemplateMeta> byId) {
         if (link == null && prev != null && prev.stageId() != null) {
             inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, prev.stageId());
         }
-        next.put(key, new TemplateMeta(weight, inline, link));
+        // Rebuild from `prev` rather than from parts so the entry's display label (and any other
+        // per-kind slot) survives a link/detach — a fresh 3-arg TemplateMeta would silently drop it.
+        next.put(key, prev == null
+            ? new TemplateMeta(weight, inline, link)
+            : prev.withGate(inline).withStage(link));
         current = new CarriageWeights(next);
         writeConfig(current);
         trySaveToSource(current);
         LOGGER.info("[DungeonTrain] Set carriage stage {}={} (persisted to {}).",
                 key, link == null ? "<custom>" : link, configPath());
         return link;
+    }
+
+    /**
+     * Set the editor display label for {@code id} ({@code null} / blank clears it back to the id),
+     * preserving weight, inline gate and Stage link, and persist. Returns the stored label, or
+     * {@code null} when cleared. Spawn behaviour is untouched — this is a rename in the editor's
+     * eyes only; the id (and its file) stays what it was. See {@link TemplateMeta#name()}.
+     */
+    public static synchronized String setName(String id, String name) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        String label = TemplateMeta.normaliseName(name);
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        next.put(key, TemplateMeta.mergeName(prev, label, DEFAULT));
+        current = new CarriageWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage label {}={} (persisted to {}).",
+                key, label == null ? "<id>" : label, configPath());
+        return label;
     }
 
     /**

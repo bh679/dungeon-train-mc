@@ -274,7 +274,10 @@ public final class EditorRosterIndex {
 
     private static boolean passes(EditorTypeMenusPacket.Variant v, Filters filters, String needle) {
         if (filters != null && !filters.admits(provenanceOf(v))) return false;
-        return needle.isEmpty() || v.name().toLowerCase(Locale.ROOT).contains(needle);
+        // Both the label and the id answer a search: an author types whichever they remember.
+        return needle.isEmpty()
+            || v.displayName().toLowerCase(Locale.ROOT).contains(needle)
+            || v.name().toLowerCase(Locale.ROOT).contains(needle);
     }
 
     /** Imported wins over user, as the world-space tints do; neither is a bundled built-in. */

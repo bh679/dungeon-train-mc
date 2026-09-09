@@ -39,6 +39,8 @@ public final class EditorIcons {
             case "reset" -> RESET;
             case "clear" -> CLEAR;
             case "package" -> PACKAGE;
+            // Re-parenting is a group operation, so it wears the group sprite.
+            case "move" -> GROUP;
             case "submit" -> SUBMIT;
             case "withdraw" -> WITHDRAW;
             default -> SAVE;

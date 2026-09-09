@@ -435,6 +435,21 @@ public final class EditorCommand {
                                 StringArgumentType.getString(ctx, "kind"),
                                 StringArgumentType.getString(ctx, "name"),
                                 StringArgumentType.getString(ctx, "new_name")))))))
+            // Display label for a track-side template — what the editor screen's Rename does.
+            // Works on bundled rooms, which `rename` above must refuse (nothing on disk to move).
+            .then(Commands.literal("label")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(TRACK_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                        .executes(ctx -> EditorLabelCommands.runTrackLabel(ctx.getSource(),
+                            parseTrackKind(ctx.getSource(), StringArgumentType.getString(ctx, "kind")),
+                            StringArgumentType.getString(ctx, "name"), ""))
+                        .then(Commands.argument("label", StringArgumentType.greedyString())
+                            .executes(ctx -> EditorLabelCommands.runTrackLabel(ctx.getSource(),
+                                parseTrackKind(ctx.getSource(), StringArgumentType.getString(ctx, "kind")),
+                                StringArgumentType.getString(ctx, "name"),
+                                StringArgumentType.getString(ctx, "label")))))))
             .then(Commands.literal("weight")
                 .then(Commands.argument("kind", StringArgumentType.word())
                     .suggests(TRACK_KIND_SUGGESTIONS)
@@ -647,6 +662,18 @@ public final class EditorCommand {
                         .executes(ctx -> runRenameCarriageById(ctx.getSource(),
                             StringArgumentType.getString(ctx, "id"),
                             StringArgumentType.getString(ctx, "new_name"))))))
+            // The rename the editor screen actually offers: a display label held in weights.json,
+            // so the id (and its file) stays put and a bundled template can be renamed too. `rename`
+            // above is the id change, kept for the rare case the file name itself must move.
+            .then(Commands.literal("label")
+                .then(Commands.argument("id", StringArgumentType.word())
+                    .suggests(VARIANT_SUGGESTIONS)
+                    .executes(ctx -> EditorLabelCommands.runCarriageLabel(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "id"), ""))
+                    .then(Commands.argument("name", StringArgumentType.greedyString())
+                        .executes(ctx -> EditorLabelCommands.runCarriageLabel(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "id"),
+                            StringArgumentType.getString(ctx, "name"))))))
             // The train's own footprint — shared by every carriage, part and track in the world.
             // Not to be confused with `editor portals size`, which is one room's box.
             .then(Commands.literal("size")
@@ -785,6 +812,16 @@ public final class EditorCommand {
                             .executes(ctx -> runRenameContentsById(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "id"),
                                 StringArgumentType.getString(ctx, "new_name"))))))
+                // Display label — see the carriages `label` node.
+                .then(Commands.literal("label")
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .executes(ctx -> EditorLabelCommands.runContentsLabel(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "id"), ""))
+                        .then(Commands.argument("name", StringArgumentType.greedyString())
+                            .executes(ctx -> EditorLabelCommands.runContentsLabel(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "id"),
+                                StringArgumentType.getString(ctx, "name"))))))
                 .then(Commands.literal("save")
                     .executes(ctx -> runContentsSave(ctx.getSource(), null))
                     .then(Commands.argument("new_name", StringArgumentType.word())
@@ -904,6 +941,15 @@ public final class EditorCommand {
                                 .executes(ctx -> runContentsGroupRemove(ctx.getSource(),
                                     StringArgumentType.getString(ctx, "parent"),
                                     StringArgumentType.getString(ctx, "child"))))))
+                    // `move <child> <new_parent>` — re-parent in one step, member record intact.
+                    .then(Commands.literal("move")
+                        .then(Commands.argument("child", StringArgumentType.word())
+                            .suggests(CONTENTS_SUGGESTIONS)
+                            .then(Commands.argument("new_parent", StringArgumentType.word())
+                                .suggests(CONTENTS_SUGGESTIONS)
+                                .executes(ctx -> runContentsGroupMove(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "child"),
+                                    StringArgumentType.getString(ctx, "new_parent"))))))
                     .then(Commands.literal("list")
                         .then(Commands.argument("parent", StringArgumentType.word())
                             .suggests(CONTENTS_SUGGESTIONS)
@@ -2514,6 +2560,63 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * {@code /dt editor contents group move <child> <new_parent>} — re-parent a sub-variant in one
+     * step, carrying its weight, gate and Stage links. Refusals are {@code group add}'s, plus the
+     * built-in-parent rule that command enforces.
+     */
+    private static int runContentsGroupMove(CommandSourceStack source, String childRaw, String newParentRaw) {
+        CarriageContents child = parseContents(source, childRaw);
+        if (child == null) return 0;
+        CarriageContents newParent = parseContents(source, newParentRaw);
+        if (newParent == null) return 0;
+        if (newParent.isBuiltin()) {
+            source.sendFailure(Component.literal(
+                "Built-in contents '" + newParent.id() + "' cannot be a group parent — built-ins have hardcoded fallback behaviour."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        java.util.Optional<String> currentParent = CarriageContentsGroupStore.findParentOf(child.id());
+        if (currentParent.isEmpty()) {
+            source.sendFailure(Component.literal("'" + child.id() + "' is top-level — use 'group add "
+                + newParent.id() + " " + child.id() + "' to make it a sub-variant.")
+                .withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        String oldParent = currentParent.get();
+        games.brennan.dungeontrain.editor.VariantGroupMoves.ContentsMove move =
+            games.brennan.dungeontrain.editor.VariantGroupMoves.move(
+                oldParent, CarriageContentsGroupStore.get(oldParent).orElse(null),
+                newParent.id(), CarriageContentsGroupStore.get(newParent.id()),
+                child.id(),
+                CarriageContentsGroupStore.allChildIds().contains(newParent.id()),
+                CarriageContentsGroupStore.exists(child.id()));
+        if (!move.ok()) {
+            source.sendFailure(Component.literal(EditorLabelCommands.moveRefusal(
+                move.refusal(), child.id(), oldParent, newParent.id(), "contents"))
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        try {
+            if (move.from().members().isEmpty()) {
+                CarriageContentsGroupStore.delete(oldParent);
+            } else {
+                CarriageContentsGroupStore.save(oldParent, move.from());
+            }
+            CarriageContentsGroupStore.save(newParent.id(), move.to());
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor contents group move failed", e);
+            source.sendFailure(Component.literal("group move failed: " + e.toString())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+            "Editor: moved '" + child.id() + "' from group '" + oldParent + "' to '" + newParent.id()
+                + "' (weight, gate and Stage links kept)."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
     }
 
     /** {@code /dt editor contents group list <parent>} — print members + weights. */
@@ -5677,6 +5780,16 @@ public final class EditorCommand {
                         .executes(ctx -> runPortalRoomGroupRemove(ctx.getSource(),
                             StringArgumentType.getString(ctx, "parent"),
                             StringArgumentType.getString(ctx, "child"))))))
+            // `move <child> <new_parent>`: re-parent in one step, carrying the member's weight, gate
+            // and Stage links — `remove` then `add` would reroll them to defaults.
+            .then(Commands.literal("move")
+                .then(Commands.argument("child", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                    .then(Commands.argument("new_parent", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomGroupMove(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "child"),
+                            StringArgumentType.getString(ctx, "new_parent"))))))
             .then(Commands.literal("list")
                 .then(Commands.argument("parent", StringArgumentType.word())
                     .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
@@ -6185,6 +6298,68 @@ public final class EditorCommand {
         return savePortalRoomGroup(source, parent, existing.get().withoutMember(child),
             "Editor: dimensional carriage '" + parent + "' → removed sub-variant '" + child
                 + "' (it is a top-level room again).");
+    }
+
+    /**
+     * {@code /dt editor portals group move <child> <new_parent>} — re-parent a sub-variant in one
+     * step. The member record travels whole (weight, gate, Stage links); both sidecars are saved
+     * inside one relayout so the plots follow. The refusals are {@code group add}'s.
+     */
+    private static int runPortalRoomGroupMove(CommandSourceStack source, String childRaw, String newParentRaw) {
+        String child = parsePortalRoom(source, childRaw);
+        if (child == null) return 0;
+        String newParent = parsePortalRoom(source, newParentRaw);
+        if (newParent == null) return 0;
+        java.util.Optional<String> currentParent = games.brennan.dungeontrain.editor.TrackVariantGroupStore
+            .findParentOf(PORTAL_ROOM_KIND, child);
+        if (currentParent.isEmpty()) {
+            source.sendFailure(Component.literal("'" + child + "' is a top-level dimensional carriage — use "
+                + "'group add " + newParent + " " + child + "' to make it a sub-variant.")
+                .withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        String oldParent = currentParent.get();
+        games.brennan.dungeontrain.editor.VariantGroupMoves.TrackMove move =
+            games.brennan.dungeontrain.editor.VariantGroupMoves.move(
+                oldParent,
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, oldParent).orElse(null),
+                newParent,
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, newParent),
+                child,
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.allChildIds(PORTAL_ROOM_KIND).contains(newParent),
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(PORTAL_ROOM_KIND, child));
+        if (!move.ok()) {
+            source.sendFailure(Component.literal(EditorLabelCommands.moveRefusal(
+                move.refusal(), child, oldParent, newParent, "dimensional carriage"))
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        IOException[] failure = new IOException[1];
+        games.brennan.dungeontrain.editor.PortalRoomEditor.relayout(overworld, dims, () -> {
+            try {
+                if (move.from().isEmpty()) {
+                    games.brennan.dungeontrain.editor.TrackVariantGroupStore.delete(PORTAL_ROOM_KIND, oldParent);
+                } else {
+                    games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, oldParent, move.from());
+                }
+                games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, newParent, move.to());
+            } catch (IOException e) {
+                failure[0] = e;
+            }
+        });
+        if (failure[0] != null) {
+            LOGGER.error("[DungeonTrain] editor portals group move failed", failure[0]);
+            source.sendFailure(Component.literal("group move failed: " + failure[0].toString())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+            "Editor: moved sub-variant '" + child + "' from '" + oldParent + "' to '" + newParent
+                + "' (weight, gate and Stage links kept)."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
     }
 
     /** {@code /dt editor portals group list <parent>} — what a room's sub-variant pool looks like. */

@@ -455,7 +455,7 @@ public final class EditorTypeMenuRenderer {
         boolean anyGate = false;
         boolean anyPart = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
-            double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
+            double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
@@ -491,7 +491,7 @@ public final class EditorTypeMenuRenderer {
         boolean anyGate = false;
         boolean anyPart = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
-            double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
+            double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
@@ -606,7 +606,7 @@ public final class EditorTypeMenuRenderer {
             if (v.subVariants().isEmpty()) continue;
             double rowW = SUB_VARIANT_GAP;
             for (EditorTypeMenusPacket.Variant sv : v.subVariants()) {
-                rowW += subVariantCellWidth(sv.name(), font);
+                rowW += subVariantCellWidth(sv.displayName(), font);
             }
             if (rowW > maxW) maxW = rowW;
         }
@@ -1268,7 +1268,7 @@ public final class EditorTypeMenuRenderer {
                     double subCursor = expColRight + SUB_VARIANT_GAP;
                     for (int ci = 0; ci < line.size(); ci++) {
                         EditorTypeMenusPacket.Variant child = line.get(ci);
-                        double cellW = subVariantCellWidth(child.name(), font);
+                        double cellW = subVariantCellWidth(child.displayName(), font);
                         double cellLeft = subCursor;
                         double cellRight = subCursor + cellW;
                         int flatIdx = slotBase + ci;
@@ -1293,7 +1293,7 @@ public final class EditorTypeMenuRenderer {
                             drawQuad(ps, buffer, cellLeft + 0.005, lineBottom + 0.005,
                                 cellRight - 0.005, lineTop - 0.005, HOVER_COLOR);
                         }
-                        drawCenteredText(ps, buffer, font, child.name(),
+                        drawCenteredText(ps, buffer, font, child.displayName(),
                             (cellLeft + cellRight) / 2.0, lineCY, NAME_COLOR);
                         if (ci + 1 < line.size()) {
                             drawQuad(ps, buffer, cellRight - COLUMN_DIVIDER_W / 2.0, lineBottom,
@@ -1463,9 +1463,9 @@ public final class EditorTypeMenuRenderer {
             boolean shown = pk == null
                 || games.brennan.dungeontrain.client.menu.ClientPartVisibility.isDisplayed(pk, variant.name());
             drawCenteredText(ps, buffer, font, shown ? "[x]" : "[ ]", (rowLeft + visR) / 2.0, rowCY, NAME_COLOR);
-            drawCenteredText(ps, buffer, font, variant.name(), (visR + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, variant.displayName(), (visR + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
         } else {
-            drawCenteredText(ps, buffer, font, variant.name(), (rowLeft + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, variant.displayName(), (rowLeft + rc.nameRight()) / 2.0, rowCY, NAME_COLOR);
         }
 
         if (!rc.hasWeight()) return;
@@ -1526,7 +1526,7 @@ public final class EditorTypeMenuRenderer {
         double toolbarW = font.width("+ Add    – Remove ✓") * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
-            double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
+            double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
         }
         // Stage rows reserve GATE_AREA_FRACTION for min|max|phase; the fixed icons band sits just
@@ -1610,7 +1610,7 @@ public final class EditorTypeMenuRenderer {
             }
 
             double nameCX = (-halfW + rc.nameRight()) / 2.0;
-            drawCenteredText(ps, buffer, font, v.name(), nameCX, rowCY, removeMode ? STAGE_REMOVE_COLOR : NAME_COLOR);
+            drawCenteredText(ps, buffer, font, v.displayName(), nameCX, rowCY, removeMode ? STAGE_REMOVE_COLOR : NAME_COLOR);
             drawStageBlockStrip(ps, buffer, font, v.modelId(), rc.nameRight(), rowCY);
             double minCX = (rc.iconsRight() + rc.minR()) / 2.0;
             drawCenteredText(ps, buffer, font, "≥" + v.minLevel(), minCX, rowCY, LEVEL_COLOR);

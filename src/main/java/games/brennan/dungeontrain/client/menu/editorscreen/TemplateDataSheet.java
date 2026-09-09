@@ -101,6 +101,11 @@ public final class TemplateDataSheet {
         String pending = EditorScreenLang.text(EditorScreenLang.SHEET_PENDING);
 
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_PATH), pathLabel));
+        // A labelled build is drawn under its label everywhere else on this screen; the id is what
+        // every command and file is named by, so the sheet keeps it one line away.
+        if (v.isLabelled()) {
+            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_ID), v.name()));
+        }
         out.add(sizeLine(summary, roomRows, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS), blocks(summary, pending)));
         out.add(weightLine(tile, key, pending));
