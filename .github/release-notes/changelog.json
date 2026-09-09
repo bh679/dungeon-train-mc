@@ -11933,6 +11933,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "door-labels-carriage-contents-plots",
+      "version": "0.829.0",
+      "type": "feat",
+      "title": "The Train Editor names both ends of a carriage",
+      "summary": "Every carriage and interior plot in the Train Editor now labels its two doorways: a blue Entrance over the end players walk in through, and a yellow Exit over the end they leave by. Dimensional carriage rooms have shown this for a while; the carriage and interior plots left you to work it out, and their two ends look identical. Only the naming is added \u2014 the doorway itself is still yours to build, so nothing is drawn over the blocks you placed there.",
+      "highlights": [
+        "Blue Entrance and yellow Exit labels on both ends of every carriage plot and every interior plot, sub-variants included",
+        "The label sits on the doorway the plot really has, so a longer plot's Exit lands on its own far end",
+        "Dimensional carriage rooms are unchanged \u2014 they keep their see-through ghost door",
+        "Turn the labels off or back on with /dungeontrain editor doorghosts off | on"
+      ],
+      "pr": 1347,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

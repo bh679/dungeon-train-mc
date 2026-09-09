@@ -151,13 +151,22 @@ public final class VariantOverlayRenderer {
     private static final Map<UUID, String> LAST_STRAYS_KEY = new HashMap<>();
 
     /**
-     * Per-player dedup key for the amber portal-door ghosts — {@link EditorDoorGhosts#key}, which
-     * encodes each room plot's origin and size. Same {@code null}-means-empty convention and the
-     * same toggle behaviour as {@link #LAST_STRAYS_KEY}.
+     * The categories whose plots have two ends worth naming — see {@link #pushDoorGhostsSnapshot}.
+     * Portal rooms carry the full ghost door; carriages and contents carry the outline and the
+     * Entrance / Exit word over the doorway the author has already cut.
+     */
+    private static final java.util.Set<EditorCategory> DOOR_GHOST_CATEGORIES =
+        java.util.EnumSet.of(EditorCategory.PORTALS, EditorCategory.CARRIAGES, EditorCategory.CONTENTS);
+
+    /**
+     * Per-player dedup key for the door markers — {@link EditorDoorGhosts#key}, which encodes the
+     * stamped category and each of its plots' origin and size. Same {@code null}-means-empty
+     * convention and the same toggle behaviour as {@link #LAST_STRAYS_KEY}.
      *
      * <p>Keyed on the plot grid rather than on a generation counter because there is no sweep behind
      * these — a door's position is a function of its plot's box, so the boxes <i>are</i> the version
-     * number. A resize moves the key; a tick in a steady editor does not.</p>
+     * number. A resize, a new variant or a category switch moves the key; a tick in a steady editor
+     * does not.</p>
      */
     private static final Map<UUID, String> LAST_DOOR_GHOSTS_KEY = new HashMap<>();
 
@@ -1065,12 +1074,16 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Push the amber portal-door ghosts when the room plot grid has moved.
+     * Push the door markers when the stamped category's plot grid has moved — the portal rooms'
+     * corridor mouths, or a carriage / contents plot's two end doorways.
      *
-     * <p>Gated on {@link EditorCategory#PORTALS} being the stamped category, so this costs a map
-     * lookup and nothing else in every other category — the door cells are only meaningful where a
-     * room plot is actually standing, and painting them over a carriage row would be painting them
-     * in mid-air.</p>
+     * <p>Gated on the stamped category being one that <i>has</i> two ends to name, so this costs a
+     * map lookup and nothing else in the rest — a marker over a track or architecture plot would
+     * stand on a line nothing is ever cut on.</p>
+     *
+     * <p>The category rides in the dedup key as well as in the snapshot: the three grids are
+     * different places, and a key that named only the boxes could in principle repeat across a
+     * category switch and leave the previous category's markers standing.</p>
      *
      * <p>Same toggle shape as {@link #pushStraysSnapshot}: a player with the ghosts off goes down the
      * clear path, which drops their dedup key, so the packet that turns them off is sent exactly once
@@ -1082,15 +1095,16 @@ public final class VariantOverlayRenderer {
             clearDoorGhostsIfStale(player);
             return;
         }
-        if (EditorStampedCategoryState.current().orElse(null) != EditorCategory.PORTALS) {
+        EditorCategory category = EditorStampedCategoryState.current().orElse(null);
+        if (!DOOR_GHOST_CATEGORIES.contains(category)) {
             clearDoorGhostsIfStale(player);
             return;
         }
-        String key = EditorDoorGhosts.key(dims);
+        String key = EditorDoorGhosts.key(category, dims);
         if (key.equals(LAST_DOOR_GHOSTS_KEY.get(uuid))) return;
 
         List<games.brennan.dungeontrain.net.EditorDoorGhostsPacket.Door> doors =
-            EditorDoorGhosts.snapshot(dims);
+            EditorDoorGhosts.snapshot(category, dims);
         if (doors.isEmpty()) {
             clearDoorGhostsIfStale(player);
             return;

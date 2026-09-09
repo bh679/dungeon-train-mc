@@ -31,8 +31,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * World-space overlay that stands a translucent oak door in each portal corridor doorway at a
- * portal-room editor plot — the openings an author has to build the room around.
+ * World-space overlay that names an editor plot's two doorways: which end is the way in, and which
+ * is the way out.
+ *
+ * <p>Two plot families, one overlay. At a <b>portal room</b> the corridor openings are not in the
+ * plot at all, so a translucent door is stood in each one — the fitting an author has to build the
+ * room around. At a <b>carriage</b> or <b>contents</b> plot the doorway is already there, cut by the
+ * author's own template, so only the naming is added: the outline and the word. The packet's
+ * {@code model} flag is what separates the two, and it is a per-door fact rather than a client-side
+ * guess so the server stays the one place that decides.</p>
  *
  * <p><b>The door itself, not a marker shaped like one.</b> The state rendered is
  * {@link PortalCarriageBuilder#doorState}, the very state the builder hangs in a real corridor, so
@@ -179,7 +186,8 @@ public final class EditorDoorGhostRenderer {
         BlockRenderDispatcher blocks = mc.getBlockRenderer();
         MultiBufferSource ghost = type -> new GhostBuffer(buffer.getBuffer(RenderType.translucent()));
         for (EditorDoorGhostsPacket.Door d : snapshot) {
-            if (culled(d, cam)) continue;
+            // Only where the plot has no door of its own — see EditorDoorGhostsPacket.Door#model.
+            if (!d.model() || culled(d, cam)) continue;
             for (int half = 0; half < DOOR_HEIGHT; half++) {
                 door(ps, blocks, ghost, d.base().above(half), /*lower*/ half == 0);
             }
