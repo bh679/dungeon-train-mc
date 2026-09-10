@@ -22,10 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The Layout tab's spawn table, row by row, against a small roster. */
+/**
+ * The Layout tab's spawn table, row by row, against a small roster.
+ *
+ * <p>Cells are fold · name · − · value · + · stage · move, so the name is cell 1 and the move cell 6.</p>
+ */
 final class EditorLayoutPageTest {
 
     private static final int NO_GATE = EditorTypeMenusPacket.Variant.NO_GATE;
+    private static final int FOLD = 0, NAME = 1, DEC = 2, VALUE = 3, INC = 4, STAGE = 5, MOVE = 6;
 
     private static EditorTypeMenusPacket.Variant v(String name, String cat, String modelId, String modelName,
                                                    int weight, int phaseMask, List<String> stages,
@@ -59,10 +64,15 @@ final class EditorLayoutPageTest {
     private static final class Recorder {
         final List<VariantKey> selected = new ArrayList<>();
         final List<String> toggled = new ArrayList<>();
+        final List<String> groups = new ArrayList<>();
     }
 
     private static List<EditorLayoutPage.Row> rows(Recorder rec, Set<String> collapsed) {
         return EditorLayoutPage.rows(sample(), collapsed, rec.selected::add, rec.toggled::add);
+    }
+
+    private static List<EditorLayoutPage.Row> rows(Recorder rec, EditorLayoutPage.Folds folds, EditorLayoutPage.Query q) {
+        return EditorLayoutPage.rows(sample(), folds, q, rec.selected::add, rec.toggled::add, rec.groups::add);
     }
 
     private static CommandMenuEntry[] cellsOf(EditorLayoutPage.Row row) {
@@ -76,14 +86,26 @@ final class EditorLayoutPageTest {
         throw new AssertionError("no row for " + modelName + " at depth " + depth + " in " + rows);
     }
 
+    private static List<String> sections(List<EditorLayoutPage.Row> rows) {
+        return rows.stream().filter(EditorLayoutPage.Row::isHeader).map(EditorLayoutPage.Row::sectionId).toList();
+    }
+
+    private static List<EditorLayoutPage.Row> query(EditorLayoutPage.Query q) {
+        return EditorLayoutPage.rows(sample(), Set.of(), q, k -> { }, s -> { });
+    }
+
+    private static List<String> names(List<EditorLayoutPage.Row> rows, String sectionId) {
+        return rows.stream().filter(r -> r.sectionId().equals(sectionId) && !r.isHeader())
+            .map(r -> r.key().modelName()).toList();
+    }
+
     @Test
     @DisplayName("sections follow roster order; a header toggles its own id")
     void sections() {
         Recorder rec = new Recorder();
         List<EditorLayoutPage.Row> rows = rows(rec, Set.of());
-        List<String> headers = rows.stream().filter(EditorLayoutPage.Row::isHeader).map(EditorLayoutPage.Row::sectionId).toList();
         assertEquals(List.of("carriages/Carriages", "parts/Floor", "contents/Contents",
-            "portals/Dimensional Carriage", "tracks/Pillar Top"), headers);
+            "portals/Dimensional Carriage", "tracks/Pillar Top"), sections(rows));
         EditorLayoutPage.Row first = rows.get(0);
         // No language is loaded here, so the header reads as its key plus the arrow — which is
         // still exactly what the page said it would be.
@@ -106,28 +128,30 @@ final class EditorLayoutPageTest {
     }
 
     @Test
-    @DisplayName("a carriage row: name selects, weight steps and types, stage opens its picker, no move")
+    @DisplayName("a carriage row: blank fold, name selects, weight steps and types, stage opens its picker, no move")
     void carriageRow() {
         Recorder rec = new Recorder();
         EditorLayoutPage.Row row = rowFor(rows(rec, Set.of()), "windowed", 0);
+        assertFalse(row.isGroupParent());
         CommandMenuEntry[] c = cellsOf(row);
-        assertEquals(6, c.length);
-        assertEquals("windowed", c[0].label());
-        ((CommandMenuEntry.ClientAction) c[0]).action().run();
+        assertEquals(7, c.length);
+        assertInstanceOf(CommandMenuEntry.Label.class, c[FOLD]);
+        assertEquals("windowed", c[NAME].label());
+        ((CommandMenuEntry.ClientAction) c[NAME]).action().run();
         assertEquals(List.of(VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed")), rec.selected);
 
-        CommandMenuEntry.Stay dec = assertInstanceOf(CommandMenuEntry.Stay.class, c[1]);
-        CommandMenuEntry.TypeArg value = assertInstanceOf(CommandMenuEntry.TypeArg.class, c[2]);
-        CommandMenuEntry.Stay inc = assertInstanceOf(CommandMenuEntry.Stay.class, c[3]);
+        CommandMenuEntry.Stay dec = assertInstanceOf(CommandMenuEntry.Stay.class, c[DEC]);
+        CommandMenuEntry.TypeArg value = assertInstanceOf(CommandMenuEntry.TypeArg.class, c[VALUE]);
+        CommandMenuEntry.Stay inc = assertInstanceOf(CommandMenuEntry.Stay.class, c[INC]);
         assertTrue(dec.command().contains("windowed") && dec.command().endsWith("dec"), dec.command());
         assertTrue(inc.command().contains("windowed") && inc.command().endsWith("inc"), inc.command());
         assertEquals("20", value.label());
         assertTrue(value.commandPrefix().contains("windowed"), value.commandPrefix());
 
-        CommandMenuEntry.DrillIn stage = assertInstanceOf(CommandMenuEntry.DrillIn.class, c[4]);
+        CommandMenuEntry.DrillIn stage = assertInstanceOf(CommandMenuEntry.DrillIn.class, c[STAGE]);
         assertEquals("nether", stage.label());
         assertInstanceOf(StagePickerScreen.class, stage.target());
-        assertInstanceOf(CommandMenuEntry.Label.class, c[5]);
+        assertInstanceOf(CommandMenuEntry.Label.class, c[MOVE]);
     }
 
     @Test
@@ -135,41 +159,75 @@ final class EditorLayoutPageTest {
     void partRow() {
         EditorLayoutPage.Row row = rowFor(rows(new Recorder(), Set.of()), "oak", 0);
         CommandMenuEntry[] c = cellsOf(row);
-        for (int i = 1; i <= 5; i++) assertInstanceOf(CommandMenuEntry.Label.class, c[i], "cell " + i);
-        assertEquals(EditorScreenLang.text(EditorScreenLang.SHEET_PENDING), c[4].label());
-        // Nothing past the name answers a click.
+        for (int i = DEC; i <= MOVE; i++) assertInstanceOf(CommandMenuEntry.Label.class, c[i], "cell " + i);
+        assertEquals(EditorScreenLang.text(EditorScreenLang.SHEET_PENDING), c[STAGE].label());
+        // Only the name answers a click: the fold cell is blank on a plain row, and so is everything after.
+        assertEquals(-1, MenuRowPainter.hitCell(row.entry(), 2, 0, 100));
+        assertEquals(NAME, MenuRowPainter.hitCell(row.entry(), 20, 0, 100));
         assertEquals(-1, MenuRowPainter.hitCell(row.entry(), 95, 0, 100));
-        assertEquals(0, MenuRowPainter.hitCell(row.entry(), 5, 0, 100));
     }
 
     @Test
-    @DisplayName("a contents group: the parent, its own share as (self), then its member one step in")
+    @DisplayName("a contents group: the parent with a fold cell, its own share as (self), then its member one step in")
     void contentsGroup() {
         Recorder rec = new Recorder();
-        List<EditorLayoutPage.Row> rows = rows(rec, Set.of());
+        List<EditorLayoutPage.Row> rows = rows(rec, EditorLayoutPage.Folds.NONE, EditorLayoutPage.Query.EVERYTHING);
         List<EditorLayoutPage.Row> section = rows.stream()
             .filter(r -> r.sectionId().equals("contents/Contents") && !r.isHeader()).toList();
         assertEquals(List.of(0, 1, 1), section.stream().map(EditorLayoutPage.Row::depth).toList());
 
+        EditorLayoutPage.Row parent = section.get(0);
+        assertTrue(parent.isGroupParent());
+        assertEquals("contents/armor/armor", parent.groupId());
+        CommandMenuEntry fold = cellsOf(parent)[FOLD];
+        assertEquals(EditorLayoutPage.OPEN, fold.label());
+        ((CommandMenuEntry.ClientAction) fold).action().run();
+        assertEquals(List.of("contents/armor/armor"), rec.groups);
+
         EditorLayoutPage.Row self = section.get(1);
+        assertFalse(self.isGroupParent());
         CommandMenuEntry[] sc = cellsOf(self);
-        assertEquals(EditorScreenLang.text(EditorScreenLang.TILE_SELF, "armor"), sc[0].label());
-        assertEquals("dungeontrain editor contents group set-weight armor armor", ((CommandMenuEntry.TypeArg) sc[2]).commandPrefix());
-        assertEquals("2", sc[2].label());
-        ((CommandMenuEntry.ClientAction) sc[0]).action().run();
+        assertInstanceOf(CommandMenuEntry.Label.class, sc[FOLD]);
+        assertEquals(EditorScreenLang.text(EditorScreenLang.TILE_SELF, "armor"), sc[NAME].label());
+        assertEquals("dungeontrain editor contents group set-weight armor armor", ((CommandMenuEntry.TypeArg) sc[VALUE]).commandPrefix());
+        assertEquals("2", sc[VALUE].label());
+        ((CommandMenuEntry.ClientAction) sc[NAME]).action().run();
         assertEquals(VariantKey.of(PlotCategory.CONTENTS, "armor", "armor"), rec.selected.get(0), "(self) selects the parent");
-        assertInstanceOf(CommandMenuEntry.Label.class, sc[4]);
-        assertInstanceOf(CommandMenuEntry.Label.class, sc[5]);
+        assertInstanceOf(CommandMenuEntry.Label.class, sc[STAGE]);
+        assertInstanceOf(CommandMenuEntry.Label.class, sc[MOVE]);
 
         EditorLayoutPage.Row member = section.get(2);
         assertEquals("armor", member.key().parentId());
         CommandMenuEntry[] mc = cellsOf(member);
-        assertEquals("dungeontrain editor contents group set-weight armor armor5", ((CommandMenuEntry.TypeArg) mc[2]).commandPrefix());
-        assertTrue(((CommandMenuEntry.Stay) mc[3]).command().contains("armor5"));
-        assertEquals(EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT), mc[4].label());
-        CommandMenuEntry.DrillIn move = assertInstanceOf(CommandMenuEntry.DrillIn.class, mc[5]);
+        assertEquals("dungeontrain editor contents group set-weight armor armor5", ((CommandMenuEntry.TypeArg) mc[VALUE]).commandPrefix());
+        assertTrue(((CommandMenuEntry.Stay) mc[INC]).command().contains("armor5"));
+        assertEquals(EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT), mc[STAGE].label());
+        CommandMenuEntry.DrillIn move = assertInstanceOf(CommandMenuEntry.DrillIn.class, mc[MOVE]);
         GroupParentPickerScreen picker = assertInstanceOf(GroupParentPickerScreen.class, move.target());
         assertEquals("dungeontrain editor contents group remove armor armor5", picker.promoteCommand());
+    }
+
+    @Test
+    @DisplayName("a folded group keeps its parent, marked folded, and hides (self) and its members")
+    void foldedGroup() {
+        Recorder rec = new Recorder();
+        List<EditorLayoutPage.Row> rows = rows(rec, new EditorLayoutPage.Folds(Set.of(), Set.of("contents/armor/armor")),
+            EditorLayoutPage.Query.EVERYTHING);
+        assertEquals(List.of("armor"), names(rows, "contents/Contents"));
+        EditorLayoutPage.Row parent = rowFor(rows, "armor", 0);
+        assertEquals(EditorLayoutPage.FOLDED, cellsOf(parent)[FOLD].label());
+        // Other groups are untouched.
+        assertEquals(List.of("house", "evilhouse"), names(rows, "portals/Dimensional Carriage"));
+    }
+
+    @Test
+    @DisplayName("a search shows what it matched even inside a folded group")
+    void searchOpensFoldedGroup() {
+        Recorder rec = new Recorder();
+        List<EditorLayoutPage.Row> rows = rows(rec, new EditorLayoutPage.Folds(Set.of(), Set.of("contents/armor/armor")),
+            new EditorLayoutPage.Query(EditorCategoryFilter.ALL, "", EditorRosterIndex.Filters.NONE, "armor5"));
+        assertEquals(List.of("armor", "armor", "armor5"), names(rows, "contents/Contents"));
+        assertEquals(EditorLayoutPage.OPEN, cellsOf(rowFor(rows, "armor", 0))[FOLD].label());
     }
 
     @Test
@@ -177,9 +235,9 @@ final class EditorLayoutPageTest {
     void portalMember() {
         EditorLayoutPage.Row member = rowFor(rows(new Recorder(), Set.of()), "evilhouse", 1);
         CommandMenuEntry[] c = cellsOf(member);
-        assertEquals("dungeontrain editor portals group set-weight house evilhouse", ((CommandMenuEntry.TypeArg) c[2]).commandPrefix());
-        assertEquals("nether +1", c[4].label());
-        GroupParentPickerScreen picker = (GroupParentPickerScreen) ((CommandMenuEntry.DrillIn) c[5]).target();
+        assertEquals("dungeontrain editor portals group set-weight house evilhouse", ((CommandMenuEntry.TypeArg) c[VALUE]).commandPrefix());
+        assertEquals("nether +1", c[STAGE].label());
+        GroupParentPickerScreen picker = (GroupParentPickerScreen) ((CommandMenuEntry.DrillIn) c[MOVE]).target();
         assertEquals("dungeontrain editor portals group move evilhouse book", picker.moveCommand("book"));
     }
 
@@ -188,20 +246,12 @@ final class EditorLayoutPageTest {
     void trackMember() {
         EditorLayoutPage.Row member = rowFor(rows(new Recorder(), Set.of()), "fancy", 1);
         CommandMenuEntry[] c = cellsOf(member);
-        assertInstanceOf(CommandMenuEntry.Label.class, c[1]);
-        assertEquals("5", c[2].label());
-        assertInstanceOf(CommandMenuEntry.Label.class, c[2]);
-        assertInstanceOf(CommandMenuEntry.Label.class, c[3]);
-        assertInstanceOf(CommandMenuEntry.DrillIn.class, c[4]);
-        assertInstanceOf(CommandMenuEntry.Label.class, c[5]);
-    }
-
-    private static List<String> sections(List<EditorLayoutPage.Row> rows) {
-        return rows.stream().filter(EditorLayoutPage.Row::isHeader).map(EditorLayoutPage.Row::sectionId).toList();
-    }
-
-    private static List<EditorLayoutPage.Row> query(EditorLayoutPage.Query q) {
-        return EditorLayoutPage.rows(sample(), Set.of(), q, k -> { }, s -> { });
+        assertInstanceOf(CommandMenuEntry.Label.class, c[DEC]);
+        assertEquals("5", c[VALUE].label());
+        assertInstanceOf(CommandMenuEntry.Label.class, c[VALUE]);
+        assertInstanceOf(CommandMenuEntry.Label.class, c[INC]);
+        assertInstanceOf(CommandMenuEntry.DrillIn.class, c[STAGE]);
+        assertInstanceOf(CommandMenuEntry.Label.class, c[MOVE]);
     }
 
     @Test
@@ -231,8 +281,7 @@ final class EditorLayoutPageTest {
             EditorRosterIndex.Filters.NONE, "armor5"));
         assertEquals(List.of("contents/Contents"), sections(rows));
         // parent, (self), the one matching member
-        assertEquals(List.of("armor", "armor", "armor5"),
-            rows.stream().filter(r -> !r.isHeader()).map(r -> r.key().modelName()).toList());
+        assertEquals(List.of("armor", "armor", "armor5"), names(rows, "contents/Contents"));
         assertTrue(rows.get(0).entry().label().endsWith(EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION, "Contents", 1)));
     }
 
@@ -254,7 +303,7 @@ final class EditorLayoutPageTest {
     }
 
     @Test
-    @DisplayName("folding a section replaces the set each time and folds back to nothing")
+    @DisplayName("folding a section or a group replaces its set each time and folds back to nothing")
     void toggleReplacesTheSet() {
         Set<String> before = EditorScreenState.collapsedSections();
         EditorScreenState.toggleSection("contents/Contents");
@@ -267,6 +316,15 @@ final class EditorLayoutPageTest {
         assertFalse(twice.contains("contents/Contents"));
         EditorScreenState.toggleSection(null);
         assertEquals(twice, EditorScreenState.collapsedSections());
+
+        Set<String> g0 = EditorScreenState.collapsedGroups();
+        EditorScreenState.toggleGroup("contents/armor/armor");
+        Set<String> g1 = EditorScreenState.collapsedGroups();
+        assertNotSame(g0, g1);
+        assertTrue(g1.contains("contents/armor/armor"));
+        EditorScreenState.toggleGroup("contents/armor/armor");
+        assertFalse(EditorScreenState.collapsedGroups().contains("contents/armor/armor"));
+        EditorScreenState.toggleGroup(null);
         assertNull(null);
     }
 }

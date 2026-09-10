@@ -30,6 +30,7 @@ final class EditorLayoutPane {
     private final Consumer<VariantKey> select;
     private EditorRosterIndex lastIndex;
     private Set<String> lastCollapsed;
+    private Set<String> lastCollapsedGroups;
     private EditorLayoutPage.Query lastQuery;
     private List<EditorLayoutPage.Row> rows = List.of();
     private int scroll;
@@ -49,11 +50,14 @@ final class EditorLayoutPane {
      */
     List<EditorLayoutPage.Row> rows(EditorRosterIndex index) {
         Set<String> collapsed = EditorScreenState.collapsedSections();
+        Set<String> groups = EditorScreenState.collapsedGroups();
         EditorLayoutPage.Query query = EditorLayoutPage.Query.current();
-        if (index != lastIndex || collapsed != lastCollapsed || !query.equals(lastQuery)) {
-            rows = EditorLayoutPage.rows(index, collapsed, query, select, EditorScreenState::toggleSection);
+        if (index != lastIndex || collapsed != lastCollapsed || groups != lastCollapsedGroups || !query.equals(lastQuery)) {
+            rows = EditorLayoutPage.rows(index, new EditorLayoutPage.Folds(collapsed, groups), query, select,
+                EditorScreenState::toggleSection, EditorScreenState::toggleGroup);
             lastIndex = index;
             lastCollapsed = collapsed;
+            lastCollapsedGroups = groups;
             lastQuery = query;
         }
         return rows;
@@ -143,11 +147,12 @@ final class EditorLayoutPane {
         if (hit == null) return null;
         if (hit.row().isHeader()) return EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION_TIP);
         return switch (hit.sub()) {
-            case 1 -> EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_DOWN);
-            case 2 -> hit.cell() instanceof CommandMenuEntry.TypeArg
+            case 0 -> EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION_TIP);
+            case 2 -> EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_DOWN);
+            case 3 -> hit.cell() instanceof CommandMenuEntry.TypeArg
                 ? EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_TOOLTIP) : null;
-            case 3 -> EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_UP);
-            case 4 -> EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP);
+            case 4 -> EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_UP);
+            case 5 -> EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP);
             default -> null;
         };
     }

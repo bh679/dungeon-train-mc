@@ -26,10 +26,32 @@ import java.util.function.Consumer;
  */
 public final class EditorLayoutPage {
 
-    /** One row: its entry, the template it is about (null for a section header), its indent, its section. */
-    public record Row(CommandMenuEntry entry, VariantKey key, int depth, String sectionId) {
+    /**
+     * One row: its entry, the template it is about (null for a section header), its indent, its
+     * section, and — for a group parent — the id its fold cell toggles.
+     */
+    public record Row(CommandMenuEntry entry, VariantKey key, int depth, String sectionId, String groupId) {
+        public Row(CommandMenuEntry entry, VariantKey key, int depth, String sectionId) {
+            this(entry, key, depth, sectionId, null);
+        }
+
         public boolean isHeader() {
             return key == null;
+        }
+
+        /** True for a group parent, whose first cell folds its members away. */
+        public boolean isGroupParent() {
+            return groupId != null;
+        }
+    }
+
+    /** What is folded away: whole type sections, and the member lists of single groups. */
+    public record Folds(Set<String> sections, Set<String> groups) {
+        public static final Folds NONE = new Folds(Set.of(), Set.of());
+
+        public Folds {
+            sections = sections == null ? Set.of() : sections;
+            groups = groups == null ? Set.of() : groups;
         }
     }
 
@@ -66,8 +88,8 @@ public final class EditorLayoutPage {
         }
     }
 
-    /** Dividers between the six columns, as fractions of the row. */
-    static final List<Double> BOUNDS = List.of(0.46, 0.53, 0.63, 0.70, 0.86);
+    /** Dividers between the seven columns — fold · name · − · value · + · stage · move — as fractions of the row. */
+    static final List<Double> BOUNDS = List.of(0.05, 0.48, 0.55, 0.64, 0.71, 0.86);
     static final String OPEN = "▾";
     static final String FOLDED = "▸";
     private static final CommandMenuEntry BLANK = new CommandMenuEntry.Label("");
@@ -79,6 +101,11 @@ public final class EditorLayoutPage {
         return g.categoryId() + "/" + g.typeName();
     }
 
+    /** A group parent's id for folding: its key, which a roster refresh does not change. */
+    public static String groupId(VariantKey key) {
+        return key.category().id() + "/" + key.modelId() + "/" + key.modelName();
+    }
+
     /**
      * Every row, top to bottom, narrowed by {@code query}.
      *
@@ -87,28 +114,40 @@ public final class EditorLayoutPage {
      * header is what is shown under it. A group parent survives the search when a member matches,
      * as it does in the browser, and the provenance chips never hide members.</p>
      *
-     * @param collapsed sections that show only their header
-     * @param select    what a name cell does — hands over the row's key
-     * @param toggle    what a header does — hands over the section id
+     * <p>A folded group keeps its parent row and hides the "(self)" and member rows under it —
+     * unless a search is on, when every group shows whatever the search matched: folding away the
+     * very thing that was searched for would read as a broken search.</p>
+     *
+     * @param folds       sections that show only their header, and groups that show only their parent
+     * @param select      what a name cell does — hands over the row's key
+     * @param toggleSection what a header does — hands over the section id
+     * @param toggleGroup what a parent's fold cell does — hands over the group id
      */
-    public static List<Row> rows(EditorRosterIndex index, Set<String> collapsed, Query query,
-                                 Consumer<VariantKey> select, Consumer<String> toggle) {
+    public static List<Row> rows(EditorRosterIndex index, Folds folds, Query query, Consumer<VariantKey> select,
+                                 Consumer<String> toggleSection, Consumer<String> toggleGroup) {
         List<Row> out = new ArrayList<>();
         if (index == null) return out;
         Query q = query == null ? Query.EVERYTHING : query;
+        Folds f = folds == null ? Folds.NONE : folds;
         for (EditorRosterPacket.Group g : index.groups()) {
             if (!q.admits(g)) continue;
             List<EditorRosterIndex.Tile> tiles = EditorRosterIndex.filter(EditorRosterIndex.tiles(g), q.filters(), q.text());
             if (tiles.isEmpty()) continue;
             String id = sectionId(g);
-            boolean folded = collapsed != null && collapsed.contains(id);
-            out.add(header(g, id, tiles.size(), folded, toggle));
+            boolean folded = f.sections().contains(id);
+            out.add(header(g, id, tiles.size(), folded, toggleSection));
             if (folded) continue;
             for (EditorRosterIndex.Tile tile : tiles) {
-                addVariant(out, g, tile, id, q.text(), select);
+                addVariant(out, g, tile, id, q.text(), f.groups(), select, toggleGroup);
             }
         }
         return out;
+    }
+
+    /** As above, with no groups folded. */
+    public static List<Row> rows(EditorRosterIndex index, Set<String> collapsed, Query query,
+                                 Consumer<VariantKey> select, Consumer<String> toggle) {
+        return rows(index, new Folds(collapsed, Set.of()), query, select, toggle, id -> { });
     }
 
     /** As above, with nothing narrowed. */
@@ -124,21 +163,35 @@ public final class EditorLayoutPage {
     }
 
     private static void addVariant(List<Row> out, EditorRosterPacket.Group g, EditorRosterIndex.Tile tile,
-                                   String sectionId, String text, Consumer<VariantKey> select) {
+                                   String sectionId, String text, Set<String> foldedGroups,
+                                   Consumer<VariantKey> select, Consumer<String> toggleGroup) {
         VariantKey key = tile.key();
         EditorTypeMenusPacket.Variant v = tile.variant();
-        out.add(new Row(cells(
+        if (!tile.isGroup()) {
+            out.add(new Row(cells(BLANK,
+                name(v.displayName(), key, select),
+                weightCells(key, v.weight()),
+                stageCell(v, key),
+                moveCell(key)), key, 0, sectionId));
+            return;
+        }
+
+        String gid = groupId(key);
+        // A search shows what it matched, folded or not.
+        boolean folded = text.isEmpty() && foldedGroups.contains(gid);
+        CommandMenuEntry fold = new CommandMenuEntry.ClientAction(folded ? FOLDED : OPEN, () -> toggleGroup.accept(gid), false);
+        out.add(new Row(cells(fold,
             name(v.displayName(), key, select),
             weightCells(key, v.weight()),
             stageCell(v, key),
-            moveCell(key)), key, 0, sectionId));
-        if (!tile.isGroup()) return;
+            moveCell(key)), key, 0, sectionId, gid));
+        if (folded) return;
 
         // The parent's own share of its group, addressed through the member verb with itself as
         // the member — the same row the browser shows as the "(self)" tile.
         if (tile.selfWeight() != EditorPlotLabelsPacket.NO_WEIGHT) {
             VariantKey self = new VariantKey(key.category(), key.modelId(), key.modelName(), key.displayName());
-            out.add(new Row(cells(
+            out.add(new Row(cells(BLANK,
                 name(EditorScreenLang.text(EditorScreenLang.TILE_SELF, v.displayName()), key, select),
                 weightCells(self, tile.selfWeight()),
                 BLANK, BLANK), key, 1, sectionId));
@@ -146,7 +199,7 @@ public final class EditorLayoutPage {
         for (EditorRosterIndex.Tile member : EditorRosterIndex.subVariants(tile, EditorRosterIndex.Filters.NONE, text)) {
             VariantKey mk = member.key();
             EditorTypeMenusPacket.Variant mv = member.variant();
-            out.add(new Row(cells(
+            out.add(new Row(cells(BLANK,
                 name(mv.displayName(), mk, select),
                 weightCells(mk, mv.weight()),
                 memberStageCell(g, tile, mv, mk),
@@ -154,9 +207,10 @@ public final class EditorLayoutPage {
         }
     }
 
-    private static CommandMenuEntry cells(CommandMenuEntry name, List<CommandMenuEntry> weight,
+    private static CommandMenuEntry cells(CommandMenuEntry fold, CommandMenuEntry name, List<CommandMenuEntry> weight,
                                           CommandMenuEntry stage, CommandMenuEntry move) {
-        List<CommandMenuEntry> all = new ArrayList<>(6);
+        List<CommandMenuEntry> all = new ArrayList<>(7);
+        all.add(fold);
         all.add(name);
         all.addAll(weight);
         all.add(stage);

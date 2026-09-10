@@ -26,6 +26,8 @@ public final class EditorScreenState {
     private static VariantKey selection;
     /** The Layout tab's folded sections, by {@code EditorLayoutPage.sectionId}. Replaced, never mutated. */
     private static Set<String> collapsedSections = Set.of();
+    /** The Layout tab's folded groups — parents whose members are hidden — by the parent's key string. */
+    private static Set<String> collapsedGroups = Set.of();
     /** Whether the filter bar shows every filter, or only the ones in force on its one row. */
     private static boolean filtersExpanded;
 
@@ -59,6 +61,7 @@ public final class EditorScreenState {
     public static String text() { return text; }
     public static VariantKey selection() { return selection; }
     public static Set<String> collapsedSections() { return collapsedSections; }
+    public static Set<String> collapsedGroups() { return collapsedGroups; }
     public static boolean filtersExpanded() { return filtersExpanded; }
 
     public static void toggleFilters() {
@@ -102,6 +105,14 @@ public final class EditorScreenState {
 
     public static void select(VariantKey key) {
         selection = key;
+    }
+
+    /** Fold or unfold a group's members in the Layout tab. A new set each time, as for sections. */
+    public static void toggleGroup(String groupId) {
+        if (groupId == null) return;
+        Set<String> next = new HashSet<>(collapsedGroups);
+        if (!next.remove(groupId)) next.add(groupId);
+        collapsedGroups = Set.copyOf(next);
     }
 
     /** Fold or unfold a Layout section. A new set each time, so a cache keyed by identity refreshes. */
