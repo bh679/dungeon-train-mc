@@ -1,12 +1,9 @@
 package games.brennan.dungeontrain.mixin;
 
-import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
-import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -36,7 +33,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * <p><b>Deliberately narrow.</b> Four guards, cheapest first: the exact command string (via
  * {@link CommandAllowlist#isSelfRevokeEverything}, the same classifier the cheat allowlist and the
  * advancement's arming share, so all three agree by construction), a player source, <em>not</em>
- * already an operator (ops keep the untouched vanilla path), and the capstone actually earned.
+ * already an operator (ops keep the untouched vanilla path), and the capstone actually earned —
+ * {@link StartAgainAdvancement#holdsBankedCapstone}, which is the arming rule's own notion of
+ * "earned" (in the live tree <em>and</em> in the cross-world profile), so the command this opens
+ * and the reward it leads to can never disagree about who qualifies.
  * It grants no other command and no lasting permission.</p>
  */
 @Mixin(Commands.class)
@@ -48,11 +48,7 @@ public abstract class CommandsSelfRevokeMixin {
         ServerPlayer player = source.getPlayer();
         if (player == null) return;                 // console / command block / function
         if (source.hasPermission(2)) return;        // an operator runs it the ordinary way
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        AdvancementHolder capstone = server.getAdvancements().get(CompletionistAdvancement.ID);
-        if (capstone == null) return;               // capstone data not loaded
-        if (!player.getAdvancements().getOrStartProgress(capstone).isDone()) return; // not earned it
+        if (!StartAgainAdvancement.holdsBankedCapstone(player)) return; // not earned it
 
         StartAgainAdvancement.performSelfWipe(player, source);
         ci.cancel();
