@@ -55,6 +55,11 @@ import java.util.function.Function;
  * <p>Best-effort throughout: each step is isolated, a failure is logged and reported in the
  * {@link Report} without stopping the others, and nothing here can undo the {@code .nbt} delete the
  * caller has already performed.</p>
+ *
+ * <p>Not {@link TemplateSidecars#filesFor}, which names the same family of files for a different job:
+ * it resolves user-tier paths so a build can be carried between installs, and knows nothing about the
+ * source tree, the weights entry or the group slot. Deletes go through each owning store instead, so
+ * every store's own cache is invalidated along with its file.</p>
  */
 public final class TemplateDeletes {
 
