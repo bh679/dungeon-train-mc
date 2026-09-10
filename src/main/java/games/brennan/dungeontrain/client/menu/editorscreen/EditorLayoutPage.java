@@ -33,6 +33,39 @@ public final class EditorLayoutPage {
         }
     }
 
+    /**
+     * What the filter bar narrows the table by — the same four things it narrows the browser by.
+     *
+     * @param category the category cell, All for every group
+     * @param typeName one type's group under that category, or {@code ""} for all of them
+     */
+    public record Query(EditorCategoryFilter category, String typeName, EditorRosterIndex.Filters filters, String text) {
+        public static final Query EVERYTHING = new Query(EditorCategoryFilter.ALL, "", EditorRosterIndex.Filters.NONE, "");
+
+        public Query {
+            category = category == null ? EditorCategoryFilter.ALL : category;
+            typeName = typeName == null ? "" : typeName;
+            filters = filters == null ? EditorRosterIndex.Filters.NONE : filters;
+            text = text == null ? "" : text;
+        }
+
+        /** What the screen's remembered filters ask for right now. */
+        public static Query current() {
+            return new Query(EditorScreenState.category(), EditorScreenState.typeName(),
+                EditorScreenState.filters(), EditorScreenState.text());
+        }
+
+        /** Whether a roster group is inside this query's category and type. */
+        boolean admits(EditorRosterPacket.Group g) {
+            PlotCategory cat = category.category();
+            if (cat == null) return true;
+            PlotCategory gc = PlotCategory.fromId(g.categoryId()).orElse(null);
+            if (gc == null) return false;
+            boolean inCategory = gc == cat || (cat == PlotCategory.CARRIAGES && gc == PlotCategory.PARTS);
+            return inCategory && (typeName.isEmpty() || typeName.equals(g.typeName()));
+        }
+    }
+
     /** Dividers between the six columns, as fractions of the row. */
     static final List<Double> BOUNDS = List.of(0.46, 0.53, 0.63, 0.70, 0.86);
     static final String OPEN = "▾";
@@ -47,36 +80,51 @@ public final class EditorLayoutPage {
     }
 
     /**
-     * Every row, top to bottom.
+     * Every row, top to bottom, narrowed by {@code query}.
+     *
+     * <p>A section outside the query's category or type is not there at all, and neither is one
+     * the chips and the search leave empty — a header over nothing reads as a bug. The count on a
+     * header is what is shown under it. A group parent survives the search when a member matches,
+     * as it does in the browser, and the provenance chips never hide members.</p>
      *
      * @param collapsed sections that show only their header
      * @param select    what a name cell does — hands over the row's key
      * @param toggle    what a header does — hands over the section id
      */
-    public static List<Row> rows(EditorRosterIndex index, Set<String> collapsed,
+    public static List<Row> rows(EditorRosterIndex index, Set<String> collapsed, Query query,
                                  Consumer<VariantKey> select, Consumer<String> toggle) {
         List<Row> out = new ArrayList<>();
         if (index == null) return out;
+        Query q = query == null ? Query.EVERYTHING : query;
         for (EditorRosterPacket.Group g : index.groups()) {
+            if (!q.admits(g)) continue;
+            List<EditorRosterIndex.Tile> tiles = EditorRosterIndex.filter(EditorRosterIndex.tiles(g), q.filters(), q.text());
+            if (tiles.isEmpty()) continue;
             String id = sectionId(g);
             boolean folded = collapsed != null && collapsed.contains(id);
-            out.add(header(g, id, folded, toggle));
+            out.add(header(g, id, tiles.size(), folded, toggle));
             if (folded) continue;
-            for (EditorRosterIndex.Tile tile : EditorRosterIndex.tiles(g)) {
-                addVariant(out, g, tile, id, select);
+            for (EditorRosterIndex.Tile tile : tiles) {
+                addVariant(out, g, tile, id, q.text(), select);
             }
         }
         return out;
     }
 
-    private static Row header(EditorRosterPacket.Group g, String id, boolean folded, Consumer<String> toggle) {
+    /** As above, with nothing narrowed. */
+    public static List<Row> rows(EditorRosterIndex index, Set<String> collapsed,
+                                 Consumer<VariantKey> select, Consumer<String> toggle) {
+        return rows(index, collapsed, Query.EVERYTHING, select, toggle);
+    }
+
+    private static Row header(EditorRosterPacket.Group g, String id, int shown, boolean folded, Consumer<String> toggle) {
         String label = (folded ? FOLDED : OPEN) + " "
-            + EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION, g.typeName(), g.entries().size());
+            + EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION, g.typeName(), shown);
         return new Row(new CommandMenuEntry.ClientAction(label, () -> toggle.accept(id), false), null, 0, id);
     }
 
     private static void addVariant(List<Row> out, EditorRosterPacket.Group g, EditorRosterIndex.Tile tile,
-                                   String sectionId, Consumer<VariantKey> select) {
+                                   String sectionId, String text, Consumer<VariantKey> select) {
         VariantKey key = tile.key();
         EditorTypeMenusPacket.Variant v = tile.variant();
         out.add(new Row(cells(
@@ -95,7 +143,7 @@ public final class EditorLayoutPage {
                 weightCells(self, tile.selfWeight()),
                 BLANK, BLANK), key, 1, sectionId));
         }
-        for (EditorRosterIndex.Tile member : EditorRosterIndex.subVariants(tile, EditorRosterIndex.Filters.NONE, "")) {
+        for (EditorRosterIndex.Tile member : EditorRosterIndex.subVariants(tile, EditorRosterIndex.Filters.NONE, text)) {
             VariantKey mk = member.key();
             EditorTypeMenusPacket.Variant mv = member.variant();
             out.add(new Row(cells(

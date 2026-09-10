@@ -22,6 +22,12 @@ public final class EditorScreenLang {
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
     public static final String TAB_DIMENSIONS = PREFIX + "tab.dimensions";
 
+    /** The filter bar's toggle and its tooltips, and what clicking an active chip does. */
+    public static final String FILTERS = PREFIX + "filters";
+    public static final String FILTERS_SHOW = PREFIX + "filters.show";
+    public static final String FILTERS_HIDE = PREFIX + "filters.hide";
+    public static final String FILTERS_CLEAR_ONE = PREFIX + "filters.clear_one";
+
     /** The Layout tab: a type's section header, its collapse hint, and the short Move cell. */
     public static final String LAYOUT_SECTION = PREFIX + "layout.section";
     public static final String LAYOUT_SECTION_TIP = PREFIX + "layout.section_tip";

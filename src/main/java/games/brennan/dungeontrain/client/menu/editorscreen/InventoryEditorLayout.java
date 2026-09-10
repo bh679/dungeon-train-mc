@@ -48,7 +48,16 @@ public record InventoryEditorLayout(
     public static final int TILE_LARGE = 52;
     public static final int TILE_SMALL = 40;
 
+    /** The layout with the filter bar expanded — the two strips under the search row. */
     public static InventoryEditorLayout of(int width, int height) {
+        return of(width, height, true);
+    }
+
+    /**
+     * @param filtersExpanded whether the category and type strips are shown; collapsed, both are
+     *                        empty rects at the bottom of the search row and the grid takes the space
+     */
+    public static InventoryEditorLayout of(int width, int height, boolean filtersExpanded) {
         int w = Math.max(0, width);
         int h = Math.max(0, height);
         Rect tabs = new Rect(EDGE, TAB_TOP, Math.max(0, w - EDGE * 2), TAB_H);
@@ -66,8 +75,12 @@ public record InventoryEditorLayout(
         Rect filter = new Rect(left.x(), left.y(), left.w(), FILTER_H);
         // Category cells, then the type strip of the chosen category. The type row is kept even
         // when it is empty (All, a builder's uploads) so the grid does not jump between cells.
-        Rect category = new Rect(left.x(), filter.bottom() + 2, left.w(), STRIP_H);
-        Rect strip = new Rect(left.x(), category.bottom() + 2, left.w(), STRIP_H);
+        Rect category = filtersExpanded
+            ? new Rect(left.x(), filter.bottom() + 2, left.w(), STRIP_H)
+            : new Rect(left.x(), filter.bottom(), left.w(), 0);
+        Rect strip = filtersExpanded
+            ? new Rect(left.x(), category.bottom() + 2, left.w(), STRIP_H)
+            : new Rect(left.x(), filter.bottom(), left.w(), 0);
         Rect grid = new Rect(left.x(), strip.bottom() + 2, left.w(), Math.max(0, left.bottom() - strip.bottom() - 2));
 
         // Header, then the tools, then what they act on. The icon row sits above the model rather

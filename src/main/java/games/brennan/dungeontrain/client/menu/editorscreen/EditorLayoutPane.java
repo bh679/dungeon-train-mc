@@ -30,6 +30,7 @@ final class EditorLayoutPane {
     private final Consumer<VariantKey> select;
     private EditorRosterIndex lastIndex;
     private Set<String> lastCollapsed;
+    private EditorLayoutPage.Query lastQuery;
     private List<EditorLayoutPage.Row> rows = List.of();
     private int scroll;
 
@@ -37,19 +38,29 @@ final class EditorLayoutPane {
         this.select = select;
     }
 
+    /** The grid rect: the filter bar sits above it, as it does above the tiles. */
     static InventoryEditorLayout.Rect rect(InventoryEditorLayout layout) {
-        return EditorSettingsPane.rect(layout);
+        return layout.grid();
     }
 
-    /** The rows for this roster and fold state, rebuilt only when either has been replaced. */
+    /**
+     * The rows for this roster, fold state and query, rebuilt only when one of them changed — the
+     * first two by identity (both are replaced, never mutated), the query by value.
+     */
     List<EditorLayoutPage.Row> rows(EditorRosterIndex index) {
         Set<String> collapsed = EditorScreenState.collapsedSections();
-        if (index != lastIndex || collapsed != lastCollapsed) {
-            rows = EditorLayoutPage.rows(index, collapsed, select, EditorScreenState::toggleSection);
+        EditorLayoutPage.Query query = EditorLayoutPage.Query.current();
+        if (index != lastIndex || collapsed != lastCollapsed || !query.equals(lastQuery)) {
+            rows = EditorLayoutPage.rows(index, collapsed, query, select, EditorScreenState::toggleSection);
             lastIndex = index;
             lastCollapsed = collapsed;
+            lastQuery = query;
         }
         return rows;
+    }
+
+    void resetScroll() {
+        scroll = 0;
     }
 
     void render(GuiGraphics g, Font font, EditorScreenTheme theme, InventoryEditorLayout layout,

@@ -196,6 +196,56 @@ final class EditorLayoutPageTest {
         assertInstanceOf(CommandMenuEntry.Label.class, c[5]);
     }
 
+    private static List<String> sections(List<EditorLayoutPage.Row> rows) {
+        return rows.stream().filter(EditorLayoutPage.Row::isHeader).map(EditorLayoutPage.Row::sectionId).toList();
+    }
+
+    private static List<EditorLayoutPage.Row> query(EditorLayoutPage.Query q) {
+        return EditorLayoutPage.rows(sample(), Set.of(), q, k -> { }, s -> { });
+    }
+
+    @Test
+    @DisplayName("the category cell narrows the sections; Carriages keeps the part kinds")
+    void categoryNarrows() {
+        var none = EditorRosterIndex.Filters.NONE;
+        assertEquals(List.of("carriages/Carriages", "parts/Floor"),
+            sections(query(new EditorLayoutPage.Query(EditorCategoryFilter.CARRIAGES, "", none, ""))));
+        assertEquals(List.of("portals/Dimensional Carriage"),
+            sections(query(new EditorLayoutPage.Query(EditorCategoryFilter.DIMENSIONS, "", none, ""))));
+        assertEquals(5, sections(query(EditorLayoutPage.Query.EVERYTHING)).size());
+    }
+
+    @Test
+    @DisplayName("a chosen type strip leaves one section; under All the type is ignored")
+    void typeNarrows() {
+        var none = EditorRosterIndex.Filters.NONE;
+        assertEquals(List.of("parts/Floor"),
+            sections(query(new EditorLayoutPage.Query(EditorCategoryFilter.CARRIAGES, "Floor", none, ""))));
+        assertEquals(5, sections(query(new EditorLayoutPage.Query(EditorCategoryFilter.ALL, "Floor", none, ""))).size());
+    }
+
+    @Test
+    @DisplayName("the search keeps a parent whose member matches, and drops sections it empties")
+    void textNarrows() {
+        List<EditorLayoutPage.Row> rows = query(new EditorLayoutPage.Query(EditorCategoryFilter.ALL, "",
+            EditorRosterIndex.Filters.NONE, "armor5"));
+        assertEquals(List.of("contents/Contents"), sections(rows));
+        // parent, (self), the one matching member
+        assertEquals(List.of("armor", "armor", "armor5"),
+            rows.stream().filter(r -> !r.isHeader()).map(r -> r.key().modelName()).toList());
+        assertTrue(rows.get(0).entry().label().endsWith(EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION, "Contents", 1)));
+    }
+
+    @Test
+    @DisplayName("the provenance chips narrow the top-level rows the way they narrow the tiles")
+    void provenanceNarrows() {
+        // Everything in the sample is built-in, so asking for Mine only leaves nothing.
+        var mineOnly = EditorRosterIndex.Filters.NONE.withMine(true);
+        assertTrue(query(new EditorLayoutPage.Query(EditorCategoryFilter.ALL, "", mineOnly, "")).isEmpty());
+        var builtinOnly = EditorRosterIndex.Filters.NONE.withBuiltin(true);
+        assertEquals(5, sections(query(new EditorLayoutPage.Query(EditorCategoryFilter.ALL, "", builtinOnly, ""))).size());
+    }
+
     @Test
     @DisplayName("an empty roster has no rows; a null one neither")
     void empty() {

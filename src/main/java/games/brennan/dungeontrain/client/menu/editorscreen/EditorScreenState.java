@@ -26,6 +26,8 @@ public final class EditorScreenState {
     private static VariantKey selection;
     /** The Layout tab's folded sections, by {@code EditorLayoutPage.sectionId}. Replaced, never mutated. */
     private static Set<String> collapsedSections = Set.of();
+    /** Whether the filter bar shows every filter, or only the ones in force on its one row. */
+    private static boolean filtersExpanded;
 
     /**
      * The two narrowings creator mode adds: where a build stands with a reviewer, and whether it is
@@ -57,6 +59,11 @@ public final class EditorScreenState {
     public static String text() { return text; }
     public static VariantKey selection() { return selection; }
     public static Set<String> collapsedSections() { return collapsedSections; }
+    public static boolean filtersExpanded() { return filtersExpanded; }
+
+    public static void toggleFilters() {
+        filtersExpanded = !filtersExpanded;
+    }
     public static String creatorReview() { return creatorReview; }
     public static boolean creatorStarred() { return creatorStarred; }
 

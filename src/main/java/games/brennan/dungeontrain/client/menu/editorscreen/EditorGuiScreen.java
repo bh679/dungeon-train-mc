@@ -64,6 +64,7 @@ public final class EditorGuiScreen extends Screen {
     private static final int SUBMIT_REFRESH_TICKS = 20;
     static final int GOING_TIMEOUT_TICKS = 200;
 
+    private final EditorFilterBar filterBar = new EditorFilterBar();
     private final EditorBrowserPane browser = new EditorBrowserPane();
     private final EditorDetailPane detail = new EditorDetailPane();
     private final EditorCreatorPane creatorPane = new EditorCreatorPane();
@@ -125,27 +126,24 @@ public final class EditorGuiScreen extends Screen {
 
     @Override
     protected void init() {
-        layout = InventoryEditorLayout.of(this.width, this.height);
+        layout = InventoryEditorLayout.of(this.width, this.height, EditorScreenState.filtersExpanded());
         InventoryEditorLayout.Rect f = layout.filter();
-        int boxW = browser.filterBoxWidth(f, this.font);
-        filterBox = new EditBox(this.font, browser.filterBoxX(f), f.y(), boxW, f.h(),
+        filterBar.layout(layout, this.font, EditorRosterClient.index(), EditorScreenState.page().isBrowser());
+        filterBox = new EditBox(this.font, filterBar.boxX(), f.y(), filterBar.boxW(), f.h(),
             Component.literal("filter"));
         filterBox.setBordered(false);
         filterBox.setMaxLength(32);
-        // The hint is only offered when it fits. An EditBox draws its hint unclipped, and this box
-        // is as narrow as the filter chips leave it, so a hint too long for it would run straight
-        // across them — the magnifier beside the box already says what it is for.
-        Component hint = Component.translatable(EditorScreenLang.FILTER_HINT);
-        filterBox.setHint(this.font.width(hint) <= boxW - 2 ? hint : Component.empty());
+        placeFilterBox();
         filterBox.setValue(EditorScreenState.text());
         filterBox.setResponder(text -> {
             EditorScreenState.setText(text);
             browser.resetScroll();
+            layoutPane.resetScroll();
         });
         // Added as a plain child rather than a renderable: this screen draws it itself, inside a
         // scissor, so neither the typed value nor the hint can escape the box.
         addWidget(filterBox);
-        filterBox.visible = EditorScreenState.page().isBrowser();
+        filterBox.visible = hasFilterBar();
         EditorCreatorBuilds.attach();
         // The toolbar's Submit icon says whether the selected build is on the train, which only the
         // player's own listing knows. Asked on the way in so the icon is right before it is pressed.
@@ -161,6 +159,26 @@ public final class EditorGuiScreen extends Screen {
         search.close();
         EditorCreatorBuilds.detach();
         BuilderProfileState.listenForDownloads(null);
+    }
+
+    /** The two tabs that browse the roster and so carry the filter bar; Settings does not. */
+    private static boolean hasFilterBar() {
+        return EditorScreenState.page() != EditorScreenPage.SETTINGS;
+    }
+
+    /**
+     * Put the box where the bar left room for it this frame.
+     *
+     * <p>The hint is only offered when it fits. An EditBox draws its hint unclipped, and this box
+     * is as narrow as the chips leave it, so a hint too long for it would run straight across
+     * them — the magnifier beside the box already says what it is for.</p>
+     */
+    private void placeFilterBox() {
+        if (filterBox == null) return;
+        filterBox.setX(filterBar.boxX());
+        filterBox.setWidth(filterBar.boxW());
+        Component hint = Component.translatable(EditorScreenLang.FILTER_HINT);
+        filterBox.setHint(this.font.width(hint) <= filterBar.boxW() - 2 ? hint : Component.empty());
     }
 
     @Override
@@ -216,7 +234,7 @@ public final class EditorGuiScreen extends Screen {
         EditorScreenTheme theme = ClientDisplayConfig.getEditorScreenTheme();
         EditorRosterIndex index = EditorRosterClient.index();
         EditorScreenState.reconcile(index);
-        layout = InventoryEditorLayout.of(this.width, this.height);
+        layout = InventoryEditorLayout.of(this.width, this.height, EditorScreenState.filtersExpanded());
         float seconds = frameSeconds();
         BuilderTilePreviews.beginFrame(BAKES_PER_FRAME);
         RelayBuildPreviews.beginFrame();
@@ -229,8 +247,13 @@ public final class EditorGuiScreen extends Screen {
         orbit.advance(seconds);
 
         boolean browsing = EditorScreenState.page().isBrowser();
-        filterBox.visible = browsing;
-        filterBox.setEditable(browsing);
+        boolean filtering = hasFilterBar();
+        filterBox.visible = filtering;
+        filterBox.setEditable(filtering);
+        if (filtering) {
+            filterBar.layout(layout, this.font, index, browsing);
+            placeFilterBox();
+        }
 
         super.render(g, mouseX, mouseY, partialTick);   // background + the filter box
 
@@ -247,10 +270,13 @@ public final class EditorGuiScreen extends Screen {
         boolean covered = modal.isOpen() || search.isOpen();
         int mx = covered ? -1 : mouseX;
         int my = covered ? -1 : mouseY;
+        if (filtering) {
+            filterBar.render(g, this.font, mx, my);
+            drawFilterBox(g, mouseX, mouseY, partialTick);
+        }
         if (browsing) {
             browser.layout(layout, this.font, index);
             browser.render(g, this.font, theme, seconds, mx, my);
-            drawFilterBox(g, mouseX, mouseY, partialTick);
         } else if (EditorScreenState.page() == EditorScreenPage.SETTINGS) {
             settingsPane.render(g, this.font, theme, layout, mx, my);
         } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
@@ -491,6 +517,8 @@ public final class EditorGuiScreen extends Screen {
         String tip = null;
         if (hoveredTab != null && hoveredTab.kind() == EditorTabBar.Kind.EXIT) {
             tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
+        } else if (hasFilterBar() && filterBar.hovered().kind() != EditorFilterBar.HitKind.NONE) {
+            tip = filterBar.tooltipAt(filterBar.hovered());
         } else if (EditorScreenState.page().isBrowser()) {
             tip = browser.tooltipAt(browser.hovered());
         } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
@@ -560,11 +588,19 @@ public final class EditorGuiScreen extends Screen {
             onTab(tab);
             return true;
         }
-        if (EditorScreenState.page().isBrowser()) {
+        if (hasFilterBar()) {
             if (filterBox.mouseClicked(mouseX, mouseY, button)) {
                 setFocused(filterBox);
                 return true;
             }
+            EditorFilterBar.Hit filterHit = filterBar.hitTest(mouseX, mouseY);
+            if (filterHit.kind() != EditorFilterBar.HitKind.NONE) {
+                click();
+                onFilterHit(filterHit);
+                return true;
+            }
+        }
+        if (EditorScreenState.page().isBrowser()) {
             EditorBrowserPane.Hit hit = browser.hitTest(mouseX, mouseY);
             if (hit.kind() != EditorBrowserPane.HitKind.NONE) {
                 click();
@@ -645,36 +681,48 @@ public final class EditorGuiScreen extends Screen {
         }
     }
 
-    private void onBrowserHit(EditorBrowserPane.Hit hit) {
-        VariantKey standing = EditorScreenState.standingIn();
-        EditorRosterIndex index = EditorRosterClient.index();
+    /** A click on the filter bar, which both roster tabs share — so both lists start over. */
+    private void onFilterHit(EditorFilterBar.Hit hit) {
         switch (hit.kind()) {
+            case TOGGLE -> EditorScreenState.toggleFilters();
             case CHIP -> {
-                if (browser.isPlayerChip(hit.index())) {
+                if (filterBar.isPlayerChip(hit.index())) {
                     openCreatorSearch();
                     return;
                 }
                 // Creator mode's own two chips narrow relay builds, which the roster's filter record
                 // knows nothing about — so they are applied first, and on their own terms.
-                if (browser.applyCreatorChip(hit.index())) {
-                    browser.resetScroll();
+                if (!filterBar.applyCreatorChip(hit.index())) {
+                    EditorScreenState.setFilters(filterBar.applyChip(hit.index(), EditorScreenState.filters()));
+                }
+            }
+            case ACTIVE -> {
+                if (filterBar.isPlayerActive(hit.index())) {
+                    openCreatorSearch();
                     return;
                 }
-                EditorScreenState.setFilters(browser.applyChip(hit.index(), EditorScreenState.filters()));
-                browser.resetScroll();
+                filterBar.applyActive(hit.index());
             }
             case CATEGORY -> {
-                EditorCategoryFilter cell = browser.categoryAt(hit.index());
+                EditorCategoryFilter cell = filterBar.categoryAt(hit.index());
                 if (cell != null) EditorScreenState.setCategory(cell);
-                browser.resetScroll();
             }
             case STRIP -> {
-                EditorRosterIndex.TypeStrip strip = browser.stripAt(hit.index());
+                EditorRosterIndex.TypeStrip strip = filterBar.stripAt(hit.index());
                 if (strip != null) EditorScreenState.setTypeName(strip.typeName());
-                browser.resetScroll();
             }
-            case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
             case LOAD_ALL -> loadAllInCategory();
+            case NONE -> { }
+        }
+        browser.resetScroll();
+        layoutPane.resetScroll();
+    }
+
+    private void onBrowserHit(EditorBrowserPane.Hit hit) {
+        VariantKey standing = EditorScreenState.standingIn();
+        EditorRosterIndex index = EditorRosterClient.index();
+        switch (hit.kind()) {
+            case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
             case CREATOR_TILE -> {
                 EditorCreatorBuilds.select(browser.creatorTiles().get(hit.index()).relayId());
                 goingTo = null;

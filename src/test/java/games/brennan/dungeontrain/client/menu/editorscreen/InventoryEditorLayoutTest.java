@@ -78,6 +78,28 @@ final class InventoryEditorLayoutTest {
     }
 
     @Test
+    @DisplayName("collapsed, both strips vanish and the grid takes their two rows back")
+    void collapsedFilters() {
+        for (int[] s : SIZES) {
+            InventoryEditorLayout open = InventoryEditorLayout.of(s[0], s[1], true);
+            InventoryEditorLayout shut = InventoryEditorLayout.of(s[0], s[1], false);
+            assertEquals(0, shut.categoryStrip().h());
+            assertEquals(0, shut.typeStrip().h());
+            assertEquals(shut.filter().bottom() + 2, shut.grid().y());
+            assertEquals(open.grid().h() + 2 * (InventoryEditorLayout.STRIP_H + 2), shut.grid().h());
+            assertEquals(open.grid().bottom(), shut.grid().bottom());
+            List<Rect> regions = List.of(shut.filter(), shut.grid(), shut.header(), shut.preview(),
+                shut.sheet(), shut.icons(), shut.settings(), shut.test());
+            for (Rect r : regions) assertTrue(inside(r, shut.panel()), s[0] + "x" + s[1] + " " + r);
+            for (int i = 0; i < regions.size(); i++) {
+                for (int j = i + 1; j < regions.size(); j++) {
+                    assertFalse(overlaps(regions.get(i), regions.get(j)));
+                }
+            }
+        }
+    }
+
+    @Test
     @DisplayName("the grid fits at least five tiles across and two rows down at the floor size")
     void gridColumns() {
         InventoryEditorLayout l = InventoryEditorLayout.of(427, 240);
