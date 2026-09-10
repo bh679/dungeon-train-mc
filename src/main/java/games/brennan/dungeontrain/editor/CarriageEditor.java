@@ -135,17 +135,30 @@ public final class CarriageEditor {
      * Returns {@code null} if the variant is not registered.
      */
     public static BlockPos plotOrigin(CarriageVariant variant, CarriageDims dims) {
-        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
-        String target = variant.id();
-        int index = -1;
-        for (int i = 0; i < all.size(); i++) {
-            if (all.get(i).id().equals(target)) {
-                index = i;
-                break;
-            }
-        }
-        if (index < 0) return null;
+        Integer index = slotIndex().get(variant.id());
+        if (index == null) return null;
         return new BlockPos(FIRST_PLOT_X + index * plotStep(dims), PLOT_Y, PLOT_Z);
+    }
+
+    // ---- id → +X slot index, memoised on the registry snapshot --------------------------------
+
+    /** The registry snapshot {@link #SLOT_INDEX} was built from; a new snapshot means a rebuild. */
+    private static List<CarriageVariant> slotIndexSource;
+    private static java.util.Map<String, Integer> SLOT_INDEX = java.util.Map.of();
+
+    /**
+     * Variant id → row slot. The overlay asks for every variant's origin every tick, and the
+     * linear walk this replaces made each ask O(n) — O(n²) per pass. The registry hands out one
+     * immutable snapshot until it mutates, so a reference compare is the whole staleness check.
+     */
+    private static synchronized java.util.Map<String, Integer> slotIndex() {
+        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
+        if (all == slotIndexSource) return SLOT_INDEX;
+        java.util.Map<String, Integer> index = new java.util.HashMap<>(all.size() * 2);
+        for (int i = 0; i < all.size(); i++) index.putIfAbsent(all.get(i).id(), i);
+        SLOT_INDEX = java.util.Map.copyOf(index);
+        slotIndexSource = all;
+        return SLOT_INDEX;
     }
 
     /**

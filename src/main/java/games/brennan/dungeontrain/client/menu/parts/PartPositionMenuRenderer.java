@@ -26,6 +26,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -88,8 +89,10 @@ public final class PartPositionMenuRenderer {
     static final double MIN_LEVEL_CELL_WIDTH = 0.34;
     /** Width of the max-level gate cell (≤N / ≤∞) — all kinds. */
     static final double MAX_LEVEL_CELL_WIDTH = 0.34;
-    /** Width of the dimension (phase) gate cell — four toggle letters O N V E — all kinds. */
-    static final double PHASE_CELL_WIDTH = 0.56;
+    /** Width of one phase toggle letter within the dimension (phase) gate cell. */
+    static final double PHASE_LETTER_WIDTH = 0.14;
+    /** Width of the dimension (phase) gate cell — one toggle letter per {@link TrainPhase} (O N V E U C) — all kinds. */
+    static final double PHASE_CELL_WIDTH = PHASE_LETTER_WIDTH * TrainPhase.values().length;
     /** Width of the side-mode cell (walls/doors only) — fits "(1|2)" with padding. */
     static final double SIDE_MODE_CELL_WIDTH = 0.50;
     /** Width of the end-mode cell (doors only) — fits "end+mid" with padding. */
@@ -97,8 +100,9 @@ public final class PartPositionMenuRenderer {
     /** Text scale matches CommandMenuRenderer's. */
     static final double TEXT_SCALE = 0.012;
 
-    /** Phase letters, indexed by {@link games.brennan.dungeontrain.worldgen.TrainPhase} ordinal. */
-    static final String[] PHASE_LETTERS = {"O", "N", "V", "E"};
+    /** Phase letters, indexed by {@link TrainPhase} ordinal — derived from {@link TrainPhase#letter()}. */
+    static final String[] PHASE_LETTERS = Arrays.stream(TrainPhase.values())
+        .map(TrainPhase::letter).toArray(String[]::new);
     /** Min/max-level text colour — matches the template-type editor's LEVEL_COLOR. */
     static final int LEVEL_COLOR = 0xFFBBD0FF;
     /** Phase letter colour when the dimension is enabled. */
@@ -317,7 +321,7 @@ public final class PartPositionMenuRenderer {
             }
 
             // Gate cells — Diff-Level band (≥min / ≤max) + dimension letters
-            // (O N V E). Shown for every kind; mirrors the template-type editor. Hidden behind the
+            // (O N V E U C). Shown for every kind; mirrors the template-type editor. Hidden behind the
             // Stage chip while linked.
             var gate = entry.gate();
             if (!stageLinked) {
@@ -337,7 +341,7 @@ public final class PartPositionMenuRenderer {
             drawCenteredText(ps, buffer, font, maxLabel,
                 (maxCellL + maxCellR) / 2.0, rowCY, maxHover ? 0xFF000000 : LEVEL_COLOR);
 
-            // Phase cell: four letters O N V E; click a letter to toggle that dimension.
+            // Phase cell: one letter per TrainPhase (O N V E U C); click a letter to toggle that dimension.
             double phaseLetterW = (phaseCellR - phaseCellL) / PHASE_LETTERS.length;
             TrainPhase[] phases = TrainPhase.values();
             for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {

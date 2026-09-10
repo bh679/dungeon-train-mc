@@ -3110,7 +3110,7 @@ public final class EditorCommand {
         if (player == null) return 0;
         EditorDoorGhosts.setEnabled(player.getUUID(), on);
         source.sendSuccess(() -> Component.literal(
-            "Portal door ghosts: " + (on ? "ON" : "off") + "."
+            "Door labels: " + (on ? "ON" : "off") + "."
         ), false);
         return 1;
     }

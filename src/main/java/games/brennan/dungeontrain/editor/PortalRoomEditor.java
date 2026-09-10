@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalClear;
@@ -907,6 +908,11 @@ public final class PortalRoomEditor {
 
     /** Draw the bedrock cage along the 12 edges of the plot. */
     private static void setOutline(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
+        // Flag-3 writes on the plot boundary: an observer on the template's outer face sees them.
+        CarriageStampGuard.run(() -> setOutlineGuarded(level, origin, size, state));
+    }
+
+    private static void setOutlineGuarded(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
         int x0 = origin.getX() - 1;
         int y0 = origin.getY() - 1;
         int z0 = origin.getZ() - 1;

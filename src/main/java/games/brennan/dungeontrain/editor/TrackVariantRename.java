@@ -220,6 +220,7 @@ public final class TrackVariantRename {
         if (src == null || !Files.isRegularFile(src)) return;
         Files.createDirectories(dst.getParent());
         Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        ProvenanceCache.invalidateAll();
     }
 
     /** The template file's twin in the source tree — dev mode only; see {@link EditorDevMode}. */

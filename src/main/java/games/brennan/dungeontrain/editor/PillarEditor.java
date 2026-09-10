@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.PillarAdjunctTemplateId;
 import games.brennan.dungeontrain.template.PillarTemplateId;
@@ -309,7 +310,7 @@ public final class PillarEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
             TemplateDecor.replace(level, origin, stored.get(), settings, null);
             return;
         }
@@ -497,7 +498,7 @@ public final class PillarEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, sentinel);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
             TemplateDecor.replace(level, origin, stored.get(), settings, null);
             return;
         }

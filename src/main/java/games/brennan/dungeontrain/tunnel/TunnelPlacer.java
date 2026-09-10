@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.tunnel;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.ship.ShipFilterProcessor;
 import games.brennan.dungeontrain.ship.Shipyards;
@@ -88,13 +89,15 @@ public final class TunnelPlacer {
         long worldSeed = level.getSeed();
         int tileIndex = origin.getX();
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(level, TunnelVariant.SECTION, name);
-        if (stored.isPresent()) {
-            stampTemplate(level, origin, stored.get(), false);
-            applyTunnelSidecar(level, origin, false, TrackKind.TUNNEL_SECTION, name, worldSeed, tileIndex);
-            return;
-        }
-        TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
-        LegacyTunnelPaint.paintSection(level, origin.getX(), tg);
+        CarriageStampGuard.run(() -> {
+            if (stored.isPresent()) {
+                stampTemplate(level, origin, stored.get(), false);
+                applyTunnelSidecar(level, origin, false, TrackKind.TUNNEL_SECTION, name, worldSeed, tileIndex);
+                return;
+            }
+            TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
+            LegacyTunnelPaint.paintSection(level, origin.getX(), tg);
+        });
     }
 
     /**
@@ -106,14 +109,16 @@ public final class TunnelPlacer {
         long worldSeed = level.getSeed();
         int tileIndex = origin.getX();
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(level, TunnelVariant.PORTAL, name);
-        if (stored.isPresent()) {
-            BlockPos stampOrigin = mirrorX ? origin.offset(LENGTH - 1, 0, 0) : origin;
-            stampTemplate(level, stampOrigin, stored.get(), mirrorX);
-            applyTunnelSidecar(level, origin, mirrorX, TrackKind.TUNNEL_PORTAL, name, worldSeed, tileIndex);
-            return;
-        }
-        TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
-        LegacyTunnelPaint.paintPortal(level, origin.getX(), tg, mirrorX);
+        CarriageStampGuard.run(() -> {
+            if (stored.isPresent()) {
+                BlockPos stampOrigin = mirrorX ? origin.offset(LENGTH - 1, 0, 0) : origin;
+                stampTemplate(level, stampOrigin, stored.get(), mirrorX);
+                applyTunnelSidecar(level, origin, mirrorX, TrackKind.TUNNEL_PORTAL, name, worldSeed, tileIndex);
+                return;
+            }
+            TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
+            LegacyTunnelPaint.paintPortal(level, origin.getX(), tg, mirrorX);
+        });
     }
 
     /**
@@ -129,8 +134,8 @@ public final class TunnelPlacer {
      * cascades are unsafe within the worldgen 3×3 decoration window.</p>
      */
     public static boolean placeSectionAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin) {
-        return placeTunnelWorldgen(level, serverLevel, origin,
-            TunnelVariant.SECTION, TrackKind.TUNNEL_SECTION, false);
+        return CarriageStampGuard.call(() -> placeTunnelWorldgen(level, serverLevel, origin,
+            TunnelVariant.SECTION, TrackKind.TUNNEL_SECTION, false));
     }
 
     /**
@@ -140,8 +145,8 @@ public final class TunnelPlacer {
      * only post-processing (shipyard guard, sidecar SilentBlockOps).
      */
     public static boolean placePortalAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin, boolean mirrorX) {
-        return placeTunnelWorldgen(level, serverLevel, origin,
-            TunnelVariant.PORTAL, TrackKind.TUNNEL_PORTAL, mirrorX);
+        return CarriageStampGuard.call(() -> placeTunnelWorldgen(level, serverLevel, origin,
+            TunnelVariant.PORTAL, TrackKind.TUNNEL_PORTAL, mirrorX));
     }
 
     /**

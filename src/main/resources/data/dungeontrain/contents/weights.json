@@ -3,6 +3,10 @@
   "books": 11,
   "cows": 15,
   "craft": 7,
+  "dangerous_1": {
+    "weight": 1,
+    "name": "tntbarrel"
+  },
   "default": 1,
   "dirt": 2,
   "dirt2": 2,
@@ -11,11 +15,26 @@
   "enemies": 7,
   "fire": 4,
   "maze": 4,
+  "mild_1": 1,
+  "mild_2": {
+    "weight": 1,
+    "name": "wishingwell"
+  },
+  "mild_3": 1,
+  "mild_4": 1,
   "narrative": 3,
   "portal": 0,
   "portal_short": 0,
   "sand": 0,
   "shop": 8,
   "statue": 1,
+  "traps": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN"
+    ]
+  },
   "vase": 1
 }

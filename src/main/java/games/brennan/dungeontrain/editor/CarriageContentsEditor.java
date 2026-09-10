@@ -240,18 +240,38 @@ public final class CarriageContentsEditor {
      * {@link CarriageContentsGroupStore#allChildIds}.
      */
     private static BlockPos topLevelPlotOrigin(String targetId, CarriageDims dims) {
-        java.util.Set<String> children = CarriageContentsGroupStore.allChildIds();
+        Integer index = topLevelSlotIndex().get(targetId);
+        if (index == null) return null;
+        return new BlockPos(FIRST_PLOT_X + index * plotStep(dims), PLOT_Y, PLOT_Z);
+    }
+
+    // ---- id → +X slot index, memoised on (registry snapshot, group child set) ------------------
+
+    private static List<CarriageContents> slotIndexSource;
+    private static java.util.Set<String> slotIndexChildren;
+    private static java.util.Map<String, Integer> SLOT_INDEX = java.util.Map.of();
+
+    /**
+     * Top-level contents id → row slot (group children claim no slot). This was the editor's
+     * hottest frame: the overlay resolves every template's origin every tick, and the linear walk
+     * here — over a registry list that was itself rebuilt per call — made a pass O(n²) with
+     * n≈230. Both inputs are now immutable objects that the registry / group store replace on
+     * mutation, so two reference compares decide whether the map is stale.
+     */
+    private static synchronized java.util.Map<String, Integer> topLevelSlotIndex() {
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
-        int step = plotStep(dims);
-        int index = 0;
+        java.util.Set<String> children = CarriageContentsGroupStore.allChildIds();
+        if (all == slotIndexSource && children == slotIndexChildren) return SLOT_INDEX;
+        java.util.Map<String, Integer> index = new java.util.HashMap<>(all.size() * 2);
+        int slot = 0;
         for (CarriageContents c : all) {
             if (children.contains(c.id())) continue;
-            if (c.id().equals(targetId)) {
-                return new BlockPos(FIRST_PLOT_X + index * step, PLOT_Y, PLOT_Z);
-            }
-            index++;
+            if (index.putIfAbsent(c.id(), slot) == null) slot++;
         }
-        return null;
+        SLOT_INDEX = java.util.Map.copyOf(index);
+        slotIndexSource = all;
+        slotIndexChildren = children;
+        return SLOT_INDEX;
     }
 
     /** Index of {@code memberId} in {@code parentId}'s group, or {@code -1} if absent. */

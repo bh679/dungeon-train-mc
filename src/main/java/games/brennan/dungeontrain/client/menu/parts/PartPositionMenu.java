@@ -66,8 +66,8 @@ public final class PartPositionMenu {
     }
 
     /**
-     * A specific cell hit by the raycast. {@code phaseSlot} identifies which of the four phase
-     * letters (0=O .. 3=E, matching {@link games.brennan.dungeontrain.worldgen.TrainPhase}'s ordinal)
+     * A specific cell hit by the raycast. {@code phaseSlot} identifies which phase letter
+     * (O N V E U C — the {@link games.brennan.dungeontrain.worldgen.TrainPhase} ordinal)
      * an {@link CellKind#ENTRY_PHASE} hit landed on; it is {@code -1} for every other cell.
      */
     public record Hit(CellKind kind, int index, int phaseSlot) {

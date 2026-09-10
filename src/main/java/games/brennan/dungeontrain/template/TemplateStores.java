@@ -74,6 +74,9 @@ public final class TemplateStores {
         // A pack may have just been saved, imported, enabled or disabled — re-scan what counts as
         // custom content so the Free Play gate reflects the new state on the very next read.
         games.brennan.dungeontrain.cheat.EditorContentIntegrity.invalidate();
+        // Which tier backs each template file may have changed with the package set — drop the
+        // editor overlay's memo so the next tick re-tints against the new search dirs.
+        games.brennan.dungeontrain.editor.ProvenanceCache.invalidateAll();
 
         // Plot snapshots are post-stamp baselines. Active-package switches
         // (and enable/disable) change what's loaded, so a stale snapshot
