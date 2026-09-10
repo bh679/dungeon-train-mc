@@ -46,6 +46,31 @@ public final class Trains {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /**
+     * Whether {@link #byTrainId} writes its per-call roster of every loaded carriage.
+     *
+     * <p>Off by default, and the cost when off is one volatile read — which is the point. This
+     * probe used to be gated on {@code LOGGER.isDebugEnabled()}, and NeoForge ships a DEBUG
+     * appender, so it was on for <b>every player</b>: {@code byTrainId} is called several times a
+     * tick, and a player's {@code debug.log} in the report that prompted this was taking 1046 of
+     * these lines — half a megabyte — every seventeen seconds, each one rebuilding a string
+     * naming all nineteen of their carriages.</p>
+     *
+     * <p>Armed by {@code /dungeontrain debug trains-trace on}, and in dev builds by
+     * {@code DevTraceDefaults} through {@code DebugCommand.setTrainGenTraceProbes}, so a developer
+     * who wants the roster still gets it. Server thread writes, command thread sets — hence
+     * {@code volatile}, as with the appender's own trace flags.</p>
+     */
+    private static volatile boolean TRAINS_TRACE_ENABLED = false;
+
+    public static boolean isTrainsTraceEnabled() {
+        return TRAINS_TRACE_ENABLED;
+    }
+
+    public static void setTrainsTraceEnabled(boolean enabled) {
+        TRAINS_TRACE_ENABLED = enabled;
+    }
+
+    /**
      * Lightweight pair of {@link ManagedShip} and its
      * {@link TrainTransformProvider}, returned together to avoid the cost
      * of re-fetching the provider via {@code getKinematicDriver()} every
@@ -228,7 +253,7 @@ public final class Trains {
             trains.computeIfAbsent(provider.getTrainId(), k -> new ArrayList<>())
                 .add(new Carriage(ship, provider));
         }
-        if (LOGGER.isDebugEnabled()) {
+        if (TRAINS_TRACE_ENABLED) {
             StringBuilder summary = new StringBuilder();
             for (Map.Entry<UUID, List<Carriage>> e : trains.entrySet()) {
                 if (summary.length() > 0) summary.append("; ");
@@ -243,7 +268,7 @@ public final class Trains {
                 }
                 summary.append("]");
             }
-            LOGGER.debug("[DungeonTrain] Trains.byTrainId: totalShips={} withTrainProvider={} trains={{{}}}",
+            LOGGER.info("[DungeonTrain][trains] byTrainId: totalShips={} withTrainProvider={} trains={{{}}}",
                 totalShips, withTrainProvider, summary);
         }
         return trains;

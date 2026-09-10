@@ -61,11 +61,24 @@ public final class PortalPuppets {
     /**
      * Most puppets one pair will describe in a tick.
      *
-     * <p>A corridor holding two players is the case this exists for; a corridor holding forty
-     * zombies is a spawner someone built in it. The cap keeps a snapshot bounded either way, and
-     * what it drops is logged rather than silently trimmed.</p>
+     * <p><b>An authored room can hold four times this.</b> The cap was first written for "a corridor
+     * holding two players", treating forty zombies as a spawner someone built. That premise is
+     * stale: {@link PortalRoomMobs#MAX_LIVE_PER_STRUCTURE} lets a room stand up 64 mobs by design,
+     * and a player reported the consequence — a horde past this cap goes <i>invisible</i> while
+     * staying entirely real and still hitting them.</p>
+     *
+     * <p>Sixteen is still the right number, but only because of what {@link #select} does with it.
+     * The budget is spent by tier and then by distance, so the sixteen drawn are the sixteen the
+     * player is actually fighting, and what falls off the end is the far side of the room rather
+     * than an arbitrary slice of it. Raising it instead would multiply a per-tick packet that
+     * already carries each puppet's whole synched data and five item stacks.</p>
      */
     public static final int MAX_PER_PAIR = 16;
+
+    /** Ordering tiers. A lower tier spends the budget first; see {@link #tierOf}. */
+    static final int TIER_PLAYER = 0;
+    static final int TIER_LIVING = 1;
+    static final int TIER_SCENERY = 2;
 
     /**
      * How far outside a corridor a player still receives its puppets.
@@ -82,6 +95,17 @@ public final class PortalPuppets {
 
     /** Players who were sent a non-empty snapshot last tick and therefore need a clearing one. */
     private static final Set<UUID> SENT = new HashSet<>();
+
+    /**
+     * Carriage index → how many puppets that pair dropped when the count last changed.
+     *
+     * <p>The drop is worth telling a room author about, but it is a <i>standing condition</i>, not
+     * an event: a corridor over the cap is over it on every one of the twenty ticks a second it
+     * stays that way. Logged unconditionally it produced 1033 identical INFO lines a minute on the
+     * server thread in the report this map exists because of. Keyed like {@link #LIVE} so the count
+     * is forgotten with the pair rather than outliving it.</p>
+     */
+    private static final Map<Integer, Integer> DROPPED = new HashMap<>();
 
     private PortalPuppets() {}
 
@@ -150,23 +174,34 @@ public final class PortalPuppets {
     public static void gather(ServerLevel level, List<ServerPlayer> players, PortalFrames frames,
                               ManagedShip ship, int carriageIndex, List<Entity> occupants,
                               Session session) {
+        // Who this pair is drawing for, resolved once. The same set answers both questions the rest
+        // of this method asks — which entities are nearest, and who receives them — so the two
+        // cannot disagree about a viewer that stepped out of range between them.
+        List<ServerPlayer> viewers = new ArrayList<>();
+        for (ServerPlayer player : players) {
+            if (canSee(frames, player)) viewers.add(player);
+        }
+
         List<PortalPuppetsPacket.Entry> entries = new ArrayList<>();
         Map<Integer, String> live = new HashMap<>();
 
-        List<Entity> sources = new ArrayList<>(occupants);
-
-        // Players first, so a corridor crowded past the cap keeps the puppets this feature exists
-        // for and drops the scenery rather than the other way round.
-        sources.sort(Comparator.comparingInt(e -> e instanceof ServerPlayer ? 0 : 1));
-
-        int dropped = 0;
-        for (Entity source : sources) {
+        // Rank before spending the budget, rather than taking the level's own scan order. Measuring
+        // every candidate is cheap — a distance and an instanceof — where describing one is not, so
+        // the sixteen that survive are chosen from the whole room and only they are described.
+        // Ranked by index into the caller's list rather than by holding the entities twice; select
+        // does not reorder that list, so the indices stay good.
+        List<Candidate> candidates = new ArrayList<>();
+        for (int i = 0; i < occupants.size(); i++) {
+            Entity source = occupants.get(i);
             if (!eligible(source)) continue;
+            candidates.add(new Candidate(source.getId(), i, tierOf(source),
+                nearestViewerDistSq(viewers, source)));
+        }
 
-            if (entries.size() >= MAX_PER_PAIR) {
-                dropped++;
-                continue;
-            }
+        List<Candidate> chosen = select(candidates, MAX_PER_PAIR);
+
+        for (Candidate candidate : chosen) {
+            Entity source = occupants.get(candidate.index());
 
             PortalPuppetsPacket.Entry entry = describe(frames, ship, source);
             if (entry == null) continue;
@@ -175,17 +210,12 @@ public final class PortalPuppets {
             live.put(entry.key(), label(frames, source));
         }
 
-        if (dropped > 0) {
-            LOGGER.info("[DungeonTrain] Portal puppets capped at {} for carriage {} — {} not described",
-                MAX_PER_PAIR, carriageIndex, dropped);
-        }
-
+        logDropped(carriageIndex, candidates.size() - chosen.size());
         logTransitions(carriageIndex, live);
 
         if (entries.isEmpty()) return;
 
-        for (ServerPlayer viewer : players) {
-            if (!canSee(frames, viewer)) continue;
+        for (ServerPlayer viewer : viewers) {
             for (PortalPuppetsPacket.Entry entry : entries) {
                 // Never your own stand-in. Filtered per recipient rather than hidden client-side, so
                 // a player's puppet is not merely invisible to them — it never reaches them.
@@ -195,16 +225,94 @@ public final class PortalPuppets {
         }
     }
 
+    /**
+     * One entity's claim on the budget: what it is, how far off it is, and where to find it again.
+     *
+     * <p>A plain value so {@link #select} — the part with the policy in it — can be tested without
+     * a level to put entities in. {@code index} points back into the caller's source list;
+     * {@code id} is the entity id, which is stable across ticks and is what breaks ties.</p>
+     */
+    record Candidate(int id, int index, int tier, double distSq) {}
+
+    /**
+     * The candidates worth describing, best first, at most {@code max} of them.
+     *
+     * <p><b>Tier before distance.</b> Scenery — a dropped sword, an experience orb, a painting — is
+     * as physically in the room as a zombie is, and in a quiet corridor it should be drawn. But it
+     * must never be drawn <i>instead</i> of a mob: the reported bug is a player clearing a horde
+     * whose own loot piled up in the corridor and took the budget from the zombies still swinging
+     * at them. Loot now fills only the slots the mobs did not want.</p>
+     *
+     * <p><b>Then distance, then id.</b> Distance is what makes a truncated snapshot the right
+     * sixteen rather than sixteen arbitrary ones. The id tiebreak is what makes it the <i>same</i>
+     * sixteen next tick: ordering that fell through to the level's scan order reshuffled every
+     * tick, and a puppet dropped and re-added is a render model torn down and rebuilt — 142 of them
+     * in a minute, each a fresh mob with its brain and goals, on the render thread.</p>
+     */
+    static List<Candidate> select(List<Candidate> candidates, int max) {
+        List<Candidate> ranked = new ArrayList<>(candidates);
+        ranked.sort(Comparator.<Candidate>comparingInt(Candidate::tier)
+            .thenComparingDouble(Candidate::distSq)
+            .thenComparingInt(Candidate::id));
+        return ranked.size() <= max ? ranked : new ArrayList<>(ranked.subList(0, max));
+    }
+
+    /** Which claim on the budget this entity has. See {@link #select}. */
+    static int tierOf(Entity entity) {
+        if (entity instanceof ServerPlayer) return TIER_PLAYER;
+        if (entity instanceof LivingEntity) return TIER_LIVING;
+        return TIER_SCENERY;
+    }
+
+    /**
+     * How far this entity is from the nearest player being drawn for.
+     *
+     * <p>Nearest rather than per-viewer: entries are described once for the pair and handed to
+     * every viewer, so sorting per viewer would mean describing the room once per player and
+     * multiplying the cost this ordering exists to bound. With nobody in range every candidate
+     * scores the same and the tier and id decide.</p>
+     */
+    private static double nearestViewerDistSq(List<ServerPlayer> viewers, Entity entity) {
+        double nearest = Double.MAX_VALUE;
+        for (ServerPlayer viewer : viewers) {
+            nearest = Math.min(nearest, viewer.distanceToSqr(entity));
+        }
+        return nearest;
+    }
+
     /** Drop a pair's puppets — it is out of range, or nobody is in it any more. */
     public static void forget(int carriageIndex) {
         logTransitions(carriageIndex, Map.of());
         LIVE.remove(carriageIndex);
+        DROPPED.remove(carriageIndex);
     }
 
     /** Forget everything, for a world unload or a server stop. */
     public static void clear() {
         LIVE.clear();
         SENT.clear();
+        DROPPED.clear();
+    }
+
+    /**
+     * Say how many puppets the cap turned away, when that number changes and not otherwise.
+     *
+     * <p>The line is aimed at whoever authored the room — it is the signal to lower a mob cell's
+     * weight — so it stays at INFO where they will see it. What it must not do is repeat: see
+     * {@link #DROPPED}.</p>
+     */
+    private static void logDropped(int carriageIndex, int dropped) {
+        if (dropped <= 0) {
+            DROPPED.remove(carriageIndex);
+            return;
+        }
+
+        Integer before = DROPPED.get(carriageIndex);
+        if (before != null && before == dropped) return;
+
+        DROPPED.put(carriageIndex, dropped);
+        LOGGER.info("[DungeonTrain] Portal puppets capped at {} for carriage {} — {} not described",
+            MAX_PER_PAIR, carriageIndex, dropped);
     }
 
     /**

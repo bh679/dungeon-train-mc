@@ -190,6 +190,14 @@ public final class DebugCommand {
             .then(Commands.literal("seamgap-trace")
                 .then(Commands.literal("on").executes(ctx -> setSeamGapTrace(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setSeamGapTrace(ctx.getSource(), false))))
+            // /dungeontrain debug trains-trace on|off — the per-call roster of every loaded
+            // carriage ([trains]). Off by default: byTrainId runs several times a tick, so this
+            // is a heavy line to leave on, and it used to be gated on LOGGER.isDebugEnabled(),
+            // which NeoForge leaves true for every player. Turn it on to see which sub-levels a
+            // train actually claims when membership looks wrong. Server-side logging only.
+            .then(Commands.literal("trains-trace")
+                .then(Commands.literal("on").executes(ctx -> setTrainsTrace(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setTrainsTrace(ctx.getSource(), false))))
             // /dungeontrain debug dupe-guard on|off|status — the duplicate-anchor guard.
             // Two live sub-levels can land on one anchor (a group reaped as gone and respawned,
             // then resurrected from Sable's holding store), which reads in-game as two identical
@@ -236,6 +244,7 @@ public final class DebugCommand {
         BackwardGenTrace.setEnabled(on);
         TrainCarriageAppender.setStallDetectionEnabled(on);
         TrainCarriageAppender.setSeamGapTraceEnabled(on);
+        games.brennan.dungeontrain.train.Trains.setTrainsTraceEnabled(on);
         DebugFlags.setChatStallTrain(server, on);
     }
 
@@ -456,6 +465,16 @@ public final class DebugCommand {
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Seam-gap trace " + (enabled ? "ON" : "OFF")
                 + (enabled ? " — grep [seamgap]/[bwd-place]/[anchor-div]/[capture-lag] in latest.log" : "")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setTrainsTrace(CommandSourceStack source, boolean enabled) {
+        games.brennan.dungeontrain.train.Trains.setTrainsTraceEnabled(enabled);
+        LOGGER.info("[DungeonTrain] trains-trace diagnostic {}", enabled ? "ENABLED" : "DISABLED");
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Trains roster trace " + (enabled ? "ON" : "OFF")
+                + (enabled ? " — grep [trains] in latest.log" : "")
         ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }
