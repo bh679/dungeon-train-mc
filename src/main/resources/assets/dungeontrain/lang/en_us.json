@@ -60,7 +60,7 @@
   "book.dungeontrain.statbook.tail.8": "Worth writing down, I thought.",
   "book.dungeontrain.statbook.tail.9": "Carry on.",
   "echo.dungeontrain.mob_name": "Echo of %s",
-  "gui.dungeontrain.editor_book.author_hint": "Tab or click the author line to sign as someone else.",
+  "gui.dungeontrain.editor_book.author_hint": "Type an author name (Tab or click the line) — required to sign.",
   "gui.dungeontrain.book_vote.ask_prefix": "The train asks,",
   "gui.dungeontrain.book_vote.prompt.1": "\"Did you enjoy this book?\"",
   "gui.dungeontrain.book_vote.prompt.2": "\"Was this one worth the ride?\"",

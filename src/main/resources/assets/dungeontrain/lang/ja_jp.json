@@ -45,7 +45,7 @@
   "book.dungeontrain.statbook.tail.8": "書き留める価値があると思った。",
   "book.dungeontrain.statbook.tail.9": "続けたまえ。",
   "echo.dungeontrain.mob_name": "%sのエコー",
-  "gui.dungeontrain.editor_book.author_hint": "Tabキーまたは著者行をクリックすると、別の名前で署名できます。",
+  "gui.dungeontrain.editor_book.author_hint": "著者名を入力してください（Tabキーまたは行をクリック）。署名には必須です。",
   "gui.dungeontrain.book_vote.ask_prefix": "列車が尋ねる——",
   "gui.dungeontrain.book_vote.prompt.1": "「この本は楽しめたか？」",
   "gui.dungeontrain.book_vote.prompt.2": "「この一冊は旅に見合ったか？」",

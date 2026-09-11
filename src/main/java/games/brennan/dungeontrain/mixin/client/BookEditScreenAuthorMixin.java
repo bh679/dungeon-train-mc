@@ -8,12 +8,12 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.font.TextFieldHelper;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.world.entity.player.Player;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -41,10 +41,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@link BookEditScreenSuspensionMixin} uses. Out on the live train the screen is untouched:
  * community books, letters and Notes keep the real name, and the server ignores a stray packet.</p>
  *
- * <p>Controls: <b>Tab</b> or a click on the author line moves the cursor between title and author;
- * Backspace edits, Enter finalizes from either field (falls through to vanilla). The author line is
- * drawn black with a blinking cursor while it has the cursor, vanilla's dark grey otherwise, and a
- * one-line hint sits under the finalize warning. The "by" line itself is swapped by a
+ * <p>The author line starts <b>blank</b> every time and is <b>required</b>: Finalize stays inactive
+ * and Enter is swallowed (moving the cursor to the author line) until both title and author are
+ * non-blank — a prop book credited to the builder's username by accident is the thing being
+ * prevented. Controls: <b>Tab</b> or a click on the author line moves the cursor between title and
+ * author; Backspace edits, Enter finalizes from either field (falls through to vanilla). The author
+ * line is drawn black with a blinking cursor while it has the cursor, vanilla's dark grey otherwise,
+ * and a one-line hint sits under the finalize warning. The "by" line itself is swapped by a
  * {@code WrapOperation} on vanilla's own {@code drawString} call (matched by identity against the
  * {@code ownerText} field), so nothing else in the layout moves.</p>
  */
@@ -55,7 +58,9 @@ public abstract class BookEditScreenAuthorMixin {
     @Shadow private String title;
     @Shadow private int frameTick;
     @Shadow @Final private Component ownerText;
-    @Shadow @Final private Player owner;
+    @Shadow private Button finalizeButton;
+
+    @Shadow protected abstract void updateButtonVisibility();
 
     @Unique private static final FormattedCharSequence DUNGEONTRAIN$BLACK_CURSOR =
             FormattedCharSequence.forward("_", Style.EMPTY.withColor(ChatFormatting.BLACK));
@@ -86,11 +91,17 @@ public abstract class BookEditScreenAuthorMixin {
         }
     }
 
-    /** Lazily built on first use so the constructor-time field order never matters. */
+    /** True when the author line holds a usable name. */
+    @Unique
+    private boolean dungeontrain$hasAuthor() {
+        return this.dungeontrain$author != null && !this.dungeontrain$author.isBlank();
+    }
+
+    /** Lazily built on first use so the constructor-time field order never matters. Starts blank. */
     @Unique
     private TextFieldHelper dungeontrain$authorEdit() {
         if (this.dungeontrain$authorEdit == null) {
-            this.dungeontrain$author = EditorBookAuthorClient.initialAuthor(this.owner.getName().getString());
+            this.dungeontrain$author = "";
             int max = EditorBookAuthorClient.maxLength();
             this.dungeontrain$authorEdit = new TextFieldHelper(
                     () -> this.dungeontrain$author,
@@ -114,11 +125,20 @@ public abstract class BookEditScreenAuthorMixin {
             cir.setReturnValue(true);
             return;
         }
+        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+            // No author yet: refuse to finalize and put the cursor where the missing text goes.
+            // Otherwise fall through to vanilla's titleKeyPressed, which finalizes the book.
+            if (!dungeontrain$hasAuthor()) {
+                this.dungeontrain$editingAuthor = true;
+                dungeontrain$authorEdit().setCursorToEnd();
+                cir.setReturnValue(true);
+            }
+            return;
+        }
         if (!this.dungeontrain$editingAuthor) return;
-        // Enter falls through to vanilla's titleKeyPressed, which finalizes the book.
-        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) return;
         if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
             dungeontrain$authorEdit().removeCharsFromCursor(-1);
+            this.updateButtonVisibility();
             cir.setReturnValue(true);
             return;
         }
@@ -129,7 +149,9 @@ public abstract class BookEditScreenAuthorMixin {
     @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$authorCharTyped(char codePoint, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if (!dungeontrain$editorMode() || !this.dungeontrain$editingAuthor) return;
-        cir.setReturnValue(dungeontrain$authorEdit().charTyped(codePoint));
+        boolean typed = dungeontrain$authorEdit().charTyped(codePoint);
+        if (typed) this.updateButtonVisibility();
+        cir.setReturnValue(typed);
     }
 
     /** A click on the author line takes the cursor; a click on the title line gives it back. */
@@ -147,11 +169,19 @@ public abstract class BookEditScreenAuthorMixin {
         }
     }
 
-    /** Leaving signing mode (Cancel) hands the cursor back to the title for next time. */
+    /**
+     * Finalize needs BOTH a title and an author in editor mode — vanilla has just set
+     * {@code active} from the title alone, so this only ever turns the button OFF, never on.
+     * Leaving signing mode (Cancel) hands the cursor back to the title for next time.
+     */
     @Inject(method = "updateButtonVisibility", at = @At("RETURN"))
-    private void dungeontrain$resetOnLeaveSigning(CallbackInfo ci) {
+    private void dungeontrain$requireAuthor(CallbackInfo ci) {
         if (!this.isSigning) {
             this.dungeontrain$editingAuthor = false;
+            return;
+        }
+        if (dungeontrain$editorMode() && !dungeontrain$hasAuthor() && this.finalizeButton != null) {
+            this.finalizeButton.active = false;
         }
     }
 
@@ -160,8 +190,7 @@ public abstract class BookEditScreenAuthorMixin {
     /** Sends the name BEFORE vanilla's own edit packet goes out in the body of saveChanges. */
     @Inject(method = "saveChanges", at = @At("HEAD"))
     private void dungeontrain$sendAuthorOnSign(boolean publish, CallbackInfo ci) {
-        if (!publish || !dungeontrain$editorMode()) return;
-        dungeontrain$authorEdit(); // initialises the author if the line was never drawn
+        if (!publish || !dungeontrain$editorMode() || !dungeontrain$hasAuthor()) return;
         EditorBookAuthorClient.sendForNextSign(this.dungeontrain$author);
     }
 

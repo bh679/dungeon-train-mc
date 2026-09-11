@@ -60,7 +60,7 @@
   "book.dungeontrain.statbook.tail.8": "Wert, es aufzuschreiben, dachte ich.",
   "book.dungeontrain.statbook.tail.9": "Nur weiter.",
   "echo.dungeontrain.mob_name": "Echo von %s",
-  "gui.dungeontrain.editor_book.author_hint": "Tab oder Klick auf die Autorenzeile, um unter einem anderen Namen zu signieren.",
+  "gui.dungeontrain.editor_book.author_hint": "Gib einen Autorennamen ein (Tab oder Klick auf die Zeile) – zum Signieren erforderlich.",
   "gui.dungeontrain.book_vote.ask_prefix": "Der Zug fragt:",
   "gui.dungeontrain.book_vote.prompt.1": "»Hat dir dieses Buch gefallen?«",
   "gui.dungeontrain.book_vote.prompt.2": "»War dieses die Fahrt wert?«",

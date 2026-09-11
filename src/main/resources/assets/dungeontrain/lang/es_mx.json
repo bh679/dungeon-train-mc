@@ -60,7 +60,7 @@
   "book.dungeontrain.statbook.tail.8": "Digno de anotarse, me pareció.",
   "book.dungeontrain.statbook.tail.9": "Continúa.",
   "echo.dungeontrain.mob_name": "Eco de %s",
-  "gui.dungeontrain.editor_book.author_hint": "Presiona Tab o haz clic en la línea del autor para firmar con otro nombre.",
+  "gui.dungeontrain.editor_book.author_hint": "Escribe un nombre de autor (Tab o clic en la línea); es obligatorio para firmar.",
   "gui.dungeontrain.book_vote.ask_prefix": "El tren pregunta:",
   "gui.dungeontrain.book_vote.prompt.1": "«¿Te gustó este libro?»",
   "gui.dungeontrain.book_vote.prompt.2": "«¿Valió el viaje?»",
