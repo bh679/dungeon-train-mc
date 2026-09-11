@@ -57,6 +57,7 @@
       "book.dungeontrain.statbook.tail.9",
       "echo.dungeontrain.mob_name",
       "gui.dungeontrain.editor_book.author_hint",
+      "gui.dungeontrain.editor_book.next_author",
       "gui.dungeontrain.book_vote.ask_prefix",
       "gui.dungeontrain.book_vote.prompt.5",
       "gui.dungeontrain.book_vote.approve",

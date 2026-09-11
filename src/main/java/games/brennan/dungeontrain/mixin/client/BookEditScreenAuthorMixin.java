@@ -9,6 +9,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.StringUtil;
 import net.minecraft.client.gui.font.TextFieldHelper;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import net.minecraft.network.chat.Component;
@@ -41,17 +44,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@link BookEditScreenSuspensionMixin} uses. Out on the live train the screen is untouched:
  * community books, letters and Notes keep the real name, and the server ignores a stray packet.</p>
  *
- * <p>The author line starts <b>blank</b> every time and is <b>required</b>: Finalize stays inactive
- * and Enter is swallowed (moving the cursor to the author line) until both title and author are
- * non-blank — a prop book credited to the builder's username by accident is the thing being
- * prevented. Controls: <b>Tab</b> or a click on the author line moves the cursor between title and
+ * <p>The author line starts <b>blank</b> every time and is <b>required</b>. Once a title is typed
+ * the "Sign and Close" button becomes a step button, <b>"Next: Author"</b>, whose click (or Enter)
+ * moves the cursor to the author line instead of signing; only with both title and author non-blank
+ * does it read "Sign and Close" again and sign — a prop book credited to the builder's username by
+ * accident is the thing being prevented. Controls: <b>Tab</b> or a click on the author line moves the cursor between title and
  * author; Backspace edits, Enter finalizes from either field (falls through to vanilla). The author
  * line is drawn black with a blinking cursor while it has the cursor, vanilla's dark grey otherwise,
  * and a one-line hint sits under the finalize warning. The "by" line itself is swapped by a
  * {@code WrapOperation} on vanilla's own {@code drawString} call (matched by identity against the
  * {@code ownerText} field), so nothing else in the layout moves.</p>
  */
-@Mixin(BookEditScreen.class)
+// Applied after BookEditScreenSuspensionMixin (default priority 1000), whose RETURN callbacks on
+// updateButtonVisibility/tick reset the Finalize label to vanilla's — ours must run after them.
+@Mixin(value = BookEditScreen.class, priority = 1100)
 public abstract class BookEditScreenAuthorMixin {
 
     @Shadow private boolean isSigning;
@@ -154,11 +160,24 @@ public abstract class BookEditScreenAuthorMixin {
         cir.setReturnValue(typed);
     }
 
-    /** A click on the author line takes the cursor; a click on the title line gives it back. */
-    @Inject(method = "mouseClicked", at = @At("HEAD"))
+    /**
+     * A click on the author line takes the cursor; a click on the title line gives it back. In the
+     * "Next: Author" state a click on the Finalize button does the same instead of signing — handled
+     * here, ahead of the widget dispatch, so vanilla's finalize lambda never runs.
+     */
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$authorMouseClicked(double mouseX, double mouseY, int button,
                                                  CallbackInfoReturnable<Boolean> cir) {
         if (button != 0 || !dungeontrain$editorMode()) return;
+        if (dungeontrain$nextAuthorStep() && this.finalizeButton != null
+                && this.finalizeButton.visible && this.finalizeButton.isMouseOver(mouseX, mouseY)) {
+            this.dungeontrain$editingAuthor = true;
+            dungeontrain$authorEdit().setCursorToEnd();
+            Minecraft.getInstance().getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            cir.setReturnValue(true);
+            return;
+        }
         int left = dungeontrain$pageLeft();
         if (mouseX < left || mouseX >= left + DUNGEONTRAIN$PAGE_INNER_W) return;
         if (mouseY >= DUNGEONTRAIN$AUTHOR_Y && mouseY < DUNGEONTRAIN$AUTHOR_Y + DUNGEONTRAIN$LINE_H) {
@@ -169,19 +188,43 @@ public abstract class BookEditScreenAuthorMixin {
         }
     }
 
+    /** Title typed, author still blank: the Finalize button is the "Next: Author" step. */
+    @Unique
+    private boolean dungeontrain$nextAuthorStep() {
+        return !StringUtil.isBlank(this.title) && !dungeontrain$hasAuthor();
+    }
+
     /**
-     * Finalize needs BOTH a title and an author in editor mode — vanilla has just set
-     * {@code active} from the title alone, so this only ever turns the button OFF, never on.
-     * Leaving signing mode (Cancel) hands the cursor back to the title for next time.
+     * Relabels the Finalize button for the editor flow: "Next: Author" (active) while a title is
+     * typed but the author is blank, vanilla's "Sign and Close" once both are present. Vanilla has
+     * just set {@code active} from the title alone, which is exactly right for both states, so only
+     * the label changes. Leaving signing mode (Cancel) hands the cursor back to the title.
      */
     @Inject(method = "updateButtonVisibility", at = @At("RETURN"))
-    private void dungeontrain$requireAuthor(CallbackInfo ci) {
+    private void dungeontrain$relabelFinalize(CallbackInfo ci) {
         if (!this.isSigning) {
             this.dungeontrain$editingAuthor = false;
             return;
         }
-        if (dungeontrain$editorMode() && !dungeontrain$hasAuthor() && this.finalizeButton != null) {
-            this.finalizeButton.active = false;
+        dungeontrain$applyFinalizeLabel();
+    }
+
+    /**
+     * {@link BookEditScreenSuspensionMixin} rewrites the label to vanilla's every tick; re-apply
+     * ours after it (this mixin has the higher priority, so its callback runs later).
+     */
+    @Inject(method = "tick", at = @At("RETURN"))
+    private void dungeontrain$relabelFinalizeEachTick(CallbackInfo ci) {
+        if (this.isSigning) dungeontrain$applyFinalizeLabel();
+    }
+
+    @Unique
+    private void dungeontrain$applyFinalizeLabel() {
+        if (this.finalizeButton == null || !dungeontrain$editorMode()) return;
+        if (dungeontrain$nextAuthorStep()) {
+            this.finalizeButton.setMessage(Component.translatable("gui.dungeontrain.editor_book.next_author"));
+        } else {
+            this.finalizeButton.setMessage(Component.translatable("book.finalizeButton"));
         }
     }
 
