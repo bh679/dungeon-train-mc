@@ -12096,6 +12096,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stages-travel-with-relay-builds",
+      "version": "0.838.0",
+      "type": "feat",
+      "title": "Your Stages travel with your builds",
+      "summary": "Builds saved to your profile now carry the Stages they use \u2014 any Stage you created, and any bundled one you edited. Loading a build on another install brings those Stages with it, and if a Stage with the same name already exists there with different settings, you're asked per Stage whether to keep yours or use theirs before anything changes.",
+      "highlights": [
+        "Every relay save uploads your user-authored Stage library; the relay keeps one copy per author and never evicts it",
+        "Loading a build installs the Stages it links and re-links the template to them \u2014 for contents and dimensional carriages too, not only carriages",
+        "New 'Stages already exist' prompt: Yours vs Theirs (name, level band, phases) with the differences highlighted, Keep mine / Use theirs per Stage"
+      ],
+      "pr": 1358,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

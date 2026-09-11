@@ -113,6 +113,36 @@ public final class StageStore {
     }
 
     /**
+     * The Stages this install AUTHORED — new to it, or a bundled default it edited — as the same
+     * id-sorted delta the config override persists. This is what a Train Builder save carries to
+     * the relay: a bundled Stage nobody touched already exists on every install and need not travel.
+     */
+    public static Map<String, Stage> userAuthored() {
+        return configDelta(current, bundled);
+    }
+
+    /** The wire/text form of one Stage's value (the {@code stages.json} value, minus the id key). */
+    public static String toJsonText(Stage stage) {
+        return stage.toJson().toString();
+    }
+
+    /**
+     * Parse a Stage from its id + the text {@link #toJsonText} produced. Returns {@code null} for a
+     * blank id or text that is not a JSON object — the tolerant {@link Stage#fromJson} would turn
+     * garbage into a default-gate Stage, which for a relay-supplied value is worse than refusing it.
+     */
+    public static Stage parseJsonText(String id, String text) {
+        if (id == null || id.isBlank() || text == null || text.isBlank()) return null;
+        try {
+            JsonElement root = JsonParser.parseString(text);
+            if (root == null || !root.isJsonObject()) return null;
+            return Stage.fromJson(id, root);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /**
      * Resolve the <b>effective</b> gate for a (possibly Stage-linked) template entry: the linked
      * Stage's gate when {@code stageId} names an existing Stage, else the inline {@code fallback}
      * (the Custom gate, or the detach snapshot of a now-deleted Stage). Pure map lookup — safe on the
@@ -239,6 +269,24 @@ public final class StageStore {
         Stage next = prev.withName(newName);
         putAndWrite(next);
         return next;
+    }
+
+    /**
+     * Upsert every Stage in {@code stages} (keyed by its id) and persist ONCE — one config write, one
+     * block-index invalidation, one dev-mode source promote — rather than once per Stage. A relay
+     * download installs a handful at a time; per-Stage {@link #save} would rewrite the file for each.
+     */
+    public static synchronized void installAll(Map<String, Stage> stages) throws IOException {
+        if (stages == null || stages.isEmpty()) return;
+        TreeMap<String, Stage> next = new TreeMap<>(current);
+        for (Stage s : stages.values()) {
+            if (s == null || s.id().isBlank()) continue;
+            next.put(s.id(), s);
+            WARNED_MISSING.remove(s.id());
+        }
+        current = Collections.unmodifiableMap(next);
+        write(current);
+        LOGGER.info("[DungeonTrain] Installed {} stage(s): {}", stages.size(), stages.keySet());
     }
 
     /** Remove Stage {@code id} and persist. Returns true if it existed. Links to it then dangle. */

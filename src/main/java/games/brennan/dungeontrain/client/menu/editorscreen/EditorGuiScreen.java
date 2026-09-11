@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
+import games.brennan.dungeontrain.client.builder.BuilderProfileStageConflictScreen;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
 import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
@@ -381,6 +382,15 @@ public final class EditorGuiScreen extends Screen {
      * screen will not write over whatever is already wearing the name.</p>
      */
     private void loadSelectedCreatorBuild() {
+        loadSelectedCreatorBuild(null);
+    }
+
+    /**
+     * As above, carrying the player's answer to the Stage question ({@code stageOverwrite} — the ids
+     * to take over the local copies; non-null means the question was put). The build, its owner
+     * and its parent are read again from the selection, which the conflict screen leaves in place.
+     */
+    private void loadSelectedCreatorBuild(List<String> stageOverwrite) {
         BuilderProfilePacket.Entry entry = selectedCreatorBuild();
         if (entry == null) return;
         boolean live = BuilderProfileState.live();
@@ -396,12 +406,13 @@ public final class EditorGuiScreen extends Screen {
         // sub-variants, at top level (blank) for the rest — carriages have no parents to land under.
         String parent = CreatorLoadParent.supports(entry.kind())
             ? CreatorLoadParent.parentFor(EditorCreatorBuilds.categoryOf(entry.kind())) : "";
-        DungeonTrainNet.sendToServer(loadAsCopy
+        BuilderProfileDownloadPacket packet = loadAsCopy
             ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
                 BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false,
                 parent)
             : new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.AS_IS, "",
-                owner, ownerName, live, false, parent));
+                owner, ownerName, live, false, parent);
+        DungeonTrainNet.sendToServer(stageOverwrite == null ? packet : packet.withStages(stageOverwrite));
         creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
     }
 
@@ -454,6 +465,13 @@ public final class EditorGuiScreen extends Screen {
             || packet.outcome() == BuilderRelayDownload.Outcome.NAME_TAKEN;
         takenNames = nameInUse ? List.copyOf(packet.takenNames()) : List.of();
         loadAsCopy = nameInUse;
+        // The build's Stages collide with ones already here: ask per Stage, then press again with
+        // the answer. Nothing was written, so the selection this screen would replay from is intact.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.STAGE_CONFLICT && this.minecraft != null) {
+            this.minecraft.setScreen(new BuilderProfileStageConflictScreen(this, packet.id(),
+                packet.stageConflicts(), this::loadSelectedCreatorBuild));
+            return;
+        }
         if (packet.outcome() == BuilderRelayDownload.Outcome.INSTALLED) {
             // Remembered against the build that was asked for: the pane stops offering to load it
             // and offers the walk to it instead.

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.net;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
+import games.brennan.dungeontrain.editor.TemplateStages;
 import io.netty.buffer.Unpooled;
 
 import java.util.List;
@@ -142,5 +143,65 @@ final class BuilderProfileDownloadPacketTest {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         BuilderProfileDownloadResultPacket.STREAM_CODEC.encode(buf, packet);
         return BuilderProfileDownloadResultPacket.STREAM_CODEC.decode(buf);
+    }
+
+    // ---- the Stage question ----
+
+    @Test
+    @DisplayName("a first press has not answered the Stage question")
+    void firstPressHasNoStageAnswer() {
+        BuilderProfileDownloadPacket first = new BuilderProfileDownloadPacket(4271);
+        assertFalse(first.stagesResolved(), "the Stage question has to be asked before anything is written");
+        assertTrue(first.stageOverwrite().isEmpty());
+        assertEquals(first, roundTrip(first));
+    }
+
+    @Test
+    @DisplayName("the answer to the Stage question survives the wire with every earlier answer")
+    void stageAnswerRoundTrip() {
+        BuilderProfileDownloadPacket first = new BuilderProfileDownloadPacket(
+                4271, BuilderRelayInstall.Resolution.LOAD_AS_NEW, "brick_cabin_2", "owner-uuid", "Owner",
+                true, true, "user_builds");
+        BuilderProfileDownloadPacket answered = first.withStages(List.of("swamp", "desert"));
+        BuilderProfileDownloadPacket back = roundTrip(answered);
+        assertTrue(back.stagesResolved(), "an answer that arrived as false would re-ask forever");
+        assertEquals(List.of("swamp", "desert"), back.stageOverwrite());
+        assertEquals(answered, back);
+        // Nothing the earlier presses settled was thrown away by answering the third question.
+        assertEquals(first.resolution(), back.resolution());
+        assertEquals(first.name(), back.name());
+        assertTrue(back.overwriteUnsaved());
+        assertEquals(first.parentId(), back.parentId());
+        assertTrue(back.live());
+    }
+
+    @Test
+    @DisplayName("an answer that raises the Stage question carries each conflict's both sides")
+    void stageConflictsRoundTrip() {
+        List<TemplateStages.Conflict> conflicts = List.of(
+                new TemplateStages.Conflict("swamp",
+                        "{\"name\":\"swamp\",\"minLevel\":20,\"maxLevel\":40}",
+                        "{\"name\":\"swamp\",\"minLevel\":25,\"maxLevel\":40}"),
+                new TemplateStages.Conflict("desert", "{\"name\":\"desert\"}", "{\"name\":\"Desert\"}"));
+        BuilderProfileDownloadResultPacket original = new BuilderProfileDownloadResultPacket(
+                BuilderRelayDownload.Outcome.STAGE_CONFLICT, BuilderPhotoPaths.Kind.CONTENTS.id(),
+                "swamp_room", "", List.of(), conflicts);
+        BuilderProfileDownloadResultPacket back = roundTrip(original);
+        assertEquals(BuilderRelayDownload.Outcome.STAGE_CONFLICT, back.outcome());
+        assertEquals(conflicts, back.stageConflicts());
+        assertEquals(original, back);
+    }
+
+    @Test
+    @DisplayName("an answer that raises no Stage question carries no conflicts")
+    void noConflictsOnOtherOutcomes() {
+        BuilderProfileDownloadResultPacket installed = new BuilderProfileDownloadResultPacket(
+                BuilderRelayDownload.Outcome.INSTALLED, "contents", "swamp_room", "");
+        assertTrue(roundTrip(installed).stageConflicts().isEmpty());
+        BuilderProfileDownloadResultPacket named = new BuilderProfileDownloadResultPacket(
+                BuilderRelayDownload.Outcome.NAME_TAKEN, "contents", "swamp_room", "", List.of("a", "b"));
+        BuilderProfileDownloadResultPacket back = roundTrip(named);
+        assertEquals(List.of("a", "b"), back.takenNames());
+        assertTrue(back.stageConflicts().isEmpty());
     }
 }
