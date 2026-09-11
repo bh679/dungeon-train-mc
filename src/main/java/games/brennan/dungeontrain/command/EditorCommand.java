@@ -2644,6 +2644,7 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+        progress(source, "Moving '" + child.id() + "' from '" + oldParent + "' to '" + newParent.id() + "'\u2026");
         try {
             if (move.from().members().isEmpty()) {
                 CarriageContentsGroupStore.delete(oldParent);
@@ -4856,6 +4857,9 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
+        progress(source, "Deleting '" + contents.id() + "'"
+            + (group.isPresent() && mode == games.brennan.dungeontrain.editor.ParentDeletes.Mode.ALL
+                ? " and its " + group.get().members().size() + " sub-variants" : "") + "\u2026");
         try {
             ParentModeOutcome outcome = group.isPresent()
                 ? applyContentsParentMode(source, contents, group.get(), mode) : ParentModeOutcome.NONE;
@@ -5002,6 +5006,16 @@ public final class EditorCommand {
      */
     private record ParentModeOutcome(String line, String landing) {
         static final ParentModeOutcome NONE = new ParentModeOutcome("", null);
+    }
+
+    /**
+     * A grey "…ing" line sent <b>before</b> a slow editor operation starts — a portal-room delete or
+     * re-parent clears and restamps the whole row, and until the result line lands the author has
+     * nothing telling them the click took. Handed to the network thread at once, so it shows while
+     * the server thread is still working.
+     */
+    private static void progress(CommandSourceStack source, String message) {
+        source.sendSuccess(() -> Component.literal(message).withStyle(ChatFormatting.GRAY), false);
     }
 
     /** One reply fragment for a per-member pass: what went through and what did not. */
@@ -6270,6 +6284,7 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent)
                 .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY)
                 .withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(child, weight));
+        progress(source, "Parenting '" + child + "' under '" + parent + "'\u2026");
         return savePortalRoomGroup(source, parent, updated,
             "Editor: dimensional carriage '" + parent + "' → added sub-variant '" + child + "' (weight=" + weight
                 + ", " + updated.members().size() + " sub-variant"
@@ -6493,6 +6508,7 @@ public final class EditorCommand {
                 "'" + child + "' is not a sub-variant of '" + parent + "'.").withStyle(ChatFormatting.YELLOW));
             return 0;
         }
+        progress(source, "Unparenting '" + child + "' from '" + parent + "'\u2026");
         return savePortalRoomGroup(source, parent, existing.get().withoutMember(child),
             "Editor: dimensional carriage '" + parent + "' → removed sub-variant '" + child
                 + "' (it is a top-level room again).");
@@ -6532,6 +6548,7 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+        progress(source, "Moving '" + child + "' from '" + oldParent + "' to '" + newParent + "'\u2026");
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         IOException[] failure = new IOException[1];
@@ -7793,6 +7810,9 @@ public final class EditorCommand {
         games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo loc = player == null ? null
             : games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
         boolean sendHome = loc != null && loc.kind() == kind;
+        progress(source, (isDefault ? "Resetting '" : "Deleting '") + name + "'"
+            + (group.isPresent() && mode == games.brennan.dungeontrain.editor.ParentDeletes.Mode.ALL
+                ? " and its " + group.get().members().size() + " sub-variants" : "") + "\u2026");
 
         // Wipe the variant's plot blocks BEFORE deregistering so the orphaned
         // plot doesn't sit in the world after teleport. restampPlotForKind
