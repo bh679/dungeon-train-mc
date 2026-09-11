@@ -28,6 +28,8 @@ public final class UploaderDropdown {
     private static final int BORDER = 0xFF5A5A5A;
     private static final int ROW_HOVER = 0x40FFFFFF;
     private static final int TEXT = 0xFFE0E0E0;
+    /** Same height vanilla lifts tooltips to — above every widget on the screen. */
+    private static final float Z = 400.0F;
 
     private final Font font;
     private final Consumer<String> onPick;
@@ -88,9 +90,20 @@ public final class UploaderDropdown {
 
     public void render(GuiGraphics g, int mouseX, int mouseY) {
         if (!isOpen()) return;
-        // GuiGraphics batches text and flushes it after the fills, so without this the video list's
-        // titles — drawn earlier but flushed later — would print straight through this panel.
-        g.flush();
+        // Lifted the way tooltips are: the list's text sits a fraction above z=0 (the font renderer
+        // offsets glyphs from their shadow), so a same-depth fill fails the depth test against it and
+        // the titles print straight through the panel. Drawing everything here at tooltip height
+        // puts the panel — and its own text — over whatever the list drew.
+        g.pose().pushPose();
+        g.pose().translate(0.0F, 0.0F, Z);
+        try {
+            draw(g, mouseX, mouseY);
+        } finally {
+            g.pose().popPose();
+        }
+    }
+
+    private void draw(GuiGraphics g, int mouseX, int mouseY) {
         int h = height();
         g.fill(x, y, x + width, y + h, BG);
         g.fill(x, y, x + width, y + 1, BORDER);
