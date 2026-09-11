@@ -26,10 +26,10 @@ final class EditorSettingsPane {
 
     private int scroll;
 
-    /** The rectangle the rows fill: the browser's filter row down to the bottom of its grid. */
+    /** The rectangle the rows fill: the left column, from the top of the search row (there is none here) to the grid's bottom. */
     static InventoryEditorLayout.Rect rect(InventoryEditorLayout layout) {
         return new InventoryEditorLayout.Rect(
-            layout.filter().x(), layout.filter().y(), layout.filter().w(),
+            layout.grid().x(), layout.filter().y(), layout.grid().w(),
             layout.grid().bottom() - layout.filter().y());
     }
 

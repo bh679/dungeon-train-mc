@@ -368,6 +368,8 @@ final class EditorFilterBar {
         g.blitSprite(EditorIcons.SEARCH, filterRect.x() + SEARCH_GAP,
             filterRect.y() + (filterRect.h() - SEARCH_ICON) / 2, SEARCH_ICON, SEARCH_ICON);
 
+        // Clipped to the row: a long list of chips stops at the panel's edge rather than running on.
+        g.enableScissor(filterRect.x(), filterRect.y(), filterRect.right(), filterRect.bottom());
         cell(g, font, toggleRect.x(), toggleRect.w(), filterRect, toggleLabel(), expanded,
             hovered.kind() == HitKind.TOGGLE, false);
         for (int i = 0; i < chips.size(); i++) {
@@ -380,6 +382,7 @@ final class EditorFilterBar {
             cell(g, font, p.x(), p.w(), filterRect, p.chip().label(), true,
                 hovered.kind() == HitKind.ACTIVE && hovered.index() == i, false);
         }
+        g.disableScissor();
         if (!expanded) return;
 
         // Category strip. The cell of the plot the author stands in wears the green mark the tab

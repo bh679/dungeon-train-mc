@@ -66,13 +66,17 @@ public record InventoryEditorLayout(
             Math.max(0, h - HOTBAR_RESERVE - panelTop));
         Rect inner = panel.inset(PAD);
 
+        // The search row runs the full width above BOTH columns: its chips can grow with the filters
+        // in force, and a row only as wide as the browser column spilled them over the right pane.
+        Rect filter = new Rect(inner.x(), inner.y(), inner.w(), FILTER_H);
+        int columnsTop = filter.bottom() + 2;
+        int columnsH = Math.max(0, inner.bottom() - columnsTop);
+
         int rightW = clamp((int) Math.round(inner.w() * 0.40), RIGHT_MIN_W, RIGHT_MAX_W);
         rightW = Math.min(rightW, Math.max(0, inner.w() - GAP));
         int leftW = Math.max(0, inner.w() - rightW - GAP);
-        Rect left = new Rect(inner.x(), inner.y(), leftW, inner.h());
-        Rect right = new Rect(inner.right() - rightW, inner.y(), rightW, inner.h());
-
-        Rect filter = new Rect(left.x(), left.y(), left.w(), FILTER_H);
+        Rect left = new Rect(inner.x(), columnsTop, leftW, columnsH);
+        Rect right = new Rect(inner.right() - rightW, columnsTop, rightW, columnsH);
         // Category cells, then the type strip of the chosen category. The type row is kept even
         // when it is empty (All, a builder's uploads) so the grid does not jump between cells.
         Rect category = filtersExpanded
@@ -88,11 +92,14 @@ public record InventoryEditorLayout(
         // read-out is one the eye has to go looking for.
         Rect header = new Rect(right.x(), right.y(), right.w(), HEADER_H);
         Rect icons = new Rect(right.x(), header.bottom() + 1, right.w(), ICONS_H);
+        Rect test = new Rect(right.x(), right.bottom() - TEST_H, right.w(), TEST_H);
         int previewH = clamp((int) Math.round(right.h() * 0.34), PREVIEW_MIN_H, PREVIEW_MAX_H);
+        // The preview gives way first: whatever the sheet and the test row leave it, at the floor size.
+        int room = (test.y() - 2) - SHEET_H - 2 - (icons.bottom() + 2);
+        previewH = Math.max(0, Math.min(previewH, room));
         int previewW = Math.min(right.w(), PREVIEW_MAX_W);
         Rect preview = new Rect(right.x(), icons.bottom() + 2, previewW, previewH);
         Rect sheet = new Rect(right.x(), preview.bottom() + 2, right.w(), SHEET_H);
-        Rect test = new Rect(right.x(), right.bottom() - TEST_H, right.w(), TEST_H);
         Rect settings = new Rect(right.x(), sheet.bottom() + 2, right.w(),
             Math.max(0, test.y() - 2 - sheet.bottom() - 2));
 

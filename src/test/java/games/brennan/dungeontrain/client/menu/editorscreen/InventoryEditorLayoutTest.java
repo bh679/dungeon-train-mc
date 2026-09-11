@@ -71,9 +71,26 @@ final class InventoryEditorLayoutTest {
             InventoryEditorLayout l = InventoryEditorLayout.of(s[0], s[1]);
             assertEquals(l.filter().bottom() + 2, l.categoryStrip().y());
             assertEquals(l.categoryStrip().bottom() + 2, l.typeStrip().y());
-            assertEquals(l.filter().x(), l.categoryStrip().x());
-            assertEquals(l.filter().w(), l.categoryStrip().w());
+            assertEquals(l.grid().x(), l.categoryStrip().x());
+            assertEquals(l.grid().w(), l.categoryStrip().w());
             assertEquals(InventoryEditorLayout.STRIP_H, l.categoryStrip().h());
+        }
+    }
+
+    @Test
+    @DisplayName("the search row spans both columns, and both columns start beneath it")
+    void filterRowSpansBothColumns() {
+        for (int[] s : SIZES) {
+            for (boolean expanded : new boolean[] {true, false}) {
+                InventoryEditorLayout l = InventoryEditorLayout.of(s[0], s[1], expanded);
+                Rect inner = l.panel().inset(InventoryEditorLayout.PAD);
+                assertEquals(inner.x(), l.filter().x());
+                assertEquals(inner.w(), l.filter().w());
+                assertEquals(l.filter().bottom() + 2, l.header().y(), "right pane starts under the row");
+                assertTrue(l.grid().y() >= l.filter().bottom() + 2);
+                assertEquals(l.filter().x(), l.grid().x());
+                assertTrue(l.grid().right() < l.header().x(), "the grid stays left of the right pane");
+            }
         }
     }
 

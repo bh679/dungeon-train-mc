@@ -216,7 +216,7 @@ public final class EditorCreatorSearch {
         InventoryEditorLayout.Rect top = layout.filter();
         InventoryEditorLayout.Rect grid = layout.grid();
         InventoryEditorLayout.Rect column = new InventoryEditorLayout.Rect(
-            top.x(), top.y(), grid.right() - top.x(), grid.bottom() - top.y());
+            grid.x(), top.y(), grid.w(), grid.bottom() - top.y());
         int w = Math.min(WIDTH, Math.max(1, column.w() - 8));
         int h = Math.min(MAX_HEIGHT, Math.max(1, column.h() - 8));
         int x = column.x() + (column.w() - w) / 2;
