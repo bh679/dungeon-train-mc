@@ -159,7 +159,8 @@ public final class TemplateLootPrefabs {
         for (Map.Entry<String, JsonElement> e : doc.getAsJsonObject().entrySet()) {
             String prefabId = e.getKey() == null ? "" : e.getKey().toLowerCase(Locale.ROOT);
             JsonElement v = e.getValue();
-            if (!LootPrefabStore.isValidName(prefabId) || v == null || !v.isJsonPrimitive()) continue;
+            if (!LootPrefabStore.isValidName(prefabId) || v == null || !v.isJsonPrimitive()
+                    || !v.getAsJsonPrimitive().isString()) continue;
             String text = v.getAsString();
             if (text.isBlank() || text.length() > MAX_TEXT_CHARS) continue;
             out.put(prefabId, text);

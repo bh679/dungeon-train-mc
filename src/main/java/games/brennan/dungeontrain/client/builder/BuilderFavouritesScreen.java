@@ -317,8 +317,16 @@ public final class BuilderFavouritesScreen extends Screen {
         // Addressed to whoever BUILT it, which on this screen is routinely not the player: the relay
         // authorises a fetch by owner uuid, and naming ourselves would be asking for a build we do
         // not own under a name that owns nothing.
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(),
+        sendDownload(new BuilderProfileDownloadPacket(entry.relayId(),
                 entry.ownerUuid(), entry.ownerName(), BuilderProfileState.live()));
+    }
+
+    /** The press most recently sent, so the loot-prefab question can replay it with the answer attached. */
+    private BuilderProfileDownloadPacket lastDownload;
+
+    private void sendDownload(BuilderProfileDownloadPacket packet) {
+        this.lastDownload = packet;
+        DungeonTrainNet.sendToServer(packet);
         this.downloadButton.active = false;
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
     }
@@ -326,6 +334,12 @@ public final class BuilderFavouritesScreen extends Screen {
     private void onDownload(BuilderProfileDownloadResultPacket packet) {
         this.downloadNote = Component.translatable(BuilderProfileScreen.noteKeyFor(packet.outcome()));
         if (this.downloadButton != null) this.downloadButton.active = selectedBuild() != null;
+        if (packet.outcome() == BuilderRelayDownload.Outcome.PREFAB_CONFLICT && lastDownload != null) {
+            BuilderProfileDownloadPacket sent = lastDownload;
+            this.minecraft.setScreen(new BuilderProfilePrefabConflictScreen(this, packet.id(),
+                    packet.conflicts(), useTheirs -> sendDownload(sent.answeringPrefabs(useTheirs))));
+            return;
+        }
         if (packet.outcome() != BuilderRelayDownload.Outcome.INSTALLED) return;
         BuilderPhotoPaths.Kind kind = BuilderPhotoPaths.Kind.fromId(packet.kindId()).orElse(null);
         if (kind == null) return;

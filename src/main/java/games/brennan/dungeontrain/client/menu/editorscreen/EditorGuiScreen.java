@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.builder.BuilderProfilePrefabConflictScreen;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
@@ -395,12 +396,20 @@ public final class EditorGuiScreen extends Screen {
         // sub-variants, at top level (blank) for the rest — carriages have no parents to land under.
         String parent = CreatorLoadParent.supports(entry.kind())
             ? CreatorLoadParent.parentFor(EditorCreatorBuilds.categoryOf(entry.kind())) : "";
-        DungeonTrainNet.sendToServer(loadAsCopy
+        sendDownload(loadAsCopy
             ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
                 BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false,
                 parent)
             : new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.AS_IS, "",
                 owner, ownerName, live, false, parent));
+    }
+
+    /** The press most recently sent, so the loot-prefab question can replay it with the answer attached. */
+    private BuilderProfileDownloadPacket lastDownload;
+
+    private void sendDownload(BuilderProfileDownloadPacket packet) {
+        this.lastDownload = packet;
+        DungeonTrainNet.sendToServer(packet);
         creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
     }
 
@@ -449,6 +458,14 @@ public final class EditorGuiScreen extends Screen {
     /** A download finished: say what happened, and pick up what landed. */
     private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
         creatorNote = EditorScreenLang.text(BuilderProfileScreen.noteKeyFor(packet.outcome()));
+        // The build brought loot prefabs this install already has, with different contents: put both
+        // versions in front of the player, and replay the same press with their choices attached.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.PREFAB_CONFLICT && lastDownload != null) {
+            BuilderProfileDownloadPacket sent = lastDownload;
+            this.minecraft.setScreen(new BuilderProfilePrefabConflictScreen(this, packet.id(),
+                packet.conflicts(), useTheirs -> sendDownload(sent.answeringPrefabs(useTheirs))));
+            return;
+        }
         boolean nameInUse = packet.outcome() == BuilderRelayDownload.Outcome.ALREADY_HERE
             || packet.outcome() == BuilderRelayDownload.Outcome.NAME_TAKEN;
         takenNames = nameInUse ? List.copyOf(packet.takenNames()) : List.of();
