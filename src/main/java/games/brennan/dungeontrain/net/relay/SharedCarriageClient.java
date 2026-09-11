@@ -47,8 +47,42 @@ public final class SharedCarriageClient {
 
     private SharedCarriageClient() {}
 
-    /** Outcome of a save/heartbeat/return call. */
-    public enum CallStatus { OK, FORBIDDEN, UNKNOWN, ERROR }
+    /**
+     * Outcome of a save/heartbeat/return call.
+     *
+     * <p>{@link #TIMEOUT} is only ever produced by {@link #fetchBuild}: it is the one call where the
+     * clock running out means something different to the caller than a refused connection or a
+     * 5xx — "the relay is slow, press Load again" rather than "the relay is down". Everything else
+     * folds a timeout into {@link #ERROR} as it always has.</p>
+     */
+    public enum CallStatus { OK, FORBIDDEN, UNKNOWN, ERROR, TIMEOUT }
+
+    /**
+     * How hard {@link #fetchBuild} tries before giving up.
+     *
+     * <p>{@link #QUICK} is one attempt within {@link #REQUEST_TIMEOUT} — the budget every other relay
+     * call has, sized for the in-play heartbeat cadence. Right for a preview tile, which has its own
+     * ask-again-later loop and of which seven may be in flight at once.</p>
+     *
+     * <p>{@link #PATIENT} is for a deliberate press of Load: a bigger first budget, and one more try
+     * after a transport failure. A fetch pulls a whole blocks blob (50–90 KB for a portal room) from
+     * a relay whose quiet-moment round trip is already a couple of seconds, so a flat 10 s dies under
+     * modest load — which is exactly when a player has just pressed a button and will wait. Safe to
+     * retry because {@code /carriages/fetch} is a read: no lease taken, nothing written, so a
+     * duplicate is harmless. Do not lend this to {@code claim} or {@code submit}, which are not.</p>
+     */
+    public enum FetchPatience {
+        QUICK(List.of(REQUEST_TIMEOUT), Duration.ZERO),
+        PATIENT(List.of(Duration.ofSeconds(20), Duration.ofSeconds(30)), Duration.ofSeconds(1));
+
+        final List<Duration> budgets;
+        final Duration pause;
+
+        FetchPatience(List<Duration> budgets, Duration pause) {
+            this.budgets = budgets;
+            this.pause = pause;
+        }
+    }
 
     /** A relay lease handle: the row id + lease token (token may be null on a dedupe we couldn't claim). */
     public record LeaseResult(int id, String token, boolean deduped) {}
@@ -644,32 +678,53 @@ public final class SharedCarriageClient {
 
     /** As above against a named relay — a build is always fetched from the pool it was listed from. */
     public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl) {
+        return fetchBuild(id, ownerUuid, baseUrl, FetchPatience.QUICK);
+    }
+
+    /**
+     * As above, with a say in how long to keep trying — see {@link FetchPatience}.
+     *
+     * <p>A transport failure on the last attempt resolves to {@link CallStatus#TIMEOUT} when it was
+     * the clock and {@link CallStatus#ERROR} otherwise; the two read differently to a player. A
+     * response the relay actually sent is never retried, whatever its status.</p>
+     */
+    public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl,
+                                                            FetchPatience patience) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
-        return post(baseUrl, "/carriages/fetch", body).thenApply(resp -> {
-            if (resp == null) {
-                logFailure("/carriages/fetch", null);
-                return FetchResult.failed(CallStatus.ERROR);
-            }
-            int sc = resp.statusCode();
-            if (sc == 403) return FetchResult.failed(CallStatus.FORBIDDEN);
-            if (sc == 404) return FetchResult.failed(CallStatus.UNKNOWN);
-            JsonObject o = okJson(resp);
-            if (o == null || !o.has("id") || !o.has("blocks") || o.get("blocks").isJsonNull()) {
-                logFailure("/carriages/fetch", resp);
-                return FetchResult.failed(CallStatus.ERROR);
-            }
-            JsonObject d = o.has("dims") && o.get("dims").isJsonObject() ? o.getAsJsonObject("dims") : null;
-            return new FetchResult(CallStatus.OK, new BuildFetch(
-                    o.get("id").getAsInt(), str(o, "kind"), str(o, "subKind"), str(o, "buildName"),
-                    str(o, "stage"), str(o, "visibility"), o.get("blocks").getAsString(),
-                    intOf(d, "l"), intOf(d, "h"), intOf(d, "w"), intOf(o, "baseSeq"),
-                    // Empty from a relay that predates the field, which reads as "said nothing" all
-                    // the way down to TemplateSidecars.apply — an install that leaves local sidecars
-                    // exactly as they were rather than clearing them.
-                    parseDeltas(o), str(o, "secret"), str(o, "sidecars")));
-        });
+        FetchPatience p = patience == null ? FetchPatience.QUICK : patience;
+        return RelayRetry.run(p.budgets, p.pause,
+                        budget -> postAttempt(baseUrl, "/carriages/fetch", body, budget))
+                .thenApply(outcome -> {
+                    RelayRetry.Transport last = outcome.last();
+                    if (!last.answered()) {
+                        logNoResponse("/carriages/fetch", p, outcome.attempts(), last);
+                        return FetchResult.failed(last.timedOut() ? CallStatus.TIMEOUT : CallStatus.ERROR);
+                    }
+                    return parseFetch(last.resp());
+                });
+    }
+
+    /** Read a fetch response into a result — the HTTP status first, then the body's shape. */
+    private static FetchResult parseFetch(HttpResponse<String> resp) {
+        int sc = resp.statusCode();
+        if (sc == 403) return FetchResult.failed(CallStatus.FORBIDDEN);
+        if (sc == 404) return FetchResult.failed(CallStatus.UNKNOWN);
+        JsonObject o = okJson(resp);
+        if (o == null || !o.has("id") || !o.has("blocks") || o.get("blocks").isJsonNull()) {
+            logFailure("/carriages/fetch", resp);
+            return FetchResult.failed(CallStatus.ERROR);
+        }
+        JsonObject d = o.has("dims") && o.get("dims").isJsonObject() ? o.getAsJsonObject("dims") : null;
+        return new FetchResult(CallStatus.OK, new BuildFetch(
+                o.get("id").getAsInt(), str(o, "kind"), str(o, "subKind"), str(o, "buildName"),
+                str(o, "stage"), str(o, "visibility"), o.get("blocks").getAsString(),
+                intOf(d, "l"), intOf(d, "h"), intOf(d, "w"), intOf(o, "baseSeq"),
+                // Empty from a relay that predates the field, which reads as "said nothing" all
+                // the way down to TemplateSidecars.apply — an install that leaves local sidecars
+                // exactly as they were rather than clearing them.
+                parseDeltas(o), str(o, "secret"), str(o, "sidecars")));
     }
 
     /** An int field, or 0 when absent/garbled — the same tolerance {@link #str} has for strings. */
@@ -1040,22 +1095,51 @@ public final class SharedCarriageClient {
      * and cannot address another relay by accident.</p>
      */
     private static CompletableFuture<HttpResponse<String>> post(String baseUrl, String path, JsonObject body) {
+        return postAttempt(baseUrl, path, body, REQUEST_TIMEOUT).thenApply(RelayRetry.Transport::resp);
+    }
+
+    /**
+     * One POST within {@code budget}, keeping the failure when there is one.
+     *
+     * <p>{@link #post} collapses every transport failure to null, which is all its callers can act on.
+     * A retrying caller needs more: whether the relay answered at all (the only thing that decides a
+     * retry) and, at the end, whether it was the clock — so this resolves to a
+     * {@link RelayRetry.Transport} and never completes exceptionally.</p>
+     */
+    private static CompletableFuture<RelayRetry.Transport> postAttempt(String baseUrl, String path,
+                                                                        JsonObject body, Duration budget) {
         try {
             HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + path))
-                    .timeout(REQUEST_TIMEOUT)
+                    .timeout(budget == null ? REQUEST_TIMEOUT : budget)
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
                     .build();
             return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(RelayRetry.Transport::of)
                     .exceptionally(e -> {
                         LOGGER.debug("[DungeonTrain] carriage {} failed: {}", path, e.toString());
-                        return null;
+                        return RelayRetry.Transport.failed(e);
                     });
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] carriage {} failed to start: {}", path, t.toString());
-            return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(RelayRetry.Transport.failed(t));
         }
+    }
+
+    /**
+     * Say that no attempt got an answer, at WARN — with how many were made and how long each had,
+     * so a log line can tell "the relay was slow" from "the relay was gone" at a glance.
+     */
+    private static void logNoResponse(String path, FetchPatience patience, int attempts,
+                                      RelayRetry.Transport last) {
+        StringBuilder budgets = new StringBuilder();
+        for (int i = 0; i < attempts && i < patience.budgets.size(); i++) {
+            if (i > 0) budgets.append(", ");
+            budgets.append(patience.budgets.get(i).toSeconds()).append('s');
+        }
+        LOGGER.warn("[DungeonTrain] relay {} failed after {} attempt(s) ({}): {}", path, attempts, budgets,
+                last.timedOut() ? "timed out" : "could not connect");
     }
 
     /** POST that only cares about success/forbidden/unknown for save/heartbeat/return. */

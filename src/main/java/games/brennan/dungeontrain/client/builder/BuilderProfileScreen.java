@@ -198,6 +198,18 @@ public final class BuilderProfileScreen extends Screen {
     private Component downloadNote;
 
     /**
+     * When the fetch now in flight was asked for, or 0 when none is. Only read by
+     * {@link #statusNote}: past {@link #SLOW_FETCH_HINT_MS} the "Fetching…" line becomes "the relay
+     * is slow" — the same fetch, said honestly. A patient fetch may take most of a minute
+     * ({@link games.brennan.dungeontrain.net.relay.SharedCarriageClient.FetchPatience#PATIENT}), and
+     * a line that has said the same thing for that long reads as a screen that has hung.
+     */
+    private long fetchStartedMs;
+
+    /** How long "Fetching…" stays plausible before the line should admit the relay is slow. */
+    static final long SLOW_FETCH_HINT_MS = 8_000L;
+
+    /**
      * The answers the last download press carried, so a question raised by that press can be
      * answered without losing them. The unsaved-edits prompt can arrive on the second press of a
      * collision flow — the player has already said "load it as bb_2" — and replaying the download
@@ -269,6 +281,7 @@ public final class BuilderProfileScreen extends Screen {
         if (packet.mine() && !packet.ownerName().isEmpty()) this.viewedName = packet.ownerName();
         int selectedId = selectedBuild() == null ? -1 : selectedBuild().relayId();
         this.downloadNote = null;
+        this.fetchStartedMs = 0L;
         this.builds = packet.builds();
         this.status = packet.status();
         refilter(selectedId);
@@ -297,6 +310,7 @@ public final class BuilderProfileScreen extends Screen {
     private void onFilterChanged() {
         int selectedId = selectedBuild() == null ? -1 : selectedBuild().relayId();
         this.downloadNote = null;
+        this.fetchStartedMs = 0L;
         refilter(selectedId);
         this.scrollY = 0;   // a different list — an inherited offset would land mid-nowhere
         rebuild();
@@ -475,7 +489,7 @@ public final class BuilderProfileScreen extends Screen {
         DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid,
                 creditedName(entry), BuilderProfileState.live()));
         this.downloadButton.active = false;
-        this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
+        markFetching();
     }
 
     /**
@@ -488,6 +502,7 @@ public final class BuilderProfileScreen extends Screen {
      * plot to stamp it on, so the build simply joins that editor's lists.</p>
      */
     private void onDownload(BuilderProfileDownloadResultPacket packet) {
+        this.fetchStartedMs = 0L;
         this.downloadNote = Component.translatable(noteKeyFor(packet.outcome()));
         if (this.downloadButton != null) this.downloadButton.active = selectedBuild() != null;
 
@@ -630,8 +645,14 @@ public final class BuilderProfileScreen extends Screen {
         this.lastChosenName = name == null ? "" : name;
         DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid,
                 creditedName(selectedBuild()), BuilderProfileState.live(), overwriteUnsaved));
-        this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
+        markFetching();
         if (this.downloadButton != null) this.downloadButton.active = false;
+    }
+
+    /** A fetch has just been asked for: say so, and start the clock the slow hint reads. */
+    private void markFetching() {
+        this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
+        this.fetchStartedMs = System.currentTimeMillis();
     }
 
     /**
@@ -680,6 +701,7 @@ public final class BuilderProfileScreen extends Screen {
             case NOT_YOURS -> "gui.dungeontrain.builder.profile.download_not_yours";
             case GONE -> "gui.dungeontrain.builder.profile.gone_short";
             case UNAVAILABLE -> "gui.dungeontrain.builder.profile.unavailable";
+            case TIMED_OUT -> "gui.dungeontrain.builder.profile.download_timed_out";
             case UNSUPPORTED -> "gui.dungeontrain.builder.profile.download_unsupported";
             case FAILED -> "gui.dungeontrain.builder.profile.download_failed";
         };
@@ -702,6 +724,7 @@ public final class BuilderProfileScreen extends Screen {
             if (index >= 0) {
                 this.selected = index;
                 this.downloadNote = null;
+                this.fetchStartedMs = 0L;
                 rebuild();
                 return true;
             }
@@ -883,6 +906,9 @@ public final class BuilderProfileScreen extends Screen {
      * the whole point — a blanket "it's off" sends someone to a setting that isn't the problem.
      */
     private Component statusNote() {
+        if (fetchStartedMs > 0L && System.currentTimeMillis() - fetchStartedMs > SLOW_FETCH_HINT_MS) {
+            return Component.translatable("gui.dungeontrain.builder.profile.downloading_slow");
+        }
         if (downloadNote != null) return downloadNote;
         if (status == null) return Component.translatable("gui.dungeontrain.builder.profile.loading");
         if (status == BuilderProfilePacket.Status.DISABLED) {

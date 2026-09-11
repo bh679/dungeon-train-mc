@@ -53,8 +53,13 @@ public final class BuilderRelayDownload {
      * anything is read off the wire is written: the template this build would land on has in-world
      * edits nobody has saved, and installing would put them beyond reach. The player answers it and
      * presses again — see {@link #download(ServerPlayer, ServerLevel, int, BuilderRelayInstall.Resolution, String, String, String, boolean, boolean)}.</p>
+     *
+     * <p>{@link #TIMED_OUT} is {@link #UNAVAILABLE}'s slow cousin: the relay was reached but never
+     * answered inside the patient budget ({@link SharedCarriageClient.FetchPatience#PATIENT}, two
+     * attempts). Kept apart because the remedy differs — a slow relay wants "press Load again", an
+     * unreachable one does not — and because the two look identical from the old single line.</p>
      */
-    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
+    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, TIMED_OUT, UNSUPPORTED, FAILED }
 
     /**
      * What an install produced: the outcome, and — when something landed — enough to name it, so the
@@ -112,11 +117,14 @@ public final class BuilderRelayDownload {
         String own = player.getUUID().toString();
         String owner = ownerUuid == null || ownerUuid.isBlank() ? own : ownerUuid.trim();
         boolean mine = owner.equals(own);
-        return SharedCarriageClient.fetchBuild(relayId, owner, RelayTarget.of(live))
+        // PATIENT: this is a button press, and the fetch is a read — see FetchPatience.
+        return SharedCarriageClient.fetchBuild(relayId, owner, RelayTarget.of(live),
+                        SharedCarriageClient.FetchPatience.PATIENT)
                 .thenCompose(result -> switch (result.status()) {
                     case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
                     case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
+                    case TIMEOUT -> CompletableFuture.completedFuture(Result.of(Outcome.TIMED_OUT));
                     case OK -> onServer(level, () -> install(level, result.build(), resolution, newName,
                             new BuildCredits.Credit(owner, ownerName, System.currentTimeMillis()), mine,
                             overwriteUnsaved));
