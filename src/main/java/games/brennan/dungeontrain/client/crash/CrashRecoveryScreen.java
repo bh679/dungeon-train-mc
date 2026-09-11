@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.crash;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.data.CrashRunState;
+import games.brennan.dungeontrain.data.ExperimentalWarningSeal;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -133,9 +134,15 @@ public final class CrashRecoveryScreen extends Screen {
     /**
      * Back into the world. The record is flipped to {@code SALVAGING} <em>before</em> the open so
      * {@link CrashRunTracker} recognises the session on login and doesn't re-mark it as a fresh run.
+     *
+     * <p>Vanilla's experimental-settings card is pre-answered first ({@link ExperimentalWarningSeal}):
+     * the player was in this world a minute ago, and "here be dragons — create a backup?" on top of
+     * "your game crashed" is the wrong second screen. Best-effort; if it can't be written the card
+     * simply shows.</p>
      */
     private void salvage() {
         CrashRunState.write(PlayerDataPaths.root(), run.salvaging());
+        ExperimentalWarningSeal.confirm(this.minecraft.getLevelSource().getLevelPath(run.levelId()));
         LOGGER.info("[DungeonTrain] Crash recovery: reopening '{}' for salvage.", run.levelId());
         WorldOpenFlows flows = this.minecraft.createWorldOpenFlows();
         flows.openWorld(run.levelId(), () -> {
