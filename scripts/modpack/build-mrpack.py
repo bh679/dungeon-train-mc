@@ -8,9 +8,9 @@ which references mods by ``projectID`` + ``fileID`` — Modrinth references each
 at build time from the *pinned Modrinth version id* of each mod (``modpack.config.json``),
 exactly mirroring the builds the CurseForge pack ships.
 
-Dungeon Train jarJars DiscordPresence + TradeEverything + EdibleBackpacks + joml-primitives
+Dungeon Train jarJars DiscordPresence + EdibleBackpacks + KeepTrim + joml-primitives
 *inside* its own jar; the sibling
-mods AIN/AIS/PlayerMob/EnderChestPersistence are un-bundled required downloads (so their own
+mods AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything are un-bundled required downloads (so their own
 project pages get credited), so the pack lists:
 
   * Dungeon Train — Modrinth version id passed in per release (``--dt-version``); the freshly
