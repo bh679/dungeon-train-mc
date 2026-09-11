@@ -1,7 +1,12 @@
 package games.brennan.dungeontrain.client.videos;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.links.OfficialLinks;
+import games.brennan.dungeontrain.client.menu.BilibiliIconButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
+import games.brennan.dungeontrain.client.menu.DiscordIconButton;
+import games.brennan.dungeontrain.client.menu.InstagramIconButton;
+import games.brennan.dungeontrain.client.menu.YouTubeIconButton;
 import games.brennan.dungeontrain.client.videotools.VideoToolsScreen;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -145,9 +150,26 @@ public final class VideosScreen extends Screen {
         // Bottom row: Creator Tools (the Video Tools page under the name that says who it is for) |
         // Submit a video (a link into the operator's review queue) | Done.
         int bottomY = this.height - MARGIN - BOTTOM_ROW_H;
-        int bottomW = Math.min(3 * 100 + 2 * GAP, rowW);
+
+        // Brennan's channels, bottom-right: YouTube · Bilibili · Instagram · Discord. Icons, not
+        // words — they are the marks the page's own rows already taught. Each opens through the
+        // vanilla confirm screen and comes back here.
+        int channelsW = 4 * ICON + 3 * GAP;
+        int cx = MARGIN + rowW - channelsW;
+        addChannelIcon(new YouTubeIconButton(cx, bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.youtube"),
+                b -> openChannel(UiAnalytics.TARGET_YOUTUBE, OfficialLinks.youtube())), "youtube");
+        addChannelIcon(new BilibiliIconButton(cx + (ICON + GAP), bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.bilibili"),
+                b -> openChannel(UiAnalytics.TARGET_BILIBILI, OfficialLinks.bilibili())), "bilibili");
+        addChannelIcon(new InstagramIconButton(cx + 2 * (ICON + GAP), bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.instagram"),
+                b -> openChannel(UiAnalytics.TARGET_INSTAGRAM, OfficialLinks.instagram())), "instagram");
+        addChannelIcon(new DiscordIconButton(cx + 3 * (ICON + GAP), bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.discord"),
+                b -> openChannel(UiAnalytics.TARGET_DISCORD, OfficialLinks.discord())), "discord");
+
+        // The three text buttons centre in what is left of the row to the icons' left.
+        int trioRight = cx - 2 * GAP;
+        int bottomW = Math.min(3 * 100 + 2 * GAP, trioRight - MARGIN);
         int thirdW = (bottomW - 2 * GAP) / 3;
-        int bx = this.width / 2 - bottomW / 2;
+        int bx = MARGIN + (trioRight - MARGIN - bottomW) / 2;
         Button tools = addRenderableWidget(new DarkTintedButton(bx, bottomY, thirdW, BOTTOM_ROW_H,
                 Component.translatable("gui.dungeontrain.videos.creator_tools"), b -> {
                     UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_TOOLS);
@@ -268,6 +290,23 @@ public final class VideosScreen extends Screen {
         String url = v.url();
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
             UiAnalytics.confirm(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_OPEN, yes);
+            if (yes) {
+                Util.getPlatform().openUri(URI.create(url));
+            }
+            Minecraft.getInstance().setScreen(this);
+        }, url, true));
+    }
+
+    private void addChannelIcon(Button icon, String key) {
+        icon.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.videos.channels." + key)));
+        addRenderableWidget(icon);
+    }
+
+    /** One of Brennan's channels: vanilla confirm, browser, back here. The URL is read at click time. */
+    private void openChannel(String target, String url) {
+        UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, target);
+        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            UiAnalytics.confirm(UiAnalytics.SURFACE_VIDEOS, target, yes);
             if (yes) {
                 Util.getPlatform().openUri(URI.create(url));
             }

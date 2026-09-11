@@ -110,6 +110,10 @@ public final class UiAnalytics {
     public static final String TARGET_VIDEO_SUBMIT = "video_submit";
     // The ⚑ on a Videos-page row: click = the flag screen opened, confirm = the relay recorded a flag.
     public static final String TARGET_VIDEO_FLAG = "video_flag";
+    // Brennan's channel icons at the bottom of the Videos page (Bilibili and Discord reuse their
+    // targets above, on the videos_page surface).
+    public static final String TARGET_YOUTUBE = "youtube";
+    public static final String TARGET_INSTAGRAM = "instagram";
     // "Reset Everything" on the Video Tools page — opening the confirm screen, not the wipe itself.
     // Same whitelist caveat as above: until the relay knows "video_tools_reset" this 400s silently,
     // which costs a funnel row and nothing else.

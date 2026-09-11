@@ -126,7 +126,7 @@ public final class PlatformToggleButton extends Button {
     }
 
     /** A camera: square outline, a lens ring in the centre, a dot in the top-right corner. */
-    private static void drawCamera(GuiGraphics g, int x, int y, int s, int mark) {
+    public static void drawCamera(GuiGraphics g, int x, int y, int s, int mark) {
         int l = x + Math.round(s * 0.22F);
         int r = x + s - Math.round(s * 0.22F);
         int t = y + Math.round(s * 0.22F);
