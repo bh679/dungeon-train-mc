@@ -286,10 +286,12 @@ public final class TemplateDeletes {
         return EditorDevMode.isEnabled() && sourceTreeAvailable;
     }
 
-    /** {@code deleteIfExists} that tolerates the null the sidecar path helpers return outside a checkout. */
+    /**
+     * Source-tree delete that tolerates the null the sidecar path helpers return outside a checkout,
+     * and takes the exploded classpath copy with it — see {@link SourceTreeFiles}.
+     */
     private static boolean deleteQuietly(Path file) throws IOException {
-        if (file == null) return false;
-        boolean existed = Files.deleteIfExists(file);
+        boolean existed = SourceTreeFiles.deleteWithClasspathTwin(file);
         if (existed) LOGGER.info("[DungeonTrain] Template delete: removed bundled {}", file);
         return existed;
     }
