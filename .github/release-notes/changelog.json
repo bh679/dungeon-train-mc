@@ -11984,6 +11984,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stall-watchdog-ignores-pause-menu",
+      "version": "0.832.0",
+      "type": "fix",
+      "title": "The stall watchdog no longer mistakes the pause menu for a freeze",
+      "summary": "Dungeon Train keeps a watchdog on the server thread so that when the game genuinely freezes \u2014 a runaway chunk load, a stuck save \u2014 your log carries a stack trace showing exactly where it was stuck. In singleplayer that watchdog measured time on the clock alone, and the Esc menu, a book screen or switching away from the window all stop the clock. Every pause longer than five seconds was written up as a freeze, complete with a full stack dump: one player's log carried sixty-four of them in an hour, one claiming a three-minute stall that was a coffee break. The watchdog now looks at what the server thread is actually doing before it speaks. A thread waiting for its next tick is idle, however long it has waited, and produces nothing; a thread stuck inside a tick is still reported exactly as before.",
+      "highlights": [
+        "Pausing, reading a book or tabbing away no longer fills your log with false stall warnings and stack dumps",
+        "Real freezes are still caught and still dump the server thread's stack \u2014 the chunk-load stall from an earlier bug report is one of the test cases",
+        "A long pause now costs one quick stack check every ten seconds instead of one every second",
+        "Bug reports built from logs are easier to read: the warnings that remain are the ones that matter"
+      ],
+      "pr": 1352,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
