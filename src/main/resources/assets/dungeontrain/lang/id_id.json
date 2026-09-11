@@ -909,6 +909,7 @@
   "gui.dungeontrain.editor_screen.layout.section_tip": "Klik untuk melipat atau membuka",
   "gui.dungeontrain.editor_screen.layout.move": "Pindahkan…",
   "gui.dungeontrain.editor_screen.layout.no_matches": "Tidak ada yang cocok dengan filter ini",
+  "gui.dungeontrain.editor_screen.layout.weight_tip": "Klik +1 · Shift+klik −1 · Cmd+klik untuk mengetik nilai",
   "gui.dungeontrain.editor_screen.filters": "Filter",
   "gui.dungeontrain.editor_screen.filters.show": "Tampilkan semua filter",
   "gui.dungeontrain.editor_screen.filters.hide": "Sembunyikan filter; yang aktif tetap di baris ini",

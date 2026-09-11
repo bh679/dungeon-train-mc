@@ -934,6 +934,7 @@
   "gui.dungeontrain.editor_screen.layout.section_tip": "Klik om in- of uit te klappen",
   "gui.dungeontrain.editor_screen.layout.move": "Verplaatsen…",
   "gui.dungeontrain.editor_screen.layout.no_matches": "Niets komt overeen met deze filters",
+  "gui.dungeontrain.editor_screen.layout.weight_tip": "Klik +1 · Shift+klik −1 · Cmd+klik om een waarde te typen",
   "gui.dungeontrain.editor_screen.filters": "Filters",
   "gui.dungeontrain.editor_screen.filters.show": "Alle filters tonen",
   "gui.dungeontrain.editor_screen.filters.hide": "Filters verbergen; de actieve blijven op deze rij",

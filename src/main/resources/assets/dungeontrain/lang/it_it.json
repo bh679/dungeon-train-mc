@@ -934,6 +934,7 @@
   "gui.dungeontrain.editor_screen.layout.section_tip": "Clicca per comprimere o espandere",
   "gui.dungeontrain.editor_screen.layout.move": "Sposta…",
   "gui.dungeontrain.editor_screen.layout.no_matches": "Niente corrisponde a questi filtri",
+  "gui.dungeontrain.editor_screen.layout.weight_tip": "Clic +1 · Maiusc+clic −1 · Cmd+clic per digitare un valore",
   "gui.dungeontrain.editor_screen.filters": "Filtri",
   "gui.dungeontrain.editor_screen.filters.show": "Mostra tutti i filtri",
   "gui.dungeontrain.editor_screen.filters.hide": "Nascondi i filtri; quelli attivi restano su questa riga",

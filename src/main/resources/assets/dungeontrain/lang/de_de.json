@@ -934,6 +934,7 @@
   "gui.dungeontrain.editor_screen.layout.section_tip": "Klicken zum Ein- oder Ausklappen",
   "gui.dungeontrain.editor_screen.layout.move": "Verschieben…",
   "gui.dungeontrain.editor_screen.layout.no_matches": "Nichts passt zu diesen Filtern",
+  "gui.dungeontrain.editor_screen.layout.weight_tip": "Klick +1 · Umschalt-Klick −1 · Cmd-Klick zum Eingeben eines Werts",
   "gui.dungeontrain.editor_screen.filters": "Filter",
   "gui.dungeontrain.editor_screen.filters.show": "Alle Filter anzeigen",
   "gui.dungeontrain.editor_screen.filters.hide": "Filter ausblenden; die aktiven bleiben in dieser Zeile",

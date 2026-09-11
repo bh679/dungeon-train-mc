@@ -1,9 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
-import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
-import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
@@ -25,12 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The Layout tab's spawn table, row by row, against a small roster.
  *
- * <p>Cells are fold · name · − · value · + · stage · move, so the name is cell 1 and the move cell 6.</p>
+ * <p>Cells are fold · name · weight · items inside, so the name is cell 1 and the count cell 3.</p>
  */
 final class EditorLayoutPageTest {
 
     private static final int NO_GATE = EditorTypeMenusPacket.Variant.NO_GATE;
-    private static final int FOLD = 0, NAME = 1, DEC = 2, VALUE = 3, INC = 4, STAGE = 5, MOVE = 6;
+    private static final int FOLD = 0, NAME = 1, WEIGHT = 2, COUNT = 3;
 
     private static EditorTypeMenusPacket.Variant v(String name, String cat, String modelId, String modelName,
                                                    int weight, int phaseMask, List<String> stages,
@@ -136,30 +134,26 @@ final class EditorLayoutPageTest {
     }
 
     @Test
-    @DisplayName("a carriage row: blank fold, name selects, weight steps and types, stage opens its picker, no move")
+    @DisplayName("a carriage row: blank fold, name selects, one weight cell with its stepper, no count")
     void carriageRow() {
         Recorder rec = new Recorder();
         EditorLayoutPage.Row row = rowFor(rows(rec), "windowed", 0);
         assertFalse(row.isGroupParent());
         CommandMenuEntry[] c = cellsOf(row);
-        assertEquals(7, c.length);
+        assertEquals(4, c.length);
         assertInstanceOf(CommandMenuEntry.Label.class, c[FOLD]);
         assertEquals("windowed", c[NAME].label());
         ((CommandMenuEntry.ClientAction) c[NAME]).action().run();
         assertEquals(List.of(VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed")), rec.selected);
 
-        CommandMenuEntry.Stay dec = assertInstanceOf(CommandMenuEntry.Stay.class, c[DEC]);
-        CommandMenuEntry.TypeArg value = assertInstanceOf(CommandMenuEntry.TypeArg.class, c[VALUE]);
-        CommandMenuEntry.Stay inc = assertInstanceOf(CommandMenuEntry.Stay.class, c[INC]);
-        assertTrue(dec.command().contains("windowed") && dec.command().endsWith("dec"), dec.command());
-        assertTrue(inc.command().contains("windowed") && inc.command().endsWith("inc"), inc.command());
-        assertEquals("20", value.label());
-        assertTrue(value.commandPrefix().contains("windowed"), value.commandPrefix());
-
-        CommandMenuEntry.DrillIn stage = assertInstanceOf(CommandMenuEntry.DrillIn.class, c[STAGE]);
-        assertEquals("nether", stage.label());
-        assertInstanceOf(StagePickerScreen.class, stage.target());
-        assertInstanceOf(CommandMenuEntry.Label.class, c[MOVE]);
+        assertInstanceOf(CommandMenuEntry.ClientAction.class, c[WEIGHT], "clickable: the pane picks the command");
+        assertEquals("20", c[WEIGHT].label());
+        TemplateDataSheet.Stepper st = row.weight();
+        assertTrue(st.dec().contains("windowed") && st.dec().endsWith("dec"), st.dec());
+        assertTrue(st.inc().contains("windowed") && st.inc().endsWith("inc"), st.inc());
+        assertTrue(st.prefix().contains("windowed"), st.prefix());
+        assertInstanceOf(CommandMenuEntry.Label.class, c[COUNT]);
+        assertEquals("", c[COUNT].label());
     }
 
     @Test
@@ -167,16 +161,19 @@ final class EditorLayoutPageTest {
     void partRow() {
         EditorLayoutPage.Row row = rowFor(rows(new Recorder()), "oak", 0);
         CommandMenuEntry[] c = cellsOf(row);
-        for (int i = DEC; i <= MOVE; i++) assertInstanceOf(CommandMenuEntry.Label.class, c[i], "cell " + i);
-        assertEquals(EditorScreenLang.text(EditorScreenLang.SHEET_PENDING), c[STAGE].label());
+        assertInstanceOf(CommandMenuEntry.Label.class, c[WEIGHT]);
+        assertEquals("", c[WEIGHT].label());
+        assertNull(row.weight());
+        assertInstanceOf(CommandMenuEntry.Label.class, c[COUNT]);
         // Only the name answers a click: the fold cell is blank on a plain row, and so is everything after.
         assertEquals(-1, MenuRowPainter.hitCell(row.entry(), 2, 0, 100));
-        assertEquals(NAME, MenuRowPainter.hitCell(row.entry(), 20, 0, 100));
+        assertEquals(NAME, MenuRowPainter.hitCell(row.entry(), 40, 0, 100));
+        assertEquals(-1, MenuRowPainter.hitCell(row.entry(), 78, 0, 100));
         assertEquals(-1, MenuRowPainter.hitCell(row.entry(), 95, 0, 100));
     }
 
     @Test
-    @DisplayName("an opened contents group: the parent with a fold cell, its own share as (self), then its member one step in")
+    @DisplayName("an opened contents group: the parent with a fold cell and its member count, its own share as (self), then its member one step in")
     void contentsGroup() {
         Recorder rec = new Recorder();
         List<EditorLayoutPage.Row> rows = rows(rec,
@@ -193,28 +190,26 @@ final class EditorLayoutPageTest {
         assertEquals(EditorLayoutPage.OPEN, fold.label());
         ((CommandMenuEntry.ClientAction) fold).action().run();
         assertEquals(List.of("contents/armor/armor"), rec.groups);
+        assertEquals("1", cellsOf(parent)[COUNT].label(), "one sub-variant inside");
 
         EditorLayoutPage.Row self = section.get(1);
         assertFalse(self.isGroupParent());
         CommandMenuEntry[] sc = cellsOf(self);
         assertInstanceOf(CommandMenuEntry.Label.class, sc[FOLD]);
         assertEquals(EditorScreenLang.text(EditorScreenLang.TILE_SELF, "armor"), sc[NAME].label());
-        assertEquals("dungeontrain editor contents group set-weight armor armor", ((CommandMenuEntry.TypeArg) sc[VALUE]).commandPrefix());
-        assertEquals("2", sc[VALUE].label());
+        assertEquals("dungeontrain editor contents group set-weight armor armor", self.weight().prefix());
+        assertEquals("2", sc[WEIGHT].label());
         ((CommandMenuEntry.ClientAction) sc[NAME]).action().run();
         assertEquals(VariantKey.of(PlotCategory.CONTENTS, "armor", "armor"), rec.selected.get(0), "(self) selects the parent");
-        assertInstanceOf(CommandMenuEntry.Label.class, sc[STAGE]);
-        assertInstanceOf(CommandMenuEntry.Label.class, sc[MOVE]);
+        assertEquals("", sc[COUNT].label());
 
         EditorLayoutPage.Row member = section.get(2);
         assertEquals("armor", member.key().parentId());
         CommandMenuEntry[] mc = cellsOf(member);
-        assertEquals("dungeontrain editor contents group set-weight armor armor5", ((CommandMenuEntry.TypeArg) mc[VALUE]).commandPrefix());
-        assertTrue(((CommandMenuEntry.Stay) mc[INC]).command().contains("armor5"));
-        assertEquals(EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT), mc[STAGE].label());
-        CommandMenuEntry.DrillIn move = assertInstanceOf(CommandMenuEntry.DrillIn.class, mc[MOVE]);
-        GroupParentPickerScreen picker = assertInstanceOf(GroupParentPickerScreen.class, move.target());
-        assertEquals("dungeontrain editor contents group remove armor armor5", picker.promoteCommand());
+        assertEquals("dungeontrain editor contents group set-weight armor armor5", member.weight().prefix());
+        assertTrue(member.weight().inc().contains("armor5"));
+        assertEquals("6", mc[WEIGHT].label());
+        assertEquals("", mc[COUNT].label());
     }
 
     @Test
@@ -248,27 +243,24 @@ final class EditorLayoutPageTest {
     }
 
     @Test
-    @DisplayName("a room member: the portals weight verb, both stages on its chip, and a move to another room")
+    @DisplayName("a room member uses the portals weight verb; its parent counts it")
     void portalMember() {
-        EditorLayoutPage.Row member = rowFor(rows(new Recorder()), "evilhouse", 1);
-        CommandMenuEntry[] c = cellsOf(member);
-        assertEquals("dungeontrain editor portals group set-weight house evilhouse", ((CommandMenuEntry.TypeArg) c[VALUE]).commandPrefix());
-        assertEquals("nether +1", c[STAGE].label());
-        GroupParentPickerScreen picker = (GroupParentPickerScreen) ((CommandMenuEntry.DrillIn) c[MOVE]).target();
-        assertEquals("dungeontrain editor portals group move evilhouse book", picker.moveCommand("book"));
+        List<EditorLayoutPage.Row> rows = rows(new Recorder());
+        EditorLayoutPage.Row member = rowFor(rows, "evilhouse", 1);
+        assertEquals("dungeontrain editor portals group set-weight house evilhouse", member.weight().prefix());
+        assertEquals("3", cellsOf(member)[WEIGHT].label());
+        assertEquals("1", cellsOf(rowFor(rows, "house", 0))[COUNT].label());
     }
 
     @Test
-    @DisplayName("a track member has no weight verb yet: the number is read-only, and there is no move")
+    @DisplayName("a track member has no weight verb yet: the number is read-only and carries no stepper")
     void trackMember() {
         EditorLayoutPage.Row member = rowFor(rows(new Recorder()), "fancy", 1);
         CommandMenuEntry[] c = cellsOf(member);
-        assertInstanceOf(CommandMenuEntry.Label.class, c[DEC]);
-        assertEquals("5", c[VALUE].label());
-        assertInstanceOf(CommandMenuEntry.Label.class, c[VALUE]);
-        assertInstanceOf(CommandMenuEntry.Label.class, c[INC]);
-        assertInstanceOf(CommandMenuEntry.DrillIn.class, c[STAGE]);
-        assertInstanceOf(CommandMenuEntry.Label.class, c[MOVE]);
+        assertInstanceOf(CommandMenuEntry.Label.class, c[WEIGHT]);
+        assertEquals("5", c[WEIGHT].label());
+        assertNull(member.weight());
+        assertEquals(-1, MenuRowPainter.hitCell(member.entry(), 78, 0, 100), "read-only: not clickable");
     }
 
     @Test

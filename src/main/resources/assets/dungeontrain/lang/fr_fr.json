@@ -934,6 +934,7 @@
   "gui.dungeontrain.editor_screen.layout.section_tip": "Cliquer pour replier ou déplier",
   "gui.dungeontrain.editor_screen.layout.move": "Déplacer…",
   "gui.dungeontrain.editor_screen.layout.no_matches": "Rien ne correspond à ces filtres",
+  "gui.dungeontrain.editor_screen.layout.weight_tip": "Clic +1 · Maj+clic −1 · Cmd+clic pour saisir une valeur",
   "gui.dungeontrain.editor_screen.filters": "Filtres",
   "gui.dungeontrain.editor_screen.filters.show": "Afficher tous les filtres",
   "gui.dungeontrain.editor_screen.filters.hide": "Masquer les filtres ; ceux en vigueur restent sur cette ligne",

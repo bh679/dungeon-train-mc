@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
+import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 
 import java.util.List;
 import java.util.Set;
@@ -144,8 +146,16 @@ final class EditorLayoutPane {
                          EditorModalHost modal, InlineEdit inlineEdit) {
         Hit hit = hitTest(layout, index, mouseX, mouseY);
         if (hit == null) return false;
-        if (hit.cell() instanceof CommandMenuEntry.TypeArg type) {
-            inlineEdit.begin(type.commandPrefix(), type.label(), hit.cellRect());
+        // The weight cell works as it does in the world-space menus: click +1, shift-click −1,
+        // cmd-click to type. The typed value goes through the inline field over the cell — the
+        // modal host's typing path would close the whole screen on Enter.
+        TemplateDataSheet.Stepper stepper = hit.row().weight();
+        if (hit.sub() == EditorLayoutPage.WEIGHT_CELL && stepper != null) {
+            if (MenuClickModifiers.cmdDown()) {
+                inlineEdit.begin(stepper.prefix(), hit.cell().label(), hit.cellRect());
+            } else {
+                modal.runAndStay(Screen.hasShiftDown() ? stepper.dec() : stepper.inc());
+            }
             return true;
         }
         modal.dispatch(hit.row().entry(), hit.sub());
@@ -158,12 +168,9 @@ final class EditorLayoutPane {
         if (hit == null) return null;
         if (hit.row().isHeader()) return EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION_TIP);
         return switch (hit.sub()) {
-            case 0 -> EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION_TIP);
-            case 2 -> EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_DOWN);
-            case 3 -> hit.cell() instanceof CommandMenuEntry.TypeArg
-                ? EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_TOOLTIP) : null;
-            case 4 -> EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_UP);
-            case 5 -> EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP);
+            case EditorLayoutPage.FOLD_CELL -> EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION_TIP);
+            case EditorLayoutPage.WEIGHT_CELL -> hit.row().weight() != null
+                ? EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP) : null;
             default -> null;
         };
     }

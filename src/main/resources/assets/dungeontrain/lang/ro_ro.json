@@ -1272,6 +1272,7 @@
   "gui.dungeontrain.editor_screen.layout.section_tip": "Clic pentru a restrânge sau extinde",
   "gui.dungeontrain.editor_screen.layout.move": "Mută…",
   "gui.dungeontrain.editor_screen.layout.no_matches": "Nimic nu se potrivește cu aceste filtre",
+  "gui.dungeontrain.editor_screen.layout.weight_tip": "Clic +1 · Shift+clic −1 · Cmd+clic pentru a tasta o valoare",
   "gui.dungeontrain.editor_screen.filters": "Filtre",
   "gui.dungeontrain.editor_screen.filters.show": "Arată toate filtrele",
   "gui.dungeontrain.editor_screen.filters.hide": "Ascunde filtrele; cele active rămân pe acest rând",

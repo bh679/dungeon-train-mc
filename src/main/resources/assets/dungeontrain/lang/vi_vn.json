@@ -909,6 +909,7 @@
   "gui.dungeontrain.editor_screen.layout.section_tip": "Nhấp để thu gọn hoặc mở rộng",
   "gui.dungeontrain.editor_screen.layout.move": "Di chuyển…",
   "gui.dungeontrain.editor_screen.layout.no_matches": "Không có gì khớp với các bộ lọc này",
+  "gui.dungeontrain.editor_screen.layout.weight_tip": "Nhấp +1 · Shift+nhấp −1 · Cmd+nhấp để nhập giá trị",
   "gui.dungeontrain.editor_screen.filters": "Bộ lọc",
   "gui.dungeontrain.editor_screen.filters.show": "Hiện mọi bộ lọc",
   "gui.dungeontrain.editor_screen.filters.hide": "Ẩn bộ lọc; những bộ lọc đang bật vẫn ở hàng này",

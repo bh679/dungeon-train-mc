@@ -959,6 +959,7 @@
   "gui.dungeontrain.editor_screen.layout.section_tip": "Kliknij, aby zwinąć lub rozwinąć",
   "gui.dungeontrain.editor_screen.layout.move": "Przenieś…",
   "gui.dungeontrain.editor_screen.layout.no_matches": "Nic nie pasuje do tych filtrów",
+  "gui.dungeontrain.editor_screen.layout.weight_tip": "Kliknij +1 · Shift+klik −1 · Cmd+klik, aby wpisać wartość",
   "gui.dungeontrain.editor_screen.filters": "Filtry",
   "gui.dungeontrain.editor_screen.filters.show": "Pokaż wszystkie filtry",
   "gui.dungeontrain.editor_screen.filters.hide": "Ukryj filtry; aktywne pozostaną w tym wierszu",

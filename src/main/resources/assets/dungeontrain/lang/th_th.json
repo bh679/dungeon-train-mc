@@ -909,6 +909,7 @@
   "gui.dungeontrain.editor_screen.layout.section_tip": "คลิกเพื่อย่อหรือขยาย",
   "gui.dungeontrain.editor_screen.layout.move": "ย้าย…",
   "gui.dungeontrain.editor_screen.layout.no_matches": "ไม่มีรายการที่ตรงกับตัวกรองเหล่านี้",
+  "gui.dungeontrain.editor_screen.layout.weight_tip": "คลิก +1 · Shift+คลิก −1 · Cmd+คลิกเพื่อพิมพ์ค่า",
   "gui.dungeontrain.editor_screen.filters": "ตัวกรอง",
   "gui.dungeontrain.editor_screen.filters.show": "แสดงตัวกรองทั้งหมด",
   "gui.dungeontrain.editor_screen.filters.hide": "ซ่อนตัวกรอง ตัวที่ใช้อยู่จะยังคงอยู่ในแถวนี้",

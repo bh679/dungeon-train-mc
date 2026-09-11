@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
-import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
@@ -15,11 +14,13 @@ import java.util.function.Consumer;
 /**
  * The Layout tab's rows: the spawn table, one section per roster type.
  *
- * <p>Every variant is a row of six columns — name · weight − · value · + · stage · move — so the
- * columns line up down the whole list; a column a row has no use for is a blank label. Group
- * members sit under their parent one step in, with the parent's own share as a first "(self)"
- * row, since that is how the server addresses it. Pure: built from a roster snapshot and the
- * folded-section set, and nothing else, so the pane can cache the result on those two.</p>
+ * <p>Every variant is a row of four columns — fold · name · weight · items inside — so the columns
+ * line up down the whole list; a column a row has no use for is a blank label. The weight is one
+ * cell that behaves as it does in the world-space menus (click +1, shift-click −1, cmd-click to
+ * type), so the row carries its stepper for the pane to act on. Stage and Move live in the detail
+ * pane once a row is selected. Group members sit under their parent one step in, with the parent's
+ * own share as a first "(self)" row, since that is how the server addresses it. Pure: built from a
+ * roster snapshot, the folds and the query, and nothing else, so the pane can cache the result.</p>
  *
  * <p>Selection and the standing plot are deliberately not baked into the entries — the pane draws
  * those two marks itself, which is what keeps the rows cacheable across hover and clicks.</p>
@@ -28,11 +29,13 @@ public final class EditorLayoutPage {
 
     /**
      * One row: its entry, the template it is about (null for a section header), its indent, its
-     * section, and — for a group parent — the id its fold cell toggles.
+     * section, for a group parent the id its fold cell toggles, and for an editable weight the
+     * stepper whose commands the weight cell runs.
      */
-    public record Row(CommandMenuEntry entry, VariantKey key, int depth, String sectionId, String groupId) {
+    public record Row(CommandMenuEntry entry, VariantKey key, int depth, String sectionId, String groupId,
+                      TemplateDataSheet.Stepper weight) {
         public Row(CommandMenuEntry entry, VariantKey key, int depth, String sectionId) {
-            this(entry, key, depth, sectionId, null);
+            this(entry, key, depth, sectionId, null, null);
         }
 
         public boolean isHeader() {
@@ -107,8 +110,10 @@ public final class EditorLayoutPage {
         }
     }
 
-    /** Dividers between the seven columns — fold · name · − · value · + · stage · move — as fractions of the row. */
-    static final List<Double> BOUNDS = List.of(0.05, 0.48, 0.55, 0.64, 0.71, 0.86);
+    /** Dividers between the four columns — fold · name · weight · items inside — as fractions of the row. */
+    static final List<Double> BOUNDS = List.of(0.05, 0.72, 0.86);
+    /** The cells' indexes, for the pane. */
+    static final int FOLD_CELL = 0, NAME_CELL = 1, WEIGHT_CELL = 2, COUNT_CELL = 3;
     static final String OPEN = "▾";
     static final String FOLDED = "▸";
     private static final CommandMenuEntry BLANK = new CommandMenuEntry.Label("");
@@ -186,11 +191,9 @@ public final class EditorLayoutPage {
         VariantKey key = tile.key();
         EditorTypeMenusPacket.Variant v = tile.variant();
         if (!tile.isGroup()) {
-            out.add(new Row(cells(BLANK,
-                name(v.displayName(), key, select),
-                weightCells(key, v.weight()),
-                stageCell(v, key),
-                moveCell(key)), key, 0, sectionId));
+            Weight w = weight(key, v.weight());
+            out.add(new Row(cells(BLANK, name(v.displayName(), key, select), w.cell(), BLANK),
+                key, 0, sectionId, null, w.stepper()));
             return;
         }
 
@@ -198,98 +201,52 @@ public final class EditorLayoutPage {
         // A search shows what it matched, folded or not.
         boolean folded = text.isEmpty() && !folds.groupOpen(gid);
         CommandMenuEntry fold = new CommandMenuEntry.ClientAction(folded ? FOLDED : OPEN, () -> toggleGroup.accept(gid), false);
-        out.add(new Row(cells(fold,
-            name(v.displayName(), key, select),
-            weightCells(key, v.weight()),
-            stageCell(v, key),
-            moveCell(key)), key, 0, sectionId, gid));
+        Weight w = weight(key, v.weight());
+        out.add(new Row(cells(fold, name(v.displayName(), key, select), w.cell(),
+            new CommandMenuEntry.Label(Integer.toString(v.subVariants().size()))),
+            key, 0, sectionId, gid, w.stepper()));
         if (folded) return;
 
         // The parent's own share of its group, addressed through the member verb with itself as
         // the member — the same row the browser shows as the "(self)" tile.
         if (tile.selfWeight() != EditorPlotLabelsPacket.NO_WEIGHT) {
             VariantKey self = new VariantKey(key.category(), key.modelId(), key.modelName(), key.displayName());
+            Weight sw = weight(self, tile.selfWeight());
             out.add(new Row(cells(BLANK,
                 name(EditorScreenLang.text(EditorScreenLang.TILE_SELF, v.displayName()), key, select),
-                weightCells(self, tile.selfWeight()),
-                BLANK, BLANK), key, 1, sectionId));
+                sw.cell(), BLANK), key, 1, sectionId, null, sw.stepper()));
         }
         for (EditorRosterIndex.Tile member : EditorRosterIndex.subVariants(tile, EditorRosterIndex.Filters.NONE, text)) {
             VariantKey mk = member.key();
             EditorTypeMenusPacket.Variant mv = member.variant();
-            out.add(new Row(cells(BLANK,
-                name(mv.displayName(), mk, select),
-                weightCells(mk, mv.weight()),
-                memberStageCell(g, tile, mv, mk),
-                moveCell(mk)), mk, 1, sectionId));
+            Weight mw = weight(mk, mv.weight());
+            out.add(new Row(cells(BLANK, name(mv.displayName(), mk, select), mw.cell(), BLANK),
+                mk, 1, sectionId, null, mw.stepper()));
         }
     }
 
-    private static CommandMenuEntry cells(CommandMenuEntry fold, CommandMenuEntry name, List<CommandMenuEntry> weight,
-                                          CommandMenuEntry stage, CommandMenuEntry move) {
-        List<CommandMenuEntry> all = new ArrayList<>(7);
-        all.add(fold);
-        all.add(name);
-        all.addAll(weight);
-        all.add(stage);
-        all.add(move);
-        return new CommandMenuEntry.Cells(all, BOUNDS);
+    private static CommandMenuEntry cells(CommandMenuEntry fold, CommandMenuEntry name, CommandMenuEntry weight,
+                                          CommandMenuEntry count) {
+        return new CommandMenuEntry.Cells(List.of(fold, name, weight, count), BOUNDS);
     }
 
     private static CommandMenuEntry name(String label, VariantKey key, Consumer<VariantKey> select) {
         return new CommandMenuEntry.ClientAction(label, () -> select.accept(key), false);
     }
 
+    /** The weight cell and, when the commands can reach it, the stepper the pane runs on a click. */
+    record Weight(CommandMenuEntry cell, TemplateDataSheet.Stepper stepper) {}
+
     /**
-     * − · value · + from the same stepper the data sheet takes apart. No weight pool (parts) means
-     * three blanks; a pool the commands cannot reach yet (track members) shows the number read-only.
+     * No weight pool (parts) is a blank; a pool the commands cannot reach yet (track members) is
+     * the number, read-only; otherwise the number as a cell the pane steps or types over — the
+     * action inside is a placeholder, since the pane reads the modifiers and picks the command.
      */
-    static List<CommandMenuEntry> weightCells(VariantKey key, int weight) {
-        if (weight == EditorPlotLabelsPacket.NO_WEIGHT) return List.of(BLANK, BLANK, BLANK);
+    static Weight weight(VariantKey key, int weight) {
+        if (weight == EditorPlotLabelsPacket.NO_WEIGHT) return new Weight(BLANK, null);
+        String value = Integer.toString(weight);
         TemplateDataSheet.Stepper stepper = TemplateDataSheet.Stepper.of(EditorScreenActions.weightRow(key, weight));
-        if (stepper == null) {
-            return List.of(BLANK, new CommandMenuEntry.Label(Integer.toString(weight)), BLANK);
-        }
-        return List.of(
-            new CommandMenuEntry.Stay("−", stepper.dec()),
-            new CommandMenuEntry.TypeArg(Integer.toString(weight), "0-100", stepper.prefix(), "", ""),
-            new CommandMenuEntry.Stay("+", stepper.inc()));
-    }
-
-    /** The Stage a top-level template is on, opening its picker; a dash where nothing is gated. */
-    static CommandMenuEntry stageCell(EditorTypeMenusPacket.Variant v, VariantKey key) {
-        if (v.phaseMask() == EditorTypeMenusPacket.Variant.NO_GATE) {
-            return new CommandMenuEntry.Label(EditorScreenLang.text(EditorScreenLang.SHEET_PENDING));
-        }
-        boolean linked = v.isStageLinked();
-        return new CommandMenuEntry.DrillIn(stageLabel(v),
-            new StagePickerScreen(key.category(), key.modelId(), key.modelName(), linked ? v.primaryStageId() : ""));
-    }
-
-    /** A member's Stages, opening the multi-select picker its group verb routes through. */
-    static CommandMenuEntry memberStageCell(EditorRosterPacket.Group g, EditorRosterIndex.Tile parent,
-                                            EditorTypeMenusPacket.Variant mv, VariantKey mk) {
-        PlotCategory cat = mk.category();
-        StagePickerScreen picker = switch (cat) {
-            case CONTENTS -> StagePickerScreen.forGroupMember(mk.parentId(), mk.displayName(), mv.stageIds());
-            // Track-side members live under their kind: the parent's modelId is the kind token.
-            case PORTALS, TRACKS -> StagePickerScreen.forTrackGroupMember(parent.key().modelId(),
-                mk.parentId(), mk.modelName(), mv.stageIds());
-            default -> null;
-        };
-        if (picker == null) return BLANK;
-        return new CommandMenuEntry.DrillIn(stageLabel(mv), picker);
-    }
-
-    /** The primary Stage's id, "+n" when it has company, or Custom. */
-    static String stageLabel(EditorTypeMenusPacket.Variant v) {
-        if (!v.isStageLinked()) return EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT);
-        int extra = v.stageIds().size() - 1;
-        return extra > 0 ? v.primaryStageId() + " +" + extra : v.primaryStageId();
-    }
-
-    private static CommandMenuEntry moveCell(VariantKey key) {
-        CommandMenuEntry move = EditorScreenActions.moveEntryFor(key, EditorScreenLang.text(EditorScreenLang.LAYOUT_MOVE));
-        return move == null ? BLANK : move;
+        if (stepper == null) return new Weight(new CommandMenuEntry.Label(value), null);
+        return new Weight(new CommandMenuEntry.ClientAction(value, () -> { }, false), stepper);
     }
 }
