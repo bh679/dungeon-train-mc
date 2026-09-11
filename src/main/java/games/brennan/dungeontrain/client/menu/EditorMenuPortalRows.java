@@ -21,6 +21,19 @@ public final class EditorMenuPortalRows {
 
     private EditorMenuPortalRows() {}
 
+    /** The command root every row sends to for the room the author is standing in. */
+    public static final String STOOD_IN_PREFIX = "dungeontrain editor portals";
+
+    /**
+     * The command root for a named room — what the editor screen sends for a room the author is
+     * previewing rather than standing in. The server hangs the same settings tree off both roots
+     * ({@code EditorCommand.portalRoomSettingNodes}), so a row built with either prefix reaches the
+     * same handler.
+     */
+    public static String prefixFor(String roomName) {
+        return STOOD_IN_PREFIX + " room " + roomName;
+    }
+
     /**
      * The row that says what a portal room does at its walls, or null outside a portal room plot.
      *
@@ -28,11 +41,11 @@ public final class EditorMenuPortalRows {
      * them is at most two taps away, and staying open lets the player tap past the one they do not
      * want.</p>
      */
-    public static CommandMenuEntry wallsModeRowFor(String currentMode) {
+    public static CommandMenuEntry wallsModeRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.modeLabel(currentMode),
-            "dungeontrain editor portals mode next");
+            prefix + " mode next");
     }
 
     /**
@@ -43,24 +56,24 @@ public final class EditorMenuPortalRows {
      * block in the registry, so tapping the row takes whatever the author is holding. An empty hand
      * means no shell at all. No Edit half — a seal of mixed blocks is not what a seal is for.</p>
      */
-    public static CommandMenuEntry lockRowFor(String currentMode) {
+    public static CommandMenuEntry lockRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!EditorPlotLabelsRenderer.hasLockRowFor(currentMode)) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.lockLabel(currentMode) + "  (+ held)",
-            "dungeontrain editor portals lock held");
+            prefix + " lock held");
     }
 
     /**
      * The Copies row, or null unless the walls are set to one of the two endless modes — the only
      * ones that append tiles for the setting to describe.
      */
-    public static CommandMenuEntry copiesRowFor(String currentMode) {
+    public static CommandMenuEntry copiesRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!PortalRoomSettings.parse(currentMode).copiesApply()) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.copiesLabel(currentMode),
-            "dungeontrain editor portals copies next");
+            prefix + " copies next");
     }
 
     /**
@@ -73,15 +86,15 @@ public final class EditorMenuPortalRows {
      * the block itself. <b>Edit</b> opens the Block Variant menu on that plane, which is how one
      * block becomes a variant of several.</p>
      */
-    public static CommandMenuEntry copiesBlockRowFor(String currentMode, PortalRoomCopiesVariant.Plane plane) {
+    public static CommandMenuEntry copiesBlockRowFor(String currentMode, PortalRoomCopiesVariant.Plane plane, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!EditorPlotLabelsRenderer.hasCopiesBlockRowFor(currentMode)) return null;
         // Value on the left, a way into its editor on the right — the same Split the Books row uses.
         return new CommandMenuEntry.Split(
             new CommandMenuEntry.Stay(EditorPlotLabelsRenderer.copiesBlockLabel(plane),
-                "dungeontrain editor portals copies " + plane.id() + " held"),
+                prefix + " copies " + plane.id() + " held"),
             new CommandMenuEntry.Stay("Edit",
-                "dungeontrain editor portals copies " + plane.id() + " edit"),
+                prefix + " copies " + plane.id() + " edit"),
             0.72);
     }
 
@@ -93,12 +106,12 @@ public final class EditorMenuPortalRows {
      * made of. Off by default, so a room that has never been given the setting shows "Sealed" and
      * behaves exactly as it always did.</p>
      */
-    public static CommandMenuEntry doorWallRowFor(String currentMode) {
+    public static CommandMenuEntry doorWallRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!EditorPlotLabelsRenderer.hasDoorWallRow(currentMode)) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.doorWallLabel(currentMode),
-            "dungeontrain editor portals doorwall next");
+            prefix + " doorwall next");
     }
 
     /**
@@ -108,11 +121,11 @@ public final class EditorMenuPortalRows {
      * <p>Shown for every portal room, unlike Copies: furnishing is not a property of the walls, so a
      * sealed room can take one as readily as a repeating one.</p>
      */
-    public static CommandMenuEntry roomContentsRowFor(String currentMode) {
+    public static CommandMenuEntry roomContentsRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomContentsLabel(currentMode),
-            "dungeontrain editor portals contents next");
+            prefix + " contents next");
     }
 
     /**
@@ -123,11 +136,11 @@ public final class EditorMenuPortalRows {
      * on the room being furnished: a room can hold books without drawing a contents template, since
      * its own template may have shelves stamped into it.</p>
      */
-    public static CommandMenuEntry roomBooksRowFor(String currentMode) {
+    public static CommandMenuEntry roomBooksRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         CommandMenuEntry cycle = new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomBooksLabel(currentMode),
-            "dungeontrain editor portals books next");
+            prefix + " books next");
         // Off has no dials, so the row is the value alone. Once the room stocks an author the Edit
         // button rides beside it rather than taking a row of its own — the weights and the author
         // band belong to the value next to them.
@@ -135,7 +148,7 @@ public final class EditorMenuPortalRows {
             return cycle;
         }
         return new CommandMenuEntry.Split(cycle,
-            new CommandMenuEntry.DrillIn("Edit", new PortalRoomBooksScreen(currentMode)),
+            new CommandMenuEntry.DrillIn("Edit", new PortalRoomBooksScreen(currentMode, prefix)),
             0.72);
     }
 
@@ -146,11 +159,11 @@ public final class EditorMenuPortalRows {
      * stands under is a statement about the place it is pretending to be, not about how it seals or
      * what is furnished into it.</p>
      */
-    public static CommandMenuEntry roomSkyRowFor(String currentMode) {
+    public static CommandMenuEntry roomSkyRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomSkyLabel(currentMode),
-            "dungeontrain editor portals sky next");
+            prefix + " sky next");
     }
 
     /**
@@ -161,11 +174,11 @@ public final class EditorMenuPortalRows {
      * the place the room is pretending to be, and an author may want it in a sealed room or out of
      * an endless one.</p>
      */
-    public static CommandMenuEntry roomFogRowFor(String currentMode) {
+    public static CommandMenuEntry roomFogRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.roomFogLabel(currentMode),
-            "dungeontrain editor portals fog next");
+            prefix + " fog next");
     }
 
     /**
@@ -177,12 +190,12 @@ public final class EditorMenuPortalRows {
      * of the walls, so an Endless Open room is asked the question too — it just answers Off by
      * default.</p>
      */
-    public static CommandMenuEntry exitsRowFor(String currentMode) {
+    public static CommandMenuEntry exitsRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!PortalRoomSettings.parse(currentMode).exitsApply()) return null;
         return new CommandMenuEntry.Stay(
             EditorPlotLabelsRenderer.exitsLabel(currentMode),
-            "dungeontrain editor portals exits next");
+            prefix + " exits next");
     }
 
     /**
@@ -193,16 +206,16 @@ public final class EditorMenuPortalRows {
      * laid is a control with nothing on the other end of it — the same reason the Copies row is
      * absent rather than dimmed under a mode that makes no copies.</p>
      */
-    public static CommandMenuEntry exitEveryTripleFor(String currentMode) {
+    public static CommandMenuEntry exitEveryTripleFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         PortalRoomSettings settings = PortalRoomSettings.parse(currentMode);
         if (!settings.exitsApply() || !settings.exits().lays()) return null;
 
-        String prefix = "dungeontrain editor portals exitevery";
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        String command = prefix + " exitevery";
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", command + " dec");
         CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            EditorPlotLabelsRenderer.exitEveryLabel(currentMode), "tiles", prefix);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+            EditorPlotLabelsRenderer.exitEveryLabel(currentMode), "tiles", command);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", command + " inc");
         return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }
 
@@ -213,16 +226,16 @@ public final class EditorMenuPortalRows {
      * unpredictable to go and find. Under the lattice a player could work out the walk in advance,
      * and under Off it would wall the only way onward there is.</p>
      */
-    public static CommandMenuEntry exitMoveTripleFor(String currentMode) {
+    public static CommandMenuEntry exitMoveTripleFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         PortalRoomSettings settings = PortalRoomSettings.parse(currentMode);
         if (!settings.exitsApply() || !settings.exits().movesApply()) return null;
 
-        String prefix = "dungeontrain editor portals exitmove";
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        String command = prefix + " exitmove";
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", command + " dec");
         CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            EditorPlotLabelsRenderer.exitMoveLabel(currentMode), "0-10", prefix);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+            EditorPlotLabelsRenderer.exitMoveLabel(currentMode), "0-10", command);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", command + " inc");
         return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }
 
@@ -235,13 +248,82 @@ public final class EditorMenuPortalRows {
      * go below what the corridor mouth needs to stay sealed, and height cannot reach into the next
      * portal pair's Y lane. Tapping {@code −} past the floor simply stops.</p>
      */
-    public static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
+    public static CommandMenuEntry sizeTripleFor(String axis, String label, int current, String prefix) {
         if (current == EditorStatusPacket.NO_SIZE) return null;
-        String prefix = "dungeontrain editor portals " + axis;
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        String command = prefix + " " + axis;
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", command + " dec");
         CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            label + " (" + current + ")", "blocks", prefix);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+            label + " (" + current + ")", "blocks", command);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", command + " inc");
         return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    }
+
+    // ------------------------------------------------------------------
+    // Stood-in overloads — the bare root, for the world-space menu and the tests
+    // ------------------------------------------------------------------
+
+    /** {@link #wallsModeRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry wallsModeRowFor(String currentMode) {
+        return wallsModeRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #lockRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry lockRowFor(String currentMode) {
+        return lockRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #copiesRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry copiesRowFor(String currentMode) {
+        return copiesRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #doorWallRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry doorWallRowFor(String currentMode) {
+        return doorWallRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #roomContentsRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry roomContentsRowFor(String currentMode) {
+        return roomContentsRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #roomBooksRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry roomBooksRowFor(String currentMode) {
+        return roomBooksRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #roomSkyRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry roomSkyRowFor(String currentMode) {
+        return roomSkyRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #roomFogRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry roomFogRowFor(String currentMode) {
+        return roomFogRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #exitsRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry exitsRowFor(String currentMode) {
+        return exitsRowFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #exitEveryTripleFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry exitEveryTripleFor(String currentMode) {
+        return exitEveryTripleFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #exitMoveTripleFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry exitMoveTripleFor(String currentMode) {
+        return exitMoveTripleFor(currentMode, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #copiesBlockRowFor(String, PortalRoomCopiesVariant.Plane, String)} for the stood-in room. */
+    public static CommandMenuEntry copiesBlockRowFor(String currentMode, PortalRoomCopiesVariant.Plane plane) {
+        return copiesBlockRowFor(currentMode, plane, STOOD_IN_PREFIX);
+    }
+
+    /** {@link #sizeTripleFor(String, String, int, String)} for the stood-in room. */
+    public static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
+        return sizeTripleFor(axis, label, current, STOOD_IN_PREFIX);
     }
 }
