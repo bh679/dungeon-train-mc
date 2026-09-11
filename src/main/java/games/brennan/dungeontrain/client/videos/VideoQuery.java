@@ -2,8 +2,10 @@ package games.brennan.dungeontrain.client.videos;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -16,29 +18,51 @@ import java.util.TreeMap;
 public final class VideoQuery {
 
     /**
-     * What to show. {@code null} for {@link #platform} / {@link #channel} means "all"; {@code
-     * devFavOnly} narrows to the operator's ★ rows.
+     * What to show. {@link #platforms} is the set of platform toggles that are lit — every platform
+     * to begin with, and an empty set shows nothing (the player switched them all off, and the page
+     * says so). {@link #channelQuery} is the uploader box's text, matched case-insensitively as a
+     * substring so a half-typed name already narrows the list; blank means everyone. {@code
+     * devFavOnly} is the ★ toggle.
      */
-    public record Filter(VideoEntry.Platform platform, String channel, boolean devFavOnly) {
-        public static final Filter ALL = new Filter(null, null, false);
+    public record Filter(Set<VideoEntry.Platform> platforms, String channelQuery, boolean devFavOnly) {
+        public static final Filter ALL = new Filter(EnumSet.allOf(VideoEntry.Platform.class), "", false);
 
-        public Filter withPlatform(VideoEntry.Platform p) {
-            return new Filter(p, channel, devFavOnly);
+        public Filter {
+            platforms = platforms == null ? EnumSet.allOf(VideoEntry.Platform.class)
+                    : (platforms.isEmpty() ? EnumSet.noneOf(VideoEntry.Platform.class) : EnumSet.copyOf(platforms));
+            channelQuery = channelQuery == null ? "" : channelQuery.trim();
         }
 
-        public Filter withChannel(String c) {
-            return new Filter(platform, c, devFavOnly);
+        /** Flip one platform's toggle; a new filter, this one untouched. */
+        public Filter togglePlatform(VideoEntry.Platform p) {
+            EnumSet<VideoEntry.Platform> next = platforms.isEmpty()
+                    ? EnumSet.noneOf(VideoEntry.Platform.class) : EnumSet.copyOf(platforms);
+            if (!next.remove(p)) next.add(p);
+            return new Filter(next, channelQuery, devFavOnly);
+        }
+
+        public boolean has(VideoEntry.Platform p) {
+            return platforms.contains(p);
+        }
+
+        public Filter withChannelQuery(String q) {
+            return new Filter(platforms, q, devFavOnly);
         }
 
         public Filter withDevFavOnly(boolean only) {
-            return new Filter(platform, channel, only);
+            return new Filter(platforms, channelQuery, only);
         }
 
         boolean matches(VideoEntry v) {
-            if (platform != null && v.platform() != platform) return false;
-            if (channel != null && !channel.equalsIgnoreCase(v.channel())) return false;
+            if (!platforms.contains(v.platform())) return false;
+            if (!channelQuery.isEmpty() && !contains(v.channel(), channelQuery)) return false;
             return !devFavOnly || v.devFav();
         }
+    }
+
+    /** Case-insensitive substring test; a {@code null} haystack matches nothing. */
+    static boolean contains(String hay, String needle) {
+        return hay != null && hay.toLowerCase(Locale.ROOT).contains(needle.toLowerCase(Locale.ROOT));
     }
 
     /** How to order. Each carries its lang-key suffix under {@code gui.dungeontrain.videos.sort.}. */
@@ -83,11 +107,20 @@ public final class VideoQuery {
     }
 
     /**
-     * Distinct uploader names across every row, in case-insensitive alphabetical order — the
-     * values the Uploader filter cycles through. Rows with no channel contribute nothing; the "all"
-     * state covers them.
+     * Distinct uploader names across every row, in case-insensitive alphabetical order — what the
+     * uploader box suggests. Rows with no channel contribute nothing.
      */
     public static List<String> channels(List<VideoEntry> entries) {
+        return channels(entries, "");
+    }
+
+    /**
+     * The uploader suggestions for what has been typed so far: every distinct name containing
+     * {@code query} (case-insensitive), alphabetical; all of them for a blank query. Names that
+     * START with the query come first — that is the completion the player is most likely reaching for.
+     */
+    public static List<String> channels(List<VideoEntry> entries, String query) {
+        String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
         // Keyed lower-case so "DroneLeg" and "droneleg" are one entry; the first spelling seen wins.
         TreeMap<String, String> distinct = new TreeMap<>();
         for (VideoEntry v : entries) {
@@ -95,7 +128,14 @@ public final class VideoQuery {
                 distinct.putIfAbsent(v.channel().trim().toLowerCase(Locale.ROOT), v.channel().trim());
             }
         }
-        return List.copyOf(distinct.values());
+        List<String> starts = new ArrayList<>();
+        List<String> within = new ArrayList<>();
+        for (var e : distinct.entrySet()) {
+            if (q.isEmpty() || e.getKey().startsWith(q)) starts.add(e.getValue());
+            else if (e.getKey().contains(q)) within.add(e.getValue());
+        }
+        starts.addAll(within);
+        return List.copyOf(starts);
     }
 
     /** The platforms actually present, in enum order — so the Platform filter never offers an empty state. */

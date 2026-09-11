@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.client.videos.PlatformToggleButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
@@ -38,16 +39,7 @@ public final class VideosIconButton extends Button {
         g.fill(x + inset, y, x + getWidth() - inset, y + getHeight(), body);
         g.fill(x, y + inset, x + getWidth(), y + getHeight() - inset, body);
 
-        // The triangle: a stack of one-pixel columns, each shorter than the last, pointing right.
-        // Nudged a touch right of centre — a centred triangle looks left-heavy.
-        int triH = Math.max(3, Math.round(s * 0.46F));
-        if ((triH & 1) == 0) triH++;                    // odd height so the apex is one pixel
-        int triW = Math.max(2, Math.round(triH * 0.85F));
-        int left = x + (getWidth() - triW) / 2 + Math.max(1, Math.round(s * 0.05F));
-        int midY = y + getHeight() / 2;
-        for (int i = 0; i < triW; i++) {
-            int half = Math.round((triH / 2.0F) * (1.0F - i / (float) triW));
-            g.fill(left + i, midY - half, left + i + 1, midY + half + 1, MARK);
-        }
+        // The triangle — the same shape the Videos page's YouTube toggle draws.
+        PlatformToggleButton.drawPlay(g, x, y, s, MARK);
     }
 }

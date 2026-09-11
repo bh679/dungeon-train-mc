@@ -43,13 +43,39 @@ class VideoQueryTest {
     }
 
     @Test
-    void filtersNarrowByPlatformChannelAndStar() {
-        assertEquals(List.of(1, 4), ids(VideoQuery.apply(ALL, VideoQuery.Filter.ALL.withPlatform(YOUTUBE), VideoQuery.Sort.VIEWS)));
-        // Channel match is case-insensitive: "Alpha" and "ALPHA" are one uploader.
-        assertEquals(List.of(1, 4), ids(VideoQuery.apply(ALL, VideoQuery.Filter.ALL.withChannel("alpha"), VideoQuery.Sort.VIEWS)));
+    void platformTogglesHideAndShow() {
+        VideoQuery.Filter f = VideoQuery.Filter.ALL.togglePlatform(BILIBILI);   // hide Bilibili
+        assertEquals(List.of(1, 4, 3), ids(VideoQuery.apply(ALL, f, VideoQuery.Sort.VIEWS)));
+        assertEquals(List.of(1, 2, 4, 3), ids(VideoQuery.apply(ALL, f.togglePlatform(BILIBILI), VideoQuery.Sort.VIEWS)), "toggle back on");
+        VideoQuery.Filter none = f.togglePlatform(YOUTUBE).togglePlatform(TWITCH)
+                .togglePlatform(VideoEntry.Platform.INSTAGRAM).togglePlatform(VideoEntry.Platform.OTHER);
+        assertEquals(List.of(), ids(VideoQuery.apply(ALL, none, VideoQuery.Sort.VIEWS)), "all off shows nothing");
+        assertEquals(List.of(1, 4), ids(VideoQuery.apply(ALL, none.togglePlatform(YOUTUBE), VideoQuery.Sort.VIEWS)));
+    }
+
+    @Test
+    void uploaderQueryIsACaseInsensitiveSubstring() {
+        // "Alpha" and "ALPHA" are one uploader; a half-typed name already narrows.
+        assertEquals(List.of(1, 4), ids(VideoQuery.apply(ALL, VideoQuery.Filter.ALL.withChannelQuery("alph"), VideoQuery.Sort.VIEWS)));
+        assertEquals(List.of(1, 4), ids(VideoQuery.apply(ALL, VideoQuery.Filter.ALL.withChannelQuery("  LPH "), VideoQuery.Sort.VIEWS)));
+        assertEquals(List.of(), ids(VideoQuery.apply(ALL, VideoQuery.Filter.ALL.withChannelQuery("zzz"), VideoQuery.Sort.VIEWS)));
+        assertEquals(List.of(1, 2, 4, 3), ids(VideoQuery.apply(ALL, VideoQuery.Filter.ALL.withChannelQuery("   "), VideoQuery.Sort.VIEWS)), "blank = everyone, including no-channel rows");
+    }
+
+    @Test
+    void starFilterCombinesWithTheOthers() {
         assertEquals(List.of(2, 4), ids(VideoQuery.apply(ALL, VideoQuery.Filter.ALL.withDevFavOnly(true), VideoQuery.Sort.VIEWS)));
         assertEquals(List.of(4), ids(VideoQuery.apply(ALL,
-                VideoQuery.Filter.ALL.withPlatform(YOUTUBE).withDevFavOnly(true), VideoQuery.Sort.VIEWS)));
+                VideoQuery.Filter.ALL.togglePlatform(BILIBILI).withDevFavOnly(true), VideoQuery.Sort.VIEWS)));
+    }
+
+    @Test
+    void channelSuggestionsNarrowWithPrefixMatchesFirst() {
+        List<VideoEntry> more = List.of(A, B, D, v(9, TWITCH, null, 1, "Gamma Alpine", false));
+        assertEquals(List.of("Alpha", "beta", "Gamma Alpine"), VideoQuery.channels(more, ""));
+        assertEquals(List.of("Alpha", "Gamma Alpine"), VideoQuery.channels(more, "al"), "prefix match before substring match");
+        assertEquals(List.of("beta"), VideoQuery.channels(more, "ET"));
+        assertEquals(List.of(), VideoQuery.channels(more, "q"));
     }
 
     @Test

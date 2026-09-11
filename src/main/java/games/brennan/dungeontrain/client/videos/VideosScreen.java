@@ -6,6 +6,8 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
@@ -14,18 +16,20 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * The <b>Videos</b> page, opened from the title screen's icon column: every video about Dungeon
- * Train the relay has saved — YouTube, Bilibili, Twitch, Instagram — filterable by platform,
- * uploader and the developer's picks, sortable by views, recency or those picks. A row opens the
- * video in the browser through vanilla's link-confirm screen.
+ * Train the relay has saved — YouTube, Bilibili, Twitch, Instagram — with one toolbar row over the
+ * list. A row opens the video in the browser through vanilla's link-confirm screen.
  *
- * <p>The filters are <b>cycle buttons</b> rather than dropdowns, like the Shaders page's sort: they
- * say which state is active, and Shift-click steps backwards so a thirty-name uploader list is not
- * a thirty-click round trip. Filter and sort state survive a resize (fields on the screen), and the
- * catalogue itself survives the session ({@link VideoCatalog}).</p>
+ * <p>The toolbar, left to right: one <b>icon toggle per platform</b> present (lit = shown), the
+ * <b>★ dev-faves</b> toggle, the <b>uploader box</b> — type to narrow, with a suggestion list under
+ * it that starts as every uploader and shrinks to matches (the shape of the editor's builder
+ * search) — and the <b>sort</b> cycle button. Every icon carries a tooltip saying what it is and
+ * which way it is set. Filter and sort state survive a resize (fields on the screen); the catalogue
+ * survives the session ({@link VideoCatalog}).</p>
  *
  * <p>Three centre-states stand in for the list when it has nothing to show: loading, failed (with
  * a Retry button), and "nothing matches these filters". The data arrives on an HTTP thread and is
@@ -38,7 +42,11 @@ public final class VideosScreen extends Screen {
     private static final int GAP = 4;
     private static final int TOP = 32;
     private static final int BUTTON_H = 20;
+    private static final int ICON = 20;
+    private static final int SORT_W = 110;
+    private static final int UPLOADER_MIN_W = 80;
     private static final int BOTTOM_ROW_H = 20;
+    private static final int MAX_QUERY = 64;
     private static final int SUB_COLOUR = 0xFF9A9A9A;
     private static final int ERROR_COLOUR = 0xFFCF5C5C;
 
@@ -47,9 +55,10 @@ public final class VideosScreen extends Screen {
     private VideoQuery.Filter filter = VideoQuery.Filter.ALL;
     private VideoQuery.Sort sort = VideoQuery.Sort.VIEWS;
 
-    private Button platformButton;
-    private Button uploaderButton;
-    private Button devFavButton;
+    private final List<PlatformToggleButton> platformButtons = new ArrayList<>();
+    private StarToggleButton starButton;
+    private EditBox uploaderBox;
+    private UploaderDropdown dropdown;
     private Button sortButton;
     private Button retryButton;
     private VideoList list;
@@ -62,24 +71,56 @@ public final class VideosScreen extends Screen {
     @Override
     protected void init() {
         VideoCatalog.ensureFetched();
+        platformButtons.clear();
 
         int rowW = this.width - 2 * MARGIN;
-        int thirdW = (rowW - 2 * GAP) / 3;
+        int x = MARGIN;
 
-        // Row 1 — the three filters. Each says its active state; Shift-click cycles backwards.
-        platformButton = addRenderableWidget(new DarkTintedButton(MARGIN, TOP, thirdW, BUTTON_H,
-                CommonComponents.EMPTY, b -> cyclePlatform(hasShiftDown() ? -1 : 1)));
-        uploaderButton = addRenderableWidget(new DarkTintedButton(MARGIN + thirdW + GAP, TOP, thirdW, BUTTON_H,
-                CommonComponents.EMPTY, b -> cycleUploader(hasShiftDown() ? -1 : 1)));
-        devFavButton = addRenderableWidget(new DarkTintedButton(MARGIN + 2 * (thirdW + GAP), TOP,
-                rowW - 2 * (thirdW + GAP), BUTTON_H, CommonComponents.EMPTY, b -> toggleDevFav()));
+        // Platform toggles — one per platform the catalogue actually has (all five before it loads,
+        // so the row does not jump when the data arrives and drops a platform nobody posted on).
+        List<VideoEntry.Platform> platforms = VideoCatalog.state() == VideoCatalog.State.LOADED
+                ? VideoQuery.platforms(VideoCatalog.entries()) : List.of(VideoEntry.Platform.values());
+        for (VideoEntry.Platform p : platforms) {
+            PlatformToggleButton b = new PlatformToggleButton(x, TOP, ICON, p, () -> filter.has(p),
+                    btn -> togglePlatform(p));
+            platformButtons.add(addRenderableWidget(b));
+            x += ICON + GAP;
+        }
 
-        // Row 2 — sort, on the left; the row count is drawn to its right in render().
-        int sortY = TOP + BUTTON_H + GAP;
-        sortButton = addRenderableWidget(new DarkTintedButton(MARGIN, sortY, thirdW, BUTTON_H,
+        starButton = addRenderableWidget(new StarToggleButton(x, TOP, ICON, () -> filter.devFavOnly(),
+                b -> toggleDevFav()));
+        x += ICON + GAP;
+
+        // Sort takes the right end; the uploader box gets whatever is left between.
+        int sortW = Math.min(SORT_W, Math.max(60, rowW / 4));
+        int sortX = MARGIN + rowW - sortW;
+        int uploaderW = Math.max(UPLOADER_MIN_W, sortX - GAP - x);
+        if (x + uploaderW + GAP > sortX) {
+            // Very narrow window: let the box take the minimum and the sort button shrink to fit.
+            sortW = Math.max(40, MARGIN + rowW - (x + uploaderW + GAP));
+            sortX = MARGIN + rowW - sortW;
+        }
+
+        EditBox box = new EditBox(this.font, x, TOP, uploaderW, BUTTON_H,
+                Component.translatable("gui.dungeontrain.videos.filter.uploader"));
+        box.setMaxLength(MAX_QUERY);
+        box.setValue(filter.channelQuery());   // survives a resize
+        Component hint = Component.translatable("gui.dungeontrain.videos.filter.uploader.hint");
+        box.setHint(this.font.width(hint) <= uploaderW - 8 ? hint : Component.empty());
+        box.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.videos.filter.uploader.tooltip")));
+        box.setResponder(text -> {
+            filter = filter.withChannelQuery(text);
+            refresh();
+        });
+        uploaderBox = addRenderableWidget(box);
+
+        dropdown = new UploaderDropdown(this.font, this::pickUploader);
+        dropdown.place(x, TOP + BUTTON_H, uploaderW);
+
+        sortButton = addRenderableWidget(new DarkTintedButton(sortX, TOP, sortW, BUTTON_H,
                 CommonComponents.EMPTY, b -> cycleSort()));
 
-        int listTop = sortY + BUTTON_H + GAP;
+        int listTop = TOP + BUTTON_H + GAP;
         int listBottom = this.height - MARGIN - BOTTOM_ROW_H - GAP;
         list = addRenderableWidget(new VideoList(this.font, MARGIN, listTop, rowW, listBottom - listTop, this::open));
 
@@ -100,41 +141,15 @@ public final class VideosScreen extends Screen {
 
     /** Called on the render thread when the catalogue loads or fails. */
     public void onCatalogChanged() {
-        // A filter chosen while loading may name nothing in the real data; drop back to "all".
-        List<VideoEntry> all = VideoCatalog.entries();
-        if (filter.channel() != null && !VideoQuery.channels(all).contains(filter.channel())) {
-            filter = filter.withChannel(null);
-        }
-        if (filter.platform() != null && !VideoQuery.platforms(all).contains(filter.platform())) {
-            filter = filter.withPlatform(null);
-        }
-        refresh();
+        // The platform row was built for all five; rebuild it for the ones that exist.
+        rebuildWidgets();
     }
 
     // ---- filter / sort controls -------------------------------------------------
 
-    private void cyclePlatform(int step) {
-        List<VideoEntry.Platform> options = VideoQuery.platforms(VideoCatalog.entries());
-        filter = filter.withPlatform(cycle(options, filter.platform(), step));
+    private void togglePlatform(VideoEntry.Platform p) {
+        filter = filter.togglePlatform(p);
         refresh();
-    }
-
-    private void cycleUploader(int step) {
-        List<String> options = VideoQuery.channels(VideoCatalog.entries());
-        filter = filter.withChannel(cycle(options, filter.channel(), step));
-        refresh();
-    }
-
-    /**
-     * Step through {@code null} (all) → options… → {@code null}. {@code step} is +1 or -1. An empty
-     * option list stays on "all" — the button still says something, it just cannot move.
-     */
-    private static <T> T cycle(List<T> options, T current, int step) {
-        if (options.isEmpty()) return null;
-        int n = options.size() + 1;                  // +1 for the "all" state at index 0
-        int idx = current == null ? 0 : options.indexOf(current) + 1;
-        int next = ((idx + step) % n + n) % n;
-        return next == 0 ? null : options.get(next - 1);
     }
 
     private void toggleDevFav() {
@@ -147,32 +162,62 @@ public final class VideosScreen extends Screen {
         refresh();
     }
 
+    /** A suggestion was clicked: it becomes the box's text, and focus (so the list) goes away. */
+    private void pickUploader(String name) {
+        uploaderBox.setValue(name);       // fires the responder → filter + refresh
+        uploaderBox.setFocused(false);
+        setFocused(null);
+    }
+
     /** Relabel every control and rebuild the list from the current catalogue + filter + sort. */
     private void refresh() {
         if (list == null) return;
         List<VideoEntry> all = VideoCatalog.entries();
 
-        platformButton.setMessage(Component.translatable("gui.dungeontrain.videos.filter.platform",
-                filter.platform() == null
-                        ? Component.translatable("gui.dungeontrain.videos.filter.all")
-                        : Component.translatable("gui.dungeontrain.videos.platform." + filter.platform().key())));
-        uploaderButton.setMessage(Component.translatable("gui.dungeontrain.videos.filter.uploader",
-                filter.channel() == null
-                        ? Component.translatable("gui.dungeontrain.videos.filter.all")
-                        : Component.literal(filter.channel())));
-        devFavButton.setMessage(Component.translatable("gui.dungeontrain.videos.filter.dev_faves",
-                Component.translatable(filter.devFavOnly() ? "options.on" : "options.off")));
+        for (PlatformToggleButton b : platformButtons) b.refreshTooltip();
+        starButton.refreshTooltip();
         sortButton.setMessage(Component.translatable("gui.dungeontrain.videos.sort",
                 Component.translatable("gui.dungeontrain.videos.sort." + sort.key())));
+        sortButton.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.videos.sort.tooltip")));
 
         boolean loaded = VideoCatalog.state() == VideoCatalog.State.LOADED;
-        platformButton.active = loaded && !VideoQuery.platforms(all).isEmpty();
-        uploaderButton.active = loaded && !VideoQuery.channels(all).isEmpty();
-        devFavButton.active = loaded;
+        for (PlatformToggleButton b : platformButtons) b.active = loaded;
+        starButton.active = loaded;
         sortButton.active = loaded;
+        uploaderBox.setEditable(loaded);
         retryButton.visible = VideoCatalog.state() == VideoCatalog.State.FAILED;
 
+        dropdown.setRows(VideoQuery.channels(all, filter.channelQuery()));
         list.setRows(VideoQuery.apply(all, filter, sort));
+    }
+
+    // ---- dropdown plumbing ----------------------------------------------------------
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // The suggestion list gets first refusal — it is drawn over the video list, so a click on it
+        // must not fall through to the row underneath.
+        if (dropdown != null && dropdown.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (dropdown != null && dropdown.mouseScrolled(mouseX, mouseY, scrollY)) return true;
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Escape with the box focused just closes the suggestions; a second Escape leaves the page.
+        if (keyCode == 256 && dropdown != null && dropdown.isOpen()) {
+            uploaderBox.setFocused(false);
+            setFocused(null);
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     // ---- opening a video -----------------------------------------------------------
@@ -197,14 +242,6 @@ public final class VideosScreen extends Screen {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(this.font, this.title, this.width / 2, 14, 0xFFFFFF);
 
-        // Row count beside the sort button: "12 of 87 videos" once loaded.
-        if (VideoCatalog.state() == VideoCatalog.State.LOADED) {
-            Component count = Component.translatable("gui.dungeontrain.videos.count",
-                    list.rowCount(), VideoCatalog.entries().size());
-            g.drawString(this.font, count, sortButton.getX() + sortButton.getWidth() + 2 * GAP,
-                    sortButton.getY() + (BUTTON_H - this.font.lineHeight) / 2, SUB_COLOUR);
-        }
-
         Component state = switch (VideoCatalog.state()) {
             case IDLE, LOADING -> Component.translatable("gui.dungeontrain.videos.state.loading");
             case FAILED -> Component.translatable("gui.dungeontrain.videos.state.failed");
@@ -216,6 +253,18 @@ public final class VideosScreen extends Screen {
             g.drawCenteredString(this.font, state, this.width / 2,
                     list.getY() + list.getHeight() / 2 - this.font.lineHeight, colour);
         }
+
+        // Row count on the title line, right-aligned, out of the toolbar's way.
+        if (VideoCatalog.state() == VideoCatalog.State.LOADED) {
+            Component count = Component.translatable("gui.dungeontrain.videos.count",
+                    list.rowCount(), VideoCatalog.entries().size());
+            g.drawString(this.font, count, this.width - MARGIN - this.font.width(count), 14, SUB_COLOUR);
+        }
+
+        // The suggestion list is open exactly while the box has focus; drawn last so it sits over
+        // the video list.
+        dropdown.setOpen(uploaderBox.isFocused());
+        dropdown.render(g, mouseX, mouseY);
     }
 
     @Override

@@ -4143,6 +4143,24 @@
       ]
     }
   },
+  "gui.dungeontrain.videos.filter.platform.shown": {
+    "1": {
+      "label": "the platform this toggle controls",
+      "examples": [
+        "YouTube",
+        "Twitch"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.filter.platform.hidden": {
+    "1": {
+      "label": "the platform this toggle controls",
+      "examples": [
+        "YouTube",
+        "Twitch"
+      ]
+    }
+  },
   "gui.dungeontrain.videos.count": {
     "1": {
       "label": "how many videos match the current filters",
@@ -4154,33 +4172,6 @@
       "label": "how many videos there are in total",
       "examples": [
         "87"
-      ]
-    }
-  },
-  "gui.dungeontrain.videos.filter.dev_faves": {
-    "1": {
-      "label": "whether the developer-favourites filter is on or off",
-      "examples": [
-        "On",
-        "Off"
-      ]
-    }
-  },
-  "gui.dungeontrain.videos.filter.platform": {
-    "1": {
-      "label": "the platform being filtered to, or 'All'",
-      "examples": [
-        "All",
-        "YouTube"
-      ]
-    }
-  },
-  "gui.dungeontrain.videos.filter.uploader": {
-    "1": {
-      "label": "the uploader being filtered to, or 'All'",
-      "examples": [
-        "All",
-        "DroneLeg"
       ]
     }
   },
