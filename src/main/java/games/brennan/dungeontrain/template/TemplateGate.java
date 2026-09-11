@@ -51,8 +51,10 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
         if (minLevel > MAX_LEVEL) minLevel = MAX_LEVEL;
         if (maxLevel < ALL) maxLevel = ALL;
         if (maxLevel > MAX_LEVEL) maxLevel = MAX_LEVEL;
-        // Enforce min ≤ max (ALL is treated as +∞), mirroring VariantDifficulty.
-        if (maxLevel != ALL && minLevel > maxLevel) minLevel = maxLevel;
+        // Enforce min ≤ max (ALL is treated as +∞). Min is the anchor: a max that has fallen
+        // under it rises to meet it, never the other way — the same direction every editor
+        // step resolves the pair (see withMinLevel / withMaxLevel).
+        if (maxLevel != ALL && minLevel > maxLevel) maxLevel = minLevel;
         // Normalise the phase set: null / empty ⇒ all phases (default); else an unmodifiable copy.
         if (phases == null || phases.isEmpty()) {
             phases = ALL_PHASES;
@@ -100,30 +102,43 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
         return false;
     }
 
-    /** Copy with {@code minLevel} replaced (re-clamped by the canonical constructor). */
+    /**
+     * Copy with {@code minLevel} replaced. Raising min past a finite max drags max up with it;
+     * lowering min leaves max where it is. Every level editor (type menus, sheet, Stages, parts,
+     * slash commands) funnels through here, so the rule holds the same way in all of them.
+     */
     public TemplateGate withMinLevel(int newMin) {
-        return new TemplateGate(newMin, maxLevel, phases);
+        int min = Math.max(0, Math.min(MAX_LEVEL, newMin));
+        int max = (maxLevel != ALL && min > maxLevel) ? min : maxLevel;
+        return new TemplateGate(min, max, phases);
     }
 
-    /** Copy with {@code maxLevel} replaced (re-clamped by the canonical constructor). */
+    /**
+     * Copy with {@code maxLevel} replaced. Min is max's floor: a finite value below it lands on
+     * min instead, and min itself is never moved by a max edit. {@link #ALL} passes through.
+     */
     public TemplateGate withMaxLevel(int newMax) {
-        return new TemplateGate(minLevel, newMax, phases);
+        int max = newMax == ALL ? ALL : Math.max(minLevel, Math.min(MAX_LEVEL, newMax));
+        return new TemplateGate(minLevel, max, phases);
     }
 
     /**
      * Cycle {@code maxLevel} up one step for a click-to-bump editor:
-     * {@link #ALL} → 0 → 1 → … → {@link #MAX_LEVEL} → {@link #ALL} (mirrors the mob difficulty-band
-     * editor's wrap). Shared by the template-type editor and the carriage-parts editor so both step
-     * the {@code ALL}↔finite sentinel identically.
+     * {@link #ALL} → {@code minLevel} → … → {@link #MAX_LEVEL} → {@link #ALL}. The finite range
+     * starts at min, not 0, so a step can never put max under min. Shared by the template-type
+     * editor and the carriage-parts editor so both step the {@code ALL}↔finite sentinel identically.
      */
     public TemplateGate incMaxLevel() {
-        int next = (maxLevel == ALL) ? 0 : (maxLevel >= MAX_LEVEL ? ALL : maxLevel + 1);
+        int next = (maxLevel == ALL) ? minLevel : (maxLevel >= MAX_LEVEL ? ALL : maxLevel + 1);
         return withMaxLevel(next);
     }
 
-    /** Cycle {@code maxLevel} down one step: {@link #ALL} → {@link #MAX_LEVEL} → … → 0 → {@link #ALL}. */
+    /**
+     * Cycle {@code maxLevel} down one step: {@link #ALL} → {@link #MAX_LEVEL} → … →
+     * {@code minLevel} → {@link #ALL}. Everything below min is skipped.
+     */
     public TemplateGate decMaxLevel() {
-        int next = (maxLevel == ALL) ? MAX_LEVEL : (maxLevel <= 0 ? ALL : maxLevel - 1);
+        int next = (maxLevel == ALL) ? MAX_LEVEL : (maxLevel <= minLevel ? ALL : maxLevel - 1);
         return withMaxLevel(next);
     }
 
