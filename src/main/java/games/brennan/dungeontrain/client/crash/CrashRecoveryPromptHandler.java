@@ -51,6 +51,8 @@ public final class CrashRecoveryPromptHandler {
         if (openDelayRemaining <= 0) return;
         Minecraft mc = Minecraft.getInstance();
         if (!(mc.screen instanceof TitleScreen)) {
+            LOGGER.debug("[DungeonTrain] Crash recovery: title screen replaced by {} during the open delay; standing down.",
+                    mc.screen == null ? "null" : mc.screen.getClass().getName());
             openDelayRemaining = -1;
             pendingParent = null;
             return;
@@ -61,7 +63,10 @@ public final class CrashRecoveryPromptHandler {
         TitleScreen parent = pendingParent;
         openDelayRemaining = -1;
         pendingParent = null;
-        if (parent == null || mc.screen != parent) return;
+        if (parent == null || mc.screen != parent) {
+            LOGGER.debug("[DungeonTrain] Crash recovery: title screen instance changed during the open delay; standing down.");
+            return;
+        }
         Optional<CrashRunState.RunState> crashed = crashedRun(mc);
         if (crashed.isEmpty()) return;
         openedThisSession = true;
@@ -74,7 +79,9 @@ public final class CrashRecoveryPromptHandler {
     public static void onScreenInitPost(ScreenEvent.Init.Post event) {
         if (openedThisSession || openDelayRemaining > 0) return;
         if (!(event.getScreen() instanceof TitleScreen titleScreen)) return;
-        if (crashedRun(Minecraft.getInstance()).isEmpty()) return;
+        Optional<CrashRunState.RunState> crashed = crashedRun(Minecraft.getInstance());
+        LOGGER.debug("[DungeonTrain] Crash recovery: title screen init, record={}", crashed.map(CrashRunState.RunState::levelId).orElse("none"));
+        if (crashed.isEmpty()) return;
         openDelayRemaining = OPEN_DELAY_TICKS;
         pendingParent = titleScreen;
     }
