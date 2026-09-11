@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.TemplateStages;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -14,6 +15,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -176,6 +178,20 @@ public final class SharedCarriageClient {
                                                                        String text, String stage, String mode,
                                                                        String kind, String subKind, String buildName,
                                                                        String visibility, String sidecars) {
+        return submitBuild(ownerUuid, ownerName, blocksBase64, l, h, w, text, stage, mode, kind, subKind,
+                buildName, visibility, new BuildExtras(sidecars, null, List.of()));
+    }
+
+    /**
+     * As above, with everything a build carries besides its blocks bundled as {@link BuildExtras} —
+     * the sidecar document plus the author's Stage library and the ids this build links.
+     */
+    public static CompletableFuture<Optional<BuildUpload>> submitBuild(String ownerUuid, String ownerName,
+                                                                       String blocksBase64, int l, int h, int w,
+                                                                       String text, String stage, String mode,
+                                                                       String kind, String subKind, String buildName,
+                                                                       String visibility, BuildExtras extras) {
+        String sidecars = extras == null ? null : extras.sidecars();
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         if (ownerName != null && !ownerName.isEmpty()) body.addProperty("name", ownerName);
@@ -189,6 +205,7 @@ public final class SharedCarriageClient {
         // contents allow-lists, weights (a portal room's door position among them). Opaque to the
         // relay, which stores and returns it verbatim.
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        addStages(body, extras);
         body.addProperty("kind", kind == null ? "" : kind);
         if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
         if (buildName != null && !buildName.isEmpty()) body.addProperty("buildName", buildName);
@@ -209,6 +226,39 @@ public final class SharedCarriageClient {
 
     /** What a build upload got back: the relay's id, the lease token, and the durable owner secret. */
     public record BuildUpload(int id, String token, String secret, boolean deduped) {}
+
+    /**
+     * Everything a build carries besides its blocks, on every write path.
+     *
+     * @param sidecars the document from {@code TemplateSidecars.collect}; null or empty says nothing
+     *                 and the relay keeps what it holds
+     * @param stages   the author's user-authored Stage library from {@code TemplateStages.collectLibrary}
+     *                 — a JSON object text of {@code id → stage json}; null says nothing
+     * @param stageIds the Stage ids THIS build links ({@code TemplateStages.linkedIds}); the relay
+     *                 hands back the definitions of exactly these on fetch. Null says nothing; an
+     *                 empty list says "links none".
+     */
+    public record BuildExtras(String sidecars, String stages, List<String> stageIds) {
+        public static final BuildExtras NONE = new BuildExtras(null, null, null);
+    }
+
+    /** Add the {@code stages} + {@code stageIds} fields a build write may carry — absent when unsaid. */
+    private static void addStages(JsonObject body, BuildExtras extras) {
+        if (extras == null) return;
+        if (extras.stages() != null && !extras.stages().isEmpty()) {
+            try {
+                JsonElement parsed = JsonParser.parseString(extras.stages());
+                if (parsed.isJsonObject()) body.add("stages", parsed);
+            } catch (RuntimeException e) {
+                LOGGER.warn("[DungeonTrain] Builder relay upload: stage library is not JSON — not sent ({})", e.toString());
+            }
+        }
+        if (extras.stageIds() != null) {
+            JsonArray ids = new JsonArray();
+            for (String id : extras.stageIds()) ids.add(id);
+            body.add("stageIds", ids);
+        }
+    }
 
     /**
      * Every build the relay holds for {@code ownerUuid} — what the builder's My Builds screen lists.
@@ -610,7 +660,16 @@ public final class SharedCarriageClient {
      */
     public record BuildFetch(int id, String kind, String subKind, String buildName, String stage,
                              String visibility, String blocks, int l, int h, int w, int baseSeq,
-                             List<DeltaRec> deltas, String secret, String sidecars) {
+                             List<DeltaRec> deltas, String secret, String sidecars,
+                             Map<String, String> stages) {
+
+        /** As the canonical constructor, for a relay that said nothing about stages. */
+        public BuildFetch(int id, String kind, String subKind, String buildName, String stage,
+                          String visibility, String blocks, int l, int h, int w, int baseSeq,
+                          List<DeltaRec> deltas, String secret, String sidecars) {
+            this(id, kind, subKind, buildName, stage, visibility, blocks, l, h, w, baseSeq, deltas, secret,
+                    sidecars, Map.of());
+        }
 
         /** Whether the relay has this build out on the train rather than sitting in the profile. */
         public boolean published() {
@@ -668,7 +727,11 @@ public final class SharedCarriageClient {
                     // Empty from a relay that predates the field, which reads as "said nothing" all
                     // the way down to TemplateSidecars.apply — an install that leaves local sidecars
                     // exactly as they were rather than clearing them.
-                    parseDeltas(o), str(o, "secret"), str(o, "sidecars")));
+                    parseDeltas(o), str(o, "secret"), str(o, "sidecars"),
+                    // The Stage definitions this build links, id → json text. Empty from a relay that
+                    // predates the field — "nothing to install", never a reason to touch local stages.
+                    TemplateStages.decode(o.has("stages") && o.get("stages").isJsonObject()
+                            ? o.getAsJsonObject("stages") : null)));
         });
     }
 
@@ -899,7 +962,7 @@ public final class SharedCarriageClient {
      * {@link #save(int, String, String, String, int, String)}, ever speaks for them.</p>
      */
     public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text, int baseSeq) {
-        return save(id, token, blocksBase64, text, baseSeq, null);
+        return save(id, token, blocksBase64, text, baseSeq, BuildExtras.NONE);
     }
 
     /**
@@ -910,6 +973,13 @@ public final class SharedCarriageClient {
      */
     public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
                                                      int baseSeq, String sidecars) {
+        return save(id, token, blocksBase64, text, baseSeq, new BuildExtras(sidecars, null, null));
+    }
+
+    /** As above, with the Stage library + links riding along too — see {@link BuildExtras}. */
+    public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
+                                                     int baseSeq, BuildExtras extras) {
+        String sidecars = extras == null ? null : extras.sidecars();
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("token", token);
@@ -917,6 +987,7 @@ public final class SharedCarriageClient {
         body.addProperty("baseSeq", baseSeq);
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        addStages(body, extras);
         return statusPost("/carriages/save", body);
     }
 
@@ -938,7 +1009,7 @@ public final class SharedCarriageClient {
      */
     public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
                                                           String text, int baseSeq) {
-        return ownerSave(id, secret, blocksBase64, text, baseSeq, null);
+        return ownerSave(id, secret, blocksBase64, text, baseSeq, BuildExtras.NONE);
     }
 
     /**
@@ -950,6 +1021,13 @@ public final class SharedCarriageClient {
      */
     public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
                                                           String text, int baseSeq, String sidecars) {
+        return ownerSave(id, secret, blocksBase64, text, baseSeq, new BuildExtras(sidecars, null, null));
+    }
+
+    /** As above, with the Stage library + links riding along too — see {@link BuildExtras}. */
+    public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq, BuildExtras extras) {
+        String sidecars = extras == null ? null : extras.sidecars();
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
@@ -958,6 +1036,7 @@ public final class SharedCarriageClient {
         body.addProperty("world", WORLD);
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        addStages(body, extras);
         return statusPost("/carriages/owner-save", body);
     }
 
