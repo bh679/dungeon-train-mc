@@ -258,7 +258,11 @@
   },
   "randomized": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/fit"
+    "mode": "endless_repetition/dynamic/fit",
+    "builder": {
+      "uuid": "8182522180174312afab35464181a12b",
+      "name": "AutisticMime"
+    }
   },
   "romanhuge": {
     "weight": 1,
