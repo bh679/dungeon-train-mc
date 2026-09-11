@@ -12034,8 +12034,39 @@
       "released_at": null
     },
     {
-      "id": "x-menu-exit-test-mode",
+      "id": "house-dimensional-carriages-little-detective-crunch",
       "version": "0.834.0",
+      "type": "content",
+      "title": "Six new house dimensional carriages by Little Detective Crunch",
+      "summary": "Six new dimensional carriages join the house group \u2014 Squidward's House, Bear Cave, Gravity Falls, Dreamcore, KFC and Safe Haven \u2014 all designed and built by Little Detective Crunch in the in-game editor and shared through the relay. Our thanks go to them for the set! Each one rolls in at its own level, so some greet you early and others wait until you have a few carriages behind you. Alongside them, a few existing rooms were tidied: the abandoned room gained extra stone and cobble variations and a new mob spot, Nostalgia picked up new variations, and a couple of level floors and weights were nudged.",
+      "highlights": [
+        "Six new house dimensional carriages, designed and built by Little Detective Crunch \u2014 thank you!",
+        "Abandoned room and Nostalgia gain new variations; a few level floors and weights adjusted"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sheet-level-step-click",
+      "version": "0.835.0",
+      "type": "feat",
+      "title": "Editor: level bounds step on click, and max never drops below min",
+      "summary": "In the editor's build sheet the min and max level cells now work like the weight cell: click to raise, shift-click to lower, cmd-click to type a value. Across every editor menu the level range keeps itself sensible \u2014 max is floored by min and never moves it, and raising min past max drags max up with it.",
+      "highlights": [
+        "Build sheet: click a level bound +1, shift-click \u22121, cmd-click to type (weight number too)",
+        "Max level can no longer be set below min \u2014 stepping down from min goes straight to 'all'",
+        "Raising min past max pushes max up; changing max never touches min"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "x-menu-exit-test-mode",
+      "version": "0.836.0",
       "type": "feat",
       "title": "Exit Test Mode and Reseed in the editor's X menu",
       "summary": "Testing a dimensional carriage from the editor X menu got two things it was missing. While you stand in a test copy, the Test the Carriage button becomes Exit Test Mode \u2014 one click takes you back to your plot and sweeps the copy. And a Reseed cell now sits beside it: outside a test it is a world switch that makes every test roll fresh contents; inside one it re-rolls the carriage you are standing in, leaving you where you are.",

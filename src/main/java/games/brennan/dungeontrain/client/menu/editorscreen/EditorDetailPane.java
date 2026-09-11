@@ -377,8 +377,9 @@ public final class EditorDetailPane {
             }
             case SHEET -> {
                 TemplateDataSheet.Placed placed = sheetCell(hit.index());
+                // A cell's tooltip may carry a second line (the step-gesture hint under a bound).
                 yield placed == null || placed.cell().tooltip() == null
-                    ? List.of() : List.of(placed.cell().tooltip());
+                    ? List.of() : List.of(placed.cell().tooltip().split("\n"));
             }
             case GO_HERE -> goHere == null || ctx.selection() == null ? List.of()
                 : List.of(EditorScreenLang.text(EditorScreenLang.GO_HERE),
