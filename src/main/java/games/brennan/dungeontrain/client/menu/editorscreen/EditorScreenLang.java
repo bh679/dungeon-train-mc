@@ -164,6 +164,9 @@ public final class EditorScreenLang {
 
     public static final String TEST_CARRIAGE = PREFIX + "test_carriage";
     public static final String EXIT_TEST = PREFIX + "exit_test";
+    public static final String RESEED = PREFIX + "reseed";
+    public static final String RESEED_TIP_ON = PREFIX + "reseed.tip_on";
+    public static final String RESEED_TIP_OFF = PREFIX + "reseed.tip_off";
     public static final String ENTER = PREFIX + "enter";
     public static final String THEME = PREFIX + "theme";
     public static final String THEME_LIGHT = PREFIX + "theme.light";

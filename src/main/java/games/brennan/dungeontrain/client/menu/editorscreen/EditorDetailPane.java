@@ -37,7 +37,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, PREVIEW, SHEET, GO_HERE, OLDER, NEWER }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -74,6 +74,12 @@ public final class EditorDetailPane {
     public List<EditorScreenActions.Icon> icons() { return icons; }
     public List<CommandMenuEntry> rows() { return rows; }
     public CommandMenuEntry testEntry() { return test; }
+
+    /** The Reseed toggle beside the test button — always there, it is a world switch. */
+    public CommandMenuEntry.Toggle reseedEntry() { return EditorScreenActions.reseedEntry(); }
+
+    /** Where the Reseed cell sits: the right end of the test row. Null before the first layout. */
+    private InventoryEditorLayout.Rect reseedRect;
     /** The teleport button in the header, or null when the author is already standing there. */
     public CommandMenuEntry goHereEntry() { return goHere; }
     public EditorScreenActions.Ctx ctx() { return ctx; }
@@ -279,7 +285,16 @@ public final class EditorDetailPane {
     }
 
     private void drawTest(GuiGraphics g, Font font) {
-        InventoryEditorLayout.Rect r = layout.test();
+        InventoryEditorLayout.Rect row = layout.test();
+        // The Reseed cell takes the right end of the row, with a one-pixel gap; the button the rest.
+        CommandMenuEntry.Toggle reseed = reseedEntry();
+        int cellW = font.width(reseed.label()) + 2 * MenuRowPainter.CELL_PAD_X + 8;
+        reseedRect = new InventoryEditorLayout.Rect(row.right() - cellW, row.y(), cellW, row.h());
+        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(row.x(), row.y(),
+            Math.max(0, row.w() - cellW - 1), row.h());
+        MenuRowPainter.drawCell(g, font, reseed, reseedRect.x(), reseedRect.y(), reseedRect.right(),
+            reseedRect.h(), hovered.kind() == HitKind.RESEED, 0, 0, null);
+
         boolean enabled = test != null;
         boolean hov = enabled && hovered.kind() == HitKind.TEST;
         g.fill(r.x(), r.y(), r.right(), r.bottom(), !enabled ? DISABLED : hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
@@ -336,6 +351,7 @@ public final class EditorDetailPane {
             }
             return Hit.NONE;
         }
+        if (reseedRect != null && reseedRect.contains(mx, my)) return new Hit(HitKind.RESEED, 0, 0);
         if (layout.test().contains(mx, my)) return new Hit(HitKind.TEST, 0, 0);
         return Hit.NONE;
     }
@@ -369,6 +385,9 @@ public final class EditorDetailPane {
                           EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.selection().displayName()));
             // Only dimensions can be stood up, and that is the whole of why the button is off —
             // it no longer asks the author to stand anywhere.
+            case RESEED -> List.of(EditorScreenLang.text(EditorScreenLang.RESEED),
+                EditorScreenLang.text(PortalTestSessionState.reseed()
+                    ? EditorScreenLang.RESEED_TIP_ON : EditorScreenLang.RESEED_TIP_OFF));
             case TEST -> test == null
                 ? List.of(testLabel(),
                           EditorScreenLang.text(EditorScreenLang.DISABLED_DIMENSIONS_ONLY))

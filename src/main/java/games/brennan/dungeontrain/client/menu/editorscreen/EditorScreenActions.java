@@ -314,6 +314,21 @@ public final class EditorScreenActions {
             new PortalTestSaveCheckScreen(ctx.selection().modelName()));
     }
 
+    /** The world's reseed-on-test switch, the same command either way the server holds it. */
+    static final String RESEED_ON_COMMAND = "dungeontrain portal test reseed on";
+    static final String RESEED_OFF_COMMAND = "dungeontrain portal test reseed off";
+
+    /**
+     * Reseed: the world switch beside Test the Carriage. On, each test rolls the room's contents
+     * afresh; off, every test stands up the same roll. Tint alone shows the state — the cell is
+     * too narrow for an [ON]/[OFF] suffix, the same call the Mirror X / Y / Z cells make.
+     */
+    public static CommandMenuEntry.Toggle reseedEntry() {
+        return new CommandMenuEntry.Toggle(EditorScreenLang.text(EditorScreenLang.RESEED),
+            PortalTestSessionState.reseed(), RESEED_ON_COMMAND, RESEED_OFF_COMMAND,
+            /*showStateText*/ false, /*cmdToToggleOthers*/ null);
+    }
+
     // ------------------------------------------------------------------
     // Per-plot settings rows
     // ------------------------------------------------------------------

@@ -871,6 +871,10 @@ public final class EditorGuiScreen extends Screen {
                 dispatch(detail.testEntry());
                 return true;
             }
+            case RESEED -> {
+                dispatch(detail.reseedEntry());
+                return true;
+            }
             case GO_HERE -> {
                 if (detail.goHereEntry() == null) return false;
                 dispatch(detail.goHereEntry());
