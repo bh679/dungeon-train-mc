@@ -12032,6 +12032,118 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "house-dimensional-carriages-little-detective-crunch",
+      "version": "0.834.0",
+      "type": "content",
+      "title": "Six new house dimensional carriages by Little Detective Crunch",
+      "summary": "Six new dimensional carriages join the house group \u2014 Squidward's House, Bear Cave, Gravity Falls, Dreamcore, KFC and Safe Haven \u2014 all designed and built by Little Detective Crunch in the in-game editor and shared through the relay. Our thanks go to them for the set! Each one rolls in at its own level, so some greet you early and others wait until you have a few carriages behind you. Alongside them, a few existing rooms were tidied: the abandoned room gained extra stone and cobble variations and a new mob spot, Nostalgia picked up new variations, and a couple of level floors and weights were nudged.",
+      "highlights": [
+        "Six new house dimensional carriages, designed and built by Little Detective Crunch \u2014 thank you!",
+        "Abandoned room and Nostalgia gain new variations; a few level floors and weights adjusted"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sheet-level-step-click",
+      "version": "0.835.0",
+      "type": "feat",
+      "title": "Editor: level bounds step on click, and max never drops below min",
+      "summary": "In the editor's build sheet the min and max level cells now work like the weight cell: click to raise, shift-click to lower, cmd-click to type a value. Across every editor menu the level range keeps itself sensible \u2014 max is floored by min and never moves it, and raising min past max drags max up with it.",
+      "highlights": [
+        "Build sheet: click a level bound +1, shift-click \u22121, cmd-click to type (weight number too)",
+        "Max level can no longer be set below min \u2014 stepping down from min goes straight to 'all'",
+        "Raising min past max pushes max up; changing max never touches min"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-book-custom-author",
+      "version": "0.836.0",
+      "type": "feat",
+      "title": "Sign editor prop books as any author",
+      "summary": "When you sign a book & quill while standing in an editor plot, the sign screen now asks who the book is by. Type any name \u2014 an in-fiction author, a character, a pen name \u2014 and the book you stock into your carriage is credited to it instead of your Minecraft username. Once you have a title, the Sign and Close button becomes \"Next: Author\" and takes you to the author line; an author name is required before the book can be signed. Books signed out on the live train are unchanged and still carry your real name.",
+      "highlights": [
+        "Editable author line on the sign screen inside editor plots (Tab or click to switch between title and author)",
+        "\"Next: Author\" step button \u2014 an author name is required before signing a prop book",
+        "Available in all 21 languages"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "x-menu-exit-test-mode",
+      "version": "0.837.0",
+      "type": "feat",
+      "title": "Exit Test Mode and Reseed in the editor's X menu",
+      "summary": "Testing a dimensional carriage from the editor X menu got two things it was missing. While you stand in a test copy, the Test the Carriage button becomes Exit Test Mode \u2014 one click takes you back to your plot and sweeps the copy. And a Reseed cell now sits beside it: outside a test it is a world switch that makes every test roll fresh contents; inside one it re-rolls the carriage you are standing in, leaving you where you are.",
+      "highlights": [
+        "Test the Carriage flips to Exit Test Mode (with an exit icon) while a test is running",
+        "Reseed switch beside it: on, each test rolls new contents; off, the same roll every time",
+        "Inside a test, Reseed re-rolls the copy around you without moving you (unless the new roll fills your spot)"
+      ],
+      "pr": 1355,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "parent-deletion-confirmation",
+      "version": "0.838.0",
+      "type": "feat",
+      "title": "Editor: safer removal of templates with sub-variants",
+      "summary": "Removing a contents template or dimensional carriage that has sub-variants now asks what to do with them: delete everything, keep them as top-level templates, or hand the group to the first sub-variant. The editor takes you to where the work continued, and re-parenting a sub-variant now lands you in its plot.",
+      "highlights": [],
+      "pr": 1360,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "keep-trim-repair",
+      "version": "0.838.0",
+      "type": "feat",
+      "title": "Repairing armor keeps its trim",
+      "summary": "Combining two damaged trimmed armor pieces in a crafting grid no longer strips the trim. The repaired piece keeps the trim of the left-most piece (top-most if both are in the same column) \u2014 put the trim you want to keep on the left. Powered by the new Keep Trim sibling mod, bundled inside Dungeon Train.",
+      "highlights": [
+        "Works in the 2x2 inventory grid and the crafting table",
+        "An untrimmed piece on the left gives an untrimmed result, so you always know which trim you get",
+        "The anvil already kept the left item's trim and is unchanged"
+      ],
+      "pr": 1359,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-fog-toggle-and-paged-room-settings",
+      "version": "0.840.0",
+      "type": "feat",
+      "title": "Fog toggle for dimensional carriages; every room setting in the editor screen, paged",
+      "summary": "Dimensional carriages can now force their fog On or Off (Auto keeps following the walls mode, so nothing changes unless you say so). The editor screen shows every setting of whichever room you select \u2014 Walls and its sub-options, Contents, Books, Sky, Fog \u2014 without standing in it, paged under the 3D preview, and contents templates show their Flip axes there too.",
+      "highlights": [
+        "Fog row (Auto / On / Off) on dimensional carriages, in the world-space panel and the editor screen",
+        "Editor screen: room settings for the selected room, no need to stand in it; paged under the 3D preview",
+        "Editor screen: Flip X/Y/Z/Rooms for contents templates",
+        "peateargriffin: fog off, moss floor and skybox roof"
+      ],
+      "pr": 1361,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

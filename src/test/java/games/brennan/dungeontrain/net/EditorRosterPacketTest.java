@@ -57,6 +57,34 @@ final class EditorRosterPacketTest {
     }
 
     @Test
+    @DisplayName("a room's tag and box and a contents template's flip axes ride with their entries")
+    void roomAndFlipExtrasRoundTrip() {
+        EditorTypeMenusPacket.Variant room = new EditorTypeMenusPacket.Variant(
+            "labrynth", 3, "PORTALS", "portal_room", "labrynth", false, false);
+        EditorTypeMenusPacket.Variant contents = new EditorTypeMenusPacket.Variant(
+            "fire", 2, "CONTENTS", "fire", "fire", false, false);
+        EditorRosterPacket packet = new EditorRosterPacket(List.of(
+            new EditorRosterPacket.Group("portals", "Dimensional Carriage", "portal_room",
+                List.of(new EditorRosterPacket.Entry(room, 1).withRoom("endless_repetition/dynamic", 11, 13, 7))),
+            new EditorRosterPacket.Group("contents", "Contents", "",
+                List.of(new EditorRosterPacket.Entry(contents, 1)
+                    .withFlipMask(EditorStatusPacket.FLIP_KNOWN | EditorStatusPacket.FLIP_Z)))),
+            "");
+        EditorRosterPacket decoded = roundTrip(packet);
+        EditorRosterPacket.Entry r = decoded.groups().get(0).entries().get(0);
+        assertTrue(r.hasRoom());
+        assertEquals("endless_repetition/dynamic", r.roomMode());
+        assertEquals(11, r.roomLength());
+        assertEquals(13, r.roomWidth());
+        assertEquals(7, r.roomHeight());
+        assertEquals(EditorStatusPacket.NO_FLIP, r.flipMask());
+        EditorRosterPacket.Entry c = decoded.groups().get(1).entries().get(0);
+        assertFalse(c.hasRoom());
+        assertEquals(EditorStatusPacket.NO_SIZE, c.roomLength());
+        assertEquals(EditorStatusPacket.FLIP_KNOWN | EditorStatusPacket.FLIP_Z, c.flipMask());
+    }
+
+    @Test
     @DisplayName("an empty roster is buffer-symmetric and normalises a null stamped category")
     void empty() {
         EditorRosterPacket decoded = roundTrip(new EditorRosterPacket(List.of(), null, null));

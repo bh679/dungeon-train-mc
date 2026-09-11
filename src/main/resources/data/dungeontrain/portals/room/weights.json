@@ -16,7 +16,7 @@
     "mode": "endless_repetition/dynamic"
   },
   "beam": {
-    "weight": 4,
+    "weight": 3,
     "minLevel": 1,
     "maxLevel": 20,
     "mode": "bedrockless"
@@ -29,6 +29,7 @@
     "weight": 1,
     "mode": "bedrockless"
   },
+  "bearcave": 1,
   "bigger": {
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on/off/end"
@@ -119,6 +120,7 @@
     "minLevel": 1,
     "mode": "endless_repetition/dynamic"
   },
+  "dreamcore": 1,
   "end": {
     "weight": 1,
     "mode": "bedrockless",
@@ -150,6 +152,7 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on/off/none/repeated/-1/7"
   },
+  "gravityfalls": 1,
   "house": {
     "weight": 1,
     "mode": "bedrock_lock",
@@ -162,6 +165,7 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on/off/end"
   },
+  "kfc": 1,
   "labrynth": {
     "weight": 2,
     "mode": "endless_repetition/dynamic"
@@ -238,7 +242,7 @@
   },
   "peateargriffin": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day",
+    "mode": "bedrockless/exact/off/off/off/day/sealed/0/0/0/0/minecraft:bedrock/off",
     "builder": {
       "uuid": "753c591dc29a49adadaca1770b1ccf8d",
       "name": "dot_cheeselover"
@@ -264,6 +268,7 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
+  "safehaven": 1,
   "sanemaze": {
     "weight": 1,
     "mode": "bedrock_lock",
@@ -303,6 +308,10 @@
     "mode": "bedrock_lock/exact/off/off/mix:1:1:1:0:10:0"
   },
   "smallpat": 1,
+  "squidwardshouse_2": {
+    "weight": 1,
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/1/-1/1"
+  },
   "statue2": {
     "weight": 1,
     "mode": "endless_open/dynamic/off/off/off/cycle"

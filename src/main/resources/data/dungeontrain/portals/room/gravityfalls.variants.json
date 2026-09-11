@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "15,2,4": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "playermob:player_mob"}],
+    "15,1,25": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:spider"}],
+    "21,1,26": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:spider"}],
+    "26,1,21": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:spider"}, {"entity": "minecraft:wolf"}],
+    "27,1,4": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:spider"}, {"entity": "minecraft:wolf"}],
+    "27,1,10": [{"entity": "minecraft:spider"}, {"entity": "minecraft:wolf"}],
+    "19,1,1": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:wolf"}, {"entity": "minecraft:spider"}],
+    "21,10,7": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:phantom"}, {"entity": "minecraft:spider"}],
+    "21,10,11": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:phantom"}, {"entity": "minecraft:spider"}],
+    "21,10,15": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:phantom"}, {"entity": "minecraft:spider"}],
+    "15,10,7": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:phantom"}, {"entity": "minecraft:spider"}],
+    "18,3,7": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "playermob:player_mob"}],
+    "21,2,11": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "playermob:player_mob"}],
+    "21,2,16": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "playermob:player_mob"}],
+    "20,2,13": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "playermob:player_mob"}]
+  }
+}

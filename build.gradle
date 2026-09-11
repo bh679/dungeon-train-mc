@@ -392,6 +392,13 @@ dependencies {
     implementation "bh679:ediblebackpacks:${ediblebackpacks_version}"
     jarJar(group: 'bh679', name: 'ediblebackpacks', version: ediblebackpacks_version)
 
+    // Keep Trim — crafting-grid repair keeps the left-most item's armor trim. TEMPORARILY
+    // jarJar-bundled (like DiscordPresence/EdibleBackpacks) until its Modrinth/CurseForge
+    // listings are approved; then flip to the external-required-dep contract + modpack entry.
+    // DT does not compile against it — the mod is a single vanilla mixin, no API.
+    implementation "bh679:keeptrim:${keeptrim_version}"
+    jarJar(group: 'bh679', name: 'keeptrim', version: keeptrim_version)
+
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
     // loaded by NeoForge from Sable's own jarJar — we don't ship it.
@@ -658,6 +665,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
+        keeptrim_version                 : keeptrim_version,
         // Declared-minimum floors for the five EXTERNAL sibling deps. Deliberately
         // separate from the *_version values above (which the auto-release cascade
         // bumps freely) — see gradle.properties for the rationale.
