@@ -112,7 +112,15 @@ public final class PortalPuppetsClient {
             return Mth.rotLerp(partialTick, prevYaw, entry.yaw());
         }
 
-        /** Advance to a new server state, keeping the old one as the interpolation baseline. */
+        /**
+         * Advance to a new server state, keeping the old one as the interpolation baseline.
+         *
+         * <p>{@code next} may be any shape. The entry held here is always a full one — a pose entry
+         * is folded onto it, a held entry leaves it as it was — so the renderer and the model always
+         * have the complete picture whatever the wire carried this tick. Only a full entry re-dresses
+         * the model: the five equipment slots and the synched-data copy are the costly part of a
+         * snapshot, and a pose or held entry is the server saying they have not changed.</p>
+         */
         private void update(PortalPuppetsPacket.Entry next) {
             this.prevX = entry.x();
             this.prevY = entry.y();
@@ -120,9 +128,15 @@ public final class PortalPuppetsClient {
             this.prevYaw = entry.yaw();
             this.prevHeadYaw = entry.headYaw();
             this.prevPitch = entry.pitch();
-            this.entry = next;
+
+            if (next.isFull()) {
+                this.entry = next;
+            } else if (next.hasPose()) {
+                this.entry = entry.withPose(next);
+            }
 
             applyPose();
+            if (next.isFull()) applyAppearance();
         }
 
         /**
@@ -144,12 +158,6 @@ public final class PortalPuppetsClient {
                 living.yHeadRot = entry.headYaw();
                 living.yHeadRotO = prevHeadYaw;
 
-                living.setItemSlot(EquipmentSlot.MAINHAND, entry.mainHand());
-                living.setItemSlot(EquipmentSlot.HEAD, entry.head());
-                living.setItemSlot(EquipmentSlot.CHEST, entry.chest());
-                living.setItemSlot(EquipmentSlot.LEGS, entry.legs());
-                living.setItemSlot(EquipmentSlot.FEET, entry.feet());
-
                 // Limb swing, driven from how far the source actually moved. Nothing ticks this
                 // entity, so the animation state that a normal entity accumulates in its own tick
                 // has to be advanced here or the puppet slides about with its legs together.
@@ -164,8 +172,19 @@ public final class PortalPuppetsClient {
                 hurt.hurtTime--;
             }
 
-            applyData();
             model.tickCount++;
+        }
+
+        /** Dress the model: equipment and synched data, the parts a full entry carries. */
+        private void applyAppearance() {
+            if (model instanceof LivingEntity living) {
+                living.setItemSlot(EquipmentSlot.MAINHAND, entry.mainHand());
+                living.setItemSlot(EquipmentSlot.HEAD, entry.head());
+                living.setItemSlot(EquipmentSlot.CHEST, entry.chest());
+                living.setItemSlot(EquipmentSlot.LEGS, entry.legs());
+                living.setItemSlot(EquipmentSlot.FEET, entry.feet());
+            }
+            applyData();
         }
 
         /**
@@ -233,11 +252,23 @@ public final class PortalPuppetsClient {
                 continue;
             }
 
+            // A pose or held entry for a puppet this client does not hold: the server's memory of
+            // us is ahead of us — most likely we dropped everything on the staleness timeout during
+            // a lag spike. Nothing can be built from it. The server re-describes every puppet on a
+            // refresh period matched to that timeout, so the full entry is at most two seconds out.
+            // Counted as present above so the gap does not also discard anything else.
+            if (!entry.isFull()) {
+                LOGGER.debug("[DungeonTrain] Portal puppet {} arrived before its description — waiting",
+                    entry.key());
+                continue;
+            }
+
             Entity model = createModel(level, entry);
             if (model == null) continue;
 
             Puppet puppet = new Puppet(model, entry);
             puppet.applyPose();
+            puppet.applyAppearance();
             PUPPETS.put(entry.key(), puppet);
 
             LOGGER.info("[DungeonTrain] Portal puppet model created: key={} {} in {} space",

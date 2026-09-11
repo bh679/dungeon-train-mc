@@ -61,19 +61,19 @@ public final class PortalPuppets {
     /**
      * Most puppets one pair will describe in a tick.
      *
-     * <p><b>An authored room can hold four times this.</b> The cap was first written for "a corridor
-     * holding two players", treating forty zombies as a spawner someone built. That premise is
-     * stale: {@link PortalRoomMobs#MAX_LIVE_PER_STRUCTURE} lets a room stand up 64 mobs by design,
-     * and a player reported the consequence — a horde past this cap goes <i>invisible</i> while
-     * staying entirely real and still hitting them.</p>
+     * <p>Sized to draw an authored room whole. {@link PortalRoomMobs#MAX_LIVE_PER_STRUCTURE} lets a
+     * room stand up 64 mobs by design, and a player reported what a smaller cap did with that — a
+     * horde past it went <i>invisible</i> while staying entirely real and still hitting them. The
+     * budget covers those 64 plus the players in the corridor and the loot a fight in it drops.</p>
      *
-     * <p>Sixteen is still the right number, but only because of what {@link #select} does with it.
-     * The budget is spent by tier and then by distance, so the sixteen drawn are the sixteen the
-     * player is actually fighting, and what falls off the end is the far side of the room rather
-     * than an arbitrary slice of it. Raising it instead would multiply a per-tick packet that
-     * already carries each puppet's whole synched data and five item stacks.</p>
+     * <p>It used to be sixteen, and the reason was the packet: every puppet re-sent its whole
+     * description — synched data and five item stacks — every tick, so the cap was a bandwidth cap.
+     * {@link PortalPuppetDelta} sends the description once and a pose, or nothing, thereafter, so
+     * what this number bounds now is the client's render work for the room, which is the same work
+     * the other copy already asks of it for the real mobs. Above it, {@link #select} still decides
+     * who gets a slot and keeps that set stable tick to tick.</p>
      */
-    public static final int MAX_PER_PAIR = 16;
+    public static final int MAX_PER_PAIR = 96;
 
     /** Ordering tiers. A lower tier spends the budget first; see {@link #tierOf}. */
     static final int TIER_PLAYER = 0;
@@ -107,6 +107,17 @@ public final class PortalPuppets {
      */
     private static final Map<Integer, Integer> DROPPED = new HashMap<>();
 
+    /**
+     * Viewer → puppet key → what that viewer was last sent for it.
+     *
+     * <p>This is the server's picture of each client's {@code PortalPuppetsClient} map, and it is
+     * what lets a snapshot say "still there, hasn't moved" in three bytes instead of re-describing
+     * the puppet. Kept in step with {@link #SENT}: a viewer sent the clearing snapshot has their
+     * client emptied, so their memory goes with it, and a key a snapshot leaves out is dropped by
+     * the client and so is dropped here.</p>
+     */
+    private static final Map<UUID, Map<Integer, PortalPuppetDelta.Sent>> KNOWN = new HashMap<>();
+
     private PortalPuppets() {}
 
     /**
@@ -121,7 +132,23 @@ public final class PortalPuppets {
 
         private Session() {}
 
-        private void add(ServerPlayer viewer, PortalPuppetsPacket.Entry entry) {
+        /**
+         * Queue {@code full} for {@code viewer}, cut down to what their client is missing.
+         *
+         * <p>The memory is advanced here, at queueing, rather than at dispatch: the same tick can
+         * queue a viewer two pairs' worth of entries, and nothing about the shape of one depends on
+         * the other, so there is no reason to wait.</p>
+         */
+        private void add(ServerPlayer viewer, PortalPuppetsPacket.Entry full, long tick) {
+            Map<Integer, PortalPuppetDelta.Sent> known =
+                KNOWN.computeIfAbsent(viewer.getUUID(), k -> new HashMap<>());
+            PortalPuppetDelta.Sent sent = known.get(full.key());
+
+            PortalPuppetsPacket.Entry entry = PortalPuppetDelta.classify(sent, full, tick);
+            known.put(full.key(), sent == null
+                ? new PortalPuppetDelta.Sent(full, tick)
+                : sent.advance(entry, tick));
+
             byViewer.computeIfAbsent(viewer.getUUID(), k -> new ArrayList<>()).add(entry);
         }
 
@@ -141,8 +168,10 @@ public final class PortalPuppets {
                 if (entries != null && !entries.isEmpty()) {
                     DungeonTrainNet.sendTo(player, new PortalPuppetsPacket(entries));
                     SENT.add(player.getUUID());
+                    forgetUnsent(player.getUUID(), entries);
                 } else if (SENT.remove(player.getUUID())) {
                     DungeonTrainNet.sendTo(player, PortalPuppetsPacket.empty());
+                    KNOWN.remove(player.getUUID());
                 }
             }
 
@@ -150,11 +179,24 @@ public final class PortalPuppets {
             // the branch that would have forgotten them never runs and their id would sit here for
             // the rest of the session. Their client is covered either way — it drops puppets on its
             // own if the snapshots stop — but the set should not grow without bound.
-            if (SENT.size() > players.size()) {
+            if (SENT.size() > players.size() || KNOWN.size() > players.size()) {
                 Set<UUID> here = new HashSet<>();
                 for (ServerPlayer player : players) here.add(player.getUUID());
                 SENT.retainAll(here);
+                KNOWN.keySet().retainAll(here);
             }
+        }
+
+        /**
+         * Drop from a viewer's memory every key this snapshot did not name — the client drops the
+         * puppet on the same rule, and a key that later returns must be described afresh.
+         */
+        private static void forgetUnsent(UUID viewer, List<PortalPuppetsPacket.Entry> entries) {
+            Map<Integer, PortalPuppetDelta.Sent> known = KNOWN.get(viewer);
+            if (known == null || known.size() == entries.size()) return;
+            Set<Integer> named = new HashSet<>();
+            for (PortalPuppetsPacket.Entry entry : entries) named.add(entry.key());
+            known.keySet().retainAll(named);
         }
     }
 
@@ -215,12 +257,13 @@ public final class PortalPuppets {
 
         if (entries.isEmpty()) return;
 
+        long tick = level.getGameTime();
         for (ServerPlayer viewer : viewers) {
             for (PortalPuppetsPacket.Entry entry : entries) {
                 // Never your own stand-in. Filtered per recipient rather than hidden client-side, so
                 // a player's puppet is not merely invisible to them — it never reaches them.
                 if (entry.key() == viewer.getId()) continue;
-                session.add(viewer, entry);
+                session.add(viewer, entry, tick);
             }
         }
     }
@@ -292,6 +335,7 @@ public final class PortalPuppets {
         LIVE.clear();
         SENT.clear();
         DROPPED.clear();
+        KNOWN.clear();
     }
 
     /**
@@ -374,7 +418,7 @@ public final class PortalPuppets {
         List<SynchedEntityData.DataValue<?>> data = source.getEntityData().getNonDefaultValues();
         if (data == null) data = List.of();
 
-        return new PortalPuppetsPacket.Entry(
+        return PortalPuppetsPacket.Entry.full(
             source.getId(),
             isPlayer ? PortalPuppetsPacket.KIND_PLAYER : PortalPuppetsPacket.KIND_MOB,
             typeId,
