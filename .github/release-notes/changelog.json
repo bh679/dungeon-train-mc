@@ -12081,8 +12081,25 @@
       "released_at": null
     },
     {
-      "id": "stages-travel-with-relay-builds",
+      "id": "x-menu-exit-test-mode",
       "version": "0.837.0",
+      "type": "feat",
+      "title": "Exit Test Mode and Reseed in the editor's X menu",
+      "summary": "Testing a dimensional carriage from the editor X menu got two things it was missing. While you stand in a test copy, the Test the Carriage button becomes Exit Test Mode \u2014 one click takes you back to your plot and sweeps the copy. And a Reseed cell now sits beside it: outside a test it is a world switch that makes every test roll fresh contents; inside one it re-rolls the carriage you are standing in, leaving you where you are.",
+      "highlights": [
+        "Test the Carriage flips to Exit Test Mode (with an exit icon) while a test is running",
+        "Reseed switch beside it: on, each test rolls new contents; off, the same roll every time",
+        "Inside a test, Reseed re-rolls the copy around you without moving you (unless the new roll fills your spot)"
+      ],
+      "pr": 1355,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stages-travel-with-relay-builds",
+      "version": "0.838.0",
       "type": "feat",
       "title": "Your Stages travel with your builds",
       "summary": "Builds saved to your profile now carry the Stages they use \u2014 any Stage you created, and any bundled one you edited. Loading a build on another install brings those Stages with it, and if a Stage with the same name already exists there with different settings, you're asked per Stage whether to keep yours or use theirs before anything changes.",

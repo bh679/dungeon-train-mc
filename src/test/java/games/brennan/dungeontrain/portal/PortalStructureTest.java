@@ -242,4 +242,45 @@ class PortalStructureTest {
         assertThrows(NullPointerException.class, () -> new PortalStructure(ORIGIN, null, size));
         assertThrows(NullPointerException.class, () -> new PortalStructure(ORIGIN, "default", null));
     }
+
+    // ------------------------------------------------------------------
+    // seedSalt — a test's fresh roll, invisible to every live pair
+    // ------------------------------------------------------------------
+
+    private static PortalStructure salted(int salt) {
+        return new PortalStructure(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS),
+            PortalRoomSettings.DEFAULT, PortalRoomTiling.base(), PortalExitCopies.NONE,
+            PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT, salt);
+    }
+
+    @Test
+    @DisplayName("no salt: the eight-part form and the legacy hash are byte-identical")
+    void noSaltIsTheLegacyRoll() {
+        PortalStructure legacy = new PortalStructure(ORIGIN, "default", PortalRoomLayout.builtInSize(DIMS));
+        assertEquals(PortalStructure.NO_SALT, legacy.seedSalt());
+        int expected = java.util.Objects.hash("default".hashCode(), 7);
+        assertEquals(expected, legacy.variantIndexFor(PortalRoomTiling.Tile.BASE, 7));
+        assertEquals(expected, salted(PortalStructure.NO_SALT).variantIndexFor(PortalRoomTiling.Tile.BASE, 7));
+    }
+
+    @Test
+    @DisplayName("a salt changes the roll, and two salts differ from each other")
+    void saltChangesTheRoll() {
+        int unsalted = salted(0).variantIndexFor(PortalRoomTiling.Tile.BASE, 0);
+        int a = salted(12345).variantIndexFor(PortalRoomTiling.Tile.BASE, 0);
+        int b = salted(67890).variantIndexFor(PortalRoomTiling.Tile.BASE, 0);
+        assertNotEquals(unsalted, a);
+        assertNotEquals(a, b);
+    }
+
+    @Test
+    @DisplayName("the salt survives every copy the tiler and the mover make")
+    void saltCarriesThroughCopies() {
+        PortalStructure s = salted(99);
+        assertEquals(99, s.withTiling(PortalRoomTiling.base()).seedSalt());
+        assertEquals(99, s.withExitCopies(PortalExitCopies.NONE).seedSalt());
+        assertEquals(99, s.withExitTile(PortalRoomTiling.Tile.BASE).seedSalt());
+        assertEquals(99, s.movedTo(ORIGIN.offset(1, 0, 0)).seedSalt());
+        assertEquals(99, s.shadowAt(new PortalRoomTiling.Tile(1, 0)).seedSalt());
+    }
 }
