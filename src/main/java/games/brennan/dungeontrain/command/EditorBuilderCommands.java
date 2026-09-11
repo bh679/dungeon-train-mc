@@ -126,14 +126,17 @@ final class EditorBuilderCommands {
         source.sendSuccess(() -> Component.literal(line).withStyle(ChatFormatting.GREEN), true);
 
         MinecraftServer server = source.getServer();
+        boolean cleared = stored == null;
         TemplateCreditClient.record(relayKind, id, stored).thenAccept(outcome ->
-            server.execute(() -> source.sendSuccess(() -> relayLine(outcome), false)));
+            server.execute(() -> source.sendSuccess(() -> relayLine(outcome, cleared), false)));
         return 1;
     }
 
-    private static Component relayLine(TemplateCreditClient.Outcome outcome) {
+    private static Component relayLine(TemplateCreditClient.Outcome outcome, boolean cleared) {
         return switch (outcome) {
-            case RECORDED -> Component.literal("Relay: credit recorded for the builder leaderboard.")
+            case RECORDED -> Component.literal(cleared
+                ? "Relay: credit cleared from the builder leaderboard."
+                : "Relay: credit recorded for the builder leaderboard.")
                 .withStyle(ChatFormatting.GRAY);
             case NO_ADMIN -> Component.literal(
                 "Relay: saved locally only — no relay admin URL on this machine, so the leaderboard was not updated.")
