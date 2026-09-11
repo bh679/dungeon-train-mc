@@ -11968,6 +11968,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "free-play-advancement-profile-fix",
+      "version": "0.831.0",
+      "type": "fix",
+      "title": "Advancement profile integrity fix",
+      "summary": "Closed a gap where one advancement could be recorded to your cross-world profile from a Free Play run, and where a related command was unreachable without cheats. Nothing earned in Free Play is written to your profile now, and the ordering the advancement tree implies is enforced against what you have actually earned, not what a command can grant.",
+      "highlights": [
+        "Nothing earned in a Free Play run is recorded to your cross-world profile",
+        "A late-game command path that was unreachable without cheats now works in survival"
+      ],
+      "pr": 1350,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
