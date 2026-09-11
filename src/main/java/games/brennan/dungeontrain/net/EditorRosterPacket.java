@@ -53,9 +53,39 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
      * uploaded it — the relay row it lives in, so the previewer can page through the versions the
      * relay recorded. {@code relayId} is 0 for a template the relay has never seen.
      */
-    public record Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId) {
+    public record Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId,
+                        String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask) {
+        public Entry {
+            if (roomMode == null || roomMode.isEmpty()) roomMode = EditorStatusPacket.NO_MODE;
+        }
+
         public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight) {
             this(variant, selfWeight, 0);
+        }
+
+        /** The three-field shape from before the screen could edit a room it is not stood in. */
+        public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId) {
+            this(variant, selfWeight, relayId, EditorStatusPacket.NO_MODE, EditorStatusPacket.NO_SIZE,
+                EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_FLIP);
+        }
+
+        /**
+         * A portal room's settings tag and box, so the detail pane can show the room's rows for a
+         * selection the author is not standing in. Same sentinels as {@link EditorStatusPacket},
+         * which is what the pane read those rows from before.
+         */
+        public Entry withRoom(String mode, int length, int width, int height) {
+            return new Entry(variant, selfWeight, relayId, mode, length, width, height, flipMask);
+        }
+
+        /** A contents template's random-flip axes, packed as {@link EditorStatusPacket#flipMaskOf}. */
+        public Entry withFlipMask(int mask) {
+            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, mask);
+        }
+
+        /** True when this row is a portal room whose tag and box rode along. */
+        public boolean hasRoom() {
+            return !EditorStatusPacket.NO_MODE.equals(roomMode);
         }
     }
 
@@ -91,6 +121,11 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 EditorTypeMenusPacket.encodeVariant(buf, e.variant());
                 buf.writeVarInt(e.selfWeight());
                 buf.writeVarInt(e.relayId());
+                buf.writeUtf(e.roomMode(), EditorStatusPacket.MODE_TAG_MAX);
+                buf.writeVarInt(e.roomLength());
+                buf.writeVarInt(e.roomWidth());
+                buf.writeVarInt(e.roomHeight());
+                buf.writeVarInt(e.flipMask());
             }
         }
     }
@@ -108,7 +143,9 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             List<Entry> entries = new ArrayList<>(en);
             for (int j = 0; j < en; j++) {
                 EditorTypeMenusPacket.Variant v = EditorTypeMenusPacket.decodeVariant(buf);
-                entries.add(new Entry(v, buf.readVarInt(), buf.readVarInt()));
+                entries.add(new Entry(v, buf.readVarInt(), buf.readVarInt(),
+                    buf.readUtf(EditorStatusPacket.MODE_TAG_MAX), buf.readVarInt(), buf.readVarInt(),
+                    buf.readVarInt(), buf.readVarInt()));
             }
             groups.add(new Group(categoryId, typeName, modelId, entries));
         }

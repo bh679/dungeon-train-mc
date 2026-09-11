@@ -12126,6 +12126,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-fog-toggle-and-paged-room-settings",
+      "version": "0.840.0",
+      "type": "feat",
+      "title": "Fog toggle for dimensional carriages; every room setting in the editor screen, paged",
+      "summary": "Dimensional carriages can now force their fog On or Off (Auto keeps following the walls mode, so nothing changes unless you say so). The editor screen shows every setting of whichever room you select \u2014 Walls and its sub-options, Contents, Books, Sky, Fog \u2014 without standing in it, paged under the 3D preview, and contents templates show their Flip axes there too.",
+      "highlights": [
+        "Fog row (Auto / On / Off) on dimensional carriages, in the world-space panel and the editor screen",
+        "Editor screen: room settings for the selected room, no need to stand in it; paged under the 3D preview",
+        "Editor screen: Flip X/Y/Z/Rooms for contents templates",
+        "peateargriffin: fog off, moss floor and skybox roof"
+      ],
+      "pr": 1361,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

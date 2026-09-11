@@ -290,7 +290,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * tab's Mirror quad ({@link #addMirrorToggles}) — the two read alike because they mean related
      * things, but this one is per-template spawn behaviour, not an editor authoring aid.
      */
-    static List<CommandMenuEntry> flipRows(String modelId, boolean x, boolean y, boolean z, boolean rooms) {
+    public static List<CommandMenuEntry> flipRows(String modelId, boolean x, boolean y, boolean z, boolean rooms) {
         String prefix = "dungeontrain editor contents flip " + modelId + " ";
         List<CommandMenuEntry> out = new ArrayList<>();
         out.add(new CommandMenuEntry.Label("Flip"));
@@ -307,35 +307,48 @@ public final class EditorMenuScreen implements MenuScreen {
         return out;
     }
 
-    /** The portal-room block, in the order the settings read: box, then walls, then contents. */
+    /**
+     * The portal-room block for the room the author is standing in, in the order the settings
+     * read: box, then walls, then contents. Values come from the stood-in plot's status packet, so
+     * they are tick-fresh, and the rows send to the bare {@code portals} root.
+     */
     public static List<CommandMenuEntry> portalRows() {
-        String mode = EditorStatusHudOverlay.roomMode();
+        return portalRows(EditorStatusHudOverlay.roomMode(), EditorStatusHudOverlay.roomLength(),
+            EditorStatusHudOverlay.roomWidth(), EditorStatusHudOverlay.roomHeight(),
+            EditorMenuPortalRows.STOOD_IN_PREFIX);
+    }
+
+    /**
+     * The same block for any room, from its settings tag and box — what the editor screen shows for
+     * a room the author is previewing rather than standing in, with the rows sent to
+     * {@link EditorMenuPortalRows#prefixFor}'s named root.
+     */
+    public static List<CommandMenuEntry> portalRows(String mode, int length, int width, int height,
+                                                    String prefix) {
         List<CommandMenuEntry> out = new ArrayList<>();
 
         // Size — a portal room is the one plot whose box the author chooses: length outright (it is
         // the distance walked underneath a portal, not a footprint) and width and height above the
         // floor the corridor mouth sets.
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor(
-            "length", "Length", EditorStatusHudOverlay.roomLength()));
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor(
-            "width", "Width", EditorStatusHudOverlay.roomWidth()));
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor(
-            "height", "Height", EditorStatusHudOverlay.roomHeight()));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("length", "Length", length, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("width", "Width", width, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("height", "Height", height, prefix));
 
-        addIfPresent(out, EditorMenuPortalRows.wallsModeRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.lockRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.copiesRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.wallsModeRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.lockRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.copiesRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
-            mode, PortalRoomCopiesVariant.Plane.FLOOR));
+            mode, PortalRoomCopiesVariant.Plane.FLOOR, prefix));
         addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
-            mode, PortalRoomCopiesVariant.Plane.ROOF));
-        addIfPresent(out, EditorMenuPortalRows.doorWallRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.roomContentsRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.roomBooksRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.roomSkyRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.exitsRowFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.exitEveryTripleFor(mode));
-        addIfPresent(out, EditorMenuPortalRows.exitMoveTripleFor(mode));
+            mode, PortalRoomCopiesVariant.Plane.ROOF, prefix));
+        addIfPresent(out, EditorMenuPortalRows.doorWallRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.roomContentsRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.roomBooksRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.roomSkyRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.roomFogRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.exitsRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.exitEveryTripleFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.exitMoveTripleFor(mode, prefix));
 
         return out;
     }

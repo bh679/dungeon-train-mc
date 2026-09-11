@@ -225,6 +225,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_FOG_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomFog fog
+                    : games.brennan.dungeontrain.portal.PortalRoomFog.values()) {
+                builder.suggest(fog.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_SKY_SUGGESTIONS =
         (ctx, builder) -> {
             for (games.brennan.dungeontrain.portal.PortalRoomSky sky
@@ -545,145 +554,19 @@ public final class EditorCommand {
             // PORTALS takes the same (kind, name) variant subcommands — the pocket room is a
             // TrackKind under the hood, so weight / gate / new / reset are literally the same
             // handlers — plus one of its own: length, the axis only a portal room may choose.
-            .then(attachTrackVariantNodes(Commands.literal("portals")
-                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.PORTALS)))
+            .then(attachTrackVariantNodes(portalRoomSettingNodes(Commands.literal("portals")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.PORTALS))))
                 .then(Commands.literal("enter")
                     .then(Commands.argument("name", StringArgumentType.word())
                         .suggests(PORTAL_ROOM_NAME_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomEnter(ctx.getSource(),
                             StringArgumentType.getString(ctx, "name")))))
-                .then(portalSizeNode("length", PortalRoomResize.Axis.LENGTH))
-                .then(portalSizeNode("width", PortalRoomResize.Axis.WIDTH))
-                .then(portalSizeNode("height", PortalRoomResize.Axis.HEIGHT))
-                // All three at once, in the order the menus label them.
-                .then(Commands.literal("size")
-                    .then(Commands.argument("length", IntegerArgumentType.integer(1, 512))
-                        .then(Commands.argument("width", IntegerArgumentType.integer(1, 512))
-                            .then(Commands.argument("height", IntegerArgumentType.integer(1, 512))
-                                .executes(ctx -> runPortalRoomSizeAll(ctx.getSource(),
-                                    IntegerArgumentType.getInteger(ctx, "length"),
-                                    IntegerArgumentType.getInteger(ctx, "width"),
-                                    IntegerArgumentType.getInteger(ctx, "height")))))))
-                // What the room does at its walls. `next` is what the panel's button sends; the
-                // named forms are for typing, and for saying which one you want in one go.
-                .then(Commands.literal("mode")
-                    .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomModeCycle(ctx.getSource())))
-                    .then(Commands.argument("mode", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_MODE_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomMode(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "mode")))))
-                // Whether Endless Repetition's copies are the room block for block, or each rolled
-                // afresh from its variant sidecar. Means nothing under the other modes.
-                .then(Commands.literal("copies")
-                    .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomCopiesCycle(ctx.getSource())))
-                    // Which block Single repeats. Its own branch rather than a second argument on
-                    // the setter above, so the setter stays a bare word and a block id — which
-                    // carries a colon — never has to survive StringArgumentType.word().
-                    //
-                    // `block` sets both planes at once, which is what it has always meant and what
-                    // "I just want one material" still wants. `floor` and `roof` are the same three
-                    // verbs aimed at one plane each.
-                    .then(copiesPlaneNode("block", null))
-                    .then(copiesPlaneNode("floor",
-                        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR))
-                    .then(copiesPlaneNode("roof",
-                        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF))
-                    .then(Commands.argument("copies", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomCopies(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "copies")))))
-                // Which block a sealing room's shell is written in. Means nothing under a mode that
-                // seals nothing; bedrock unless the author has picked something else.
-                .then(Commands.literal("lock")
-                    .then(Commands.literal("held")
-                        .executes(ctx -> runPortalRoomLockHeld(ctx.getSource())))
-                    .then(Commands.argument("block", StringArgumentType.greedyString())
-                        .executes(ctx -> runPortalRoomLockBlock(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "block")))))
-                // Whether the room is furnished from the ordinary contents pool, and how a
-                // furnishing smaller than the room is fitted into it. Off by default.
-                .then(Commands.literal("contents")
-                    .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomContentsCycle(ctx.getSource())))
-                    .then(Commands.argument("contents", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_CONTENTS_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomContents(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "contents")))))
-                // Whether the copies standing against the portal carriages carry their own end wall
-                // through the corridor mouth's plane. Sealed by default — what every room did before
-                // the setting existed — and means nothing outside Endless Repetition.
-                .then(Commands.literal("doorwall")
-                    .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomDoorWallCycle(ctx.getSource())))
-                    .then(Commands.argument("doorwall", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_DOOR_WALL_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomDoorWall(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "doorwall")))))
-                // Whether the room is lit as though it stood outdoors, and under which sky. Off by
-                // default, which is every room lit only by whatever its own build gives it.
-                .then(Commands.literal("sky")
-                    .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomSkyCycle(ctx.getSource())))
-                    .then(Commands.argument("sky", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_SKY_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomSky(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "sky")))))
-                // How many extra ways back to the train an endless room scatters through its copies.
-                // Means nothing under the modes that do not repeat.
-                .then(Commands.literal("exits")
-                    .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomExitsCycle(ctx.getSource())))
-                    .then(Commands.argument("exits", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_EXITS_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomExits(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "exits")))))
-                // The X both readings of Exits are measured in — every X tiles, or one tile in X.
-                .then(Commands.literal("exitevery")
-                    .then(Commands.literal("inc")
-                        .executes(ctx -> runPortalRoomExitEveryStep(ctx.getSource(), +1)))
-                    .then(Commands.literal("dec")
-                        .executes(ctx -> runPortalRoomExitEveryStep(ctx.getSource(), -1)))
-                    .then(Commands.argument("tiles", IntegerArgumentType.integer(
-                            games.brennan.dungeontrain.portal.PortalRoomExits.MIN_EVERY,
-                            games.brennan.dungeontrain.portal.PortalRoomExits.MAX_EVERY))
-                        .executes(ctx -> runPortalRoomExitEvery(ctx.getSource(),
-                            IntegerArgumentType.getInteger(ctx, "tiles")))))
-                // How often a Random room walls off the base pair's exit, so the only ways onward
-                // are the copies. 0 never, 10 always.
-                .then(Commands.literal("exitmove")
-                    .then(Commands.literal("inc")
-                        .executes(ctx -> runPortalRoomExitMoveStep(ctx.getSource(), +1)))
-                    .then(Commands.literal("dec")
-                        .executes(ctx -> runPortalRoomExitMoveStep(ctx.getSource(), -1)))
-                    .then(Commands.argument("chance", IntegerArgumentType.integer(
-                            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_NEVER,
-                            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_ALWAYS))
-                        .executes(ctx -> runPortalRoomExitMove(ctx.getSource(),
-                            IntegerArgumentType.getInteger(ctx, "chance")))))
-                // Whether every book found in the room is by one author, and how that author is
-                // picked. Off by default — the ordinary mixed community pool.
-                .then(Commands.literal("books")
-                    .then(Commands.literal("next")
-                        .executes(ctx -> runPortalRoomBooksCycle(ctx.getSource())))
-                    .then(Commands.argument("books", StringArgumentType.word())
-                        .suggests(PORTAL_ROOM_BOOKS_SUGGESTIONS)
-                        .executes(ctx -> runPortalRoomBooks(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "books")))))
-                // The four shares of the roll — three ways to name an author, plus the tally —
-                // and the band of author a room will accept. All six mean nothing while Books is
-                // Off, which is why the edit screen is only reachable from a room that stocks at all.
-                .then(portalRoomBookWeightNode("booksself",
-                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SELF))
-                .then(portalRoomBookWeightNode("booksplayer",
-                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.PLAYER))
-                .then(portalRoomBookWeightNode("bookssignature",
-                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SIGNATURE))
-                .then(portalRoomBookWeightNode("booksstats",
-                    games.brennan.dungeontrain.portal.PortalRoomBooks.Share.STATS))
-                .then(portalRoomBookBoundNode("booksmin", true))
-                .then(portalRoomBookBoundNode("booksmax", false))
+                // The room settings tree, once for the plot the player is standing in and
+                // once more under `room <name>` for a room they are only looking at — see
+                // portalRoomSettingNodes.
+                .then(Commands.literal("room")
+                    .then(portalRoomSettingNodes(Commands.argument("room", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_NAME_SUGGESTIONS))))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
             .then(Commands.literal("architecture")
@@ -6664,8 +6547,9 @@ public final class EditorCommand {
      * <p>What the floating plot panel's Walls button sends. Three modes is few enough that cycling
      * reaches any of them in at most two clicks, and a cycle needs no keyboard.</p>
      */
-    private static int runPortalRoomModeCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomModeCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
@@ -6673,8 +6557,9 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals copies next} — step the Copies sub-mode. */
-    private static int runPortalRoomCopiesCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomCopiesCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
@@ -6682,8 +6567,9 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals contents next} — step the Contents setting. */
-    private static int runPortalRoomContentsCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomContentsCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
@@ -6691,8 +6577,9 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals doorwall next} — step Sealed → Repeated. */
-    private static int runPortalRoomDoorWallCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomDoorWallCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         return applyPortalRoomSettings(source, name,
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).nextDoorWall());
@@ -6705,8 +6592,9 @@ public final class EditorCommand {
      * sky and contents setters do the same: parsing is deliberately total, so a typo would otherwise
      * silently set the room to Sealed and report success.</p>
      */
-    private static int runPortalRoomDoorWall(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomDoorWall(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         games.brennan.dungeontrain.portal.PortalRoomDoorWall wanted =
@@ -6721,17 +6609,45 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals sky next} — step Off → Daylight → Day/Night → Nether → End. */
-    private static int runPortalRoomSkyCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomSkyCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
         return applyPortalRoomSettings(source, name, current.withSky(current.sky().next()));
     }
 
+    /** {@code /dt editor portals fog next} — step Auto → On → Off. */
+    private static int runPortalRoomFogCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).nextFog());
+    }
+
+    /** {@code /dt editor portals fog <auto|on|off>} — set it outright. Rejects a misspelling rather than falling back to Auto. */
+    private static int runPortalRoomFog(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomFog wanted =
+            games.brennan.dungeontrain.portal.PortalRoomFog.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown fog option '" + raw + "'. Try auto, on or off."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withFog(wanted));
+    }
+
     /** {@code /dt editor portals exits next} — step On → Random → Off, keeping the spacing. */
-    private static int runPortalRoomExitsCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomExitsCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
@@ -6739,8 +6655,9 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals exits <on|random|off>} — set it outright, keeping the spacing. */
-    private static int runPortalRoomExits(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomExits(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         games.brennan.dungeontrain.portal.PortalRoomExits.Kind wanted =
@@ -6757,12 +6674,13 @@ public final class EditorCommand {
     }
 
     /** Nudge the Exits spacing of the room plot the player is standing in by {@code delta}. */
-    private static int runPortalRoomExitEveryStep(CommandSourceStack source, int delta) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomExitEveryStep(CommandContext<CommandSourceStack> ctx, int delta) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return runPortalRoomExitEvery(source, current.exits().every() + delta);
+        return runPortalRoomExitEvery(ctx, current.exits().every() + delta);
     }
 
     /**
@@ -6771,8 +6689,9 @@ public final class EditorCommand {
      * <p>Clamped rather than rejected, the way the size commands are: a number the author typed and
      * meant should land on the nearest legal one with the reply saying so, not vanish.</p>
      */
-    private static int runPortalRoomExitEvery(CommandSourceStack source, int tiles) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomExitEvery(CommandContext<CommandSourceStack> ctx, int tiles) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
@@ -6781,12 +6700,13 @@ public final class EditorCommand {
     }
 
     /** Nudge how often the room walls off its exit, by {@code delta}. */
-    private static int runPortalRoomExitMoveStep(CommandSourceStack source, int delta) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomExitMoveStep(CommandContext<CommandSourceStack> ctx, int delta) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-        return runPortalRoomExitMove(source, current.exits().moveChance() + delta);
+        return runPortalRoomExitMove(ctx, current.exits().moveChance() + delta);
     }
 
     /**
@@ -6795,8 +6715,9 @@ public final class EditorCommand {
      *
      * <p>Clamped rather than rejected, like the other numeric portal settings.</p>
      */
-    private static int runPortalRoomExitMove(CommandSourceStack source, int chance) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomExitMove(CommandContext<CommandSourceStack> ctx, int chance) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
@@ -6805,8 +6726,9 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals contents <off|fit|exact|tile>} — set it outright. */
-    private static int runPortalRoomContents(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomContents(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         games.brennan.dungeontrain.portal.PortalRoomContents wanted =
@@ -6827,8 +6749,9 @@ public final class EditorCommand {
      * contents setter does the same: parsing is deliberately total, so a typo would otherwise
      * silently set the room to Off and report success.</p>
      */
-    private static int runPortalRoomSky(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomSky(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         games.brennan.dungeontrain.portal.PortalRoomSky wanted =
@@ -6849,8 +6772,9 @@ public final class EditorCommand {
      * {@code single}'s id() carries the block it repeats, and rejecting the bare word would be
      * rejecting the only spelling the suggestions offer.</p>
      */
-    private static int runPortalRoomCopies(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomCopies(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         games.brennan.dungeontrain.portal.PortalRoomCopies.Kind wanted =
@@ -6874,17 +6798,173 @@ public final class EditorCommand {
      * three branches are identical bar that argument, so they are built once rather than written out
      * three times over.</p>
      */
+    /**
+     * Every setting of a dimensional carriage — its box, what its walls do, and what is found
+     * inside it — hung off {@code root}.
+     *
+     * <p>Built twice: once on the bare {@code portals} literal, where each command acts on the plot
+     * the player is standing in, and once under {@code portals room <name>}, where it acts on the
+     * named room. The handlers tell the two apart through {@link #portalRoomOf}, so a setting that
+     * exists in one spelling exists in the other — the editor screen sends the named form for a
+     * room the author is previewing rather than standing in.</p>
+     */
+    private static <T extends com.mojang.brigadier.builder.ArgumentBuilder<CommandSourceStack, T>> T
+    portalRoomSettingNodes(T root) {
+        return root
+            .then(portalSizeNode("length", PortalRoomResize.Axis.LENGTH))
+            .then(portalSizeNode("width", PortalRoomResize.Axis.WIDTH))
+            .then(portalSizeNode("height", PortalRoomResize.Axis.HEIGHT))
+            // All three at once, in the order the menus label them.
+            .then(Commands.literal("size")
+                .then(Commands.argument("length", IntegerArgumentType.integer(1, 512))
+                    .then(Commands.argument("width", IntegerArgumentType.integer(1, 512))
+                        .then(Commands.argument("height", IntegerArgumentType.integer(1, 512))
+                            .executes(ctx -> runPortalRoomSizeAll(ctx,
+                                IntegerArgumentType.getInteger(ctx, "length"),
+                                IntegerArgumentType.getInteger(ctx, "width"),
+                                IntegerArgumentType.getInteger(ctx, "height")))))))
+            // What the room does at its walls. `next` is what the panel's button sends; the
+            // named forms are for typing, and for saying which one you want in one go.
+            .then(Commands.literal("mode")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomModeCycle(ctx)))
+                .then(Commands.argument("mode", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_MODE_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomMode(ctx,
+                        StringArgumentType.getString(ctx, "mode")))))
+            // Whether Endless Repetition's copies are the room block for block, or each rolled
+            // afresh from its variant sidecar. Means nothing under the other modes.
+            .then(Commands.literal("copies")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomCopiesCycle(ctx)))
+                // Which block Single repeats. Its own branch rather than a second argument on
+                // the setter above, so the setter stays a bare word and a block id — which
+                // carries a colon — never has to survive StringArgumentType.word().
+                //
+                // `block` sets both planes at once, which is what it has always meant and what
+                // "I just want one material" still wants. `floor` and `roof` are the same three
+                // verbs aimed at one plane each.
+                .then(copiesPlaneNode("block", null))
+                .then(copiesPlaneNode("floor",
+                    games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR))
+                .then(copiesPlaneNode("roof",
+                    games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF))
+                .then(Commands.argument("copies", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_COPIES_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomCopies(ctx,
+                        StringArgumentType.getString(ctx, "copies")))))
+            // Which block a sealing room's shell is written in. Means nothing under a mode that
+            // seals nothing; bedrock unless the author has picked something else.
+            .then(Commands.literal("lock")
+                .then(Commands.literal("held")
+                    .executes(ctx -> runPortalRoomLockHeld(ctx)))
+                .then(Commands.argument("block", StringArgumentType.greedyString())
+                    .executes(ctx -> runPortalRoomLockBlock(ctx,
+                        StringArgumentType.getString(ctx, "block")))))
+            // Whether the room is furnished from the ordinary contents pool, and how a
+            // furnishing smaller than the room is fitted into it. Off by default.
+            .then(Commands.literal("contents")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomContentsCycle(ctx)))
+                .then(Commands.argument("contents", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_CONTENTS_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomContents(ctx,
+                        StringArgumentType.getString(ctx, "contents")))))
+            // Whether the copies standing against the portal carriages carry their own end wall
+            // through the corridor mouth's plane. Sealed by default — what every room did before
+            // the setting existed — and means nothing outside Endless Repetition.
+            .then(Commands.literal("doorwall")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomDoorWallCycle(ctx)))
+                .then(Commands.argument("doorwall", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_DOOR_WALL_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomDoorWall(ctx,
+                        StringArgumentType.getString(ctx, "doorwall")))))
+            // Whether the room is lit as though it stood outdoors, and under which sky. Off by
+            // default, which is every room lit only by whatever its own build gives it.
+            .then(Commands.literal("sky")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomSkyCycle(ctx)))
+                .then(Commands.argument("sky", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_SKY_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomSky(ctx,
+                        StringArgumentType.getString(ctx, "sky")))))
+            // Whether the room is fogged. Auto by default — whatever the walls mode says — with
+            // On and Off as the author's override either way.
+            .then(Commands.literal("fog")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomFogCycle(ctx)))
+                .then(Commands.argument("fog", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_FOG_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomFog(ctx,
+                        StringArgumentType.getString(ctx, "fog")))))
+            // How many extra ways back to the train an endless room scatters through its copies.
+            // Means nothing under the modes that do not repeat.
+            .then(Commands.literal("exits")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomExitsCycle(ctx)))
+                .then(Commands.argument("exits", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_EXITS_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomExits(ctx,
+                        StringArgumentType.getString(ctx, "exits")))))
+            // The X both readings of Exits are measured in — every X tiles, or one tile in X.
+            .then(Commands.literal("exitevery")
+                .then(Commands.literal("inc")
+                    .executes(ctx -> runPortalRoomExitEveryStep(ctx, +1)))
+                .then(Commands.literal("dec")
+                    .executes(ctx -> runPortalRoomExitEveryStep(ctx, -1)))
+                .then(Commands.argument("tiles", IntegerArgumentType.integer(
+                        games.brennan.dungeontrain.portal.PortalRoomExits.MIN_EVERY,
+                        games.brennan.dungeontrain.portal.PortalRoomExits.MAX_EVERY))
+                    .executes(ctx -> runPortalRoomExitEvery(ctx,
+                        IntegerArgumentType.getInteger(ctx, "tiles")))))
+            // How often a Random room walls off the base pair's exit, so the only ways onward
+            // are the copies. 0 never, 10 always.
+            .then(Commands.literal("exitmove")
+                .then(Commands.literal("inc")
+                    .executes(ctx -> runPortalRoomExitMoveStep(ctx, +1)))
+                .then(Commands.literal("dec")
+                    .executes(ctx -> runPortalRoomExitMoveStep(ctx, -1)))
+                .then(Commands.argument("chance", IntegerArgumentType.integer(
+                        games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_NEVER,
+                        games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_ALWAYS))
+                    .executes(ctx -> runPortalRoomExitMove(ctx,
+                        IntegerArgumentType.getInteger(ctx, "chance")))))
+            // Whether every book found in the room is by one author, and how that author is
+            // picked. Off by default — the ordinary mixed community pool.
+            .then(Commands.literal("books")
+                .then(Commands.literal("next")
+                    .executes(ctx -> runPortalRoomBooksCycle(ctx)))
+                .then(Commands.argument("books", StringArgumentType.word())
+                    .suggests(PORTAL_ROOM_BOOKS_SUGGESTIONS)
+                    .executes(ctx -> runPortalRoomBooks(ctx,
+                        StringArgumentType.getString(ctx, "books")))))
+            // The four shares of the roll — three ways to name an author, plus the tally —
+            // and the band of author a room will accept. All six mean nothing while Books is
+            // Off, which is why the edit screen is only reachable from a room that stocks at all.
+            .then(portalRoomBookWeightNode("booksself",
+                games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SELF))
+            .then(portalRoomBookWeightNode("booksplayer",
+                games.brennan.dungeontrain.portal.PortalRoomBooks.Share.PLAYER))
+            .then(portalRoomBookWeightNode("bookssignature",
+                games.brennan.dungeontrain.portal.PortalRoomBooks.Share.SIGNATURE))
+            .then(portalRoomBookWeightNode("booksstats",
+                games.brennan.dungeontrain.portal.PortalRoomBooks.Share.STATS))
+            .then(portalRoomBookBoundNode("booksmin", true))
+            .then(portalRoomBookBoundNode("booksmax", false));
+    }
+
     private static LiteralArgumentBuilder<CommandSourceStack> copiesPlaneNode(
         String literal,
         @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
     ) {
         return Commands.literal(literal)
             .then(Commands.literal("held")
-                .executes(ctx -> runPortalRoomCopiesBlockHeld(ctx.getSource(), plane)))
+                .executes(ctx -> runPortalRoomCopiesBlockHeld(ctx, plane)))
             .then(Commands.literal("edit")
-                .executes(ctx -> runPortalRoomCopiesBlockEdit(ctx.getSource(), plane)))
+                .executes(ctx -> runPortalRoomCopiesBlockEdit(ctx, plane)))
             .then(Commands.argument("block", StringArgumentType.greedyString())
-                .executes(ctx -> runPortalRoomCopiesBlock(ctx.getSource(), plane,
+                .executes(ctx -> runPortalRoomCopiesBlock(ctx, plane,
                     StringArgumentType.getString(ctx, "block"))));
     }
 
@@ -6907,10 +6987,11 @@ public final class EditorCommand {
      * toggle rather than by holding a tool, so the main hand is free.</p>
      */
     private static int runPortalRoomCopiesBlockHeld(
-        CommandSourceStack source,
+        CommandContext<CommandSourceStack> ctx,
         @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
     ) {
-        String name = portalRoomPlotUnderPlayer(source);
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         ServerPlayer player = source.getPlayer();
@@ -6964,8 +7045,9 @@ public final class EditorCommand {
      * genuinely unseals the room: no skin, no corridor shells, no plugs. It is the author saying the
      * shell should not be there, which is why it succeeds rather than failing as a mistake.</p>
      */
-    private static int runPortalRoomLockHeld(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomLockHeld(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         ServerPlayer player = source.getPlayer();
@@ -6989,8 +7071,9 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals lock <id>} — set the shell's block by name, for a script. */
-    private static int runPortalRoomLockBlock(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomLockBlock(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         String id = raw == null ? "" : raw.trim();
@@ -7016,11 +7099,12 @@ public final class EditorCommand {
 
     /** {@code /dt editor portals copies <block|floor|roof> <id>} — set it by name, for a script. */
     private static int runPortalRoomCopiesBlock(
-        CommandSourceStack source,
+        CommandContext<CommandSourceStack> ctx,
         @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane,
         String raw
     ) {
-        String name = portalRoomPlotUnderPlayer(source);
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         java.util.Optional<net.minecraft.world.level.block.state.BlockState> state =
@@ -7043,10 +7127,11 @@ public final class EditorCommand {
      * turning the one block into a variant needs no authoring surface of its own.</p>
      */
     private static int runPortalRoomCopiesBlockEdit(
-        CommandSourceStack source,
+        CommandContext<CommandSourceStack> ctx,
         @javax.annotation.Nullable games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane
     ) {
-        String name = portalRoomPlotUnderPlayer(source);
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         ServerPlayer player = source.getPlayer();
         if (player == null) {
@@ -7148,8 +7233,9 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals books next} — step the author lock. */
-    private static int runPortalRoomBooksCycle(CommandSourceStack source) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomBooksCycle(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
@@ -7157,8 +7243,9 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals books <off|self|player|signature>} — set it outright. */
-    private static int runPortalRoomBooks(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomBooks(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         games.brennan.dungeontrain.portal.PortalRoomBooks wanted =
@@ -7191,10 +7278,11 @@ public final class EditorCommand {
      * <p>One handler for all three: the rows are identical but for which share they name, and three
      * copies of this would be three places for the clamp or the plot lookup to drift apart.</p>
      */
-    private static int runPortalRoomBookWeight(CommandSourceStack source,
+    private static int runPortalRoomBookWeight(CommandContext<CommandSourceStack> ctx,
                                                games.brennan.dungeontrain.portal.PortalRoomBooks.Share which,
                                                int delta, Integer exact) {
-        String name = portalRoomPlotUnderPlayer(source);
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
@@ -7205,8 +7293,9 @@ public final class EditorCommand {
     }
 
     /** {@code /dt editor portals mode <mode>} — set it outright. */
-    private static int runPortalRoomMode(CommandSourceStack source, String raw) {
-        String name = portalRoomPlotUnderPlayer(source);
+    private static int runPortalRoomMode(CommandContext<CommandSourceStack> ctx, String raw) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
 
         games.brennan.dungeontrain.portal.PortalRoomMode wanted =
@@ -7307,6 +7396,31 @@ public final class EditorCommand {
     }
 
     /** The portal room plot the player is standing in, or null with the reason already reported. */
+    /**
+     * The room a portal-room setting command acts on.
+     *
+     * <p>Named when the command was typed under {@code portals room <name>} — the form the editor
+     * screen sends for a room the author is only looking at — and the plot the player is standing
+     * in otherwise, which is what every one of these commands meant before the named form existed.
+     * Both roots share one subtree, so the two spellings cannot drift apart in what they accept.</p>
+     */
+    private static String portalRoomOf(CommandContext<CommandSourceStack> ctx) {
+        String named;
+        try {
+            named = ctx.getArgument("room", String.class);
+        } catch (IllegalArgumentException absent) {
+            return portalRoomPlotUnderPlayer(ctx.getSource());
+        }
+        String room = named == null ? "" : named.trim();
+        if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry
+                .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)
+                .contains(room)) {
+            ctx.getSource().sendFailure(Component.literal("Unknown dimensional carriage '" + room + "'."));
+            return null;
+        }
+        return room;
+    }
+
     private static String portalRoomPlotUnderPlayer(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return null;
@@ -7338,13 +7452,13 @@ public final class EditorCommand {
     ) {
         return Commands.literal(literal)
             .then(Commands.literal("inc")
-                .executes(ctx -> runPortalRoomBookWeight(ctx.getSource(), which, +1, null)))
+                .executes(ctx -> runPortalRoomBookWeight(ctx, which, +1, null)))
             .then(Commands.literal("dec")
-                .executes(ctx -> runPortalRoomBookWeight(ctx.getSource(), which, -1, null)))
+                .executes(ctx -> runPortalRoomBookWeight(ctx, which, -1, null)))
             .then(Commands.argument("weight", IntegerArgumentType.integer(
                     games.brennan.dungeontrain.portal.PortalRoomBooks.MIN_WEIGHT,
                     games.brennan.dungeontrain.portal.PortalRoomBooks.MAX_WEIGHT))
-                .executes(ctx -> runPortalRoomBookWeight(ctx.getSource(), which, 0,
+                .executes(ctx -> runPortalRoomBookWeight(ctx, which, 0,
                     IntegerArgumentType.getInteger(ctx, "weight"))));
     }
 
@@ -7359,20 +7473,21 @@ public final class EditorCommand {
     ) {
         return Commands.literal(literal)
             .then(Commands.literal("inc")
-                .executes(ctx -> runPortalRoomBookBound(ctx.getSource(), minimum, +1, null)))
+                .executes(ctx -> runPortalRoomBookBound(ctx, minimum, +1, null)))
             .then(Commands.literal("dec")
-                .executes(ctx -> runPortalRoomBookBound(ctx.getSource(), minimum, -1, null)))
+                .executes(ctx -> runPortalRoomBookBound(ctx, minimum, -1, null)))
             .then(Commands.argument("books", IntegerArgumentType.integer(
                     games.brennan.dungeontrain.portal.PortalRoomBooks.MIN_BOOK_BOUND,
                     games.brennan.dungeontrain.portal.PortalRoomBooks.MAX_BOOK_BOUND))
-                .executes(ctx -> runPortalRoomBookBound(ctx.getSource(), minimum, 0,
+                .executes(ctx -> runPortalRoomBookBound(ctx, minimum, 0,
                     IntegerArgumentType.getInteger(ctx, "books"))));
     }
 
     /** {@code /dt editor portals books<min|max> <inc|dec|N>} — the band of author this room accepts. */
-    private static int runPortalRoomBookBound(CommandSourceStack source, boolean minimum,
+    private static int runPortalRoomBookBound(CommandContext<CommandSourceStack> ctx, boolean minimum,
                                               int delta, Integer exact) {
-        String name = portalRoomPlotUnderPlayer(source);
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
         if (name == null) return 0;
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
@@ -7387,8 +7502,8 @@ public final class EditorCommand {
         String literal, PortalRoomResize.Axis axis
     ) {
         return Commands.literal(literal)
-            .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, +1)))
-            .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx.getSource(), axis, -1)))
+            .then(Commands.literal("inc").executes(ctx -> runPortalRoomSizeStep(ctx, axis, +1)))
+            .then(Commands.literal("dec").executes(ctx -> runPortalRoomSizeStep(ctx, axis, -1)))
             // Loosest floor AND ceiling of any axis, not the length's — this node is shared by
             // length, width and height, and a parser bound is a silent rejection where clampSize is
             // a visible one. PortalRoomLayout.clampSize stays the single authority on what is legal.
@@ -7400,7 +7515,7 @@ public final class EditorCommand {
                     Math.min(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT),
                     Math.max(PortalRoomLayout.MAX_LENGTH,
                         Math.max(PortalRoomLayout.MAX_WIDTH, PortalRoomLayout.MAX_HEIGHT))))
-                .executes(ctx -> runPortalRoomSize(ctx.getSource(), axis,
+                .executes(ctx -> runPortalRoomSize(ctx, axis,
                     IntegerArgumentType.getInteger(ctx, "blocks"))));
     }
 
@@ -7411,18 +7526,15 @@ public final class EditorCommand {
      * legal for this world and the reply says so when it had to pull a number in. A typed size that
      * is silently rejected would be worse than one that is visibly clamped.</p>
      */
-    private static int runPortalRoomSizeAll(CommandSourceStack source, int length, int width, int height) {
+    private static int runPortalRoomSizeAll(CommandContext<CommandSourceStack> ctx, int length, int width, int height) {
+        CommandSourceStack source = ctx.getSource();
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
-        if (name == null) {
-            source.sendFailure(Component.literal(
-                "Stand in a dimensional carriage plot first — /dt editor portals."));
-            return 0;
-        }
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
 
         net.minecraft.core.Vec3i wanted = new net.minecraft.core.Vec3i(length, height, width);
         net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, wanted, dims);
@@ -7466,18 +7578,15 @@ public final class EditorCommand {
     }
 
     /** Nudge one axis of the room plot the player is standing in by {@code delta}. */
-    private static int runPortalRoomSizeStep(CommandSourceStack source, PortalRoomResize.Axis axis, int delta) {
+    private static int runPortalRoomSizeStep(CommandContext<CommandSourceStack> ctx, PortalRoomResize.Axis axis, int delta) {
+        CommandSourceStack source = ctx.getSource();
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
-        if (name == null) {
-            source.sendFailure(Component.literal(
-                "Stand in a dimensional carriage plot first — /dt editor portals."));
-            return 0;
-        }
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
         int current = PortalRoomEditor.axisOf(PortalRoomEditor.plotSize(name, dims), axis);
-        return runPortalRoomSize(source, axis, current + delta);
+        return runPortalRoomSize(ctx, axis, current + delta);
     }
 
     /**
@@ -7488,18 +7597,15 @@ public final class EditorCommand {
      * moves, and a shrink files the row it removes so stepping back up returns it. Nothing is written
      * to disk until the next {@code /dt save}, which is what makes the size permanent.</p>
      */
-    private static int runPortalRoomSize(CommandSourceStack source, PortalRoomResize.Axis axis, int blocks) {
+    private static int runPortalRoomSize(CommandContext<CommandSourceStack> ctx, PortalRoomResize.Axis axis, int blocks) {
+        CommandSourceStack source = ctx.getSource();
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
-        if (name == null) {
-            source.sendFailure(Component.literal(
-                "Stand in a dimensional carriage plot first — /dt editor portals."));
-            return 0;
-        }
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
 
         int before = PortalRoomEditor.axisOf(PortalRoomEditor.plotSize(name, dims), axis);
         net.minecraft.core.Vec3i applied = PortalRoomEditor.setSize(overworld, name, axis, blocks, dims);

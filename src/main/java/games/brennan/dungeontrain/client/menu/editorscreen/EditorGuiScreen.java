@@ -573,7 +573,8 @@ public final class EditorGuiScreen extends Screen {
             tile == null ? null : tile.key(),
             tile == null ? null : tile.variant(),
             tile == null ? -1 : tile.selfWeight(),
-            standing, index.stampedCategory(), dirty);
+            standing, index.stampedCategory(), dirty,
+            tile == null ? null : tile.extras());
     }
 
     private float frameSeconds() {
@@ -880,6 +881,12 @@ public final class EditorGuiScreen extends Screen {
                 if (detail.goHereEntry() == null) return false;
                 dispatch(detail.goHereEntry());
                 return true;
+            }
+            case PAGE_PREV -> {
+                return detail.scrollBy(-1);
+            }
+            case PAGE_NEXT -> {
+                return detail.scrollBy(+1);
             }
             case OLDER -> {
                 pageVersion(true);

@@ -392,8 +392,9 @@ public final class TemplateDataSheet {
 
         /** A room axis row is the one whose command sets length, width or height. */
         boolean isRoomAxis() {
-            return prefix.contains(" portals length") || prefix.contains(" portals width")
-                || prefix.contains(" portals height");
+            // Matched on the axis word rather than the whole root, so a stepper built for a named
+            // room (`portals room <name> length`) is the same Size cell as a stood-in one.
+            return prefix.endsWith(" length") || prefix.endsWith(" width") || prefix.endsWith(" height");
         }
 
         /** The number inside a label like {@code "Weight (20)"}, or the whole label without one. */
