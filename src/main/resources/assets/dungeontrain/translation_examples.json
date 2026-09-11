@@ -3090,6 +3090,42 @@
       ]
     }
   },
+  "gui.dungeontrain.credits.page": {
+    "1": {
+      "label": "the page shown",
+      "examples": [
+        "2"
+      ]
+    },
+    "2": {
+      "label": "how many pages there are",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.writers.person_line": {
+    "1": {
+      "label": "the writer's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "how many books they wrote (more than twenty)",
+      "examples": [
+        "42"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.writers.how": {
+    "1": {
+      "label": "how many praised books it takes",
+      "examples": [
+        "20"
+      ]
+    }
+  },
   "gui.dungeontrain.custom_content.packages": {
     "1": {
       "label": "the custom content packs, comma-separated",

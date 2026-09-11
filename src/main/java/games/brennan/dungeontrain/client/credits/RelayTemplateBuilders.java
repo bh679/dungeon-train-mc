@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
+import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.template.BuilderCredit;
 import org.slf4j.Logger;
 
@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 /**
  * The builders the relay credits for shipped templates — {@code GET /templates/builders} — beside
@@ -32,9 +31,10 @@ import java.util.function.Consumer;
  * otherwise go unthanked until the next update — so the relay's list rides along and the Credits
  * page merges it onto the bundled one ({@link TemplateBuilderCredits#merged()}).</p>
  *
- * <p>Anonymous and UNGATED, like {@code /translations/coverage}: it carries no uuid and asks nothing
- * about this player. Cached to disk so an offline launch still thanks everybody it last saw. One
- * fetch per client run, from the Credits page itself; never throws, never blocks, never retries.</p>
+ * <p>Always the live pool ({@link RelayTarget#live()}) — that is where credits are mirrored, on
+ * every branch. Anonymous and UNGATED, like {@code /translations/coverage}: it carries no uuid and asks nothing
+ * about this player. Cached to disk so an offline launch still thanks everybody it last saw. Fetched
+ * each time the Credits page opens; never throws, never blocks, never retries.</p>
  */
 public final class RelayTemplateBuilders {
 
@@ -64,7 +64,7 @@ public final class RelayTemplateBuilders {
         }
     }
 
-    private static final AtomicBoolean FETCHED = new AtomicBoolean(false);
+    private static final AtomicBoolean IN_FLIGHT = new AtomicBoolean(false);
     private static List<Row> rows;
 
     private RelayTemplateBuilders() {}
@@ -76,21 +76,25 @@ public final class RelayTemplateBuilders {
     }
 
     /**
-     * Fetch once for the whole client run; {@code onUpdate} runs (off-thread) when a fresh answer
-     * differs from what was cached. Later calls are no-ops.
+     * Ask the relay again — once per opening of the Credits page, never two in flight at once;
+     * {@code onUpdate} runs (off-thread) when a fresh answer differs from what was cached. A
+     * credit set in the editor a minute ago is on the page the next time it is opened.
      */
-    public static void fetchOnce(Runnable onUpdate) {
-        if (FETCHED.compareAndSet(false, true)) fetchAsync(onUpdate);
+    public static void refresh(Runnable onUpdate) {
+        if (IN_FLIGHT.compareAndSet(false, true)) fetchAsync(onUpdate);
     }
 
     private static void fetchAsync(Runnable onUpdate) {
         try {
-            HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + PATH))
+            // The LIVE pool whatever branch this is: credits are mirrored there (TemplateCreditClient),
+            // and they are facts about shipped content, not about the relay the editor happens to use.
+            HttpRequest req = HttpRequest.newBuilder(URI.create(RelayTarget.live() + PATH))
                 .timeout(REQUEST_TIMEOUT)
                 .GET()
                 .build();
             HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .whenComplete((resp, err) -> {
+                    IN_FLIGHT.set(false);
                     if (err != null || resp == null || resp.statusCode() / 100 != 2) {
                         // Includes a relay older than the endpoint. Debug only: the page falls back
                         // to the cached + bundled lists, which is where it was before.
@@ -101,6 +105,7 @@ public final class RelayTemplateBuilders {
                     if (apply(parse(resp.body())) && onUpdate != null) onUpdate.run();
                 });
         } catch (Throwable t) {
+            IN_FLIGHT.set(false);
             LOGGER.debug("[DungeonTrain] Credits: relay builders fetch failed — {}", t.toString());
         }
     }
@@ -185,9 +190,8 @@ public final class RelayTemplateBuilders {
         }
     }
 
-    /** Test seam — forget everything, including the once-per-run latch. */
+    /** Test seam — forget everything read from disk. */
     static synchronized void reset() {
         rows = null;
-        FETCHED.set(false);
     }
 }

@@ -96,7 +96,11 @@ public enum LeaderboardCategory {
     // Templates that ship with the mod, credited to their original builder (the editor's Built-by
     // field, mirrored to the relay). Scope.NONE like the two above: a template is built once, not
     // within a life.
-    TEMPLATES_BUILT("templates_built", "templates_built", "Most Templates Built", Scope.NONE, Format.COUNT);
+    TEMPLATES_BUILT("templates_built", "templates_built", "Most Templates Built", Scope.NONE, Format.COUNT),
+    // Books the community liked: an author's shared books whose up-votes beat down-votes better
+    // than ten to one. The Credits page's Writers card reads this one; books_written above counts
+    // everything ever submitted.
+    BOOKS_PRAISED("books_praised", "books_praised", "Most Praised Writers", Scope.NONE, Format.COUNT);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject
