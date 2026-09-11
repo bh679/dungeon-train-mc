@@ -154,6 +154,21 @@ public final class EditorMenuPortalRows {
     }
 
     /**
+     * The Fog row — whether the room hides its boundary behind fog: Auto (the walls mode's own
+     * answer), On or Off.
+     *
+     * <p>Shown for every portal room, directly under Sky: like the sky, the fog is a statement about
+     * the place the room is pretending to be, and an author may want it in a sealed room or out of
+     * an endless one.</p>
+     */
+    public static CommandMenuEntry roomFogRowFor(String currentMode) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        return new CommandMenuEntry.Stay(
+            EditorPlotLabelsRenderer.roomFogLabel(currentMode),
+            "dungeontrain editor portals fog next");
+    }
+
+    /**
      * The Exits row, or null unless the walls repeat — only an endless room has anywhere to put an
      * extra way back to the train.
      *

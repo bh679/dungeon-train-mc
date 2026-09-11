@@ -222,6 +222,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_FOG_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (games.brennan.dungeontrain.portal.PortalRoomFog fog
+                    : games.brennan.dungeontrain.portal.PortalRoomFog.values()) {
+                builder.suggest(fog.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PORTAL_ROOM_SKY_SUGGESTIONS =
         (ctx, builder) -> {
             for (games.brennan.dungeontrain.portal.PortalRoomSky sky
@@ -588,6 +597,15 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_SKY_SUGGESTIONS)
                         .executes(ctx -> runPortalRoomSky(ctx.getSource(),
                             StringArgumentType.getString(ctx, "sky")))))
+                // Whether the room is fogged. Auto by default — whatever the walls mode says — with
+                // On and Off as the author's override either way.
+                .then(Commands.literal("fog")
+                    .then(Commands.literal("next")
+                        .executes(ctx -> runPortalRoomFogCycle(ctx.getSource())))
+                    .then(Commands.argument("fog", StringArgumentType.word())
+                        .suggests(PORTAL_ROOM_FOG_SUGGESTIONS)
+                        .executes(ctx -> runPortalRoomFog(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "fog")))))
                 // How many extra ways back to the train an endless room scatters through its copies.
                 // Means nothing under the modes that do not repeat.
                 .then(Commands.literal("exits")
@@ -6499,6 +6517,30 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
             games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
         return applyPortalRoomSettings(source, name, current.withSky(current.sky().next()));
+    }
+
+    /** {@code /dt editor portals fog next} — step Auto → On → Off. */
+    private static int runPortalRoomFogCycle(CommandSourceStack source) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).nextFog());
+    }
+
+    /** {@code /dt editor portals fog <auto|on|off>} — set it outright. Rejects a misspelling rather than falling back to Auto. */
+    private static int runPortalRoomFog(CommandSourceStack source, String raw) {
+        String name = portalRoomPlotUnderPlayer(source);
+        if (name == null) return 0;
+
+        games.brennan.dungeontrain.portal.PortalRoomFog wanted =
+            games.brennan.dungeontrain.portal.PortalRoomFog.parse(raw);
+        if (!wanted.id().equalsIgnoreCase(raw.trim())) {
+            source.sendFailure(Component.literal(
+                "Unknown fog option '" + raw + "'. Try auto, on or off."));
+            return 0;
+        }
+        return applyPortalRoomSettings(source, name,
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).withFog(wanted));
     }
 
     /** {@code /dt editor portals exits next} — step On → Random → Off, keeping the spacing. */

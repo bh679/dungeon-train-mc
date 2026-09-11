@@ -1386,7 +1386,7 @@ public final class PortalCarriageEvents {
     private static void sendFogFor(List<ServerPlayer> players, CarriageDims dims,
                                    PortalCarriageLayout layout, PortalStructure structure,
                                    Set<UUID> fogged) {
-        if (!structure.mode().fogs()) return;
+        if (!structure.settings().fogs()) return;
 
         // Bedrockless reaches past its own copies — there are none — into the clearance it swept, so
         // that mining out through the room's shell does not leave the fog behind while the player is

@@ -147,6 +147,12 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals sky next";
     }
 
+    /** As {@link #modeCycleCommandFor}, for whether the room is fogged. */
+    public static String roomFogCycleCommandFor(PlotCategory category) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals fog next";
+    }
+
     /** As {@link #modeCycleCommandFor}, for how many extra corridors an endless room lays. */
     public static String exitsCycleCommandFor(PlotCategory category) {
         if (category == null || !category.hasRoomBox()) return null;

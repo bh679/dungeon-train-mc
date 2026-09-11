@@ -333,6 +333,7 @@ public final class EditorMenuScreen implements MenuScreen {
         addIfPresent(out, EditorMenuPortalRows.roomContentsRowFor(mode));
         addIfPresent(out, EditorMenuPortalRows.roomBooksRowFor(mode));
         addIfPresent(out, EditorMenuPortalRows.roomSkyRowFor(mode));
+        addIfPresent(out, EditorMenuPortalRows.roomFogRowFor(mode));
         addIfPresent(out, EditorMenuPortalRows.exitsRowFor(mode));
         addIfPresent(out, EditorMenuPortalRows.exitEveryTripleFor(mode));
         addIfPresent(out, EditorMenuPortalRows.exitMoveTripleFor(mode));
