@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.net;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
+import games.brennan.dungeontrain.builder.relay.BuilderRelaySubVariant;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -27,22 +28,34 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * A foreign build installs as a local copy: the link back to its relay row is deliberately not
  * recorded, so a later save here can never overwrite the original.</p>
  *
+ * <p>{@code parentId} names the variant parent to file the build under as a sub-variant once it is
+ * installed — blank for a plain top-level load. Honoured for the kinds that have sub-variants
+ * (contents, portal rooms) and ignored for the rest; see {@link BuilderRelaySubVariant}.</p>
+ *
  * <p>The answer comes back as a {@link BuilderProfileDownloadResultPacket} once the relay has
  * answered, rather than from this handler — the fetch is a network call and the server thread does
  * not wait on one.</p>
  */
 public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Resolution resolution,
                                            String name, String ownerUuid, String ownerName,
-                                           boolean live, boolean overwriteUnsaved)
+                                           boolean live, boolean overwriteUnsaved, String parentId)
         implements CustomPacketPayload {
 
     public BuilderProfileDownloadPacket {
         ownerName = ownerName == null ? "" : ownerName;
+        parentId = parentId == null ? "" : parentId;
+    }
+
+    /** As the canonical constructor, for a plain top-level load. */
+    public BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Resolution resolution,
+                                        String name, String ownerUuid, String ownerName,
+                                        boolean live, boolean overwriteUnsaved) {
+        this(relayId, resolution, name, ownerUuid, ownerName, live, overwriteUnsaved, "");
     }
 
     /** The first press on one of my own builds: install it, unless the name is already in use here. */
     public BuilderProfileDownloadPacket(int relayId) {
-        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", "", false, false);
+        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", "", false, false, "");
     }
 
     /**
@@ -56,7 +69,7 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
      * nothing more. Empty when the screen never knew a name.</p>
      */
     public BuilderProfileDownloadPacket(int relayId, String ownerUuid, String ownerName, boolean live) {
-        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", ownerUuid, ownerName, live, false);
+        this(relayId, BuilderRelayInstall.Resolution.AS_IS, "", ownerUuid, ownerName, live, false, "");
     }
 
     public static final Type<BuilderProfileDownloadPacket> TYPE =
@@ -72,10 +85,11 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
                 buf.writeUtf(packet.ownerName, 64);
                 buf.writeBoolean(packet.live);
                 buf.writeBoolean(packet.overwriteUnsaved);
+                buf.writeUtf(packet.parentId, 64);
             },
             buf -> new BuilderProfileDownloadPacket(buf.readVarInt(),
                     buf.readEnum(BuilderRelayInstall.Resolution.class), buf.readUtf(64), buf.readUtf(48),
-                    buf.readUtf(64), buf.readBoolean(), buf.readBoolean())
+                    buf.readUtf(64), buf.readBoolean(), buf.readBoolean(), buf.readUtf(64))
         );
 
     @Override
@@ -91,7 +105,7 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
             String owner = BuilderProfileRequestPacket.viewedOwner(player, packet.ownerUuid);
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
             BuilderRelayDownload.download(player, level, packet.relayId, packet.resolution, packet.name,
-                            owner, packet.ownerName, live, packet.overwriteUnsaved)
+                            owner, packet.ownerName, live, packet.overwriteUnsaved, packet.parentId)
                     .thenAccept(result -> player.getServer().execute(() -> {
                         if (player.hasDisconnected()) return;
                         DungeonTrainNet.sendTo(player, BuilderProfileDownloadResultPacket.of(result));
