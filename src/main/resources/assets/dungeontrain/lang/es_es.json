@@ -989,6 +989,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "Las plantillas integradas no se pueden renombrar",
   "gui.dungeontrain.editor_screen.disabled.not_here": "No disponible para esta plantilla",
   "gui.dungeontrain.editor_screen.test_carriage": "Probar el vagón",
+  "gui.dungeontrain.editor_screen.exit_test": "Salir del modo de prueba",
   "gui.dungeontrain.editor_screen.enter": "Entrar",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Claro",

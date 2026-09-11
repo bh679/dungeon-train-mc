@@ -964,6 +964,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "แม่แบบในตัวเปลี่ยนชื่อไม่ได้",
   "gui.dungeontrain.editor_screen.disabled.not_here": "ใช้ไม่ได้กับแม่แบบนี้",
   "gui.dungeontrain.editor_screen.test_carriage": "ทดสอบตู้",
+  "gui.dungeontrain.editor_screen.exit_test": "ออกจากโหมดทดสอบ",
   "gui.dungeontrain.editor_screen.enter": "เข้า",
   "gui.dungeontrain.editor_screen.theme": "ธีม",
   "gui.dungeontrain.editor_screen.theme.light": "สว่าง",

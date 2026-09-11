@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
 import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
+import games.brennan.dungeontrain.client.PortalTestSessionState;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
@@ -41,6 +42,9 @@ import java.util.function.Supplier;
  * which is addressed, where the category supports it.</p>
  */
 public final class EditorScreenActions {
+
+    /** The way out of a test carriage — the same command the row-list menu's Back row runs. */
+    static final String EXIT_TEST_COMMAND = "dungeontrain portal test back";
 
     /** What the builders need to know about the selection and the player. */
     public record Ctx(
@@ -295,8 +299,16 @@ public final class EditorScreenActions {
      * <p>It used to require standing in the room, because the command could only name the plot the
      * author was in. The room is stamped in its own band in the basement either way, so where they
      * were standing was never part of what it tested — only of how it was named.</p>
+     *
+     * <p>While a test is running the same button is the way back out — Exit Test Mode, the row-list
+     * menu's "Back from" row ({@code MainMenuScreen}). Independent of the selection: the test copy
+     * sits in the basement between plots, where nothing is "here" to select.</p>
      */
     public static CommandMenuEntry testEntry(Ctx ctx) {
+        if (PortalTestSessionState.active()) {
+            return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.EXIT_TEST),
+                EXIT_TEST_COMMAND);
+        }
         if (!ctx.hasSelection() || ctx.category() != PlotCategory.PORTALS) return null;
         return new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
             new PortalTestSaveCheckScreen(ctx.selection().modelName()));

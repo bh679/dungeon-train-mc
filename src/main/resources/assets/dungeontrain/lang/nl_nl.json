@@ -989,6 +989,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "Ingebouwde sjablonen kunnen niet worden hernoemd",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Niet beschikbaar voor dit sjabloon",
   "gui.dungeontrain.editor_screen.test_carriage": "Test de wagon",
+  "gui.dungeontrain.editor_screen.exit_test": "Testmodus verlaten",
   "gui.dungeontrain.editor_screen.enter": "Betreden",
   "gui.dungeontrain.editor_screen.theme": "Thema",
   "gui.dungeontrain.editor_screen.theme.light": "Licht",

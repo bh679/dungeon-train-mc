@@ -1014,6 +1014,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "Wbudowanych szablonów nie można zmienić nazwy",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Niedostępne dla tego szablonu",
   "gui.dungeontrain.editor_screen.test_carriage": "Przetestuj wagon",
+  "gui.dungeontrain.editor_screen.exit_test": "Wyjdź z trybu testowego",
   "gui.dungeontrain.editor_screen.enter": "Wejdź",
   "gui.dungeontrain.editor_screen.theme": "Motyw",
   "gui.dungeontrain.editor_screen.theme.light": "Jasny",

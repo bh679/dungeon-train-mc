@@ -989,6 +989,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "I modelli integrati non possono essere rinominati",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Non disponibile per questo modello",
   "gui.dungeontrain.editor_screen.test_carriage": "Prova il vagone",
+  "gui.dungeontrain.editor_screen.exit_test": "Esci dalla modalità di prova",
   "gui.dungeontrain.editor_screen.enter": "Entra",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Chiaro",

@@ -1300,6 +1300,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "Parts and tracks cannot be renamed from here yet",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Not available for this template",
   "gui.dungeontrain.editor_screen.test_carriage": "Test the Carriage",
+  "gui.dungeontrain.editor_screen.exit_test": "Exit Test Mode",
   "gui.dungeontrain.editor_screen.enter": "Enter",
   "gui.dungeontrain.editor_screen.theme": "Theme",
   "gui.dungeontrain.editor_screen.theme.light": "Light",

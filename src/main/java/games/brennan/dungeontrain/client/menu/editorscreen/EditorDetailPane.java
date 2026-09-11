@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.PortalTestSessionState;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
@@ -12,6 +13,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
 
@@ -281,15 +283,25 @@ public final class EditorDetailPane {
         boolean enabled = test != null;
         boolean hov = enabled && hovered.kind() == HitKind.TEST;
         g.fill(r.x(), r.y(), r.right(), r.bottom(), !enabled ? DISABLED : hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
-        String label = EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE);
+        String label = testLabel();
         int tw = font.width(label) + 12;
         int x = r.x() + (r.w() - tw) / 2;
         if (!enabled) tint(g, DISABLED_ICON);
         else if (hov) tint(g, 0xFF000000);
-        g.blitSprite(EditorIcons.PLAY, x, r.y() + (r.h() - 10) / 2, 10, 10);
+        g.blitSprite(testIcon(), x, r.y() + (r.h() - 10) / 2, 10, 10);
         g.setColor(1f, 1f, 1f, 1f);
         g.drawString(font, label, x + 12, r.y() + (r.h() - font.lineHeight) / 2 + 1,
             !enabled ? 0x80FFFFFF : hov ? 0xFF000000 : 0xFFFFFFFF, false);
+    }
+
+    /** The test button's name: the way in, or — while a test is running — the way back out. */
+    private static String testLabel() {
+        return EditorScreenLang.text(PortalTestSessionState.active()
+            ? EditorScreenLang.EXIT_TEST : EditorScreenLang.TEST_CARRIAGE);
+    }
+
+    private static ResourceLocation testIcon() {
+        return PortalTestSessionState.active() ? EditorIcons.EXIT : EditorIcons.PLAY;
     }
 
     private static void tint(GuiGraphics g, int argb) {
@@ -358,7 +370,7 @@ public final class EditorDetailPane {
             // Only dimensions can be stood up, and that is the whole of why the button is off —
             // it no longer asks the author to stand anywhere.
             case TEST -> test == null
-                ? List.of(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
+                ? List.of(testLabel(),
                           EditorScreenLang.text(EditorScreenLang.DISABLED_DIMENSIONS_ONLY))
                 : List.of();
             default -> List.of();

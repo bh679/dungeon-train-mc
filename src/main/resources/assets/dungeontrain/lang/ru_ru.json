@@ -1019,6 +1019,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "Встроенные шаблоны нельзя переименовать",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Недоступно для этого шаблона",
   "gui.dungeontrain.editor_screen.test_carriage": "Испытать вагон",
+  "gui.dungeontrain.editor_screen.exit_test": "Выйти из режима испытания",
   "gui.dungeontrain.editor_screen.enter": "Войти",
   "gui.dungeontrain.editor_screen.theme": "Тема",
   "gui.dungeontrain.editor_screen.theme.light": "Светлая",

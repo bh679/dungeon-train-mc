@@ -1327,6 +1327,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "Șabloanele native nu pot fi redenumite",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Indisponibil pentru acest șablon",
   "gui.dungeontrain.editor_screen.test_carriage": "Testează vagonul",
+  "gui.dungeontrain.editor_screen.exit_test": "Ieși din modul de testare",
   "gui.dungeontrain.editor_screen.enter": "Intră",
   "gui.dungeontrain.editor_screen.theme": "Temă",
   "gui.dungeontrain.editor_screen.theme.light": "Deschisă",

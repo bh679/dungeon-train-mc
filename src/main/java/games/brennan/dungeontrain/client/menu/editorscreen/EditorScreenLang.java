@@ -163,6 +163,7 @@ public final class EditorScreenLang {
     public static final String DISABLED_DIMENSIONS_ONLY = PREFIX + "disabled.dimensions_only";
 
     public static final String TEST_CARRIAGE = PREFIX + "test_carriage";
+    public static final String EXIT_TEST = PREFIX + "exit_test";
     public static final String ENTER = PREFIX + "enter";
     public static final String THEME = PREFIX + "theme";
     public static final String THEME_LIGHT = PREFIX + "theme.light";

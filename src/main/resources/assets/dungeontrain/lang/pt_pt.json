@@ -989,6 +989,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "Os modelos originais não podem ser renomeados",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Não disponível para este modelo",
   "gui.dungeontrain.editor_screen.test_carriage": "Testar a Carruagem",
+  "gui.dungeontrain.editor_screen.exit_test": "Sair do Modo de Teste",
   "gui.dungeontrain.editor_screen.enter": "Entrar",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Claro",

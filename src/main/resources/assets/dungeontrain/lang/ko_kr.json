@@ -964,6 +964,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "내장 템플릿은 이름을 바꿀 수 없습니다",
   "gui.dungeontrain.editor_screen.disabled.not_here": "이 템플릿에서는 사용할 수 없음",
   "gui.dungeontrain.editor_screen.test_carriage": "객차 테스트",
+  "gui.dungeontrain.editor_screen.exit_test": "테스트 모드 종료",
   "gui.dungeontrain.editor_screen.enter": "입장",
   "gui.dungeontrain.editor_screen.theme": "테마",
   "gui.dungeontrain.editor_screen.theme.light": "밝게",

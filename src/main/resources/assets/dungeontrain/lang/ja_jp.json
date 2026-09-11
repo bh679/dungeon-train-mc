@@ -964,6 +964,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "内蔵テンプレートの名前は変更できません",
   "gui.dungeontrain.editor_screen.disabled.not_here": "このテンプレートでは利用できません",
   "gui.dungeontrain.editor_screen.test_carriage": "車両をテスト",
+  "gui.dungeontrain.editor_screen.exit_test": "テストモードを終了",
   "gui.dungeontrain.editor_screen.enter": "入る",
   "gui.dungeontrain.editor_screen.theme": "テーマ",
   "gui.dungeontrain.editor_screen.theme.light": "ライト",

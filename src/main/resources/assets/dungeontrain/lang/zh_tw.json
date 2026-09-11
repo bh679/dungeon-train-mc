@@ -964,6 +964,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "內建範本無法重新命名",
   "gui.dungeontrain.editor_screen.disabled.not_here": "此範本無法使用",
   "gui.dungeontrain.editor_screen.test_carriage": "測試車廂",
+  "gui.dungeontrain.editor_screen.exit_test": "退出測試模式",
   "gui.dungeontrain.editor_screen.enter": "進入",
   "gui.dungeontrain.editor_screen.theme": "主題",
   "gui.dungeontrain.editor_screen.theme.light": "淺色",

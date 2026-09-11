@@ -964,6 +964,7 @@
   "gui.dungeontrain.editor_screen.disabled.builtin": "Hindi mapapalitan ang pangalan ng mga built-in na template",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Hindi available para sa template na ito",
   "gui.dungeontrain.editor_screen.test_carriage": "Subukan ang Bagon",
+  "gui.dungeontrain.editor_screen.exit_test": "Lumabas sa Test Mode",
   "gui.dungeontrain.editor_screen.enter": "Pumasok",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Maliwanag",
