@@ -4857,10 +4857,11 @@ public final class EditorCommand {
             return 0;
         }
         try {
-            String membersLine = group.isPresent()
-                ? applyContentsParentMode(source, contents, group.get(), mode) : "";
+            ParentModeOutcome outcome = group.isPresent()
+                ? applyContentsParentMode(source, contents, group.get(), mode) : ParentModeOutcome.NONE;
             String line = deleteContents(source, contents);
-            source.sendSuccess(() -> Component.literal(line + membersLine), true);
+            String landed = landInContents(source, outcome.landing());
+            source.sendSuccess(() -> Component.literal(line + outcome.line() + landed), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents reset failed", t);
@@ -4868,6 +4869,24 @@ public final class EditorCommand {
                 + t.getClass().getSimpleName() + ": " + t.getMessage()
             ).withStyle(ChatFormatting.RED));
             return 0;
+        }
+    }
+
+    /**
+     * Put the player in {@code id}'s plot after a parent delete — the new parent, or the first
+     * member that just became top-level — so the author lands where the work continued rather than
+     * in a hole. No-op without a player or a landing. Returns the reply fragment.
+     */
+    private static String landInContents(CommandSourceStack source, String id) {
+        if (id == null || !(source.getEntity() instanceof ServerPlayer player)) return "";
+        java.util.Optional<CarriageContents> target = CarriageContentsRegistry.find(id);
+        if (target.isEmpty()) return "";
+        try {
+            CarriageContentsEditor.enter(player, target.get(), null);
+            return " Entered '" + id + "'.";
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] contents reset: could not enter {} afterwards: {}", id, e.toString());
+            return "";
         }
     }
 
@@ -4910,9 +4929,9 @@ public final class EditorCommand {
      * member step is isolated — a failure is logged and named in the returned line, and the rest
      * (and the parent delete) still run. See {@link games.brennan.dungeontrain.editor.ParentDeletes}.
      */
-    private static String applyContentsParentMode(CommandSourceStack source, CarriageContents parent,
-                                                  CarriageContentsGroup group,
-                                                  games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
+    private static ParentModeOutcome applyContentsParentMode(CommandSourceStack source, CarriageContents parent,
+                                                             CarriageContentsGroup group,
+                                                             games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
         List<String> done = new ArrayList<>();
         List<String> failed = new ArrayList<>();
         switch (mode) {
@@ -4933,15 +4952,17 @@ public final class EditorCommand {
                         failed.add(m.id());
                     }
                 }
-                return summarise(" Sub-variants deleted: ", done, failed);
+                return new ParentModeOutcome(summarise(" Sub-variants deleted: ", done, failed), null);
             }
             case UNPARENT -> {
+                String first = null;
                 for (games.brennan.dungeontrain.editor.ParentDeletes.TopLevel t
                         : games.brennan.dungeontrain.editor.ParentDeletes.unparentContents(group)) {
                     try {
                         CarriageContentsWeights.set(t.id(), t.weight());
                         CarriageContentsWeights.setGate(t.id(), t.gate());
                         CarriageContentsWeights.setStage(t.id(), t.stageId());
+                        if (first == null) first = t.id();
                         done.add(t.droppedStages() > 0
                             ? t.id() + " (kept 1 of " + (t.droppedStages() + 1) + " Stage links)" : t.id());
                     } catch (Exception e) {
@@ -4949,7 +4970,7 @@ public final class EditorCommand {
                         failed.add(t.id());
                     }
                 }
-                return summarise(" Now top-level: ", done, failed);
+                return new ParentModeOutcome(summarise(" Now top-level: ", done, failed), first);
             }
             case PROMOTE_FIRST -> {
                 games.brennan.dungeontrain.editor.ParentDeletes.ContentsPromotion p =
@@ -4962,16 +4983,25 @@ public final class EditorCommand {
                     CarriageContentsWeights.setGate(heir, w.gateFor(parent.id()));
                     CarriageContentsWeights.setStage(heir, w.stageIdFor(parent.id()));
                     if (p.group().isPresent()) CarriageContentsGroupStore.save(heir, p.group().get());
-                    return " '" + heir + "' now heads the group ("
-                        + p.group().map(g -> g.members().size()).orElse(0) + " sub-variant"
-                        + (p.group().map(g -> g.members().size()).orElse(0) == 1 ? "" : "s") + ").";
+                    int n = p.group().map(g -> g.members().size()).orElse(0);
+                    return new ParentModeOutcome(" '" + heir + "' now heads the group (" + n + " sub-variant"
+                        + (n == 1 ? "" : "s") + ").", heir);
                 } catch (Exception e) {
                     LOGGER.warn("[DungeonTrain] contents reset promote: could not promote {}: {}", heir, e.toString());
-                    return " Could not promote '" + heir + "': " + e.getMessage();
+                    return new ParentModeOutcome(" Could not promote '" + heir + "': " + e.getMessage(), null);
                 }
             }
         }
-        return "";
+        return ParentModeOutcome.NONE;
+    }
+
+    /**
+     * What a parent-deletion mode did, and where the author should land afterwards: the new parent
+     * after a promote, the first newly top-level member after an unparent, nowhere in particular
+     * otherwise (null). The landing is a template id the caller enters once the delete has restamped.
+     */
+    private record ParentModeOutcome(String line, String landing) {
+        static final ParentModeOutcome NONE = new ParentModeOutcome("", null);
     }
 
     /** One reply fragment for a per-member pass: what went through and what did not. */
@@ -7777,8 +7807,8 @@ public final class EditorCommand {
             clearPlotForVariant(overworld, kind, name, dims);
         }
 
-        String membersLine = group.isPresent()
-            ? applyTrackParentMode(overworld, dims, kind, name, group.get(), mode) : "";
+        ParentModeOutcome outcome = group.isPresent()
+            ? applyTrackParentMode(overworld, dims, kind, name, group.get(), mode) : ParentModeOutcome.NONE;
 
         TemplateDeletes.Report cleanup;
         try {
@@ -7788,17 +7818,28 @@ public final class EditorCommand {
             return 0;
         }
         restampPlotForKind(overworld, kind, dims);
-        if (sendHome) {
+        // Land where the work continued: the new parent, or the first member that just went
+        // top-level; otherwise a player who was in this kind's row goes back to default's plot.
+        String landing = outcome.landing();
+        boolean landed = false;
+        if (player != null && landing != null
+                && games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(kind, landing).isPresent()) {
+            if (kind == PORTAL_ROOM_KIND) PortalRoomEditor.enter(player, landing);
+            else teleportToPlot(player, overworld, kind, landing, dims);
+            landed = true;
+        } else if (sendHome) {
             teleportToPlot(player, overworld, kind,
                 games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
         }
+        final String where = landed ? " Entered '" + landing + "'."
+            : (sendHome && !isDefault ? " — teleported back to default." : "");
 
         source.sendSuccess(() -> Component.literal(
             (isDefault
                 ? "Reset " + kind.id() + ":default to its built-in fallback"
                 : "Removed " + kind.id() + ":" + name)
-                + (sendHome && !isDefault ? " — teleported back to default." : ".")
-                + cleanup.summaryLine() + membersLine
+                + (where.startsWith(" —") ? where : "." + where)
+                + cleanup.summaryLine() + outcome.line()
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -7829,7 +7870,7 @@ public final class EditorCommand {
      * applied between the row clear and the parent's own delete so the one restamp that follows
      * lays the row out for the new membership. Best-effort per member.
      */
-    private static String applyTrackParentMode(ServerLevel overworld, CarriageDims dims,
+    private static ParentModeOutcome applyTrackParentMode(ServerLevel overworld, CarriageDims dims,
                                                games.brennan.dungeontrain.track.variant.TrackKind kind,
                                                String parent,
                                                games.brennan.dungeontrain.track.variant.TrackVariantGroup group,
@@ -7849,15 +7890,17 @@ public final class EditorCommand {
                         failed.add(m.id());
                     }
                 }
-                return summarise(" Sub-variants deleted: ", done, failed);
+                return new ParentModeOutcome(summarise(" Sub-variants deleted: ", done, failed), null);
             }
             case UNPARENT -> {
+                String first = null;
                 for (games.brennan.dungeontrain.editor.ParentDeletes.TopLevel t
                         : games.brennan.dungeontrain.editor.ParentDeletes.unparentTrack(group)) {
                     try {
                         TrackVariantWeights.set(kind, t.id(), t.weight());
                         TrackVariantWeights.setGate(kind, t.id(), t.gate());
                         TrackVariantWeights.setStage(kind, t.id(), t.stageId());
+                        if (first == null) first = t.id();
                         done.add(t.droppedStages() > 0
                             ? t.id() + " (kept 1 of " + (t.droppedStages() + 1) + " Stage links)" : t.id());
                     } catch (Exception e) {
@@ -7865,7 +7908,7 @@ public final class EditorCommand {
                         failed.add(t.id());
                     }
                 }
-                return summarise(" Now top-level: ", done, failed);
+                return new ParentModeOutcome(summarise(" Now top-level: ", done, failed), first);
             }
             case PROMOTE_FIRST -> {
                 games.brennan.dungeontrain.editor.ParentDeletes.TrackPromotion p =
@@ -7880,14 +7923,15 @@ public final class EditorCommand {
                         games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(kind, heir, p.group().get());
                     }
                     int n = p.group().map(g -> g.members().size()).orElse(0);
-                    return " '" + heir + "' now heads the group (" + n + " sub-variant" + (n == 1 ? "" : "s") + ").";
+                    return new ParentModeOutcome(" '" + heir + "' now heads the group (" + n + " sub-variant"
+                        + (n == 1 ? "" : "s") + ").", heir);
                 } catch (Exception e) {
                     LOGGER.warn("[DungeonTrain] {} reset promote: could not promote {}: {}", kind.id(), heir, e.toString());
-                    return " Could not promote '" + heir + "': " + e.getMessage();
+                    return new ParentModeOutcome(" Could not promote '" + heir + "': " + e.getMessage(), null);
                 }
             }
         }
-        return "";
+        return ParentModeOutcome.NONE;
     }
 
     /**
