@@ -12126,6 +12126,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "community-videos-page",
+      "version": "0.840.0",
+      "type": "feat",
+      "title": "Community Videos page on the main menu",
+      "summary": "A new play-button icon on the title screen (between Credits and Discord) opens Dungeon Train Community Videos \u2014 every video the community has made about the game, across YouTube, Bilibili, Twitch and Instagram. Filter by platform, uploader or the developer's picks, sort by views, newest or dev picks, and open any video in your browser.",
+      "highlights": [
+        "Uploader search with suggestions as you type; platform and dev-fave toggles on one row",
+        "Know a video that isn't listed? Submit the link from the page \u2014 it's reviewed before it appears",
+        "Flag a video as not about Dungeon Train or not safe for kids; kid-mode players only see videos that pass",
+        "Creator Tools (the filming guide) and the Videos page now link to each other"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
