@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.data.CrashRunState;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
+import games.brennan.dungeontrain.data.SaveFreePlayProbe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.neoforged.api.distmarker.Dist;
@@ -97,6 +98,15 @@ public final class CrashRecoveryPromptHandler {
             if (state.isEmpty()) return Optional.empty();
             if (!mc.getLevelSource().levelExists(state.get().levelId())) {
                 LOGGER.info("[DungeonTrain] Crash recovery: save '{}' is gone; forgetting the run.",
+                        state.get().levelId());
+                CrashRunState.clear(PlayerDataPaths.root());
+                return Optional.empty();
+            }
+            // A Free Play run has nothing to salvage that a fresh Free Play world wouldn't hand
+            // straight back, and its Ender Chest is the Free Play one anyway. Skip the card.
+            if (SaveFreePlayProbe.wasFreePlay(mc.getLevelSource().getLevelPath(state.get().levelId()),
+                    mc.getUser().getProfileId())) {
+                LOGGER.info("[DungeonTrain] Crash recovery: '{}' was already Free Play; nothing to salvage, forgetting the run.",
                         state.get().levelId());
                 CrashRunState.clear(PlayerDataPaths.root());
                 return Optional.empty();
