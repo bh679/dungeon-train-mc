@@ -10,6 +10,10 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
+import net.minecraft.util.Mth;
+import org.joml.Vector2i;
+import org.joml.Vector2ic;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -108,7 +112,8 @@ public final class VideosScreen extends Screen {
         box.setValue(filter.channelQuery());   // survives a resize
         Component hint = Component.translatable("gui.dungeontrain.videos.filter.uploader.hint");
         box.setHint(this.font.width(hint) <= uploaderW - 8 ? hint : Component.empty());
-        box.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.videos.filter.uploader.tooltip")));
+        // No vanilla tooltip on the box: that positions itself below the cursor, straight over the
+        // suggestion panel. Its tooltip is drawn by render() ABOVE the box instead.
         box.setResponder(text -> {
             filter = filter.withChannelQuery(text);
             refresh();
@@ -299,6 +304,31 @@ public final class VideosScreen extends Screen {
         // the video list.
         dropdown.setOpen(uploaderBox.isFocused());
         dropdown.render(g, mouseX, mouseY);
+
+        // The box's tooltip goes ABOVE the box — vanilla's positioner hangs it under the cursor,
+        // which is exactly where the suggestion panel is.
+        if (uploaderBox.isHovered() && !dropdown.isMouseOver(mouseX, mouseY)) {
+            g.renderTooltip(this.font,
+                    this.font.split(Component.translatable("gui.dungeontrain.videos.filter.uploader.tooltip"), 220),
+                    new AboveWidgetPositioner(uploaderBox.getX(), uploaderBox.getY(), uploaderBox.getWidth()),
+                    mouseX, mouseY);
+        }
+    }
+
+    /** Puts a tooltip directly above a widget, left-aligned to it and kept on screen. */
+    private record AboveWidgetPositioner(int widgetX, int widgetY, int widgetW) implements ClientTooltipPositioner {
+        /** Vanilla pads the tooltip background 3px around the text, plus a little air over the widget. */
+        private static final int PAD = 3;
+        private static final int AIR = 4;
+
+        @Override
+        public Vector2ic positionTooltip(int screenWidth, int screenHeight, int mouseX, int mouseY,
+                                         int tooltipWidth, int tooltipHeight) {
+            int x = Mth.clamp(widgetX, PAD, Math.max(PAD, screenWidth - tooltipWidth - PAD));
+            int y = widgetY - tooltipHeight - PAD - AIR;
+            if (y < PAD) y = PAD;
+            return new Vector2i(x, y);
+        }
     }
 
     @Override
