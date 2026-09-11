@@ -7,58 +7,53 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** How the detail pane cuts its settings rows into pages. */
+/** How the detail pane cuts its body into pages: the model and its sheet first, then the rows. */
 class EditorDetailPanePagesTest {
 
     @Test
-    @DisplayName("rows that fit are one page with no pager")
-    void fitsOnOnePage() {
-        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(5, 8);
+    @DisplayName("with no rows there is the model page alone and no pager")
+    void modelOnly() {
+        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(0, 12);
         assertFalse(p.paged());
         assertFalse(p.hasPager());
         assertEquals(1, p.pageCount());
-        assertEquals(0, p.first(0));
-        assertEquals(5, p.end(0));
+        assertEquals(0, p.end(0));
         assertEquals(0, p.clamp(3));
     }
 
     @Test
-    @DisplayName("an overflowing list gives the last slot to the pager and pages the rest")
-    void overflowPages() {
-        // 17 rows in 8 slots: 7 per page -> 3 pages (7, 7, 3).
-        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(17, 8);
+    @DisplayName("rows start on page two and fill the body less the pager's slot")
+    void rowsAfterTheModel() {
+        // 17 rows in a 12-slot body: 11 per row page -> model + 2 row pages (11, 6).
+        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(17, 12);
         assertTrue(p.paged());
         assertTrue(p.hasPager());
-        assertEquals(7, p.perPage());
+        assertEquals(11, p.perPage());
+        assertEquals(2, p.rowPages());
         assertEquals(3, p.pageCount());
-        assertEquals(7, p.first(1));
-        assertEquals(14, p.end(1));
-        assertEquals(14, p.first(2));
+        assertEquals(0, p.end(0));          // the model page has no rows
+        assertEquals(0, p.first(1));
+        assertEquals(11, p.end(1));
+        assertEquals(11, p.first(2));
         assertEquals(17, p.end(2));
         assertEquals(2, p.clamp(9));
         assertEquals(0, p.clamp(-1));
     }
 
     @Test
-    @DisplayName("exactly filling the slots is still one page — the pager only appears when it saves a row")
-    void exactFit() {
-        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(8, 8);
-        assertFalse(p.paged());
-        assertEquals(1, p.pageCount());
-        // One more row and the pager costs a slot: 9 rows -> 7 + 2.
-        assertEquals(2, EditorDetailPane.Pages.of(9, 8).pageCount());
+    @DisplayName("a few rows still get a page of their own rather than squeezing under the sheet")
+    void fewRowsStillPage() {
+        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(3, 12);
+        assertEquals(2, p.pageCount());
+        assertEquals(3, p.end(1));
     }
 
     @Test
-    @DisplayName("a pane with no room at all is harmless")
-    void noSlots() {
-        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(6, 0);
+    @DisplayName("a body too short for a row and the pager shows the model page only")
+    void noRoom() {
+        EditorDetailPane.Pages p = EditorDetailPane.Pages.of(6, 1);
         assertFalse(p.paged());
         assertEquals(1, p.pageCount());
-        assertEquals(0, p.end(0));
-        // A single slot pages one row at a time, with no pager to spend the slot on.
-        EditorDetailPane.Pages one = EditorDetailPane.Pages.of(3, 1);
-        assertEquals(3, one.pageCount());
-        assertFalse(one.hasPager());
+        assertEquals(1, EditorDetailPane.Pages.of(6, 0).pageCount());
     }
 }

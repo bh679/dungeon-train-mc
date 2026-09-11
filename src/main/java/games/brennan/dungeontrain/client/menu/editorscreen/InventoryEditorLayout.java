@@ -44,14 +44,11 @@ public record InventoryEditorLayout(
     public static final int PREVIEW_MAX_H = 130;
     public static final int PREVIEW_MIN_H = 50;
     /**
-     * The least the settings list under the sheet is given: two rows and the pager. The rows are
-     * controls — Walls, Fog, Copies — and a list with no pixels is a control the author cannot find,
-     * which is what happened below 640×360 when the list only took what the preview and the sheet
-     * left. The preview gives way to it instead; and a preview squeezed under
-     * {@link #PREVIEW_MIN_H} is dropped altogether, its sliver going to the list, since a
-     * nine-pixel model shows nothing and nine pixels is most of a row.
+     * One row at the foot of the body — preview, sheet and settings together — kept for the pager.
+     * The body is paged as a whole (the model and its sheet on the first page, the room's rows on
+     * the pages after), so the pager needs a slot that neither the preview nor the sheet can take.
      */
-    public static final int SETTINGS_MIN_H = 3 * EditorDetailPane.ROW_H;
+    public static final int PAGER_H = EditorDetailPane.ROW_H;
     public static final int RIGHT_MIN_W = 150;
     public static final int RIGHT_MAX_W = 260;
     public static final int TILE_LARGE = 52;
@@ -103,16 +100,16 @@ public record InventoryEditorLayout(
         Rect icons = new Rect(right.x(), header.bottom() + 1, right.w(), ICONS_H);
         Rect test = new Rect(right.x(), right.bottom() - TEST_H, right.w(), TEST_H);
         int previewH = clamp((int) Math.round(right.h() * 0.34), PREVIEW_MIN_H, PREVIEW_MAX_H);
-        // The preview gives way first: whatever the sheet, the settings list's floor and the test
-        // row leave it — down to nothing at the smallest size, where the controls matter more.
-        int room = (test.y() - 2) - SHEET_H - 2 - SETTINGS_MIN_H - 2 - (icons.bottom() + 2);
+        // The preview gives way first: whatever the sheet, the pager slot and the test row leave it.
+        int bodyBottom = test.y() - 2 - PAGER_H;
+        int room = bodyBottom - SHEET_H - 2 - (icons.bottom() + 2);
         previewH = Math.max(0, Math.min(previewH, room));
-        if (previewH < PREVIEW_MIN_H) previewH = 0;
         int previewW = Math.min(right.w(), PREVIEW_MAX_W);
         Rect preview = new Rect(right.x(), icons.bottom() + 2, previewW, previewH);
         Rect sheet = new Rect(right.x(), preview.bottom() + 2, right.w(), SHEET_H);
+        // What the first page leaves under the sheet; the later pages use the whole body instead.
         Rect settings = new Rect(right.x(), sheet.bottom() + 2, right.w(),
-            Math.max(0, test.y() - 2 - sheet.bottom() - 2));
+            Math.max(0, bodyBottom - sheet.bottom() - 2));
 
         int tile = panel.h() < 210 ? TILE_SMALL : TILE_LARGE;
         return new InventoryEditorLayout(tabs, panel, filter, category, strip, grid,

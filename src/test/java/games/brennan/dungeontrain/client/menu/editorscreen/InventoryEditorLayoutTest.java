@@ -56,10 +56,10 @@ final class InventoryEditorLayoutTest {
     void previewBounds() {
         InventoryEditorLayout small = InventoryEditorLayout.of(427, 240);
         InventoryEditorLayout large = InventoryEditorLayout.of(1920, 1080);
-        // At the floor size the settings list's floor comes first and the preview, which could not
-        // reach its own floor, is dropped rather than drawn as a sliver.
-        assertEquals(0, small.preview().h());
-        assertTrue(InventoryEditorLayout.of(640, 360).preview().h() >= InventoryEditorLayout.PREVIEW_MIN_H);
+        // At the very floor the pager's slot costs the preview a little of its own floor; one size
+        // up it is back above it.
+        assertTrue(small.preview().h() >= InventoryEditorLayout.PREVIEW_MIN_H - InventoryEditorLayout.PAGER_H);
+        assertTrue(InventoryEditorLayout.of(480, 270).preview().h() >= InventoryEditorLayout.PREVIEW_MIN_H);
         assertTrue(small.preview().h() < large.preview().h());
         assertTrue(large.preview().w() <= InventoryEditorLayout.PREVIEW_MAX_W);
         assertTrue(large.preview().h() <= InventoryEditorLayout.PREVIEW_MAX_H);
@@ -137,12 +137,12 @@ final class InventoryEditorLayoutTest {
     }
 
     @Test
-    @DisplayName("the settings list under the sheet always has room for two rows and the pager")
-    void settingsNeverCollapse() {
+    @DisplayName("a pager slot is kept under the body at every size, so paged rows never lose their pager")
+    void pagerSlotKept() {
         for (int[] s : SIZES) {
             InventoryEditorLayout l = InventoryEditorLayout.of(s[0], s[1]);
-            assertTrue(l.settings().h() >= InventoryEditorLayout.SETTINGS_MIN_H,
-                s[0] + "x" + s[1] + " settings h=" + l.settings().h());
+            assertTrue(l.sheet().bottom() + l.settings().h() + InventoryEditorLayout.PAGER_H <= l.test().y() - 2,
+                s[0] + "x" + s[1] + " sheet=" + l.sheet() + " settings=" + l.settings() + " test=" + l.test());
         }
     }
 }

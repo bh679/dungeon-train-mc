@@ -100,7 +100,7 @@ public final class EditorDetailPane {
         // A new selection starts on its first page; a shorter list clamps the page it was on.
         if (ctx.selection() == null || !ctx.selection().equals(pagedFor)) page = 0;
         pagedFor = ctx.selection();
-        pages = Pages.of(rows.size(), Math.max(0, layout.settings().h() / ROW_H));
+        pages = Pages.of(rows.size(), Math.max(0, body().h() / ROW_H));
         page = pages.clamp(page);
 
         IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
@@ -163,8 +163,31 @@ public final class EditorDetailPane {
         return n;
     }
 
+    /**
+     * The body: everything between the icon row and the Test button — preview, sheet and the space
+     * under the sheet, plus the pager slot the layout keeps below them. Paged as one.
+     */
+    InventoryEditorLayout.Rect body() {
+        InventoryEditorLayout.Rect p = layout.preview();
+        InventoryEditorLayout.Rect t = layout.test();
+        return new InventoryEditorLayout.Rect(layout.settings().x(), p.y(), layout.settings().w(),
+            Math.max(0, t.y() - 2 - p.y()));
+    }
+
+    /** The slots of the body a page of rows fills: all of it but the pager's slot. */
+    private InventoryEditorLayout.Rect rowArea() {
+        InventoryEditorLayout.Rect b = body();
+        return new InventoryEditorLayout.Rect(b.x(), b.y(), b.w(), Math.max(0, b.h() - ROW_H));
+    }
+
+    /** Where the pager sits: the body's last slot. */
+    private InventoryEditorLayout.Rect pagerRect() {
+        InventoryEditorLayout.Rect b = body();
+        return new InventoryEditorLayout.Rect(b.x(), b.bottom() - ROW_H, b.w(), ROW_H);
+    }
+
     public boolean overSettings(double mx, double my) {
-        return layout != null && layout.settings().contains(mx, my);
+        return layout != null && body().contains(mx, my);
     }
 
     public boolean overPreview(double mx, double my) {
@@ -172,7 +195,7 @@ public final class EditorDetailPane {
     }
 
     /**
-     * Turn the page — the wheel over the rows, or the pager's arrows.
+     * Turn the page — the wheel over the body, or the pager's arrows.
      *
      * <p>Pages rather than a scroll: the rows are controls, and a control half hidden under the
      * pane's edge is one the author cannot read the value of before tapping it. A page shows whole
@@ -185,60 +208,67 @@ public final class EditorDetailPane {
         return moved || pages.pageCount() > 1;
     }
 
-    /** The page the rows are on, zero-based. */
+    /** The page the body is on, zero-based: 0 is the model and its sheet, the rest are the rows. */
     public int page() { return page; }
 
-    /** How the rows are cut into pages this frame. */
+    /** How the body is cut into pages this frame. */
     public Pages pages() { return pages; }
 
+    /** True while the model and its sheet are showing rather than a page of rows. */
+    public boolean onModelPage() { return page == 0; }
+
     /**
-     * The row list cut into pages that fit the pane.
+     * The body cut into pages.
      *
-     * <p>Pure, so it can be tested without a screen. When every row fits there is one page and no
-     * pager; otherwise the last slot of the pane is the pager and the rows above it are paged in
-     * windows of one fewer.</p>
+     * <p>The first page is always the model and its data sheet — path, size, blocks, weight, stage,
+     * levels. The room's rows come after, as many per page as the whole body holds less the pager's
+     * slot, so a long list of walls sub-options takes over the space the model had rather than
+     * squeezing under its sheet. With no rows there is one page and no pager.</p>
+     *
+     * <p>Pure, so it can be tested without a screen.</p>
      *
      * @param count   how many rows there are
-     * @param slots   how many rows tall the pane is
-     * @param perPage rows on a page — {@code slots} when there is no pager, {@code slots - 1} with one
+     * @param perPage rows on each row page — the body's slots, less the pager's
      */
-    public record Pages(int count, int slots, int perPage) {
-        public static final Pages NONE = new Pages(0, 0, 0);
+    public record Pages(int count, int perPage) {
+        public static final Pages NONE = new Pages(0, 0);
 
-        public static Pages of(int count, int slots) {
-            if (slots <= 0) return new Pages(count, 0, 0);
-            if (count <= slots) return new Pages(count, slots, slots);
-            // The pager takes a slot; with only one slot there is nowhere to put a row, so the
-            // pager is dropped and the single slot pages one row at a time.
-            return new Pages(count, slots, Math.max(1, slots - 1));
+        public static Pages of(int count, int bodySlots) {
+            return new Pages(Math.max(0, count), Math.max(0, bodySlots - 1));
         }
 
+        /** True when there is anything past the model page. */
         public boolean paged() {
-            return perPage > 0 && count > slots;
+            return count > 0 && perPage > 0;
         }
 
-        /** How many pages there are; at least one. */
+        /** How many row pages follow the model page. */
+        public int rowPages() {
+            return paged() ? (count + perPage - 1) / perPage : 0;
+        }
+
+        /** The model page plus the row pages; at least one. */
         public int pageCount() {
-            return perPage <= 0 ? 1 : Math.max(1, (count + perPage - 1) / perPage);
+            return 1 + rowPages();
         }
 
         public int clamp(int page) {
             return Math.max(0, Math.min(page, pageCount() - 1));
         }
 
-        /** The first row index on {@code page}. */
+        /** The first row index on {@code page}; meaningless on the model page. */
         public int first(int page) {
-            return clamp(page) * perPage;
+            return Math.max(0, clamp(page) - 1) * perPage;
         }
 
         /** One past the last row index on {@code page}. */
         public int end(int page) {
-            return Math.min(count, first(page) + perPage);
+            return clamp(page) == 0 ? 0 : Math.min(count, first(page) + perPage);
         }
 
-        /** True when the pager row is drawn, and where it sits (the last slot). */
+        /** True when the pager is drawn — only when there is a page to turn to. */
         public boolean hasPager() {
-            return paged() && slots > 1;
+            return paged();
         }
     }
 
@@ -248,20 +278,23 @@ public final class EditorDetailPane {
         hovered = hitTest(mouseX, mouseY);
         drawHeader(g, font, theme);
         String name = tile == null ? "" : tile.variant().displayName();
-        // The layout drops the preview altogether when it could not reach its floor height —
-        // drawing its caption and outline into a zero-height rect would paint over the sheet.
-        if (layout.preview().h() > 0) {
+        if (onModelPage()) {
             PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
             versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
+            sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
+                tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
+                ctx.selection(), roomRows);
+            sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
+            TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
+                hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
+        } else {
+            // Nothing of the model page is hittable while a row page is up.
+            sheetLines = List.of();
+            sheetCells = List.of();
+            drawRows(g, font, theme);
         }
-        sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
-            tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
-            ctx.selection(), roomRows);
-        sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
-        TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
-            hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
+        if (pages.hasPager()) drawPager(g, font);
         drawIcons(g);
-        drawRows(g, font, theme);
         drawTest(g, font);
     }
 
@@ -331,7 +364,7 @@ public final class EditorDetailPane {
     }
 
     private void drawRows(GuiGraphics g, Font font, EditorScreenTheme theme) {
-        InventoryEditorLayout.Rect r = layout.settings();
+        InventoryEditorLayout.Rect r = rowArea();
         g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
         int first = pages.first(page);
         int end = pages.end(page);
@@ -341,14 +374,14 @@ public final class EditorDetailPane {
             MenuRowPainter.drawRow(g, font, rows.get(idx), r.x(), top, r.right(), ROW_H - 1,
                 idx, hov, hovered.sub(), null);
         }
-        if (pages.hasPager()) drawPager(g, font, r);
         g.disableScissor();
     }
 
-    /** {@code <  n / N  >} in the pane's last slot. */
-    private void drawPager(GuiGraphics g, Font font, InventoryEditorLayout.Rect r) {
-        int top = r.y() + (pages.slots() - 1) * ROW_H;
-        int bottom = top + ROW_H - 1;
+    /** {@code <  n / N  >} in the body's last slot, on every page. */
+    private void drawPager(GuiGraphics g, Font font) {
+        InventoryEditorLayout.Rect r = pagerRect();
+        int top = r.y();
+        int bottom = r.bottom() - 1;
         int arrowW = (int) Math.round(r.w() * PAGER_ARROW_SHARE);
         boolean first = page == 0;
         boolean last = page >= pages.pageCount() - 1;
@@ -393,14 +426,25 @@ public final class EditorDetailPane {
 
     public Hit hitTest(double mx, double my) {
         if (layout == null) return Hit.NONE;
-        switch (versions.hit(mx, my)) {
-            case OLDER -> { return new Hit(HitKind.OLDER, 0, 0); }
-            case NEWER -> { return new Hit(HitKind.NEWER, 0, 0); }
-            case NONE -> { }
+        if (onModelPage()) {
+            switch (versions.hit(mx, my)) {
+                case OLDER -> { return new Hit(HitKind.OLDER, 0, 0); }
+                case NEWER -> { return new Hit(HitKind.NEWER, 0, 0); }
+                case NONE -> { }
+            }
         }
         if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
-        if (layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
-        int sheetCell = TemplateDataSheet.hit(sheetCells, mx, my);
+        if (pages.hasPager() && pagerRect().contains(mx, my)) {
+            InventoryEditorLayout.Rect pr = pagerRect();
+            int arrowW = (int) Math.round(pr.w() * PAGER_ARROW_SHARE);
+            if (mx < pr.x() + arrowW) return page > 0 ? new Hit(HitKind.PAGE_PREV, 0, 0) : Hit.NONE;
+            if (mx >= pr.right() - arrowW) {
+                return page < pages.pageCount() - 1 ? new Hit(HitKind.PAGE_NEXT, 0, 0) : Hit.NONE;
+            }
+            return Hit.NONE;
+        }
+        if (onModelPage() && layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
+        int sheetCell = onModelPage() ? TemplateDataSheet.hit(sheetCells, mx, my) : -1;
         if (sheetCell >= 0) return new Hit(HitKind.SHEET, sheetCell, 0);
         InventoryEditorLayout.Rect ir = layout.icons();
         if (my >= ir.y() && my < ir.y() + iconCell) {
@@ -408,17 +452,9 @@ public final class EditorDetailPane {
                 if (mx >= iconX[i] && mx < iconX[i] + iconCell) return new Hit(HitKind.ICON, i, 0);
             }
         }
-        InventoryEditorLayout.Rect r = layout.settings();
-        if (r.contains(mx, my)) {
+        InventoryEditorLayout.Rect r = rowArea();
+        if (!onModelPage() && r.contains(mx, my)) {
             int k = (int) ((my - r.y()) / ROW_H);
-            if (pages.hasPager() && k == pages.slots() - 1) {
-                int arrowW = (int) Math.round(r.w() * PAGER_ARROW_SHARE);
-                if (mx < r.x() + arrowW) return page > 0 ? new Hit(HitKind.PAGE_PREV, 0, 0) : Hit.NONE;
-                if (mx >= r.right() - arrowW) {
-                    return page < pages.pageCount() - 1 ? new Hit(HitKind.PAGE_NEXT, 0, 0) : Hit.NONE;
-                }
-                return Hit.NONE;
-            }
             int idx = pages.first(page) + k;
             if (k < pages.perPage() && idx < pages.end(page)) {
                 int sub = MenuRowPainter.hitCell(rows.get(idx), (int) mx, r.x(), r.right());
