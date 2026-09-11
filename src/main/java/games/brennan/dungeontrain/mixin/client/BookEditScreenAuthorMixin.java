@@ -134,7 +134,8 @@ public abstract class BookEditScreenAuthorMixin {
 
     /** A click on the author line takes the cursor; a click on the title line gives it back. */
     @Inject(method = "mouseClicked", at = @At("HEAD"))
-    private void dungeontrain$authorMouseClicked(double mouseX, double mouseY, int button, CallbackInfo ci) {
+    private void dungeontrain$authorMouseClicked(double mouseX, double mouseY, int button,
+                                                 CallbackInfoReturnable<Boolean> cir) {
         if (button != 0 || !dungeontrain$editorMode()) return;
         int left = dungeontrain$pageLeft();
         if (mouseX < left || mouseX >= left + DUNGEONTRAIN$PAGE_INNER_W) return;
