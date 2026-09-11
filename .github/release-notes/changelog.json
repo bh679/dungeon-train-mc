@@ -12194,6 +12194,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "randomized-carriage-builder-credit",
+      "version": "0.843.0",
+      "type": "content",
+      "title": "Randomized dimensional carriage credited to AutisticMime",
+      "summary": "The randomized dimensional carriage now shows its builder \u2014 AutisticMime \u2014 in the editor's Built by line and on the Credits page's Builders list.",
+      "highlights": [],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
