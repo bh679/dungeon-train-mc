@@ -69,5 +69,7 @@ public final class EditorRosterClient {
         index = EditorRosterIndex.EMPTY;
         refreshTicks = 0;
         everRequested = false;
+        // A parent chosen against this install's roster means nothing on the next one.
+        CreatorLoadParent.reset();
     }
 }

@@ -3332,6 +3332,14 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.creator.parent_new": {
+    "1": {
+      "label": "the display name of the variant parent that will be created when the build is loaded",
+      "examples": [
+        "User builds"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sub_variants_of": {
     "1": {
       "label": "the name of the group template whose sub-variants are listed",
