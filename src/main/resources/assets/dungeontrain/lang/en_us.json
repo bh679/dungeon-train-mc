@@ -1244,6 +1244,7 @@
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Click to collapse or expand",
   "gui.dungeontrain.editor_screen.layout.move": "Move…",
+  "gui.dungeontrain.editor_screen.layout.no_matches": "Nothing matches these filters",
   "gui.dungeontrain.editor_screen.filters": "Filters",
   "gui.dungeontrain.editor_screen.filters.show": "Show every filter",
   "gui.dungeontrain.editor_screen.filters.hide": "Hide the filters; the ones in force stay on this row",

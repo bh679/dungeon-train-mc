@@ -257,5 +257,11 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             packet.partMenuEnabled, packet.mirrorX, packet.mirrorY, packet.mirrorZ, packet.mirrorVariants,
             packet.excludedContents, packet.stageId,
             packet.roomLength, packet.roomWidth, packet.roomHeight, packet.roomMode, packet.flipMask));
+        // Standing in a plot is the other cue that the editor screen is about to be wanted.
+        ctx.enqueueWork(() -> {
+            if (EditorStatusHudOverlay.isActive()) {
+                games.brennan.dungeontrain.client.menu.editorscreen.EditorRosterClient.prefetch();
+            }
+        });
     }
 }

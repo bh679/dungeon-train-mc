@@ -32,6 +32,8 @@ public final class EditorScreenLang {
     public static final String LAYOUT_SECTION = PREFIX + "layout.section";
     public static final String LAYOUT_SECTION_TIP = PREFIX + "layout.section_tip";
     public static final String LAYOUT_MOVE = PREFIX + "layout.move";
+    /** The Layout tab with a roster but nothing left after the filters — not "loading". */
+    public static final String LAYOUT_NO_MATCHES = PREFIX + "layout.no_matches";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */

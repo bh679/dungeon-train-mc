@@ -72,8 +72,9 @@ final class EditorLayoutPane {
         InventoryEditorLayout.Rect r = rect(layout);
         g.fill(r.x() - 1, r.y() - 1, r.right() + 1, r.bottom() + 1, theme.subPanel());
         List<EditorLayoutPage.Row> all = rows(index);
-        if (all.isEmpty()) {
-            g.drawString(font, EditorScreenLang.text(EditorScreenLang.NO_ROSTER), r.x() + 4, r.y() + 4, 0xFFFFFFFF, true);
+        String note = emptyNote(index, all);
+        if (note != null) {
+            g.drawString(font, note, r.x() + 4, r.y() + 4, 0xFFFFFFFF, true);
             return;
         }
         int visible = visibleRows(r);
@@ -97,6 +98,16 @@ final class EditorLayoutPane {
             }
         }
         drawScrollbar(g, r, all.size(), visible);
+    }
+
+    /**
+     * What an empty list means: no roster yet is "loading"; a roster the filters left nothing of is
+     * not, and saying "loading" there is a lie that never comes true.
+     */
+    static String emptyNote(EditorRosterIndex index, List<EditorLayoutPage.Row> rows) {
+        if (index == null || index.isEmpty()) return EditorScreenLang.text(EditorScreenLang.NO_ROSTER);
+        if (rows.isEmpty()) return EditorScreenLang.text(EditorScreenLang.LAYOUT_NO_MATCHES);
+        return null;
     }
 
     private void drawScrollbar(GuiGraphics g, InventoryEditorLayout.Rect r, int count, int visible) {

@@ -882,6 +882,7 @@
       "gui.dungeontrain.editor_screen.layout.section",
       "gui.dungeontrain.editor_screen.layout.section_tip",
       "gui.dungeontrain.editor_screen.layout.move",
+      "gui.dungeontrain.editor_screen.layout.no_matches",
       "gui.dungeontrain.editor_screen.filters",
       "gui.dungeontrain.editor_screen.filters.show",
       "gui.dungeontrain.editor_screen.filters.hide",
