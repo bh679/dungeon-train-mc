@@ -45,6 +45,8 @@
   "book.dungeontrain.statbook.tail.8": "Ta nghĩ điều đó đáng ghi lại.",
   "book.dungeontrain.statbook.tail.9": "Đi tiếp đi.",
   "echo.dungeontrain.mob_name": "Tàn dư của %s",
+  "gui.dungeontrain.editor_book.author_hint": "Cần có tên tác giả để ký.",
+  "gui.dungeontrain.editor_book.next_author": "Tiếp: Tác giả",
   "gui.dungeontrain.book_vote.ask_prefix": "Con tàu cất tiếng hỏi,",
   "gui.dungeontrain.book_vote.prompt.1": "\"Bạn có thích cuốn sách này không?\"",
   "gui.dungeontrain.book_vote.prompt.2": "\"Cuốn này có xứng đáng với chuyến đi không?\"",

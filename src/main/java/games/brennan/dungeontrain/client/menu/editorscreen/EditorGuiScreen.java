@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.menu.CreatorParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.client.menu.HotbarPassthrough;
+import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
@@ -917,6 +918,18 @@ public final class EditorGuiScreen extends Screen {
         if (action instanceof TemplateDataSheet.Action.Run run) {
             CommandRunner.run(run.command());
             afterCommand();
+            return true;
+        }
+        // Same gestures as the Layout tab's weight cell: click +1, shift-click −1, cmd-click
+        // types. The typed value goes through the inline field over the cell, as Type does.
+        if (action instanceof TemplateDataSheet.Action.Step step) {
+            if (MenuClickModifiers.cmdDown()) {
+                inlineEdit.begin(step.prefix(), placed.cell().text(), placed.rect());
+                setFocused(null);
+            } else {
+                CommandRunner.run(Screen.hasShiftDown() ? step.dec() : step.inc());
+                afterCommand();
+            }
             return true;
         }
         if (action instanceof TemplateDataSheet.Action.Open open) {

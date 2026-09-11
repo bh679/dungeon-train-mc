@@ -75,6 +75,8 @@
   "book.dungeontrain.statbook.tail.8": {"author": "helluvaboy", "reviewer": "helluvaboy"},
   "book.dungeontrain.statbook.tail.9": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "echo.dungeontrain.mob_name": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.editor_book.author_hint": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.editor_book.next_author": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.book_vote.ask_prefix": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
   "gui.dungeontrain.book_vote.prompt.1": {"author": "helluvaboy", "reviewer": "helluvaboy"},
   "gui.dungeontrain.book_vote.prompt.2": {"author": "helluvaboy", "reviewer": "helluvaboy"},

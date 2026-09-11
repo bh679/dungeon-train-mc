@@ -44,10 +44,40 @@ final class TemplateGateTest {
     void clamps() {
         assertEquals(0, new TemplateGate(-5, 10, null).minLevel());
         assertEquals(TemplateGate.MAX_LEVEL, new TemplateGate(TemplateGate.MAX_LEVEL + 100, TemplateGate.ALL, null).minLevel());
-        // min > finite max collapses min down to max (mirrors VariantDifficulty)
+        // min > finite max raises max up to min — min is the anchor, never pulled down
         TemplateGate g = new TemplateGate(20, 10, null);
-        assertEquals(10, g.minLevel());
-        assertEquals(10, g.maxLevel());
+        assertEquals(20, g.minLevel());
+        assertEquals(20, g.maxLevel());
+    }
+
+    @Test
+    @DisplayName("raising min past max drags max up; lowering min leaves max alone")
+    void minPushesMax() {
+        TemplateGate pushed = TemplateGate.ofLevels(0, 5).withMinLevel(8);
+        assertEquals(8, pushed.minLevel());
+        assertEquals(8, pushed.maxLevel());
+        // an unbounded max stays unbounded
+        TemplateGate open = TemplateGate.ofLevels(0, TemplateGate.ALL).withMinLevel(8);
+        assertEquals(8, open.minLevel());
+        assertEquals(TemplateGate.ALL, open.maxLevel());
+        // lowering min never touches max
+        TemplateGate lowered = TemplateGate.ofLevels(5, 10).withMinLevel(2);
+        assertEquals(2, lowered.minLevel());
+        assertEquals(10, lowered.maxLevel());
+    }
+
+    @Test
+    @DisplayName("max is floored by min and never moves min")
+    void maxFlooredByMin() {
+        TemplateGate floored = TemplateGate.ofLevels(5, 10).withMaxLevel(2);
+        assertEquals(5, floored.minLevel());
+        assertEquals(5, floored.maxLevel());
+        TemplateGate open = TemplateGate.ofLevels(5, 10).withMaxLevel(TemplateGate.ALL);
+        assertEquals(5, open.minLevel());
+        assertEquals(TemplateGate.ALL, open.maxLevel());
+        TemplateGate raised = TemplateGate.ofLevels(5, 10).withMaxLevel(30);
+        assertEquals(5, raised.minLevel());
+        assertEquals(30, raised.maxLevel());
     }
 
     @Test
@@ -66,7 +96,7 @@ final class TemplateGateTest {
     }
 
     @Test
-    @DisplayName("incMaxLevel cycles ALL→0→…→MAX→ALL; decMaxLevel reverses")
+    @DisplayName("incMaxLevel cycles ALL→min→…→MAX→ALL; decMaxLevel reverses and skips below min")
     void maxLevelCycle() {
         // inc: ALL → 0, mid-range steps up, MAX wraps back to ALL
         assertEquals(0, TemplateGate.DEFAULT.incMaxLevel().maxLevel());
@@ -76,6 +106,11 @@ final class TemplateGateTest {
         assertEquals(TemplateGate.MAX_LEVEL, TemplateGate.DEFAULT.decMaxLevel().maxLevel());
         assertEquals(4, TemplateGate.ofLevels(0, 5).decMaxLevel().maxLevel());
         assertEquals(TemplateGate.ALL, TemplateGate.ofLevels(0, 0).decMaxLevel().maxLevel());
+        // the finite range starts at min: ALL → min going up, min → ALL going down
+        assertEquals(5, TemplateGate.ofLevels(5, TemplateGate.ALL).incMaxLevel().maxLevel());
+        assertEquals(5, TemplateGate.ofLevels(5, 6).decMaxLevel().maxLevel());
+        assertEquals(TemplateGate.ALL, TemplateGate.ofLevels(5, 5).decMaxLevel().maxLevel());
+        assertEquals(5, TemplateGate.ofLevels(5, 5).decMaxLevel().minLevel());
     }
 
     @Test
