@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
+import games.brennan.dungeontrain.client.menu.ParentRemoveConfirmScreen;
 import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
@@ -247,7 +248,42 @@ public final class EditorScreenActions {
                     "Remove '" + sel.modelName() + "'?",
                     "dungeontrain editor part reset " + sel.modelId() + " " + sel.modelName()));
         }
+        CommandMenuEntry parent = parentRemoveEntry(ctx);
+        if (parent != null) return parent;
+        if (sel.category() == PlotCategory.PORTALS) {
+            // Addressed by room name: the in-plot menu's `reset <kind>` acts on the plot the player
+            // stands in, which is not necessarily the row selected here.
+            return new CommandMenuEntry.DrillIn("Remove",
+                new games.brennan.dungeontrain.client.menu.ConfirmScreen(
+                    "Remove '" + sel.displayName() + "'?", resetCommand(sel)));
+        }
         return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.displayName());
+    }
+
+    /** The name-addressed reset for a selection, without a mode word; null for categories without one. */
+    private static String resetCommand(VariantKey sel) {
+        return switch (sel.category()) {
+            case CONTENTS -> "dungeontrain editor contents reset " + sel.modelId();
+            case PORTALS -> "dungeontrain editor portals reset " + sel.modelId() + " " + sel.modelName();
+            default -> null;
+        };
+    }
+
+    /**
+     * Remove on a template that has sub-variants: the three-way {@link ParentRemoveConfirmScreen}
+     * (delete all / unparent / promote the first) in place of the plain Yes/No, wrapping the same
+     * reset command {@link EditorMenuScreen#removeEntryFor} sends with a mode word appended. Null
+     * when the selection has no sub-variants or its category has no groups.
+     */
+    static CommandMenuEntry parentRemoveEntry(Ctx ctx) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        List<EditorTypeMenusPacket.Variant> subs = ctx.variant().subVariants();
+        if (subs == null || subs.isEmpty()) return null;
+        String base = resetCommand(sel);
+        if (base == null) return null;
+        return new CommandMenuEntry.DrillIn("Remove",
+            new ParentRemoveConfirmScreen(sel.displayName(), base, subs.size(), subs.get(0).displayName()));
     }
 
     /**

@@ -12096,6 +12096,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "parent-deletion-confirmation",
+      "version": "0.838.0",
+      "type": "feat",
+      "title": "Editor: safer removal of templates with sub-variants",
+      "summary": "Removing a contents template or dimensional carriage that has sub-variants now asks what to do with them: delete everything, keep them as top-level templates, or hand the group to the first sub-variant. The editor takes you to where the work continued, and re-parenting a sub-variant now lands you in its plot.",
+      "highlights": [],
+      "pr": 1360,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
