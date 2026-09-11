@@ -12111,8 +12111,25 @@
       "released_at": null
     },
     {
+      "id": "keep-trim-repair",
+      "version": "0.838.0",
+      "type": "feat",
+      "title": "Repairing armor keeps its trim",
+      "summary": "Combining two damaged trimmed armor pieces in a crafting grid no longer strips the trim. The repaired piece keeps the trim of the left-most piece (top-most if both are in the same column) \u2014 put the trim you want to keep on the left. Powered by the new Keep Trim sibling mod, bundled inside Dungeon Train.",
+      "highlights": [
+        "Works in the 2x2 inventory grid and the crafting table",
+        "An untrimmed piece on the left gives an untrimmed result, so you always know which trim you get",
+        "The anvil already kept the left item's trim and is unchanged"
+      ],
+      "pr": 1359,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "portal-room-fog-toggle-and-paged-room-settings",
-      "version": "0.839.0",
+      "version": "0.840.0",
       "type": "feat",
       "title": "Fog toggle for dimensional carriages; every room setting in the editor screen, paged",
       "summary": "Dimensional carriages can now force their fog On or Off (Auto keeps following the walls mode, so nothing changes unless you say so). The editor screen shows every setting of whichever room you select \u2014 Walls and its sub-options, Contents, Books, Sky, Fog \u2014 without standing in it, paged under the 3D preview, and contents templates show their Flip axes there too.",
@@ -12122,6 +12139,7 @@
         "Editor screen: Flip X/Y/Z/Rooms for contents templates",
         "peateargriffin: fog off, moss floor and skybox roof"
       ],
+      "pr": 1361,
       "date": "2026-09-11",
       "released": false,
       "released_in": null,
