@@ -122,10 +122,11 @@ public final class CreditsScreen extends Screen {
 
         y = addTeamCard(y);
 
-        // Everyone credited as the original builder of a template that ships with the mod — read
-        // from the jar's own weights files, so the list is exactly this version's train. Skipped
-        // entirely when nobody is credited, so no empty card is drawn.
-        List<TemplateBuilderCredits.Builder> builders = TemplateBuilderCredits.all();
+        // Everyone credited as the original builder of a template that ships with the mod — the
+        // jar's own weights files PLUS whoever the relay has credited since this build was cut (see
+        // TemplateBuilderCredits.merged). Skipped entirely when nobody is credited, so no empty card
+        // is drawn.
+        List<TemplateBuilderCredits.Builder> builders = TemplateBuilderCredits.merged();
         if (!builders.isEmpty()) {
             y += CardCanvas.CARD_GAP;
             y = addBuildersCard(builders, y);
@@ -172,6 +173,12 @@ public final class CreditsScreen extends Screen {
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(rowX + supportW + gap + policyW + gap, rowY, doneW, 20)
                 .build());
+
+        // Once per client run: ask the relay who else it credits. A changed answer re-lays the page
+        // on the render thread — the same shape as the own-names fetch below.
+        RelayTemplateBuilders.fetchOnce(() -> Minecraft.getInstance().execute(() -> {
+            if (Minecraft.getInstance().screen == this) rebuildWidgets();
+        }));
 
         // Once per screen: which of these names are this player's. The answer arrives later on
         // the render thread and re-lays the page with Edit buttons beside them — the same shape

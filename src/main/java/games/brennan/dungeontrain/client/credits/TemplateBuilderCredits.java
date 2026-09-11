@@ -36,6 +36,13 @@ import java.util.Map;
  * <p>One person per line however many templates they built, keyed by uuid when there is one and by
  * name otherwise, counting templates; ordered most-built first, then by name. Loaded once per
  * session — the jar does not change under a running game.</p>
+ *
+ * <p>{@link #merged()} lays the relay's list ({@link RelayTemplateBuilders}) over the bundled one:
+ * a credit set in the editor after this build was cut is on the relay the same minute, and the
+ * page thanks that person now rather than after the next update. Per person the larger count
+ * wins — the relay mirrors the jar's credits plus newer ones, so it is normally the superset, but
+ * a relay that has fallen behind (or is unreachable, leaving only a stale cache) must never make a
+ * bundled credit disappear.</p>
  */
 public final class TemplateBuilderCredits {
 
@@ -57,6 +64,43 @@ public final class TemplateBuilderCredits {
     public static synchronized List<Builder> all() {
         if (cached == null) cached = load();
         return cached;
+    }
+
+    /** The bundled list with the relay's laid over it — what the Credits page shows. */
+    public static List<Builder> merged() {
+        return merge(all(), RelayTemplateBuilders.current());
+    }
+
+    /**
+     * Fold relay rows onto the bundled list: same person (uuid, else case-insensitive name) →
+     * one line at the larger count, first non-empty name kept; new people appended. Pure.
+     */
+    static List<Builder> merge(List<Builder> bundled, List<RelayTemplateBuilders.Row> relay) {
+        Map<String, Builder> byPerson = new LinkedHashMap<>();
+        for (Builder b : bundled) byPerson.put(keyOf(b.uuid(), b.name()), b);
+        for (RelayTemplateBuilders.Row r : relay) {
+            if (r == null || !r.known() || r.templates() <= 0) continue;
+            String key = keyOf(r.uuid(), r.name());
+            Builder prev = byPerson.get(key);
+            if (prev == null) {
+                byPerson.put(key, new Builder(r.uuid(), r.name(), r.templates()));
+            } else {
+                String name = prev.name().isEmpty() ? r.name() : prev.name();
+                byPerson.put(key, new Builder(prev.uuid(), name, Math.max(prev.templates(), r.templates())));
+            }
+        }
+        return sorted(byPerson.values());
+    }
+
+    private static String keyOf(String uuid, String name) {
+        return uuid != null && !uuid.isEmpty() ? "u:" + uuid : "n:" + name.toLowerCase(Locale.ROOT);
+    }
+
+    private static List<Builder> sorted(java.util.Collection<Builder> people) {
+        List<Builder> out = new ArrayList<>(people);
+        out.sort(Comparator.comparingInt(Builder::templates).reversed()
+            .thenComparing(b -> b.display().toLowerCase(Locale.ROOT)));
+        return List.copyOf(out);
     }
 
     /** Drop the cache — for tests, and for anything that swaps the resources under the game. */
@@ -82,7 +126,7 @@ public final class TemplateBuilderCredits {
         Map<String, Builder> byPerson = new LinkedHashMap<>();
         for (BuilderCredit c : credits) {
             if (c == null || !c.known()) continue;
-            String key = c.hasUuid() ? "u:" + c.uuid() : "n:" + c.name().toLowerCase(Locale.ROOT);
+            String key = keyOf(c.uuid(), c.name());
             Builder prev = byPerson.get(key);
             if (prev == null) {
                 byPerson.put(key, new Builder(c.uuid(), c.name(), 1));
@@ -93,10 +137,7 @@ public final class TemplateBuilderCredits {
                 byPerson.put(key, new Builder(prev.uuid(), name, prev.templates() + 1));
             }
         }
-        List<Builder> out = new ArrayList<>(byPerson.values());
-        out.sort(Comparator.comparingInt(Builder::templates).reversed()
-            .thenComparing(b -> b.display().toLowerCase(Locale.ROOT)));
-        return List.copyOf(out);
+        return sorted(byPerson.values());
     }
 
     /** The builder credit of every entry in one bundled weights file; empty when absent or unreadable. */

@@ -50,4 +50,38 @@ final class TemplateBuilderCreditsTest {
             assertTrue(!b.display().isEmpty());
         }
     }
+
+    @Test
+    @DisplayName("relay rows lay over the bundled list: larger count wins per person, newcomers are appended")
+    void mergesRelayOverBundled() {
+        List<TemplateBuilderCredits.Builder> bundled = TemplateBuilderCredits.aggregate(List.of(
+            new BuilderCredit(MIKA, "Mika"), new BuilderCredit(MIKA, "Mika"),
+            new BuilderCredit("", "Old Friend")));
+        List<TemplateBuilderCredits.Builder> out = TemplateBuilderCredits.merge(bundled, List.of(
+            new RelayTemplateBuilders.Row(MIKA, "Mika Renamed", 3),   // newer credit on the relay
+            new RelayTemplateBuilders.Row("", "old friend", 1),        // same person by name
+            new RelayTemplateBuilders.Row(ARLO, "Arlo", 1),            // not in this jar yet
+            new RelayTemplateBuilders.Row("", "", 4)));                // nobody — dropped
+        assertEquals(List.of("Mika", "Arlo", "Old Friend"),
+            out.stream().map(TemplateBuilderCredits.Builder::display).toList());
+        assertEquals(List.of(3, 1, 1), out.stream().map(TemplateBuilderCredits.Builder::templates).toList());
+        // A relay that has fallen behind never shrinks a bundled credit.
+        List<TemplateBuilderCredits.Builder> behind = TemplateBuilderCredits.merge(bundled,
+            List.of(new RelayTemplateBuilders.Row(MIKA, "Mika", 1)));
+        assertEquals(2, behind.get(0).templates());
+        assertEquals(bundled, TemplateBuilderCredits.merge(bundled, List.of()));
+    }
+
+    @Test
+    @DisplayName("the relay answer parses, drops nobodies and zero counts, and survives garbage")
+    void parsesRelayAnswer() {
+        List<RelayTemplateBuilders.Row> rows = RelayTemplateBuilders.parse(
+            "{\"ok\":true,\"builders\":[{\"uuid\":\"" + MIKA + "\",\"name\":\"Mika\",\"templates\":2},"
+            + "{\"uuid\":null,\"name\":\"Old Friend\",\"templates\":1},"
+            + "{\"name\":\"\",\"templates\":9},{\"name\":\"Zero\",\"templates\":0},\"junk\"]}");
+        assertEquals(List.of(new RelayTemplateBuilders.Row(MIKA, "Mika", 2),
+            new RelayTemplateBuilders.Row("", "Old Friend", 1)), rows);
+        assertTrue(RelayTemplateBuilders.parse("not json").isEmpty());
+        assertTrue(RelayTemplateBuilders.parse("{\"builders\":5}").isEmpty());
+    }
 }
