@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.TrackPalette;
@@ -259,7 +260,7 @@ public final class TrackEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, TrackKind.TILE, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
             TemplateDecor.replace(level, origin, stored.get(), settings, null);
             return;
         }

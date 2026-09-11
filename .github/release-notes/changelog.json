@@ -11864,6 +11864,126 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-tick-rate-provenance-cache-registry-snapshots",
+      "version": "0.827.0",
+      "type": "perf",
+      "title": "Train Editor no longer drags the tick rate down",
+      "summary": "Standing at a plot in the Train Editor, especially a Contents group parent, used to cost the server most of its tick budget: the editor was re-checking which pack every template came from on disk every tick, and rebuilding the whole contents registry for every plot lookup. Both are now cached, so the editor ticks at full speed with hundreds of plots stamped. A new \"traps\" contents group with four members rides along, gated to the Void, Upside Down and Chunks stretches of the line.",
+      "highlights": [
+        "Editor overlay cost at a Contents group plot: 85\u2013180 ms per tick \u2192 about 3 ms",
+        "Template provenance (yours / imported / bundled) is cached and refreshes immediately on save, delete, rename, import or pack switch",
+        "New \"traps\" contents group (mild_1, tntbarrel, mild_3, mild_4) in the Void, Upside Down and Chunks phases",
+        "Dev builds log a 1 Hz [editor.timing] line so editor tick cost is visible"
+      ],
+      "pr": 1344,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "observers-silent-on-placement",
+      "version": "0.827.0",
+      "type": "fix",
+      "title": "Observers no longer fire when the train builds around them",
+      "summary": "An observer saved into a carriage pulsed every time Dungeon Train placed that carriage: when a template opened in the editor, when the carriage spawned onto the train, and again as its contents and parts were filled in. Redstone contraptions fired themselves on load. Observers now stay quiet while the mod is doing its own building and only react to real causes: you breaking or placing a block, a piston, a door.",
+      "highlights": [
+        "Observers stay silent while a carriage is placed, lifted onto the train, and furnished",
+        "Also applies when a template opens in the editor or builder, and when a saved train reloads",
+        "Player and gameplay triggers on a running carriage are unchanged"
+      ],
+      "pr": 1345,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-six-phase-letters",
+      "version": "0.828.0",
+      "type": "fix",
+      "title": "Editor phase gates cover the whole line",
+      "summary": "The Train Editor's phase gates only ever showed the first four phases, so the later stretches of the line were invisible and impossible to toggle. Every phase picker in the editor now shows one letter per phase: the floating type menu, the Stages panel, the parts position menu, the Stage edit screen and the gate summary line. Templates you had already gated to a later phase were spawning correctly all along \u2014 the editor just could not show or change that gate.",
+      "highlights": [
+        "Every phase now appears in the editor's gate cells, not just the first four",
+        "Later-phase gates can be toggled from the world-space menus instead of only by command",
+        "Gate summaries list every enabled phase, so a template gated to a later phase no longer reads as ungated"
+      ],
+      "pr": 1346,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "traps-group-level-gating",
+      "version": "0.828.0",
+      "type": "content",
+      "title": "Traps arrive in order, and one more joins them",
+      "summary": "The traps carriages used to all be in play from the moment their stretch of the line began. Each one now has a level floor, so the gentler traps greet you early and the nastier ones wait until you have a few carriages behind you. A new trap carriage joins the group \u2014 designed and built by FireFly in the in-game editor, and our thanks go to them for it \u2014 and the group itself now rides the Overworld stretch as well as the Void and Upside Down.",
+      "highlights": [
+        "A new trap carriage joins the rotation, designed and built by FireFly \u2014 thank you!",
+        "Every trap carriage is level-gated \u2014 the harshest ones no longer turn up on your first run",
+        "Traps now appear in the Overworld stretch, and no longer in Chunks"
+      ],
+      "pr": 1345,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "door-labels-carriage-contents-plots",
+      "version": "0.829.0",
+      "type": "feat",
+      "title": "The Train Editor names both ends of a carriage",
+      "summary": "Every carriage and interior plot in the Train Editor now labels its two doorways: a blue Entrance over the end players walk in through, and a yellow Exit over the end they leave by. Dimensional carriage rooms have shown this for a while; the carriage and interior plots left you to work it out, and their two ends look identical. Only the naming is added \u2014 the doorway itself is still yours to build, so nothing is drawn over the blocks you placed there.",
+      "highlights": [
+        "Blue Entrance and yellow Exit labels on both ends of every carriage plot and every interior plot, sub-variants included",
+        "The label sits on the doorway the plot really has, so a longer plot's Exit lands on its own far end",
+        "Dimensional carriage rooms are unchanged \u2014 they keep their see-through ghost door",
+        "Turn the labels off or back on with /dungeontrain editor doorghosts off | on"
+      ],
+      "pr": 1347,
+      "date": "2026-09-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "curseforge-pack-catch-up",
+      "version": "0.830.0",
+      "type": "ci",
+      "title": "The CurseForge modpack catches up on its own",
+      "summary": "The CurseForge modpack is built around that release's Dungeon Train file, and CurseForge rejects a pack that points at a file it has not approved yet. The pipeline already waited for approval \u2014 but when approval took longer than it was willing to wait, which turned out to be most of the time, that release was simply never added to the pack, and nothing ever tried again. The CurseForge pack had quietly fallen forty releases behind the Modrinth one. A scheduled check now looks every few hours for the newest release whose file CurseForge has since approved, and publishes the pack for it. A slow approval is a delay of a few hours now, not a missing version.",
+      "highlights": [
+        "The CurseForge modpack no longer falls behind when CurseForge is slow to approve a file",
+        "Slow approvals are picked up automatically within a few hours \u2014 no manual re-run needed",
+        "The pack is brought up to the newest release; older gaps are left as they are",
+        "The CurseForge pack is current again as of 0.828.0"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "free-play-advancement-profile-fix",
+      "version": "0.831.0",
+      "type": "fix",
+      "title": "Advancement profile integrity fix",
+      "summary": "Closed a gap where one advancement could be recorded to your cross-world profile from a Free Play run, and where a related command was unreachable without cheats. Nothing earned in Free Play is written to your profile now, and the ordering the advancement tree implies is enforced against what you have actually earned, not what a command can grant.",
+      "highlights": [
+        "Nothing earned in a Free Play run is recorded to your cross-world profile",
+        "A late-game command path that was unreachable without cheats now works in survival"
+      ],
+      "pr": 1350,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -68,7 +68,7 @@ public final class EditorStatusHudOverlay {
     private static int roomHeight = EditorStatusPacket.NO_SIZE;
     /** What that room does at its walls, or {@link EditorStatusPacket#NO_MODE} outside a portal plot. */
     private static String roomMode = EditorStatusPacket.NO_MODE;
-    /** Active model's spawn gate: min Diff-Level (default 0), max Diff-Level ({@code -1} = no upper bound), and a 4-bit phase mask (default all four set). */
+    /** Active model's spawn gate: min Diff-Level (default 0), max Diff-Level ({@code -1} = no upper bound), and a {@link TrainPhase#bit()} phase mask (default {@link TrainPhase#ALL_MASK}). */
     private static int minLevel = 0;
     private static int maxLevel = -1;
     private static int phaseMask = TrainPhase.ALL_MASK;
@@ -257,7 +257,7 @@ public final class EditorStatusHudOverlay {
         return maxLevel;
     }
 
-    /** Active model's 4-bit worldgen-phase mask (bit per {@code TrainPhase} ordinal: OW/Nether/Void/End). */
+    /** Active model's worldgen-phase mask (one {@link TrainPhase#bit()} per phase). */
     public static int phaseMask() {
         return phaseMask;
     }

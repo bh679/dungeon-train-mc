@@ -285,9 +285,19 @@ public final class UserContentPaths {
     public static Provenance provenanceOf(String subSlug, String basenameWithExt) {
         // Suppressed ⇒ nothing loads from a package, so everything really is bundled. Reporting
         // USER/IMPORTED here would tint the variant menus for files that aren't being read.
+        // Checked outside the cache: it is one static read, and the flip that changes it runs the
+        // TemplateStores reload barrier, which clears the cache anyway.
         if (games.brennan.dungeontrain.cheat.EditorContentIntegrity.isSuppressed()) {
             return Provenance.BUNDLED;
         }
+        // The editor overlay asks this for every template of the stamped category on every tick;
+        // the stats below are what made that a tick-rate problem. See ProvenanceCache.
+        return ProvenanceCache.get(subSlug, basenameWithExt,
+            key -> provenanceUncached(subSlug, basenameWithExt));
+    }
+
+    /** The filesystem answer behind {@link #provenanceOf} — every call is a run of stats. */
+    private static Provenance provenanceUncached(String subSlug, String basenameWithExt) {
         // The active package's working dir maps onto the legacy USER tier —
         // it's where edits land and what the variant menus tint as "yours".
         if (Files.isRegularFile(activeSubDir(subSlug).resolve(basenameWithExt))) {

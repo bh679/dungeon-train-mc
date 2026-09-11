@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Drilldown reached from the Editor menu's "Phases" row. Four
- * {@link CommandMenuEntry.Toggle} rows — Overworld / Nether / Void / End — let the author pick
+ * Drilldown reached from the Editor menu's "Phases" row. One
+ * {@link CommandMenuEntry.Toggle} row per {@link TrainPhase} — Overworld … Chuncks — lets the author pick
  * which worldgen phases the active weighted template may spawn in. Toggling a row dispatches
  * {@code /dungeontrain editor [contents|tracks] phase <id> [<name>] <phase> on|off} and the server
  * pushes a fresh {@link games.brennan.dungeontrain.net.EditorStatusPacket} carrying the updated
@@ -78,14 +78,7 @@ public final class PhaseSelectScreen implements MenuScreen {
     }
 
     private static String displayName(TrainPhase p) {
-        return switch (p) {
-            case OVERWORLD -> "Overworld";
-            case NETHER -> "Nether";
-            case VOID -> "Void";
-            case END -> "End";
-            case UPSIDE_DOWN -> "Upside Down";
-            case CHUNCKS -> "Chuncks";
-        };
+        return p.displayName();
     }
 
     /** Visible-for-test accessor. */
