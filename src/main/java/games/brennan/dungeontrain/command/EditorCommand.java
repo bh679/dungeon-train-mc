@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -87,6 +88,7 @@ import net.minecraft.world.phys.HitResult;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -402,6 +404,28 @@ public final class EditorCommand {
      * handlers are identical and only the command prefix differs. Every node is freshly built per
      * call — brigadier builders are single-use.</p>
      */
+    /** Runs a reset with the parent-deletion mode the author chose. */
+    @FunctionalInterface
+    private interface ParentModeExecutor {
+        int run(CommandContext<CommandSourceStack> ctx,
+                games.brennan.dungeontrain.editor.ParentDeletes.Mode mode);
+    }
+
+    /**
+     * Hang one literal per {@link games.brennan.dungeontrain.editor.ParentDeletes.Mode} under
+     * {@code node} — the optional trailing {@code all|unparent|promote} the two reset commands take
+     * when their target is a sub-variant parent.
+     */
+    private static <T extends ArgumentBuilder<CommandSourceStack, T>> T parentModeNodes(
+        T node, ParentModeExecutor exec
+    ) {
+        for (games.brennan.dungeontrain.editor.ParentDeletes.Mode mode
+                : games.brennan.dungeontrain.editor.ParentDeletes.Mode.values()) {
+            node = node.then(Commands.literal(mode.literal()).executes(ctx -> exec.run(ctx, mode)));
+        }
+        return node;
+    }
+
     private static LiteralArgumentBuilder<CommandSourceStack> attachTrackVariantNodes(
         LiteralArgumentBuilder<CommandSourceStack> node
     ) {
@@ -424,12 +448,29 @@ public final class EditorCommand {
                             ctx.getSource(),
                             StringArgumentType.getString(ctx, "kind"),
                             StringArgumentType.getString(ctx, "name"))))))
+            // `reset <kind> [mode]` acts on the plot the player stands in; `reset <kind> <name> [mode]`
+            // is the same delete addressed by name (the editor screen's Remove). The mode literals
+            // sit beside the name argument — brigadier tries literals first, so a variant that
+            // happens to be called `all` would need the standing form.
             .then(Commands.literal("reset")
-                .then(Commands.argument("kind", StringArgumentType.word())
+                .then(parentModeNodes(Commands.argument("kind", StringArgumentType.word())
                     .suggests(TRACK_KIND_SUGGESTIONS)
                     .executes(ctx -> runTrackResetActiveVariant(
                         ctx.getSource(),
-                        StringArgumentType.getString(ctx, "kind")))))
+                        StringArgumentType.getString(ctx, "kind"))),
+                    (ctx, mode) -> runTrackResetActiveVariant(
+                        ctx.getSource(),
+                        StringArgumentType.getString(ctx, "kind"), mode))
+                    .then(parentModeNodes(Commands.argument("name", StringArgumentType.word())
+                        .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                        .executes(ctx -> runTrackResetNamedVariant(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "kind"),
+                            StringArgumentType.getString(ctx, "name"), null)),
+                        (ctx, mode) -> runTrackResetNamedVariant(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "kind"),
+                            StringArgumentType.getString(ctx, "name"), mode)))))
             // Addressed by (kind, name) rather than by where the player is standing, so the editor
             // screen can rename what its pane is showing — the same shape the carriage and contents
             // renames take. The menu sends the kind spelled out (`… portals rename portal_room <id>`)
@@ -714,10 +755,12 @@ public final class EditorCommand {
                             StringArgumentType.getString(ctx, "new_name")))))
                 .then(Commands.literal("list").executes(ctx -> runContentsList(ctx.getSource())))
                 .then(Commands.literal("reset")
-                    .then(Commands.argument("contents", StringArgumentType.word())
+                    .then(parentModeNodes(Commands.argument("contents", StringArgumentType.word())
                         .suggests(CONTENTS_SUGGESTIONS)
                         .executes(ctx -> runContentsReset(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "contents")))))
+                            StringArgumentType.getString(ctx, "contents"))),
+                        (ctx, mode) -> runContentsReset(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "contents"), mode))))
                 .then(Commands.literal("new")
                     .then(Commands.argument("name", StringArgumentType.word())
                         .executes(ctx -> runContentsNew(ctx.getSource(),
@@ -2484,6 +2527,7 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+        progress(source, "Moving '" + child.id() + "' from '" + oldParent + "' to '" + newParent.id() + "'\u2026");
         try {
             if (move.from().members().isEmpty()) {
                 CarriageContentsGroupStore.delete(oldParent);
@@ -2497,9 +2541,10 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+        String landed = landInContents(source, child.id());
         source.sendSuccess(() -> Component.literal(
             "Editor: moved '" + child.id() + "' from group '" + oldParent + "' to '" + newParent.id()
-                + "' (weight, gate and Stage links kept)."
+                + "' (weight, gate and Stage links kept)." + landed
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -4671,37 +4716,40 @@ public final class EditorCommand {
     }
 
     private static int runContentsReset(CommandSourceStack source, String raw) {
+        return runContentsReset(source, raw, null);
+    }
+
+    /**
+     * {@code /dt editor contents reset <id> [all|unparent|promote]}. A leaf deletes as it always
+     * has. A group <b>parent</b> needs a {@link games.brennan.dungeontrain.editor.ParentDeletes.Mode
+     * mode} saying what becomes of its sub-variants, and is refused without one — the group sidecar
+     * is the only place their weights, gates and Stage links live, so a bare delete would strand
+     * them silently. The editor's Remove asks the author and sends the mode; scripts pass it by hand.
+     */
+    private static int runContentsReset(CommandSourceStack source, String raw,
+                                        games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
         CarriageContents contents = parseContents(source, raw);
         if (contents == null) return 0;
+        java.util.Optional<CarriageContentsGroup> group = CarriageContentsGroupStore.get(contents.id())
+            .filter(g -> !g.members().isEmpty());
+        if (group.isPresent() && mode == null) {
+            int n = group.get().members().size();
+            source.sendFailure(Component.literal(
+                "'" + contents.id() + "' has " + n + " sub-variant" + (n == 1 ? "" : "s")
+                    + " — say what happens to them: contents reset " + contents.id() + " <"
+                    + games.brennan.dungeontrain.editor.ParentDeletes.Mode.literals() + ">."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        progress(source, "Deleting '" + contents.id() + "'"
+            + (group.isPresent() && mode == games.brennan.dungeontrain.editor.ParentDeletes.Mode.ALL
+                ? " and its " + group.get().members().size() + " sub-variants" : "") + "\u2026");
         try {
-            ServerLevel overworld = source.getServer().overworld();
-            CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-
-            List<CarriageContents> rowBefore = CarriageContentsRegistry.allContents();
-            int oldIdx = -1;
-            for (int i = 0; i < rowBefore.size(); i++) {
-                if (rowBefore.get(i).id().equals(contents.id())) { oldIdx = i; break; }
-            }
-            int oldCount = rowBefore.size();
-
-            CarriageContentsEditor.clearPlot(overworld, contents, dims);
-            boolean deleted = CarriageContentsStore.delete(contents);
-            // Sidecars, weight, group slot — and in dev mode the bundled copies of each.
-            TemplateDeletes.Report cleanup = TemplateDeletes.contents(contents);
-            boolean wasCustom = !contents.isBuiltin();
-            if (wasCustom) {
-                CarriageContentsRegistry.unregister(contents.id());
-                if (oldIdx >= 0) {
-                    CarriageContentsEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
-                }
-            }
-            source.sendSuccess(() -> Component.literal(
-                (deleted
-                    ? ("Editor: deleted contents '" + contents.id() + "' template"
-                        + (wasCustom ? " and removed from registry." : "."))
-                    : ("Editor: no contents '" + contents.id() + "' template to delete."))
-                + cleanup.summaryLine()
-            ), true);
+            ParentModeOutcome outcome = group.isPresent()
+                ? applyContentsParentMode(source, contents, group.get(), mode) : ParentModeOutcome.NONE;
+            String line = deleteContents(source, contents);
+            String landed = landInContents(source, outcome.landing());
+            source.sendSuccess(() -> Component.literal(line + outcome.line() + landed), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents reset failed", t);
@@ -4710,6 +4758,156 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * Put the player in {@code id}'s plot after a parent delete — the new parent, or the first
+     * member that just became top-level — so the author lands where the work continued rather than
+     * in a hole. No-op without a player or a landing. Returns the reply fragment.
+     */
+    private static String landInContents(CommandSourceStack source, String id) {
+        if (id == null || !(source.getEntity() instanceof ServerPlayer player)) return "";
+        java.util.Optional<CarriageContents> target = CarriageContentsRegistry.find(id);
+        if (target.isEmpty()) return "";
+        try {
+            CarriageContentsEditor.enter(player, target.get(), null);
+            return " Entered '" + id + "'.";
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] contents reset: could not enter {} afterwards: {}", id, e.toString());
+            return "";
+        }
+    }
+
+    /**
+     * Delete one contents template: clear its plot, drop the {@code .nbt} and everything
+     * {@link TemplateDeletes#contents} takes with it, deregister a custom and close the plot row's
+     * gap. Returns the reply line; the caller sends it.
+     */
+    private static String deleteContents(CommandSourceStack source, CarriageContents contents) throws java.io.IOException {
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        List<CarriageContents> rowBefore = CarriageContentsRegistry.allContents();
+        int oldIdx = -1;
+        for (int i = 0; i < rowBefore.size(); i++) {
+            if (rowBefore.get(i).id().equals(contents.id())) { oldIdx = i; break; }
+        }
+        int oldCount = rowBefore.size();
+
+        CarriageContentsEditor.clearPlot(overworld, contents, dims);
+        boolean deleted = CarriageContentsStore.delete(contents);
+        // Sidecars, weight, group slot — and in dev mode the bundled copies of each.
+        TemplateDeletes.Report cleanup = TemplateDeletes.contents(contents);
+        boolean wasCustom = !contents.isBuiltin();
+        if (wasCustom) {
+            CarriageContentsRegistry.unregister(contents.id());
+            if (oldIdx >= 0) {
+                CarriageContentsEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
+            }
+        }
+        return (deleted
+                ? ("Editor: deleted contents '" + contents.id() + "' template"
+                    + (wasCustom ? " and removed from registry." : "."))
+                : ("Editor: no contents '" + contents.id() + "' template to delete."))
+            + cleanup.summaryLine();
+    }
+
+    /**
+     * What a contents parent's sub-variants become, applied before the parent itself goes. Each
+     * member step is isolated — a failure is logged and named in the returned line, and the rest
+     * (and the parent delete) still run. See {@link games.brennan.dungeontrain.editor.ParentDeletes}.
+     */
+    private static ParentModeOutcome applyContentsParentMode(CommandSourceStack source, CarriageContents parent,
+                                                             CarriageContentsGroup group,
+                                                             games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
+        List<String> done = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
+        switch (mode) {
+            case ALL -> {
+                for (CarriageContentsGroup.Member m : group.members()) {
+                    java.util.Optional<CarriageContents> member = CarriageContentsRegistry.find(m.id());
+                    if (member.isEmpty()) continue;
+                    if (member.get().isBuiltin()) {
+                        // A built-in can be a member but never deleted — it simply stops being one.
+                        done.add(m.id() + " (built-in, kept)");
+                        continue;
+                    }
+                    try {
+                        deleteContents(source, member.get());
+                        done.add(m.id());
+                    } catch (Exception e) {
+                        LOGGER.warn("[DungeonTrain] contents reset all: could not delete member {}: {}", m.id(), e.toString());
+                        failed.add(m.id());
+                    }
+                }
+                return new ParentModeOutcome(summarise(" Sub-variants deleted: ", done, failed), null);
+            }
+            case UNPARENT -> {
+                String first = null;
+                for (games.brennan.dungeontrain.editor.ParentDeletes.TopLevel t
+                        : games.brennan.dungeontrain.editor.ParentDeletes.unparentContents(group)) {
+                    try {
+                        CarriageContentsWeights.set(t.id(), t.weight());
+                        CarriageContentsWeights.setGate(t.id(), t.gate());
+                        CarriageContentsWeights.setStage(t.id(), t.stageId());
+                        if (first == null) first = t.id();
+                        done.add(t.droppedStages() > 0
+                            ? t.id() + " (kept 1 of " + (t.droppedStages() + 1) + " Stage links)" : t.id());
+                    } catch (Exception e) {
+                        LOGGER.warn("[DungeonTrain] contents reset unparent: could not carry {}: {}", t.id(), e.toString());
+                        failed.add(t.id());
+                    }
+                }
+                return new ParentModeOutcome(summarise(" Now top-level: ", done, failed), first);
+            }
+            case PROMOTE_FIRST -> {
+                games.brennan.dungeontrain.editor.ParentDeletes.ContentsPromotion p =
+                    games.brennan.dungeontrain.editor.ParentDeletes.promoteContents(group).orElseThrow();
+                String heir = p.newParent();
+                try {
+                    // The family keeps the parent's place in the top-level draw.
+                    CarriageContentsWeights w = CarriageContentsWeights.current();
+                    CarriageContentsWeights.set(heir, w.weightFor(parent.id()));
+                    CarriageContentsWeights.setGate(heir, w.gateFor(parent.id()));
+                    CarriageContentsWeights.setStage(heir, w.stageIdFor(parent.id()));
+                    if (p.group().isPresent()) CarriageContentsGroupStore.save(heir, p.group().get());
+                    int n = p.group().map(g -> g.members().size()).orElse(0);
+                    return new ParentModeOutcome(" '" + heir + "' now heads the group (" + n + " sub-variant"
+                        + (n == 1 ? "" : "s") + ").", heir);
+                } catch (Exception e) {
+                    LOGGER.warn("[DungeonTrain] contents reset promote: could not promote {}: {}", heir, e.toString());
+                    return new ParentModeOutcome(" Could not promote '" + heir + "': " + e.getMessage(), null);
+                }
+            }
+        }
+        return ParentModeOutcome.NONE;
+    }
+
+    /**
+     * What a parent-deletion mode did, and where the author should land afterwards: the new parent
+     * after a promote, the first newly top-level member after an unparent, nowhere in particular
+     * otherwise (null). The landing is a template id the caller enters once the delete has restamped.
+     */
+    private record ParentModeOutcome(String line, String landing) {
+        static final ParentModeOutcome NONE = new ParentModeOutcome("", null);
+    }
+
+    /**
+     * A grey "…ing" line sent <b>before</b> a slow editor operation starts — a portal-room delete or
+     * re-parent clears and restamps the whole row, and until the result line lands the author has
+     * nothing telling them the click took. Handed to the network thread at once, so it shows while
+     * the server thread is still working.
+     */
+    private static void progress(CommandSourceStack source, String message) {
+        source.sendSuccess(() -> Component.literal(message).withStyle(ChatFormatting.GRAY), false);
+    }
+
+    /** One reply fragment for a per-member pass: what went through and what did not. */
+    private static String summarise(String label, List<String> done, List<String> failed) {
+        StringBuilder sb = new StringBuilder();
+        if (!done.isEmpty()) sb.append(label).append(String.join(", ", done)).append('.');
+        if (!failed.isEmpty()) sb.append(" Could not: ").append(String.join(", ", failed)).append('.');
+        return sb.toString();
     }
 
     private static int runContentsNew(CommandSourceStack source, String rawName, CarriageContents sourceContents) {
@@ -5722,6 +5920,30 @@ public final class EditorCommand {
     private static int savePortalRoomGroup(CommandSourceStack source, String parent,
                                            games.brennan.dungeontrain.track.variant.TrackVariantGroup updated,
                                            String message) {
+        return savePortalRoomGroup(source, parent, updated, message, null);
+    }
+
+    /**
+     * Put the player in room {@code name}'s plot after a re-parent or a parent delete moved it —
+     * the row is re-laid out, so wherever they stood is no longer that room. No-op without a
+     * player or a name. Returns the reply fragment.
+     */
+    private static String landInPortalRoom(CommandSourceStack source, String name) {
+        if (name == null || !(source.getEntity() instanceof ServerPlayer player)) return "";
+        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(PORTAL_ROOM_KIND, name).isEmpty()) return "";
+        try {
+            PortalRoomEditor.enter(player, name);
+            return " Entered '" + name + "'.";
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] portals group: could not enter {} afterwards: {}", name, e.toString());
+            return "";
+        }
+    }
+
+    /** As above; {@code landIn} names the room to enter once the row is re-laid out (null = stay). */
+    private static int savePortalRoomGroup(CommandSourceStack source, String parent,
+                                           games.brennan.dungeontrain.track.variant.TrackVariantGroup updated,
+                                           String message, String landIn) {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         IOException[] failure = new IOException[1];
@@ -5738,7 +5960,8 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        source.sendSuccess(() -> Component.literal(message).withStyle(ChatFormatting.GREEN), true);
+        String landed = landInPortalRoom(source, landIn);
+        source.sendSuccess(() -> Component.literal(message + landed).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -5970,10 +6193,11 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent)
                 .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY)
                 .withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(child, weight));
+        progress(source, "Parenting '" + child + "' under '" + parent + "'\u2026");
         return savePortalRoomGroup(source, parent, updated,
             "Editor: dimensional carriage '" + parent + "' → added sub-variant '" + child + "' (weight=" + weight
                 + ", " + updated.members().size() + " sub-variant"
-                + (updated.members().size() == 1 ? "" : "s") + " + the parent itself).");
+                + (updated.members().size() == 1 ? "" : "s") + " + the parent itself).", child);
     }
 
     /**
@@ -6193,9 +6417,10 @@ public final class EditorCommand {
                 "'" + child + "' is not a sub-variant of '" + parent + "'.").withStyle(ChatFormatting.YELLOW));
             return 0;
         }
+        progress(source, "Unparenting '" + child + "' from '" + parent + "'\u2026");
         return savePortalRoomGroup(source, parent, existing.get().withoutMember(child),
             "Editor: dimensional carriage '" + parent + "' → removed sub-variant '" + child
-                + "' (it is a top-level room again).");
+                + "' (it is a top-level room again).", child);
     }
 
     /**
@@ -6232,6 +6457,7 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+        progress(source, "Moving '" + child + "' from '" + oldParent + "' to '" + newParent + "'\u2026");
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         IOException[] failure = new IOException[1];
@@ -6253,9 +6479,10 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+        String landed = landInPortalRoom(source, child);
         source.sendSuccess(() -> Component.literal(
             "Editor: moved sub-variant '" + child + "' from '" + oldParent + "' to '" + newParent
-                + "' (weight, gate and Stage links kept)."
+                + "' (weight, gate and Stage links kept)." + landed
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -7636,19 +7863,22 @@ public final class EditorCommand {
         return 1;
     }
 
-    /**
-     * {@code /dt editor tracks reset <kind>} — delete the variant the
-     * player is currently standing on (must not be {@code default}),
-     * unregister it, restamp, teleport back to default's plot.
-     */
     private static int runTrackResetActiveVariant(CommandSourceStack source, String rawKind) {
+        return runTrackResetActiveVariant(source, rawKind, null);
+    }
+
+    /**
+     * {@code /dt editor tracks reset <kind> [all|unparent|promote]} — delete the variant the
+     * player is currently standing on (must not be {@code default}), unregister it, restamp,
+     * teleport back to default's plot. See {@link #resetTrackVariant} for the mode rule.
+     */
+    private static int runTrackResetActiveVariant(CommandSourceStack source, String rawKind,
+                                                  games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
-
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        ServerLevel overworld = source.getServer().overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
 
         games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo loc =
             games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
@@ -7657,13 +7887,65 @@ public final class EditorCommand {
                 "Stand on the " + kind.id() + " variant you want to remove first."));
             return 0;
         }
-        String name = loc.name();
-        if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(name)) {
-            source.sendFailure(Component.literal(
-                "Standing on the synthetic 'default' for " + kind.id() + " — nothing to remove. "
-                + "Stand on a custom variant first."));
+        return resetTrackVariant(source, kind, loc.name(), mode);
+    }
+
+    /**
+     * {@code /dt editor tracks reset <kind> <name> [all|unparent|promote]} — the same delete
+     * addressed by name, for the editor screen whose Remove acts on the selected row rather than
+     * on the plot the player happens to stand in.
+     */
+    private static int runTrackResetNamedVariant(CommandSourceStack source, String rawKind, String rawName,
+                                                 games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        if (!games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(name)
+                && games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(kind, name).isEmpty()) {
+            source.sendFailure(Component.literal("Unknown " + kind.id() + " variant '" + name + "'."));
             return 0;
         }
+        return resetTrackVariant(source, kind, name, mode);
+    }
+
+    /**
+     * Delete {@code (kind, name)}: refuse {@code default}; a variant that heads a group (a
+     * dimensional carriage with sub-variants) needs a
+     * {@link games.brennan.dungeontrain.editor.ParentDeletes.Mode mode} saying what becomes of its
+     * members and is refused without one — same rule as {@code contents reset}. Clears the plot
+     * (the whole row for portal rooms), applies the mode, deletes, restamps, and sends a player who
+     * was standing in one of this kind's plots back to default's.
+     */
+    private static int resetTrackVariant(CommandSourceStack source,
+                                         games.brennan.dungeontrain.track.variant.TrackKind kind, String name,
+                                         games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        // `default` is a real name too: the registry always lists it and it can never be
+        // unregistered, but it may have an authored template (a config-dir save, or — for the
+        // portal room — a bundled default.nbt with its own sub-variants). Resetting it drops those
+        // files, in dev mode the bundled copies as well, and the kind falls back to its built-in
+        // geometry; the row keeps its `default` slot.
+        boolean isDefault = games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(name);
+        java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, name)
+                .filter(g -> !g.members().isEmpty());
+        if (group.isPresent() && mode == null) {
+            int n = group.get().members().size();
+            source.sendFailure(Component.literal(
+                "'" + name + "' has " + n + " sub-variant" + (n == 1 ? "" : "s")
+                    + " — say what happens to them: " + kind.id() + " reset " + name + " <"
+                    + games.brennan.dungeontrain.editor.ParentDeletes.Mode.literals() + ">."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        ServerPlayer player = source.getEntity() instanceof ServerPlayer sp ? sp : null;
+        games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo loc = player == null ? null
+            : games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
+        boolean sendHome = loc != null && loc.kind() == kind;
+        progress(source, (isDefault ? "Resetting '" : "Deleting '") + name + "'"
+            + (group.isPresent() && mode == games.brennan.dungeontrain.editor.ParentDeletes.Mode.ALL
+                ? " and its " + group.get().members().size() + " sub-variants" : "") + "\u2026");
 
         // Wipe the variant's plot blocks BEFORE deregistering so the orphaned
         // plot doesn't sit in the world after teleport. restampPlotForKind
@@ -7678,12 +7960,52 @@ public final class EditorCommand {
             clearPlotForVariant(overworld, kind, name, dims);
         }
 
+        ParentModeOutcome outcome = group.isPresent()
+            ? applyTrackParentMode(overworld, dims, kind, name, group.get(), mode) : ParentModeOutcome.NONE;
+
+        TemplateDeletes.Report cleanup;
         try {
-            games.brennan.dungeontrain.track.variant.TrackVariantStore.delete(kind, name);
+            cleanup = deleteTrackVariant(kind, name);
         } catch (java.io.IOException e) {
             source.sendFailure(Component.literal("Delete failed: " + e.getMessage()));
             return 0;
         }
+        restampPlotForKind(overworld, kind, dims);
+        // Land where the work continued: the new parent, or the first member that just went
+        // top-level; otherwise a player who was in this kind's row goes back to default's plot.
+        String landing = outcome.landing();
+        boolean landed = false;
+        if (player != null && landing != null
+                && games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(kind, landing).isPresent()) {
+            if (kind == PORTAL_ROOM_KIND) PortalRoomEditor.enter(player, landing);
+            else teleportToPlot(player, overworld, kind, landing, dims);
+            landed = true;
+        } else if (sendHome) {
+            teleportToPlot(player, overworld, kind,
+                games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
+        }
+        final String where = landed ? " Entered '" + landing + "'."
+            : (sendHome && !isDefault ? " — teleported back to default." : "");
+
+        source.sendSuccess(() -> Component.literal(
+            (isDefault
+                ? "Reset " + kind.id() + ":default to its built-in fallback"
+                : "Removed " + kind.id() + ":" + name)
+                + (where.startsWith(" —") ? where : "." + where)
+                + cleanup.summaryLine() + outcome.line()
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /**
+     * Delete one named track-side variant's files and registry entry: the {@code .nbt}, everything
+     * {@link TemplateDeletes#track} takes with it, the registry row and the cached room size. Plot
+     * clearing and restamping are the caller's — they work on the whole row.
+     */
+    private static TemplateDeletes.Report deleteTrackVariant(
+        games.brennan.dungeontrain.track.variant.TrackKind kind, String name
+    ) throws java.io.IOException {
+        games.brennan.dungeontrain.track.variant.TrackVariantStore.delete(kind, name);
         // Sidecars, weight, group slot — and in dev mode the bundled copies of each. Before
         // unregister, because the group strip finds parents through the registry.
         TemplateDeletes.Report cleanup = TemplateDeletes.track(kind, name);
@@ -7693,14 +8015,76 @@ public final class EditorCommand {
         if (kind.hasBuiltInFallback()) {
             games.brennan.dungeontrain.portal.PortalRoomSizes.forget(name);
         }
-        restampPlotForKind(overworld, kind, dims);
-        teleportToPlot(player, overworld, kind,
-            games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
+        return cleanup;
+    }
 
-        source.sendSuccess(() -> Component.literal(
-            "Removed " + kind.id() + ":" + name + " — teleported back to default." + cleanup.summaryLine()
-        ).withStyle(ChatFormatting.GREEN), true);
-        return 1;
+    /**
+     * Track-side twin of {@link #applyContentsParentMode}: what a group parent's members become,
+     * applied between the row clear and the parent's own delete so the one restamp that follows
+     * lays the row out for the new membership. Best-effort per member.
+     */
+    private static ParentModeOutcome applyTrackParentMode(ServerLevel overworld, CarriageDims dims,
+                                               games.brennan.dungeontrain.track.variant.TrackKind kind,
+                                               String parent,
+                                               games.brennan.dungeontrain.track.variant.TrackVariantGroup group,
+                                               games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
+        List<String> done = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
+        switch (mode) {
+            case ALL -> {
+                for (games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member m : group.members()) {
+                    if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(kind, m.id()).isEmpty()) continue;
+                    try {
+                        if (!kind.freeSizeAboveFloor()) clearPlotForVariant(overworld, kind, m.id(), dims);
+                        deleteTrackVariant(kind, m.id());
+                        done.add(m.id());
+                    } catch (Exception e) {
+                        LOGGER.warn("[DungeonTrain] {} reset all: could not delete member {}: {}", kind.id(), m.id(), e.toString());
+                        failed.add(m.id());
+                    }
+                }
+                return new ParentModeOutcome(summarise(" Sub-variants deleted: ", done, failed), null);
+            }
+            case UNPARENT -> {
+                String first = null;
+                for (games.brennan.dungeontrain.editor.ParentDeletes.TopLevel t
+                        : games.brennan.dungeontrain.editor.ParentDeletes.unparentTrack(group)) {
+                    try {
+                        TrackVariantWeights.set(kind, t.id(), t.weight());
+                        TrackVariantWeights.setGate(kind, t.id(), t.gate());
+                        TrackVariantWeights.setStage(kind, t.id(), t.stageId());
+                        if (first == null) first = t.id();
+                        done.add(t.droppedStages() > 0
+                            ? t.id() + " (kept 1 of " + (t.droppedStages() + 1) + " Stage links)" : t.id());
+                    } catch (Exception e) {
+                        LOGGER.warn("[DungeonTrain] {} reset unparent: could not carry {}: {}", kind.id(), t.id(), e.toString());
+                        failed.add(t.id());
+                    }
+                }
+                return new ParentModeOutcome(summarise(" Now top-level: ", done, failed), first);
+            }
+            case PROMOTE_FIRST -> {
+                games.brennan.dungeontrain.editor.ParentDeletes.TrackPromotion p =
+                    games.brennan.dungeontrain.editor.ParentDeletes.promoteTrack(group).orElseThrow();
+                String heir = p.newParent();
+                try {
+                    // The family keeps the parent's place in the top-level draw.
+                    TrackVariantWeights.set(kind, heir, TrackVariantWeights.weightFor(kind, parent));
+                    TrackVariantWeights.setGate(kind, heir, TrackVariantWeights.gateFor(kind, parent));
+                    TrackVariantWeights.setStage(kind, heir, TrackVariantWeights.stageIdFor(kind, parent));
+                    if (p.group().isPresent()) {
+                        games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(kind, heir, p.group().get());
+                    }
+                    int n = p.group().map(g -> g.members().size()).orElse(0);
+                    return new ParentModeOutcome(" '" + heir + "' now heads the group (" + n + " sub-variant"
+                        + (n == 1 ? "" : "s") + ").", heir);
+                } catch (Exception e) {
+                    LOGGER.warn("[DungeonTrain] {} reset promote: could not promote {}: {}", kind.id(), heir, e.toString());
+                    return new ParentModeOutcome(" Could not promote '" + heir + "': " + e.getMessage(), null);
+                }
+            }
+        }
+        return ParentModeOutcome.NONE;
     }
 
     /**

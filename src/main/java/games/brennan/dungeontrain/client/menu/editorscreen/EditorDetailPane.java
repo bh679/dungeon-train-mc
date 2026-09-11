@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.PortalTestSessionState;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
@@ -12,6 +13,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
 
@@ -35,7 +37,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT }
 
     /** How wide each arrow cell of the pager is, as a share of the row. */
     static final double PAGER_ARROW_SHARE = 0.18;
@@ -76,6 +78,12 @@ public final class EditorDetailPane {
     public List<EditorScreenActions.Icon> icons() { return icons; }
     public List<CommandMenuEntry> rows() { return rows; }
     public CommandMenuEntry testEntry() { return test; }
+
+    /** The Reseed cell beside the test button — the world switch, or in a test the re-roll button. */
+    public CommandMenuEntry reseedEntry() { return EditorScreenActions.reseedEntry(); }
+
+    /** Where the Reseed cell sits: the right end of the test row. Null before the first layout. */
+    private InventoryEditorLayout.Rect reseedRect;
     /** The teleport button in the header, or null when the author is already standing there. */
     public CommandMenuEntry goHereEntry() { return goHere; }
     public EditorScreenActions.Ctx ctx() { return ctx; }
@@ -404,19 +412,38 @@ public final class EditorDetailPane {
     }
 
     private void drawTest(GuiGraphics g, Font font) {
-        InventoryEditorLayout.Rect r = layout.test();
+        InventoryEditorLayout.Rect row = layout.test();
+        // The Reseed cell takes the right end of the row, with a one-pixel gap; the button the rest.
+        CommandMenuEntry reseed = reseedEntry();
+        int cellW = font.width(MenuRowPainter.labelFor(reseed)) + 2 * MenuRowPainter.CELL_PAD_X + 8;
+        reseedRect = new InventoryEditorLayout.Rect(row.right() - cellW, row.y(), cellW, row.h());
+        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(row.x(), row.y(),
+            Math.max(0, row.w() - cellW - 1), row.h());
+        MenuRowPainter.drawCell(g, font, reseed, reseedRect.x(), reseedRect.y(), reseedRect.right(),
+            reseedRect.h(), hovered.kind() == HitKind.RESEED, 0, 0, null);
+
         boolean enabled = test != null;
         boolean hov = enabled && hovered.kind() == HitKind.TEST;
         g.fill(r.x(), r.y(), r.right(), r.bottom(), !enabled ? DISABLED : hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
-        String label = EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE);
+        String label = testLabel();
         int tw = font.width(label) + 12;
         int x = r.x() + (r.w() - tw) / 2;
         if (!enabled) tint(g, DISABLED_ICON);
         else if (hov) tint(g, 0xFF000000);
-        g.blitSprite(EditorIcons.PLAY, x, r.y() + (r.h() - 10) / 2, 10, 10);
+        g.blitSprite(testIcon(), x, r.y() + (r.h() - 10) / 2, 10, 10);
         g.setColor(1f, 1f, 1f, 1f);
         g.drawString(font, label, x + 12, r.y() + (r.h() - font.lineHeight) / 2 + 1,
             !enabled ? 0x80FFFFFF : hov ? 0xFF000000 : 0xFFFFFFFF, false);
+    }
+
+    /** The test button's name: the way in, or — while a test is running — the way back out. */
+    private static String testLabel() {
+        return EditorScreenLang.text(PortalTestSessionState.active()
+            ? EditorScreenLang.EXIT_TEST : EditorScreenLang.TEST_CARRIAGE);
+    }
+
+    private static ResourceLocation testIcon() {
+        return PortalTestSessionState.active() ? EditorIcons.EXIT : EditorIcons.PLAY;
     }
 
     private static void tint(GuiGraphics g, int argb) {
@@ -462,6 +489,7 @@ public final class EditorDetailPane {
             }
             return Hit.NONE;
         }
+        if (reseedRect != null && reseedRect.contains(mx, my)) return new Hit(HitKind.RESEED, 0, 0);
         if (layout.test().contains(mx, my)) return new Hit(HitKind.TEST, 0, 0);
         return Hit.NONE;
     }
@@ -487,16 +515,21 @@ public final class EditorDetailPane {
             }
             case SHEET -> {
                 TemplateDataSheet.Placed placed = sheetCell(hit.index());
+                // A cell's tooltip may carry a second line (the step-gesture hint under a bound).
                 yield placed == null || placed.cell().tooltip() == null
-                    ? List.of() : List.of(placed.cell().tooltip());
+                    ? List.of() : List.of(placed.cell().tooltip().split("\n"));
             }
             case GO_HERE -> goHere == null || ctx.selection() == null ? List.of()
                 : List.of(EditorScreenLang.text(EditorScreenLang.GO_HERE),
                           EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.selection().displayName()));
             // Only dimensions can be stood up, and that is the whole of why the button is off —
             // it no longer asks the author to stand anywhere.
+            case RESEED -> List.of(EditorScreenLang.text(EditorScreenLang.RESEED),
+                EditorScreenLang.text(PortalTestSessionState.active() ? EditorScreenLang.RESEED_TIP_NOW
+                    : PortalTestSessionState.reseed() ? EditorScreenLang.RESEED_TIP_ON
+                    : EditorScreenLang.RESEED_TIP_OFF));
             case TEST -> test == null
-                ? List.of(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
+                ? List.of(testLabel(),
                           EditorScreenLang.text(EditorScreenLang.DISABLED_DIMENSIONS_ONLY))
                 : List.of();
             default -> List.of();

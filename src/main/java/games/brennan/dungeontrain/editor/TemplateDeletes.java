@@ -224,9 +224,10 @@ public final class TemplateDeletes {
     // ---------- track-side variants ----------
 
     /**
-     * Companion cleanup for {@link TrackVariantStore#delete} of a <b>named</b> variant. Not for the
-     * {@code default} resets the pillar/tunnel/track stores perform — those drop an override and must
-     * leave the bundled copy alone; the callers of this method already refuse {@code default}.
+     * Companion cleanup for {@link TrackVariantStore#delete} of a named variant — {@code default}
+     * included: outside dev mode that drops the config-dir override and the bundled copy stays; in dev
+     * mode the bundled copy goes too and the kind falls back to its built-in geometry. Not for the
+     * {@code default} resets the pillar/tunnel/track <b>stores</b> perform on their own.
      */
     public static Report track(TrackKind kind, String name) {
         String key = name.toLowerCase(Locale.ROOT);
@@ -285,10 +286,12 @@ public final class TemplateDeletes {
         return EditorDevMode.isEnabled() && sourceTreeAvailable;
     }
 
-    /** {@code deleteIfExists} that tolerates the null the sidecar path helpers return outside a checkout. */
+    /**
+     * Source-tree delete that tolerates the null the sidecar path helpers return outside a checkout,
+     * and takes the exploded classpath copy with it — see {@link SourceTreeFiles}.
+     */
     private static boolean deleteQuietly(Path file) throws IOException {
-        if (file == null) return false;
-        boolean existed = Files.deleteIfExists(file);
+        boolean existed = SourceTreeFiles.deleteWithClasspathTwin(file);
         if (existed) LOGGER.info("[DungeonTrain] Template delete: removed bundled {}", file);
         return existed;
     }

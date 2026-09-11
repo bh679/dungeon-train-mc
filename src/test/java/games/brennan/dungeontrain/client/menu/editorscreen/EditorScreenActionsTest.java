@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.ConfirmScreen;
 import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
+import games.brennan.dungeontrain.client.menu.ParentRemoveConfirmScreen;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.editor.PlotCategory;
@@ -384,5 +385,72 @@ final class EditorScreenActionsTest {
         assertNull(EditorScreenActions.newEntry(PlotCategory.ARCHITECTURE, "", "", null));
         assertNotNull(EditorScreenActions.newSubVariantEntry(VariantKey.of(PlotCategory.CONTENTS, "armor", "armor"), null));
         assertNull(EditorScreenActions.newSubVariantEntry(VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen"), null));
+    }
+
+    @Test
+    @DisplayName("remove on a contents parent: the three-way confirmation, one reset mode per row")
+    void removeOnContentsParentOffersThreeWays() {
+        EditorTypeMenusPacket.Variant copper = gated("CONTENTS", "copper", "copper", 2, List.of());
+        EditorTypeMenusPacket.Variant stone = gated("CONTENTS", "stone", "stone", 1, List.of());
+        EditorTypeMenusPacket.Variant maze = new EditorTypeMenusPacket.Variant("maze", 5, 10, 60, 1, "CONTENTS",
+            "maze", "maze", false, false, List.of(copper, stone), List.of());
+        VariantKey sel = VariantKey.of(PlotCategory.CONTENTS, "maze", "maze");
+
+        CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(sel, maze, null, null)));
+        ParentRemoveConfirmScreen screen = assertInstanceOf(ParentRemoveConfirmScreen.class, remove.target());
+
+        assertEquals("Remove 'maze'? It has 2 sub-variants", screen.title());
+        List<CommandMenuEntry> rows = screen.entries();
+        assertEquals(4, rows.size());
+        assertEquals("dungeontrain editor contents reset maze all",
+            assertInstanceOf(CommandMenuEntry.Run.class, rows.get(0)).command());
+        assertEquals("dungeontrain editor contents reset maze unparent",
+            assertInstanceOf(CommandMenuEntry.Run.class, rows.get(1)).command());
+        CommandMenuEntry.Run promote = assertInstanceOf(CommandMenuEntry.Run.class, rows.get(2));
+        assertEquals("dungeontrain editor contents reset maze promote", promote.command());
+        assertTrue(promote.label().contains("'copper'"), "promote row names the first sub-variant");
+        assertInstanceOf(CommandMenuEntry.Back.class, rows.get(3));
+    }
+
+    @Test
+    @DisplayName("remove on a portal-room parent: same screen over the kind-addressed reset")
+    void removeOnPortalRoomParent() {
+        EditorTypeMenusPacket.Variant hall = gated("PORTALS", "portal_room", "hall", 1, List.of());
+        EditorTypeMenusPacket.Variant house = new EditorTypeMenusPacket.Variant("house", 3, 10, 60, 1, "PORTALS",
+            "portal_room", "house", false, false, List.of(hall), List.of());
+        VariantKey sel = VariantKey.of(PlotCategory.PORTALS, "portal_room", "house");
+
+        CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(sel, house, null, null)));
+        ParentRemoveConfirmScreen screen = assertInstanceOf(ParentRemoveConfirmScreen.class, remove.target());
+        assertEquals("Remove 'house'? It has 1 sub-variant", screen.title());
+        assertEquals("dungeontrain editor portals reset portal_room house promote",
+            assertInstanceOf(CommandMenuEntry.Run.class, screen.entries().get(2)).command());
+    }
+
+    @Test
+    @DisplayName("remove on a portal-room leaf: plain confirm, addressed by room name not by where the player stands")
+    void removeOnPortalRoomLeafIsAddressed() {
+        EditorTypeMenusPacket.Variant hall = gated("PORTALS", "portal_room", "hall", 1, List.of());
+        CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(VariantKey.of(PlotCategory.PORTALS, "portal_room", "hall"), hall, null, null)));
+        ConfirmScreen screen = assertInstanceOf(ConfirmScreen.class, remove.target());
+        assertEquals("dungeontrain editor portals reset portal_room hall",
+            assertInstanceOf(CommandMenuEntry.Run.class, screen.entries().get(0)).command());
+    }
+
+    @Test
+    @DisplayName("remove on a leaf or a sub-variant keeps the plain Yes/No")
+    void removeOnLeafStaysPlain() {
+        EditorTypeMenusPacket.Variant leaf = gated("CONTENTS", "armor5", "armor5", 6, List.of());
+        CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(VariantKey.of(PlotCategory.CONTENTS, "armor5", "armor5"), leaf, null, null)));
+        assertInstanceOf(ConfirmScreen.class, remove.target());
+
+        EditorTypeMenusPacket.Variant sub = gated("CONTENTS", "copper", "copper", 2, List.of());
+        CommandMenuEntry.DrillIn subRemove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(new VariantKey(PlotCategory.CONTENTS, "copper", "copper", "maze"), sub, null, null)));
+        assertInstanceOf(ConfirmScreen.class, subRemove.target());
     }
 }

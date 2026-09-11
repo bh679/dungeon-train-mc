@@ -22,9 +22,10 @@ import java.util.List;
  *
  * <p>The sheet is the editing surface rather than a read-out with a matching set of controls
  * underneath. A weight, a level bound, a phase and a room's dimensions are all edited on the line
- * that shows them: click a number to type over it, click a phase letter to toggle it, and the
- * weight carries its own pair of nudge buttons. The pane used to show each of those twice — once
- * as a fact and once as a stepper row — and the two could disagree.</p>
+ * that shows them: click a number to nudge it up (shift-click down, cmd-click to type over it),
+ * click a phase letter to toggle it, and the weight carries its own pair of nudge buttons besides.
+ * The pane used to show each of those twice — once as a fact and once as a stepper row — and the
+ * two could disagree.</p>
  *
  * <p>Command strings are never written here. Every editable cell takes its command from the same
  * builders the old menu's rows use ({@code EditorMenuScreen.weightTripleFor} and friends), read
@@ -46,6 +47,17 @@ public final class TemplateDataSheet {
 
         /** Run a command and leave the menu open. */
         record Run(String command) implements Action {}
+
+        /**
+         * A number that steps: click runs {@code inc}, shift-click runs {@code dec}, and cmd-click
+         * types a value over the cell with {@code prefix} — the same three gestures as the weight
+         * cell in the world-space menus and on the Layout tab.
+         */
+        record Step(String prefix, String dec, String inc) implements Action {
+            static Step of(Stepper stepper) {
+                return new Step(stepper.prefix(), stepper.dec(), stepper.inc());
+            }
+        }
 
         /** Open a screen as a modal. */
         record Open(MenuScreen screen) implements Action {}
@@ -183,7 +195,7 @@ public final class TemplateDataSheet {
         return blocks.toString();
     }
 
-    /** Weight: the number types, and a pair of nudge buttons sits after it. */
+    /** Weight: the number steps (cmd-click types), and a pair of nudge buttons sits after it. */
     static Line weightLine(EditorRosterIndex.Tile tile, VariantKey key, String pending) {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT);
         EditorTypeMenusPacket.Variant v = tile.variant();
@@ -195,8 +207,8 @@ public final class TemplateDataSheet {
         if (stepper == null) {
             cells.add(Cell.plain(Integer.toString(weight)));
         } else {
-            cells.add(new Cell(Integer.toString(weight), new Action.Type(stepper.prefix()), true)
-                .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_TOOLTIP)));
+            cells.add(new Cell(Integer.toString(weight), Action.Step.of(stepper), true)
+                .withTooltip(EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP)));
             cells.add(new Cell("-", new Action.Run(stepper.dec()), true)
                 .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_DOWN)));
             cells.add(new Cell("+", new Action.Run(stepper.inc()), true)
@@ -275,9 +287,14 @@ public final class TemplateDataSheet {
     private static void addLevelCell(List<Cell> cells, VariantKey key, String sub, String shown,
                                      boolean linked, String tooltipKey) {
         Stepper stepper = linked ? null : Stepper.of(EditorScreenActions.levelRow(key, sub, shown));
-        Cell cell = stepper == null ? new Cell(shown, null, true)
-            : new Cell(shown, new Action.Type(stepper.prefix()), true);
-        cells.add(cell.withTooltip(EditorScreenLang.text(tooltipKey)));
+        String tooltip = EditorScreenLang.text(tooltipKey);
+        if (stepper == null) {
+            cells.add(new Cell(shown, null, true).withTooltip(tooltip));
+            return;
+        }
+        // Live bounds step like a weight, so the tooltip carries the same gesture hint.
+        cells.add(new Cell(shown, Action.Step.of(stepper), true)
+            .withTooltip(tooltip + "\n" + EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP)));
     }
 
     static String sourceLabel(EditorRosterIndex.Provenance p) {
