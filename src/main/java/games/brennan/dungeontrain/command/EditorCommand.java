@@ -7741,12 +7741,12 @@ public final class EditorCommand {
                                          games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(name)) {
-            source.sendFailure(Component.literal(
-                "'default' is the synthetic fallback for " + kind.id() + " — nothing to remove. "
-                + "Pick a custom variant."));
-            return 0;
-        }
+        // `default` is a real name too: the registry always lists it and it can never be
+        // unregistered, but it may have an authored template (a config-dir save, or — for the
+        // portal room — a bundled default.nbt with its own sub-variants). Resetting it drops those
+        // files, in dev mode the bundled copies as well, and the kind falls back to its built-in
+        // geometry; the row keeps its `default` slot.
+        boolean isDefault = games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(name);
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, name)
                 .filter(g -> !g.members().isEmpty());
@@ -7794,7 +7794,10 @@ public final class EditorCommand {
         }
 
         source.sendSuccess(() -> Component.literal(
-            "Removed " + kind.id() + ":" + name + (sendHome ? " — teleported back to default." : ".")
+            (isDefault
+                ? "Reset " + kind.id() + ":default to its built-in fallback"
+                : "Removed " + kind.id() + ":" + name)
+                + (sendHome && !isDefault ? " — teleported back to default." : ".")
                 + cleanup.summaryLine() + membersLine
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;

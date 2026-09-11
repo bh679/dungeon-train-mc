@@ -224,9 +224,10 @@ public final class TemplateDeletes {
     // ---------- track-side variants ----------
 
     /**
-     * Companion cleanup for {@link TrackVariantStore#delete} of a <b>named</b> variant. Not for the
-     * {@code default} resets the pillar/tunnel/track stores perform — those drop an override and must
-     * leave the bundled copy alone; the callers of this method already refuse {@code default}.
+     * Companion cleanup for {@link TrackVariantStore#delete} of a named variant — {@code default}
+     * included: outside dev mode that drops the config-dir override and the bundled copy stays; in dev
+     * mode the bundled copy goes too and the kind falls back to its built-in geometry. Not for the
+     * {@code default} resets the pillar/tunnel/track <b>stores</b> perform on their own.
      */
     public static Report track(TrackKind kind, String name) {
         String key = name.toLowerCase(Locale.ROOT);
