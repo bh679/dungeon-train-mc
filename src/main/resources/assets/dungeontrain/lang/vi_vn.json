@@ -1842,7 +1842,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "Không thể xóa:",
   "gui.dungeontrain.video_tools.reset.done_desc": "Xong. Tạo một thế giới mới và Dungeon Train sẽ đối xử với bạn như người chơi lần đầu.",
   "gui.dungeontrain.videos.button": "Video",
-  "gui.dungeontrain.videos.title": "Video",
+  "gui.dungeontrain.videos.title": "Video cộng đồng Dungeon Train",
   "gui.dungeontrain.videos.list": "Video",
   "gui.dungeontrain.videos.list.narration": "%s video",
   "gui.dungeontrain.videos.count": "%s trong %s video",

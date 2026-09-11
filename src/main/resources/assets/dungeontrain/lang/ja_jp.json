@@ -1842,7 +1842,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "削除できなかったもの:",
   "gui.dungeontrain.video_tools.reset.done_desc": "完了しました。新しいワールドを作れば、Dungeon Train はあなたを初めてのプレイヤーとして迎えます。",
   "gui.dungeontrain.videos.button": "動画",
-  "gui.dungeontrain.videos.title": "動画",
+  "gui.dungeontrain.videos.title": "Dungeon Train コミュニティ動画",
   "gui.dungeontrain.videos.list": "動画",
   "gui.dungeontrain.videos.list.narration": "%s 本の動画",
   "gui.dungeontrain.videos.count": "%s / %s 本の動画",

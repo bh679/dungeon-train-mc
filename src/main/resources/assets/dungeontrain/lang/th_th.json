@@ -1842,7 +1842,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "ลบไม่สำเร็จ:",
   "gui.dungeontrain.video_tools.reset.done_desc": "เสร็จแล้ว สร้างโลกใหม่ แล้ว Dungeon Train จะปฏิบัติกับคุณเหมือนผู้เล่นครั้งแรก",
   "gui.dungeontrain.videos.button": "วิดีโอ",
-  "gui.dungeontrain.videos.title": "วิดีโอ",
+  "gui.dungeontrain.videos.title": "วิดีโอจากชุมชน Dungeon Train",
   "gui.dungeontrain.videos.list": "วิดีโอ",
   "gui.dungeontrain.videos.list.narration": "%s วิดีโอ",
   "gui.dungeontrain.videos.count": "%s จาก %s วิดีโอ",

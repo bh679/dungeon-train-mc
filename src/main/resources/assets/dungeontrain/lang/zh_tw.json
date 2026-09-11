@@ -1856,7 +1856,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "無法移除：",
   "gui.dungeontrain.video_tools.reset.done_desc": "完成。建立一個新世界，《地牢列車》會把你當作初次遊玩的玩家。",
   "gui.dungeontrain.videos.button": "影片",
-  "gui.dungeontrain.videos.title": "影片",
+  "gui.dungeontrain.videos.title": "Dungeon Train 社群影片",
   "gui.dungeontrain.videos.list": "影片",
   "gui.dungeontrain.videos.list.narration": "%s 部影片",
   "gui.dungeontrain.videos.count": "%s / %s 部影片",

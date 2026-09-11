@@ -1842,7 +1842,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "삭제하지 못한 것:",
   "gui.dungeontrain.video_tools.reset.done_desc": "완료했습니다. 새 세계를 만들면 Dungeon Train이 당신을 처음 온 플레이어로 맞이합니다.",
   "gui.dungeontrain.videos.button": "영상",
-  "gui.dungeontrain.videos.title": "영상",
+  "gui.dungeontrain.videos.title": "Dungeon Train 커뮤니티 영상",
   "gui.dungeontrain.videos.list": "영상",
   "gui.dungeontrain.videos.list.narration": "영상 %s개",
   "gui.dungeontrain.videos.count": "영상 %s개 중 %s개",

@@ -1906,7 +1906,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "Nie udało się usunąć:",
   "gui.dungeontrain.video_tools.reset.done_desc": "Gotowe. Stwórz nowy świat, a Dungeon Train potraktuje cię jak gracza, który dopiero zaczyna.",
   "gui.dungeontrain.videos.button": "Filmy",
-  "gui.dungeontrain.videos.title": "Filmy",
+  "gui.dungeontrain.videos.title": "Filmy społeczności Dungeon Train",
   "gui.dungeontrain.videos.list": "Filmy",
   "gui.dungeontrain.videos.list.narration": "%s filmów",
   "gui.dungeontrain.videos.count": "%s z %s filmów",

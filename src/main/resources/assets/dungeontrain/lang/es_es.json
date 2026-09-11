@@ -1874,7 +1874,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "No se pudieron eliminar:",
   "gui.dungeontrain.video_tools.reset.done_desc": "Listo. Crea un mundo nuevo y Dungeon Train te tratará como a un jugador primerizo.",
   "gui.dungeontrain.videos.button": "Vídeos",
-  "gui.dungeontrain.videos.title": "Vídeos",
+  "gui.dungeontrain.videos.title": "Vídeos de la comunidad de Dungeon Train",
   "gui.dungeontrain.videos.list": "Vídeos",
   "gui.dungeontrain.videos.list.narration": "%s vídeos",
   "gui.dungeontrain.videos.count": "%s de %s vídeos",

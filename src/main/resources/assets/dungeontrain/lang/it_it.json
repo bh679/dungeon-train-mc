@@ -1874,7 +1874,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "Non è stato possibile rimuovere:",
   "gui.dungeontrain.video_tools.reset.done_desc": "Fatto. Crea un mondo nuovo e Dungeon Train ti tratterà come un giocatore alle prime armi.",
   "gui.dungeontrain.videos.button": "Video",
-  "gui.dungeontrain.videos.title": "Video",
+  "gui.dungeontrain.videos.title": "Video della community di Dungeon Train",
   "gui.dungeontrain.videos.list": "Video",
   "gui.dungeontrain.videos.list.narration": "%s video",
   "gui.dungeontrain.videos.count": "%s di %s video",

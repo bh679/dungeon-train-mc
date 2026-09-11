@@ -1842,7 +1842,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "Tidak bisa dihapus:",
   "gui.dungeontrain.video_tools.reset.done_desc": "Selesai. Buat dunia baru dan Dungeon Train akan memperlakukanmu sebagai pemain yang baru pertama kali.",
   "gui.dungeontrain.videos.button": "Video",
-  "gui.dungeontrain.videos.title": "Video",
+  "gui.dungeontrain.videos.title": "Video Komunitas Dungeon Train",
   "gui.dungeontrain.videos.list": "Video",
   "gui.dungeontrain.videos.list.narration": "%s video",
   "gui.dungeontrain.videos.count": "%s dari %s video",

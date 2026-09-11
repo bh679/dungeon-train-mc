@@ -1906,7 +1906,7 @@
   "gui.dungeontrain.video_tools.reset.failures_header": "Не может быть удалено:",
   "gui.dungeontrain.video_tools.reset.done_desc": "Готово. Создайте новый мир и Dungeon Train будет таким же, как в первый раз.",
   "gui.dungeontrain.videos.button": "Видео",
-  "gui.dungeontrain.videos.title": "Видео",
+  "gui.dungeontrain.videos.title": "Видео сообщества Dungeon Train",
   "gui.dungeontrain.videos.list": "Видео",
   "gui.dungeontrain.videos.list.narration": "%s видео",
   "gui.dungeontrain.videos.count": "%s из %s видео",
