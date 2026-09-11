@@ -191,7 +191,7 @@ final class TemplateDataSheetTest {
     void placementAndHits() {
         List<TemplateDataSheet.Line> lines = carriageSheet(15, List.of());
         // Wide, because with no language loaded a label renders as its whole lang key.
-        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(10, 20, 800, 62);
+        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(10, 20, 800, InventoryEditorLayout.SHEET_H);
         List<TemplateDataSheet.Placed> placed = TemplateDataSheet.place(lines, r, new FixedFont());
         assertFalse(placed.isEmpty());
         for (TemplateDataSheet.Placed p : placed) {
@@ -225,5 +225,35 @@ final class TemplateDataSheetTest {
         public int width(String text) {
             return text.length() * 6;
         }
+    }
+
+    @Test
+    @DisplayName("Built by is read-only in play and a picker in dev mode, per category")
+    void builderLine() {
+        VariantKey pen = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
+        EditorTypeMenusPacket.Variant anon = variant("CARRIAGES", "pen", "pen", 10, 0, -1, 1, List.of());
+        EditorTypeMenusPacket.Variant credited = anon.withBuilder("380df991f603344ca090369bad2a924a", "Mika");
+
+        TemplateDataSheet.Line play = TemplateDataSheet.builderLine(credited, pen, false);
+        assertEquals(EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER), play.label());
+        assertEquals("Mika", play.cells().get(0).text());
+        assertNull(play.cells().get(0).action());
+
+        TemplateDataSheet.Line dev = TemplateDataSheet.builderLine(anon, pen, true);
+        assertEquals(EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER_NONE), dev.cells().get(0).text());
+        assertFalse(dev.cells().get(0).on());
+        TemplateDataSheet.Action.PickBuilder pick =
+            assertInstanceOf(TemplateDataSheet.Action.PickBuilder.class, dev.cells().get(0).action());
+        assertEquals("dungeontrain editor builder pen", pick.prefix());
+
+        // A room is addressed as <kind> <name>, like its label; a part has no verb at all.
+        assertEquals("dungeontrain editor portals builder portal_room lobby",
+            TemplateDataSheet.builderCommandPrefix(VariantKey.of(PlotCategory.PORTALS, "portal_room", "lobby")));
+        assertEquals("dungeontrain editor contents builder tomes",
+            TemplateDataSheet.builderCommandPrefix(VariantKey.of(PlotCategory.CONTENTS, "tomes", "tomes")));
+        assertNull(TemplateDataSheet.builderCommandPrefix(VariantKey.of(PlotCategory.PARTS, "floor", "standard")));
+        TemplateDataSheet.Line part = TemplateDataSheet.builderLine(credited,
+            VariantKey.of(PlotCategory.PARTS, "floor", "standard"), true);
+        assertNull(part.cells().get(0).action());
     }
 }

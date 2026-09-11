@@ -63,6 +63,11 @@ final class InventoryEditorLayoutTest {
         assertTrue(small.preview().h() < large.preview().h());
         assertTrue(large.preview().w() <= InventoryEditorLayout.PREVIEW_MAX_W);
         assertTrue(large.preview().h() <= InventoryEditorLayout.PREVIEW_MAX_H);
+        // The sheet is full height where there is room and gives lines back at the floor, but
+        // never below the six it always had — and never at the preview's expense below its minimum.
+        assertEquals(InventoryEditorLayout.SHEET_H, large.sheet().h());
+        assertTrue(small.sheet().h() >= InventoryEditorLayout.SHEET_MIN_H);
+        assertTrue(small.sheet().h() <= InventoryEditorLayout.SHEET_H);
         assertEquals(InventoryEditorLayout.TILE_SMALL, small.tile());
         assertEquals(InventoryEditorLayout.TILE_LARGE, large.tile());
     }

@@ -83,4 +83,26 @@ final class EditorTypeMenusPacketTest {
     void legacyConstructorDefault() {
         assertFalse(new EditorTypeMenusPacket(List.of(), "").helpPanelDismissed());
     }
+
+    @Test
+    @DisplayName("round-trip carries the builder credit, and a row with none decodes to empty strings")
+    void roundTrip_builder() {
+        EditorTypeMenusPacket.Variant plain = new EditorTypeMenusPacket.Variant(
+            "standard", 50, "carriages", "standard", "standard", true, false);
+        EditorTypeMenusPacket.Variant credited = plain.withBuilder("380df991f603344ca090369bad2a924a", "Mika");
+        EditorTypeMenusPacket.Menu menu = new EditorTypeMenusPacket.Menu(
+            new BlockPos(12, 250, -30), "Carriages", List.of(plain, credited), false,
+            "carriages",
+            List.of(new EditorTypeMenusPacket.CategoryButton("carriages", "Carriages")),
+            List.of(new EditorTypeMenusPacket.TypeTab("Carriages", "carriages", "standard", "standard")));
+        EditorTypeMenusPacket decoded = roundTrip(new EditorTypeMenusPacket(List.of(menu), "", false));
+        List<EditorTypeMenusPacket.Variant> rows = decoded.menus().get(0).variants();
+        assertFalse(rows.get(0).hasBuilder());
+        assertEquals("", rows.get(0).builderUuid());
+        assertTrue(rows.get(1).hasBuilder());
+        assertEquals("380df991f603344ca090369bad2a924a", rows.get(1).builderUuid());
+        assertEquals("Mika", rows.get(1).builderDisplay());
+        // The credit is not the label: a row keeps its own name whoever built it.
+        assertEquals("standard", rows.get(1).displayName());
+    }
 }

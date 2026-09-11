@@ -147,6 +147,12 @@ public class DungeonTrain {
      * and is a read of the cap that every release jar already carries, not a way around any gate.</p>
      */
     public static String liveRelayBaseUrl() {
+        // Dev/test override, the live-pool twin of DUNGEONTRAIN_RELAY_BASE_URL: a local relay run
+        // with both a dev and a live cap can then stand in for both pools at once.
+        String override = System.getenv("DUNGEONTRAIN_RELAY_LIVE_BASE_URL");
+        if (override != null && !override.isBlank()) {
+            return override;
+        }
         return RELAY_LIVE_BASE_URL;
     }
 

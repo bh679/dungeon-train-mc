@@ -795,6 +795,10 @@ public final class EditorGuiScreen extends Screen {
     private void onSearchClick(EditorCreatorSearch.Result result) {
         switch (result.outcome()) {
             case PICKED -> {
+                if (search.isPicking()) {
+                    creditBuilder(result.creator().uuid(), result.creator().name());
+                    return;
+                }
                 click();
                 EditorCreatorBuilds.show(result.creator().uuid(), result.creator().name());
                 forgetLastLoad();
@@ -825,6 +829,14 @@ public final class EditorGuiScreen extends Screen {
                 forgetLastLoad();
                 search.rearm();
             }
+            case PICKED_ME -> {
+                var player = Minecraft.getInstance().player;
+                if (player != null) {
+                    creditBuilder(player.getUUID().toString().replace("-", ""),
+                        player.getGameProfile().getName());
+                }
+            }
+            case PICKED_NONE -> creditBuilder(null, "");
             // A click outside the panel closes it, the way clicking off any picker does.
             case NONE -> search.close();
             case CONSUMED -> { }
@@ -929,7 +941,25 @@ public final class EditorGuiScreen extends Screen {
             modal.open(open.screen());
             return true;
         }
+        if (action instanceof TemplateDataSheet.Action.PickBuilder pick) {
+            setFocused(null);   // the filter box must not eat what is typed into the panel
+            search.openForPick(pick.prefix());
+            return true;
+        }
         return false;
+    }
+
+    /**
+     * A pick in the panel's credit mode: run the sheet's {@code builder} command with the chosen
+     * player and close. The roster the server re-sends afterwards redraws the sheet.
+     */
+    private void creditBuilder(String uuid, String name) {
+        String prefix = search.pickPrefix();
+        if (prefix == null) return;
+        click();
+        CommandRunner.run(uuid == null ? prefix + " none" : prefix + " " + uuid + " " + name);
+        search.close();
+        afterCommand();
     }
 
     private void dispatch(CommandMenuEntry entry) {

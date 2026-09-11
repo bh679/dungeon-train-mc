@@ -502,6 +502,23 @@ public final class EditorCommand {
                                 parseTrackKind(ctx.getSource(), StringArgumentType.getString(ctx, "kind")),
                                 StringArgumentType.getString(ctx, "name"),
                                 StringArgumentType.getString(ctx, "label")))))))
+            // Who originally built a track-side template — see EditorBuilderCommands.
+            .then(Commands.literal("builder")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(TRACK_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                        .then(Commands.argument("uuid", StringArgumentType.word())
+                            .executes(ctx -> EditorBuilderCommands.runTrackBuilder(ctx.getSource(),
+                                parseTrackKind(ctx.getSource(), StringArgumentType.getString(ctx, "kind")),
+                                StringArgumentType.getString(ctx, "name"),
+                                StringArgumentType.getString(ctx, "uuid"), ""))
+                            .then(Commands.argument("builder_name", StringArgumentType.greedyString())
+                                .executes(ctx -> EditorBuilderCommands.runTrackBuilder(ctx.getSource(),
+                                    parseTrackKind(ctx.getSource(), StringArgumentType.getString(ctx, "kind")),
+                                    StringArgumentType.getString(ctx, "name"),
+                                    StringArgumentType.getString(ctx, "uuid"),
+                                    StringArgumentType.getString(ctx, "builder_name"))))))))
             .then(Commands.literal("weight")
                 .then(Commands.argument("kind", StringArgumentType.word())
                     .suggests(TRACK_KIND_SUGGESTIONS)
@@ -600,6 +617,20 @@ public final class EditorCommand {
                         .executes(ctx -> EditorLabelCommands.runCarriageLabel(ctx.getSource(),
                             StringArgumentType.getString(ctx, "id"),
                             StringArgumentType.getString(ctx, "name"))))))
+            // Who originally built the carriage: `builder <id> <uuid|none> [name…]` — the credit
+            // the editor's data sheet shows and the Credits page thanks. See EditorBuilderCommands.
+            .then(Commands.literal("builder")
+                .then(Commands.argument("id", StringArgumentType.word())
+                    .suggests(VARIANT_SUGGESTIONS)
+                    .then(Commands.argument("uuid", StringArgumentType.word())
+                        .executes(ctx -> EditorBuilderCommands.runCarriageBuilder(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "id"),
+                            StringArgumentType.getString(ctx, "uuid"), ""))
+                        .then(Commands.argument("name", StringArgumentType.greedyString())
+                            .executes(ctx -> EditorBuilderCommands.runCarriageBuilder(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "id"),
+                                StringArgumentType.getString(ctx, "uuid"),
+                                StringArgumentType.getString(ctx, "name")))))))
             // The train's own footprint — shared by every carriage, part and track in the world.
             // Not to be confused with `editor portals size`, which is one room's box.
             .then(Commands.literal("size")
@@ -748,6 +779,19 @@ public final class EditorCommand {
                             .executes(ctx -> EditorLabelCommands.runContentsLabel(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "id"),
                                 StringArgumentType.getString(ctx, "name"))))))
+                // Original builder — see the carriages `builder` node.
+                .then(Commands.literal("builder")
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .then(Commands.argument("uuid", StringArgumentType.word())
+                            .executes(ctx -> EditorBuilderCommands.runContentsBuilder(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "id"),
+                                StringArgumentType.getString(ctx, "uuid"), ""))
+                            .then(Commands.argument("name", StringArgumentType.greedyString())
+                                .executes(ctx -> EditorBuilderCommands.runContentsBuilder(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "id"),
+                                    StringArgumentType.getString(ctx, "uuid"),
+                                    StringArgumentType.getString(ctx, "name")))))))
                 .then(Commands.literal("save")
                     .executes(ctx -> runContentsSave(ctx.getSource(), null))
                     .then(Commands.argument("new_name", StringArgumentType.word())

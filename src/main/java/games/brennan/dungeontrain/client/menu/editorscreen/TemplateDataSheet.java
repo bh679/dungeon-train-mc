@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
@@ -61,6 +62,12 @@ public final class TemplateDataSheet {
 
         /** Open a screen as a modal. */
         record Open(MenuScreen screen) implements Action {}
+
+        /**
+         * Pick a builder from the relay and credit them; the command is
+         * {@code prefix + " " + uuid + " " + name} (or {@code prefix + " none"} to clear).
+         */
+        record PickBuilder(String prefix) implements Action {}
     }
 
     /**
@@ -118,12 +125,46 @@ public final class TemplateDataSheet {
         if (v.isLabelled()) {
             out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_ID), v.name()));
         }
+        out.add(builderLine(v, key, EditorStatusHudOverlay.isDevModeOn()));
         out.add(sizeLine(summary, roomRows, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS), blocks(summary, pending)));
         out.add(weightLine(tile, key, pending));
         out.addAll(stageLines(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
         return out;
+    }
+
+    /**
+     * Built by: who originally made this template.
+     *
+     * <p>Read-only in play. In dev mode the cell is a picker — a click opens the builder search and
+     * the pick runs the kind's {@code builder} command — because crediting somebody is the
+     * developer's call and the credit writes through to the source tree. Categories with no
+     * {@code builder} verb (parts, tracks) show the value and nothing else.</p>
+     */
+    static Line builderLine(EditorTypeMenusPacket.Variant v, VariantKey key, boolean devMode) {
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER);
+        String shown = v.hasBuilder() ? v.builderDisplay()
+            : EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER_NONE);
+        String prefix = devMode ? builderCommandPrefix(key) : null;
+        if (prefix == null) return Line.of(label, shown);
+        return new Line(label, List.of(new Cell(shown, new Action.PickBuilder(prefix), v.hasBuilder())
+            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER_TOOLTIP))));
+    }
+
+    /**
+     * The {@code builder} command for {@code key}, minus its {@code <uuid> [name]} tail; null for a
+     * category without the verb. Mirrors {@code EditorScreenActions.renameEntry}'s spellings: a room
+     * is addressed as {@code <kind> <name>}, everything else by id.
+     */
+    static String builderCommandPrefix(VariantKey key) {
+        if (key == null) return null;
+        return switch (key.category()) {
+            case CARRIAGES -> "dungeontrain editor builder " + key.modelId();
+            case CONTENTS -> "dungeontrain editor contents builder " + key.modelId();
+            case PORTALS -> "dungeontrain editor portals builder " + key.modelId() + " " + key.modelName();
+            case PARTS, TRACKS, ARCHITECTURE -> null;
+        };
     }
 
     /**

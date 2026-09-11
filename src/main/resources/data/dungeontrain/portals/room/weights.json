@@ -1,7 +1,11 @@
 {
   "abandonedroom": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "author_new": {
     "weight": 1,
@@ -45,7 +49,11 @@
   },
   "chess": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_end"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/0/0/dungeontrain:skybox_end",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "chunk_dimension": {
     "weight": 1,
@@ -73,7 +81,11 @@
       "UPSIDE_DOWN",
       "CHUNCKS"
     ],
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock",
+    "builder": {
+      "uuid": "d3bf88f298b74343a19152a8a445e49b",
+      "name": "CorporalJackShep"
+    }
   },
   "default": {
     "weight": 2,
@@ -97,7 +109,11 @@
   },
   "deserter": {
     "weight": 1,
-    "mode": "endless_open/single:minecraft:stone"
+    "mode": "endless_open/single:minecraft:stone",
+    "builder": {
+      "uuid": "f02ad784e5ca41f5b645ce9c5c780670",
+      "name": "ZesCrew2"
+    }
   },
   "distantenemies": {
     "weight": 2,
@@ -107,15 +123,30 @@
   "dreamcore": 1,
   "end": {
     "weight": 1,
-    "mode": "bedrockless"
+    "mode": "bedrockless",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "ender": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
   },
+  "evilhouse": {
+    "weight": 1,
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
+  },
   "foundation": {
     "weight": 1,
-    "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30"
+    "mode": "endless_repetition/exact/off/off/off/end/repeated/0/30",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "gemotricwalk": {
     "weight": 1,
@@ -124,7 +155,11 @@
   "gravityfalls": 1,
   "house": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "icebears": {
     "weight": 1,
@@ -142,7 +177,18 @@
   },
   "man": {
     "weight": 1,
-    "mode": "endless_open/single:minecraft:stone/off/off/off/end"
+    "mode": "endless_open/single:minecraft:stone/off/off/off/end",
+    "builder": {
+      "uuid": "f02ad784e5ca41f5b645ce9c5c780670",
+      "name": "ZesCrew2"
+    }
+  },
+  "medievalhouse": {
+    "weight": 1,
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "midlibrary": {
     "weight": 1,
@@ -150,7 +196,11 @@
   },
   "miniword": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day"
+    "mode": "bedrock_lock/exact/off/off/off/day",
+    "builder": {
+      "uuid": "753c591dc29a49adadaca1770b1ccf8d",
+      "name": "dot_cheeselover"
+    }
   },
   "moria": {
     "weight": 1,
@@ -162,7 +212,11 @@
   },
   "nostalgia": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day"
+    "mode": "bedrock_lock/exact/off/off/off/day",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "outsidethebox": {
     "weight": 0,
@@ -188,7 +242,11 @@
   },
   "peateargriffin": {
     "weight": 1,
-    "mode": "bedrockless/exact/off/off/off/day/sealed/0/0/0/0/minecraft:bedrock/off"
+    "mode": "bedrockless/exact/off/off/off/day/sealed/0/0/0/0/minecraft:bedrock/off",
+    "builder": {
+      "uuid": "753c591dc29a49adadaca1770b1ccf8d",
+      "name": "dot_cheeselover"
+    }
   },
   "pistons": {
     "weight": 1,
@@ -213,7 +271,11 @@
   "safehaven": 1,
   "sanemaze": {
     "weight": 1,
-    "mode": "bedrock_lock"
+    "mode": "bedrock_lock",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "singlepillar": {
     "weight": 4,
@@ -289,11 +351,19 @@
   },
   "suspiciousfurniturestore": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day"
+    "mode": "bedrock_lock/exact/off/off/off/day",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "terrarium": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/day/sealed/0/73/0/19"
+    "mode": "bedrock_lock/exact/off/off/off/day/sealed/0/73/0/19",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "trap": {
     "weight": 1,
@@ -302,7 +372,11 @@
   },
   "upsidedown": {
     "weight": 1,
-    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1"
+    "mode": "bedrock_lock/exact/off/off/off/none/sealed/-1",
+    "builder": {
+      "uuid": "e79d74abff784cf8b96fa36e343dfcef",
+      "name": "AntonioMacarely"
+    }
   },
   "window": {
     "weight": 1,
