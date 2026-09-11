@@ -253,7 +253,11 @@ Separate from the mod, there are **two modpacks** published from one config
   `project_id`/`file_id`. First publish is a **draft** → enters Modrinth's modpack review queue.
 
 After a successful mod upload `release.yml` dispatches **`release-modpack.yml`** (CurseForge —
-polls until CurseForge approves the new DT file, and fails without uploading if it never does) and **`release-modpack-modrinth.yml`**
+polls until CurseForge approves the new DT file; if that takes longer than the timeout the run
+**defers** — green, nothing uploaded — and `modpack-reconcile.yml`'s 6-hourly catch-up
+(`scripts/modpack/catch-up.py`) publishes the newest release once its file is listed as
+approved. Approval routinely takes >1h, so this is the normal path. Catch-up is **newest
+release only** — no backfill of older gaps.) and **`release-modpack-modrinth.yml`**
 (Modrinth — no wait), each gated on that platform's mod upload having produced a file/version id.
 **Modrinth fires for every release including the ~22 cascade ticks; CurseForge fires only for
 real, operator-dispatched releases** (`inputs.auto == false`) — CurseForge's pack validation

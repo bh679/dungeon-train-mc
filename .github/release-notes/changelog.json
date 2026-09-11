@@ -11951,6 +11951,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "curseforge-pack-catch-up",
+      "version": "0.830.0",
+      "type": "ci",
+      "title": "The CurseForge modpack catches up on its own",
+      "summary": "The CurseForge modpack is built around that release's Dungeon Train file, and CurseForge rejects a pack that points at a file it has not approved yet. The pipeline already waited for approval \u2014 but when approval took longer than it was willing to wait, which turned out to be most of the time, that release was simply never added to the pack, and nothing ever tried again. The CurseForge pack had quietly fallen forty releases behind the Modrinth one. A scheduled check now looks every few hours for the newest release whose file CurseForge has since approved, and publishes the pack for it. A slow approval is a delay of a few hours now, not a missing version.",
+      "highlights": [
+        "The CurseForge modpack no longer falls behind when CurseForge is slow to approve a file",
+        "Slow approvals are picked up automatically within a few hours \u2014 no manual re-run needed",
+        "The pack is brought up to the newest release; older gaps are left as they are",
+        "The CurseForge pack is current again as of 0.828.0"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
