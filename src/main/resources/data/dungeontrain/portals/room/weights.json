@@ -108,7 +108,11 @@
   },
   "deserter": {
     "weight": 1,
-    "mode": "endless_open/single:minecraft:stone"
+    "mode": "endless_open/single:minecraft:stone",
+    "builder": {
+      "uuid": "f02ad784e5ca41f5b645ce9c5c780670",
+      "name": "ZesCrew2"
+    }
   },
   "distantenemies": {
     "weight": 2,
@@ -169,7 +173,11 @@
   },
   "man": {
     "weight": 1,
-    "mode": "endless_open/single:minecraft:stone/off/off/off/end"
+    "mode": "endless_open/single:minecraft:stone/off/off/off/end",
+    "builder": {
+      "uuid": "f02ad784e5ca41f5b645ce9c5c780670",
+      "name": "ZesCrew2"
+    }
   },
   "medievalhouse": {
     "weight": 1,
