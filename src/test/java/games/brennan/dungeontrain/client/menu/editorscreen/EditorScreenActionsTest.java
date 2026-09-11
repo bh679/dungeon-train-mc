@@ -380,8 +380,19 @@ final class EditorScreenActionsTest {
             EditorScreenActions.removeEntry(ctx(sel, house, null, null)));
         ParentRemoveConfirmScreen screen = assertInstanceOf(ParentRemoveConfirmScreen.class, remove.target());
         assertEquals("Remove 'house'? It has 1 sub-variant", screen.title());
-        assertEquals("dungeontrain editor portals reset portal_room promote",
+        assertEquals("dungeontrain editor portals reset portal_room house promote",
             assertInstanceOf(CommandMenuEntry.Run.class, screen.entries().get(2)).command());
+    }
+
+    @Test
+    @DisplayName("remove on a portal-room leaf: plain confirm, addressed by room name not by where the player stands")
+    void removeOnPortalRoomLeafIsAddressed() {
+        EditorTypeMenusPacket.Variant hall = gated("PORTALS", "portal_room", "hall", 1, List.of());
+        CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(VariantKey.of(PlotCategory.PORTALS, "portal_room", "hall"), hall, null, null)));
+        ConfirmScreen screen = assertInstanceOf(ConfirmScreen.class, remove.target());
+        assertEquals("dungeontrain editor portals reset portal_room hall",
+            assertInstanceOf(CommandMenuEntry.Run.class, screen.entries().get(0)).command());
     }
 
     @Test

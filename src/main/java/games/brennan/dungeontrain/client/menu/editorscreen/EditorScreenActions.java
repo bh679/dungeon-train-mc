@@ -246,7 +246,23 @@ public final class EditorScreenActions {
         }
         CommandMenuEntry parent = parentRemoveEntry(ctx);
         if (parent != null) return parent;
+        if (sel.category() == PlotCategory.PORTALS) {
+            // Addressed by room name: the in-plot menu's `reset <kind>` acts on the plot the player
+            // stands in, which is not necessarily the row selected here.
+            return new CommandMenuEntry.DrillIn("Remove",
+                new games.brennan.dungeontrain.client.menu.ConfirmScreen(
+                    "Remove '" + sel.displayName() + "'?", resetCommand(sel)));
+        }
         return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.displayName());
+    }
+
+    /** The name-addressed reset for a selection, without a mode word; null for categories without one. */
+    private static String resetCommand(VariantKey sel) {
+        return switch (sel.category()) {
+            case CONTENTS -> "dungeontrain editor contents reset " + sel.modelId();
+            case PORTALS -> "dungeontrain editor portals reset " + sel.modelId() + " " + sel.modelName();
+            default -> null;
+        };
     }
 
     /**
@@ -260,11 +276,7 @@ public final class EditorScreenActions {
         VariantKey sel = ctx.selection();
         List<EditorTypeMenusPacket.Variant> subs = ctx.variant().subVariants();
         if (subs == null || subs.isEmpty()) return null;
-        String base = switch (sel.category()) {
-            case CONTENTS -> "dungeontrain editor contents reset " + sel.modelId();
-            case PORTALS -> "dungeontrain editor portals reset " + sel.modelId();
-            default -> null;
-        };
+        String base = resetCommand(sel);
         if (base == null) return null;
         return new CommandMenuEntry.DrillIn("Remove",
             new ParentRemoveConfirmScreen(sel.displayName(), base, subs.size(), subs.get(0).displayName()));

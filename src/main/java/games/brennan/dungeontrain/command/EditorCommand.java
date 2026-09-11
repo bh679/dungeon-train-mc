@@ -439,6 +439,10 @@ public final class EditorCommand {
                             ctx.getSource(),
                             StringArgumentType.getString(ctx, "kind"),
                             StringArgumentType.getString(ctx, "name"))))))
+            // `reset <kind> [mode]` acts on the plot the player stands in; `reset <kind> <name> [mode]`
+            // is the same delete addressed by name (the editor screen's Remove). The mode literals
+            // sit beside the name argument — brigadier tries literals first, so a variant that
+            // happens to be called `all` would need the standing form.
             .then(Commands.literal("reset")
                 .then(parentModeNodes(Commands.argument("kind", StringArgumentType.word())
                     .suggests(TRACK_KIND_SUGGESTIONS)
@@ -447,7 +451,17 @@ public final class EditorCommand {
                         StringArgumentType.getString(ctx, "kind"))),
                     (ctx, mode) -> runTrackResetActiveVariant(
                         ctx.getSource(),
-                        StringArgumentType.getString(ctx, "kind"), mode))))
+                        StringArgumentType.getString(ctx, "kind"), mode))
+                    .then(parentModeNodes(Commands.argument("name", StringArgumentType.word())
+                        .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                        .executes(ctx -> runTrackResetNamedVariant(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "kind"),
+                            StringArgumentType.getString(ctx, "name"), null)),
+                        (ctx, mode) -> runTrackResetNamedVariant(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "kind"),
+                            StringArgumentType.getString(ctx, "name"), mode)))))
             // Addressed by (kind, name) rather than by where the player is standing, so the editor
             // screen can rename what its pane is showing — the same shape the carriage and contents
             // renames take. The menu sends the kind spelled out (`… portals rename portal_room <id>`)
@@ -7676,19 +7690,15 @@ public final class EditorCommand {
     /**
      * {@code /dt editor tracks reset <kind> [all|unparent|promote]} — delete the variant the
      * player is currently standing on (must not be {@code default}), unregister it, restamp,
-     * teleport back to default's plot. A variant that heads a group (a dimensional carriage with
-     * sub-variants) needs a {@link games.brennan.dungeontrain.editor.ParentDeletes.Mode mode} saying
-     * what becomes of its members and is refused without one — same rule as {@code contents reset}.
+     * teleport back to default's plot. See {@link #resetTrackVariant} for the mode rule.
      */
     private static int runTrackResetActiveVariant(CommandSourceStack source, String rawKind,
                                                   games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
-
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        ServerLevel overworld = source.getServer().overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
 
         games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo loc =
             games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
@@ -7697,11 +7707,44 @@ public final class EditorCommand {
                 "Stand on the " + kind.id() + " variant you want to remove first."));
             return 0;
         }
-        String name = loc.name();
+        return resetTrackVariant(source, kind, loc.name(), mode);
+    }
+
+    /**
+     * {@code /dt editor tracks reset <kind> <name> [all|unparent|promote]} — the same delete
+     * addressed by name, for the editor screen whose Remove acts on the selected row rather than
+     * on the plot the player happens to stand in.
+     */
+    private static int runTrackResetNamedVariant(CommandSourceStack source, String rawKind, String rawName,
+                                                 games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        if (!games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(name)
+                && games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(kind, name).isEmpty()) {
+            source.sendFailure(Component.literal("Unknown " + kind.id() + " variant '" + name + "'."));
+            return 0;
+        }
+        return resetTrackVariant(source, kind, name, mode);
+    }
+
+    /**
+     * Delete {@code (kind, name)}: refuse {@code default}; a variant that heads a group (a
+     * dimensional carriage with sub-variants) needs a
+     * {@link games.brennan.dungeontrain.editor.ParentDeletes.Mode mode} saying what becomes of its
+     * members and is refused without one — same rule as {@code contents reset}. Clears the plot
+     * (the whole row for portal rooms), applies the mode, deletes, restamps, and sends a player who
+     * was standing in one of this kind's plots back to default's.
+     */
+    private static int resetTrackVariant(CommandSourceStack source,
+                                         games.brennan.dungeontrain.track.variant.TrackKind kind, String name,
+                                         games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(name)) {
             source.sendFailure(Component.literal(
-                "Standing on the synthetic 'default' for " + kind.id() + " — nothing to remove. "
-                + "Stand on a custom variant first."));
+                "'default' is the synthetic fallback for " + kind.id() + " — nothing to remove. "
+                + "Pick a custom variant."));
             return 0;
         }
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
@@ -7711,11 +7754,15 @@ public final class EditorCommand {
             int n = group.get().members().size();
             source.sendFailure(Component.literal(
                 "'" + name + "' has " + n + " sub-variant" + (n == 1 ? "" : "s")
-                    + " — say what happens to them: " + kind.id() + " reset <"
+                    + " — say what happens to them: " + kind.id() + " reset " + name + " <"
                     + games.brennan.dungeontrain.editor.ParentDeletes.Mode.literals() + ">."
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
+        ServerPlayer player = source.getEntity() instanceof ServerPlayer sp ? sp : null;
+        games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo loc = player == null ? null
+            : games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
+        boolean sendHome = loc != null && loc.kind() == kind;
 
         // Wipe the variant's plot blocks BEFORE deregistering so the orphaned
         // plot doesn't sit in the world after teleport. restampPlotForKind
@@ -7741,12 +7788,14 @@ public final class EditorCommand {
             return 0;
         }
         restampPlotForKind(overworld, kind, dims);
-        teleportToPlot(player, overworld, kind,
-            games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
+        if (sendHome) {
+            teleportToPlot(player, overworld, kind,
+                games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
+        }
 
         source.sendSuccess(() -> Component.literal(
-            "Removed " + kind.id() + ":" + name + " — teleported back to default." + cleanup.summaryLine()
-                + membersLine
+            "Removed " + kind.id() + ":" + name + (sendHome ? " — teleported back to default." : ".")
+                + cleanup.summaryLine() + membersLine
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
