@@ -12000,6 +12000,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stall-watchdog-ignores-pause-menu",
+      "version": "0.833.0",
+      "type": "fix",
+      "title": "Pausing no longer logs false stall warnings",
+      "summary": "Pausing, reading a book or tabbing away in singleplayer no longer fills your log with stall warnings and stack dumps. Real freezes are still reported as before.",
+      "highlights": [],
+      "pr": 1352,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
