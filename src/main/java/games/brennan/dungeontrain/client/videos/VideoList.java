@@ -1,0 +1,225 @@
+package games.brennan.dungeontrain.client.videos;
+
+import games.brennan.dungeontrain.client.ui.ListScrollbar;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarratedElementType;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import java.util.List;
+import java.util.function.Consumer;
+
+/**
+ * The Videos page's scrolling list: one row per video — thumbnail (or platform tile), title, and a
+ * {@code uploader · views · date} line, with a ★ on the operator's picks. Clicking a row opens it.
+ *
+ * <p>Hand-rolled on {@link ListScrollbar} like every other list in the mod ({@code ShaderPackList},
+ * {@code TranslationListWidget}) rather than an {@code ObjectSelectionList}, so the row geometry and
+ * scrollbar behaviour match the rest of the menus. Ninety rows is comfortably within "draw the
+ * visible ones and skip the rest".</p>
+ *
+ * <p>Thumbnails are requested only for rows that are on screen — {@link VideoThumbnails} starts a
+ * download the first time a row is drawn, so scrolling is what paces the network, not the length
+ * of the list.</p>
+ */
+@OnlyIn(Dist.CLIENT)
+public final class VideoList extends AbstractWidget {
+
+    private static final int PAD = 4;
+    /** Thumbnail cell — 16:9, the shape every platform's poster frame comes in. */
+    static final int THUMB_W = 64;
+    static final int THUMB_H = 36;
+    private static final int TEXT_GAP = 6;
+
+    private static final int BG = 0x66000000;
+    private static final int ROW_HOVER = 0x33FFFFFF;
+    private static final int ROW_ALT = 0x18FFFFFF;
+    private static final int TITLE_COLOUR = 0xFFFFFFFF;
+    private static final int SUB_COLOUR = 0xFF9A9A9A;
+    private static final int STAR_COLOUR = 0xFFF5C542;
+    private static final int TILE_TEXT = 0xFFFFFFFF;
+
+    private final Font font;
+    private final Consumer<VideoEntry> onOpen;
+    private final ListScrollbar scrollbar = new ListScrollbar();
+
+    private List<VideoEntry> rows = List.of();
+    private int scroll;
+
+    public VideoList(Font font, int x, int y, int width, int height, Consumer<VideoEntry> onOpen) {
+        super(x, y, width, height, Component.translatable("gui.dungeontrain.videos.list"));
+        this.font = font;
+        this.onOpen = onOpen;
+    }
+
+    /** Replace the rows (already filtered and sorted) and jump back to the top. */
+    public void setRows(List<VideoEntry> rows) {
+        this.rows = rows == null ? List.of() : rows;
+        scroll = 0;
+    }
+
+    public int rowCount() {
+        return rows.size();
+    }
+
+    private int rowHeight() {
+        return THUMB_H + PAD * 2;
+    }
+
+    private int totalHeight() {
+        return rows.size() * rowHeight();
+    }
+
+    private int maxScroll() {
+        return Math.max(0, totalHeight() - height);
+    }
+
+    @Override
+    protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        g.fill(getX(), getY(), getX() + width, getY() + height, BG);
+        int rowH = rowHeight();
+        g.enableScissor(getX(), getY(), getX() + width, getY() + height);
+        for (int i = 0; i < rows.size(); i++) {
+            int rowY = getY() + i * rowH - scroll;
+            if (rowY + rowH < getY() || rowY > getY() + height) {
+                continue;
+            }
+            renderRow(g, rows.get(i), i, rowY, rowH, mouseX, mouseY);
+        }
+        g.disableScissor();
+        scrollbar.render(g, getX(), getY(), width, height, totalHeight(), scroll, maxScroll());
+    }
+
+    private void renderRow(GuiGraphics g, VideoEntry v, int index, int rowY, int rowH, int mouseX, int mouseY) {
+        int right = getX() + width - ListScrollbar.WIDTH - 1;
+        boolean hovered = isMouseOver(mouseX, mouseY) && mouseY >= rowY && mouseY < rowY + rowH;
+        if (hovered) {
+            g.fill(getX(), rowY, right, rowY + rowH, ROW_HOVER);
+        } else if ((index & 1) == 1) {
+            g.fill(getX(), rowY, right, rowY + rowH, ROW_ALT);
+        }
+
+        int thumbX = getX() + PAD;
+        int thumbY = rowY + PAD;
+        renderThumb(g, v, thumbX, thumbY);
+
+        int textX = thumbX + THUMB_W + TEXT_GAP;
+        int textRight = right - PAD;
+        // The star takes the row's top-right corner; the title yields to it only on starred rows.
+        int titleRight = textRight;
+        if (v.devFav()) {
+            String star = "★";
+            g.drawString(font, star, textRight - font.width(star), thumbY, STAR_COLOUR);
+            titleRight = textRight - font.width(star) - PAD;
+        }
+        // Two text lines centred on the thumbnail's height.
+        int textY = thumbY + (THUMB_H - font.lineHeight * 2 - 2) / 2;
+        g.drawString(font, font.plainSubstrByWidth(v.displayTitle(), titleRight - textX), textX, textY, TITLE_COLOUR);
+        g.drawString(font, font.plainSubstrByWidth(subLine(v), textRight - textX), textX,
+                textY + font.lineHeight + 2, SUB_COLOUR);
+    }
+
+    /** {@code uploader · 1.2K views · 2026-09-11}, dropping any part the relay had no value for. */
+    private static String subLine(VideoEntry v) {
+        StringBuilder sb = new StringBuilder();
+        if (v.hasChannel()) {
+            sb.append(v.channel());
+        }
+        String views = VideoQuery.compactViews(v.views());
+        if (views != null) {
+            if (!sb.isEmpty()) sb.append(" · ");
+            sb.append(Component.translatable("gui.dungeontrain.videos.views", views).getString());
+        }
+        if (v.day() != null) {
+            if (!sb.isEmpty()) sb.append(" · ");
+            sb.append(v.day());
+        }
+        if (sb.isEmpty()) {
+            sb.append(Component.translatable("gui.dungeontrain.videos.platform." + v.platform().key()).getString());
+        }
+        return sb.toString();
+    }
+
+    /** The YouTube thumbnail when decoded, else a platform-coloured tile naming the platform. */
+    private void renderThumb(GuiGraphics g, VideoEntry v, int x, int y) {
+        VideoThumbnails.Thumb thumb = VideoThumbnails.textureFor(v);
+        if (thumb != null) {
+            // Letterbox inside the cell — mqdefault is 16:9 so this is normally exact, but a
+            // different aspect must not be squashed.
+            float imgAspect = thumb.width() / (float) Math.max(1, thumb.height());
+            float cellAspect = THUMB_W / (float) THUMB_H;
+            int dw;
+            int dh;
+            if (cellAspect > imgAspect) {
+                dh = THUMB_H;
+                dw = Math.round(THUMB_H * imgAspect);
+            } else {
+                dw = THUMB_W;
+                dh = Math.round(THUMB_W / imgAspect);
+            }
+            g.fill(x, y, x + THUMB_W, y + THUMB_H, 0xFF000000);
+            g.blit(thumb.texture(), x + (THUMB_W - dw) / 2, y + (THUMB_H - dh) / 2, dw, dh,
+                    0.0F, 0.0F, thumb.width(), thumb.height(), thumb.width(), thumb.height());
+            return;
+        }
+        g.fill(x, y, x + THUMB_W, y + THUMB_H, v.platform().tileColour());
+        String label = Component.translatable("gui.dungeontrain.videos.platform." + v.platform().key()).getString();
+        label = font.plainSubstrByWidth(label, THUMB_W - 4);
+        g.drawCenteredString(font, label, x + THUMB_W / 2, y + (THUMB_H - font.lineHeight) / 2, TILE_TEXT);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!visible || !active || button != 0 || !isMouseOver(mouseX, mouseY)) {
+            return false;
+        }
+        if (maxScroll() > 0 && scrollbar.isOverTrack(mouseX, getX(), width)) {
+            scrollbar.begin();
+            scroll = scrollbar.scrollFor(mouseY, getY(), height, totalHeight(), maxScroll());
+            return true;
+        }
+        int index = (int) ((mouseY - getY() + scroll) / rowHeight());
+        if (index < 0 || index >= rows.size()) {
+            return false;
+        }
+        playDownSound(Minecraft.getInstance().getSoundManager());
+        onOpen.accept(rows.get(index));
+        return true;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (!scrollbar.isDragging()) {
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        }
+        scroll = scrollbar.scrollFor(mouseY, getY(), height, totalHeight(), maxScroll());
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        scrollbar.end();
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (!visible || !isMouseOver(mouseX, mouseY) || maxScroll() == 0) {
+            return false;
+        }
+        scroll = Mth.clamp(scroll - (int) (scrollY * rowHeight()), 0, maxScroll());
+        return true;
+    }
+
+    @Override
+    protected void updateWidgetNarration(NarrationElementOutput output) {
+        output.add(NarratedElementType.TITLE,
+                Component.translatable("gui.dungeontrain.videos.list.narration", rows.size()));
+    }
+}

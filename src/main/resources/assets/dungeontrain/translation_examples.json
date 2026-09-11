@@ -4143,6 +4143,73 @@
       ]
     }
   },
+  "gui.dungeontrain.videos.count": {
+    "1": {
+      "label": "how many videos match the current filters",
+      "examples": [
+        "12"
+      ]
+    },
+    "2": {
+      "label": "how many videos there are in total",
+      "examples": [
+        "87"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.filter.dev_faves": {
+    "1": {
+      "label": "whether the developer-favourites filter is on or off",
+      "examples": [
+        "On",
+        "Off"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.filter.platform": {
+    "1": {
+      "label": "the platform being filtered to, or 'All'",
+      "examples": [
+        "All",
+        "YouTube"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.filter.uploader": {
+    "1": {
+      "label": "the uploader being filtered to, or 'All'",
+      "examples": [
+        "All",
+        "DroneLeg"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.list.narration": {
+    "1": {
+      "label": "how many videos are listed",
+      "examples": [
+        "87"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.sort": {
+    "1": {
+      "label": "which order the video list is in",
+      "examples": [
+        "Views",
+        "Recent"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.views": {
+    "1": {
+      "label": "a compact view count",
+      "examples": [
+        "130",
+        "1.2K"
+      ]
+    }
+  },
   "gui.dungeontrain.number_input.range": {
     "1": {
       "label": "the lowest value this field accepts",
