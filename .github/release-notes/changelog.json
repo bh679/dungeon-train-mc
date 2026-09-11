@@ -12162,8 +12162,26 @@
       "released_at": null
     },
     {
+      "id": "community-videos-page",
+      "version": "0.842.0",
+      "type": "feat",
+      "title": "Community Videos page on the main menu",
+      "summary": "A new play-button icon on the title screen (between Credits and Discord) opens Dungeon Train Community Videos \u2014 every video the community has made about the game, across YouTube, Bilibili, Twitch and Instagram. Filter by platform, uploader or the developer's picks, sort by views, newest or dev picks, and open any video in your browser.",
+      "highlights": [
+        "Uploader search with suggestions as you type; platform and dev-fave toggles on one row",
+        "Know a video that isn't listed? Submit the link from the page \u2014 it's reviewed before it appears",
+        "Flag a video as not about Dungeon Train or not safe for kids; kid-mode players only see videos that pass",
+        "Creator Tools (the filming guide) and the Videos page now link to each other",
+        "Brennan's YouTube, Bilibili, Instagram and Discord are one click away at the bottom of the page"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "crash-recovery-enderchest-salvage",
-      "version": "0.841.0",
+      "version": "0.842.0",
       "type": "feat",
       "title": "Crashed mid-run? Salvage your gear into the Ender Chest",
       "summary": "If the game crashes in the middle of a run, the next launch now offers to put you back into that world for one purpose: reach an Ender Chest and stash what you can, because that is the one thing that carries to your next run. The card is upfront that a world saved mid-crash will be buggy \u2014 grab your things, then start fresh.",
