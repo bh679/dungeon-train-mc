@@ -2857,6 +2857,31 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.stage_conflict.intro": {
+    "1": {
+      "label": "the build being loaded, whose Stages clash with local ones",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.stage_conflict.levels": {
+    "1": {
+      "label": "the lowest Diff-Level the Stage spawns at",
+      "examples": [
+        "0",
+        "36"
+      ]
+    },
+    "2": {
+      "label": "the highest Diff-Level, or the word 'all' when there is no upper bound",
+      "examples": [
+        "50",
+        "all"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.unsaved.title": {
     "1": {
       "label": "the build on this install that has unsaved editor edits",

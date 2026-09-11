@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.editor.TemplateSidecars;
+import games.brennan.dungeontrain.editor.TemplateStages;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
@@ -20,6 +21,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -49,25 +51,35 @@ public final class BuilderRelayDownload {
      * theirs is a bug or a stale screen, and a relay that could not be reached is worth trying again
      * in a minute.</p>
      *
+     * <p>{@link #STAGE_CONFLICT} is the other question asked before anything is written: the build
+     * came with Stage definitions that already exist here under the same ids with different
+     * settings. The player chooses per Stage (keep mine / use theirs) and presses again with
+     * {@code stagesResolved}; see {@link TemplateStages}.</p>
+     *
      * <p>{@link #UNSAVED_EDITS} is a question rather than a refusal, and the only one raised before
      * anything is read off the wire is written: the template this build would land on has in-world
      * edits nobody has saved, and installing would put them beyond reach. The player answers it and
      * presses again — see {@link #download(ServerPlayer, ServerLevel, int, BuilderRelayInstall.Resolution, String, String, String, boolean, boolean)}.</p>
      */
-    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
+    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, STAGE_CONFLICT, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
 
     /**
      * What an install produced: the outcome, and — when something landed — enough to name it, so the
      * screen can offer to open the thing that was just written.
      */
     public record Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind,
-                         List<String> takenNames) {
+                         List<String> takenNames, List<TemplateStages.Conflict> stageConflicts) {
+        public Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind,
+                      List<String> takenNames) {
+            this(outcome, kind, id, subKind, takenNames, List.of());
+        }
+
         Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind) {
-            this(outcome, kind, id, subKind, List.of());
+            this(outcome, kind, id, subKind, List.of(), List.of());
         }
 
         static Result of(Outcome outcome) {
-            return new Result(outcome, null, "", "", List.of());
+            return new Result(outcome, null, "", "", List.of(), List.of());
         }
 
         /**
@@ -77,7 +89,7 @@ public final class BuilderRelayDownload {
          * {@link BuilderRelayInstall#takenNames}.</p>
          */
         Result withTakenNames(List<String> names) {
-            return new Result(outcome, kind, id, subKind, names);
+            return new Result(outcome, kind, id, subKind, names, stageConflicts);
         }
     }
 
@@ -109,6 +121,23 @@ public final class BuilderRelayDownload {
                                                      BuilderRelayInstall.Resolution resolution,
                                                      String newName, String ownerUuid, String ownerName,
                                                      boolean live, boolean overwriteUnsaved, String parentId) {
+        return download(player, level, relayId, resolution, newName, ownerUuid, ownerName, live,
+                overwriteUnsaved, parentId, List.of(), false);
+    }
+
+    /**
+     * As above, carrying the player's answer to the Stage question too.
+     *
+     * @param stageOverwrite the Stage ids the player chose "use theirs" for — written over the local
+     *                       copy; every other conflicting id is kept as it is here
+     * @param stagesResolved true on the press that follows a {@link Outcome#STAGE_CONFLICT}: the
+     *                       question has been answered, do not ask it again
+     */
+    public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
+                                                     BuilderRelayInstall.Resolution resolution,
+                                                     String newName, String ownerUuid, String ownerName,
+                                                     boolean live, boolean overwriteUnsaved, String parentId,
+                                                     List<String> stageOverwrite, boolean stagesResolved) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
@@ -122,7 +151,8 @@ public final class BuilderRelayDownload {
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
                     case OK -> onServer(level, () -> install(level, result.build(), resolution, newName,
                             new BuildCredits.Credit(owner, ownerName, System.currentTimeMillis()), mine,
-                            overwriteUnsaved, parentId == null ? "" : parentId));
+                            overwriteUnsaved, parentId == null ? "" : parentId,
+                            stageOverwrite == null ? Set.of() : Set.copyOf(stageOverwrite), stagesResolved));
                 });
     }
 
@@ -137,7 +167,7 @@ public final class BuilderRelayDownload {
     private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build,
                                   BuilderRelayInstall.Resolution resolution, String newName,
                                   BuildCredits.Credit credit, boolean mine, boolean overwriteUnsaved,
-                                  String parentId) {
+                                  String parentId, Set<String> stageOverwrite, boolean stagesResolved) {
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
             // A kind this build of the mod does not know, or a build the relay never named. Neither
@@ -174,6 +204,19 @@ public final class BuilderRelayDownload {
         if (!overwriteUnsaved && hasUnsavedEdits(level, kind, build.subKind(), landsOn)) {
             return new Result(Outcome.UNSAVED_EDITS, kind, landsOn, build.subKind());
         }
+
+        // The Stages this build links, as the relay holds them. Ones missing here simply install;
+        // ones that exist here with different settings are the player's call, asked — like the
+        // unsaved-edits question — before anything is written, and answered on the next press.
+        // Stages go in BEFORE the template: the install links the template to its stage only when
+        // that stage exists.
+        if (!stagesResolved) {
+            List<TemplateStages.Conflict> conflicts = TemplateStages.conflicts(build.stages());
+            if (!conflicts.isEmpty()) {
+                return new Result(Outcome.STAGE_CONFLICT, kind, landsOn, build.subKind(), List.of(), conflicts);
+            }
+        }
+        TemplateStages.install(build.stages(), stageOverwrite);
 
         BuilderRelayInstall.Outcome installed = BuilderRelayInstall.install(
                 kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName,

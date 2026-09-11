@@ -4,6 +4,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import games.brennan.dungeontrain.builder.relay.BuilderRelaySubVariant;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -38,12 +40,37 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Resolution resolution,
                                            String name, String ownerUuid, String ownerName,
-                                           boolean live, boolean overwriteUnsaved, String parentId)
+                                           boolean live, boolean overwriteUnsaved, String parentId,
+                                           List<String> stageOverwrite, boolean stagesResolved)
         implements CustomPacketPayload {
+
+    /** As many Stage ids as one build could link — the server bounds the relay column the same. */
+    private static final int MAX_STAGE_IDS = 64;
 
     public BuilderProfileDownloadPacket {
         ownerName = ownerName == null ? "" : ownerName;
         parentId = parentId == null ? "" : parentId;
+        stageOverwrite = stageOverwrite == null ? List.of() : List.copyOf(stageOverwrite);
+    }
+
+    /**
+     * As the canonical constructor, before the Stage question has been asked.
+     *
+     * <p>{@code stageOverwrite} + {@code stagesResolved} are the answer to a
+     * {@link games.brennan.dungeontrain.builder.relay.BuilderRelayDownload.Outcome#STAGE_CONFLICT}:
+     * which of the build's Stages to take over the local copies, and that the question was put.
+     * Every first press sends none and false.</p>
+     */
+    public BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Resolution resolution,
+                                        String name, String ownerUuid, String ownerName,
+                                        boolean live, boolean overwriteUnsaved, String parentId) {
+        this(relayId, resolution, name, ownerUuid, ownerName, live, overwriteUnsaved, parentId, List.of(), false);
+    }
+
+    /** The same request, carrying the player's answer to the Stage question. */
+    public BuilderProfileDownloadPacket withStages(List<String> overwrite) {
+        return new BuilderProfileDownloadPacket(relayId, resolution, name, ownerUuid, ownerName, live,
+                overwriteUnsaved, parentId, overwrite, true);
     }
 
     /** As the canonical constructor, for a plain top-level load. */
@@ -86,10 +113,19 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
                 buf.writeBoolean(packet.live);
                 buf.writeBoolean(packet.overwriteUnsaved);
                 buf.writeUtf(packet.parentId, 64);
+                buf.writeCollection(
+                        packet.stageOverwrite.size() > MAX_STAGE_IDS
+                                ? packet.stageOverwrite.subList(0, MAX_STAGE_IDS)
+                                : packet.stageOverwrite,
+                        (b, id) -> b.writeUtf(id, 32));
+                buf.writeBoolean(packet.stagesResolved);
             },
             buf -> new BuilderProfileDownloadPacket(buf.readVarInt(),
                     buf.readEnum(BuilderRelayInstall.Resolution.class), buf.readUtf(64), buf.readUtf(48),
-                    buf.readUtf(64), buf.readBoolean(), buf.readBoolean(), buf.readUtf(64))
+                    buf.readUtf(64), buf.readBoolean(), buf.readBoolean(), buf.readUtf(64),
+                    buf.readCollection(size -> new ArrayList<String>(Math.min(size, MAX_STAGE_IDS)),
+                            b -> b.readUtf(32)),
+                    buf.readBoolean())
         );
 
     @Override
@@ -105,7 +141,8 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
             String owner = BuilderProfileRequestPacket.viewedOwner(player, packet.ownerUuid);
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
             BuilderRelayDownload.download(player, level, packet.relayId, packet.resolution, packet.name,
-                            owner, packet.ownerName, live, packet.overwriteUnsaved, packet.parentId)
+                            owner, packet.ownerName, live, packet.overwriteUnsaved, packet.parentId,
+                            packet.stageOverwrite, packet.stagesResolved)
                     .thenAccept(result -> player.getServer().execute(() -> {
                         if (player.hasDisconnected()) return;
                         DungeonTrainNet.sendTo(player, BuilderProfileDownloadResultPacket.of(result));

@@ -205,6 +205,8 @@ public final class BuilderProfileScreen extends Screen {
      */
     private BuilderRelayInstall.Resolution lastResolution = BuilderRelayInstall.Resolution.AS_IS;
     private String lastChosenName = "";
+    /** The unsaved-edits answer of the last press, carried into a Stage-question replay. */
+    private boolean lastOverwriteUnsaved;
 
     private final BuilderTileSpin spin = new BuilderTileSpin();
     private long lastFrameNanos;
@@ -536,6 +538,18 @@ public final class BuilderProfileScreen extends Screen {
             }
             return;
         }
+        // The build's Stages collide with ones already here: the same shape of question again, per
+        // Stage, and answered with every earlier answer intact.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.STAGE_CONFLICT) {
+            BuilderProfilePacket.Entry entry = selectedBuild();
+            if (entry != null) {
+                this.minecraft.setScreen(new BuilderProfileStageConflictScreen(this, packet.id(),
+                        packet.stageConflicts(),
+                        chosen -> resolveDownload(entry.relayId(), lastResolution, lastChosenName,
+                                lastOverwriteUnsaved, chosen)));
+            }
+            return;
+        }
         if (packet.outcome() != BuilderRelayDownload.Outcome.INSTALLED) return;
 
         // An install is the end of this menu either way: the build is on disk, and leaving the
@@ -626,10 +640,23 @@ public final class BuilderProfileScreen extends Screen {
     /** As above, with the player's answer to the unsaved-edits question carried alongside. */
     private void resolveDownload(int relayId, BuilderRelayInstall.Resolution resolution, String name,
                                  boolean overwriteUnsaved) {
+        resolveDownload(relayId, resolution, name, overwriteUnsaved, null);
+    }
+
+    /**
+     * As above, with the player's answer to the Stage question too — {@code stageOverwrite} is the
+     * ids to take over the local copies, and non-null means the question was put. Every earlier
+     * answer (resolution, name, unsaved-edits) is carried unchanged, so a question that arrives
+     * third does not throw away the first two.
+     */
+    private void resolveDownload(int relayId, BuilderRelayInstall.Resolution resolution, String name,
+                                 boolean overwriteUnsaved, List<String> stageOverwrite) {
         this.lastResolution = resolution;
         this.lastChosenName = name == null ? "" : name;
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid,
-                creditedName(selectedBuild()), BuilderProfileState.live(), overwriteUnsaved));
+        this.lastOverwriteUnsaved = overwriteUnsaved;
+        BuilderProfileDownloadPacket packet = new BuilderProfileDownloadPacket(relayId, resolution, name,
+                viewedUuid, creditedName(selectedBuild()), BuilderProfileState.live(), overwriteUnsaved);
+        DungeonTrainNet.sendToServer(stageOverwrite == null ? packet : packet.withStages(stageOverwrite));
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
         if (this.downloadButton != null) this.downloadButton.active = false;
     }
@@ -677,6 +704,7 @@ public final class BuilderProfileScreen extends Screen {
             case ALREADY_HERE -> "gui.dungeontrain.builder.profile.download_already_here";
             case NAME_TAKEN -> "gui.dungeontrain.builder.profile.download_name_taken";
             case UNSAVED_EDITS -> "gui.dungeontrain.builder.profile.download_unsaved";
+            case STAGE_CONFLICT -> "gui.dungeontrain.builder.profile.download_stage_conflict";
             case NOT_YOURS -> "gui.dungeontrain.builder.profile.download_not_yours";
             case GONE -> "gui.dungeontrain.builder.profile.gone_short";
             case UNAVAILABLE -> "gui.dungeontrain.builder.profile.unavailable";

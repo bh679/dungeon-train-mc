@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.editor.TemplateSidecars;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
 import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -24,6 +25,7 @@ import games.brennan.dungeontrain.train.CarriageGroupRegistry;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.train.WholeCarriage;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
@@ -185,14 +187,21 @@ public final class BuilderRelayInstall {
                     kind.id(), subKind == null || subKind.isEmpty() ? "template" : subKind, id);
         }
         Outcome outcome = switch (kind) {
-            case CARRIAGE -> installCarriage(id, stageId, template);
+            case CARRIAGE -> installCarriage(id, template);
             case CARRIAGE_GROUP -> installGroup(id, template);
             case CONTENTS -> installContents(id, template);
             case PART -> installPart(id, subKind, template);
             case TRACK -> installTrack(id, subKind, template);
             case PORTAL_ROOM -> installPortalRoom(id, template);
         };
-        if (outcome == Outcome.INSTALLED) TemplateSidecars.apply(kind, subKind, id, sidecars);
+        if (outcome == Outcome.INSTALLED) {
+            TemplateSidecars.apply(kind, subKind, id, sidecars);
+            // After the sidecars: their weights entry rewrites the same store row (weight + inline
+            // gate, link preserved), and the link is the one field the sidecars strip on the way
+            // up — see TemplateSidecars.encodeWeights — so it is restored here, from the relay's own
+            // `stage` field, for every kind that can carry one.
+            linkStage(kind, subKind, id, stageId);
+        }
         return outcome;
     }
 
@@ -412,15 +421,13 @@ public final class BuilderRelayInstall {
      * both: the train generator has no idea whole carriages exist, so a build that existed only in
      * the first store would never appear in a train.
      */
-    private static Outcome installCarriage(String id, String stageId, StructureTemplate template)
-            throws IOException {
+    private static Outcome installCarriage(String id, StructureTemplate template) throws IOException {
         WholeCarriage wholeCarriage = WholeCarriage.of(id);
         CarriageVariant variant = variantFor(id).orElse(null);
         if (variant == null) return Outcome.FAILED;
         WholeCarriageTemplateStore.save(wholeCarriage, template);
         WholeCarriageRegistry.register(wholeCarriage);
         CarriageTemplateStore.save(variant, template);
-        linkStage(variant.id(), stageId);
         LOGGER.info("[DungeonTrain] Builder relay download: installed carriage '{}'", id);
         return Outcome.INSTALLED;
     }
@@ -506,13 +513,29 @@ public final class BuilderRelayInstall {
     }
 
     /**
-     * Link the downloaded carriage to the stage it was authored in, when this install has that stage.
-     * Silently skipped otherwise — a stage the relay names and this world has never heard of is not
-     * an error, it is a build made against content this install does not have.
+     * Link the downloaded template to the stage it was authored in, when this install has that
+     * stage. Silently skipped otherwise — a stage the relay names and this world has never heard of
+     * is not an error, it is a build made against content this install does not have. (The stage
+     * definitions a build links normally arrive with it — {@code TemplateStages} installs them
+     * before the template — so this is the case of an author who never uploaded theirs.)
+     *
+     * <p>Every kind with a Stage-capable weight store: carriages, contents, and the track kinds
+     * (portal rooms among them). Parts and groups have no top-level link.</p>
      */
-    private static void linkStage(String variantId, String stageId) throws IOException {
+    private static void linkStage(BuilderPhotoPaths.Kind kind, String subKind, String id, String stageId)
+            throws IOException {
         if (stageId == null || stageId.isEmpty() || !StageStore.exists(stageId)) return;
-        CarriageWeights.setStage(variantId, stageId);
-        LOGGER.info("[DungeonTrain] Builder relay download: linked carriage {} to stage {}", variantId, stageId);
+        switch (kind) {
+            case CARRIAGE -> CarriageWeights.setStage(id, stageId);
+            case CONTENTS -> CarriageContentsWeights.setStage(id, stageId);
+            case TRACK, PORTAL_ROOM -> {
+                TrackKind trackKind = kind == BuilderPhotoPaths.Kind.PORTAL_ROOM
+                        ? TrackKind.PORTAL_ROOM : TrackKind.fromId(subKind);
+                if (trackKind == null) return;
+                TrackVariantWeights.setStage(trackKind, id, stageId);
+            }
+            default -> { return; }
+        }
+        LOGGER.info("[DungeonTrain] Builder relay download: linked {} '{}' to stage {}", kind.id(), id, stageId);
     }
 }

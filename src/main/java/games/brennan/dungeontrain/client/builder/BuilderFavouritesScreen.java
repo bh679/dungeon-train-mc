@@ -312,13 +312,19 @@ public final class BuilderFavouritesScreen extends Screen {
 
     /** Ask the server for this build's blocks — the same path My Builds' Load into editor takes. */
     private void downloadSelected() {
+        downloadSelected(null);
+    }
+
+    /** As above, carrying the player's answer to the Stage question (non-null = it was put). */
+    private void downloadSelected(List<String> stageOverwrite) {
         BuilderProfilePacket.Entry entry = selectedBuild();
         if (entry == null) return;
         // Addressed to whoever BUILT it, which on this screen is routinely not the player: the relay
         // authorises a fetch by owner uuid, and naming ourselves would be asking for a build we do
         // not own under a name that owns nothing.
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(),
-                entry.ownerUuid(), entry.ownerName(), BuilderProfileState.live()));
+        BuilderProfileDownloadPacket packet = new BuilderProfileDownloadPacket(entry.relayId(),
+                entry.ownerUuid(), entry.ownerName(), BuilderProfileState.live());
+        DungeonTrainNet.sendToServer(stageOverwrite == null ? packet : packet.withStages(stageOverwrite));
         this.downloadButton.active = false;
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
     }
@@ -326,6 +332,12 @@ public final class BuilderFavouritesScreen extends Screen {
     private void onDownload(BuilderProfileDownloadResultPacket packet) {
         this.downloadNote = Component.translatable(BuilderProfileScreen.noteKeyFor(packet.outcome()));
         if (this.downloadButton != null) this.downloadButton.active = selectedBuild() != null;
+        // The build's Stages collide with ones already here: ask per Stage, then press again.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.STAGE_CONFLICT && this.minecraft != null) {
+            this.minecraft.setScreen(new BuilderProfileStageConflictScreen(this, packet.id(),
+                    packet.stageConflicts(), this::downloadSelected));
+            return;
+        }
         if (packet.outcome() != BuilderRelayDownload.Outcome.INSTALLED) return;
         BuilderPhotoPaths.Kind kind = BuilderPhotoPaths.Kind.fromId(packet.kindId()).orElse(null);
         if (kind == null) return;
