@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
+import games.brennan.dungeontrain.client.menu.ParentRemoveConfirmScreen;
 import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
@@ -243,7 +244,30 @@ public final class EditorScreenActions {
                     "Remove '" + sel.modelName() + "'?",
                     "dungeontrain editor part reset " + sel.modelId() + " " + sel.modelName()));
         }
+        CommandMenuEntry parent = parentRemoveEntry(ctx);
+        if (parent != null) return parent;
         return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.displayName());
+    }
+
+    /**
+     * Remove on a template that has sub-variants: the three-way {@link ParentRemoveConfirmScreen}
+     * (delete all / unparent / promote the first) in place of the plain Yes/No, wrapping the same
+     * reset command {@link EditorMenuScreen#removeEntryFor} sends with a mode word appended. Null
+     * when the selection has no sub-variants or its category has no groups.
+     */
+    static CommandMenuEntry parentRemoveEntry(Ctx ctx) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        List<EditorTypeMenusPacket.Variant> subs = ctx.variant().subVariants();
+        if (subs == null || subs.isEmpty()) return null;
+        String base = switch (sel.category()) {
+            case CONTENTS -> "dungeontrain editor contents reset " + sel.modelId();
+            case PORTALS -> "dungeontrain editor portals reset " + sel.modelId();
+            default -> null;
+        };
+        if (base == null) return null;
+        return new CommandMenuEntry.DrillIn("Remove",
+            new ParentRemoveConfirmScreen(sel.displayName(), base, subs.size(), subs.get(0).displayName()));
     }
 
     /**
