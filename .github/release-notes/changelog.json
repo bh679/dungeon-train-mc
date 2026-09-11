@@ -12047,6 +12047,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sheet-level-step-click",
+      "version": "0.835.0",
+      "type": "feat",
+      "title": "Editor: level bounds step on click, and max never drops below min",
+      "summary": "In the editor's build sheet the min and max level cells now work like the weight cell: click to raise, shift-click to lower, cmd-click to type a value. Across every editor menu the level range keeps itself sensible \u2014 max is floored by min and never moves it, and raising min past max drags max up with it.",
+      "highlights": [
+        "Build sheet: click a level bound +1, shift-click \u22121, cmd-click to type (weight number too)",
+        "Max level can no longer be set below min \u2014 stepping down from min goes straight to 'all'",
+        "Raising min past max pushes max up; changing max never touches min"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
