@@ -75,6 +75,8 @@
   "book.dungeontrain.statbook.tail.8": "Не зря записал.",
   "book.dungeontrain.statbook.tail.9": "Продолжай.",
   "echo.dungeontrain.mob_name": "Эхо %s",
+  "gui.dungeontrain.editor_book.author_hint": "Для подписи нужно имя автора.",
+  "gui.dungeontrain.editor_book.next_author": "Далее: автор",
   "gui.dungeontrain.book_vote.ask_prefix": "Поезд спрашивает:",
   "gui.dungeontrain.book_vote.prompt.1": "«Понравилась ли вам книга?»",
   "gui.dungeontrain.book_vote.prompt.2": "«Проехались бы ещё раз ради этой книги?»",

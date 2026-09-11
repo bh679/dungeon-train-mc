@@ -60,6 +60,8 @@
   "book.dungeontrain.statbook.tail.8": "Het waard om op te schrijven, dacht ik.",
   "book.dungeontrain.statbook.tail.9": "Ga door.",
   "echo.dungeontrain.mob_name": "Echo van %s",
+  "gui.dungeontrain.editor_book.author_hint": "Een auteursnaam is vereist om te ondertekenen.",
+  "gui.dungeontrain.editor_book.next_author": "Volgende: auteur",
   "gui.dungeontrain.book_vote.ask_prefix": "De trein vraagt:",
   "gui.dungeontrain.book_vote.prompt.1": "\"Heb je van dit boek genoten?\"",
   "gui.dungeontrain.book_vote.prompt.2": "\"Was deze de rit waard?\"",
