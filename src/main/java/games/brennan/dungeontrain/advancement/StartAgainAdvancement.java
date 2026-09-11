@@ -3,18 +3,14 @@ package games.brennan.dungeontrain.advancement;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.advancements.AdvancementProgress;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,29 +37,36 @@ import java.util.concurrent.ConcurrentHashMap;
  * did not actually clear the player's tree (wrong target, failed command)
  * disarms without granting.</p>
  *
- * <p><b>Surviving the cheat system, without punching a hole in it.</b> The command that earns
- * this is op-only, so two separate parts of the cheat system would otherwise erase the reward.
- * {@link CommandAllowlist} exempts the exact form {@code /advancement revoke @s everything}
- * (and only that form — any other target is still cheating), which stops the Free Play
- * confirmation from cancelling the command. That alone isn't enough: {@code OperatorIntegrity}
- * treats cheats being <em>available</em> as Free Play, so anyone who <em>can</em> run the command
- * is a cheated run before they run it, and
- * {@link games.brennan.dungeontrain.cheat.RunIntegrity#persistsAdvancement} would drop the award
- * on its way to the cross-world profile.
+ * <p><b>Reaching the command without cheats.</b> Vanilla gates the whole {@code advancement} node
+ * behind permission 2 — for an ordinary player it isn't even in the command tree, so it neither
+ * autocompletes nor parses, and {@code @s} is refused as a selector besides. Three pieces open
+ * exactly this one form to a {@linkplain #holdsBankedCapstone capstone-holder}, and only while they
+ * hold it: {@link SelfRevokeCommandAccess} rewrites the vanilla nodes' requirements so
+ * {@code advancement → revoke → <targets> → everything} is sent to (and parses for) the holder,
+ * {@link SelfSelectorGrant} admits a bare {@code @s}, and the {@code CommandEvent} guard in
+ * {@code AchievementEvents} cancels any other {@code /advancement …} form from a non-op before the
+ * cheat detector can see it. The command tree is re-sent whenever the answer changes — capstone
+ * granted at login or live, or wiped here — so the autocomplete appears and disappears with the
+ * eligibility. {@link CommandAllowlist} exempts the exact form so the Free Play confirmation never
+ * holds it; that exemption is what keeps the run clean through the wipe.
  *
- * <p>And a third leg, {@link games.brennan.dungeontrain.mixin.CommandsSelfRevokeMixin}: vanilla
- * won't even parse {@code /advancement …} for a player without cheats, so a clean survival run
- * could never run the command in the first place. That mixin routes exactly this one command,
- * for a capstone-holder only, into {@link #performSelfWipe}. The two exemptions above still earn
- * their keep — they cover the operator, who goes down the ordinary vanilla path instead.
- *
- * <p>So {@link #checkArmed} writes to {@link GlobalAchievementStore} itself, at the one call site
- * that has verified the player held the capstone and actually wiped it. Deliberately <em>not</em>
- * an id-level exemption in {@code persistsAdvancement}: vanilla
+ * <p><b>Two honesty gates, and why they are here rather than in {@code persistsAdvancement}.</b>
+ * {@link #checkArmed} writes to {@link GlobalAchievementStore} itself, at the one call site that
+ * has verified the player held the capstone and actually wiped it. Deliberately <em>not</em> an
+ * id-level exemption in {@link RunIntegrity#persistsAdvancement}: vanilla
  * {@code /advancement grant @s everything} awards {@code impossible} criteria directly, so an
  * exemption by id would let a plain grant launder this advancement into the profile. As it
  * stands a grant still lights the toast in that session — unavoidable for any code-granted
- * advancement, and true of the capstone already — but it can never bank.</p>
+ * advancement, and true of the capstone already — but it can never bank.
+ *
+ * <p>That local write is gated twice, because writing at a verified call site is only as honest as
+ * what it verifies. {@link #shouldArm} requires the capstone to be <em>banked</em>, not merely
+ * present in the live tree — a granted burrito is not an earned one — and {@link #shouldBank}
+ * refuses the write outright from a Free Play run ({@link RunIntegrity#isCheated}), the same answer
+ * every other advancement gets from {@code persistsAdvancement}. An earlier version skipped the
+ * second gate on the reasoning that the command is op-only and therefore the run is always cheated
+ * by the time we get here; the mixin path above made that false, and a Free Play player who granted
+ * themselves the capstone could bank this while the burrito itself was correctly refused.</p>
  */
 public final class StartAgainAdvancement {
 
@@ -91,9 +94,10 @@ public final class StartAgainAdvancement {
     }
 
     /**
-     * Remember that {@code player} is about to run a revoke-everything, but only
-     * when they currently hold the capstone — no burrito, nothing armed, nothing
-     * ever granted. Called from the {@code CommandEvent} hook, before execution.
+     * Remember that {@code player} is about to run a revoke-everything, but only when
+     * {@link #shouldArm} says they've earned the right — no burrito, nothing armed, nothing ever
+     * granted. Called from the {@code CommandEvent} hook, before execution. One sidecar read per
+     * revoke command, which is as rare as commands get.
      */
     public static void armIfEligible(ServerPlayer player) {
         MinecraftServer server = player.getServer();
@@ -102,9 +106,56 @@ public final class StartAgainAdvancement {
         AdvancementHolder capstone = mgr.get(CompletionistAdvancement.ID);
         AdvancementHolder self = mgr.get(ID);
         if (capstone == null || self == null) return; // data not loaded (e.g. datapack stripped)
-        if (player.getAdvancements().getOrStartProgress(self).isDone()) return;      // already earned
-        if (!player.getAdvancements().getOrStartProgress(capstone).isDone()) return; // no burrito to clear
+        Set<ResourceLocation> banked = GlobalAchievementStore.read(player.getUUID());
+        if (!shouldArm(banked.contains(ID),
+                       player.getAdvancements().getOrStartProgress(capstone).isDone(),
+                       banked.contains(CompletionistAdvancement.ID))) {
+            return;
+        }
         ARMED.add(player.getUUID());
+    }
+
+    /**
+     * The arming rule as a pure predicate — the part that actually encodes "earned the burrito,
+     * honestly, and hasn't banked this yet". Package-private for unit tests; the live-player
+     * plumbing above is a thin wrapper, as with {@link FarStartAdvancement#shouldGrant}.
+     *
+     * <p>The capstone is checked twice on purpose. It must be <b>live</b>, because the reward is
+     * for wiping a tree that really holds it; and it must be <b>banked</b>, because only a clean
+     * run writes to the cross-world profile, so a burrito conjured by
+     * {@code /advancement grant @s only …/completionist} in a Free Play world is exactly the case
+     * that must not open this door.</p>
+     *
+     * <p>The "already got it" term is likewise the banked copy, not the live one. An unbanked live
+     * copy is what an earlier {@code /advancement grant} of this very advancement leaves behind;
+     * treating that as earned would lock the player out of ever earning it honestly.</p>
+     */
+    static boolean shouldArm(boolean selfBanked, boolean capstoneLiveDone, boolean capstoneBanked) {
+        return !selfBanked && capstoneLiveDone && capstoneBanked;
+    }
+
+    /**
+     * Does a confirmed wipe bank the reward? Only out of a clean run. A cheated run still awards it
+     * live — it toasts, exactly like every other advancement earned in Free Play — but the
+     * cross-world profile stays honest. Package-private for unit tests.
+     */
+    static boolean shouldBank(boolean cheated) {
+        return !cheated;
+    }
+
+    /**
+     * Does {@code player} hold the capstone both in this world's tree and in their cross-world
+     * profile? The gate {@link games.brennan.dungeontrain.mixin.CommandsSelfRevokeMixin} opens the
+     * command on, kept here beside {@link #shouldArm} so the command that is permitted and the
+     * command that is rewarded can never drift apart.
+     */
+    public static boolean holdsBankedCapstone(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return false;
+        AdvancementHolder capstone = server.getAdvancements().get(CompletionistAdvancement.ID);
+        if (capstone == null) return false; // capstone data not loaded (e.g. datapack stripped)
+        return player.getAdvancements().getOrStartProgress(capstone).isDone()
+            && GlobalAchievementStore.read(player.getUUID()).contains(CompletionistAdvancement.ID);
     }
 
     /**
@@ -113,6 +164,9 @@ public final class StartAgainAdvancement {
      * isn't swept up by the wipe that earned it. Disarms either way: a revoke
      * that left the capstone standing (wrong target, failed command) simply
      * drops the arm. Cheap: early-returns on the common empty-set case.
+     *
+     * <p>The live award is unconditional once the wipe is confirmed; only the write to the
+     * cross-world profile answers to {@link #shouldBank}.</p>
      */
     public static void checkArmed(ServerPlayer player) {
         if (ARMED.isEmpty()) return;
@@ -124,71 +178,36 @@ public final class StartAgainAdvancement {
         AdvancementHolder self = mgr.get(ID);
         if (capstone == null || self == null) return;
         if (player.getAdvancements().getOrStartProgress(capstone).isDone()) return; // wipe didn't happen
-        if (player.getAdvancements().getOrStartProgress(self).isDone()) return;     // already earned
+        refreshCommandTree(player); // capstone gone → /advancement leaves the tree again
+        // No "already earned" check: the wipe that earned this just cleared the live copy, and an
+        // unbanked one left over from a /advancement grant is precisely what shouldArm ignores.
 
         boolean granted = false;
         for (String key : self.value().criteria().keySet()) {
             if (player.getAdvancements().award(self, key)) granted = true;
         }
-        if (granted) {
-            // Bank it here rather than leaving it to the earn-event's persistence gate. The gate
-            // would drop it: the command that earns this needs permission level 2, and
-            // OperatorIntegrity treats cheats being AVAILABLE as Free Play, so the run is always
-            // cheated by the time we get here — the reward would toast and then be forgotten.
-            // Writing at this one call site (rather than exempting the id in
-            // RunIntegrity.persistsAdvancement) is what keeps it honest: this is the only path
-            // that checks the player actually held the capstone and actually wiped it, so
-            // /advancement grant @s everything still awards the advancement live but can never
-            // launder it into the cross-world profile.
-            GlobalAchievementStore.append(player.getUUID(), ID);
-            LOGGER.info("[DungeonTrain] Granted start-again advancement (It's Not That Simple) to {}",
-                player.getName().getString());
+        if (!granted) return;
+        // Bank it here rather than leaving it to the earn-event's persistence gate, which cannot
+        // tell this apart from a laundered /advancement grant — but apply that gate's own answer,
+        // so a Free Play run gets the toast and nothing more. See the class javadoc.
+        if (!shouldBank(RunIntegrity.isCheated(player))) {
+            LOGGER.info("[DungeonTrain] Granted start-again advancement (It's Not That Simple) to {} "
+                + "— live only, NOT banked: Free Play run", player.getName().getString());
+            return;
         }
+        GlobalAchievementStore.append(player.getUUID(), ID);
+        LOGGER.info("[DungeonTrain] Granted start-again advancement (It's Not That Simple) to {} (banked)",
+            player.getName().getString());
     }
 
     /**
-     * Run the wipe ourselves, for a player who holds the capstone but has no cheats — the path
-     * {@link games.brennan.dungeontrain.mixin.CommandsSelfRevokeMixin} routes
-     * {@code /advancement revoke @s everything} down when vanilla would refuse to parse it at all
-     * (the {@code advancement} node requires permission 2, so it isn't in an ordinary player's
-     * command tree).
-     *
-     * <p>Mirrors vanilla {@code AdvancementCommands.Action.REVOKE} + {@code perform(...)} so the
-     * player gets the real command's behaviour and its own chat feedback, not an imitation: every
-     * advancement with progress has its completed criteria revoked, and the many-to-one success
-     * line is sent with the same translation key vanilla uses.</p>
-     *
-     * <p>{@link #checkArmed} is called inline rather than left to the player tick: the wipe has
-     * already finished on this thread, which is exactly the condition it verifies. The tick path
-     * stays for the operator case, where vanilla executes the revoke after {@code CommandEvent}
-     * has armed.</p>
+     * Re-send the player's command tree so {@code /advancement} appears or disappears with their
+     * eligibility ({@link SelfRevokeCommandAccess}). Vanilla only re-sends on permission changes;
+     * the capstone being granted or wiped is our equivalent.
      */
-    public static void performSelfWipe(ServerPlayer player, CommandSourceStack source) {
+    public static void refreshCommandTree(ServerPlayer player) {
         MinecraftServer server = player.getServer();
-        if (server == null) return;
-        armIfEligible(player);
-
-        int revoked = 0;
-        for (AdvancementHolder holder : server.getAdvancements().getAllAdvancements()) {
-            AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
-            if (!progress.hasProgress()) continue;
-            // Copy first: revoking mutates what getCompletedCriteria() reflects. (It is an
-            // Iterable, not a Collection, so this is a manual drain rather than List.copyOf.)
-            List<String> completed = new ArrayList<>();
-            progress.getCompletedCriteria().forEach(completed::add);
-            for (String criterion : completed) {
-                player.getAdvancements().revoke(holder, criterion);
-            }
-            revoked++;
-        }
-
-        int total = revoked;
-        source.sendSuccess(() -> Component.translatable(
-            "commands.advancement.revoke.many.to.one.success", total, player.getDisplayName()), true);
-        LOGGER.info("[DungeonTrain] Self-wipe without cheats: revoked {} advancement(s) for {}",
-            total, player.getName().getString());
-
-        checkArmed(player);
+        if (server != null) server.getCommands().sendCommands(player);
     }
 
     /** Drop any pending arm for a departing player, so a disconnect mid-command can't leak. */

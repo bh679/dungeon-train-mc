@@ -33,6 +33,10 @@ public final class CommandEvents {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         TrainCommand.register(event.getDispatcher(), event.getBuildContext());
+        // Vanilla /advancement is op-only. Open exactly `revoke <targets> everything` to a player who
+        // holds the banked "Everything Burrito" — the command that earns "It's Not That Simple" —
+        // so it autocompletes for them and only them. See SelfRevokeCommandAccess.
+        games.brennan.dungeontrain.advancement.SelfRevokeCommandAccess.open(event.getDispatcher());
         // /bug — opens the feedback survey jumped to the bug-report question (logs ship on a
         // real-bug answer, same as the death screen). Bundled DP is always present.
         BugCommand.register(event.getDispatcher());
