@@ -1331,6 +1331,7 @@
   "gui.dungeontrain.editor_screen.reseed": "Regenerează",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "Regenerează la test: conținut nou la fiecare test",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "Regenerează la test: același conținut la fiecare test",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "Regenerează acest vagon de test acum",
   "gui.dungeontrain.editor_screen.enter": "Intră",
   "gui.dungeontrain.editor_screen.theme": "Temă",
   "gui.dungeontrain.editor_screen.theme.light": "Deschisă",

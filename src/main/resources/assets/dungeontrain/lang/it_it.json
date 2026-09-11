@@ -993,6 +993,7 @@
   "gui.dungeontrain.editor_screen.reseed": "Rigenera",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "Rigenera alla prova: contenuti nuovi a ogni prova",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "Rigenera alla prova: gli stessi contenuti a ogni prova",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "Rigenera subito questo vagone di prova",
   "gui.dungeontrain.editor_screen.enter": "Entra",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Chiaro",

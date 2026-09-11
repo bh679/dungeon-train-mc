@@ -993,6 +993,7 @@
   "gui.dungeontrain.editor_screen.reseed": "Resembrar",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "Resembrar al probar: contenido nuevo en cada prueba",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "Resembrar al probar: el mismo contenido en cada prueba",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "Volver a sortear este vagón de prueba ahora",
   "gui.dungeontrain.editor_screen.enter": "Entrar",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Claro",

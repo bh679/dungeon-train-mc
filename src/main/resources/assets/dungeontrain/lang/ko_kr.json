@@ -968,6 +968,7 @@
   "gui.dungeontrain.editor_screen.reseed": "재추첨",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "테스트 시 재추첨: 테스트마다 새로운 내용물",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "테스트 시 재추첨: 테스트마다 같은 내용물",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "이 테스트 객차를 지금 재추첨",
   "gui.dungeontrain.editor_screen.enter": "입장",
   "gui.dungeontrain.editor_screen.theme": "테마",
   "gui.dungeontrain.editor_screen.theme.light": "밝게",

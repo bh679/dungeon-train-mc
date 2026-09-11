@@ -993,6 +993,7 @@
   "gui.dungeontrain.editor_screen.reseed": "Sortear de novo",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "Sortear de novo ao testar: conteúdo novo a cada teste",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "Sortear de novo ao testar: o mesmo conteúdo a cada teste",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "Sortear de novo esta carruagem de teste agora",
   "gui.dungeontrain.editor_screen.enter": "Entrar",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Claro",

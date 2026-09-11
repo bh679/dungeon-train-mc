@@ -968,6 +968,7 @@
   "gui.dungeontrain.editor_screen.reseed": "再抽選",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "テスト時に再抽選: テストのたびに新しい中身",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "テスト時に再抽選: テストのたびに同じ中身",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "このテスト車両を今すぐ再抽選",
   "gui.dungeontrain.editor_screen.enter": "入る",
   "gui.dungeontrain.editor_screen.theme": "テーマ",
   "gui.dungeontrain.editor_screen.theme.light": "ライト",

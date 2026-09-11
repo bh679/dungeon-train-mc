@@ -338,6 +338,7 @@
       "gui.dungeontrain.editor_screen.reseed",
       "gui.dungeontrain.editor_screen.reseed.tip_on",
       "gui.dungeontrain.editor_screen.reseed.tip_off",
+      "gui.dungeontrain.editor_screen.reseed.tip_now",
       "gui.dungeontrain.editor_screen.enter",
       "gui.dungeontrain.editor_screen.theme",
       "gui.dungeontrain.editor_screen.theme.light",

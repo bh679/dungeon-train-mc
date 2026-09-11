@@ -993,6 +993,7 @@
   "gui.dungeontrain.editor_screen.reseed": "Opnieuw loten",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "Opnieuw loten bij test: elke test nieuwe inhoud",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "Opnieuw loten bij test: elke test dezelfde inhoud",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "Deze testwagon nu opnieuw loten",
   "gui.dungeontrain.editor_screen.enter": "Betreden",
   "gui.dungeontrain.editor_screen.theme": "Thema",
   "gui.dungeontrain.editor_screen.theme.light": "Licht",

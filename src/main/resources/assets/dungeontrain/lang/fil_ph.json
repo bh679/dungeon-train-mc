@@ -968,6 +968,7 @@
   "gui.dungeontrain.editor_screen.reseed": "Reseed",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "Reseed sa test: bagong laman sa bawat test",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "Reseed sa test: parehong laman sa bawat test",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "I-reseed ang test carriage na ito ngayon",
   "gui.dungeontrain.editor_screen.enter": "Pumasok",
   "gui.dungeontrain.editor_screen.theme": "Tema",
   "gui.dungeontrain.editor_screen.theme.light": "Maliwanag",

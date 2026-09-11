@@ -968,6 +968,7 @@
   "gui.dungeontrain.editor_screen.reseed": "สุ่มใหม่",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "สุ่มใหม่เมื่อทดสอบ: ของข้างในใหม่ทุกครั้งที่ทดสอบ",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "สุ่มใหม่เมื่อทดสอบ: ของข้างในเหมือนเดิมทุกครั้งที่ทดสอบ",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "สุ่มตู้ทดสอบนี้ใหม่ตอนนี้",
   "gui.dungeontrain.editor_screen.enter": "เข้า",
   "gui.dungeontrain.editor_screen.theme": "ธีม",
   "gui.dungeontrain.editor_screen.theme.light": "สว่าง",

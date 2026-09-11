@@ -77,12 +77,14 @@ public final class PortalTestCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("test")
-            .executes(ctx -> runTest(ctx.getSource(), null))
+            .executes(ctx -> runTest(ctx.getSource(), null, false))
             .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
-            // Reseed on test — a world switch. On, each test rolls the room's contents afresh; off,
-            // every test stands up the same roll, which is what it always did. A literal, so a room
-            // that happens to be called "reseed" is reached by the argument below, never here.
+            // Reseed — bare, it re-rolls the test the author is standing in, right now. With on|off
+            // it is the world switch: on, each test rolls the room's contents afresh; off, every
+            // test stands up the same roll, which is what it always did. A literal, so a room that
+            // happens to be called "reseed" is reached by the argument below, never here.
             .then(Commands.literal("reseed")
+                .executes(ctx -> runReseedNow(ctx.getSource()))
                 .then(Commands.literal("on").executes(ctx -> runReseed(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runReseed(ctx.getSource(), false))))
             // Naming the room tests one the author is not standing in — what the X menu's button
@@ -91,7 +93,7 @@ public final class PortalTestCommand {
                 .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
                     games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
                         games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM), builder))
-                .executes(ctx -> runTest(ctx.getSource(), StringArgumentType.getString(ctx, "room"))));
+                .executes(ctx -> runTest(ctx.getSource(), StringArgumentType.getString(ctx, "room"), false)));
     }
 
     /**
@@ -102,7 +104,11 @@ public final class PortalTestCommand {
      * basement either way, and where the author happens to be standing has never been part of what
      * it tests.</p>
      */
-    private static int runTest(CommandSourceStack source, String roomArg) {
+    /**
+     * @param freshRoll salt the rolls whatever the world switch says — a reseed of the test the
+     *                  author is already standing in
+     */
+    private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -232,7 +238,8 @@ public final class PortalTestCommand {
             // PortalRoomTiler around the player, so an endless room repeats here exactly as it does
             // on the train, block variants and all.
             PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT, saltFor(worldData, overworld));
+            PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
+            saltFor(worldData, overworld, freshRoll));
 
         PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
 
@@ -282,9 +289,32 @@ public final class PortalTestCommand {
      * what it always did; a fresh random one while it is on. Never zero when on — zero is the
      * unsalted roll, and a reseed that landed on it would silently repeat the last test.
      */
-    private static int saltFor(DungeonTrainWorldData worldData, ServerLevel level) {
-        if (!worldData.isPortalTestReseed()) return PortalStructure.NO_SALT;
+    private static int saltFor(DungeonTrainWorldData worldData, ServerLevel level, boolean freshRoll) {
+        if (!freshRoll && !worldData.isPortalTestReseed()) return PortalStructure.NO_SALT;
         return level.random.nextInt() | 1;
+    }
+
+    /**
+     * {@code portal test reseed} — re-roll the test the author is standing in. The same room, the
+     * same doorway, a fresh salt: runTest already sends them back and in again when a session is
+     * live, so this is that trip with the roll forced.
+     */
+    private static int runReseedNow(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+        PortalTestSession.Session session = PortalTestSession.get(player.getUUID());
+        if (session == null) {
+            source.sendFailure(Component.literal(
+                "Not in a test carriage — Test the Carriage first, then Reseed rolls it again.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        return runTest(source, session.roomName(), true);
     }
 
     /** {@code portal test reseed on|off} — flip the world switch and tell the client what it now holds. */

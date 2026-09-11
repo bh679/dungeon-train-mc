@@ -317,13 +317,21 @@ public final class EditorScreenActions {
     /** The world's reseed-on-test switch, the same command either way the server holds it. */
     static final String RESEED_ON_COMMAND = "dungeontrain portal test reseed on";
     static final String RESEED_OFF_COMMAND = "dungeontrain portal test reseed off";
+    /** Re-roll the test carriage the author is standing in, now. */
+    static final String RESEED_NOW_COMMAND = "dungeontrain portal test reseed";
 
     /**
-     * Reseed: the world switch beside Test the Carriage. On, each test rolls the room's contents
-     * afresh; off, every test stands up the same roll. Tint alone shows the state — the cell is
-     * too narrow for an [ON]/[OFF] suffix, the same call the Mirror X / Y / Z cells make.
+     * Reseed, beside Test the Carriage. Outside a test it is the world switch: on, each test rolls
+     * the room's contents afresh; off, every test stands up the same roll. Tint alone shows the
+     * state — the cell is too narrow for an [ON]/[OFF] suffix, the same call the Mirror X / Y / Z
+     * cells make. Inside a test it is a button instead: it re-rolls the copy they are standing in,
+     * whatever the switch says — the switch is about the next test, and they are already in one.
      */
-    public static CommandMenuEntry.Toggle reseedEntry() {
+    public static CommandMenuEntry reseedEntry() {
+        if (PortalTestSessionState.active()) {
+            return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.RESEED),
+                RESEED_NOW_COMMAND);
+        }
         return new CommandMenuEntry.Toggle(EditorScreenLang.text(EditorScreenLang.RESEED),
             PortalTestSessionState.reseed(), RESEED_ON_COMMAND, RESEED_OFF_COMMAND,
             /*showStateText*/ false, /*cmdToToggleOthers*/ null);

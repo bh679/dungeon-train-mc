@@ -75,8 +75,8 @@ public final class EditorDetailPane {
     public List<CommandMenuEntry> rows() { return rows; }
     public CommandMenuEntry testEntry() { return test; }
 
-    /** The Reseed toggle beside the test button — always there, it is a world switch. */
-    public CommandMenuEntry.Toggle reseedEntry() { return EditorScreenActions.reseedEntry(); }
+    /** The Reseed cell beside the test button — the world switch, or in a test the re-roll button. */
+    public CommandMenuEntry reseedEntry() { return EditorScreenActions.reseedEntry(); }
 
     /** Where the Reseed cell sits: the right end of the test row. Null before the first layout. */
     private InventoryEditorLayout.Rect reseedRect;
@@ -287,8 +287,8 @@ public final class EditorDetailPane {
     private void drawTest(GuiGraphics g, Font font) {
         InventoryEditorLayout.Rect row = layout.test();
         // The Reseed cell takes the right end of the row, with a one-pixel gap; the button the rest.
-        CommandMenuEntry.Toggle reseed = reseedEntry();
-        int cellW = font.width(reseed.label()) + 2 * MenuRowPainter.CELL_PAD_X + 8;
+        CommandMenuEntry reseed = reseedEntry();
+        int cellW = font.width(MenuRowPainter.labelFor(reseed)) + 2 * MenuRowPainter.CELL_PAD_X + 8;
         reseedRect = new InventoryEditorLayout.Rect(row.right() - cellW, row.y(), cellW, row.h());
         InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(row.x(), row.y(),
             Math.max(0, row.w() - cellW - 1), row.h());
@@ -386,8 +386,9 @@ public final class EditorDetailPane {
             // Only dimensions can be stood up, and that is the whole of why the button is off —
             // it no longer asks the author to stand anywhere.
             case RESEED -> List.of(EditorScreenLang.text(EditorScreenLang.RESEED),
-                EditorScreenLang.text(PortalTestSessionState.reseed()
-                    ? EditorScreenLang.RESEED_TIP_ON : EditorScreenLang.RESEED_TIP_OFF));
+                EditorScreenLang.text(PortalTestSessionState.active() ? EditorScreenLang.RESEED_TIP_NOW
+                    : PortalTestSessionState.reseed() ? EditorScreenLang.RESEED_TIP_ON
+                    : EditorScreenLang.RESEED_TIP_OFF));
             case TEST -> test == null
                 ? List.of(testLabel(),
                           EditorScreenLang.text(EditorScreenLang.DISABLED_DIMENSIONS_ONLY))

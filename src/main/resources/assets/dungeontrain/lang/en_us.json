@@ -1304,6 +1304,7 @@
   "gui.dungeontrain.editor_screen.reseed": "Reseed",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "Reseed on test: new contents every time you test",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "Reseed on test: the same contents every test",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "Roll this test carriage again, now",
   "gui.dungeontrain.editor_screen.enter": "Enter",
   "gui.dungeontrain.editor_screen.theme": "Theme",
   "gui.dungeontrain.editor_screen.theme.light": "Light",

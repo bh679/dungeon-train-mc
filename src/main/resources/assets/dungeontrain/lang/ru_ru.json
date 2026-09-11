@@ -1023,6 +1023,7 @@
   "gui.dungeontrain.editor_screen.reseed": "Перебросить",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "Перебросить при испытании: новое содержимое при каждом испытании",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "Перебросить при испытании: одно и то же содержимое при каждом испытании",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "Перебросить этот испытательный вагон сейчас",
   "gui.dungeontrain.editor_screen.enter": "Войти",
   "gui.dungeontrain.editor_screen.theme": "Тема",
   "gui.dungeontrain.editor_screen.theme.light": "Светлая",

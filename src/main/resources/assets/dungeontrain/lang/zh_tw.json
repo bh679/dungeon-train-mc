@@ -968,6 +968,7 @@
   "gui.dungeontrain.editor_screen.reseed": "重新隨機",
   "gui.dungeontrain.editor_screen.reseed.tip_on": "測試時重新隨機：每次測試內容都不同",
   "gui.dungeontrain.editor_screen.reseed.tip_off": "測試時重新隨機：每次測試內容都相同",
+  "gui.dungeontrain.editor_screen.reseed.tip_now": "立即重新隨機這節測試車廂",
   "gui.dungeontrain.editor_screen.enter": "進入",
   "gui.dungeontrain.editor_screen.theme": "主題",
   "gui.dungeontrain.editor_screen.theme.light": "淺色",
