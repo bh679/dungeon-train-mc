@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -279,6 +280,48 @@ final class EditorScreenActionsTest {
     }
 
     @Test
+    @DisplayName("a room the author is only looking at gets its rows from the roster, sent to the named root")
+    void roomRowsFromRosterWhenNotStanding() {
+        VariantKey room = VariantKey.of(PlotCategory.PORTALS, "portal_room", "labrynth");
+        EditorTypeMenusPacket.Variant v = gated("PORTALS", "portal_room", "labrynth", 3, List.of());
+        EditorScreenActions.Ctx looking = new EditorScreenActions.Ctx(room, v, 1, null, PlotCategory.PORTALS, false,
+            new EditorRosterIndex.Extras("endless_repetition/dynamic", 11, 13, 7, EditorStatusPacket.NO_FLIP));
+        List<CommandMenuEntry> rows = EditorScreenActions.roomRows(looking);
+        List<String> labels = rows.stream().map(CommandMenuEntry::label).toList();
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Fog: Auto (On)")), labels.toString());
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Copies")), labels.toString());
+        CommandMenuEntry.Stay fog = rows.stream().filter(r -> r.label().startsWith("Fog"))
+            .map(r -> (CommandMenuEntry.Stay) r).findFirst().orElseThrow();
+        assertEquals("dungeontrain editor portals room labrynth fog next", fog.command());
+        // The settings list keeps them (minus the size steppers the sheet carries) — no standing gate.
+        List<CommandMenuEntry> settings = EditorScreenActions.settingRows(looking,
+            () -> rows, () -> EditorScreenActions.roomModeOf(looking, () -> ""));
+        assertTrue(settings.stream().anyMatch(r -> r.label().startsWith("Fog")));
+        assertTrue(settings.stream().noneMatch(r -> r.label().startsWith("Length")));
+        assertEquals("endless_repetition/dynamic", EditorScreenActions.roomModeOf(looking, () -> "stood"));
+
+        // No extras (a roster from before, or a sub-variant) — nothing to build from, so no rows.
+        assertTrue(EditorScreenActions.roomRows(ctx(room, v, null, PlotCategory.PORTALS)).isEmpty());
+    }
+
+    @Test
+    @DisplayName("a contents template the author is only looking at shows its Flip quad from the roster")
+    void flipRowsFromRoster() {
+        VariantKey k = VariantKey.of(PlotCategory.CONTENTS, "fire", "fire");
+        EditorTypeMenusPacket.Variant v = gated("CONTENTS", "fire", "fire", 2, List.of());
+        EditorScreenActions.Ctx looking = new EditorScreenActions.Ctx(k, v, 1, null, PlotCategory.CONTENTS, false,
+            new EditorRosterIndex.Extras(EditorStatusPacket.NO_MODE, -1, -1, -1,
+                EditorStatusPacket.FLIP_KNOWN | EditorStatusPacket.FLIP_Z));
+        List<CommandMenuEntry> rows = ROWS.apply(looking);
+        assertEquals("Flip", rows.get(0).label(), rows.toString());
+        CommandMenuEntry.Quad quad = assertInstanceOf(CommandMenuEntry.Quad.class, rows.get(1));
+        assertFalse(((CommandMenuEntry.Toggle) quad.e1()).state());
+        assertTrue(((CommandMenuEntry.Toggle) quad.e3()).state());
+        // Without the known bit there is nothing to show — same as the old roster.
+        assertTrue(ROWS.apply(ctx(k, v, null, PlotCategory.CONTENTS)).isEmpty());
+    }
+
+    @Test
     @DisplayName("a stage-linked template drops the Stage row, because the Spawns line already is one")
     void stageLinkedRows() {
         VariantKey k = VariantKey.of(PlotCategory.CONTENTS, "fire", "fire");
@@ -309,15 +352,17 @@ final class EditorScreenActionsTest {
     }
 
     @Test
-    @DisplayName("room geometry rows appear only while standing in the selected dimension room")
+    @DisplayName("the room rows the pane is handed land under the icons, standing in the room or not")
     void roomRowsOnlyWhenStanding() {
         VariantKey room = VariantKey.of(PlotCategory.PORTALS, "portal_room", "house");
         EditorTypeMenusPacket.Variant v = gated("PORTALS", "portal_room", "house", 1, List.of());
         List<CommandMenuEntry> inside = ROWS.apply(ctx(room, v, room, PlotCategory.PORTALS));
         assertTrue(inside.stream().anyMatch(e -> "ROOM".equals(e.label())),
             "the room's non-size rows still belong under the icons");
+        // Whether there ARE rows for a room the author is only looking at is roomRows' question
+        // (see roomRowsFromRosterWhenNotStanding); settingRows keeps whatever it is handed.
         List<CommandMenuEntry> away = ROWS.apply(ctx(room, v, null, PlotCategory.PORTALS));
-        assertFalse(away.stream().anyMatch(e -> "ROOM".equals(e.label())));
+        assertTrue(away.stream().anyMatch(e -> "ROOM".equals(e.label())));
         // A part has no weight pool and no gate: nothing to show.
         VariantKey part = VariantKey.of(PlotCategory.PARTS, "floor", "oak");
         EditorTypeMenusPacket.Variant pv = new EditorTypeMenusPacket.Variant("oak", EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", "floor", "oak", false, false);

@@ -12128,8 +12128,42 @@
       "released_at": null
     },
     {
-      "id": "community-videos-page",
+      "id": "portal-room-fog-toggle-and-paged-room-settings",
       "version": "0.840.0",
+      "type": "feat",
+      "title": "Fog toggle for dimensional carriages; every room setting in the editor screen, paged",
+      "summary": "Dimensional carriages can now force their fog On or Off (Auto keeps following the walls mode, so nothing changes unless you say so). The editor screen shows every setting of whichever room you select \u2014 Walls and its sub-options, Contents, Books, Sky, Fog \u2014 without standing in it, paged under the 3D preview, and contents templates show their Flip axes there too.",
+      "highlights": [
+        "Fog row (Auto / On / Off) on dimensional carriages, in the world-space panel and the editor screen",
+        "Editor screen: room settings for the selected room, no need to stand in it; paged under the 3D preview",
+        "Editor screen: Flip X/Y/Z/Rooms for contents templates",
+        "peateargriffin: fog off, moss floor and skybox roof"
+      ],
+      "pr": 1361,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "template-builder-credits",
+      "version": "0.841.0",
+      "type": "feat",
+      "title": "Credits for the builders and writers behind the train",
+      "summary": "The Credits page now thanks the people whose work rides every train: a Translations list, a new Writers list (players with 20 or more well-loved community books), and a new Builders list (whoever originally built each shipped carriage, room or contents template). Each list shows its top names first with See more, and the writers and builders lists stay current from the community relay. Two new Tallyman leaderboards to find aboard: Most Templates Built and Most Praised Writers.",
+      "highlights": [
+        "Credits page: Writers and Builders sections, with See more / See less and pages of ten",
+        "New leaderboards: Most Templates Built, Most Praised Writers (books with more than 10:1 up-votes)",
+        "Editor: a Built by field on every template's data sheet; developers can credit a builder straight from the relay"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "community-videos-page",
+      "version": "0.842.0",
       "type": "feat",
       "title": "Community Videos page on the main menu",
       "summary": "A new play-button icon on the title screen (between Credits and Discord) opens Dungeon Train Community Videos \u2014 every video the community has made about the game, across YouTube, Bilibili, Twitch and Instagram. Filter by platform, uploader or the developer's picks, sort by views, newest or dev picks, and open any video in your browser.",
@@ -12137,7 +12171,8 @@
         "Uploader search with suggestions as you type; platform and dev-fave toggles on one row",
         "Know a video that isn't listed? Submit the link from the page \u2014 it's reviewed before it appears",
         "Flag a video as not about Dungeon Train or not safe for kids; kid-mode players only see videos that pass",
-        "Creator Tools (the filming guide) and the Videos page now link to each other"
+        "Creator Tools (the filming guide) and the Videos page now link to each other",
+        "Brennan's YouTube, Bilibili, Instagram and Discord are one click away at the bottom of the page"
       ],
       "date": "2026-09-11",
       "released": false,

@@ -279,6 +279,69 @@ class PortalRoomSettingsTest {
         assertSame(PortalRoomContents.DEFAULT, s.contents());
     }
 
+    // ---- fog ----
+
+    @Test
+    @DisplayName("Fog is absent from every tag ever written and reads back Auto")
+    void fogDefaultsToAutoForEveryLegacyTag() {
+        for (String tag : new String[] {"bedrock_lock", "endless_open/dynamic",
+                "bedrock_lock/exact/off/off/off/none/sealed/-3/2/-3/2/minecraft:obsidian"}) {
+            PortalRoomSettings parsed = PortalRoomSettings.parse(tag);
+            assertSame(PortalRoomFog.AUTO, parsed.fog(), tag);
+            assertEquals(parsed.mode().fogs(), parsed.fogs(), tag);
+            assertEquals(tag, parsed.toTag(), tag);
+        }
+    }
+
+    @Test
+    @DisplayName("On and Off round-trip as a thirteenth segment; Auto is never written")
+    void fogOverrideRoundTrips() {
+        PortalRoomSettings sealedOn = PortalRoomSettings.parse("bedrock_lock").withFog(PortalRoomFog.ON);
+        assertTrue(sealedOn.fogs());
+        String tag = sealedOn.toTag();
+        assertTrue(tag.endsWith("/on"), tag);
+        assertEquals(13, tag.split("/", -1).length, tag);
+        // Tag-level round trip rather than record equality: toTag writes every earlier segment at
+        // its EFFECTIVE value, so a re-parse pins Door Wall the way parse always has.
+        assertSame(PortalRoomFog.ON, PortalRoomSettings.parse(tag).fog());
+        assertEquals(tag, PortalRoomSettings.parse(tag).toTag());
+
+        PortalRoomSettings endlessOff =
+            PortalRoomSettings.parse("endless_repetition/dynamic").withFog(PortalRoomFog.OFF);
+        assertFalse(endlessOff.fogs());
+        PortalRoomSettings reread = PortalRoomSettings.parse(endlessOff.toTag());
+        assertSame(PortalRoomFog.OFF, reread.fog());
+        assertEquals(PortalRoomCopies.DYNAMIC, reread.copies());
+        assertEquals(endlessOff.toTag(), reread.toTag());
+
+        assertEquals("bedrock_lock", sealedOn.withFog(PortalRoomFog.AUTO).toTag());
+    }
+
+    @Test
+    @DisplayName("Every wither carries the fog override through, and withFog leaves the rest alone")
+    void withersPreserveFog() {
+        PortalRoomSettings on = PortalRoomSettings.parse("endless_open/dynamic").withFog(PortalRoomFog.ON);
+        assertSame(PortalRoomFog.ON, on.withMode(PortalRoomMode.BEDROCK_LOCK).fog());
+        assertSame(PortalRoomFog.ON, on.withCopies(PortalRoomCopies.EXACT).fog());
+        assertSame(PortalRoomFog.ON, on.withContents(PortalRoomContents.FIT).fog());
+        assertSame(PortalRoomFog.ON, on.withSky(PortalRoomSky.DAY).fog());
+        assertSame(PortalRoomFog.ON, on.withLock(new PortalRoomLock("minecraft:obsidian")).fog());
+        assertSame(PortalRoomFog.ON, on.withDoorOffset(new PortalRoomDoorOffset(2)).fog());
+        assertSame(PortalRoomMode.ENDLESS_OPEN, on.withFog(PortalRoomFog.OFF).mode());
+        assertEquals(PortalRoomCopies.DYNAMIC, on.withFog(PortalRoomFog.OFF).copies());
+    }
+
+    @Test
+    @DisplayName("The longest tag with a seal block and a fog override still fits the packet's cap")
+    void longestSealedTagWithFogFitsTheModeTagCap() {
+        String tag = PortalRoomSettings.parse("bedrock_lock")
+            .withLock(new PortalRoomLock("a".repeat(PortalRoomLock.BLOCK_ID_MAX)))
+            .withDoorOffset(new PortalRoomDoorOffset(-PortalRoomLayout.MAX_WIDTH))
+            .withFog(PortalRoomFog.OFF).toTag();
+        assertTrue(tag.length() <= games.brennan.dungeontrain.net.EditorStatusPacket.MODE_TAG_MAX,
+            "tag is " + tag.length() + " chars: " + tag);
+    }
+
     @Test
     @DisplayName("Setting one control leaves the other two alone")
     void withersAreIndependent() {

@@ -587,4 +587,39 @@ final class EditorMenuScreenTest {
     void panelWidth_isSharedDefault() {
         assertEquals(CommandMenuLayout.PANEL_WIDTH, new EditorMenuScreen().panelWidth(), 0.0);
     }
+
+    @Test
+    @DisplayName("the room rows can be built for a named room, sending to `portals room <name>`")
+    void portalRowsForANamedRoom() {
+        String prefix = EditorMenuPortalRows.prefixFor("labrynth");
+        assertEquals("dungeontrain editor portals room labrynth", prefix);
+        List<CommandMenuEntry> rows = EditorMenuScreen.portalRows("bedrock_lock", 11, 13, 7, prefix);
+        List<String> labels = rows.stream().map(CommandMenuEntry::label).toList();
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Fog: Auto")), labels.toString());
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Sky:")), labels.toString());
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Contents")), labels.toString());
+        // Every command the rows send starts at the named root — none falls back to the bare one.
+        for (CommandMenuEntry row : rows) {
+            for (String command : commandsOf(row)) {
+                assertTrue(command.startsWith(prefix + " "), command);
+            }
+        }
+        // And the stood-in form still sends to the bare root.
+        CommandMenuEntry.Stay fog = (CommandMenuEntry.Stay) EditorMenuPortalRows.roomFogRowFor("bedrock_lock");
+        assertEquals("dungeontrain editor portals fog next", fog.command());
+    }
+
+    /** Every command string a row (or its cells) would run. */
+    private static List<String> commandsOf(CommandMenuEntry row) {
+        List<String> out = new java.util.ArrayList<>();
+        if (row instanceof CommandMenuEntry.Stay s) out.add(s.command());
+        else if (row instanceof CommandMenuEntry.Run r) out.add(r.command());
+        else if (row instanceof CommandMenuEntry.TypeArg t) out.add(t.commandPrefix());
+        else if (row instanceof CommandMenuEntry.Triple t) {
+            out.addAll(commandsOf(t.leftEntry())); out.addAll(commandsOf(t.middleEntry())); out.addAll(commandsOf(t.rightEntry()));
+        } else if (row instanceof CommandMenuEntry.Split s) {
+            out.addAll(commandsOf(s.leftEntry())); out.addAll(commandsOf(s.rightEntry()));
+        }
+        return out;
+    }
 }

@@ -650,7 +650,7 @@ public final class ShaderSweep {
         // — and puts the camera at the corridor mouth facing down it, which is deterministic. It
         // insists on being run from inside a room's plot, hence the editor hop first.
         // The room's own authored settings decide whether there is anything to measure: the fog is
-        // only sent for a mode that fogs (`if (!structure.mode().fogs()) return`), and the sky lift
+        // only sent for a room that fogs (`if (!structure.settings().fogs()) return`), and the sky lift
         // only for a room that names a sky. The control found `backrooms` doing neither, which
         // would have read as "the pack discarded it" for a system that was never asked. Forced here
         // so a zero is always the pack's doing.

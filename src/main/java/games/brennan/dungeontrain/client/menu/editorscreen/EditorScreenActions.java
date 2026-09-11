@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
@@ -54,8 +56,19 @@ public final class EditorScreenActions {
         int selfWeight,
         VariantKey standing,
         PlotCategory stampedCategory,
-        boolean dirty
+        boolean dirty,
+        EditorRosterIndex.Extras extras
     ) {
+        public Ctx {
+            if (extras == null) extras = EditorRosterIndex.Extras.NONE;
+        }
+
+        /** The six-field shape from before the selection carried its room's tag and box. */
+        public Ctx(VariantKey selection, EditorTypeMenusPacket.Variant variant, int selfWeight,
+                   VariantKey standing, PlotCategory stampedCategory, boolean dirty) {
+            this(selection, variant, selfWeight, standing, stampedCategory, dirty, EditorRosterIndex.Extras.NONE);
+        }
+
         public boolean hasSelection() {
             return selection != null && variant != null;
         }
@@ -378,25 +391,75 @@ public final class EditorScreenActions {
     // ------------------------------------------------------------------
 
     /**
-     * The world-space plot panel's rows for the selection, in its order: weight, then the room
-     * geometry (dimensions, standing only), then the gate, then the contents allow-list.
+     * The world-space plot panel's rows for the selection, in its order: the room's walls and
+     * what is inside it, a contents template's flip axes, then the contents allow-list.
      *
-     * @param portalRows the HUD-backed room rows, supplied so they are only read when they apply
+     * <p>Weight, the level bounds, the phases and a room's length, width and height are edited on
+     * the data sheet, on the lines that show them. Only what the sheet has no room for lands here.</p>
+     *
+     * @param portalRows the room rows for the selection — see {@link #roomRows}, supplied so they
+     *                   are only read when they apply
+     * @param roomMode   the selection's settings tag — see {@link #roomModeOf}
      */
     public static List<CommandMenuEntry> settingRows(Ctx ctx, Supplier<List<CommandMenuEntry>> portalRows,
                                                      Supplier<String> roomMode) {
         List<CommandMenuEntry> out = new ArrayList<>();
         if (!ctx.hasSelection()) return out;
-        // Weight, the level bounds, the phases and a room's length, width and height are edited on
-        // the data sheet, on the lines that show them. Only what the sheet has no room for lands
-        // here: the Stage link, the contents allow-list, and what a room does at its walls.
-        if (ctx.standingInSelection() && ctx.category() == PlotCategory.PORTALS) {
+        if (ctx.category() == PlotCategory.PORTALS) {
             for (CommandMenuEntry row : portalRows.get()) {
                 if (!isRoomSizeRow(row)) out.add(row);
             }
         }
+        out.addAll(flipRows(ctx));
         addIfPresent(out, contentsAllowEntry(ctx, roomMode));
         return out;
+    }
+
+    /**
+     * The room rows for the selection, or none when it is not a room the screen can describe.
+     *
+     * <p>Two sources, and which one is a matter of freshness rather than of reach. Standing in the
+     * room, the stood-in status packet is read — it arrives every tick, so a tap shows its result
+     * on the next frame, and the rows send to the bare {@code portals} root the world-space menu
+     * sends to. Anywhere else the roster entry's tag and box are used and the rows send to
+     * {@code portals room <name>}; those update on the roster refresh the screen schedules after
+     * every command it runs. A sub-variant room has no roster entry of its own, so it keeps the
+     * stood-in requirement it always had.</p>
+     */
+    public static List<CommandMenuEntry> roomRows(Ctx ctx) {
+        if (!ctx.hasSelection() || ctx.category() != PlotCategory.PORTALS) return List.of();
+        if (ctx.standingInSelection()) return EditorMenuScreen.portalRows();
+        EditorRosterIndex.Extras x = ctx.extras();
+        if (!x.hasRoom()) return List.of();
+        return EditorMenuScreen.portalRows(x.roomMode(), x.roomLength(), x.roomWidth(), x.roomHeight(),
+            games.brennan.dungeontrain.client.menu.EditorMenuPortalRows.prefixFor(ctx.selection().modelName()));
+    }
+
+    /** The selection's settings tag, from the same source {@link #roomRows} reads. */
+    public static String roomModeOf(Ctx ctx, Supplier<String> stoodIn) {
+        if (ctx.hasSelection() && ctx.category() == PlotCategory.PORTALS && !ctx.standingInSelection()
+            && ctx.extras().hasRoom()) {
+            return ctx.extras().roomMode();
+        }
+        return stoodIn.get();
+    }
+
+    /**
+     * A contents template's random-flip axes — the same Flip quad the world-space Current tab
+     * shows, by model id. Read from the stood-in status while standing in the template (tick-fresh)
+     * and from the roster row otherwise; a sub-variant has neither and shows none.
+     */
+    static List<CommandMenuEntry> flipRows(Ctx ctx) {
+        if (ctx.category() != PlotCategory.CONTENTS || ctx.isSubVariant()) return List.of();
+        String modelId = ctx.selection().modelId();
+        if (ctx.standingInSelection()) {
+            return EditorMenuScreen.flipRows(modelId, EditorStatusHudOverlay.flipX(),
+                EditorStatusHudOverlay.flipY(), EditorStatusHudOverlay.flipZ(), EditorStatusHudOverlay.flipRooms());
+        }
+        EditorRosterIndex.Extras x = ctx.extras();
+        if (!x.hasFlip()) return List.of();
+        return EditorMenuScreen.flipRows(modelId, x.flip(EditorStatusPacket.FLIP_X), x.flip(EditorStatusPacket.FLIP_Y),
+            x.flip(EditorStatusPacket.FLIP_Z), x.flip(EditorStatusPacket.FLIP_ROOMS));
     }
 
     /** True for the length, width and height steppers, which the Size line now carries. */
@@ -454,7 +517,7 @@ public final class EditorScreenActions {
         if (sel.category() == PlotCategory.CARRIAGES && !sel.isSubVariant()) {
             return new CommandMenuEntry.DrillIn(label, CarriageContentsAllowScreen.forCarriage(sel.modelId()));
         }
-        if (sel.category() == PlotCategory.PORTALS && ctx.standingInSelection()
+        if (sel.category() == PlotCategory.PORTALS
             && PortalRoomSettings.parse(roomMode.get()).contents().furnishes()) {
             return new CommandMenuEntry.DrillIn(label, CarriageContentsAllowScreen.forPortalRoom(sel.modelName()));
         }

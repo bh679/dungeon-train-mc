@@ -148,6 +148,14 @@ public final class EditorScreenLang {
     public static final String ICON_PACKAGE = PREFIX + "icon.package";
     public static final String ICON_MOVE = PREFIX + "icon.move";
     public static final String SHEET_ID = PREFIX + "sheet.id";
+    /** "Built by" — who originally made the template; a picker in dev mode. */
+    public static final String SHEET_BUILDER = PREFIX + "sheet.builder";
+    public static final String SHEET_BUILDER_NONE = PREFIX + "sheet.builder_none";
+    public static final String SHEET_BUILDER_TOOLTIP = PREFIX + "sheet.builder_tooltip";
+    /** The builder search opened from the Built-by cell: its title, and the two rows it adds. */
+    public static final String CREATORS_PICK_TITLE = PREFIX + "creators.pick_title";
+    public static final String CREATORS_PICK_ME = PREFIX + "creators.pick_me";
+    public static final String CREATORS_PICK_NONE = PREFIX + "creators.pick_none";
     public static final String DISABLED_NO_GROUPS = PREFIX + "disabled.no_groups";
     public static final String MOVE_TITLE = PREFIX + "move.title";
     public static final String MOVE_TOP_LEVEL = PREFIX + "move.top_level";

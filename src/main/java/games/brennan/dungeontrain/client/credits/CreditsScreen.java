@@ -54,6 +54,8 @@ import java.util.Set;
  */
 public final class CreditsScreen extends Screen {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     private static final int MAX_COL_W   = 360;
     private static final int SIDE_MARGIN = 40;
     private static final int TOP         = 16;
@@ -63,6 +65,10 @@ public final class CreditsScreen extends Screen {
     private static final int ACCENT_TEAM = 0xFFE0B56A;
     /** Green for the translators. */
     private static final int ACCENT_TRANSLATIONS = 0xFF5FBF5F;
+    /** Copper for the builders — the colour of the train they built. */
+    private static final int ACCENT_BUILDERS = 0xFFC98A5B;
+    /** Parchment for the writers. */
+    private static final int ACCENT_WRITERS = 0xFFD9C08A;
 
     /** Team photos are 128×128 sources. */
     private static final int TEX = 128;
@@ -94,6 +100,12 @@ public final class CreditsScreen extends Screen {
     private final CardCanvas canvas;
     /** Names this player submitted translations under; empty until the relay answers. */
     private Set<String> ownNames = Set.of();
+    /** How much of each long list is showing — survives a re-layout, not a fresh screen. */
+    private CreditsPaging translatorsPaging = CreditsPaging.START;
+    private CreditsPaging buildersPaging = CreditsPaging.START;
+    private CreditsPaging writersPaging = CreditsPaging.START;
+    /** In-page control links carry this prefix in a RUN_COMMAND click event; see {@link #mouseClicked}. */
+    private static final String CONTROL_PREFIX = "dt:credits/";
     private boolean askedForOwnNames;
     private final List<EditSlot> editSlots = new ArrayList<>();
 
@@ -131,6 +143,26 @@ public final class CreditsScreen extends Screen {
             y = addTranslationsCard(contributors, y);
         }
 
+        // The community's writers — the relay's Most Praised Writers board, past the bar
+        // RelayWriters sets. Relay-only: a book is written on the relay, never in the jar.
+        List<RelayWriters.Writer> writers = RelayWriters.current();
+        if (!writers.isEmpty()) {
+            y += CardCanvas.CARD_GAP;
+            y = addWritersCard(writers, y);
+        }
+
+        // Everyone credited as the original builder of a template that ships with the mod — the
+        // jar's own weights files PLUS whoever the relay has credited since this build was cut (see
+        // TemplateBuilderCredits.merged). Skipped entirely when nobody is credited, so no empty card
+        // is drawn.
+        List<TemplateBuilderCredits.Builder> builders = TemplateBuilderCredits.merged();
+        LOGGER.info("[DungeonTrain] Credits: builders card — {} bundled, {} from the relay, {} merged.",
+                TemplateBuilderCredits.all().size(), RelayTemplateBuilders.current().size(), builders.size());
+        if (!builders.isEmpty()) {
+            y += CardCanvas.CARD_GAP;
+            y = addBuildersCard(builders, y);
+        }
+
         // One bottom row: "Support the Developer" and the AI Policy icon beside Done. The viewport
         // ends just above the row so scrolling content never overlaps the buttons.
         int rowY = this.height - 28;
@@ -162,11 +194,19 @@ public final class CreditsScreen extends Screen {
                 .bounds(rowX + supportW + gap + policyW + gap, rowY, doneW, 20)
                 .build());
 
-        // Once per screen: which of these names are this player's. The answer arrives later on
-        // the render thread and re-lays the page with Edit buttons beside them — the same shape
-        // as the submit screen's history list. Consent off answers "none", so nothing appears.
+        // Once per screen (not per re-layout — a See more press must not be a relay round trip):
+        // which of these names are this player's, and who else the relay credits as a builder.
+        // Each answer arrives later on the render thread and re-lays the page — the same shape as
+        // the submit screen's history list. Consent off answers "none" to the first; the second is
+        // anonymous and always asked.
         if (!askedForOwnNames) {
             askedForOwnNames = true;
+            RelayTemplateBuilders.refresh(() -> Minecraft.getInstance().execute(() -> {
+                if (Minecraft.getInstance().screen == this) rebuildWidgets();
+            }));
+            RelayWriters.refresh(() -> Minecraft.getInstance().execute(() -> {
+                if (Minecraft.getInstance().screen == this) rebuildWidgets();
+            }));
             TranslatorOwnNames.fetch(names -> {
                 if (!names.equals(ownNames) && Minecraft.getInstance().screen == this) {
                     ownNames = names;
@@ -246,6 +286,81 @@ public final class CreditsScreen extends Screen {
         return Math.max(y + photo, ty);
     }
 
+    /** The "Builders" card: heading, accent bar, the thank-you line, then one line per builder. */
+    private int addBuildersCard(List<TemplateBuilderCredits.Builder> builders, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.builders.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_BUILDERS);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.builders.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        // Top five first; See more opens the whole list, ten to a page.
+        List<TemplateBuilderCredits.Builder> topFive = builders.subList(0,
+                Math.min(builders.size(), CreditsPaging.BUILDERS_COLLAPSED));
+        CreditsPaging.View<TemplateBuilderCredits.Builder> view = buildersPaging.view(topFive, builders);
+        for (TemplateBuilderCredits.Builder builder : view.rows()) {
+            y = canvas.addWrappedAt(builderLine(builder), innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+        y = addControls(view, "builders", innerX, innerW, y);
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
+    /** The "Writers" card: heading, accent bar, the thank-you line, then one line per writer. */
+    private int addWritersCard(List<RelayWriters.Writer> writers, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.writers.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_WRITERS);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.writers.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        List<RelayWriters.Writer> topFive = writers.subList(0, Math.min(writers.size(), CreditsPaging.BUILDERS_COLLAPSED));
+        CreditsPaging.View<RelayWriters.Writer> view = writersPaging.view(topFive, writers);
+        for (RelayWriters.Writer writer : view.rows()) {
+            y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.writers.person_line",
+                    Component.literal(writer.name()), Component.literal(Integer.toString(writer.books()))),
+                    innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+        y = addControls(view, "writers", innerX, innerW, y);
+        // How to get on the list — only at the very end of it: the last page once See more has
+        // been pressed, or straight away when the whole list already fits without one.
+        if (view.atEnd()) {
+            y += DESC_GAP;
+            y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.writers.how",
+                    Component.literal(Integer.toString(RelayWriters.MIN_BOOKS))),
+                    innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
+    /** "&lt;Name&gt; — N templates" (or "1 template"): one line per builder. */
+    private static Component builderLine(TemplateBuilderCredits.Builder builder) {
+        String key = builder.templates() == 1
+                ? "gui.dungeontrain.credits.builders.person_line_one"
+                : "gui.dungeontrain.credits.builders.person_line";
+        return Component.translatable(key, Component.literal(builder.display()),
+                Component.literal(Integer.toString(builder.templates())));
+    }
+
     /** The "Translations" card: heading, accent bar, the thank-you line, then one line per person. */
     private int addTranslationsCard(List<TranslationContributor> contributors, int top) {
         int innerX = canvas.colX() + CardCanvas.CARD_PAD;
@@ -261,7 +376,10 @@ public final class CreditsScreen extends Screen {
         y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.translations.desc"),
                 innerX, innerW, y, CardCanvas.COLOUR_DESC);
         y += DESC_GAP;
-        for (TranslationContributor contributor : contributors) {
+        // Everyone above 1% of a language first; See more opens the whole list, ten to a page.
+        List<TranslationContributor> notable = contributors.stream().filter(CreditsScreen::aboveMinShare).toList();
+        CreditsPaging.View<TranslationContributor> view = translatorsPaging.view(notable, contributors);
+        for (TranslationContributor contributor : view.rows()) {
             if (!ownNames.contains(contributor.name())) {
                 y = canvas.addWrappedAt(personLine(contributor), innerX, innerW, y,
                         CardCanvas.COLOUR_DESC);
@@ -280,10 +398,76 @@ public final class CreditsScreen extends Screen {
             y = canvas.addWrappedAt(personLine(contributor), innerX,
                     Math.max(1, innerW - EDIT_W - EDIT_GAP), y, CardCanvas.COLOUR_DESC);
         }
+        y = addControls(view, "translators", innerX, innerW, y);
 
         y += CardCanvas.CARD_PAD;
         canvas.addCard(top, y - top);
         return y;
+    }
+
+    /** True when the contributor's strongest known language share clears the collapsed-list bar. */
+    static boolean aboveMinShare(TranslationContributor contributor) {
+        for (TranslationContributor.LanguageShare share : contributor.languages()) {
+            if (share.total() > 0 && share.fraction() > CreditsPaging.TRANSLATOR_MIN_SHARE) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The line under a paged list: Prev · Page n of m · Next when there is more than one page, then
+     * <i>See more</i> while collapsed or <i>See less</i> once expanded. Nothing at all when the
+     * whole list already fits.
+     */
+    private int addControls(CreditsPaging.View<?> view, String card, int x, int w, int y) {
+        MutableComponent line = Component.empty();
+        if (view.pages() > 1) {
+            if (view.prev()) line.append(control("gui.dungeontrain.credits.prev", card + "/prev")).append("  ");
+            line.append(Component.translatable("gui.dungeontrain.credits.page",
+                    Component.literal(Integer.toString(view.page() + 1)),
+                    Component.literal(Integer.toString(view.pages()))));
+            if (view.next()) line.append("  ").append(control("gui.dungeontrain.credits.next", card + "/next"));
+        }
+        if (view.seeMore() || view.seeLess()) {
+            if (view.pages() > 1) line.append("   ");
+            line.append(view.seeMore()
+                    ? control("gui.dungeontrain.credits.see_more", card + "/more")
+                    : control("gui.dungeontrain.credits.see_less", card + "/less"));
+        }
+        if (line.getSiblings().isEmpty()) return y;
+        y += DESC_GAP;
+        return canvas.addWrappedAt(line, x, w, y, CardCanvas.COLOUR_DESC);
+    }
+
+    /** A link-styled in-page control; the click is routed by {@link #mouseClicked}, never run as a command. */
+    private static Component control(String key, String action) {
+        return Component.translatable(key).withStyle(s -> s
+                .withColor(CardCanvas.COLOUR_LINK)
+                .withUnderlined(true)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, CONTROL_PREFIX + action)));
+    }
+
+    /** A See more / Prev / Next press: move that card's paging and re-lay the page in place. */
+    private void onControl(String action) {
+        String[] parts = action.split("/");
+        if (parts.length != 2) return;
+        CreditsPaging paging = switch (parts[0]) {
+            case "builders" -> buildersPaging;
+            case "writers" -> writersPaging;
+            default -> translatorsPaging;
+        };
+        CreditsPaging next = switch (parts[1]) {
+            case "more" -> paging.expand();
+            case "less" -> paging.collapse();
+            case "next" -> paging.nextPage();
+            case "prev" -> paging.prevPage();
+            default -> paging;
+        };
+        switch (parts[0]) {
+            case "builders" -> buildersPaging = next;
+            case "writers" -> writersPaging = next;
+            default -> translatorsPaging = next;
+        }
+        rebuildWidgets();
     }
 
     /**
@@ -352,6 +536,12 @@ public final class CreditsScreen extends Screen {
             if (style != null && style.getClickEvent() != null
                     && style.getClickEvent().getAction() == ClickEvent.Action.OPEN_URL) {
                 openLink(style.getClickEvent().getValue());
+                return true;
+            }
+            if (style != null && style.getClickEvent() != null
+                    && style.getClickEvent().getAction() == ClickEvent.Action.RUN_COMMAND
+                    && style.getClickEvent().getValue().startsWith(CONTROL_PREFIX)) {
+                onControl(style.getClickEvent().getValue().substring(CONTROL_PREFIX.length()));
                 return true;
             }
         }
