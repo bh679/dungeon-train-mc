@@ -12032,6 +12032,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "house-dimensional-carriages-little-detective-crunch",
+      "version": "0.834.0",
+      "type": "content",
+      "title": "Six new house dimensional carriages by Little Detective Crunch",
+      "summary": "Six new dimensional carriages join the house group \u2014 Squidward's House, Bear Cave, Gravity Falls, Dreamcore, KFC and Safe Haven \u2014 all designed and built by Little Detective Crunch in the in-game editor and shared through the relay. Our thanks go to them for the set! Each one rolls in at its own level, so some greet you early and others wait until you have a few carriages behind you. Alongside them, a few existing rooms were tidied: the abandoned room gained extra stone and cobble variations and a new mob spot, Nostalgia picked up new variations, and a couple of level floors and weights were nudged.",
+      "highlights": [
+        "Six new house dimensional carriages, designed and built by Little Detective Crunch \u2014 thank you!",
+        "Abandoned room and Nostalgia gain new variations; a few level floors and weights adjusted"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
