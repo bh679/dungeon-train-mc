@@ -67,8 +67,9 @@ final class EditorLayoutPageTest {
         final List<String> groups = new ArrayList<>();
     }
 
-    private static List<EditorLayoutPage.Row> rows(Recorder rec, Set<String> collapsed) {
-        return EditorLayoutPage.rows(sample(), collapsed, rec.selected::add, rec.toggled::add);
+    /** The whole table, everything opened. */
+    private static List<EditorLayoutPage.Row> rows(Recorder rec) {
+        return EditorLayoutPage.rows(sample(), rec.selected::add, rec.toggled::add);
     }
 
     private static List<EditorLayoutPage.Row> rows(Recorder rec, EditorLayoutPage.Folds folds, EditorLayoutPage.Query q) {
@@ -91,7 +92,7 @@ final class EditorLayoutPageTest {
     }
 
     private static List<EditorLayoutPage.Row> query(EditorLayoutPage.Query q) {
-        return EditorLayoutPage.rows(sample(), Set.of(), q, k -> { }, s -> { });
+        return EditorLayoutPage.rows(sample(), q, k -> { }, s -> { });
     }
 
     private static List<String> names(List<EditorLayoutPage.Row> rows, String sectionId) {
@@ -103,7 +104,7 @@ final class EditorLayoutPageTest {
     @DisplayName("sections follow roster order; a header toggles its own id")
     void sections() {
         Recorder rec = new Recorder();
-        List<EditorLayoutPage.Row> rows = rows(rec, Set.of());
+        List<EditorLayoutPage.Row> rows = rows(rec);
         assertEquals(List.of("carriages/Carriages", "parts/Floor", "contents/Contents",
             "portals/Dimensional Carriage", "tracks/Pillar Top"), sections(rows));
         EditorLayoutPage.Row first = rows.get(0);
@@ -116,22 +117,29 @@ final class EditorLayoutPageTest {
     }
 
     @Test
-    @DisplayName("a folded section is its header alone, marked folded")
-    void folded() {
-        List<EditorLayoutPage.Row> rows = rows(new Recorder(), Set.of("contents/Contents"));
+    @DisplayName("by default every section is its header alone, marked folded; opening one shows its rows")
+    void foldedByDefault() {
+        Recorder rec = new Recorder();
+        List<EditorLayoutPage.Row> rows = rows(rec, EditorLayoutPage.Folds.DEFAULT, EditorLayoutPage.Query.EVERYTHING);
+        assertEquals(5, rows.size());
+        for (EditorLayoutPage.Row r : rows) {
+            assertTrue(r.isHeader(), r.toString());
+            assertTrue(r.entry().label().startsWith(EditorLayoutPage.FOLDED + " "), r.entry().label());
+        }
+        rows = rows(rec, new EditorLayoutPage.Folds(Set.of("contents/Contents"), Set.of()), EditorLayoutPage.Query.EVERYTHING);
         List<EditorLayoutPage.Row> contents = rows.stream().filter(r -> r.sectionId().equals("contents/Contents")).toList();
-        assertEquals(1, contents.size());
-        assertTrue(contents.get(0).isHeader());
-        assertTrue(contents.get(0).entry().label().startsWith(EditorLayoutPage.FOLDED + " "));
-        // The other sections are untouched.
-        assertEquals(3, rows.stream().filter(r -> r.sectionId().equals("portals/Dimensional Carriage")).count());
+        assertEquals(2, contents.size(), "header + the folded group's parent");
+        assertTrue(contents.get(0).entry().label().startsWith(EditorLayoutPage.OPEN + " "));
+        assertEquals("armor", contents.get(1).key().modelName());
+        // The other sections stay folded.
+        assertEquals(1, rows.stream().filter(r -> r.sectionId().equals("portals/Dimensional Carriage")).count());
     }
 
     @Test
     @DisplayName("a carriage row: blank fold, name selects, weight steps and types, stage opens its picker, no move")
     void carriageRow() {
         Recorder rec = new Recorder();
-        EditorLayoutPage.Row row = rowFor(rows(rec, Set.of()), "windowed", 0);
+        EditorLayoutPage.Row row = rowFor(rows(rec), "windowed", 0);
         assertFalse(row.isGroupParent());
         CommandMenuEntry[] c = cellsOf(row);
         assertEquals(7, c.length);
@@ -157,7 +165,7 @@ final class EditorLayoutPageTest {
     @Test
     @DisplayName("a part has no weight pool and no gate: blanks and a dash")
     void partRow() {
-        EditorLayoutPage.Row row = rowFor(rows(new Recorder(), Set.of()), "oak", 0);
+        EditorLayoutPage.Row row = rowFor(rows(new Recorder()), "oak", 0);
         CommandMenuEntry[] c = cellsOf(row);
         for (int i = DEC; i <= MOVE; i++) assertInstanceOf(CommandMenuEntry.Label.class, c[i], "cell " + i);
         assertEquals(EditorScreenLang.text(EditorScreenLang.SHEET_PENDING), c[STAGE].label());
@@ -171,7 +179,8 @@ final class EditorLayoutPageTest {
     @DisplayName("an opened contents group: the parent with a fold cell, its own share as (self), then its member one step in")
     void contentsGroup() {
         Recorder rec = new Recorder();
-        List<EditorLayoutPage.Row> rows = rows(rec, new EditorLayoutPage.Folds(Set.of(), Set.of("contents/armor/armor")),
+        List<EditorLayoutPage.Row> rows = rows(rec,
+            new EditorLayoutPage.Folds(Set.of("contents/Contents"), Set.of("contents/armor/armor")),
             EditorLayoutPage.Query.EVERYTHING);
         List<EditorLayoutPage.Row> section = rows.stream()
             .filter(r -> r.sectionId().equals("contents/Contents") && !r.isHeader()).toList();
@@ -209,28 +218,31 @@ final class EditorLayoutPageTest {
     }
 
     @Test
-    @DisplayName("by default every group is folded: its parent, marked folded, with no (self) row or members under it")
-    void foldedByDefault() {
+    @DisplayName("in an opened section every group is folded: its parent, marked folded, with no (self) row or members under it")
+    void groupsFoldedByDefault() {
         Recorder rec = new Recorder();
-        List<EditorLayoutPage.Row> rows = rows(rec, EditorLayoutPage.Folds.DEFAULT, EditorLayoutPage.Query.EVERYTHING);
+        Set<String> allSections = Set.of("contents/Contents", "portals/Dimensional Carriage", "tracks/Pillar Top");
+        List<EditorLayoutPage.Row> rows = rows(rec, new EditorLayoutPage.Folds(allSections, Set.of()), EditorLayoutPage.Query.EVERYTHING);
         assertEquals(List.of("armor"), names(rows, "contents/Contents"));
         assertEquals(List.of("house"), names(rows, "portals/Dimensional Carriage"));
         assertEquals(List.of("plain"), names(rows, "tracks/Pillar Top"));
         assertEquals(EditorLayoutPage.FOLDED, cellsOf(rowFor(rows, "armor", 0))[FOLD].label());
         // Opening one leaves the others folded.
-        rows = rows(rec, new EditorLayoutPage.Folds(Set.of(), Set.of("portals/portal_room/house")), EditorLayoutPage.Query.EVERYTHING);
+        rows = rows(rec, new EditorLayoutPage.Folds(allSections, Set.of("portals/portal_room/house")), EditorLayoutPage.Query.EVERYTHING);
         assertEquals(List.of("armor"), names(rows, "contents/Contents"));
         assertEquals(List.of("house", "evilhouse"), names(rows, "portals/Dimensional Carriage"));
         // The no-folds overloads open everything, for the callers that want the whole table.
-        assertEquals(List.of("armor", "armor", "armor5"), names(rows(rec, Set.of()), "contents/Contents"));
+        assertEquals(List.of("armor", "armor", "armor5"), names(rows(rec), "contents/Contents"));
     }
 
     @Test
-    @DisplayName("a search shows what it matched even inside a folded group")
-    void searchOpensFoldedGroup() {
+    @DisplayName("a search shows what it matched even inside a folded section and a folded group")
+    void searchOpensFolds() {
         Recorder rec = new Recorder();
         List<EditorLayoutPage.Row> rows = rows(rec, EditorLayoutPage.Folds.DEFAULT,
             new EditorLayoutPage.Query(EditorCategoryFilter.ALL, "", EditorRosterIndex.Filters.NONE, "armor5"));
+        assertEquals(List.of("contents/Contents"), sections(rows));
+        assertTrue(rows.get(0).entry().label().startsWith(EditorLayoutPage.OPEN + " "));
         assertEquals(List.of("armor", "armor", "armor5"), names(rows, "contents/Contents"));
         assertEquals(EditorLayoutPage.OPEN, cellsOf(rowFor(rows, "armor", 0))[FOLD].label());
     }
@@ -238,7 +250,7 @@ final class EditorLayoutPageTest {
     @Test
     @DisplayName("a room member: the portals weight verb, both stages on its chip, and a move to another room")
     void portalMember() {
-        EditorLayoutPage.Row member = rowFor(rows(new Recorder(), Set.of()), "evilhouse", 1);
+        EditorLayoutPage.Row member = rowFor(rows(new Recorder()), "evilhouse", 1);
         CommandMenuEntry[] c = cellsOf(member);
         assertEquals("dungeontrain editor portals group set-weight house evilhouse", ((CommandMenuEntry.TypeArg) c[VALUE]).commandPrefix());
         assertEquals("nether +1", c[STAGE].label());
@@ -249,7 +261,7 @@ final class EditorLayoutPageTest {
     @Test
     @DisplayName("a track member has no weight verb yet: the number is read-only, and there is no move")
     void trackMember() {
-        EditorLayoutPage.Row member = rowFor(rows(new Recorder(), Set.of()), "fancy", 1);
+        EditorLayoutPage.Row member = rowFor(rows(new Recorder()), "fancy", 1);
         CommandMenuEntry[] c = cellsOf(member);
         assertInstanceOf(CommandMenuEntry.Label.class, c[DEC]);
         assertEquals("5", c[VALUE].label());
@@ -303,24 +315,24 @@ final class EditorLayoutPageTest {
     @Test
     @DisplayName("an empty roster has no rows; a null one neither")
     void empty() {
-        assertTrue(EditorLayoutPage.rows(EditorRosterIndex.EMPTY, Set.of(), k -> { }, s -> { }).isEmpty());
-        assertTrue(EditorLayoutPage.rows(null, Set.of(), k -> { }, s -> { }).isEmpty());
+        assertTrue(EditorLayoutPage.rows(EditorRosterIndex.EMPTY, k -> { }, s -> { }).isEmpty());
+        assertTrue(EditorLayoutPage.rows(null, k -> { }, s -> { }).isEmpty());
     }
 
     @Test
     @DisplayName("folding a section or a group replaces its set each time and folds back to nothing")
     void toggleReplacesTheSet() {
-        Set<String> before = EditorScreenState.collapsedSections();
+        Set<String> before = EditorScreenState.expandedSections();
         EditorScreenState.toggleSection("contents/Contents");
-        Set<String> once = EditorScreenState.collapsedSections();
+        Set<String> once = EditorScreenState.expandedSections();
         assertNotSame(before, once);
         assertTrue(once.contains("contents/Contents"));
         EditorScreenState.toggleSection("contents/Contents");
-        Set<String> twice = EditorScreenState.collapsedSections();
+        Set<String> twice = EditorScreenState.expandedSections();
         assertNotSame(once, twice);
         assertFalse(twice.contains("contents/Contents"));
         EditorScreenState.toggleSection(null);
-        assertEquals(twice, EditorScreenState.collapsedSections());
+        assertEquals(twice, EditorScreenState.expandedSections());
 
         Set<String> g0 = EditorScreenState.expandedGroups();
         EditorScreenState.toggleGroup("contents/armor/armor");

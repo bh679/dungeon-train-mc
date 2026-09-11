@@ -29,7 +29,7 @@ final class EditorLayoutPane {
 
     private final Consumer<VariantKey> select;
     private EditorRosterIndex lastIndex;
-    private Set<String> lastCollapsed;
+    private Set<String> lastExpandedSections;
     private Set<String> lastExpandedGroups;
     private EditorLayoutPage.Query lastQuery;
     private List<EditorLayoutPage.Row> rows = List.of();
@@ -49,14 +49,14 @@ final class EditorLayoutPane {
      * first two by identity (both are replaced, never mutated), the query by value.
      */
     List<EditorLayoutPage.Row> rows(EditorRosterIndex index) {
-        Set<String> collapsed = EditorScreenState.collapsedSections();
+        Set<String> sections = EditorScreenState.expandedSections();
         Set<String> groups = EditorScreenState.expandedGroups();
         EditorLayoutPage.Query query = EditorLayoutPage.Query.current();
-        if (index != lastIndex || collapsed != lastCollapsed || groups != lastExpandedGroups || !query.equals(lastQuery)) {
-            rows = EditorLayoutPage.rows(index, new EditorLayoutPage.Folds(collapsed, groups), query, select,
+        if (index != lastIndex || sections != lastExpandedSections || groups != lastExpandedGroups || !query.equals(lastQuery)) {
+            rows = EditorLayoutPage.rows(index, new EditorLayoutPage.Folds(sections, groups), query, select,
                 EditorScreenState::toggleSection, EditorScreenState::toggleGroup);
             lastIndex = index;
-            lastCollapsed = collapsed;
+            lastExpandedSections = sections;
             lastExpandedGroups = groups;
             lastQuery = query;
         }

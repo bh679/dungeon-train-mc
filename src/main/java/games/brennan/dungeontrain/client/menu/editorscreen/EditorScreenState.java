@@ -24,8 +24,8 @@ public final class EditorScreenState {
     private static EditorRosterIndex.Filters filters = EditorRosterIndex.Filters.DEFAULT;
     private static String text = "";
     private static VariantKey selection;
-    /** The Layout tab's folded sections, by {@code EditorLayoutPage.sectionId}. Replaced, never mutated. */
-    private static Set<String> collapsedSections = Set.of();
+    /** The Layout tab's opened sections, by {@code EditorLayoutPage.sectionId}. Folded is the default; replaced, never mutated. */
+    private static Set<String> expandedSections = Set.of();
     /** The Layout tab's opened groups — parents whose members are shown — by the parent's key string. Folded is the default. */
     private static Set<String> expandedGroups = Set.of();
     /** Whether the filter bar shows every filter, or only the ones in force on its one row. */
@@ -60,7 +60,7 @@ public final class EditorScreenState {
     public static EditorRosterIndex.Filters filters() { return filters; }
     public static String text() { return text; }
     public static VariantKey selection() { return selection; }
-    public static Set<String> collapsedSections() { return collapsedSections; }
+    public static Set<String> expandedSections() { return expandedSections; }
     public static Set<String> expandedGroups() { return expandedGroups; }
     public static boolean filtersExpanded() { return filtersExpanded; }
 
@@ -115,12 +115,12 @@ public final class EditorScreenState {
         expandedGroups = Set.copyOf(next);
     }
 
-    /** Fold or unfold a Layout section. A new set each time, so a cache keyed by identity refreshes. */
+    /** Open or fold a Layout section. A new set each time, so a cache keyed by identity refreshes. */
     public static void toggleSection(String sectionId) {
         if (sectionId == null) return;
-        Set<String> next = new HashSet<>(collapsedSections);
+        Set<String> next = new HashSet<>(expandedSections);
         if (!next.remove(sectionId)) next.add(sectionId);
-        collapsedSections = Set.copyOf(next);
+        expandedSections = Set.copyOf(next);
     }
 
     /** The plot the player stands in right now, or null outside a plot. */

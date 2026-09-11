@@ -46,27 +46,31 @@ public final class EditorLayoutPage {
     }
 
     /**
-     * What is folded away: whole type sections, by the sections folded; and the member lists of
-     * groups, by the groups <em>opened</em> — a group is folded unless it has been opened.
+     * What has been opened: type sections and the member lists of groups, each by id. Everything is
+     * folded unless it has been opened — the tab starts as a list of headers.
      */
-    public record Folds(Set<String> sections, Set<String> expandedGroups, boolean allGroupsOpen) {
-        /** Nothing folded away at all: no sections folded, every group opened. */
+    public record Folds(Set<String> expandedSections, Set<String> expandedGroups, boolean allOpen) {
+        /** Nothing folded away at all — the whole table. */
         public static final Folds NONE = new Folds(Set.of(), Set.of(), true);
-        /** The opening state: every section open, every group folded. */
+        /** The opening state: every section and every group folded. */
         public static final Folds DEFAULT = new Folds(Set.of(), Set.of(), false);
 
         public Folds {
-            sections = sections == null ? Set.of() : sections;
+            expandedSections = expandedSections == null ? Set.of() : expandedSections;
             expandedGroups = expandedGroups == null ? Set.of() : expandedGroups;
         }
 
-        /** Sections folded and groups opened; the rest of the groups stay folded. */
-        public Folds(Set<String> sections, Set<String> expandedGroups) {
-            this(sections, expandedGroups, false);
+        /** The sections and groups opened; everything else stays folded. */
+        public Folds(Set<String> expandedSections, Set<String> expandedGroups) {
+            this(expandedSections, expandedGroups, false);
+        }
+
+        public boolean sectionOpen(String sectionId) {
+            return allOpen || expandedSections.contains(sectionId);
         }
 
         public boolean groupOpen(String groupId) {
-            return allGroupsOpen || expandedGroups.contains(groupId);
+            return allOpen || expandedGroups.contains(groupId);
         }
     }
 
@@ -129,11 +133,11 @@ public final class EditorLayoutPage {
      * header is what is shown under it. A group parent survives the search when a member matches,
      * as it does in the browser, and the provenance chips never hide members.</p>
      *
-     * <p>A group is folded unless it has been opened: its parent row shows, the "(self)" and member
-     * rows under it do not — unless a search is on, when every group shows whatever the search
-     * matched: folding away the very thing that was searched for would read as a broken search.</p>
+     * <p>A section or a group is folded unless it has been opened: a folded section is its header,
+     * a folded group its parent row — unless a search is on, when everything holding a match shows
+     * it: folding away the very thing that was searched for would read as a broken search.</p>
      *
-     * @param folds       sections that show only their header, and the groups opened past their parent
+     * @param folds       the sections and groups opened; the rest show their header or parent only
      * @param select      what a name cell does — hands over the row's key
      * @param toggleSection what a header does — hands over the section id
      * @param toggleGroup what a parent's fold cell does — hands over the group id
@@ -149,7 +153,7 @@ public final class EditorLayoutPage {
             List<EditorRosterIndex.Tile> tiles = EditorRosterIndex.filter(EditorRosterIndex.tiles(g), q.filters(), q.text());
             if (tiles.isEmpty()) continue;
             String id = sectionId(g);
-            boolean folded = f.sections().contains(id);
+            boolean folded = q.text().isEmpty() && !f.sectionOpen(id);
             out.add(header(g, id, tiles.size(), folded, toggleSection));
             if (folded) continue;
             for (EditorRosterIndex.Tile tile : tiles) {
@@ -159,16 +163,15 @@ public final class EditorLayoutPage {
         return out;
     }
 
-    /** As above, with every group opened — the whole table. */
-    public static List<Row> rows(EditorRosterIndex index, Set<String> collapsed, Query query,
+    /** As above, with everything opened — the whole table. */
+    public static List<Row> rows(EditorRosterIndex index, Query query,
                                  Consumer<VariantKey> select, Consumer<String> toggle) {
-        return rows(index, new Folds(collapsed, Set.of(), true), query, select, toggle, id -> { });
+        return rows(index, Folds.NONE, query, select, toggle, id -> { });
     }
 
-    /** As above, with nothing narrowed. */
-    public static List<Row> rows(EditorRosterIndex index, Set<String> collapsed,
-                                 Consumer<VariantKey> select, Consumer<String> toggle) {
-        return rows(index, collapsed, Query.EVERYTHING, select, toggle);
+    /** The whole table, nothing narrowed. */
+    public static List<Row> rows(EditorRosterIndex index, Consumer<VariantKey> select, Consumer<String> toggle) {
+        return rows(index, Query.EVERYTHING, select, toggle);
     }
 
     private static Row header(EditorRosterPacket.Group g, String id, int shown, boolean folded, Consumer<String> toggle) {
