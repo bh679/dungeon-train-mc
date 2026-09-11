@@ -2658,9 +2658,10 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+        String landed = landInContents(source, child.id());
         source.sendSuccess(() -> Component.literal(
             "Editor: moved '" + child.id() + "' from group '" + oldParent + "' to '" + newParent.id()
-                + "' (weight, gate and Stage links kept)."
+                + "' (weight, gate and Stage links kept)." + landed
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -6036,6 +6037,30 @@ public final class EditorCommand {
     private static int savePortalRoomGroup(CommandSourceStack source, String parent,
                                            games.brennan.dungeontrain.track.variant.TrackVariantGroup updated,
                                            String message) {
+        return savePortalRoomGroup(source, parent, updated, message, null);
+    }
+
+    /**
+     * Put the player in room {@code name}'s plot after a re-parent or a parent delete moved it —
+     * the row is re-laid out, so wherever they stood is no longer that room. No-op without a
+     * player or a name. Returns the reply fragment.
+     */
+    private static String landInPortalRoom(CommandSourceStack source, String name) {
+        if (name == null || !(source.getEntity() instanceof ServerPlayer player)) return "";
+        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(PORTAL_ROOM_KIND, name).isEmpty()) return "";
+        try {
+            PortalRoomEditor.enter(player, name);
+            return " Entered '" + name + "'.";
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] portals group: could not enter {} afterwards: {}", name, e.toString());
+            return "";
+        }
+    }
+
+    /** As above; {@code landIn} names the room to enter once the row is re-laid out (null = stay). */
+    private static int savePortalRoomGroup(CommandSourceStack source, String parent,
+                                           games.brennan.dungeontrain.track.variant.TrackVariantGroup updated,
+                                           String message, String landIn) {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         IOException[] failure = new IOException[1];
@@ -6052,7 +6077,8 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        source.sendSuccess(() -> Component.literal(message).withStyle(ChatFormatting.GREEN), true);
+        String landed = landInPortalRoom(source, landIn);
+        source.sendSuccess(() -> Component.literal(message + landed).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -6288,7 +6314,7 @@ public final class EditorCommand {
         return savePortalRoomGroup(source, parent, updated,
             "Editor: dimensional carriage '" + parent + "' → added sub-variant '" + child + "' (weight=" + weight
                 + ", " + updated.members().size() + " sub-variant"
-                + (updated.members().size() == 1 ? "" : "s") + " + the parent itself).");
+                + (updated.members().size() == 1 ? "" : "s") + " + the parent itself).", child);
     }
 
     /**
@@ -6511,7 +6537,7 @@ public final class EditorCommand {
         progress(source, "Unparenting '" + child + "' from '" + parent + "'\u2026");
         return savePortalRoomGroup(source, parent, existing.get().withoutMember(child),
             "Editor: dimensional carriage '" + parent + "' → removed sub-variant '" + child
-                + "' (it is a top-level room again).");
+                + "' (it is a top-level room again).", child);
     }
 
     /**
@@ -6570,9 +6596,10 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+        String landed = landInPortalRoom(source, child);
         source.sendSuccess(() -> Component.literal(
             "Editor: moved sub-variant '" + child + "' from '" + oldParent + "' to '" + newParent
-                + "' (weight, gate and Stage links kept)."
+                + "' (weight, gate and Stage links kept)." + landed
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
