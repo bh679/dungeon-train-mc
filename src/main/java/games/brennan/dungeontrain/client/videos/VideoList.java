@@ -13,6 +13,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
 /**
@@ -51,6 +52,11 @@ public final class VideoList extends AbstractWidget {
 
     private List<VideoEntry> rows = List.of();
     private int scroll;
+    /**
+     * Where something else is drawn over this list — the uploader suggestion panel. A point it
+     * claims is neither hovered nor clickable here, so a row cannot light up or open under it.
+     */
+    private BiPredicate<Double, Double> covered = (mx, my) -> false;
 
     public VideoList(Font font, int x, int y, int width, int height, Consumer<VideoEntry> onOpen) {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.videos.list"));
@@ -66,6 +72,16 @@ public final class VideoList extends AbstractWidget {
 
     public int rowCount() {
         return rows.size();
+    }
+
+    /** Tell the list which points an overlay owns; see {@link #covered}. */
+    public void setCoveredBy(BiPredicate<Double, Double> covered) {
+        this.covered = covered == null ? (mx, my) -> false : covered;
+    }
+
+    @Override
+    public boolean isMouseOver(double mouseX, double mouseY) {
+        return super.isMouseOver(mouseX, mouseY) && !covered.test(mouseX, mouseY);
     }
 
     private int rowHeight() {

@@ -124,6 +124,9 @@ public final class VideosScreen extends Screen {
         int listTop = TOP + BUTTON_H + GAP;
         int listBottom = this.height - MARGIN - BOTTOM_ROW_H - GAP;
         list = addRenderableWidget(new VideoList(this.font, MARGIN, listTop, rowW, listBottom - listTop, this::open));
+        // The suggestion panel hangs over the list: while it is open, the rows under it neither
+        // highlight nor answer clicks.
+        list.setCoveredBy((mx, my) -> dropdown.isMouseOver(mx, my));
 
         // Retry sits in the middle of the (empty) list and only shows when the fetch failed.
         retryButton = addRenderableWidget(new DarkTintedButton(this.width / 2 - 50,
@@ -216,16 +219,28 @@ public final class VideosScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // The suggestion list gets first refusal — it is drawn over the video list, so a click on it
         // must not fall through to the row underneath.
-        if (dropdown != null && dropdown.mouseClicked(mouseX, mouseY, button)) {
-            return true;
+        if (dropdown != null && dropdown.isMouseOver(mouseX, mouseY)) {
+            dropdown.mouseClicked(mouseX, mouseY, button);
+            return true;   // whatever the button, nothing under the panel hears this
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (dropdown != null && dropdown.mouseScrolled(mouseX, mouseY, scrollY)) return true;
+        if (dropdown != null && dropdown.isMouseOver(mouseX, mouseY)) {
+            dropdown.mouseScrolled(mouseX, mouseY, scrollY);
+            return true;   // a full-height panel with nothing more to scroll still swallows the wheel
+        }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        // The press over the panel was swallowed above; the matching release must not start a
+        // scrollbar drag or a click on whatever is under it either.
+        if (dropdown != null && dropdown.isMouseOver(mouseX, mouseY)) return true;
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override
