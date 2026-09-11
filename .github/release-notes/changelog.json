@@ -11953,8 +11953,41 @@
       "released_at": null
     },
     {
+      "id": "curseforge-pack-catch-up",
+      "version": "0.830.0",
+      "type": "ci",
+      "title": "The CurseForge modpack catches up on its own",
+      "summary": "The CurseForge modpack is built around that release's Dungeon Train file, and CurseForge rejects a pack that points at a file it has not approved yet. The pipeline already waited for approval \u2014 but when approval took longer than it was willing to wait, which turned out to be most of the time, that release was simply never added to the pack, and nothing ever tried again. The CurseForge pack had quietly fallen forty releases behind the Modrinth one. A scheduled check now looks every few hours for the newest release whose file CurseForge has since approved, and publishes the pack for it. A slow approval is a delay of a few hours now, not a missing version.",
+      "highlights": [
+        "The CurseForge modpack no longer falls behind when CurseForge is slow to approve a file",
+        "Slow approvals are picked up automatically within a few hours \u2014 no manual re-run needed",
+        "The pack is brought up to the newest release; older gaps are left as they are",
+        "The CurseForge pack is current again as of 0.828.0"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "free-play-advancement-profile-fix",
+      "version": "0.831.0",
+      "type": "fix",
+      "title": "Advancement profile integrity fix",
+      "summary": "Closed a gap where one advancement could be recorded to your cross-world profile from a Free Play run, and where a related command was unreachable without cheats. Nothing earned in Free Play is written to your profile now, and the ordering the advancement tree implies is enforced against what you have actually earned, not what a command can grant.",
+      "highlights": [
+        "Nothing earned in a Free Play run is recorded to your cross-world profile",
+        "A late-game command path that was unreachable without cheats now works in survival"
+      ],
+      "pr": 1350,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "devmode-delete-cleans-up-after-itself",
-      "version": "0.829.0",
+      "version": "0.831.0",
       "type": "fix",
       "title": "Deleting custom editor content now cleans up after itself",
       "summary": "Deleting a carriage, interior, part or track variant you made in the editor used to leave pieces of it behind \u2014 its block-variant candidates, its chest loot links, its spawn weight and its place in a sub-variant group all stayed on disk. Those leftovers kept influencing what the train generated, and the next thing you saved under the same name inherited them. A delete now takes the whole template with it.",
@@ -11963,7 +11996,7 @@
         "A name you reuse after a delete starts clean instead of inheriting the old template's settings"
       ],
       "pr": 1348,
-      "date": "2026-09-10",
+      "date": "2026-09-11",
       "released": false,
       "released_in": null,
       "released_at": null

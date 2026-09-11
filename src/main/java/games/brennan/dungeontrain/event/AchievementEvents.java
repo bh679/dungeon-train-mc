@@ -45,6 +45,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.EnderChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.CommandEvent;
@@ -947,6 +948,12 @@ public final class AchievementEvents {
         // (post-replay) progress and grants normally (replaying is false here).
         replaySidecarAdvancements(player);
         CompletionistAdvancement.checkAndGrant(player);
+        // Vanilla sent this player's command tree before any of the above ran. If they hold the
+        // banked capstone — replayed just now, or granted just now — /advancement revoke @s
+        // everything is theirs to run, so send the tree again with it in.
+        if (StartAgainAdvancement.holdsBankedCapstone(player)) {
+            StartAgainAdvancement.refreshCommandTree(player);
+        }
     }
 
     /**
@@ -1134,6 +1141,31 @@ public final class AchievementEvents {
      * {@link games.brennan.dungeontrain.cheat.CommandAllowlist}), so in practice the
      * revoke reaches execution untainted.</p>
      */
+    /**
+     * The fence around {@link games.brennan.dungeontrain.advancement.SelfRevokeCommandAccess}: a
+     * player <em>without</em> permission 2 may run {@code /advancement …} in exactly one form,
+     * {@code /advancement revoke @s everything}. The requirement rewrite already hides
+     * {@code grant} and the narrowing {@code revoke} forms from them, but {@code <targets>} is a
+     * free argument, so {@code revoke SomeoneElse everything} would still parse. Cancel anything
+     * that isn't the exact form.
+     *
+     * <p>{@link EventPriority#HIGHEST} on purpose: a cancelled event is not delivered to
+     * {@link CheatDetectionEvents#onCommand}, so a non-op poking at other forms gets "unknown
+     * command" and no Free Play prompt — the command never existed for them, and it still
+     * doesn't. Operators are untouched (vanilla path, cheat detector, the lot).</p>
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onNonOpAdvancementCommand(CommandEvent event) {
+        var source = event.getParseResults().getContext().getSource();
+        ServerPlayer player = source.getPlayer();
+        if (player == null || source.hasPermission(2)) return;
+        var nodes = event.getParseResults().getContext().getNodes();
+        if (nodes.isEmpty() || !"advancement".equals(nodes.get(0).getNode().getName())) return;
+        if (StartAgainAdvancement.isSelfRevokeEverything(event.getParseResults().getReader().getString())) return;
+        event.setCanceled(true);
+        source.sendFailure(Component.translatable("command.unknown.command"));
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onCommand(CommandEvent event) {
         ServerPlayer player = event.getParseResults().getContext().getSource().getPlayer();
