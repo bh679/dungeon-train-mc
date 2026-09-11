@@ -269,6 +269,14 @@ public final class ContainerContentsStore {
         return true;
     }
 
+    /**
+     * Every distinct loot-prefab id a container here links to, sorted. What a template needs from
+     * the prefab library to roll its chests as authored — see {@link TemplateLootPrefabs}.
+     */
+    public synchronized java.util.SortedSet<String> linkedPrefabIds() {
+        return new java.util.TreeSet<>(links.values());
+    }
+
     /** All positions in this store currently linked to {@code prefabId}. */
     public synchronized java.util.List<BlockPos> positionsLinkedTo(String prefabId) {
         if (prefabId == null) return java.util.Collections.emptyList();

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.builder.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import games.brennan.dungeontrain.editor.TemplateSidecars;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
@@ -340,7 +341,8 @@ public final class BuilderRelayReconcile {
                     // A reconcile re-uploads a build the relay has lost. It has to carry the sidecars
                     // for the same reason the ordinary save does — a row restored without them is a
                     // build stripped of everything but its blocks.
-                    TemplateSidecars.collect(missing.kind(), missing.subKind(), missing.id()))
+                    TemplateSidecars.collect(missing.kind(), missing.subKind(), missing.id()),
+                    TemplateLootPrefabs.collect(missing.kind(), missing.subKind(), missing.id()))
                     .join();
             if (result.isEmpty()) return false;
 
