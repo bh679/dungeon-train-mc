@@ -82,6 +82,10 @@ public final class EditorScreenLang {
     public static final String CREATOR_LOAD = "gui.dungeontrain.builder.profile.load_into_editor";
     public static final String CREATOR_LOAD_COPY = PREFIX + "creator.load_copy";
     public static final String CREATOR_LOADED = PREFIX + "creator.loaded";
+    /** Load, for the kinds that land under a variant parent; and the parent button beside it. */
+    public static final String CREATOR_LOAD_SUB_VARIANT = PREFIX + "creator.load_sub_variant";
+    public static final String CREATOR_PARENT_TITLE = PREFIX + "creator.parent_title";
+    public static final String CREATOR_PARENT_NEW = PREFIX + "creator.parent_new";
     public static final String CREATOR_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
     public static final String CREATOR_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
     public static final String CREATOR_NOT_YOURS = "gui.dungeontrain.builder.profile.not_yours_short";

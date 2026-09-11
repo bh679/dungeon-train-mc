@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.CommandMenuKeyBindings;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.CreatorParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.client.menu.HotbarPassthrough;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
@@ -390,10 +391,16 @@ public final class EditorGuiScreen extends Screen {
         String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
             ? EditorCreatorBuilds.viewedName()
             : entry.ownerName();
+        // Where it lands in the roster: under the chosen variant parent for the kinds that have
+        // sub-variants, at top level (blank) for the rest — carriages have no parents to land under.
+        String parent = CreatorLoadParent.supports(entry.kind())
+            ? CreatorLoadParent.parentFor(EditorCreatorBuilds.categoryOf(entry.kind())) : "";
         DungeonTrainNet.sendToServer(loadAsCopy
             ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
-                BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false)
-            : new BuilderProfileDownloadPacket(entry.relayId(), owner, ownerName, live));
+                BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false,
+                parent)
+            : new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.AS_IS, "",
+                owner, ownerName, live, false, parent));
         creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
     }
 
@@ -507,13 +514,28 @@ public final class EditorGuiScreen extends Screen {
         afterCommand();
     }
 
+    /** Choose the variant parent the selected build will be filed under when it is loaded. */
+    private void pickLoadParent() {
+        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
+        if (entry == null || !CreatorLoadParent.supports(entry.kind())) return;
+        PlotCategory category = EditorCreatorBuilds.categoryOf(entry.kind());
+        if (category == null) return;
+        modal.open(new CreatorParentPickerScreen(category, modal::pop));
+    }
+
     /** The builder's upload the browser has selected, or null. */
     private static BuilderProfilePacket.Entry selectedCreatorBuild() {
         return EditorCreatorBuilds.byId(EditorCreatorBuilds.selectedId());
     }
 
     private void drawTooltips(GuiGraphics g, int mouseX, int mouseY) {
-        if (modal.isOpen() || search.isOpen() || inlineEdit.active()) return;
+        if (search.isOpen()) {
+            // The one hover text the panel carries: which relay its light is showing.
+            String lightTip = search.tooltipAt(mouseX, mouseY);
+            if (lightTip != null) g.renderTooltip(this.font, Component.literal(lightTip), mouseX, mouseY);
+            return;
+        }
+        if (modal.isOpen() || inlineEdit.active()) return;
         String tip = null;
         if (hoveredTab != null && hoveredTab.kind() == EditorTabBar.Kind.EXIT) {
             tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
@@ -636,6 +658,11 @@ public final class EditorGuiScreen extends Screen {
                 case LOAD -> {
                     click();
                     loadSelectedCreatorBuild();
+                    return true;
+                }
+                case PARENT -> {
+                    click();
+                    pickLoadParent();
                     return true;
                 }
                 case SUBMIT -> {
@@ -785,6 +812,16 @@ public final class EditorGuiScreen extends Screen {
                 forgetLastLoad();
                 browser.resetScroll();
                 search.close();
+            }
+            case RELAY_TOGGLED -> {
+                click();
+                // The same switch the Settings tab carries, minus the trip there and back. The
+                // panel stays open: the point of flipping it here is to re-ask the name typed.
+                EditorSettingsPage.setRelay(!BuilderProfileState.live());
+                EditorCreatorBuilds.requestFavourites();
+                EditorCreatorBuilds.refresh();
+                forgetLastLoad();
+                search.rearm();
             }
             // A click outside the panel closes it, the way clicking off any picker does.
             case NONE -> search.close();

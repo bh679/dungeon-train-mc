@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -30,11 +31,16 @@ public final class EditorCreatorPane {
     static final int LOADED_TEXT = 0xFF88DD88;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, LOAD, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT }
+    public enum HitKind { NONE, LOAD, PARENT, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT }
+
+    /** The parent button's share of the load slot; the load button keeps the rest. */
+    static final double PARENT_SHARE = 0.42;
+    static final int BUTTON_GAP = 2;
 
     private final VersionStrip versions = new VersionStrip();
 
     private InventoryEditorLayout.Rect loadRect;
+    private InventoryEditorLayout.Rect parentRect;
     private InventoryEditorLayout.Rect goHereRect;
     private InventoryEditorLayout.Rect previewRect;
     private InventoryEditorLayout.Rect submitRect;
@@ -140,11 +146,17 @@ public final class EditorCreatorPane {
      * template: it appears in the roster, and the header's <b>Go here</b> walks the player to it. A
      * name already taken here turns the button into the copy, because that is the only answer left
      * that does not overwrite somebody's work.</p>
+     *
+     * <p>For a kind with sub-variants the slot is two buttons: the load, and to its right the
+     * variant parent the build will land under — <b>User builds</b> until the reviewer picks another.
+     * The parent is chosen here and not after the fact because after the fact is a second trip to
+     * the roster per build, and a reviewer loads them by the dozen.</p>
      */
     private void drawLoad(GuiGraphics g, Font font, InventoryEditorLayout.Rect r,
                           BuilderProfilePacket.Entry entry, EditorCreatorBuilds.Landed landed,
                           boolean asCopy, int mouseX, int mouseY) {
         loadRect = null;
+        parentRect = null;
         if (landed != null) {
             // Done, and not a button: pressing it again would fetch the same build and be told the
             // name is taken — by the copy it just made.
@@ -155,14 +167,31 @@ public final class EditorCreatorPane {
             return;
         }
         boolean enabled = entry != null;
-        loadRect = enabled ? r : null;
+        boolean underParent = enabled && CreatorLoadParent.supports(entry.kind());
+        InventoryEditorLayout.Rect load = r;
+        if (underParent) {
+            int parentW = (int) (r.w() * PARENT_SHARE);
+            load = new InventoryEditorLayout.Rect(r.x(), r.y(), r.w() - parentW - BUTTON_GAP, r.h());
+            parentRect = new InventoryEditorLayout.Rect(r.right() - parentW, r.y(), parentW, r.h());
+            PlotCategory category = EditorCreatorBuilds.categoryOf(entry.kind());
+            String parent = "\u25B8 " + CreatorLoadParent.labelFor(category, EditorRosterClient.index());
+            button(g, font, parentRect, parent, true, mouseX, mouseY);
+        }
+        loadRect = enabled ? load : null;
+        String label = EditorScreenLang.text(asCopy ? EditorScreenLang.CREATOR_LOAD_COPY
+            : underParent ? EditorScreenLang.CREATOR_LOAD_SUB_VARIANT : EditorScreenLang.CREATOR_LOAD);
+        button(g, font, load, label, enabled, mouseX, mouseY);
+    }
+
+    /** One slot-height button, centred label, greyed when it cannot be pressed. */
+    private static void button(GuiGraphics g, Font font, InventoryEditorLayout.Rect r, String label,
+                               boolean enabled, int mouseX, int mouseY) {
         boolean hot = enabled && r.contains(mouseX, mouseY);
         g.fill(r.x(), r.y(), r.right(), r.bottom(), !enabled ? EditorDetailPane.DISABLED
             : hot ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
-        String label = EditorScreenLang.text(asCopy
-            ? EditorScreenLang.CREATOR_LOAD_COPY : EditorScreenLang.CREATOR_LOAD);
-        g.drawString(font, font.plainSubstrByWidth(label, r.w() - 6),
-            r.x() + (r.w() - font.width(label)) / 2, r.y() + (r.h() - font.lineHeight) / 2 + 1,
+        String shown = font.plainSubstrByWidth(label, r.w() - 6);
+        g.drawString(font, shown, r.x() + (r.w() - font.width(shown)) / 2,
+            r.y() + (r.h() - font.lineHeight) / 2 + 1,
             !enabled ? 0x80FFFFFF : hot ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
     }
 
@@ -215,6 +244,7 @@ public final class EditorCreatorPane {
         if (goHereRect != null && goHereRect.contains(mx, my)) return HitKind.GO_HERE;
         if (submitRect != null && submitRect.contains(mx, my)) return HitKind.SUBMIT;
         if (loadRect != null && loadRect.contains(mx, my)) return HitKind.LOAD;
+        if (parentRect != null && parentRect.contains(mx, my)) return HitKind.PARENT;
         if (previewRect != null && previewRect.contains(mx, my)) return HitKind.PREVIEW;
         return HitKind.NONE;
     }

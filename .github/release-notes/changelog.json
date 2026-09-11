@@ -11984,6 +11984,35 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "devmode-delete-cleans-up-after-itself",
+      "version": "0.831.0",
+      "type": "fix",
+      "title": "Deleting custom editor content now cleans up after itself",
+      "summary": "Deleting a carriage, interior, part or track variant you made in the editor used to leave pieces of it behind \u2014 its block-variant candidates, its chest loot links, its spawn weight and its place in a sub-variant group all stayed on disk. Those leftovers kept influencing what the train generated, and the next thing you saved under the same name inherited them. A delete now takes the whole template with it.",
+      "highlights": [
+        "Deleting editor content removes its sidecars, spawn weight and sub-variant group membership",
+        "A name you reuse after a delete starts clean instead of inheriting the old template's settings"
+      ],
+      "pr": 1348,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stall-watchdog-ignores-pause-menu",
+      "version": "0.833.0",
+      "type": "fix",
+      "title": "Pausing no longer logs false stall warnings",
+      "summary": "Pausing, reading a book or tabbing away in singleplayer no longer fills your log with stall warnings and stack dumps. Real freezes are still reported as before.",
+      "highlights": [],
+      "pr": 1352,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

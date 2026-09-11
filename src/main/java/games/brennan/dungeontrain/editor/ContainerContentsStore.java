@@ -425,6 +425,36 @@ public final class ContainerContentsStore {
         return true;
     }
 
+    /**
+     * Remove the per-install config-dir sidecar for {@code plotKey} and drop its cached document.
+     * The inverse of {@link #save()} — used when the plot's template is deleted outright, so the
+     * next template saved under the same key starts with no inherited links or pools.
+     *
+     * @return {@code true} if a file was removed.
+     */
+    public static synchronized boolean deleteConfig(String plotKey) throws IOException {
+        Path file = configPathFor(plotKey);
+        boolean existed = Files.deleteIfExists(file);
+        CACHE.remove(plotKey);
+        if (existed) LOGGER.info("[DungeonTrain] Deleted container contents sidecar for {} ({})", plotKey, file);
+        return existed;
+    }
+
+    /**
+     * Remove the source-tree copy of {@code plotKey}'s sidecar — the inverse of {@link #promoteFor}
+     * / {@link #saveToSource()}, for a dev-mode delete of the plot's template.
+     *
+     * @return {@code true} if a file was removed; {@code false} when there was nothing to remove or
+     *         no writable source tree.
+     */
+    public static synchronized boolean deleteFromSource(String plotKey) throws IOException {
+        if (!sourceTreeAvailable()) return false;
+        Path file = sourcePathFor(plotKey);
+        boolean existed = Files.deleteIfExists(file);
+        if (existed) LOGGER.info("[DungeonTrain] Deleted bundled container contents sidecar for {} ({})", plotKey, file);
+        return existed;
+    }
+
     public static boolean sourceTreeAvailable() {
         Path resources = resourcesRootOrNull();
         return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);

@@ -90,7 +90,7 @@ public final class BuilderRelayDownload {
      * is not asked to accept them coming down either.</p>
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId) {
-        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", "", false, false);
+        return download(player, level, relayId, BuilderRelayInstall.Resolution.AS_IS, "", "", "", false, false, "");
     }
 
     /**
@@ -101,11 +101,14 @@ public final class BuilderRelayDownload {
      * and the second names the choice. The build is fetched again for that second press rather than
      * held between the two — a cached blob would have to be keyed to a player and expired somehow,
      * and this is one HTTP call on a deliberate button press.</p>
+     *
+     * @param parentId the variant parent to file the build under once installed, or blank to leave
+     *                 it at top level — see {@link BuilderRelaySubVariant}
      */
     public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
                                                      BuilderRelayInstall.Resolution resolution,
                                                      String newName, String ownerUuid, String ownerName,
-                                                     boolean live, boolean overwriteUnsaved) {
+                                                     boolean live, boolean overwriteUnsaved, String parentId) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
@@ -119,7 +122,7 @@ public final class BuilderRelayDownload {
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
                     case OK -> onServer(level, () -> install(level, result.build(), resolution, newName,
                             new BuildCredits.Credit(owner, ownerName, System.currentTimeMillis()), mine,
-                            overwriteUnsaved));
+                            overwriteUnsaved, parentId == null ? "" : parentId));
                 });
     }
 
@@ -133,7 +136,8 @@ public final class BuilderRelayDownload {
      */
     private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build,
                                   BuilderRelayInstall.Resolution resolution, String newName,
-                                  BuildCredits.Credit credit, boolean mine, boolean overwriteUnsaved) {
+                                  BuildCredits.Credit credit, boolean mine, boolean overwriteUnsaved,
+                                  String parentId) {
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
             // A kind this build of the mod does not know, or a build the relay never named. Neither
@@ -204,6 +208,11 @@ public final class BuilderRelayDownload {
         }
         credit(kind, build.subKind(), installedAs, credit, mine,
                 TemplateSidecars.hasCredit(build.sidecars()));
+        // Last, and only once the template is a template: a refused join leaves the build where it
+        // installed, which is still the INSTALLED the screen was promised — the roster says where.
+        if (!parentId.isBlank() && BuilderRelaySubVariant.supports(kind)) {
+            BuilderRelaySubVariant.join(level, kind, installedAs, parentId, template);
+        }
         return new Result(Outcome.INSTALLED, kind, installedAs, build.subKind());
     }
 

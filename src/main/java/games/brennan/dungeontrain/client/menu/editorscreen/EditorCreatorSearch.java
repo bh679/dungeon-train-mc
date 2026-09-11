@@ -35,6 +35,10 @@ public final class EditorCreatorSearch {
     static final int FIELD_H = 14;
     static final int ROW_H = 13;
     static final int STAR_W = 14;
+    /** The relay light in the header, and its two colours: lit for live, dark for dev. */
+    static final int LIGHT_W = 14;
+    static final int LIGHT_ON = 0xFF55DD55;
+    static final int LIGHT_OFF = 0xFF505050;
     static final int NOTE_H = 11;
     static final int BG = 0xF0101010;
     static final int FIELD_BG = 0x40FFFFFF;
@@ -44,7 +48,7 @@ public final class EditorCreatorSearch {
     static final int SEARCH_DELAY_TICKS = 8;
 
     /** What a click did, for the screen that hosts the panel. */
-    public enum Outcome { NONE, CONSUMED, PICKED, CLEARED, ALL }
+    public enum Outcome { NONE, CONSUMED, PICKED, CLEARED, ALL, RELAY_TOGGLED }
 
     public record Result(Outcome outcome, BuilderCreatorResultsPacket.Creator creator) {
         static final Result NONE = new Result(Outcome.NONE, null);
@@ -69,6 +73,8 @@ public final class EditorCreatorSearch {
     private InventoryEditorLayout.Rect clearRect;
     private InventoryEditorLayout.Rect allRect;
     private boolean hoveredAll;
+    private InventoryEditorLayout.Rect lightRect;
+    private boolean hoveredLight;
     private int rowsTop;
     private int visibleRows;
 
@@ -93,6 +99,29 @@ public final class EditorCreatorSearch {
         this.ticksUntilSearch = -1;
         this.searching = false;
         BuilderProfileState.listenForCreators(null);
+    }
+
+    /**
+     * The relay was switched under the panel — the rows on screen answer the other pool's question.
+     *
+     * <p>Drops the results and re-arms the debounce for whatever is typed, so the same name is asked
+     * of the pool the light now shows. The favourites re-ask is the caller's, because the answer lands
+     * in {@link EditorCreatorBuilds}, not here.</p>
+     */
+    public void rearm() {
+        this.results = List.of();
+        this.answered = "";
+        this.unavailable = false;
+        this.searching = false;
+        this.scroll = 0;
+        this.ticksUntilSearch = query.trim().isEmpty() ? -1 : SEARCH_DELAY_TICKS;
+    }
+
+    /** The hover text for the relay light, or null when the mouse is not on it. */
+    public String tooltipAt(double mx, double my) {
+        if (!open || lightRect == null || !lightRect.contains(mx, my)) return null;
+        return EditorScreenLang.text(BuilderProfileState.live()
+            ? EditorScreenLang.RELAY_LIVE : EditorScreenLang.RELAY_DEV);
     }
 
     /**
@@ -170,6 +199,9 @@ public final class EditorCreatorSearch {
     public Result mouseClicked(double mx, double my) {
         if (!open || panel == null) return Result.NONE;
         if (!panel.contains(mx, my)) return Result.NONE;   // the screen closes the panel
+        if (lightRect != null && lightRect.contains(mx, my)) {
+            return new Result(Outcome.RELAY_TOGGLED, null);
+        }
         if (allRect != null && allRect.contains(mx, my)) {
             return new Result(Outcome.ALL, null);
         }
@@ -236,9 +268,22 @@ public final class EditorCreatorSearch {
         g.fill(x - 1, y - 1, x + w + 1, y + h + 1, theme.outline());
         g.fill(x, y, x + w, y + h, BG);
 
-        // Title.
+        // The relay light, top-right: lit while the panel is asking the live relay, dark for dev.
+        // The same switch the Settings tab's Relay row is, put where the question is actually asked
+        // — a builder found on one relay is a name with nothing to see on the other.
+        lightRect = new InventoryEditorLayout.Rect(x + w - PAD - LIGHT_W, y + PAD - 1, LIGHT_W, HEADER_H - 1);
+        hoveredLight = lightRect.contains(mouseX, mouseY);
+        boolean live = BuilderProfileState.live();
+        g.fill(lightRect.x(), lightRect.y(), lightRect.right(), lightRect.bottom(),
+            hoveredLight ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+        String light = "\u25CF";
+        g.drawString(font, light, lightRect.x() + (LIGHT_W - font.width(light)) / 2,
+            lightRect.y() + (lightRect.h() - font.lineHeight) / 2 + 1, live ? LIGHT_ON : LIGHT_OFF, false);
+
+        // Title, stopping short of the light.
         String title = EditorScreenLang.text(EditorScreenLang.CREATORS_TITLE);
-        g.drawString(font, title, x + PAD, y + PAD, MenuRowPainter.TEXT_HEADER, false);
+        g.drawString(font, font.plainSubstrByWidth(title, lightRect.x() - x - PAD * 2), x + PAD, y + PAD,
+            MenuRowPainter.TEXT_HEADER, false);
 
         // The query, typed straight into the panel — there is no widget here to focus or lose.
         int fieldY = y + PAD + HEADER_H;

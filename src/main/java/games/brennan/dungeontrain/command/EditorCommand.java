@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.TemplateDeletes;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor.SaveResult;
@@ -3886,6 +3887,8 @@ public final class EditorCommand {
 
             CarriageEditor.clearPlot(overworld, variant, dims);
             boolean deleted = CarriageTemplateStore.delete(variant);
+            // Sidecars and weight — and in dev mode the bundled copies of each.
+            TemplateDeletes.Report cleanup = TemplateDeletes.carriage(variant);
             boolean wasCustom = !variant.isBuiltin();
             if (wasCustom) {
                 CarriageVariantRegistry.unregister(variant.id());
@@ -3894,10 +3897,11 @@ public final class EditorCommand {
                 }
             }
             source.sendSuccess(() -> Component.literal(
-                deleted
+                (deleted
                     ? ("Editor: deleted '" + variant.id() + "' template"
                         + (wasCustom ? " and removed from registry." : "."))
-                    : ("Editor: no '" + variant.id() + "' template to delete.")
+                    : ("Editor: no '" + variant.id() + "' template to delete."))
+                + cleanup.summaryLine()
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -4798,6 +4802,8 @@ public final class EditorCommand {
 
             CarriageContentsEditor.clearPlot(overworld, contents, dims);
             boolean deleted = CarriageContentsStore.delete(contents);
+            // Sidecars, weight, group slot — and in dev mode the bundled copies of each.
+            TemplateDeletes.Report cleanup = TemplateDeletes.contents(contents);
             boolean wasCustom = !contents.isBuiltin();
             if (wasCustom) {
                 CarriageContentsRegistry.unregister(contents.id());
@@ -4806,10 +4812,11 @@ public final class EditorCommand {
                 }
             }
             source.sendSuccess(() -> Component.literal(
-                deleted
+                (deleted
                     ? ("Editor: deleted contents '" + contents.id() + "' template"
                         + (wasCustom ? " and removed from registry." : "."))
-                    : ("Editor: no contents '" + contents.id() + "' template to delete.")
+                    : ("Editor: no contents '" + contents.id() + "' template to delete."))
+                + cleanup.summaryLine()
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -5442,6 +5449,10 @@ public final class EditorCommand {
 
             CarriagePartEditor.clearPlot(overworld, kind, name, dims);
             boolean deleted = CarriagePartTemplateStore.delete(kind, name);
+            // Sidecars — and in dev mode the bundled copies, including the src .nbt. `bundled` below
+            // still reads the classpath copy, so the registry entry survives until the next build.
+            TemplateDeletes.Report cleanup = TemplateDeletes.part(kind, name);
+            boolean srcRemoved = cleanup.removed().contains("bundled template");
             boolean stillBundled = CarriagePartTemplateStore.bundled(kind, name);
             if (!stillBundled) {
                 CarriagePartRegistry.unregister(kind, name);
@@ -5449,10 +5460,13 @@ public final class EditorCommand {
                     CarriagePartEditor.restampRowAfterDeletion(overworld, kind, oldIdx, oldCount, dims);
                 }
             }
-            final String msg = deleted
+            final String msg = (deleted
                 ? ("Editor: deleted part '" + kind.id() + ":" + name + "' (config-dir copy)"
-                    + (stillBundled ? " — bundled default remains." : " — no bundled fallback, registry entry removed."))
-                : ("Editor: no config-dir part '" + kind.id() + ":" + name + "' to delete.");
+                    + (srcRemoved ? " — bundled copy removed from src too (gone after the next build)."
+                        : stillBundled ? " — bundled default remains."
+                        : " — no bundled fallback, registry entry removed."))
+                : ("Editor: no config-dir part '" + kind.id() + ":" + name + "' to delete."))
+                + cleanup.summaryLine();
             source.sendSuccess(() -> Component.literal(msg), true);
             return 1;
         } catch (Throwable t) {
@@ -7563,6 +7577,9 @@ public final class EditorCommand {
             source.sendFailure(Component.literal("Delete failed: " + e.getMessage()));
             return 0;
         }
+        // Sidecars, weight, group slot — and in dev mode the bundled copies of each. Before
+        // unregister, because the group strip finds parents through the registry.
+        TemplateDeletes.Report cleanup = TemplateDeletes.track(kind, name);
         games.brennan.dungeontrain.track.variant.TrackVariantRegistry.unregister(kind, name);
         // Drop the removed room's cached size, or re-creating the same name later would silently
         // inherit the dead variant's dimensions.
@@ -7574,7 +7591,7 @@ public final class EditorCommand {
             games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
 
         source.sendSuccess(() -> Component.literal(
-            "Removed " + kind.id() + ":" + name + " — teleported back to default."
+            "Removed " + kind.id() + ":" + name + " — teleported back to default." + cleanup.summaryLine()
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
