@@ -88,6 +88,9 @@ public final class UploaderDropdown {
 
     public void render(GuiGraphics g, int mouseX, int mouseY) {
         if (!isOpen()) return;
+        // GuiGraphics batches text and flushes it after the fills, so without this the video list's
+        // titles — drawn earlier but flushed later — would print straight through this panel.
+        g.flush();
         int h = height();
         g.fill(x, y, x + width, y + h, BG);
         g.fill(x, y, x + width, y + 1, BORDER);

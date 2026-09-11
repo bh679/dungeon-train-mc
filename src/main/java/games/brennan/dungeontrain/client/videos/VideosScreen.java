@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.videos;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
+import games.brennan.dungeontrain.client.videotools.VideoToolsScreen;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -132,8 +133,26 @@ public final class VideosScreen extends Screen {
                     refresh();
                 }));
 
+        // Bottom row: Video Tools (the content-creator page — how to film the game) | Submit a video
+        // (a link into the operator's review queue) | Done.
+        int bottomY = this.height - MARGIN - BOTTOM_ROW_H;
+        int bottomW = Math.min(3 * 100 + 2 * GAP, rowW);
+        int thirdW = (bottomW - 2 * GAP) / 3;
+        int bx = this.width / 2 - bottomW / 2;
+        Button tools = addRenderableWidget(new DarkTintedButton(bx, bottomY, thirdW, BOTTOM_ROW_H,
+                Component.translatable("gui.dungeontrain.video_tools.button"), b -> {
+                    UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_TOOLS);
+                    Minecraft.getInstance().setScreen(new VideoToolsScreen(this));
+                }));
+        tools.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.videos.tools.tooltip")));
+        Button submit = addRenderableWidget(new DarkTintedButton(bx + thirdW + GAP, bottomY, thirdW, BOTTOM_ROW_H,
+                Component.translatable("gui.dungeontrain.videos.submit.button"), b -> {
+                    UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_SUBMIT);
+                    Minecraft.getInstance().setScreen(new VideoSubmitScreen(this));
+                }));
+        submit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.videos.submit.tooltip")));
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(this.width / 2 - 100, this.height - MARGIN - BOTTOM_ROW_H, 200, BOTTOM_ROW_H)
+                .bounds(bx + 2 * (thirdW + GAP), bottomY, bottomW - 2 * (thirdW + GAP), BOTTOM_ROW_H)
                 .build());
 
         refresh();

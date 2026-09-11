@@ -105,6 +105,9 @@ public final class UiAnalytics {
     // "do players open the page and follow through", not a per-creator scoreboard.
     public static final String TARGET_VIDEOS = "videos";
     public static final String TARGET_VIDEO_OPEN = "video_open";
+    // "Submit a video" on the Videos page: the click opens the submit screen, the confirm is the
+    // relay accepting the link (yes) or refusing it (no). Whitelisted alongside the two above.
+    public static final String TARGET_VIDEO_SUBMIT = "video_submit";
     // "Reset Everything" on the Video Tools page — opening the confirm screen, not the wipe itself.
     // Same whitelist caveat as above: until the relay knows "video_tools_reset" this 400s silently,
     // which costs a funnel row and nothing else.
