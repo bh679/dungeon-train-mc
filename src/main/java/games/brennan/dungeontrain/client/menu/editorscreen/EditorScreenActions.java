@@ -217,11 +217,15 @@ public final class EditorScreenActions {
      */
     static CommandMenuEntry moveEntry(Ctx ctx) {
         if (!ctx.hasSelection()) return null;
-        VariantKey sel = ctx.selection();
-        if (!GroupParentPickerScreen.supports(sel.category())) return null;
+        return moveEntryFor(ctx.selection(), EditorScreenLang.text(EditorScreenLang.ICON_MOVE));
+    }
+
+    /** The same picker for any key, under a caller's label — the Layout tab's cell is shorter. */
+    public static CommandMenuEntry moveEntryFor(VariantKey sel, String label) {
+        if (sel == null || !GroupParentPickerScreen.supports(sel.category())) return null;
         // Contents groups are keyed by the contents id; a room by its name under the portal kind.
         String childId = sel.category() == PlotCategory.PORTALS ? sel.modelName() : sel.modelId();
-        return new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.ICON_MOVE),
+        return new CommandMenuEntry.DrillIn(label,
             new GroupParentPickerScreen(sel.category(), childId, sel.parentId()));
     }
 

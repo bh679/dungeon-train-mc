@@ -240,15 +240,30 @@ public final class EditorCreatorSearch {
     // Render
     // ------------------------------------------------------------------
 
+    /**
+     * Where the panel goes: centred over the browser column — the filter row down to the grid's
+     * bottom — and never across the right pane, whose preview it would otherwise sit on.
+     */
+    static InventoryEditorLayout.Rect place(InventoryEditorLayout layout) {
+        InventoryEditorLayout.Rect top = layout.filter();
+        InventoryEditorLayout.Rect grid = layout.grid();
+        InventoryEditorLayout.Rect column = new InventoryEditorLayout.Rect(
+            grid.x(), top.y(), grid.w(), grid.bottom() - top.y());
+        int w = Math.min(WIDTH, Math.max(1, column.w() - 8));
+        int h = Math.min(MAX_HEIGHT, Math.max(1, column.h() - 8));
+        int x = column.x() + (column.w() - w) / 2;
+        int y = column.y() + (column.h() - h) / 2;
+        return new InventoryEditorLayout.Rect(x, y, w, h);
+    }
+
     public void render(GuiGraphics g, Font font, InventoryEditorLayout layout, EditorScreenTheme theme,
                        int mouseX, int mouseY) {
         if (!open) return;
-        InventoryEditorLayout.Rect area = layout.panel();
-        int w = Math.min(WIDTH, Math.max(120, area.w() - 20));
-        int h = Math.min(MAX_HEIGHT, Math.max(80, area.h() - 20));
-        int x = area.x() + (area.w() - w) / 2;
-        int y = area.y() + (area.h() - h) / 2;
-        panel = new InventoryEditorLayout.Rect(x, y, w, h);
+        panel = place(layout);
+        int x = panel.x();
+        int y = panel.y();
+        int w = panel.w();
+        int h = panel.h();
 
         g.fill(x - 1, y - 1, x + w + 1, y + h + 1, theme.outline());
         g.fill(x, y, x + w, y + h, BG);

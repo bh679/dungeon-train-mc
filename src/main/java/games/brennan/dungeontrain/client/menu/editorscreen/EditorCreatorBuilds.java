@@ -337,9 +337,9 @@ public final class EditorCreatorBuilds {
         };
     }
 
-    /** Everything loaded, narrowed to the tab and the filter box. */
-    public static List<BuilderProfilePacket.Entry> forPage(EditorScreenPage page, String text) {
-        return forPage(page, text, BuilderProfileFilters.ALL, false);
+    /** Everything loaded, narrowed to the category cell and the filter box. */
+    public static List<BuilderProfilePacket.Entry> forCategory(EditorCategoryFilter filter, String text) {
+        return forCategory(filter, text, BuilderProfileFilters.ALL, false);
     }
 
     /**
@@ -351,12 +351,12 @@ public final class EditorCreatorBuilds {
      * every filter including All. The star axis is answered from {@link #starred} rather than from the
      * row's own flag — the pooled listing has no viewer to carry one.</p>
      */
-    public static List<BuilderProfilePacket.Entry> forPage(EditorScreenPage page, String text,
-                                                           String review, boolean starredOnly) {
+    public static List<BuilderProfilePacket.Entry> forCategory(EditorCategoryFilter filter, String text,
+                                                               String review, boolean starredOnly) {
         String needle = text == null ? "" : text.trim().toLowerCase(Locale.ROOT);
         List<BuilderProfilePacket.Entry> out = new ArrayList<>();
         for (BuilderProfilePacket.Entry entry : builds) {
-            if (!admits(page, entry.kind())) continue;
+            if (!admits(filter, entry.kind())) continue;
             if (!needle.isEmpty() && !entry.buildName().toLowerCase(Locale.ROOT).contains(needle)) continue;
             if (!BuilderProfileFilters.matches(entry, BuilderProfileFilters.ALL, review)) continue;
             if (starredOnly && !starred(entry)) continue;
@@ -378,15 +378,15 @@ public final class EditorCreatorBuilds {
     }
 
     /**
-     * Whether a relay kind belongs on a tab.
+     * Whether a relay kind belongs under a category cell.
      *
-     * <p>The same grouping the tabs use for local templates — parts browse under Carriages, a
+     * <p>The same grouping the cells use for local templates — parts browse under Carriages, a
      * portal room under Dimensions — so switching to somebody else's builds does not also switch
-     * what a tab means.</p>
+     * what a cell means.</p>
      */
-    static boolean admits(EditorScreenPage page, String kind) {
-        if (page == null || page == EditorScreenPage.ALL) return true;
-        return switch (page) {
+    static boolean admits(EditorCategoryFilter filter, String kind) {
+        if (filter == null || filter == EditorCategoryFilter.ALL) return true;
+        return switch (filter) {
             case CARRIAGES -> BuilderRelayKinds.CARRIAGE.equals(kind)
                 || BuilderRelayKinds.CARRIAGE_GROUP.equals(kind)
                 || BuilderRelayKinds.PART.equals(kind);

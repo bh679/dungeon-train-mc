@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.EditorWorldLayout;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorRosterRequestPacket;
+import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -42,6 +44,18 @@ public final class EditorRosterClient {
         DungeonTrainNet.sendToServer(new EditorRosterRequestPacket());
     }
 
+    /**
+     * Ask once, ahead of the screen being opened.
+     *
+     * <p>Called when the player lands in the editor world or in an editor plot, so the roster is
+     * already here by the time X is pressed and the screen opens on its rows rather than on
+     * "Loading templates…". A no-op once anything has asked; after that the refresh rhythm keeps
+     * it fresh.</p>
+     */
+    public static void prefetch() {
+        if (!everRequested) request();
+    }
+
     /** Ask again in {@code ticks} ticks; a pending request is simply moved later. */
     public static void scheduleRefresh(int ticks) {
         refreshTicks = Math.max(1, ticks);
@@ -60,6 +74,14 @@ public final class EditorRosterClient {
     public static void onClientTick(ClientTickEvent.Post event) {
         if (refreshTicks > 0 && --refreshTicks == 0) {
             request();
+        }
+        // The editor world itself is the cue outside any plot: one boolean a tick until the first ask.
+        if (!everRequested) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player != null && mc.level != null && mc.getConnection() != null
+                    && EditorWorldLayout.isEditorWorld(mc.level)) {
+                request();
+            }
         }
     }
 

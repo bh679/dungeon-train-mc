@@ -374,8 +374,8 @@ public final class EditorDetailPane {
     public static String pathLabel(EditorRosterIndex index, VariantKey key) {
         if (key == null) return "";
         EditorRosterPacket.Group g = index.groupOf(key);
-        EditorScreenPage page = EditorScreenPage.forCategory(key.category());
-        String pageName = page == null ? key.category().displayName() : EditorScreenLang.text(page.langKey());
+        EditorCategoryFilter cell = EditorCategoryFilter.forCategory(key.category());
+        String pageName = cell == null ? key.category().displayName() : EditorScreenLang.text(cell.langKey());
         String type = g == null ? "" : " › " + g.typeName();
         String parent = key.isSubVariant() ? " › " + key.parentId() : "";
         return pageName + type + parent;

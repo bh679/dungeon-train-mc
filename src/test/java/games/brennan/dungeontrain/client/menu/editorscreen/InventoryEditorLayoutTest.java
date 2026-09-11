@@ -29,7 +29,7 @@ final class InventoryEditorLayoutTest {
     void regionsNest() {
         for (int[] s : SIZES) {
             InventoryEditorLayout l = InventoryEditorLayout.of(s[0], s[1]);
-            List<Rect> regions = List.of(l.filter(), l.typeStrip(), l.grid(), l.header(), l.preview(),
+            List<Rect> regions = List.of(l.filter(), l.categoryStrip(), l.typeStrip(), l.grid(), l.header(), l.preview(),
                 l.sheet(), l.icons(), l.settings(), l.test());
             for (Rect r : regions) assertTrue(inside(r, l.panel()), s[0] + "x" + s[1] + " " + r);
             for (int i = 0; i < regions.size(); i++) {
@@ -62,6 +62,58 @@ final class InventoryEditorLayoutTest {
         assertTrue(large.preview().h() <= InventoryEditorLayout.PREVIEW_MAX_H);
         assertEquals(InventoryEditorLayout.TILE_SMALL, small.tile());
         assertEquals(InventoryEditorLayout.TILE_LARGE, large.tile());
+    }
+
+    @Test
+    @DisplayName("the category strip sits between the filter row and the type strip, full width")
+    void categoryStripBetweenFilterAndTypes() {
+        for (int[] s : SIZES) {
+            InventoryEditorLayout l = InventoryEditorLayout.of(s[0], s[1]);
+            assertEquals(l.filter().bottom() + 2, l.categoryStrip().y());
+            assertEquals(l.categoryStrip().bottom() + 2, l.typeStrip().y());
+            assertEquals(l.grid().x(), l.categoryStrip().x());
+            assertEquals(l.grid().w(), l.categoryStrip().w());
+            assertEquals(InventoryEditorLayout.STRIP_H, l.categoryStrip().h());
+        }
+    }
+
+    @Test
+    @DisplayName("the search row spans both columns, and both columns start beneath it")
+    void filterRowSpansBothColumns() {
+        for (int[] s : SIZES) {
+            for (boolean expanded : new boolean[] {true, false}) {
+                InventoryEditorLayout l = InventoryEditorLayout.of(s[0], s[1], expanded);
+                Rect inner = l.panel().inset(InventoryEditorLayout.PAD);
+                assertEquals(inner.x(), l.filter().x());
+                assertEquals(inner.w(), l.filter().w());
+                assertEquals(l.filter().bottom() + 2, l.header().y(), "right pane starts under the row");
+                assertTrue(l.grid().y() >= l.filter().bottom() + 2);
+                assertEquals(l.filter().x(), l.grid().x());
+                assertTrue(l.grid().right() < l.header().x(), "the grid stays left of the right pane");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("collapsed, both strips vanish and the grid takes their two rows back")
+    void collapsedFilters() {
+        for (int[] s : SIZES) {
+            InventoryEditorLayout open = InventoryEditorLayout.of(s[0], s[1], true);
+            InventoryEditorLayout shut = InventoryEditorLayout.of(s[0], s[1], false);
+            assertEquals(0, shut.categoryStrip().h());
+            assertEquals(0, shut.typeStrip().h());
+            assertEquals(shut.filter().bottom() + 2, shut.grid().y());
+            assertEquals(open.grid().h() + 2 * (InventoryEditorLayout.STRIP_H + 2), shut.grid().h());
+            assertEquals(open.grid().bottom(), shut.grid().bottom());
+            List<Rect> regions = List.of(shut.filter(), shut.grid(), shut.header(), shut.preview(),
+                shut.sheet(), shut.icons(), shut.settings(), shut.test());
+            for (Rect r : regions) assertTrue(inside(r, shut.panel()), s[0] + "x" + s[1] + " " + r);
+            for (int i = 0; i < regions.size(); i++) {
+                for (int j = i + 1; j < regions.size(); j++) {
+                    assertFalse(overlaps(regions.get(i), regions.get(j)));
+                }
+            }
+        }
     }
 
     @Test

@@ -10,13 +10,32 @@ public final class EditorScreenLang {
 
     private static final String PREFIX = "gui.dungeontrain.editor_screen.";
 
+    public static final String TAB_TEMPLATES = PREFIX + "tab.templates";
+    public static final String TAB_LAYOUT = PREFIX + "tab.layout";
+    public static final String TAB_SETTINGS = PREFIX + "tab.settings";
+    public static final String TAB_EXIT = PREFIX + "tab.exit";
+
+    /** The category strip under the Templates tab's filter row — these were the tabs once. */
     public static final String TAB_ALL = PREFIX + "tab.all";
     public static final String TAB_CARRIAGES = PREFIX + "tab.carriages";
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
     public static final String TAB_DIMENSIONS = PREFIX + "tab.dimensions";
-    public static final String TAB_SETTINGS = PREFIX + "tab.settings";
-    public static final String TAB_EXIT = PREFIX + "tab.exit";
+
+    /** The filter bar's toggle and its tooltips, and what clicking an active chip does. */
+    public static final String FILTERS = PREFIX + "filters";
+    public static final String FILTERS_SHOW = PREFIX + "filters.show";
+    public static final String FILTERS_HIDE = PREFIX + "filters.hide";
+    public static final String FILTERS_CLEAR_ONE = PREFIX + "filters.clear_one";
+
+    /** The Layout tab: a type's section header, its collapse hint, and the short Move cell. */
+    public static final String LAYOUT_SECTION = PREFIX + "layout.section";
+    public static final String LAYOUT_SECTION_TIP = PREFIX + "layout.section_tip";
+    public static final String LAYOUT_MOVE = PREFIX + "layout.move";
+    /** The Layout tab with a roster but nothing left after the filters — not "loading". */
+    public static final String LAYOUT_NO_MATCHES = PREFIX + "layout.no_matches";
+    /** The weight cell's tooltip: the same three clicks the world-space menus take. */
+    public static final String LAYOUT_WEIGHT_TIP = PREFIX + "layout.weight_tip";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */

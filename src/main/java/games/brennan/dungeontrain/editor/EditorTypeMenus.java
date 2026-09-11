@@ -402,9 +402,16 @@ public final class EditorTypeMenus {
         for (games.brennan.dungeontrain.train.CarriageContentsGroup.Member m : members) {
             EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
                 games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(m.id()));
+            // The member's effective gate and Stage links ride along, as the track-side builder's
+            // do, so a chip drawn from this row reads the Stage the member is on rather than Custom.
+            String primaryStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
+            TemplateGate g = StageStore.effectiveGate(m.gate(), primaryStage);
             out.add(new EditorTypeMenusPacket.Variant(
-                m.id(), m.weight(), category, m.id(), m.id(),
-                prov.isUser(), prov.isImported()).withDisplayName(weights.nameFor(m.id())));
+                m.id(), m.weight(),
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                category, m.id(), m.id(),
+                prov.isUser(), prov.isImported(),
+                java.util.List.of(), m.stageIds()).withDisplayName(weights.nameFor(m.id())));
         }
         return out;
     }
