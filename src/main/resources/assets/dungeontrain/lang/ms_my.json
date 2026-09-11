@@ -45,6 +45,7 @@
   "book.dungeontrain.statbook.tail.8": "Aku rasa ia berbaloi dicatat.",
   "book.dungeontrain.statbook.tail.9": "Teruskan.",
   "echo.dungeontrain.mob_name": "Gema %s",
+  "gui.dungeontrain.editor_book.author_hint": "Tekan Tab atau klik baris pengarang untuk menandatangani sebagai orang lain.",
   "gui.dungeontrain.book_vote.ask_prefix": "Kereta api bertanya,",
   "gui.dungeontrain.book_vote.prompt.1": "\"Adakah anda menikmati buku ini?\"",
   "gui.dungeontrain.book_vote.prompt.2": "\"Adakah buku ini berbaloi dengan perjalanannya?\"",

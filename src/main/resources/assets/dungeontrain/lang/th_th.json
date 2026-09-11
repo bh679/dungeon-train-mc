@@ -45,6 +45,7 @@
   "book.dungeontrain.statbook.tail.8": "ข้าคิดว่าควรจดไว้",
   "book.dungeontrain.statbook.tail.9": "ไปต่อเถอะ",
   "echo.dungeontrain.mob_name": "เสียงสะท้อนของ %s",
+  "gui.dungeontrain.editor_book.author_hint": "กด Tab หรือคลิกบรรทัดผู้เขียนเพื่อลงชื่อในนามคนอื่น",
   "gui.dungeontrain.book_vote.ask_prefix": "ขบวนรถไฟถามว่า",
   "gui.dungeontrain.book_vote.prompt.1": "\"คุณชอบหนังสือเล่มนี้ไหม\"",
   "gui.dungeontrain.book_vote.prompt.2": "\"เล่มนี้คุ้มค่ากับการเดินทางหรือเปล่า\"",

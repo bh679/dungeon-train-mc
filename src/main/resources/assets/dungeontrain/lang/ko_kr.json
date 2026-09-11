@@ -45,6 +45,7 @@
   "book.dungeontrain.statbook.tail.8": "적어둘 만하다고 생각했다.",
   "book.dungeontrain.statbook.tail.9": "계속하라.",
   "echo.dungeontrain.mob_name": "%s의 메아리",
+  "gui.dungeontrain.editor_book.author_hint": "Tab 키를 누르거나 저자 줄을 클릭하면 다른 이름으로 서명할 수 있습니다.",
   "gui.dungeontrain.book_vote.ask_prefix": "기차가 묻는다,",
   "gui.dungeontrain.book_vote.prompt.1": "\"이 책은 즐거웠나?\"",
   "gui.dungeontrain.book_vote.prompt.2": "\"이 책은 여정만큼의 값어치를 했나?\"",

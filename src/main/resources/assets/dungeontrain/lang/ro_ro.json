@@ -75,6 +75,7 @@
   "book.dungeontrain.statbook.tail.8": "M-am gândit că merită notat.",
   "book.dungeontrain.statbook.tail.9": "Continuă.",
   "echo.dungeontrain.mob_name": "Echo al lui %s",
+  "gui.dungeontrain.editor_book.author_hint": "Tab sau clic pe rândul autorului pentru a semna cu alt nume.",
   "gui.dungeontrain.book_vote.ask_prefix": "Trenul întreabă:",
   "gui.dungeontrain.book_vote.prompt.1": "„Ți-a plăcut cartea asta?”",
   "gui.dungeontrain.book_vote.prompt.2": "„A meritat drumul?”",

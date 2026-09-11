@@ -45,6 +45,7 @@
   "book.dungeontrain.statbook.tail.8": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "book.dungeontrain.statbook.tail.9": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "echo.dungeontrain.mob_name": {"author": "老本願", "reviewer": "老本願"},
+  "gui.dungeontrain.editor_book.author_hint": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.book_vote.ask_prefix": {"author": "Opus 4.8 (Claude)", "reviewer": "老本願"},
   "gui.dungeontrain.book_vote.prompt.1": {"author": "Opus 4.8 (Claude)", "reviewer": "老本願"},
   "gui.dungeontrain.book_vote.prompt.2": {"author": "老本願", "reviewer": "老本願"},

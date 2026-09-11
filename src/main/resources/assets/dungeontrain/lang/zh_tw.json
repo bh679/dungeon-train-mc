@@ -45,6 +45,7 @@
   "book.dungeontrain.statbook.tail.8": "我覺得值得記下來。",
   "book.dungeontrain.statbook.tail.9": "繼續吧。",
   "echo.dungeontrain.mob_name": "回聲：%s",
+  "gui.dungeontrain.editor_book.author_hint": "按 Tab 或點擊作者列，以其他名字署名。",
   "gui.dungeontrain.book_vote.ask_prefix": "列車問道：",
   "gui.dungeontrain.book_vote.prompt.1": "「你喜歡這本書嗎？」",
   "gui.dungeontrain.book_vote.prompt.2": "「這本配得上這段旅程嗎？」",

@@ -60,6 +60,7 @@
   "book.dungeontrain.statbook.tail.8": "Ça méritait d'être noté, ai-je pensé.",
   "book.dungeontrain.statbook.tail.9": "Poursuis.",
   "echo.dungeontrain.mob_name": "Écho de %s",
+  "gui.dungeontrain.editor_book.author_hint": "Tab ou clic sur la ligne de l'auteur pour signer sous un autre nom.",
   "gui.dungeontrain.book_vote.ask_prefix": "Le train demande :",
   "gui.dungeontrain.book_vote.prompt.1": "« As-tu aimé ce livre ? »",
   "gui.dungeontrain.book_vote.prompt.2": "« Celui-ci valait-il le voyage ? »",
