@@ -44,6 +44,20 @@ final class StartAgainAdvancementTest {
     }
 
     @Test
+    @DisplayName("The self-selector grant admits a bare @s token and nothing that merely starts with it")
+    void bareSelfSelectorOnly() {
+        assertTrue(SelfSelectorGrant.isBareSelfSelector("@s"));
+        assertTrue(SelfSelectorGrant.isBareSelfSelector("@s everything"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@a"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@a everything"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@s2"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@self"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("@s[limit=1]"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector("Dev everything"));
+        assertFalse(SelfSelectorGrant.isBareSelfSelector(""));
+    }
+
+    @Test
     @DisplayName("Only a clean run banks")
     void freePlayNeverBanks() {
         assertTrue(StartAgainAdvancement.shouldBank(false));

@@ -5,17 +5,12 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.advancements.AdvancementProgress;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,16 +37,18 @@ import java.util.concurrent.ConcurrentHashMap;
  * did not actually clear the player's tree (wrong target, failed command)
  * disarms without granting.</p>
  *
- * <p><b>Surviving the cheat system, without punching a hole in it.</b> Vanilla gates the whole
- * {@code advancement} node behind permission 2, so two parts of the cheat system stand between a
- * player and this reward. {@link CommandAllowlist} exempts the exact form
- * {@code /advancement revoke @s everything} (and only that form — any other target is still
- * cheating), which stops the Free Play confirmation from cancelling the command; and
- * {@link games.brennan.dungeontrain.mixin.CommandsSelfRevokeMixin} routes that one command, for a
- * {@linkplain #holdsBankedCapstone capstone-holder} only, into {@link #performSelfWipe} — without
- * it a clean survival player could never run the command at all, since the node isn't in their
- * command tree. The allowlist exemption still earns its keep: it covers the operator, who goes
- * down the ordinary vanilla path instead.
+ * <p><b>Reaching the command without cheats.</b> Vanilla gates the whole {@code advancement} node
+ * behind permission 2 — for an ordinary player it isn't even in the command tree, so it neither
+ * autocompletes nor parses, and {@code @s} is refused as a selector besides. Three pieces open
+ * exactly this one form to a {@linkplain #holdsBankedCapstone capstone-holder}, and only while they
+ * hold it: {@link SelfRevokeCommandAccess} rewrites the vanilla nodes' requirements so
+ * {@code advancement → revoke → <targets> → everything} is sent to (and parses for) the holder,
+ * {@link SelfSelectorGrant} admits a bare {@code @s}, and the {@code CommandEvent} guard in
+ * {@code AchievementEvents} cancels any other {@code /advancement …} form from a non-op before the
+ * cheat detector can see it. The command tree is re-sent whenever the answer changes — capstone
+ * granted at login or live, or wiped here — so the autocomplete appears and disappears with the
+ * eligibility. {@link CommandAllowlist} exempts the exact form so the Free Play confirmation never
+ * holds it; that exemption is what keeps the run clean through the wipe.
  *
  * <p><b>Two honesty gates, and why they are here rather than in {@code persistsAdvancement}.</b>
  * {@link #checkArmed} writes to {@link GlobalAchievementStore} itself, at the one call site that
@@ -181,6 +178,7 @@ public final class StartAgainAdvancement {
         AdvancementHolder self = mgr.get(ID);
         if (capstone == null || self == null) return;
         if (player.getAdvancements().getOrStartProgress(capstone).isDone()) return; // wipe didn't happen
+        refreshCommandTree(player); // capstone gone → /advancement leaves the tree again
         // No "already earned" check: the wipe that earned this just cleared the live copy, and an
         // unbanked one left over from a /advancement grant is precisely what shouldArm ignores.
 
@@ -203,48 +201,13 @@ public final class StartAgainAdvancement {
     }
 
     /**
-     * Run the wipe ourselves, for a player who holds the capstone but has no cheats — the path
-     * {@link games.brennan.dungeontrain.mixin.CommandsSelfRevokeMixin} routes
-     * {@code /advancement revoke @s everything} down when vanilla would refuse to parse it at all
-     * (the {@code advancement} node requires permission 2, so it isn't in an ordinary player's
-     * command tree).
-     *
-     * <p>Mirrors vanilla {@code AdvancementCommands.Action.REVOKE} + {@code perform(...)} so the
-     * player gets the real command's behaviour and its own chat feedback, not an imitation: every
-     * advancement with progress has its completed criteria revoked, and the many-to-one success
-     * line is sent with the same translation key vanilla uses.</p>
-     *
-     * <p>{@link #checkArmed} is called inline rather than left to the player tick: the wipe has
-     * already finished on this thread, which is exactly the condition it verifies. The tick path
-     * stays for the operator case, where vanilla executes the revoke after {@code CommandEvent}
-     * has armed.</p>
+     * Re-send the player's command tree so {@code /advancement} appears or disappears with their
+     * eligibility ({@link SelfRevokeCommandAccess}). Vanilla only re-sends on permission changes;
+     * the capstone being granted or wiped is our equivalent.
      */
-    public static void performSelfWipe(ServerPlayer player, CommandSourceStack source) {
+    public static void refreshCommandTree(ServerPlayer player) {
         MinecraftServer server = player.getServer();
-        if (server == null) return;
-        armIfEligible(player);
-
-        int revoked = 0;
-        for (AdvancementHolder holder : server.getAdvancements().getAllAdvancements()) {
-            AdvancementProgress progress = player.getAdvancements().getOrStartProgress(holder);
-            if (!progress.hasProgress()) continue;
-            // Copy first: revoking mutates what getCompletedCriteria() reflects. (It is an
-            // Iterable, not a Collection, so this is a manual drain rather than List.copyOf.)
-            List<String> completed = new ArrayList<>();
-            progress.getCompletedCriteria().forEach(completed::add);
-            for (String criterion : completed) {
-                player.getAdvancements().revoke(holder, criterion);
-            }
-            revoked++;
-        }
-
-        int total = revoked;
-        source.sendSuccess(() -> Component.translatable(
-            "commands.advancement.revoke.many.to.one.success", total, player.getDisplayName()), true);
-        LOGGER.info("[DungeonTrain] Self-wipe without cheats: revoked {} advancement(s) for {}",
-            total, player.getName().getString());
-
-        checkArmed(player);
+        if (server != null) server.getCommands().sendCommands(player);
     }
 
     /** Drop any pending arm for a departing player, so a disconnect mid-command can't leak. */

@@ -59,7 +59,8 @@
     "StructureBandBiomeFilterMixin",
     "JigsawStructureAccessor",
     "RuinedPortalStructureAccessor",
-    "CommandsSelfRevokeMixin"
+    "EntityArgumentSelfSelectorMixin",
+    "EntitySelectorSelfPermissionMixin"
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",
