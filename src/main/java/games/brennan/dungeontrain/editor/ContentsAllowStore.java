@@ -180,7 +180,7 @@ final class ContentsAllowStore {
         if (!shipsWithGame(id)) return;
         try {
             Path file = sourceFileFor(id);
-            if (Files.deleteIfExists(file)) {
+            if (SourceTreeFiles.deleteWithClasspathTwin(file)) {
                 LOGGER.info("[DungeonTrain] Deleted bundled contents allow-list {} (devmode promote).", file);
             }
         } catch (IOException e) {

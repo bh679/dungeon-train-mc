@@ -173,7 +173,7 @@ public final class CarriageVariantPartsStore {
         if (!shipsWithGame(variant)) return;
         try {
             Path file = sourceFileForVariant(variant);
-            if (Files.deleteIfExists(file)) {
+            if (SourceTreeFiles.deleteWithClasspathTwin(file)) {
                 LOGGER.info("[DungeonTrain] Deleted bundled parts assignment {} (devmode promote).", file);
             }
         } catch (IOException e) {
