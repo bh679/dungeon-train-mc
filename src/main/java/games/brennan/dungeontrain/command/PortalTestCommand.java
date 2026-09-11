@@ -295,9 +295,15 @@ public final class PortalTestCommand {
     }
 
     /**
-     * {@code portal test reseed} — re-roll the test the author is standing in. The same room, the
-     * same doorway, a fresh salt: runTest already sends them back and in again when a session is
-     * live, so this is that trip with the roll forced.
+     * {@code portal test reseed} — re-roll the test the author is standing in. The same room, a
+     * fresh salt: runTest already sends them back and in again when a session is live, so this is
+     * that trip with the roll forced.
+     *
+     * <p><b>They stay where they were.</b> The trip lands them in the doorway, but an author looking
+     * at a chest wants the chest re-rolled under their nose, not a walk back to it. So where they
+     * stood is put back afterwards — provided it is still inside the stamped box and the new roll
+     * left it open. A spot the reseed filled (a wall variant, a bookcase where there was floor)
+     * would suffocate them, and they are left in the doorway instead.</p>
      */
     private static int runReseedNow(CommandSourceStack source) {
         ServerPlayer player;
@@ -314,7 +320,26 @@ public final class PortalTestCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        return runTest(source, session.roomName(), true);
+        ServerLevel overworld = source.getServer().overworld();
+        boolean wasHere = player.level() == overworld;
+        Vec3 stood = player.position();
+        float yaw = player.getYRot();
+        float pitch = player.getXRot();
+
+        int result = runTest(source, session.roomName(), true);
+        if (result == 0 || !wasHere) return result;
+
+        PortalTestSession.Session fresh = PortalTestSession.get(player.getUUID());
+        if (fresh == null) return result;
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BoundingBox box = PortalCarriageBuilder.footprintOf(overworld, fresh.structure(), dims);
+        if (!box.isInside(BlockPos.containing(stood))) return result;
+        // The player's own box, moved to where they stood, against what the reseed just wrote.
+        if (!overworld.noCollision(player, player.getBoundingBox().move(stood.subtract(player.position())))) {
+            return result;
+        }
+        player.teleportTo(overworld, stood.x, stood.y, stood.z, yaw, pitch);
+        return result;
     }
 
     /** {@code portal test reseed on|off} — flip the world switch and tell the client what it now holds. */
