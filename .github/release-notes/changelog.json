@@ -12013,6 +12013,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-menu-tabs-layout-filters",
+      "version": "0.833.0",
+      "type": "feat",
+      "title": "The editor menu gets tabs, folding filters and a spawn table",
+      "summary": "Press X anywhere in the Train Editor world now \u2014 between plots as well as inside one \u2014 and the editor menu opens on three tabs. Templates browses every carriage, interior, track piece and dimensional carriage, with the category as a filter rather than a tab of its own; the filters fold away behind one button, leaving the ones in force on a single row where a click turns each off. Layout is new: a spawn table of every template by type, showing its weight (click to raise it, shift-click to lower, cmd-click to type a value) and how many sub-variants sit inside, all folded until you open what you need \u2014 and the same search and filters narrow it. Settings is where it was.",
+      "highlights": [
+        "The X menu opens anywhere in the editor world, not only inside a plot",
+        "Templates, Layout and Settings tabs; category and type are filters now",
+        "Filters fold behind one button; the active ones stay on the row and a click turns each off",
+        "New Layout tab: every template's weight and sub-variant count in one folding table",
+        "Stepping into a template from between plots no longer reloads every plot"
+      ],
+      "pr": 1353,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
