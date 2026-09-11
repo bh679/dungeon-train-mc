@@ -12144,6 +12144,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "template-builder-credits",
+      "version": "0.841.0",
+      "type": "feat",
+      "title": "Credits for the builders and writers behind the train",
+      "summary": "The Credits page now thanks the people whose work rides every train: a Translations list, a new Writers list (players with 20 or more well-loved community books), and a new Builders list (whoever originally built each shipped carriage, room or contents template). Each list shows its top names first with See more, and the writers and builders lists stay current from the community relay. Two new Tallyman leaderboards to find aboard: Most Templates Built and Most Praised Writers.",
+      "highlights": [
+        "Credits page: Writers and Builders sections, with See more / See less and pages of ten",
+        "New leaderboards: Most Templates Built, Most Praised Writers (books with more than 10:1 up-votes)",
+        "Editor: a Built by field on every template's data sheet; developers can credit a builder straight from the relay"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
