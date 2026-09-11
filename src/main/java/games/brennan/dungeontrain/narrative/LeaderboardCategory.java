@@ -92,7 +92,11 @@ public enum LeaderboardCategory {
     // vocabulary here is a LIFE, and neither building nor shipping a build happens inside one —
     // time in the Train Builder is not measured from a spawn and does not reset at a death.
     BUILDER_TIME("builder_time", "builder_time", "Longest Building", Scope.NONE, Format.DURATION),
-    BUILDS_APPROVED("builds_approved", "builds_approved", "Most Builds Approved", Scope.NONE, Format.COUNT);
+    BUILDS_APPROVED("builds_approved", "builds_approved", "Most Builds Approved", Scope.NONE, Format.COUNT),
+    // Templates that ship with the mod, credited to their original builder (the editor's Built-by
+    // field, mirrored to the relay). Scope.NONE like the two above: a template is built once, not
+    // within a life.
+    TEMPLATES_BUILT("templates_built", "templates_built", "Most Templates Built", Scope.NONE, Format.COUNT);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject

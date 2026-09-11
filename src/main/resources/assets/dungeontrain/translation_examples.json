@@ -3062,6 +3062,34 @@
       ]
     }
   },
+  "gui.dungeontrain.credits.builders.person_line": {
+    "1": {
+      "label": "the builder's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "how many templates they built (two or more)",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.builders.person_line_one": {
+    "1": {
+      "label": "the builder's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "the number one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
   "gui.dungeontrain.custom_content.packages": {
     "1": {
       "label": "the custom content packs, comma-separated",

@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.BuilderCredit;
 import games.brennan.dungeontrain.template.FlipOptions;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.TemplateMeta;
@@ -65,7 +66,8 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
     /** Shared empty instance — identity weight (1) for every id. */
     public static final CarriageContentsWeights EMPTY = new CarriageContentsWeights(Map.of());
 
-    static final String BUNDLED_RESOURCE = "/data/dungeontrain/contents/weights.json";
+    /** Classpath path of the weights file that ships in the jar — also read by the Credits page. */
+    public static final String BUNDLED_RESOURCE = "/data/dungeontrain/contents/weights.json";
     static final String CONFIG_SUBDIR = "contents";
     static final String CONFIG_FILE = "weights.json";
 
@@ -122,6 +124,13 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         if (id == null) return "";
         TemplateMeta m = byId.get(id);
         return m == null || m.name() == null ? id : m.name();
+    }
+
+    /** Who originally built {@code id}, or {@code null} when nobody is credited. See {@link TemplateMeta#builder()}. */
+    public BuilderCredit builderFor(String id) {
+        if (id == null) return null;
+        TemplateMeta m = byId.get(id);
+        return m == null ? null : m.builder();
     }
 
     public static int clamp(int value) {
@@ -264,6 +273,25 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         LOGGER.info("[DungeonTrain] Set carriage contents label {}={} (persisted to {}).",
                 key, label == null ? "<id>" : label, configPath());
         return label;
+    }
+
+    /**
+     * Credit {@code builder} as the original builder of {@code id} ({@code null} clears the credit),
+     * preserving weight, inline gate, Stage link, mode, flip and label, and persist. Returns the
+     * stored credit, or {@code null} when cleared. See {@link CarriageWeights#setBuilder}.
+     */
+    public static synchronized BuilderCredit setBuilder(String id, BuilderCredit builder) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        BuilderCredit stored = builder == null || !builder.known() ? null : builder;
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        next.put(key, TemplateMeta.mergeBuilder(prev, stored, DEFAULT));
+        current = new CarriageContentsWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage contents builder {}={} (persisted to {}).",
+                key, stored == null ? "<none>" : stored.display(), configPath());
+        return stored;
     }
 
     /**

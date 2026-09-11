@@ -63,6 +63,8 @@ public final class CreditsScreen extends Screen {
     private static final int ACCENT_TEAM = 0xFFE0B56A;
     /** Green for the translators. */
     private static final int ACCENT_TRANSLATIONS = 0xFF5FBF5F;
+    /** Copper for the builders — the colour of the train they built. */
+    private static final int ACCENT_BUILDERS = 0xFFC98A5B;
 
     /** Team photos are 128×128 sources. */
     private static final int TEX = 128;
@@ -119,6 +121,15 @@ public final class CreditsScreen extends Screen {
         y += CardCanvas.SECTION_GAP;
 
         y = addTeamCard(y);
+
+        // Everyone credited as the original builder of a template that ships with the mod — read
+        // from the jar's own weights files, so the list is exactly this version's train. Skipped
+        // entirely when nobody is credited, so no empty card is drawn.
+        List<TemplateBuilderCredits.Builder> builders = TemplateBuilderCredits.all();
+        if (!builders.isEmpty()) {
+            y += CardCanvas.CARD_GAP;
+            y = addBuildersCard(builders, y);
+        }
 
         // The generated, human-grouped translator list (one line per person, listing every language
         // they worked on with a %). Fully derived from the provenance data at build time, so it
@@ -244,6 +255,39 @@ public final class CreditsScreen extends Screen {
         ty = canvas.addWrappedAt(Component.translatable(bioKey), textX, textW, ty,
                 CardCanvas.COLOUR_DESC);
         return Math.max(y + photo, ty);
+    }
+
+    /** The "Builders" card: heading, accent bar, the thank-you line, then one line per builder. */
+    private int addBuildersCard(List<TemplateBuilderCredits.Builder> builders, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.builders.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_BUILDERS);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.builders.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        for (TemplateBuilderCredits.Builder builder : builders) {
+            y = canvas.addWrappedAt(builderLine(builder), innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
+    /** "&lt;Name&gt; — N templates" (or "1 template"): one line per builder. */
+    private static Component builderLine(TemplateBuilderCredits.Builder builder) {
+        String key = builder.templates() == 1
+                ? "gui.dungeontrain.credits.builders.person_line_one"
+                : "gui.dungeontrain.credits.builders.person_line";
+        return Component.translatable(key, Component.literal(builder.display()),
+                Component.literal(Integer.toString(builder.templates())));
     }
 
     /** The "Translations" card: heading, accent bar, the thank-you line, then one line per person. */

@@ -37,7 +37,13 @@ public record InventoryEditorLayout(
     public static final int FILTER_H = 14;
     public static final int STRIP_H = 14;
     public static final int HEADER_H = 14;
-    public static final int SHEET_H = 62;
+    /**
+     * Eight data-sheet lines: Path, Built by, Size, Blocks, Weight, Stage + its Custom bounds row,
+     * Source. At the floor size the sheet gives back lines before the preview goes under its
+     * minimum — down to {@link #SHEET_MIN_H}, the six lines it had before Built by existed.
+     */
+    public static final int SHEET_H = 82;
+    public static final int SHEET_MIN_H = 62;
     public static final int ICONS_H = 20;
     public static final int TEST_H = 14;
     public static final int PREVIEW_MAX_W = 420;
@@ -94,12 +100,16 @@ public record InventoryEditorLayout(
         Rect icons = new Rect(right.x(), header.bottom() + 1, right.w(), ICONS_H);
         Rect test = new Rect(right.x(), right.bottom() - TEST_H, right.w(), TEST_H);
         int previewH = clamp((int) Math.round(right.h() * 0.34), PREVIEW_MIN_H, PREVIEW_MAX_H);
-        // The preview gives way first: whatever the sheet and the test row leave it, at the floor size.
-        int room = (test.y() - 2) - SHEET_H - 2 - (icons.bottom() + 2);
+        // The sheet takes its full height while the preview can still keep its minimum, and gives
+        // lines back (never below SHEET_MIN_H) before the preview would go under it. Then the
+        // preview gives way first: whatever the sheet and the test row leave it, at the floor size.
+        int between = (test.y() - 2) - (icons.bottom() + 2) - 2;
+        int sheetH = clamp(between - PREVIEW_MIN_H, SHEET_MIN_H, SHEET_H);
+        int room = between - sheetH;
         previewH = Math.max(0, Math.min(previewH, room));
         int previewW = Math.min(right.w(), PREVIEW_MAX_W);
         Rect preview = new Rect(right.x(), icons.bottom() + 2, previewW, previewH);
-        Rect sheet = new Rect(right.x(), preview.bottom() + 2, right.w(), SHEET_H);
+        Rect sheet = new Rect(right.x(), preview.bottom() + 2, right.w(), sheetH);
         Rect settings = new Rect(right.x(), sheet.bottom() + 2, right.w(),
             Math.max(0, test.y() - 2 - sheet.bottom() - 2));
 
