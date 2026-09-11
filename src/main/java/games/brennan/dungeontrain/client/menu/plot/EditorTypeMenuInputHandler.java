@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.Hovere
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.Direction;
@@ -359,9 +360,6 @@ public final class EditorTypeMenuInputHandler {
             variant.plotCategory(), variant.modelId(), variant.modelName(), variant.primaryStageId()));
     }
 
-    /** Lowercase phase tokens for the Stages panel's inline dimension cells (TrainPhase ordinal order). */
-    private static final String[] STAGE_PHASE_TOKENS = {"overworld", "nether", "void", "end"};
-
     /**
      * Click routing for the world-space Stages panel:
      * <ul>
@@ -402,11 +400,12 @@ public final class EditorTypeMenuInputHandler {
             case PHASE -> {
                 String id = stageIdAt(menu, hit);
                 int slot = hit.slotIdx();
-                if (id == null || slot < 0 || slot >= STAGE_PHASE_TOKENS.length) return;
+                if (id == null || slot < 0 || slot >= TrainPhase.values().length) return;
+                TrainPhase phase = TrainPhase.values()[slot];
                 int mask = menu.variants().get(hit.variantIdx()).phaseMask();
-                boolean on = (mask & (1 << slot)) != 0;
+                boolean on = (mask & phase.bit()) != 0;
                 String action = shift ? "others" : (on ? "off" : "on");
-                CommandRunner.run(EditorPlotTeleport.stagePhaseCommandFor(id, STAGE_PHASE_TOKENS[slot], action));
+                CommandRunner.run(EditorPlotTeleport.stagePhaseCommandFor(id, phase.token(), action));
             }
             case STAGE_BLOCKS -> {
                 // The row's icon strip just SELECTS the stage (which auto-opens/closes its panel) —
@@ -425,9 +424,6 @@ public final class EditorTypeMenuInputHandler {
         if (hit.variantIdx() < 0 || hit.variantIdx() >= menu.variants().size()) return null;
         return menu.variants().get(hit.variantIdx()).modelId();
     }
-
-    /** Lowercase phase tokens indexed by {@code TrainPhase} ordinal (OVERWORLD/NETHER/VOID/END). */
-    private static final String[] PHASE_TOKENS = {"overworld", "nether", "void", "end"};
 
     /**
      * Bump a per-template gate level bound. On Sub-Variants rows this targets the group member's
@@ -461,25 +457,26 @@ public final class EditorTypeMenuInputHandler {
      */
     private static void dispatchPhase(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
                                       int slot, boolean shift) {
-        if (slot < 0 || slot >= PHASE_TOKENS.length) return;
-        boolean on = (variant.phaseMask() & (1 << slot)) != 0;
+        if (slot < 0 || slot >= TrainPhase.values().length) return;
+        TrainPhase phase = TrainPhase.values()[slot];
+        boolean on = (variant.phaseMask() & phase.bit()) != 0;
         String action = shift ? "others" : (on ? "off" : "on");
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
             String cmd = isPortalRoom(variant)
                 ? EditorPlotTeleport.portalRoomGroupPhaseCommandFor(
-                    parentId, variant.modelId(), PHASE_TOKENS[slot], action)
+                    parentId, variant.modelId(), phase.token(), action)
                 : EditorPlotTeleport.groupMemberPhaseCommandFor(
-                    parentId, variant.modelId(), PHASE_TOKENS[slot], action);
-            LOGGER.debug("[DungeonTrain] EditorTypeMenu group phase {} {}: {}", PHASE_TOKENS[slot], action, cmd);
+                    parentId, variant.modelId(), phase.token(), action);
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu group phase {} {}: {}", phase.token(), action, cmd);
             CommandRunner.run(cmd);
             return;
         }
         String cmd = EditorPlotTeleport.phaseCommandFor(
             variant.plotCategory(), variant.modelId(), variant.modelName(),
-            PHASE_TOKENS[slot], action);
+            phase.token(), action);
         if (cmd == null) return;
-        LOGGER.debug("[DungeonTrain] EditorTypeMenu phase {} {}: {}", PHASE_TOKENS[slot], action, cmd);
+        LOGGER.debug("[DungeonTrain] EditorTypeMenu phase {} {}: {}", phase.token(), action, cmd);
         CommandRunner.run(cmd);
     }
 

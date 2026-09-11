@@ -223,7 +223,9 @@ public final class EditorTypeMenus {
                 v.id(), weights.weightFor(v.id()),
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, v.id(), v.id(), p.isUser(), p.isImported(),
-                stageId == null ? "" : stageId).withDisplayName(weights.nameFor(v.id())));
+                stageId == null ? "" : stageId).withDisplayName(weights.nameFor(v.id()))
+                .withBuilder(builderUuid(TemplateBuilderLookup.carriage(weights, v.id())),
+                    builderName(TemplateBuilderLookup.carriage(weights, v.id()))));
         }
         return rows;
     }
@@ -268,7 +270,9 @@ public final class EditorTypeMenus {
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, c.id(), c.id(), p.isUser(), p.isImported(),
                 subVariantsFor(c.id(), cat), stageId == null ? "" : stageId)
-                .withDisplayName(weights.nameFor(c.id())));
+                .withDisplayName(weights.nameFor(c.id()))
+                .withBuilder(builderUuid(TemplateBuilderLookup.contents(weights, c.id())),
+                    builderName(TemplateBuilderLookup.contents(weights, c.id()))));
         }
         return rows;
     }
@@ -289,7 +293,9 @@ public final class EditorTypeMenus {
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, modelId, name, p.isUser(), p.isImported(),
                 subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId)
-                .withDisplayName(TrackVariantWeights.nameFor(kind, name)));
+                .withDisplayName(TrackVariantWeights.nameFor(kind, name))
+                .withBuilder(builderUuid(TemplateBuilderLookup.track(kind, name)),
+                    builderName(TemplateBuilderLookup.track(kind, name))));
         }
         return rows;
     }
@@ -402,9 +408,18 @@ public final class EditorTypeMenus {
         for (games.brennan.dungeontrain.train.CarriageContentsGroup.Member m : members) {
             EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
                 games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(m.id()));
+            // The member's effective gate and Stage links ride along, as the track-side builder's
+            // do, so a chip drawn from this row reads the Stage the member is on rather than Custom.
+            String primaryStage = m.stageIds().isEmpty() ? null : m.stageIds().get(0);
+            TemplateGate g = StageStore.effectiveGate(m.gate(), primaryStage);
             out.add(new EditorTypeMenusPacket.Variant(
-                m.id(), m.weight(), category, m.id(), m.id(),
-                prov.isUser(), prov.isImported()).withDisplayName(weights.nameFor(m.id())));
+                m.id(), m.weight(),
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                category, m.id(), m.id(),
+                prov.isUser(), prov.isImported(),
+                java.util.List.of(), m.stageIds()).withDisplayName(weights.nameFor(m.id()))
+                .withBuilder(builderUuid(TemplateBuilderLookup.contents(weights, m.id())),
+                    builderName(TemplateBuilderLookup.contents(weights, m.id()))));
         }
         return out;
     }
@@ -440,7 +455,9 @@ public final class EditorTypeMenus {
                 games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
                 category, modelId, m.id(),
                 prov.isUser(), prov.isImported(),
-                java.util.List.of(), m.stageIds()).withDisplayName(TrackVariantWeights.nameFor(kind, m.id())));
+                java.util.List.of(), m.stageIds()).withDisplayName(TrackVariantWeights.nameFor(kind, m.id()))
+                .withBuilder(builderUuid(TemplateBuilderLookup.track(kind, m.id())),
+                    builderName(TemplateBuilderLookup.track(kind, m.id()))));
         }
         return out;
     }
@@ -592,5 +609,15 @@ public final class EditorTypeMenus {
     private static String capitalise(String s) {
         if (s.isEmpty()) return s;
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    /** The wire form of a credit's uuid — {@code ""} for none. */
+    private static String builderUuid(games.brennan.dungeontrain.template.BuilderCredit c) {
+        return c == null ? "" : c.uuid();
+    }
+
+    /** The wire form of a credit's cached name — {@code ""} for none. */
+    private static String builderName(games.brennan.dungeontrain.template.BuilderCredit c) {
+        return c == null ? "" : c.name();
     }
 }

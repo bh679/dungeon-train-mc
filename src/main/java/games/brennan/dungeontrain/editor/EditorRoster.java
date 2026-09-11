@@ -46,6 +46,8 @@ public final class EditorRoster {
     public static List<EditorRosterPacket.Group> all(net.minecraft.server.level.ServerLevel overworld) {
         RELAY_ROWS.set(overworld == null ? null
             : games.brennan.dungeontrain.world.DungeonTrainWorldData.get(overworld).builderRelayBuilds());
+        ROOM_DIMS.set(overworld == null ? null
+            : games.brennan.dungeontrain.world.DungeonTrainWorldData.get(overworld).dims());
         try {
             List<EditorRosterPacket.Group> out = new ArrayList<>();
             addCarriages(out);
@@ -56,7 +58,38 @@ public final class EditorRoster {
             return out;
         } finally {
             RELAY_ROWS.set(null);
+            ROOM_DIMS.set(null);
         }
+    }
+
+    /** The world's carriage footprint, which a portal room's box is measured against; null when unknown. */
+    private static final ThreadLocal<games.brennan.dungeontrain.train.CarriageDims> ROOM_DIMS =
+        new ThreadLocal<>();
+
+    /**
+     * A portal room's settings tag and box, or the entry unchanged for every other row — what lets
+     * the detail pane show the room's Walls / Copies / Sky / Fog rows and edit its size for a
+     * selection the author is not standing in. Read the same way {@code EditorPlotLabels} reads
+     * them for the plot panel, so the two surfaces cannot disagree about a room.
+     */
+    private static EditorRosterPacket.Entry withRoomData(String categoryId, EditorRosterPacket.Entry entry) {
+        if (!EditorCategory.PORTALS.id().equals(categoryId)) return entry;
+        games.brennan.dungeontrain.train.CarriageDims dims = ROOM_DIMS.get();
+        if (dims == null) return entry;
+        String name = entry.variant().modelName();
+        // Resolved rather than passed through raw, as the plot panel does, so the rows show the
+        // mode the room will actually behave as even when the tag on disk is absent or misspelt.
+        String mode = games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).toTag();
+        net.minecraft.core.Vec3i size = games.brennan.dungeontrain.portal.PortalRoomSizes.sizeOf(name, dims);
+        return entry.withRoom(mode, size.getX(), size.getZ(), size.getY());
+    }
+
+    /** A contents template's random-flip axes, or the entry unchanged for every other row. */
+    private static EditorRosterPacket.Entry withFlipData(String categoryId, EditorRosterPacket.Entry entry) {
+        if (!EditorCategory.CONTENTS.id().equals(categoryId)) return entry;
+        return entry.withFlipMask(games.brennan.dungeontrain.net.EditorStatusPacket.FLIP_KNOWN
+            | games.brennan.dungeontrain.net.EditorStatusPacket.flipMaskOf(
+                games.brennan.dungeontrain.train.CarriageContentsWeights.current().flipFor(entry.variant().modelId())));
     }
 
     /** The world's relay rows for the roster being built, on this thread; null when not attaching. */
@@ -149,7 +182,8 @@ public final class EditorRoster {
         List<EditorRosterPacket.Entry> entries = new ArrayList<>(rows.size());
         for (EditorTypeMenusPacket.Variant v : rows) {
             int self = selfWeight == null ? EditorPlotLabelsPacket.NO_WEIGHT : selfWeight.of(v);
-            entries.add(new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v)));
+            entries.add(withFlipData(categoryId, withRoomData(categoryId,
+                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v)))));
         }
         return new EditorRosterPacket.Group(categoryId, typeName, modelId, entries);
     }

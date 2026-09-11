@@ -22,6 +22,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public record EditorRosterRequestPacket() implements CustomPacketPayload {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
+
     /** Matches {@code EditorCommand.requiresPermissions}. */
     private static final int PERMISSION_LEVEL = 2;
 
@@ -42,7 +44,14 @@ public record EditorRosterRequestPacket() implements CustomPacketPayload {
             if (!player.hasPermissions(PERMISSION_LEVEL)) return;
             String stamped = EditorStampedCategoryState.current().map(EditorCategory::id).orElse("");
             CarriageDims dims = DungeonTrainWorldData.get(player.server.overworld()).dims();
-            DungeonTrainNet.sendTo(player, new EditorRosterPacket(EditorRoster.all(player.serverLevel().getServer().overworld()), stamped,
+            long started = System.nanoTime();
+            java.util.List<EditorRosterPacket.Group> groups = EditorRoster.all(player.serverLevel().getServer().overworld());
+            if (LOGGER.isDebugEnabled()) {
+                int rows = groups.stream().mapToInt(g -> g.entries().size()).sum();
+                LOGGER.debug("[editor.timing] roster {} groups / {} rows built in {} ms",
+                    groups.size(), rows, (System.nanoTime() - started) / 1_000_000);
+            }
+            DungeonTrainNet.sendTo(player, new EditorRosterPacket(groups, stamped,
                 new EditorRosterPacket.TrainSize(dims.length(), dims.width(), dims.height())));
         });
     }

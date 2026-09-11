@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "65";
+    public static final String PROTOCOL_VERSION = "67";
 
     private DungeonTrainNet() {}
 
@@ -163,6 +163,11 @@ public final class DungeonTrainNet {
         // closed WITHOUT signing, so the server leaves the unsigned book on the lectern as a draft.
         registrar.playToClient(OpenLetterEditorPacket.TYPE, OpenLetterEditorPacket.STREAM_CODEC, OpenLetterEditorPacket::handle);
         registrar.playToServer(LetterDraftToLecternPacket.TYPE, LetterDraftToLecternPacket.STREAM_CODEC, LetterDraftToLecternPacket::handle);
+
+        // Editor prop books: client → server with the custom author name typed on the sign screen
+        // inside an editor plot, sent just ahead of vanilla's edit-book packet (see
+        // EditorBookAuthorPending + ServerGamePacketListenerImplSignBookMixin).
+        registrar.playToServer(EditorBookAuthorPacket.TYPE, EditorBookAuthorPacket.STREAM_CODEC, EditorBookAuthorPacket::handle);
 
         // Mod recommendation: the death screen's Mod Recommendations page sends one mod + comment per
         // submit (or a typed name, for a mod the player doesn't have); server consent-gates, posts it

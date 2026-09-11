@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
 import games.brennan.dungeontrain.template.TemplateDecor;
@@ -140,7 +141,7 @@ final class PortalRoomResizeSlabs {
                 origin.getX() + sizeAfter.getX() - 1,
                 origin.getY() + sizeAfter.getY() - 1,
                 origin.getZ() + sizeAfter.getZ() - 1));
-        blocks.placeInWorld(overworld, at, at, settings, overworld.getRandom(), 3);
+        CarriageStampGuard.run(() -> blocks.placeInWorld(overworld, at, at, settings, overworld.getRandom(), 3));
         // The row's own decoration comes back with it — a picture the author hung on the wall a
         // shrink took away is part of the row, not of the box it was cut from.
         TemplateDecor.replace(overworld, at, blocks, settings, null, TemplateDecor.Rule.ROOM);

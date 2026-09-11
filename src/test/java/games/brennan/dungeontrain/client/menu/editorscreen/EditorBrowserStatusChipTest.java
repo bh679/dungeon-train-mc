@@ -27,7 +27,7 @@ final class EditorBrowserStatusChipTest {
         String state = BuilderProfileFilters.ALL;
         for (int i = 0; i < 5; i++) {
             seen.add(state);
-            state = EditorBrowserPane.nextStatus(state);
+            state = EditorFilterBar.nextStatus(state);
         }
         assertEquals(List.of(BuilderProfileFilters.ALL, BuilderReviewState.NONE,
                 BuilderReviewState.SUBMITTED, BuilderReviewState.ACCEPTED, BuilderReviewState.DECLINED),
@@ -38,19 +38,19 @@ final class EditorBrowserStatusChipTest {
     @Test
     @DisplayName("a state this version does not know starts the cycle over rather than sticking")
     void unknownStateFallsBackToAll() {
-        assertEquals(BuilderProfileFilters.ALL, EditorBrowserPane.nextStatus("some_future_state"));
-        assertEquals(BuilderProfileFilters.ALL, EditorBrowserPane.nextStatus(null));
+        assertEquals(BuilderProfileFilters.ALL, EditorFilterBar.nextStatus("some_future_state"));
+        assertEquals(BuilderProfileFilters.ALL, EditorFilterBar.nextStatus(null));
     }
 
     @Test
     @DisplayName("every state the chip offers narrows to itself, and All narrows to nothing")
     void everyOfferedStateIsOneTheFilterKnows() {
-        String state = EditorBrowserPane.nextStatus(BuilderProfileFilters.ALL);
+        String state = EditorFilterBar.nextStatus(BuilderProfileFilters.ALL);
         while (!BuilderProfileFilters.ALL.equals(state)) {
             String review = state;
             assertTrue(BuilderProfileFilters.matches(entry(review), BuilderProfileFilters.ALL, review),
                     "a build in state " + review + " must survive its own chip");
-            state = EditorBrowserPane.nextStatus(state);
+            state = EditorFilterBar.nextStatus(state);
         }
     }
 

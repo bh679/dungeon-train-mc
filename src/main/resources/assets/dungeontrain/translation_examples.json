@@ -3062,6 +3062,70 @@
       ]
     }
   },
+  "gui.dungeontrain.credits.builders.person_line": {
+    "1": {
+      "label": "the builder's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "how many templates they built (two or more)",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.builders.person_line_one": {
+    "1": {
+      "label": "the builder's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "the number one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.page": {
+    "1": {
+      "label": "the page shown",
+      "examples": [
+        "2"
+      ]
+    },
+    "2": {
+      "label": "how many pages there are",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.writers.person_line": {
+    "1": {
+      "label": "the writer's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "how many books they wrote (more than twenty)",
+      "examples": [
+        "42"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.writers.how": {
+    "1": {
+      "label": "how many praised books it takes",
+      "examples": [
+        "20"
+      ]
+    }
+  },
   "gui.dungeontrain.custom_content.packages": {
     "1": {
       "label": "the custom content packs, comma-separated",
@@ -3296,6 +3360,22 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.layout.section": {
+    "1": {
+      "label": "the template type this section lists (Carriages, Floor, Walls…)",
+      "examples": [
+        "Carriages",
+        "Floor"
+      ]
+    },
+    "2": {
+      "label": "how many templates the section holds",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sheet.entities": {
     "1": {
       "label": "how many entities (mobs, item frames…) the template contains",
@@ -3329,6 +3409,14 @@
       "examples": [
         "armor5",
         "windowed"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.creator.parent_new": {
+    "1": {
+      "label": "the display name of the variant parent that will be created when the build is loaded",
+      "examples": [
+        "User builds"
       ]
     }
   },

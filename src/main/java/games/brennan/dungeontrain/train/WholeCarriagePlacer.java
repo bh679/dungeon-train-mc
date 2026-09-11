@@ -57,10 +57,12 @@ public final class WholeCarriagePlacer {
                 wholeCarriage.id());
             return false;
         }
-        CarriagePlacer.eraseAt(level, origin, dims);
-        // Entities are ignored to match the capture, which fills from world without them.
-        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-        template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_ALL);
+        CarriageStampGuard.run(() -> {
+            CarriagePlacer.eraseAt(level, origin, dims);
+            // Entities are ignored to match the capture, which fills from world without them.
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_ALL);
+        });
         return true;
     }
 

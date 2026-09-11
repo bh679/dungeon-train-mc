@@ -341,7 +341,7 @@ public final class TrackVariantGroupStore {
     private static void tryDeleteFromSource(TrackKind kind, String key) {
         if (!sourceTreeAvailable()) return;
         try {
-            if (Files.deleteIfExists(sourceFileFor(kind, key))) {
+            if (SourceTreeFiles.deleteWithClasspathTwin(sourceFileFor(kind, key))) {
                 LOGGER.info("[DungeonTrain] Deleted bundled track variant group {}:{} (devmode promote).",
                     kind.id(), key);
             }

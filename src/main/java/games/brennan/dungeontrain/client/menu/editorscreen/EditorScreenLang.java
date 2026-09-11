@@ -10,13 +10,32 @@ public final class EditorScreenLang {
 
     private static final String PREFIX = "gui.dungeontrain.editor_screen.";
 
+    public static final String TAB_TEMPLATES = PREFIX + "tab.templates";
+    public static final String TAB_LAYOUT = PREFIX + "tab.layout";
+    public static final String TAB_SETTINGS = PREFIX + "tab.settings";
+    public static final String TAB_EXIT = PREFIX + "tab.exit";
+
+    /** The category strip under the Templates tab's filter row — these were the tabs once. */
     public static final String TAB_ALL = PREFIX + "tab.all";
     public static final String TAB_CARRIAGES = PREFIX + "tab.carriages";
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
     public static final String TAB_DIMENSIONS = PREFIX + "tab.dimensions";
-    public static final String TAB_SETTINGS = PREFIX + "tab.settings";
-    public static final String TAB_EXIT = PREFIX + "tab.exit";
+
+    /** The filter bar's toggle and its tooltips, and what clicking an active chip does. */
+    public static final String FILTERS = PREFIX + "filters";
+    public static final String FILTERS_SHOW = PREFIX + "filters.show";
+    public static final String FILTERS_HIDE = PREFIX + "filters.hide";
+    public static final String FILTERS_CLEAR_ONE = PREFIX + "filters.clear_one";
+
+    /** The Layout tab: a type's section header, its collapse hint, and the short Move cell. */
+    public static final String LAYOUT_SECTION = PREFIX + "layout.section";
+    public static final String LAYOUT_SECTION_TIP = PREFIX + "layout.section_tip";
+    public static final String LAYOUT_MOVE = PREFIX + "layout.move";
+    /** The Layout tab with a roster but nothing left after the filters — not "loading". */
+    public static final String LAYOUT_NO_MATCHES = PREFIX + "layout.no_matches";
+    /** The weight cell's tooltip: the same three clicks the world-space menus take. */
+    public static final String LAYOUT_WEIGHT_TIP = PREFIX + "layout.weight_tip";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */
@@ -63,6 +82,10 @@ public final class EditorScreenLang {
     public static final String CREATOR_LOAD = "gui.dungeontrain.builder.profile.load_into_editor";
     public static final String CREATOR_LOAD_COPY = PREFIX + "creator.load_copy";
     public static final String CREATOR_LOADED = PREFIX + "creator.loaded";
+    /** Load, for the kinds that land under a variant parent; and the parent button beside it. */
+    public static final String CREATOR_LOAD_SUB_VARIANT = PREFIX + "creator.load_sub_variant";
+    public static final String CREATOR_PARENT_TITLE = PREFIX + "creator.parent_title";
+    public static final String CREATOR_PARENT_NEW = PREFIX + "creator.parent_new";
     public static final String CREATOR_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
     public static final String CREATOR_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
     public static final String CREATOR_NOT_YOURS = "gui.dungeontrain.builder.profile.not_yours_short";
@@ -125,6 +148,14 @@ public final class EditorScreenLang {
     public static final String ICON_PACKAGE = PREFIX + "icon.package";
     public static final String ICON_MOVE = PREFIX + "icon.move";
     public static final String SHEET_ID = PREFIX + "sheet.id";
+    /** "Built by" — who originally made the template; a picker in dev mode. */
+    public static final String SHEET_BUILDER = PREFIX + "sheet.builder";
+    public static final String SHEET_BUILDER_NONE = PREFIX + "sheet.builder_none";
+    public static final String SHEET_BUILDER_TOOLTIP = PREFIX + "sheet.builder_tooltip";
+    /** The builder search opened from the Built-by cell: its title, and the two rows it adds. */
+    public static final String CREATORS_PICK_TITLE = PREFIX + "creators.pick_title";
+    public static final String CREATORS_PICK_ME = PREFIX + "creators.pick_me";
+    public static final String CREATORS_PICK_NONE = PREFIX + "creators.pick_none";
     public static final String DISABLED_NO_GROUPS = PREFIX + "disabled.no_groups";
     public static final String MOVE_TITLE = PREFIX + "move.title";
     public static final String MOVE_TOP_LEVEL = PREFIX + "move.top_level";
@@ -140,6 +171,11 @@ public final class EditorScreenLang {
     public static final String DISABLED_DIMENSIONS_ONLY = PREFIX + "disabled.dimensions_only";
 
     public static final String TEST_CARRIAGE = PREFIX + "test_carriage";
+    public static final String EXIT_TEST = PREFIX + "exit_test";
+    public static final String RESEED = PREFIX + "reseed";
+    public static final String RESEED_TIP_ON = PREFIX + "reseed.tip_on";
+    public static final String RESEED_TIP_OFF = PREFIX + "reseed.tip_off";
+    public static final String RESEED_TIP_NOW = PREFIX + "reseed.tip_now";
     public static final String ENTER = PREFIX + "enter";
     public static final String THEME = PREFIX + "theme";
     public static final String THEME_LIGHT = PREFIX + "theme.light";

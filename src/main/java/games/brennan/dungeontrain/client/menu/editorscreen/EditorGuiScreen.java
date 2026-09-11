@@ -13,8 +13,10 @@ import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.CommandMenuKeyBindings;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.CreatorParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.client.menu.HotbarPassthrough;
+import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
@@ -41,9 +43,10 @@ import java.util.List;
  * The inventory-style editor X menu.
  *
  * <p>Opened by {@link games.brennan.dungeontrain.client.menu.CommandMenuState#open()} in place of
- * the row-list panel whenever the player is standing in an editor plot with the X menu set to
- * screen space. The world keeps running underneath and the hotbar keeps working — the same
- * contract as the panel it replaces.</p>
+ * the row-list panel anywhere in the editor world — and in an editor plot elsewhere — with the X
+ * menu set to screen space. Between plots nothing is "here", so no template is selected on the way
+ * in; everything else reads the same. The world keeps running underneath and the hotbar keeps
+ * working — the same contract as the panel it replaces.</p>
  */
 public final class EditorGuiScreen extends Screen {
 
@@ -63,9 +66,12 @@ public final class EditorGuiScreen extends Screen {
     private static final int SUBMIT_REFRESH_TICKS = 20;
     static final int GOING_TIMEOUT_TICKS = 200;
 
+    private final EditorFilterBar filterBar = new EditorFilterBar();
     private final EditorBrowserPane browser = new EditorBrowserPane();
     private final EditorDetailPane detail = new EditorDetailPane();
     private final EditorCreatorPane creatorPane = new EditorCreatorPane();
+    private final EditorSettingsPane settingsPane = new EditorSettingsPane();
+    private final EditorLayoutPane layoutPane = new EditorLayoutPane(this::selectOrEnter);
     private final OrbitState orbit = new OrbitState();
     private final InlineEdit inlineEdit = new InlineEdit();
     private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
@@ -80,7 +86,6 @@ public final class EditorGuiScreen extends Screen {
     private long lastClickMillis;
     private VariantKey previewKey;
     private int refreshTicks;
-    private int settingsScroll;
     /** What the last press of Load came back with, already worded for the player. */
     private String creatorNote;
     /** Whether the next press should bring the build down under a name this install is not using. */
@@ -123,27 +128,24 @@ public final class EditorGuiScreen extends Screen {
 
     @Override
     protected void init() {
-        layout = InventoryEditorLayout.of(this.width, this.height);
+        layout = InventoryEditorLayout.of(this.width, this.height, EditorScreenState.filtersExpanded());
         InventoryEditorLayout.Rect f = layout.filter();
-        int boxW = browser.filterBoxWidth(f, this.font);
-        filterBox = new EditBox(this.font, browser.filterBoxX(f), f.y(), boxW, f.h(),
+        filterBar.layout(layout, this.font, EditorRosterClient.index(), EditorScreenState.page().isBrowser());
+        filterBox = new EditBox(this.font, filterBar.boxX(), f.y(), filterBar.boxW(), f.h(),
             Component.literal("filter"));
         filterBox.setBordered(false);
         filterBox.setMaxLength(32);
-        // The hint is only offered when it fits. An EditBox draws its hint unclipped, and this box
-        // is as narrow as the filter chips leave it, so a hint too long for it would run straight
-        // across them — the magnifier beside the box already says what it is for.
-        Component hint = Component.translatable(EditorScreenLang.FILTER_HINT);
-        filterBox.setHint(this.font.width(hint) <= boxW - 2 ? hint : Component.empty());
+        placeFilterBox();
         filterBox.setValue(EditorScreenState.text());
         filterBox.setResponder(text -> {
             EditorScreenState.setText(text);
             browser.resetScroll();
+            layoutPane.resetScroll();
         });
         // Added as a plain child rather than a renderable: this screen draws it itself, inside a
         // scissor, so neither the typed value nor the hint can escape the box.
         addWidget(filterBox);
-        filterBox.visible = EditorScreenState.page().isBrowser();
+        filterBox.visible = hasFilterBar();
         EditorCreatorBuilds.attach();
         // The toolbar's Submit icon says whether the selected build is on the train, which only the
         // player's own listing knows. Asked on the way in so the icon is right before it is pressed.
@@ -159,6 +161,26 @@ public final class EditorGuiScreen extends Screen {
         search.close();
         EditorCreatorBuilds.detach();
         BuilderProfileState.listenForDownloads(null);
+    }
+
+    /** The two tabs that browse the roster and so carry the filter bar; Settings does not. */
+    private static boolean hasFilterBar() {
+        return EditorScreenState.page() != EditorScreenPage.SETTINGS;
+    }
+
+    /**
+     * Put the box where the bar left room for it this frame.
+     *
+     * <p>The hint is only offered when it fits. An EditBox draws its hint unclipped, and this box
+     * is as narrow as the chips leave it, so a hint too long for it would run straight across
+     * them — the magnifier beside the box already says what it is for.</p>
+     */
+    private void placeFilterBox() {
+        if (filterBox == null) return;
+        filterBox.setX(filterBar.boxX());
+        filterBox.setWidth(filterBar.boxW());
+        Component hint = Component.translatable(EditorScreenLang.FILTER_HINT);
+        filterBox.setHint(this.font.width(hint) <= filterBar.boxW() - 2 ? hint : Component.empty());
     }
 
     @Override
@@ -214,7 +236,7 @@ public final class EditorGuiScreen extends Screen {
         EditorScreenTheme theme = ClientDisplayConfig.getEditorScreenTheme();
         EditorRosterIndex index = EditorRosterClient.index();
         EditorScreenState.reconcile(index);
-        layout = InventoryEditorLayout.of(this.width, this.height);
+        layout = InventoryEditorLayout.of(this.width, this.height, EditorScreenState.filtersExpanded());
         float seconds = frameSeconds();
         BuilderTilePreviews.beginFrame(BAKES_PER_FRAME);
         RelayBuildPreviews.beginFrame();
@@ -227,28 +249,40 @@ public final class EditorGuiScreen extends Screen {
         orbit.advance(seconds);
 
         boolean browsing = EditorScreenState.page().isBrowser();
-        filterBox.visible = browsing;
-        filterBox.setEditable(browsing);
+        boolean filtering = hasFilterBar();
+        filterBox.visible = filtering;
+        filterBox.setEditable(filtering);
+        if (filtering) {
+            filterBar.layout(layout, this.font, index, browsing);
+            placeFilterBox();
+        }
 
         super.render(g, mouseX, mouseY, partialTick);   // background + the filter box
 
         drawPanel(g, theme);
-        tabs = EditorTabBar.layout(layout.tabs(), this.font::width, tabLabels());
+        tabs = EditorTabBar.layout(layout.tabs(), this.font::width, p -> EditorScreenLang.text(p.langKey()));
         hoveredTab = modal.isOpen() || search.isOpen() ? null
             : EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
+        // The standing plot's category is a cell of the Templates tab now, so that is the tab that
+        // wears the dot; the browser pane marks the cell itself.
         EditorTabBar.draw(g, this.font, layout.tabs(), tabs, EditorScreenState.page(),
-            EditorScreenPage.forCategory(ctx.standing() == null ? null : ctx.standing().category()),
+            ctx.standing() == null ? null : EditorScreenPage.TEMPLATES,
             ctx.dirty(), hoveredTab, theme);
 
         boolean covered = modal.isOpen() || search.isOpen();
         int mx = covered ? -1 : mouseX;
         int my = covered ? -1 : mouseY;
+        if (filtering) {
+            filterBar.render(g, this.font, mx, my);
+            drawFilterBox(g, mouseX, mouseY, partialTick);
+        }
         if (browsing) {
             browser.layout(layout, this.font, index);
             browser.render(g, this.font, theme, seconds, mx, my);
-            drawFilterBox(g, mouseX, mouseY, partialTick);
-        } else {
-            drawSettingsPage(g, theme, mx, my);
+        } else if (EditorScreenState.page() == EditorScreenPage.SETTINGS) {
+            settingsPane.render(g, this.font, theme, layout, mx, my);
+        } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
+            layoutPane.render(g, this.font, theme, layout, index, ctx.selection(), ctx.standing(), mx, my);
         }
 
         if (EditorCreatorBuilds.active()) {
@@ -298,35 +332,6 @@ public final class EditorGuiScreen extends Screen {
         g.fill(h.x() - 1, h.y() - 1, h.right() + 1, t.bottom() + 1, theme.subPanel());
     }
 
-    private List<String> tabLabels() {
-        return List.of(
-            EditorScreenLang.text(EditorScreenLang.TAB_ALL),
-            EditorScreenLang.text(EditorScreenLang.TAB_CARRIAGES),
-            EditorScreenLang.text(EditorScreenLang.TAB_CONTENTS),
-            EditorScreenLang.text(EditorScreenLang.TAB_TRACKS),
-            EditorScreenLang.text(EditorScreenLang.TAB_DIMENSIONS),
-            EditorScreenLang.text(EditorScreenLang.TAB_SETTINGS));
-    }
-
-    private void drawSettingsPage(GuiGraphics g, EditorScreenTheme theme, int mouseX, int mouseY) {
-        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(
-            layout.filter().x(), layout.filter().y(), layout.filter().w(),
-            layout.grid().bottom() - layout.filter().y());
-        g.fill(r.x() - 1, r.y() - 1, r.right() + 1, r.bottom() + 1, theme.subPanel());
-        List<CommandMenuEntry> rows = settingsRows();
-        int rowH = EditorDetailPane.ROW_H;
-        int visible = Math.max(1, r.h() / rowH);
-        settingsScroll = Math.max(0, Math.min(settingsScroll, Math.max(0, rows.size() - visible)));
-        int hoveredRow = settingsRowAt(mouseX, mouseY, r, rows, visible);
-        int hoveredSub = hoveredRow < 0 ? 0
-            : MenuRowPainter.hitCell(rows.get(hoveredRow), mouseX, r.x(), r.right());
-        for (int k = 0; k < visible && settingsScroll + k < rows.size(); k++) {
-            int idx = settingsScroll + k;
-            MenuRowPainter.drawRow(g, this.font, rows.get(idx), r.x(), r.y() + k * rowH, r.right(), rowH - 1,
-                idx, idx == hoveredRow, hoveredSub, null);
-        }
-    }
-
     /**
      * The filter box, drawn inside its own rectangle and nowhere else.
      *
@@ -345,22 +350,6 @@ public final class EditorGuiScreen extends Screen {
         g.enableScissor(x, y, x + w, y + h);
         filterBox.render(g, mouseX, mouseY, partialTick);
         g.disableScissor();
-    }
-
-    private List<CommandMenuEntry> settingsRows() {
-        VariantKey standing = EditorScreenState.standingIn();
-        PlotCategory cat = standing == null ? null : standing.category();
-        String name = standing == null ? "" : standing.displayName();
-        return EditorSettingsPage.rows(cat, name, ClientDisplayConfig.getEditorScreenTheme(),
-            ClientDisplayConfig::setEditorScreenTheme);
-    }
-
-    private int settingsRowAt(double mx, double my, InventoryEditorLayout.Rect r,
-                              List<CommandMenuEntry> rows, int visible) {
-        if (!r.contains(mx, my)) return -1;
-        int k = (int) ((my - r.y()) / EditorDetailPane.ROW_H);
-        int idx = settingsScroll + k;
-        return k < visible && idx < rows.size() ? idx : -1;
     }
 
     /** Why the grid is empty, or null when it is not: six answers that mean different things. */
@@ -403,10 +392,16 @@ public final class EditorGuiScreen extends Screen {
         String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
             ? EditorCreatorBuilds.viewedName()
             : entry.ownerName();
+        // Where it lands in the roster: under the chosen variant parent for the kinds that have
+        // sub-variants, at top level (blank) for the rest — carriages have no parents to land under.
+        String parent = CreatorLoadParent.supports(entry.kind())
+            ? CreatorLoadParent.parentFor(EditorCreatorBuilds.categoryOf(entry.kind())) : "";
         DungeonTrainNet.sendToServer(loadAsCopy
             ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
-                BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false)
-            : new BuilderProfileDownloadPacket(entry.relayId(), owner, ownerName, live));
+                BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false,
+                parent)
+            : new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.AS_IS, "",
+                owner, ownerName, live, false, parent));
         creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
     }
 
@@ -506,18 +501,27 @@ public final class EditorGuiScreen extends Screen {
     }
 
     /**
-     * Load all: every template on this page into the world, the plots cleared first.
+     * Load all: every template of the chosen category into the world, the plots cleared first.
      *
      * <p>The category switch is exactly that — it tears down every plot of every category and
      * stamps this one's models — so this is the button for it rather than a second way to do the
-     * same writes. Only on a category page: the All page is four categories at once, which the
-     * editor stamps one of, and a builder's uploads are not this world's to stamp.</p>
+     * same writes. Only under a category cell: All is four categories at once, which the editor
+     * stamps one of, and a builder's uploads are not this world's to stamp.</p>
      */
-    private void loadAllOnThisPage() {
-        PlotCategory category = EditorScreenState.page().category();
+    private void loadAllInCategory() {
+        PlotCategory category = EditorScreenState.category().category();
         if (category == null) return;
         CommandRunner.run("dungeontrain editor " + category.owner().id());
         afterCommand();
+    }
+
+    /** Choose the variant parent the selected build will be filed under when it is loaded. */
+    private void pickLoadParent() {
+        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
+        if (entry == null || !CreatorLoadParent.supports(entry.kind())) return;
+        PlotCategory category = EditorCreatorBuilds.categoryOf(entry.kind());
+        if (category == null) return;
+        modal.open(new CreatorParentPickerScreen(category, modal::pop));
     }
 
     /** The builder's upload the browser has selected, or null. */
@@ -526,12 +530,22 @@ public final class EditorGuiScreen extends Screen {
     }
 
     private void drawTooltips(GuiGraphics g, int mouseX, int mouseY) {
-        if (modal.isOpen() || search.isOpen() || inlineEdit.active()) return;
+        if (search.isOpen()) {
+            // The one hover text the panel carries: which relay its light is showing.
+            String lightTip = search.tooltipAt(mouseX, mouseY);
+            if (lightTip != null) g.renderTooltip(this.font, Component.literal(lightTip), mouseX, mouseY);
+            return;
+        }
+        if (modal.isOpen() || inlineEdit.active()) return;
         String tip = null;
         if (hoveredTab != null && hoveredTab.kind() == EditorTabBar.Kind.EXIT) {
             tip = EditorScreenLang.text(EditorScreenLang.TAB_EXIT);
+        } else if (hasFilterBar() && filterBar.hovered().kind() != EditorFilterBar.HitKind.NONE) {
+            tip = filterBar.tooltipAt(filterBar.hovered());
         } else if (EditorScreenState.page().isBrowser()) {
             tip = browser.tooltipAt(browser.hovered());
+        } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
+            tip = layoutPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
         }
         if (tip != null) {
             g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
@@ -559,7 +573,8 @@ public final class EditorGuiScreen extends Screen {
             tile == null ? null : tile.key(),
             tile == null ? null : tile.variant(),
             tile == null ? -1 : tile.selfWeight(),
-            standing, index.stampedCategory(), dirty);
+            standing, index.stampedCategory(), dirty,
+            tile == null ? null : tile.extras());
     }
 
     private float frameSeconds() {
@@ -597,20 +612,38 @@ public final class EditorGuiScreen extends Screen {
             onTab(tab);
             return true;
         }
-        if (EditorScreenState.page().isBrowser()) {
+        if (hasFilterBar()) {
             if (filterBox.mouseClicked(mouseX, mouseY, button)) {
                 setFocused(filterBox);
                 return true;
             }
+            EditorFilterBar.Hit filterHit = filterBar.hitTest(mouseX, mouseY);
+            if (filterHit.kind() != EditorFilterBar.HitKind.NONE) {
+                click();
+                onFilterHit(filterHit);
+                return true;
+            }
+        }
+        if (EditorScreenState.page().isBrowser()) {
             EditorBrowserPane.Hit hit = browser.hitTest(mouseX, mouseY);
             if (hit.kind() != EditorBrowserPane.HitKind.NONE) {
                 click();
                 onBrowserHit(hit);
                 return true;
             }
-        } else if (onSettingsClick(mouseX, mouseY)) {
-            click();
-            return true;
+        } else if (EditorScreenState.page() == EditorScreenPage.SETTINGS) {
+            EditorSettingsPane.Hit hit = settingsPane.hitTest(layout, mouseX, mouseY);
+            if (hit != null) {
+                click();
+                dispatchAt(hit.entry(), hit.sub());
+                return true;
+            }
+        } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
+            if (layoutPane.mouseClicked(layout, EditorRosterClient.index(), mouseX, mouseY, modal, inlineEdit)) {
+                click();
+                setFocused(null);
+                return true;
+            }
         }
         if (EditorCreatorBuilds.active()) {
             switch (creatorPane.hitTest(mouseX, mouseY)) {
@@ -627,6 +660,11 @@ public final class EditorGuiScreen extends Screen {
                 case LOAD -> {
                     click();
                     loadSelectedCreatorBuild();
+                    return true;
+                }
+                case PARENT -> {
+                    click();
+                    pickLoadParent();
                     return true;
                 }
                 case SUBMIT -> {
@@ -672,31 +710,48 @@ public final class EditorGuiScreen extends Screen {
         }
     }
 
-    private void onBrowserHit(EditorBrowserPane.Hit hit) {
-        VariantKey standing = EditorScreenState.standingIn();
-        EditorRosterIndex index = EditorRosterClient.index();
+    /** A click on the filter bar, which both roster tabs share — so both lists start over. */
+    private void onFilterHit(EditorFilterBar.Hit hit) {
         switch (hit.kind()) {
+            case TOGGLE -> EditorScreenState.toggleFilters();
             case CHIP -> {
-                if (browser.isPlayerChip(hit.index())) {
+                if (filterBar.isPlayerChip(hit.index())) {
                     openCreatorSearch();
                     return;
                 }
                 // Creator mode's own two chips narrow relay builds, which the roster's filter record
                 // knows nothing about — so they are applied first, and on their own terms.
-                if (browser.applyCreatorChip(hit.index())) {
-                    browser.resetScroll();
+                if (!filterBar.applyCreatorChip(hit.index())) {
+                    EditorScreenState.setFilters(filterBar.applyChip(hit.index(), EditorScreenState.filters()));
+                }
+            }
+            case ACTIVE -> {
+                if (filterBar.isPlayerActive(hit.index())) {
+                    openCreatorSearch();
                     return;
                 }
-                EditorScreenState.setFilters(browser.applyChip(hit.index(), EditorScreenState.filters()));
-                browser.resetScroll();
+                filterBar.applyActive(hit.index());
+            }
+            case CATEGORY -> {
+                EditorCategoryFilter cell = filterBar.categoryAt(hit.index());
+                if (cell != null) EditorScreenState.setCategory(cell);
             }
             case STRIP -> {
-                EditorRosterIndex.TypeStrip strip = browser.stripAt(hit.index());
+                EditorRosterIndex.TypeStrip strip = filterBar.stripAt(hit.index());
                 if (strip != null) EditorScreenState.setTypeName(strip.typeName());
-                browser.resetScroll();
             }
+            case LOAD_ALL -> loadAllInCategory();
+            case NONE -> { }
+        }
+        browser.resetScroll();
+        layoutPane.resetScroll();
+    }
+
+    private void onBrowserHit(EditorBrowserPane.Hit hit) {
+        VariantKey standing = EditorScreenState.standingIn();
+        EditorRosterIndex index = EditorRosterClient.index();
+        switch (hit.kind()) {
             case TILE -> selectOrEnter(browser.tiles().get(hit.index()).key());
-            case LOAD_ALL -> loadAllOnThisPage();
             case CREATOR_TILE -> {
                 EditorCreatorBuilds.select(browser.creatorTiles().get(hit.index()).relayId());
                 goingTo = null;
@@ -711,7 +766,7 @@ public final class EditorGuiScreen extends Screen {
                 else selectOrEnter(browser.subTiles().get(hit.index()).key());
             }
             case NEW -> {
-                PlotCategory page = EditorScreenState.page().category();
+                PlotCategory page = EditorScreenState.category().category();
                 EditorRosterIndex.TypeStrip strip = stripByName(index, page, EditorScreenState.effectiveTypeName(index));
                 if (strip == null) return;
                 List<EditorRosterIndex.Tile> all = index.tiles(page, strip.typeName());
@@ -740,6 +795,10 @@ public final class EditorGuiScreen extends Screen {
     private void onSearchClick(EditorCreatorSearch.Result result) {
         switch (result.outcome()) {
             case PICKED -> {
+                if (search.isPicking()) {
+                    creditBuilder(result.creator().uuid(), result.creator().name());
+                    return;
+                }
                 click();
                 EditorCreatorBuilds.show(result.creator().uuid(), result.creator().name());
                 forgetLastLoad();
@@ -760,6 +819,24 @@ public final class EditorGuiScreen extends Screen {
                 browser.resetScroll();
                 search.close();
             }
+            case RELAY_TOGGLED -> {
+                click();
+                // The same switch the Settings tab carries, minus the trip there and back. The
+                // panel stays open: the point of flipping it here is to re-ask the name typed.
+                EditorSettingsPage.setRelay(!BuilderProfileState.live());
+                EditorCreatorBuilds.requestFavourites();
+                EditorCreatorBuilds.refresh();
+                forgetLastLoad();
+                search.rearm();
+            }
+            case PICKED_ME -> {
+                var player = Minecraft.getInstance().player;
+                if (player != null) {
+                    creditBuilder(player.getUUID().toString().replace("-", ""),
+                        player.getGameProfile().getName());
+                }
+            }
+            case PICKED_NONE -> creditBuilder(null, "");
             // A click outside the panel closes it, the way clicking off any picker does.
             case NONE -> search.close();
             case CONSUMED -> { }
@@ -808,10 +885,20 @@ public final class EditorGuiScreen extends Screen {
                 dispatch(detail.testEntry());
                 return true;
             }
+            case RESEED -> {
+                dispatch(detail.reseedEntry());
+                return true;
+            }
             case GO_HERE -> {
                 if (detail.goHereEntry() == null) return false;
                 dispatch(detail.goHereEntry());
                 return true;
+            }
+            case PAGE_PREV -> {
+                return detail.scrollBy(-1);
+            }
+            case PAGE_NEXT -> {
+                return detail.scrollBy(+1);
             }
             case OLDER -> {
                 pageVersion(true);
@@ -823,20 +910,6 @@ public final class EditorGuiScreen extends Screen {
             }
             default -> { return false; }
         }
-    }
-
-    private boolean onSettingsClick(double mouseX, double mouseY) {
-        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(
-            layout.filter().x(), layout.filter().y(), layout.filter().w(),
-            layout.grid().bottom() - layout.filter().y());
-        List<CommandMenuEntry> rows = settingsRows();
-        int visible = Math.max(1, r.h() / EditorDetailPane.ROW_H);
-        int idx = settingsRowAt(mouseX, mouseY, r, rows, visible);
-        if (idx < 0) return false;
-        int sub = MenuRowPainter.hitCell(rows.get(idx), (int) mouseX, r.x(), r.right());
-        if (sub < 0) return false;
-        dispatchAt(rows.get(idx), sub);
-        return true;
     }
 
     /** A click on a data-sheet cell: type over it, run its command, or open its picker. */
@@ -852,11 +925,41 @@ public final class EditorGuiScreen extends Screen {
             afterCommand();
             return true;
         }
+        // Same gestures as the Layout tab's weight cell: click +1, shift-click −1, cmd-click
+        // types. The typed value goes through the inline field over the cell, as Type does.
+        if (action instanceof TemplateDataSheet.Action.Step step) {
+            if (MenuClickModifiers.cmdDown()) {
+                inlineEdit.begin(step.prefix(), placed.cell().text(), placed.rect());
+                setFocused(null);
+            } else {
+                CommandRunner.run(Screen.hasShiftDown() ? step.dec() : step.inc());
+                afterCommand();
+            }
+            return true;
+        }
         if (action instanceof TemplateDataSheet.Action.Open open) {
             modal.open(open.screen());
             return true;
         }
+        if (action instanceof TemplateDataSheet.Action.PickBuilder pick) {
+            setFocused(null);   // the filter box must not eat what is typed into the panel
+            search.openForPick(pick.prefix());
+            return true;
+        }
         return false;
+    }
+
+    /**
+     * A pick in the panel's credit mode: run the sheet's {@code builder} command with the chosen
+     * player and close. The roster the server re-sends afterwards redraws the sheet.
+     */
+    private void creditBuilder(String uuid, String name) {
+        String prefix = search.pickPrefix();
+        if (prefix == null) return;
+        click();
+        CommandRunner.run(uuid == null ? prefix + " none" : prefix + " " + uuid + " " + name);
+        search.close();
+        afterCommand();
     }
 
     private void dispatch(CommandMenuEntry entry) {
@@ -902,9 +1005,15 @@ public final class EditorGuiScreen extends Screen {
         if (EditorScreenState.page().isBrowser() && browser.overGrid(mouseX, mouseY)) {
             if (browser.scrollBy(dir)) return true;
         }
-        if (!EditorScreenState.page().isBrowser() && layout != null && layout.grid().contains(mouseX, mouseY)) {
-            settingsScroll = Math.max(0, settingsScroll + dir);
-            return true;
+        if (EditorScreenState.page() == EditorScreenPage.SETTINGS && layout != null
+                && EditorSettingsPane.rect(layout).contains(mouseX, mouseY)) {
+            return settingsPane.scrollBy(dir);
+        }
+        if (EditorScreenState.page() == EditorScreenPage.LAYOUT && layout != null
+                && layoutPane.over(layout, mouseX, mouseY)) {
+            // A half-typed value must not float over a list that just moved under it.
+            inlineEdit.cancel();
+            return layoutPane.scrollBy(dir);
         }
         if (detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) return true;
         if (HotbarPassthrough.scroll(this.minecraft, scrollY)) return true;

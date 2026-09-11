@@ -40,9 +40,22 @@ public final class EditorTemplateJumpBridge {
         return standing != null && standing.equalsIgnoreCase(id);
     }
 
-    /** Walk there, switching editor category only when it is not the one being stood in. */
+    /**
+     * Walk there, switching editor category only when it is not the one already stamped.
+     *
+     * <p>Between plots the status HUD names no category, but the plots are still stamped with one
+     * — and a category switch clears and restamps every plot, unsaved edits included. So the roster's
+     * own answer stands in for the HUD's: same category, no switch.</p>
+     */
     public static boolean go(BuilderPhotoPaths.Kind kind, String id, String subKind) {
-        return EditorTemplateJump.go(kind, id, subKind,
-            EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT));
+        return EditorTemplateJump.go(kind, id, subKind, currentCategory().toLowerCase(Locale.ROOT));
+    }
+
+    /** The category the player stands in, else the one the plots are stamped with, else nothing. */
+    static String currentCategory() {
+        String standing = EditorStatusHudOverlay.category();
+        if (standing != null && !standing.isEmpty()) return standing;
+        var stamped = EditorRosterClient.index().stampedCategory();
+        return stamped == null ? "" : stamped.id();
     }
 }

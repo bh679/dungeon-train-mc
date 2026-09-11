@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 
 import java.util.ArrayList;
@@ -91,10 +92,20 @@ public final class EditorRosterIndex {
     public record TypeStrip(String typeName, String modelId, PlotCategory category, int count) {}
 
     /** A tile: the row, its key, and the group's self weight when it is a parent. */
-    public record Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight, int relayId) {
+    public record Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight, int relayId,
+                       Extras extras) {
+        public Tile {
+            if (extras == null) extras = Extras.NONE;
+        }
+
         /** A tile the relay has no row for — every sub-variant, and any template never uploaded. */
         public Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight) {
             this(variant, key, selfWeight, 0);
+        }
+
+        /** The four-field shape from before a tile carried its room's tag and box. */
+        public Tile(EditorTypeMenusPacket.Variant variant, VariantKey key, int selfWeight, int relayId) {
+            this(variant, key, selfWeight, relayId, Extras.NONE);
         }
         public boolean isGroup() {
             return !variant.subVariants().isEmpty();
@@ -149,13 +160,23 @@ public final class EditorRosterIndex {
             if (gc == null || !g.typeName().equals(typeName)) continue;
             boolean onPage = gc == page || (page == PlotCategory.CARRIAGES && gc == PlotCategory.PARTS);
             if (!onPage) continue;
-            List<Tile> out = new ArrayList<>(g.entries().size());
-            for (EditorRosterPacket.Entry e : g.entries()) {
-                out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight(), e.relayId()));
-            }
-            return out;
+            return tiles(g);
         }
         return List.of();
+    }
+
+    /** Every roster group in the server's order — what the Layout tab walks, one section each. */
+    public List<EditorRosterPacket.Group> groups() {
+        return groups;
+    }
+
+    /** One group's entries as tiles, in roster order. */
+    public static List<Tile> tiles(EditorRosterPacket.Group g) {
+        List<Tile> out = new ArrayList<>(g.entries().size());
+        for (EditorRosterPacket.Entry e : g.entries()) {
+            out.add(new Tile(e.variant(), VariantKey.of(e.variant(), ""), e.selfWeight(), e.relayId()));
+        }
+        return out;
     }
 
     /**
@@ -298,7 +319,7 @@ public final class EditorRosterIndex {
                 EditorTypeMenusPacket.Variant v = e.variant();
                 VariantKey top = VariantKey.of(v, "");
                 if (top.sameTemplate(key)) {
-                    return new Tile(v, top, e.selfWeight(), e.relayId());
+                    return new Tile(v, top, e.selfWeight(), e.relayId(), Extras.of(e));
                 }
                 for (EditorTypeMenusPacket.Variant sv : v.subVariants()) {
                     VariantKey member = VariantKey.of(sv, top.displayName());
@@ -309,6 +330,37 @@ public final class EditorRosterIndex {
             }
         }
         return null;
+    }
+
+    /**
+     * What a roster entry knows beyond its variant: a portal room's settings tag and box, a contents
+     * template's random-flip axes. {@link #NONE} for every row that has neither — sub-variants
+     * included, which the roster does not describe this way.
+     *
+     * <p>What lets the detail pane build a room's rows for a selection the author is not standing
+     * in; the same sentinels as {@code EditorStatusPacket}, which those rows used to be read from.</p>
+     */
+    public record Extras(String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask) {
+        public static final Extras NONE = new Extras(EditorStatusPacket.NO_MODE, EditorStatusPacket.NO_SIZE,
+            EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_FLIP);
+
+        public static Extras of(EditorRosterPacket.Entry e) {
+            return new Extras(e.roomMode(), e.roomLength(), e.roomWidth(), e.roomHeight(), e.flipMask());
+        }
+
+        /** True when a portal room's tag rode along — the rows can be built from it. */
+        public boolean hasRoom() {
+            return !EditorStatusPacket.NO_MODE.equals(roomMode);
+        }
+
+        /** True when flip axes rode along — a top-level contents template. */
+        public boolean hasFlip() {
+            return (flipMask & EditorStatusPacket.FLIP_KNOWN) != 0;
+        }
+
+        public boolean flip(int bit) {
+            return (flipMask & bit) != 0;
+        }
     }
 
     /** The group that holds {@code key}, or null: which page and type strip to show for it. */
@@ -333,7 +385,7 @@ public final class EditorRosterIndex {
             for (EditorRosterPacket.Entry e : g.entries()) {
                 VariantKey top = VariantKey.of(e.variant(), "");
                 if (top.category() == key.category() && top.displayName().equals(key.parentId())) {
-                    return new Tile(e.variant(), top, e.selfWeight(), e.relayId());
+                    return new Tile(e.variant(), top, e.selfWeight(), e.relayId(), Extras.of(e));
                 }
             }
         }

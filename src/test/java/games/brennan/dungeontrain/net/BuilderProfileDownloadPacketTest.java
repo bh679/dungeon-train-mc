@@ -63,6 +63,21 @@ final class BuilderProfileDownloadPacketTest {
         assertEquals(original, back);
     }
 
+    @Test
+    @DisplayName("the variant parent a build is filed under rides along, and is blank for a plain load")
+    void parentIdRoundTrip() {
+        BuilderProfileDownloadPacket original = new BuilderProfileDownloadPacket(
+                4271, BuilderRelayInstall.Resolution.AS_IS, "", "", "", false, false, "user_builds");
+        BuilderProfileDownloadPacket back = roundTrip(original);
+        assertEquals("user_builds", back.parentId(), "a lost parent would land the build at top level unasked");
+        assertEquals(original, back);
+        assertEquals("", new BuilderProfileDownloadPacket(4271).parentId(), "a plain load names no parent");
+        assertEquals("", new BuilderProfileDownloadPacket(4271, "", "", false).parentId());
+        assertEquals("", new BuilderProfileDownloadPacket(
+                4271, BuilderRelayInstall.Resolution.AS_IS, "", "", "", false, false, null).parentId(),
+                "null normalises to blank so the codec never sees it");
+    }
+
     private static BuilderProfileDownloadPacket roundTrip(BuilderProfileDownloadPacket packet) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         BuilderProfileDownloadPacket.STREAM_CODEC.encode(buf, packet);

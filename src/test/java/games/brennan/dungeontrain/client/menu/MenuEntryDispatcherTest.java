@@ -114,4 +114,18 @@ final class MenuEntryDispatcherTest {
         assertTrue(ran[0]);
         assertTrue(h.log.isEmpty());
     }
+
+    @Test
+    @DisplayName("Cells dispatches the nth cell and clamps an index past the end")
+    void cells() {
+        Recorder h = new Recorder();
+        CommandMenuEntry row = new CommandMenuEntry.Cells(List.of(
+            new CommandMenuEntry.Stay("a", "cmd a"),
+            new CommandMenuEntry.Stay("b", "cmd b"),
+            new CommandMenuEntry.Run("c", "cmd c")), List.of(0.3, 0.6));
+        MenuEntryDispatcher.dispatch(row, 1, h, false);
+        MenuEntryDispatcher.dispatch(row, 7, h, false);
+        MenuEntryDispatcher.dispatch(row, -2, h, false);
+        assertEquals(List.of("stay:cmd b", "close:cmd c", "stay:cmd a"), h.log);
+    }
 }

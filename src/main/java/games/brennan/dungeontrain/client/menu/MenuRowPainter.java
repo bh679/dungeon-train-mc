@@ -55,6 +55,9 @@ public final class MenuRowPainter {
         if (entry instanceof CommandMenuEntry.Quad q) {
             return new CommandMenuEntry[] { q.e1(), q.e2(), q.e3(), q.e4() };
         }
+        if (entry instanceof CommandMenuEntry.Cells c) {
+            return c.cells().toArray(new CommandMenuEntry[0]);
+        }
         return new CommandMenuEntry[] { entry };
     }
 
@@ -69,7 +72,26 @@ public final class MenuRowPainter {
         if (entry instanceof CommandMenuEntry.Quad q) {
             return new double[] { q.boundary1(), q.boundary2(), q.boundary3() };
         }
+        if (entry instanceof CommandMenuEntry.Cells c) {
+            double[] out = new double[c.boundaries().size()];
+            for (int i = 0; i < out.length; i++) out[i] = c.boundaries().get(i);
+            return out;
+        }
         return new double[0];
+    }
+
+    /**
+     * The x-range {@code [x1, x2)} cell {@code sub} of {@code row} is drawn across, with the same
+     * rounding {@link #drawRow} uses — so a field drawn over a cell lands exactly on it.
+     */
+    public static int[] cellSpan(CommandMenuEntry row, int sub, int left, int right) {
+        double[] bounds = cellBoundaries(row);
+        int usable = right - left;
+        int count = bounds.length + 1;
+        int c = Math.max(0, Math.min(sub, count - 1));
+        int x1 = c == 0 ? left : left + (int) Math.round(bounds[c - 1] * usable);
+        int x2 = c == count - 1 ? right : left + (int) Math.round(bounds[c] * usable);
+        return new int[] { x1, x2 };
     }
 
     /** The text a cell shows — a Toggle may append its state. */

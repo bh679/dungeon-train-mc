@@ -33,6 +33,12 @@ public final class DungeonTrainClient {
         // the same log-collection path the death screen uses.
         SurveySubmitClientHook.register(BugLogReporter::maybeReport);
 
+        // "@s" in the chat box for a non-op capstone-holder: the server decides for real, this only
+        // keeps the syntax highlighter from painting the selector red once the server has exposed
+        // /advancement to us.
+        games.brennan.dungeontrain.advancement.SelfSelectorGrant.setClientCheck(
+            SelfSelectorClientCheck::serverExposedAdvancementCommand);
+
         // Distant Horizons draws its own LODs of the real world: it never sees the upside-down band's
         // block flip, and it never sees that a dimensional carriage is meant to be somewhere other
         // than the coordinates it is stamped at. Bind the per-frame suppression for both — behind the

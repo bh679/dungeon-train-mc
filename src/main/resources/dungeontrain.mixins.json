@@ -32,6 +32,7 @@
     "SpreadingSnowyDirtBlockUpsideDownMixin",
     "SnowLayerBlockUpsideDownMixin",
     "CropBlockCarriageSurviveMixin",
+    "ObserverBlockStampMixin",
     "FlowingFluidUpsideDownMixin",
     "FlowingFluidChuncksMixin",
     "FlowingFluidDisintegrationMixin",
@@ -58,13 +59,15 @@
     "StructureBandBiomeFilterMixin",
     "JigsawStructureAccessor",
     "RuinedPortalStructureAccessor",
-    "CommandsSelfRevokeMixin"
+    "EntityArgumentSelfSelectorMixin",
+    "EntitySelectorSelfPermissionMixin"
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",
     "client.DebugScreenOverlayDepthMixin",
     "client.BookViewScreenAccessor",
     "client.BookEditScreenAccessor",
+    "client.BookEditScreenAuthorMixin",
     "client.BookEditScreenSignMixin",
     "client.BookEditScreenSuspensionMixin",
     "CreateWorldScreenAccessor",

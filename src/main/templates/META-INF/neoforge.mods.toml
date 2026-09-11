@@ -88,6 +88,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Keep Trim is jarJar'd INSIDE this jar too (crafting-grid repair keeps the left-most
+# item's armor trim), so the shipped version is always exactly keeptrim_version.
+[[dependencies.${mod_id}]]
+    modId="keeptrim"
+    type="required"
+    versionRange="[${keeptrim_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"

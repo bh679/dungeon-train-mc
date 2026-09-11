@@ -1,17 +1,24 @@
 name: Modpack Reconcile
 
-# Backstop for silently-lost modpack versions.
+# Backstop AND repair for the CurseForge modpack falling behind.
 #
-# The primary guard is the "Verify the pack version actually published" step in
-# release-modpack.yml, which fails that release's run when CurseForge accepts an upload
-# and then rejects it during validation. This workflow is the coarse net underneath: it
-# compares what is PUBLICLY listed on both modpack platforms against the GitHub releases,
-# so a stall that slips past the per-release check still surfaces on its own.
+# Two things go wrong with CurseForge pack versions, and this workflow covers both:
+#
+#   1. A lost version. release-modpack.yml verifies each upload actually became public,
+#      because CurseForge can accept an upload and reject it during validation. That is the
+#      primary guard; the drift report below is the coarse net underneath it.
+#
+#   2. A DEFERRED version — the common case. CurseForge takes longer to approve the DT mod
+#      file than release-modpack.yml is willing to wait, and a pack that references an
+#      unapproved file is rejected. The release run therefore skips the upload (green,
+#      with a warning) and leaves it to the CATCH-UP step here, which publishes the newest
+#      release once its mod file is approved. Until Sept 2026 nothing retried at all, and the
+#      pack sat 41 releases behind while every one of those files was, by then, approved.
 #
 # The report always prints in full — scan it to see drift early. The job only FAILS on a
 # prolonged CurseForge stall (see the threshold below), which is deliberately generous:
-# since the auto-release cascade no longer publishes CurseForge pack versions, a quiet
-# stretch with no operator-dispatched release is normal and must not page anyone.
+# a quiet stretch with no operator-dispatched release is normal and must not page anyone.
+# With catch-up in place, a stall that trips it means catch-up ITSELF is broken.
 
 on:
   schedule:
@@ -23,12 +30,23 @@ on:
         required: false
         type: string
         default: "168"
+      dry_run:
+        description: "Report what catch-up WOULD dispatch, without dispatching it."
+        required: false
+        type: boolean
+        default: false
+
+# One reconcile at a time: two overlapping runs could each decide to dispatch the same tag.
+concurrency:
+  group: modpack-reconcile
+  cancel-in-progress: false
 
 jobs:
   reconcile:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: write   # catch-up dispatches release-modpack.yml
     steps:
       - uses: actions/checkout@v4
 
@@ -46,3 +64,40 @@ jobs:
           STALE_HOURS: ${{ inputs.fail_if_stale_hours || '168' }}
         run: |
           python3 scripts/modpack/reconcile.py --fail-if-stale-hours "$STALE_HOURS"
+
+      # Newest release missing from the pack AND its DT mod file approved → publish it.
+      # Nothing to do → no outputs → the dispatch step below is skipped. Never polls: it acts
+      # only on approvals that have already happened, so the next pass is at most 6h away.
+      - name: Catch up — find the newest publishable missing release
+        id: catchup
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CURSEFORGE_MODPACK_PROJECT_ID: ${{ vars.CURSEFORGE_MODPACK_PROJECT_ID }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          python3 scripts/modpack/catch-up.py $DRY_RUN
+
+      - name: Dispatch the CurseForge modpack for it
+        if: ${{ steps.catchup.outputs.tag != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.catchup.outputs.tag }}
+          DT_FILE_ID: ${{ steps.catchup.outputs.dt_file_id }}
+        run: |
+          set -euo pipefail
+          # The notes come from the GitHub Release body — by definition the text that
+          # release already published to GitHub and Modrinth (same source as
+          # reupload-curseforge.yml). Empty → release-modpack.yml's templated boilerplate.
+          NOTES=$(gh release view "$TAG" --json body --jq .body || true)
+          echo "Dispatching release-modpack.yml for $TAG (DT CurseForge file $DT_FILE_ID)…"
+          # auto=false: this is catching up a REAL release, so it goes through the same
+          # path an operator dispatch does. The approval wait there is a formality now —
+          # catch-up only picks files that are already approved.
+          gh workflow run release-modpack.yml \
+            -f tag="$TAG" \
+            -f dt_file_id="$DT_FILE_ID" \
+            -f auto=false \
+            -f changelog="$NOTES"
+          echo "::notice::Catch-up dispatched the CurseForge modpack for $TAG (DT file $DT_FILE_ID)."
