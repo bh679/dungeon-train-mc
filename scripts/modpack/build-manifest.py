@@ -3,8 +3,8 @@
 
 A CurseForge modpack manifest lists the Minecraft version, the modloader, and an
 explicit set of CurseForge mod files (by ``projectID`` + ``fileID``). Dungeon Train
-jarJars only DiscordPresence + joml-primitives *inside* its own jar; the sibling mods
-AIN/AIS/PlayerMob/EnderChestPersistence are un-bundled required downloads (so their own
+jarJars only DiscordPresence + EdibleBackpacks + KeepTrim + joml-primitives *inside* its own jar; the sibling mods
+AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything are un-bundled required downloads (so their own
 project pages get credited), which means the pack must list them explicitly:
 
   * Dungeon Train — project from ``modpack.config.json``, file ID passed in per release
