@@ -45,6 +45,8 @@
   "book.dungeontrain.statbook.tail.8": "Sa tingin ko'y karapat-dapat itong isulat.",
   "book.dungeontrain.statbook.tail.9": "Magpatuloy ka.",
   "echo.dungeontrain.mob_name": "Alingawngaw ni %s",
+  "gui.dungeontrain.editor_book.author_hint": "Kailangan ng pangalan ng may-akda para pumirma.",
+  "gui.dungeontrain.editor_book.next_author": "Susunod: May-akda",
   "gui.dungeontrain.book_vote.ask_prefix": "Tanong ng tren,",
   "gui.dungeontrain.book_vote.prompt.1": "\"Nagustuhan mo ba ang aklat na ito?\"",
   "gui.dungeontrain.book_vote.prompt.2": "\"Sulit ba ito sa biyahe?\"",

@@ -45,6 +45,8 @@
   "book.dungeontrain.statbook.tail.8": "Kupikir itu layak dicatat.",
   "book.dungeontrain.statbook.tail.9": "Lanjutkan.",
   "echo.dungeontrain.mob_name": "Gema dari %s",
+  "gui.dungeontrain.editor_book.author_hint": "Nama penulis diperlukan untuk menandatangani.",
+  "gui.dungeontrain.editor_book.next_author": "Lanjut: Penulis",
   "gui.dungeontrain.book_vote.ask_prefix": "Kereta bertanya,",
   "gui.dungeontrain.book_vote.prompt.1": "\"Apakah kamu menikmati buku ini?\"",
   "gui.dungeontrain.book_vote.prompt.2": "\"Apakah buku ini sepadan dengan perjalanannya?\"",

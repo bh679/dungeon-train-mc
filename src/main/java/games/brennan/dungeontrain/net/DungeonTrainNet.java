@@ -164,6 +164,11 @@ public final class DungeonTrainNet {
         registrar.playToClient(OpenLetterEditorPacket.TYPE, OpenLetterEditorPacket.STREAM_CODEC, OpenLetterEditorPacket::handle);
         registrar.playToServer(LetterDraftToLecternPacket.TYPE, LetterDraftToLecternPacket.STREAM_CODEC, LetterDraftToLecternPacket::handle);
 
+        // Editor prop books: client → server with the custom author name typed on the sign screen
+        // inside an editor plot, sent just ahead of vanilla's edit-book packet (see
+        // EditorBookAuthorPending + ServerGamePacketListenerImplSignBookMixin).
+        registrar.playToServer(EditorBookAuthorPacket.TYPE, EditorBookAuthorPacket.STREAM_CODEC, EditorBookAuthorPacket::handle);
+
         // Mod recommendation: the death screen's Mod Recommendations page sends one mod + comment per
         // submit (or a typed name, for a mod the player doesn't have); server consent-gates, posts it
         // to the Discord survey channel and queues a text-free telemetry event.

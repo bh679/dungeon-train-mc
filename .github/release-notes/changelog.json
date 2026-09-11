@@ -12065,8 +12065,24 @@
       "released_at": null
     },
     {
-      "id": "x-menu-exit-test-mode",
+      "id": "editor-book-custom-author",
       "version": "0.836.0",
+      "type": "feat",
+      "title": "Sign editor prop books as any author",
+      "summary": "When you sign a book & quill while standing in an editor plot, the sign screen now asks who the book is by. Type any name \u2014 an in-fiction author, a character, a pen name \u2014 and the book you stock into your carriage is credited to it instead of your Minecraft username. Once you have a title, the Sign and Close button becomes \"Next: Author\" and takes you to the author line; an author name is required before the book can be signed. Books signed out on the live train are unchanged and still carry your real name.",
+      "highlights": [
+        "Editable author line on the sign screen inside editor plots (Tab or click to switch between title and author)",
+        "\"Next: Author\" step button \u2014 an author name is required before signing a prop book",
+        "Available in all 21 languages"
+      ],
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "x-menu-exit-test-mode",
+      "version": "0.837.0",
       "type": "feat",
       "title": "Exit Test Mode and Reseed in the editor's X menu",
       "summary": "Testing a dimensional carriage from the editor X menu got two things it was missing. While you stand in a test copy, the Test the Carriage button becomes Exit Test Mode \u2014 one click takes you back to your plot and sweeps the copy. And a Reseed cell now sits beside it: outside a test it is a world switch that makes every test roll fresh contents; inside one it re-rolls the carriage you are standing in, leaving you where you are.",
