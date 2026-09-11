@@ -67,6 +67,7 @@
     "client.DebugScreenOverlayDepthMixin",
     "client.BookViewScreenAccessor",
     "client.BookEditScreenAccessor",
+    "client.BookEditScreenAuthorMixin",
     "client.BookEditScreenSignMixin",
     "client.BookEditScreenSuspensionMixin",
     "CreateWorldScreenAccessor",

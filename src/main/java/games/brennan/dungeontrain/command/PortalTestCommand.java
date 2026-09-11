@@ -77,15 +77,23 @@ public final class PortalTestCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("test")
-            .executes(ctx -> runTest(ctx.getSource(), null))
+            .executes(ctx -> runTest(ctx.getSource(), null, false))
             .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
+            // Reseed — bare, it re-rolls the test the author is standing in, right now. With on|off
+            // it is the world switch: on, each test rolls the room's contents afresh; off, every
+            // test stands up the same roll, which is what it always did. A literal, so a room that
+            // happens to be called "reseed" is reached by the argument below, never here.
+            .then(Commands.literal("reseed")
+                .executes(ctx -> runReseedNow(ctx.getSource()))
+                .then(Commands.literal("on").executes(ctx -> runReseed(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runReseed(ctx.getSource(), false))))
             // Naming the room tests one the author is not standing in — what the X menu's button
             // sends, since a tile can be selected from anywhere in the browser.
             .then(Commands.argument("room", StringArgumentType.word())
                 .suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
                     games.brennan.dungeontrain.track.variant.TrackVariantRegistry.namesFor(
                         games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM), builder))
-                .executes(ctx -> runTest(ctx.getSource(), StringArgumentType.getString(ctx, "room"))));
+                .executes(ctx -> runTest(ctx.getSource(), StringArgumentType.getString(ctx, "room"), false)));
     }
 
     /**
@@ -96,7 +104,11 @@ public final class PortalTestCommand {
      * basement either way, and where the author happens to be standing has never been part of what
      * it tests.</p>
      */
-    private static int runTest(CommandSourceStack source, String roomArg) {
+    /**
+     * @param freshRoll salt the rolls whatever the world switch says — a reseed of the test the
+     *                  author is already standing in
+     */
+    private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -106,7 +118,8 @@ public final class PortalTestCommand {
         }
 
         ServerLevel overworld = source.getServer().overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
+        CarriageDims dims = worldData.dims();
 
         // Already inside one: stamping a second would leave the first standing and lose the way home
         // to the plot. Send them back first, then in again, so the button is idempotent.
@@ -225,7 +238,8 @@ public final class PortalTestCommand {
             // PortalRoomTiler around the player, so an endless room repeats here exactly as it does
             // on the train, block variants and all.
             PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE);
+            PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
+            saltFor(worldData, overworld, freshRoll));
 
         PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
 
@@ -253,19 +267,96 @@ public final class PortalTestCommand {
 
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
-        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, roomName));
+        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, roomName,
+            worldData.isPortalTestReseed()));
         // The room's own light. In play PortalCarriageEvents sends this to whoever stands inside a
         // live pair's room, on the same box; a test session is not a pair, so nothing there sees
         // it, and a room set to Daylight tested dark — which is precisely what the test is for.
         sendSky(player, dims, layout, structure);
 
-        LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}",
+        LOGGER.info("[DungeonTrain] portal test: stamped '{}' ({}x{}x{}) at {} for {} — arrival {}, salt={}",
             roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
-            player.getName().getString(), arrival);
+            player.getName().getString(), arrival, structure.seedSalt());
 
         source.sendSuccess(() -> Component.literal(
             "You're in the doorway of '" + roomName + "' — a corridor each side, no train attached. "
                 + "Back in the menu returns you to the plot.").withStyle(ChatFormatting.AQUA), false);
+        return 1;
+    }
+
+    /**
+     * The salt this test's rolls are folded with: none while the switch is off, so the test stamps
+     * what it always did; a fresh random one while it is on. Never zero when on — zero is the
+     * unsalted roll, and a reseed that landed on it would silently repeat the last test.
+     */
+    private static int saltFor(DungeonTrainWorldData worldData, ServerLevel level, boolean freshRoll) {
+        if (!freshRoll && !worldData.isPortalTestReseed()) return PortalStructure.NO_SALT;
+        return level.random.nextInt() | 1;
+    }
+
+    /**
+     * {@code portal test reseed} — re-roll the test the author is standing in. The same room, a
+     * fresh salt: runTest already sends them back and in again when a session is live, so this is
+     * that trip with the roll forced.
+     *
+     * <p><b>They stay where they were.</b> The trip lands them in the doorway, but an author looking
+     * at a chest wants the chest re-rolled under their nose, not a walk back to it. So where they
+     * stood is put back afterwards — provided it is still inside the stamped box and the new roll
+     * left it open. A spot the reseed filled (a wall variant, a bookcase where there was floor)
+     * would suffocate them, and they are left in the doorway instead.</p>
+     */
+    private static int runReseedNow(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+        PortalTestSession.Session session = PortalTestSession.get(player.getUUID());
+        if (session == null) {
+            source.sendFailure(Component.literal(
+                "Not in a test carriage — Test the Carriage first, then Reseed rolls it again.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        ServerLevel overworld = source.getServer().overworld();
+        boolean wasHere = player.level() == overworld;
+        Vec3 stood = player.position();
+        float yaw = player.getYRot();
+        float pitch = player.getXRot();
+
+        int result = runTest(source, session.roomName(), true);
+        if (result == 0 || !wasHere) return result;
+
+        PortalTestSession.Session fresh = PortalTestSession.get(player.getUUID());
+        if (fresh == null) return result;
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BoundingBox box = PortalCarriageBuilder.footprintOf(overworld, fresh.structure(), dims);
+        if (!box.isInside(BlockPos.containing(stood))) return result;
+        // The player's own box, moved to where they stood, against what the reseed just wrote.
+        if (!overworld.noCollision(player, player.getBoundingBox().move(stood.subtract(player.position())))) {
+            return result;
+        }
+        player.teleportTo(overworld, stood.x, stood.y, stood.z, yaw, pitch);
+        return result;
+    }
+
+    /** {@code portal test reseed on|off} — flip the world switch and tell the client what it now holds. */
+    private static int runReseed(CommandSourceStack source, boolean on) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+        DungeonTrainWorldData.get(source.getServer().overworld()).setPortalTestReseed(on);
+        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.of(player));
+        source.sendSuccess(() -> Component.literal(on
+            ? "Reseed on test: on — each test rolls the room's contents afresh."
+            : "Reseed on test: off — each test stands up the same roll.")
+            .withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
@@ -307,7 +398,8 @@ public final class PortalTestCommand {
         if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
             player.setGameMode(session.previousGameType());
         }
-        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none());
+        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none(
+            DungeonTrainWorldData.get(source.getServer().overworld()).isPortalTestReseed()));
         DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.none());
 
         // Take the room's fog, daylight, train audio and depth disguise back. The same call the

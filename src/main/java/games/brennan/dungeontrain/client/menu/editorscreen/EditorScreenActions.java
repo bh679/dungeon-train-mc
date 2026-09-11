@@ -7,9 +7,11 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
+import games.brennan.dungeontrain.client.menu.ParentRemoveConfirmScreen;
 import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
+import games.brennan.dungeontrain.client.PortalTestSessionState;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
@@ -41,6 +43,9 @@ import java.util.function.Supplier;
  * which is addressed, where the category supports it.</p>
  */
 public final class EditorScreenActions {
+
+    /** The way out of a test carriage — the same command the row-list menu's Back row runs. */
+    static final String EXIT_TEST_COMMAND = "dungeontrain portal test back";
 
     /** What the builders need to know about the selection and the player. */
     public record Ctx(
@@ -243,7 +248,42 @@ public final class EditorScreenActions {
                     "Remove '" + sel.modelName() + "'?",
                     "dungeontrain editor part reset " + sel.modelId() + " " + sel.modelName()));
         }
+        CommandMenuEntry parent = parentRemoveEntry(ctx);
+        if (parent != null) return parent;
+        if (sel.category() == PlotCategory.PORTALS) {
+            // Addressed by room name: the in-plot menu's `reset <kind>` acts on the plot the player
+            // stands in, which is not necessarily the row selected here.
+            return new CommandMenuEntry.DrillIn("Remove",
+                new games.brennan.dungeontrain.client.menu.ConfirmScreen(
+                    "Remove '" + sel.displayName() + "'?", resetCommand(sel)));
+        }
         return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.displayName());
+    }
+
+    /** The name-addressed reset for a selection, without a mode word; null for categories without one. */
+    private static String resetCommand(VariantKey sel) {
+        return switch (sel.category()) {
+            case CONTENTS -> "dungeontrain editor contents reset " + sel.modelId();
+            case PORTALS -> "dungeontrain editor portals reset " + sel.modelId() + " " + sel.modelName();
+            default -> null;
+        };
+    }
+
+    /**
+     * Remove on a template that has sub-variants: the three-way {@link ParentRemoveConfirmScreen}
+     * (delete all / unparent / promote the first) in place of the plain Yes/No, wrapping the same
+     * reset command {@link EditorMenuScreen#removeEntryFor} sends with a mode word appended. Null
+     * when the selection has no sub-variants or its category has no groups.
+     */
+    static CommandMenuEntry parentRemoveEntry(Ctx ctx) {
+        if (!ctx.hasSelection()) return null;
+        VariantKey sel = ctx.selection();
+        List<EditorTypeMenusPacket.Variant> subs = ctx.variant().subVariants();
+        if (subs == null || subs.isEmpty()) return null;
+        String base = resetCommand(sel);
+        if (base == null) return null;
+        return new CommandMenuEntry.DrillIn("Remove",
+            new ParentRemoveConfirmScreen(sel.displayName(), base, subs.size(), subs.get(0).displayName()));
     }
 
     /**
@@ -295,11 +335,42 @@ public final class EditorScreenActions {
      * <p>It used to require standing in the room, because the command could only name the plot the
      * author was in. The room is stamped in its own band in the basement either way, so where they
      * were standing was never part of what it tested — only of how it was named.</p>
+     *
+     * <p>While a test is running the same button is the way back out — Exit Test Mode, the row-list
+     * menu's "Back from" row ({@code MainMenuScreen}). Independent of the selection: the test copy
+     * sits in the basement between plots, where nothing is "here" to select.</p>
      */
     public static CommandMenuEntry testEntry(Ctx ctx) {
+        if (PortalTestSessionState.active()) {
+            return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.EXIT_TEST),
+                EXIT_TEST_COMMAND);
+        }
         if (!ctx.hasSelection() || ctx.category() != PlotCategory.PORTALS) return null;
         return new CommandMenuEntry.DrillIn(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
             new PortalTestSaveCheckScreen(ctx.selection().modelName()));
+    }
+
+    /** The world's reseed-on-test switch, the same command either way the server holds it. */
+    static final String RESEED_ON_COMMAND = "dungeontrain portal test reseed on";
+    static final String RESEED_OFF_COMMAND = "dungeontrain portal test reseed off";
+    /** Re-roll the test carriage the author is standing in, now. */
+    static final String RESEED_NOW_COMMAND = "dungeontrain portal test reseed";
+
+    /**
+     * Reseed, beside Test the Carriage. Outside a test it is the world switch: on, each test rolls
+     * the room's contents afresh; off, every test stands up the same roll. Tint alone shows the
+     * state — the cell is too narrow for an [ON]/[OFF] suffix, the same call the Mirror X / Y / Z
+     * cells make. Inside a test it is a button instead: it re-rolls the copy they are standing in,
+     * whatever the switch says — the switch is about the next test, and they are already in one.
+     */
+    public static CommandMenuEntry reseedEntry() {
+        if (PortalTestSessionState.active()) {
+            return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.RESEED),
+                RESEED_NOW_COMMAND);
+        }
+        return new CommandMenuEntry.Toggle(EditorScreenLang.text(EditorScreenLang.RESEED),
+            PortalTestSessionState.reseed(), RESEED_ON_COMMAND, RESEED_OFF_COMMAND,
+            /*showStateText*/ false, /*cmdToToggleOthers*/ null);
     }
 
     // ------------------------------------------------------------------
