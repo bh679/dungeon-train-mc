@@ -30,7 +30,7 @@ final class EditorLayoutPane {
     private final Consumer<VariantKey> select;
     private EditorRosterIndex lastIndex;
     private Set<String> lastCollapsed;
-    private Set<String> lastCollapsedGroups;
+    private Set<String> lastExpandedGroups;
     private EditorLayoutPage.Query lastQuery;
     private List<EditorLayoutPage.Row> rows = List.of();
     private int scroll;
@@ -50,14 +50,14 @@ final class EditorLayoutPane {
      */
     List<EditorLayoutPage.Row> rows(EditorRosterIndex index) {
         Set<String> collapsed = EditorScreenState.collapsedSections();
-        Set<String> groups = EditorScreenState.collapsedGroups();
+        Set<String> groups = EditorScreenState.expandedGroups();
         EditorLayoutPage.Query query = EditorLayoutPage.Query.current();
-        if (index != lastIndex || collapsed != lastCollapsed || groups != lastCollapsedGroups || !query.equals(lastQuery)) {
+        if (index != lastIndex || collapsed != lastCollapsed || groups != lastExpandedGroups || !query.equals(lastQuery)) {
             rows = EditorLayoutPage.rows(index, new EditorLayoutPage.Folds(collapsed, groups), query, select,
                 EditorScreenState::toggleSection, EditorScreenState::toggleGroup);
             lastIndex = index;
             lastCollapsed = collapsed;
-            lastCollapsedGroups = groups;
+            lastExpandedGroups = groups;
             lastQuery = query;
         }
         return rows;

@@ -168,10 +168,11 @@ final class EditorLayoutPageTest {
     }
 
     @Test
-    @DisplayName("a contents group: the parent with a fold cell, its own share as (self), then its member one step in")
+    @DisplayName("an opened contents group: the parent with a fold cell, its own share as (self), then its member one step in")
     void contentsGroup() {
         Recorder rec = new Recorder();
-        List<EditorLayoutPage.Row> rows = rows(rec, EditorLayoutPage.Folds.NONE, EditorLayoutPage.Query.EVERYTHING);
+        List<EditorLayoutPage.Row> rows = rows(rec, new EditorLayoutPage.Folds(Set.of(), Set.of("contents/armor/armor")),
+            EditorLayoutPage.Query.EVERYTHING);
         List<EditorLayoutPage.Row> section = rows.stream()
             .filter(r -> r.sectionId().equals("contents/Contents") && !r.isHeader()).toList();
         assertEquals(List.of(0, 1, 1), section.stream().map(EditorLayoutPage.Row::depth).toList());
@@ -208,23 +209,27 @@ final class EditorLayoutPageTest {
     }
 
     @Test
-    @DisplayName("a folded group keeps its parent, marked folded, and hides (self) and its members")
-    void foldedGroup() {
+    @DisplayName("by default every group is folded: its parent, marked folded, with no (self) row or members under it")
+    void foldedByDefault() {
         Recorder rec = new Recorder();
-        List<EditorLayoutPage.Row> rows = rows(rec, new EditorLayoutPage.Folds(Set.of(), Set.of("contents/armor/armor")),
-            EditorLayoutPage.Query.EVERYTHING);
+        List<EditorLayoutPage.Row> rows = rows(rec, EditorLayoutPage.Folds.DEFAULT, EditorLayoutPage.Query.EVERYTHING);
         assertEquals(List.of("armor"), names(rows, "contents/Contents"));
-        EditorLayoutPage.Row parent = rowFor(rows, "armor", 0);
-        assertEquals(EditorLayoutPage.FOLDED, cellsOf(parent)[FOLD].label());
-        // Other groups are untouched.
+        assertEquals(List.of("house"), names(rows, "portals/Dimensional Carriage"));
+        assertEquals(List.of("plain"), names(rows, "tracks/Pillar Top"));
+        assertEquals(EditorLayoutPage.FOLDED, cellsOf(rowFor(rows, "armor", 0))[FOLD].label());
+        // Opening one leaves the others folded.
+        rows = rows(rec, new EditorLayoutPage.Folds(Set.of(), Set.of("portals/portal_room/house")), EditorLayoutPage.Query.EVERYTHING);
+        assertEquals(List.of("armor"), names(rows, "contents/Contents"));
         assertEquals(List.of("house", "evilhouse"), names(rows, "portals/Dimensional Carriage"));
+        // The no-folds overloads open everything, for the callers that want the whole table.
+        assertEquals(List.of("armor", "armor", "armor5"), names(rows(rec, Set.of()), "contents/Contents"));
     }
 
     @Test
     @DisplayName("a search shows what it matched even inside a folded group")
     void searchOpensFoldedGroup() {
         Recorder rec = new Recorder();
-        List<EditorLayoutPage.Row> rows = rows(rec, new EditorLayoutPage.Folds(Set.of(), Set.of("contents/armor/armor")),
+        List<EditorLayoutPage.Row> rows = rows(rec, EditorLayoutPage.Folds.DEFAULT,
             new EditorLayoutPage.Query(EditorCategoryFilter.ALL, "", EditorRosterIndex.Filters.NONE, "armor5"));
         assertEquals(List.of("armor", "armor", "armor5"), names(rows, "contents/Contents"));
         assertEquals(EditorLayoutPage.OPEN, cellsOf(rowFor(rows, "armor", 0))[FOLD].label());
@@ -317,13 +322,13 @@ final class EditorLayoutPageTest {
         EditorScreenState.toggleSection(null);
         assertEquals(twice, EditorScreenState.collapsedSections());
 
-        Set<String> g0 = EditorScreenState.collapsedGroups();
+        Set<String> g0 = EditorScreenState.expandedGroups();
         EditorScreenState.toggleGroup("contents/armor/armor");
-        Set<String> g1 = EditorScreenState.collapsedGroups();
+        Set<String> g1 = EditorScreenState.expandedGroups();
         assertNotSame(g0, g1);
         assertTrue(g1.contains("contents/armor/armor"));
         EditorScreenState.toggleGroup("contents/armor/armor");
-        assertFalse(EditorScreenState.collapsedGroups().contains("contents/armor/armor"));
+        assertFalse(EditorScreenState.expandedGroups().contains("contents/armor/armor"));
         EditorScreenState.toggleGroup(null);
         assertNull(null);
     }
