@@ -4280,5 +4280,14 @@
         "1000"
       ]
     }
+  },
+  "gui.dungeontrain.crash_recovery.world": {
+    "1": {
+      "label": "the crashed world's name",
+      "examples": [
+        "Dungeon Train 1757400000000",
+        "World 1757400000000"
+      ]
+    }
   }
 }
