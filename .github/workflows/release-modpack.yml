@@ -79,9 +79,12 @@ jobs:
       # This used to be a fixed `sleep 15m` — a guess. When approval took longer, or never
       # came at all (every DT file after v0.625.0 in Aug 2026), the pack was built around an
       # unapproved file and rejected AFTER upload, leaving this workflow green and the release
-      # silently missing from the pack. Ask the real question instead, and stop if the answer
-      # is no: a re-dispatch is cheap, a silently missing pack version is not.
+      # silently missing from the pack. Ask the real question instead, and if the answer is
+      # no, DEFER: every step below gates on `approved == 'true'`, and modpack-reconcile.yml's
+      # catch-up publishes this tag once the file is approved. Failing here instead was the
+      # bug that left the pack 41 releases behind — nothing ever retried.
       - name: Wait for CurseForge to approve the mod file
+        id: approval
         env:
           DT_FILE_ID: ${{ inputs.dt_file_id }}
           APPROVAL_TIMEOUT_MINUTES: ${{ inputs.approval_timeout_minutes }}
@@ -89,15 +92,33 @@ jobs:
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
           CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
         run: |
+          # Writes approved=true|false to $GITHUB_OUTPUT; exits 0 either way under --on-timeout defer.
           python3 scripts/modpack/wait-for-approval.py \
-            --file-id "$DT_FILE_ID" --timeout-minutes "$APPROVAL_TIMEOUT_MINUTES"
+            --file-id "$DT_FILE_ID" --timeout-minutes "$APPROVAL_TIMEOUT_MINUTES" \
+            --on-timeout defer
+
+      - name: Deferred — leaving this release to the scheduled catch-up
+        if: ${{ steps.approval.outputs.approved != 'true' }}
+        env:
+          TAG: ${{ inputs.tag }}
+          DT_FILE_ID: ${{ inputs.dt_file_id }}
+        run: |
+          echo "::warning title=Modpack deferred::$TAG not published to the CurseForge modpack yet — DT file $DT_FILE_ID is still awaiting approval. modpack-reconcile.yml (every 6h) will publish it once approved; nothing to do by hand."
+          {
+            echo "### CurseForge modpack: deferred"
+            echo
+            echo "**$TAG** was not published because DT file \`$DT_FILE_ID\` is still awaiting CurseForge approval."
+            echo "The 6-hourly **Modpack Reconcile** catch-up will publish it once the file is approved."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Modpack override allowlist
         # overrides/ ships verbatim to every player. Re-checked here because this workflow is
         # dispatchable with --ref <branch>, which bypasses build.yml's modpack-checks job.
+        if: ${{ steps.approval.outputs.approved == 'true' }}
         run: python3 scripts/modpack/check-overrides.py
 
       - name: Render modpack manifest
+        if: ${{ steps.approval.outputs.approved == 'true' }}
         env:
           TAG: ${{ inputs.tag }}
           DT_FILE_ID: ${{ inputs.dt_file_id }}
@@ -111,6 +132,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Publish modpack to CurseForge
+        if: ${{ steps.approval.outputs.approved == 'true' }}
         env:
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
           CURSEFORGE_MODPACK_PROJECT_ID: ${{ vars.CURSEFORGE_MODPACK_PROJECT_ID }}
@@ -140,7 +162,7 @@ jobs:
       # Skipped on dry runs (nothing was uploaded). Failing here does not undo the upload —
       # it exists to make a rejection visible the same day instead of weeks later.
       - name: Verify the pack version actually published
-        if: ${{ !inputs.dry_run }}
+        if: ${{ steps.approval.outputs.approved == 'true' && !inputs.dry_run }}
         env:
           TAG: ${{ inputs.tag }}
           CURSEFORGE_MODPACK_PROJECT_ID: ${{ vars.CURSEFORGE_MODPACK_PROJECT_ID }}
