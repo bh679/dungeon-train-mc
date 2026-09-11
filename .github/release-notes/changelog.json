@@ -11968,6 +11968,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "start-again-earned-burrito-only",
+      "version": "0.831.0",
+      "type": "fix",
+      "title": "\"It's Not That Simple\" is now actually earnable \u2014 and only honestly",
+      "summary": "The one advancement that sits after Everything Burrito had two problems. Players without cheats could never run the command that earns it, and players in Free Play could record it without ever earning the burrito. Now a player who has honestly completed Everything Burrito can type /advancement revoke @s everything in survival \u2014 it autocompletes for them, and only them \u2014 and wiping their slate earns It's Not That Simple without touching Free Play. Granting the burrito with commands no longer counts, and nothing earned in a Free Play run is recorded to your profile.",
+      "highlights": [
+        "/advancement revoke @s everything works without cheats once you hold Everything Burrito, and autocompletes only then",
+        "Earning it never triggers Free Play",
+        "It's Not That Simple requires a genuinely earned Everything Burrito and is never recorded from a Free Play run"
+      ],
+      "pr": 1350,
+      "date": "2026-09-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
