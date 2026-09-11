@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.client.videos;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Session cache of the relay's curated video list — the data behind the main-menu Videos page.
@@ -19,6 +22,8 @@ public final class VideoCatalog {
 
     private static volatile State state = State.IDLE;
     private static volatile List<VideoEntry> entries = List.of();
+    /** Row ids this player flagged this session — the row's flag draws filled and won't re-open. */
+    private static volatile Set<Integer> flagged = Set.of();
 
     private VideoCatalog() {}
 
@@ -45,6 +50,31 @@ public final class VideoCatalog {
         ensureFetched();
     }
 
+    /** Has this player already flagged this row this session? */
+    public static boolean isFlagged(int id) {
+        return flagged.contains(id);
+    }
+
+    /** Remember a flag (new set, old one untouched). */
+    public static void markFlagged(int id) {
+        Set<Integer> next = new HashSet<>(flagged);
+        next.add(id);
+        flagged = Set.copyOf(next);
+    }
+
+    /**
+     * Drop one row locally — the relay just said it is off this player's list (hidden, or off the
+     * kid list on a kid-mode client), and waiting for the next session to see that would look like
+     * the flag did nothing.
+     */
+    public static void remove(int id) {
+        List<VideoEntry> next = new ArrayList<>(entries.size());
+        for (VideoEntry v : entries) {
+            if (v.id() != id) next.add(v);
+        }
+        entries = List.copyOf(next);
+    }
+
     static void accept(List<VideoEntry> fetched) {
         entries = List.copyOf(fetched);
         state = State.LOADED;
@@ -58,5 +88,6 @@ public final class VideoCatalog {
     static void reset() {
         state = State.IDLE;
         entries = List.of();
+        flagged = Set.of();
     }
 }

@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 
@@ -46,7 +47,10 @@ public final class VideoCatalogFetcher {
     /** Fetch the catalogue off-thread. No-throw. */
     static void fetchAsync() {
         try {
-            String url = DungeonTrain.relayBaseUrl() + "/videos";
+            // A kid-mode client asks for the kid list: the relay drops what adults (or enough kids)
+            // have flagged as not safe for kids. Nothing else about the player goes with it.
+            String url = DungeonTrain.relayBaseUrl() + "/videos"
+                    + (ClientDisplayConfig.getContentMode().isKid() ? "?mode=kid" : "");
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Accept", "application/json")

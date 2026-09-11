@@ -128,7 +128,8 @@ public final class VideosScreen extends Screen {
 
         int listTop = TOP + BUTTON_H + GAP;
         int listBottom = this.height - MARGIN - BOTTOM_ROW_H - GAP;
-        list = addRenderableWidget(new VideoList(this.font, MARGIN, listTop, rowW, listBottom - listTop, this::open));
+        list = addRenderableWidget(new VideoList(this.font, MARGIN, listTop, rowW, listBottom - listTop,
+                this::open, this::flag));
         // The suggestion panel hangs over the list: while it is open, the rows under it neither
         // highlight nor answer clicks.
         list.setCoveredBy((mx, my) -> dropdown.isMouseOver(mx, my));
@@ -141,14 +142,14 @@ public final class VideosScreen extends Screen {
                     refresh();
                 }));
 
-        // Bottom row: Video Tools (the content-creator page — how to film the game) | Submit a video
-        // (a link into the operator's review queue) | Done.
+        // Bottom row: Creator Tools (the Video Tools page under the name that says who it is for) |
+        // Submit a video (a link into the operator's review queue) | Done.
         int bottomY = this.height - MARGIN - BOTTOM_ROW_H;
         int bottomW = Math.min(3 * 100 + 2 * GAP, rowW);
         int thirdW = (bottomW - 2 * GAP) / 3;
         int bx = this.width / 2 - bottomW / 2;
         Button tools = addRenderableWidget(new DarkTintedButton(bx, bottomY, thirdW, BOTTOM_ROW_H,
-                Component.translatable("gui.dungeontrain.video_tools.button"), b -> {
+                Component.translatable("gui.dungeontrain.videos.creator_tools"), b -> {
                     UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_TOOLS);
                     Minecraft.getInstance().setScreen(new VideoToolsScreen(this));
                 }));
@@ -272,6 +273,12 @@ public final class VideosScreen extends Screen {
             }
             Minecraft.getInstance().setScreen(this);
         }, url, true));
+    }
+
+    /** The row's ⚑: report this video. The flag screen talks to the relay and comes back here. */
+    private void flag(VideoEntry v) {
+        UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_FLAG);
+        Minecraft.getInstance().setScreen(new VideoFlagScreen(this, v));
     }
 
     // ---- render --------------------------------------------------------------------

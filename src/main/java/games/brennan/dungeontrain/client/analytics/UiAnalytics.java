@@ -108,6 +108,8 @@ public final class UiAnalytics {
     // "Submit a video" on the Videos page: the click opens the submit screen, the confirm is the
     // relay accepting the link (yes) or refusing it (no). Whitelisted alongside the two above.
     public static final String TARGET_VIDEO_SUBMIT = "video_submit";
+    // The ⚑ on a Videos-page row: click = the flag screen opened, confirm = the relay recorded a flag.
+    public static final String TARGET_VIDEO_FLAG = "video_flag";
     // "Reset Everything" on the Video Tools page — opening the confirm screen, not the wipe itself.
     // Same whitelist caveat as above: until the relay knows "video_tools_reset" this 400s silently,
     // which costs a funnel row and nothing else.

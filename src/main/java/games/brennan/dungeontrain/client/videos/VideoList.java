@@ -44,10 +44,17 @@ public final class VideoList extends AbstractWidget {
     private static final int TITLE_COLOUR = 0xFFFFFFFF;
     private static final int SUB_COLOUR = 0xFF9A9A9A;
     private static final int STAR_COLOUR = 0xFFF5C542;
+    /** The ⚑ in the row's bottom-right corner: faint until hovered, filled once this player flagged it. */
+    private static final int FLAG_IDLE = 0x60FFFFFF;
+    private static final int FLAG_HOVER = 0xFFFFFFFF;
+    private static final int FLAG_DONE = 0xFFE08A3A;
+    /** Square hit target around the ⚑, so it is clickable without pixel aim. */
+    private static final int FLAG_HIT = 12;
     private static final int TILE_TEXT = 0xFFFFFFFF;
 
     private final Font font;
     private final Consumer<VideoEntry> onOpen;
+    private final Consumer<VideoEntry> onFlag;
     private final ListScrollbar scrollbar = new ListScrollbar();
 
     private List<VideoEntry> rows = List.of();
@@ -58,10 +65,12 @@ public final class VideoList extends AbstractWidget {
      */
     private BiPredicate<Double, Double> covered = (mx, my) -> false;
 
-    public VideoList(Font font, int x, int y, int width, int height, Consumer<VideoEntry> onOpen) {
+    public VideoList(Font font, int x, int y, int width, int height,
+                     Consumer<VideoEntry> onOpen, Consumer<VideoEntry> onFlag) {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.videos.list"));
         this.font = font;
         this.onOpen = onOpen;
+        this.onFlag = onFlag;
     }
 
     /** Replace the rows (already filtered and sorted) and jump back to the top. */
@@ -137,8 +146,27 @@ public final class VideoList extends AbstractWidget {
         // Two text lines centred on the thumbnail's height.
         int textY = thumbY + (THUMB_H - font.lineHeight * 2 - 2) / 2;
         g.drawString(font, font.plainSubstrByWidth(v.displayTitle(), titleRight - textX), textX, textY, TITLE_COLOUR);
-        g.drawString(font, font.plainSubstrByWidth(subLine(v), textRight - textX), textX,
+        // The sub-line yields to the flag in the bottom-right corner.
+        int subRight = textRight - FLAG_HIT - PAD;
+        g.drawString(font, font.plainSubstrByWidth(subLine(v), subRight - textX), textX,
                 textY + font.lineHeight + 2, SUB_COLOUR);
+
+        // ⚑ — report this video. Faint so it does not compete with the row, bright under the cursor,
+        // and filled orange once this player has flagged it.
+        boolean done = VideoCatalog.isFlagged(v.id());
+        boolean overFlag = hovered && isOverFlag(mouseX, mouseY, rowY, rowH);
+        int colour = done ? FLAG_DONE : (overFlag ? FLAG_HOVER : FLAG_IDLE);
+        String flag = "⚑";
+        int fx = textRight - FLAG_HIT + (FLAG_HIT - font.width(flag)) / 2;
+        int fy = rowY + rowH - PAD - font.lineHeight;
+        g.drawString(font, flag, fx, fy, colour);
+    }
+
+    /** Is the cursor on the row's ⚑ hit square (bottom-right corner)? */
+    private boolean isOverFlag(double mouseX, double mouseY, int rowY, int rowH) {
+        int right = getX() + width - ListScrollbar.WIDTH - 1 - PAD;
+        int bottom = rowY + rowH - PAD;
+        return mouseX >= right - FLAG_HIT && mouseX < right && mouseY >= bottom - FLAG_HIT && mouseY < bottom;
     }
 
     /** {@code uploader · 1.2K views · 2026-09-11}, dropping any part the relay had no value for. */
@@ -205,7 +233,13 @@ public final class VideoList extends AbstractWidget {
             return false;
         }
         playDownSound(Minecraft.getInstance().getSoundManager());
-        onOpen.accept(rows.get(index));
+        int rowY = getY() + index * rowHeight() - scroll;
+        VideoEntry v = rows.get(index);
+        if (isOverFlag(mouseX, mouseY, rowY, rowHeight())) {
+            if (!VideoCatalog.isFlagged(v.id())) onFlag.accept(v);
+            return true;
+        }
+        onOpen.accept(v);
         return true;
     }
 
