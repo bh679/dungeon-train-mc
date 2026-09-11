@@ -43,6 +43,15 @@ public record InventoryEditorLayout(
     public static final int PREVIEW_MAX_W = 420;
     public static final int PREVIEW_MAX_H = 130;
     public static final int PREVIEW_MIN_H = 50;
+    /**
+     * The least the settings list under the sheet is given: two rows and the pager. The rows are
+     * controls — Walls, Fog, Copies — and a list with no pixels is a control the author cannot find,
+     * which is what happened below 640×360 when the list only took what the preview and the sheet
+     * left. The preview gives way to it instead; and a preview squeezed under
+     * {@link #PREVIEW_MIN_H} is dropped altogether, its sliver going to the list, since a
+     * nine-pixel model shows nothing and nine pixels is most of a row.
+     */
+    public static final int SETTINGS_MIN_H = 3 * EditorDetailPane.ROW_H;
     public static final int RIGHT_MIN_W = 150;
     public static final int RIGHT_MAX_W = 260;
     public static final int TILE_LARGE = 52;
@@ -94,9 +103,11 @@ public record InventoryEditorLayout(
         Rect icons = new Rect(right.x(), header.bottom() + 1, right.w(), ICONS_H);
         Rect test = new Rect(right.x(), right.bottom() - TEST_H, right.w(), TEST_H);
         int previewH = clamp((int) Math.round(right.h() * 0.34), PREVIEW_MIN_H, PREVIEW_MAX_H);
-        // The preview gives way first: whatever the sheet and the test row leave it, at the floor size.
-        int room = (test.y() - 2) - SHEET_H - 2 - (icons.bottom() + 2);
+        // The preview gives way first: whatever the sheet, the settings list's floor and the test
+        // row leave it — down to nothing at the smallest size, where the controls matter more.
+        int room = (test.y() - 2) - SHEET_H - 2 - SETTINGS_MIN_H - 2 - (icons.bottom() + 2);
         previewH = Math.max(0, Math.min(previewH, room));
+        if (previewH < PREVIEW_MIN_H) previewH = 0;
         int previewW = Math.min(right.w(), PREVIEW_MAX_W);
         Rect preview = new Rect(right.x(), icons.bottom() + 2, previewW, previewH);
         Rect sheet = new Rect(right.x(), preview.bottom() + 2, right.w(), SHEET_H);

@@ -248,8 +248,12 @@ public final class EditorDetailPane {
         hovered = hitTest(mouseX, mouseY);
         drawHeader(g, font, theme);
         String name = tile == null ? "" : tile.variant().displayName();
-        PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
-        versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
+        // The layout drops the preview altogether when it could not reach its floor height —
+        // drawing its caption and outline into a zero-height rect would paint over the sheet.
+        if (layout.preview().h() > 0) {
+            PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
+            versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
+        }
         sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
             tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
             ctx.selection(), roomRows);
