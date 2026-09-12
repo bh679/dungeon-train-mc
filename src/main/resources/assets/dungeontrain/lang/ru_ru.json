@@ -1962,7 +1962,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "Нажмите, чтобы изменить порядок",
   "gui.dungeontrain.videos.sort": "Сортировка: %s",
   "gui.dungeontrain.videos.sort.default": "По умолчанию",
-  "gui.dungeontrain.videos.sort.live": "В эфире",
   "gui.dungeontrain.videos.sort.views": "Просмотры",
   "gui.dungeontrain.videos.sort.recent": "Новые",
   "gui.dungeontrain.videos.sort.dev_picks": "Выбор разработчика",

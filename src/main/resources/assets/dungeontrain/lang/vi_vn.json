@@ -1898,7 +1898,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "Nhấn để đổi cách sắp xếp",
   "gui.dungeontrain.videos.sort": "Sắp xếp: %s",
   "gui.dungeontrain.videos.sort.default": "Mặc định",
-  "gui.dungeontrain.videos.sort.live": "Trực tiếp",
   "gui.dungeontrain.videos.sort.views": "Lượt xem",
   "gui.dungeontrain.videos.sort.recent": "Mới nhất",
   "gui.dungeontrain.videos.sort.dev_picks": "Dev đề xuất",

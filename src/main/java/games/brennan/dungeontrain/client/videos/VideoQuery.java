@@ -85,11 +85,9 @@ public final class VideoQuery {
     public enum Sort {
         /** The page's opening order: live streams, then ★ picks, then by views, then newest. */
         DEFAULT("default"),
-        /** Live streams first, then by views. */
-        LIVE("live"),
         /** Most viewed first; rows with no count sink to the bottom, newest of those first. */
         VIEWS("views"),
-        /** Newest publish day first; undated rows last. */
+        /** Live streams first, then newest publish day; undated rows last. */
         RECENT("recent"),
         /**
          * Starred rows first, then by views. A numeric dev-pick weight is planned to replace the
@@ -255,9 +253,8 @@ public final class VideoQuery {
         Comparator<Row> byFav = Comparator.comparing(Row::sortFav, Comparator.reverseOrder());
         return switch (sort) {
             case DEFAULT -> byLive.thenComparing(byFav).thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
-            case LIVE -> byLive.thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
             case VIEWS -> byViews.thenComparing(byDay).thenComparing(byId);
-            case RECENT -> byDay.thenComparing(byViews).thenComparing(byId);
+            case RECENT -> byLive.thenComparing(byDay).thenComparing(byViews).thenComparing(byId);
             case DEV_PICKS -> byFav.thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
         };
     }

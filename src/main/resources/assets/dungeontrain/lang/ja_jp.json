@@ -1898,7 +1898,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "クリックで並び順を変更",
   "gui.dungeontrain.videos.sort": "並び順: %s",
   "gui.dungeontrain.videos.sort.default": "デフォルト",
-  "gui.dungeontrain.videos.sort.live": "配信中",
   "gui.dungeontrain.videos.sort.views": "再生数",
   "gui.dungeontrain.videos.sort.recent": "新着",
   "gui.dungeontrain.videos.sort.dev_picks": "開発者のおすすめ",

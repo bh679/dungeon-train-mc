@@ -1930,7 +1930,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "Klik om de sortering te wijzigen",
   "gui.dungeontrain.videos.sort": "Sortering: %s",
   "gui.dungeontrain.videos.sort.default": "Standaard",
-  "gui.dungeontrain.videos.sort.live": "Live",
   "gui.dungeontrain.videos.sort.views": "Weergaven",
   "gui.dungeontrain.videos.sort.recent": "Recent",
   "gui.dungeontrain.videos.sort.dev_picks": "Dev-keuze",

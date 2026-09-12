@@ -1080,7 +1080,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "Click to change the order",
   "gui.dungeontrain.videos.sort": "Sort: %s",
   "gui.dungeontrain.videos.sort.default": "Default",
-  "gui.dungeontrain.videos.sort.live": "Live",
   "gui.dungeontrain.videos.sort.views": "Views",
   "gui.dungeontrain.videos.sort.recent": "Recent",
   "gui.dungeontrain.videos.sort.dev_picks": "Dev picks",

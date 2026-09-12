@@ -1898,7 +1898,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "I-click para baguhin ang ayos",
   "gui.dungeontrain.videos.sort": "Ayusin: %s",
   "gui.dungeontrain.videos.sort.default": "Default",
-  "gui.dungeontrain.videos.sort.live": "Live",
   "gui.dungeontrain.videos.sort.views": "Mga view",
   "gui.dungeontrain.videos.sort.recent": "Pinakabago",
   "gui.dungeontrain.videos.sort.dev_picks": "Pili ng dev",

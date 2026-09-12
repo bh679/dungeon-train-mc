@@ -154,24 +154,23 @@ class VideoQueryTest {
     }
 
     @Test
-    void sortCyclesThroughAllFive() {
-        assertSame(VideoQuery.Sort.LIVE, VideoQuery.Sort.DEFAULT.next());
-        assertSame(VideoQuery.Sort.VIEWS, VideoQuery.Sort.LIVE.next());
+    void sortCyclesThroughAllFour() {
+        assertSame(VideoQuery.Sort.VIEWS, VideoQuery.Sort.DEFAULT.next());
         assertSame(VideoQuery.Sort.RECENT, VideoQuery.Sort.VIEWS.next());
         assertSame(VideoQuery.Sort.DEV_PICKS, VideoQuery.Sort.RECENT.next());
         assertSame(VideoQuery.Sort.DEFAULT, VideoQuery.Sort.DEV_PICKS.next());
     }
 
     @Test
-    void defaultAndLiveSortsPutLiveStreamsFirst() {
+    void defaultAndRecentSortsPutLiveStreamsFirst() {
         // A live streamer (no views), a starred low-view video (B), a popular unstarred one (A), a VOD (C).
         List<VideoEntry> all = List.of(A, B, C, marker(9, "livenow", "2026-09-12", true), marker(7, "droneleg", "2026-08-21"));
         assertEquals(List.of("s:livenow", "v2", "v1", "s:droneleg", "v3"),
                 rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.DEFAULT)),
                 "Default: live → ★ → views → recent");
-        assertEquals(List.of("s:livenow", "v1", "v2", "s:droneleg", "v3"),
-                rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.LIVE)),
-                "Live: live → views (★ ignored)");
+        assertEquals(List.of("s:livenow", "v2", "v1", "s:droneleg", "v3"),
+                rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.RECENT)),
+                "Recent: live first, then newest day (B 09-05, A 09-01, droneleg 08-21, C undated)");
         assertEquals(List.of("v1", "v2", "s:livenow", "s:droneleg", "v3"),
                 rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.VIEWS)),
                 "Views: a live streamer is still view-less");

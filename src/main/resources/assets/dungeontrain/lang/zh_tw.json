@@ -1912,7 +1912,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "點擊變更排序",
   "gui.dungeontrain.videos.sort": "排序：%s",
   "gui.dungeontrain.videos.sort.default": "預設",
-  "gui.dungeontrain.videos.sort.live": "直播中",
   "gui.dungeontrain.videos.sort.views": "觀看次數",
   "gui.dungeontrain.videos.sort.recent": "最新",
   "gui.dungeontrain.videos.sort.dev_picks": "開發者推薦",

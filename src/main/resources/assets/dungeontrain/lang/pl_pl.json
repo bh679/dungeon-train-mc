@@ -1962,7 +1962,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "Kliknij, aby zmienić sortowanie",
   "gui.dungeontrain.videos.sort": "Sortowanie: %s",
   "gui.dungeontrain.videos.sort.default": "Domyślne",
-  "gui.dungeontrain.videos.sort.live": "Na żywo",
   "gui.dungeontrain.videos.sort.views": "Wyświetlenia",
   "gui.dungeontrain.videos.sort.recent": "Najnowsze",
   "gui.dungeontrain.videos.sort.dev_picks": "Wybór dewelopera",

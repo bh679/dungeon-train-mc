@@ -1898,7 +1898,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "클릭하여 정렬 변경",
   "gui.dungeontrain.videos.sort": "정렬: %s",
   "gui.dungeontrain.videos.sort.default": "기본",
-  "gui.dungeontrain.videos.sort.live": "라이브",
   "gui.dungeontrain.videos.sort.views": "조회수",
   "gui.dungeontrain.videos.sort.recent": "최신",
   "gui.dungeontrain.videos.sort.dev_picks": "개발자 추천",

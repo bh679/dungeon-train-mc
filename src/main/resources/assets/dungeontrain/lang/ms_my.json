@@ -1898,7 +1898,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "Klik untuk tukar susunan",
   "gui.dungeontrain.videos.sort": "Susun: %s",
   "gui.dungeontrain.videos.sort.default": "Lalai",
-  "gui.dungeontrain.videos.sort.live": "Langsung",
   "gui.dungeontrain.videos.sort.views": "Tontonan",
   "gui.dungeontrain.videos.sort.recent": "Terkini",
   "gui.dungeontrain.videos.sort.dev_picks": "Pilihan dev",

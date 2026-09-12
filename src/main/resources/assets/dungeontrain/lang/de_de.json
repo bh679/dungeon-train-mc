@@ -1930,7 +1930,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "Klicken, um die Sortierung zu ändern",
   "gui.dungeontrain.videos.sort": "Sortierung: %s",
   "gui.dungeontrain.videos.sort.default": "Standard",
-  "gui.dungeontrain.videos.sort.live": "Live",
   "gui.dungeontrain.videos.sort.views": "Aufrufe",
   "gui.dungeontrain.videos.sort.recent": "Neueste",
   "gui.dungeontrain.videos.sort.dev_picks": "Dev-Auswahl",

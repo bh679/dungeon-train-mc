@@ -1104,7 +1104,6 @@
   "gui.dungeontrain.videos.sort.tooltip": "Clic pentru a schimba ordinea",
   "gui.dungeontrain.videos.sort": "Sortare: %s",
   "gui.dungeontrain.videos.sort.default": "Implicit",
-  "gui.dungeontrain.videos.sort.live": "Live",
   "gui.dungeontrain.videos.sort.views": "Vizualizări",
   "gui.dungeontrain.videos.sort.recent": "Recente",
   "gui.dungeontrain.videos.sort.dev_picks": "Alegerea dezvoltatorului",
