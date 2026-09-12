@@ -185,6 +185,25 @@ jobs:
               trailer = 'Opened by `.github/workflows/import-approved-translations.yml`.'
               body = (body.replace(trailer, section + trailer) if trailer in body
                       else body + '\n' + section)
+          hidden = renames.get('hidden', [])
+          restored = renames.get('restored', [])
+          if hidden or restored:
+              # Translators who pressed Remove (or Restore) on the in-game Credits page. The relay
+              # already serves them anonymously; this diff marks them `"credit": false` in
+              # `localization/authors.json` so the regenerated credits stop naming them too.
+              section = f'## {len(hidden)} name(s) taken off the credits, {len(restored)} restored\n\n'
+              if hidden:
+                  section += ('Asked to be listed as Anonymous from the in-game Credits page. Their '
+                              'work stays in the provenance sidecars; `authors.json` now carries '
+                              '`"credit": false` and `translation_contributors.json` leaves them out:'
+                              '\n\n```\n' + '\n'.join(f'  {json.dumps(n, ensure_ascii=False)}' for n in hidden)
+                              + '\n```\n\n')
+              if restored:
+                  section += ('Back on the credits by their own choice:\n\n```\n'
+                              + '\n'.join(f'  {json.dumps(n, ensure_ascii=False)}' for n in restored)
+                              + '\n```\n\n')
+              body = (body.replace(trailer, section + trailer) if trailer in body
+                      else body + '\n' + section)
           if names:
               # Rendered as the authors.json lines themselves: a name is arbitrary player-supplied
               # text, and inside a fence it cannot break the page's markdown the way a backtick or

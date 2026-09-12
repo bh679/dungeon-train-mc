@@ -1,11 +1,17 @@
 package games.brennan.dungeontrain.client.credits;
 
+import games.brennan.dungeontrain.client.chat.RelayChatClient;
+import games.brennan.dungeontrain.client.credits.CreditEditClient.Action;
+import games.brennan.dungeontrain.client.credits.CreditEditClient.Section;
 import games.brennan.dungeontrain.client.localization.TranslationContributor;
+import games.brennan.dungeontrain.client.localization.TranslationContributorsRegistry;
 import games.brennan.dungeontrain.client.localization.TranslationCreditsMerge;
+import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
 import games.brennan.dungeontrain.client.localization.edit.TranslationCoverageClient;
 import games.brennan.dungeontrain.client.localization.edit.TranslatorName;
 import games.brennan.dungeontrain.client.localization.edit.TranslatorOwnNames;
 import games.brennan.dungeontrain.client.localization.edit.TranslatorRenames;
+import games.brennan.dungeontrain.template.BuilderCredit;
 import games.brennan.dungeontrain.client.menu.AiPolicyIconButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
@@ -42,10 +48,16 @@ import java.util.Set;
  *   <li><b>Translations</b> — every translator credit from {@link TranslationCreditsMerge} (the
  *       build-time list plus anyone the relay has approved since), each name clickable when the
  *       credit carries a URL. The whole card is omitted on stock installs where no credits exist,
- *       which is the normal en_us release-build path rather than an edge case. A name this
- *       player submitted under carries an <b>Edit</b> button (see {@link TranslatorOwnNames}) that
- *       opens {@link TranslatorRenameScreen}.</li>
+ *       which is the normal en_us release-build path rather than an edge case.</li>
+ *   <li><b>Writers</b> and <b>Builders</b> — the relay's most-praised writers and everyone credited
+ *       as a shipped template's builder ({@link RelayWriters}, {@link TemplateBuilderCredits}).</li>
  * </ol>
+ *
+ * <p>Any line that is this player's own — a translator name they submitted under
+ * ({@link TranslatorOwnNames}), the writer row the relay ranks their uuid at, a builder credit
+ * carrying their uuid — gets an <b>Edit</b> button opening {@link CreditEditScreen}: rename, be
+ * listed as Anonymous, or come back. What the relay has not caught up with yet is laid over by
+ * {@link CreditsSelfEdits} (and {@link TranslatorRenames} for translator names).</p>
  *
  * <p>Scrolling, clipping, the card/rule/photo draw order, inline-link hit-testing and the palette
  * all live in {@link CardCanvas}, shared with the AI Policy page so the two cannot drift apart —
@@ -100,6 +112,10 @@ public final class CreditsScreen extends Screen {
     private final CardCanvas canvas;
     /** Names this player submitted translations under; empty until the relay answers. */
     private Set<String> ownNames = Set.of();
+    /** This player's profile uuid, undashed — what a builder credit or a relay row carries. */
+    private final String ownUuid;
+    /** Where the relay ranks this player among the writers; null until it answers (or unranked). */
+    private RelayWriters.Standing writerStanding;
     /** How much of each long list is showing — survives a re-layout, not a fresh screen. */
     private CreditsPaging translatorsPaging = CreditsPaging.START;
     private CreditsPaging buildersPaging = CreditsPaging.START;
@@ -113,11 +129,15 @@ public final class CreditsScreen extends Screen {
         super(Component.translatable("gui.dungeontrain.credits.title"));
         this.parent = parent;
         this.canvas = new CardCanvas(Minecraft.getInstance().font);
+        Minecraft mc = Minecraft.getInstance();
+        this.ownUuid = mc != null && mc.getUser() != null && mc.getUser().getProfileId() != null
+                ? BuilderCredit.normaliseUuid(mc.getUser().getProfileId().toString()) : "";
     }
 
     @Override
     protected void init() {
         editSlots.clear();
+        CreditsSelfEdits.beginPage();
         int colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
         canvas.beginLayout((this.width - colW) / 2, colW);
 
@@ -137,7 +157,10 @@ public final class CreditsScreen extends Screen {
         // never needs a hand-authored credit file. The build-time list PLUS anyone the relay has
         // approved since — see TranslationCreditsMerge for why they are merged into one list rather
         // than thanked twice in two. Skipped entirely when empty, so no empty card is drawn.
-        List<TranslationContributor> contributors = TranslationCreditsMerge.merged();
+        List<TranslationContributor> contributors = TranslationCreditsMerge.merge(
+                TranslationContributorsRegistry.all(), TranslationCoverageClient.allCredits(),
+                LocalizationCreditRegistry::totalKeysFor, TranslatorRenames.snapshot(),
+                CreditsSelfEdits.get().hidden() ? ownNames : Set.of());
         if (!contributors.isEmpty()) {
             y += CardCanvas.CARD_GAP;
             y = addTranslationsCard(contributors, y);
@@ -167,6 +190,7 @@ public final class CreditsScreen extends Screen {
         // ends just above the row so scrolling content never overlaps the buttons.
         int rowY = this.height - 28;
         canvas.finishLayout(y, TOP, rowY - 8);
+        CreditsSelfEdits.endPage();
 
         int gap = 4;
         int supportW = 150;
@@ -213,28 +237,74 @@ public final class CreditsScreen extends Screen {
                     rebuildWidgets();
                 }
             });
+            // Which writer row is mine — the board is uuid-free, so the relay is asked where this
+            // uuid stands and the row at that rank is the one. Carries the uuid: consent-gated.
+            if (!ownUuid.isEmpty() && RelayChatClient.canConnect()) {
+                RelayWriters.fetchStanding(ownUuid, standing -> Minecraft.getInstance().execute(() -> {
+                    if (Minecraft.getInstance().screen != this) return;
+                    writerStanding = standing;
+                    rebuildWidgets();
+                }));
+            }
         }
     }
 
     /**
-     * The relay accepted a rename. Remember it locally so the page folds the old name into the
-     * new one at once (the jar and the cached relay credits still carry the old one — see
-     * {@link TranslatorRenames}), make the next submission use it, refresh the live credits, and
-     * come back to a freshly laid-out page. The cached relay credits are kept — see below.
+     * The relay accepted an edit. Remember it locally so the page shows it at once (the jar, the
+     * cached relay credits and the relay's own boards all lag — see {@link CreditsSelfEdits} and
+     * {@link TranslatorRenames}), refresh the live lists, and come back to a freshly laid-out page.
      */
-    private void onRenamed(String from, String to) {
-        TranslatorRenames.record(from, to);
-        TranslatorName.set(to);
-        // Refetch WITHOUT clearing: the alias above already renders the new name from the cached
-        // credits, and an empty cache while the answer is in flight would drop them from the page.
-        TranslationCoverageClient.refetch();
+    private void onEdited(Section section, Action action, String from, String to) {
         Set<String> names = new java.util.HashSet<>(ownNames);
-        names.remove(from);
-        names.add(to);
+        switch (action) {
+            case RENAME -> {
+                // One identity: every name the player translated under is now `to` on the relay
+                // (translations.renameAll), so every own name folds into it here too.
+                for (String old : ownNames) TranslatorRenames.record(old, to);
+                if (!from.isEmpty()) TranslatorRenames.record(from, to);
+                TranslatorName.set(to);
+                names.clear();
+                names.add(to);
+                CreditsSelfEdits.recordRename(from, to);
+            }
+            case REMOVE -> CreditsSelfEdits.setHidden(true);
+            case RESTORE -> CreditsSelfEdits.setHidden(false);
+        }
+        // Refetch WITHOUT clearing: the overlay already renders the change from the cached lists,
+        // and an empty cache while the answer is in flight would drop them from the page.
+        TranslationCoverageClient.refetch();
+        RelayWriters.refresh(null);
+        RelayTemplateBuilders.refresh(null);
         CreditsScreen fresh = new CreditsScreen(parent);
         fresh.ownNames = Set.copyOf(names);
+        fresh.writerStanding = writerStanding;
         fresh.askedForOwnNames = true;
         Minecraft.getInstance().setScreen(fresh);
+    }
+
+    /**
+     * One credited line, with an Edit button riding its first line when it is this player's own.
+     * The text then wraps short of the button's column so the two never overlap. {@code name} is
+     * what the edit screen opens with; {@code hidden} makes it offer Restore instead.
+     */
+    private int addCreditRow(Component line, boolean own, Section section, String name, boolean hidden,
+                             int innerX, int innerW, int y) {
+        if (!own) {
+            return canvas.addWrappedAt(line, innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+        DarkTintedButton edit = new DarkTintedButton(innerX + innerW - EDIT_W, 0, EDIT_W, EDIT_H,
+                Component.translatable("gui.dungeontrain.credits.translations.edit"),
+                b -> Minecraft.getInstance().setScreen(
+                        new CreditEditScreen(this, section, name, hidden, this::onEdited)));
+        edit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.credits.rename.title")));
+        addWidget(edit);
+        editSlots.add(new EditSlot(edit, y));
+        return canvas.addWrappedAt(line, innerX, Math.max(1, innerW - EDIT_W - EDIT_GAP), y, CardCanvas.COLOUR_DESC);
+    }
+
+    /** "Anonymous", or "Anonymous (you)" for this player's own line. */
+    private static Component anonymousName(boolean own) {
+        return Component.translatable(own ? "gui.dungeontrain.credits.anonymous_you" : "gui.dungeontrain.credits.anonymous");
     }
 
     /** The "Made by" card: heading, accent bar, then the two people separated by a hairline. */
@@ -306,7 +376,14 @@ public final class CreditsScreen extends Screen {
                 Math.min(builders.size(), CreditsPaging.BUILDERS_COLLAPSED));
         CreditsPaging.View<TemplateBuilderCredits.Builder> view = buildersPaging.view(topFive, builders);
         for (TemplateBuilderCredits.Builder builder : view.rows()) {
-            y = canvas.addWrappedAt(builderLine(builder), innerX, innerW, y, CardCanvas.COLOUR_DESC);
+            boolean own = !ownUuid.isEmpty() && ownUuid.equals(builder.uuid());
+            CreditsSelfEdits.Shown shown = own
+                    ? CreditsSelfEdits.apply(Section.BUILDERS, builder.name(), builder.anonymous())
+                    : new CreditsSelfEdits.Shown(builder.name(), builder.anonymous());
+            Component name = shown.anonymous() ? anonymousName(own)
+                    : Component.literal(shown.name().isEmpty() ? builder.display() : shown.name());
+            y = addCreditRow(builderLine(builder, name), own, Section.BUILDERS, shown.name(), shown.anonymous(),
+                    innerX, innerW, y);
         }
         y = addControls(view, "builders", innerX, innerW, y);
 
@@ -333,9 +410,14 @@ public final class CreditsScreen extends Screen {
         List<RelayWriters.Writer> topFive = writers.subList(0, Math.min(writers.size(), CreditsPaging.BUILDERS_COLLAPSED));
         CreditsPaging.View<RelayWriters.Writer> view = writersPaging.view(topFive, writers);
         for (RelayWriters.Writer writer : view.rows()) {
-            y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.writers.person_line",
-                    Component.literal(writer.name()), Component.literal(Integer.toString(writer.books()))),
-                    innerX, innerW, y, CardCanvas.COLOUR_DESC);
+            boolean own = writerStanding != null && writer.rank() > 0 && writer.rank() == writerStanding.rank();
+            CreditsSelfEdits.Shown shown = own
+                    ? CreditsSelfEdits.apply(Section.WRITERS, writer.name(), writer.anonymous())
+                    : new CreditsSelfEdits.Shown(writer.name(), writer.anonymous());
+            Component name = shown.anonymous() ? anonymousName(own) : Component.literal(shown.name());
+            y = addCreditRow(Component.translatable("gui.dungeontrain.credits.writers.person_line",
+                    name, Component.literal(Integer.toString(writer.books()))),
+                    own, Section.WRITERS, shown.name(), shown.anonymous(), innerX, innerW, y);
         }
         y = addControls(view, "writers", innerX, innerW, y);
         // How to get on the list — only at the very end of it: the last page once See more has
@@ -353,12 +435,11 @@ public final class CreditsScreen extends Screen {
     }
 
     /** "&lt;Name&gt; — N templates" (or "1 template"): one line per builder. */
-    private static Component builderLine(TemplateBuilderCredits.Builder builder) {
+    private static Component builderLine(TemplateBuilderCredits.Builder builder, Component name) {
         String key = builder.templates() == 1
                 ? "gui.dungeontrain.credits.builders.person_line_one"
                 : "gui.dungeontrain.credits.builders.person_line";
-        return Component.translatable(key, Component.literal(builder.display()),
-                Component.literal(Integer.toString(builder.templates())));
+        return Component.translatable(key, name, Component.literal(Integer.toString(builder.templates())));
     }
 
     /** The "Translations" card: heading, accent bar, the thank-you line, then one line per person. */
@@ -379,24 +460,14 @@ public final class CreditsScreen extends Screen {
         // Everyone above 1% of a language first; See more opens the whole list, ten to a page.
         List<TranslationContributor> notable = contributors.stream().filter(CreditsScreen::aboveMinShare).toList();
         CreditsPaging.View<TranslationContributor> view = translatorsPaging.view(notable, contributors);
+        boolean hiddenSelf = CreditsSelfEdits.get().hidden() && !ownNames.isEmpty();
         for (TranslationContributor contributor : view.rows()) {
-            if (!ownNames.contains(contributor.name())) {
-                y = canvas.addWrappedAt(personLine(contributor), innerX, innerW, y,
-                        CardCanvas.COLOUR_DESC);
-                continue;
-            }
-            // This player's own line: the text wraps short of the button's column so the two
-            // never overlap, and the button rides the first line of the entry.
-            String name = contributor.name();
-            DarkTintedButton edit = new DarkTintedButton(innerX + innerW - EDIT_W, 0, EDIT_W, EDIT_H,
-                    Component.translatable("gui.dungeontrain.credits.translations.edit"),
-                    b -> Minecraft.getInstance().setScreen(
-                            new TranslatorRenameScreen(this, name, this::onRenamed)));
-            edit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.credits.rename.title")));
-            addWidget(edit);
-            editSlots.add(new EditSlot(edit, y));
-            y = canvas.addWrappedAt(personLine(contributor), innerX,
-                    Math.max(1, innerW - EDIT_W - EDIT_GAP), y, CardCanvas.COLOUR_DESC);
+            // The Anonymous line is this player's own while they have asked to be on it — that is
+            // where their names were folded (see merge above) and where Restore lives.
+            boolean own = contributor.isAnonymous() ? hiddenSelf : ownNames.contains(contributor.name());
+            String name = contributor.isAnonymous() ? ownNames.iterator().next() : contributor.name();
+            y = addCreditRow(personLine(contributor, own), own, Section.TRANSLATIONS, name,
+                    contributor.isAnonymous(), innerX, innerW, y);
         }
         y = addControls(view, "translators", innerX, innerW, y);
 
@@ -475,8 +546,8 @@ public final class CreditsScreen extends Screen {
      * languages in the generated (strongest-share-first) order. The name links when the
      * contributor has a URL.
      */
-    private Component personLine(TranslationContributor contributor) {
-        Component nameComp = contributor.url()
+    private Component personLine(TranslationContributor contributor, boolean own) {
+        Component nameComp = contributor.isAnonymous() ? anonymousName(own) : contributor.url()
                 .map(u -> link(Component.literal(contributor.name()), u))
                 .orElseGet(() -> Component.literal(contributor.name()));
 

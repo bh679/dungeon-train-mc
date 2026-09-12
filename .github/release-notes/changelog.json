@@ -12283,6 +12283,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "credits-self-edit",
+      "version": "0.849.0",
+      "type": "feat",
+      "title": "Edit your own line on the Credits page",
+      "summary": "If you're credited on the Credits page \u2014 as a translator, a writer whose books the community praised, or the builder of a shipped template \u2014 an Edit button now sits beside your name. Change it, take it off (your line stays, listed as Anonymous with its count), or put it back, and every card follows at once. Needs the internet connection turned on in Dungeon Train Options.",
+      "highlights": [
+        "Edit beside your own row on the Translations, Writers and Builders cards",
+        "Rename yourself \u2014 one name across every card",
+        "Remove my name: listed as Anonymous, nothing deleted; Restore my name brings it back"
+      ],
+      "pr": 1371,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

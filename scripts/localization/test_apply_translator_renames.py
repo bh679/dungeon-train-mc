@@ -71,6 +71,62 @@ def rename(src, dst, uuid="0123456789abcdef0123456789abcdef"):
     return {"id": 1, "ts": 1, "uuid": uuid, "from": src, "to": dst, "updated": 1}
 
 
+def run_with_optouts(ws, renames, optouts, *extra):
+    payload = os.path.join(ws, "optouts.json")
+    write_json(payload, {"ok": True, "section": "translations", "count": len(optouts), "optouts": optouts})
+    return run(ws, renames, "--optouts-file", payload, *extra)
+
+
+def optout(names, uuid="0123456789abcdef0123456789abcdef"):
+    return {"uuid": uuid, "ts": 1, "names": names}
+
+
+class ApplyOptouts(unittest.TestCase):
+
+    def test_marks_an_opted_out_name_credit_false_and_keeps_the_sidecars(self):
+        ws = workspace()
+        proc, report = run_with_optouts(ws, [], [optout(["Old Name", "Never Landed"])])
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        authors = read_json(os.path.join(ws, "authors.json"))
+        self.assertEqual(authors["Old Name"], {"kind": "human", "credit": False})
+        self.assertNotIn("Never Landed", authors, "an unregistered name is nothing to hide")
+        self.assertEqual(list(authors), list(AUTHORS), "order kept")
+        self.assertEqual(read_json(os.path.join(ws, "prov", "xx_yy.json")), PROV, "the work stays theirs")
+        self.assertEqual(report["hidden"], ["Old Name"])
+        self.assertEqual(report["restored"], [])
+        self.assertEqual(report["applied"], [])
+
+    def test_keeps_the_url_on_an_object_entry_and_restores_when_the_relay_no_longer_lists_it(self):
+        ws = workspace()
+        run_with_optouts(ws, [], [optout(["老本願"])])
+        authors = read_json(os.path.join(ws, "authors.json"))
+        self.assertEqual(authors["老本願"],
+                         {"kind": "human", "url": "https://space.bilibili.com/296088227", "credit": False})
+        proc, report = run_with_optouts(ws, [], [])
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(read_json(os.path.join(ws, "authors.json")), AUTHORS, "back to the bare form")
+        self.assertEqual(report["restored"], ["老本願"])
+        self.assertEqual(report["hidden"], [])
+
+    def test_a_rename_then_an_optout_under_the_new_name(self):
+        ws = workspace()
+        proc, report = run_with_optouts(ws, [rename("Old Name", "New Name")], [optout(["New Name"])])
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        authors = read_json(os.path.join(ws, "authors.json"))
+        self.assertEqual(authors["New Name"], {"kind": "human", "credit": False})
+        self.assertEqual(report["applied"][0]["to"], "New Name")
+        self.assertEqual(report["hidden"], ["New Name"])
+
+    def test_an_ai_name_is_never_hidden_and_a_dry_run_writes_nothing(self):
+        ws = workspace()
+        proc, report = run_with_optouts(ws, [], [optout(["Opus 5 (Claude)", "Old Name"])], "--dry-run")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("would hide 'Old Name'", proc.stdout)
+        self.assertNotIn("Opus 5", proc.stdout)
+        self.assertEqual(read_json(os.path.join(ws, "authors.json")), AUTHORS, "dry run")
+        self.assertIsNone(report)
+
+
 class ApplyRenames(unittest.TestCase):
 
     def test_renames_the_registry_and_every_sidecar(self):
@@ -148,7 +204,7 @@ class ApplyRenames(unittest.TestCase):
         proc, report = run(ws, [{"from": "", "to": "x"}, {"from": "Old Name", "to": "Old Name"}, {"nope": 1}])
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("no renames to apply", proc.stdout)
-        self.assertEqual(report, {"applied": [], "skipped": []})
+        self.assertEqual(report, {"applied": [], "skipped": [], "hidden": [], "restored": []})
         self.assertEqual(read_json(os.path.join(ws, "authors.json")), AUTHORS)
 
 
