@@ -12206,6 +12206,23 @@
       "released": true,
       "released_in": "v0.843.0",
       "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "advancement-requirement-values",
+      "version": "0.844.0",
+      "type": "feat",
+      "title": "Advancement milestones can be rebalanced without an update",
+      "summary": "Every milestone advancement \u2014 carriages traversed, metres ridden, biomes visited, time aboard, books read \u2014 now reads its number from one place, and its description shows that live number in every language. Tick-based milestones spell their time as hours or days. Milestone values can be tuned server-side and reach existing installs at the next world load.",
+      "highlights": [
+        "Advancement descriptions always show the requirement value in force",
+        "Time milestones read as hours or days in every language",
+        "Milestone rebalances no longer need a mod update"
+      ],
+      "pr": 1366,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
