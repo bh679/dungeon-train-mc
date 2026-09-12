@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.menu.CreatorParentPickerScreen;
 import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.client.menu.HotbarPassthrough;
+import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
@@ -589,7 +590,8 @@ public final class EditorGuiScreen extends Screen {
             tile == null ? null : tile.key(),
             tile == null ? null : tile.variant(),
             tile == null ? -1 : tile.selfWeight(),
-            standing, index.stampedCategory(), dirty);
+            standing, index.stampedCategory(), dirty,
+            tile == null ? null : tile.extras());
     }
 
     private float frameSeconds() {
@@ -810,6 +812,10 @@ public final class EditorGuiScreen extends Screen {
     private void onSearchClick(EditorCreatorSearch.Result result) {
         switch (result.outcome()) {
             case PICKED -> {
+                if (search.isPicking()) {
+                    creditBuilder(result.creator().uuid(), result.creator().name());
+                    return;
+                }
                 click();
                 EditorCreatorBuilds.show(result.creator().uuid(), result.creator().name());
                 forgetLastLoad();
@@ -840,6 +846,14 @@ public final class EditorGuiScreen extends Screen {
                 forgetLastLoad();
                 search.rearm();
             }
+            case PICKED_ME -> {
+                var player = Minecraft.getInstance().player;
+                if (player != null) {
+                    creditBuilder(player.getUUID().toString().replace("-", ""),
+                        player.getGameProfile().getName());
+                }
+            }
+            case PICKED_NONE -> creditBuilder(null, "");
             // A click outside the panel closes it, the way clicking off any picker does.
             case NONE -> search.close();
             case CONSUMED -> { }
@@ -888,10 +902,20 @@ public final class EditorGuiScreen extends Screen {
                 dispatch(detail.testEntry());
                 return true;
             }
+            case RESEED -> {
+                dispatch(detail.reseedEntry());
+                return true;
+            }
             case GO_HERE -> {
                 if (detail.goHereEntry() == null) return false;
                 dispatch(detail.goHereEntry());
                 return true;
+            }
+            case PAGE_PREV -> {
+                return detail.scrollBy(-1);
+            }
+            case PAGE_NEXT -> {
+                return detail.scrollBy(+1);
             }
             case OLDER -> {
                 pageVersion(true);
@@ -918,11 +942,41 @@ public final class EditorGuiScreen extends Screen {
             afterCommand();
             return true;
         }
+        // Same gestures as the Layout tab's weight cell: click +1, shift-click −1, cmd-click
+        // types. The typed value goes through the inline field over the cell, as Type does.
+        if (action instanceof TemplateDataSheet.Action.Step step) {
+            if (MenuClickModifiers.cmdDown()) {
+                inlineEdit.begin(step.prefix(), placed.cell().text(), placed.rect());
+                setFocused(null);
+            } else {
+                CommandRunner.run(Screen.hasShiftDown() ? step.dec() : step.inc());
+                afterCommand();
+            }
+            return true;
+        }
         if (action instanceof TemplateDataSheet.Action.Open open) {
             modal.open(open.screen());
             return true;
         }
+        if (action instanceof TemplateDataSheet.Action.PickBuilder pick) {
+            setFocused(null);   // the filter box must not eat what is typed into the panel
+            search.openForPick(pick.prefix());
+            return true;
+        }
         return false;
+    }
+
+    /**
+     * A pick in the panel's credit mode: run the sheet's {@code builder} command with the chosen
+     * player and close. The roster the server re-sends afterwards redraws the sheet.
+     */
+    private void creditBuilder(String uuid, String name) {
+        String prefix = search.pickPrefix();
+        if (prefix == null) return;
+        click();
+        CommandRunner.run(uuid == null ? prefix + " none" : prefix + " " + uuid + " " + name);
+        search.close();
+        afterCommand();
     }
 
     private void dispatch(CommandMenuEntry entry) {

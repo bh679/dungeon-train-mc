@@ -124,6 +124,18 @@ not merge onto a name already in `authors.json`, and cannot rename a name the re
 both are reported in the import PR's body for a person to resolve. Translators who delivered a zip
 rather than using the editor have no relay rows and are renamed by hand.
 
+### Opt-outs — `"credit": false`
+
+The same **Edit** button offers **Remove**: the translator keeps their count but is listed as
+*Anonymous* everywhere the relay names them (`credits.js` on the relay — reversible with
+**Restore**). The jar's baked credits catch up on the same import: after the renames,
+`apply-translator-renames.py` reads `GET /<ADMIN_CAP>/credits/optouts?section=translations` and
+writes the object form with `"credit": false` for every registered name that uuid was credited
+under (`{"kind": "human", "credit": false}`; a `url` is kept). The sidecars are **not** touched —
+the work is still theirs and `check-provenance.py` still needs the name registered — but
+`build_contributors` leaves the name out of `translation_contributors.json`. A restore drops the
+flag on the next import (`"restored"` in the report), and the PR body lists both.
+
 ```bash
 python3 scripts/localization/apply-translator-renames.py --dry-run          # what would change
 python3 scripts/localization/apply-translator-renames.py --from-file r.json  # a saved log

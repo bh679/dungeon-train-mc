@@ -56,11 +56,17 @@ import java.util.Objects;
  * @param tiling     which copies of the room are currently standing
  * @param exitCopies which of the room's extra corridors are currently standing
  * @param kind       which of the two corridor shapes this pair's two corridors are
+ * @param seedSalt   folded into every roll this structure makes, so a test can stand up a fresh
+ *                   furnishing of the same room; {@code 0} — every live pair — rolls exactly as
+ *                   before the salt existed
  */
 public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
                               PortalRoomSettings settings, PortalRoomTiling tiling,
                               PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile,
-                              PortalCorridorKind kind) {
+                              PortalCorridorKind kind, int seedSalt) {
+
+    /** No salt: the roll is a function of the pair's position alone. */
+    public static final int NO_SALT = 0;
 
     public PortalStructure {
         Objects.requireNonNull(origin, "origin");
@@ -71,6 +77,14 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         if (exitCopies == null) exitCopies = PortalExitCopies.NONE;
         if (exitTile == null) exitTile = PortalRoomTiling.Tile.BASE;
         if (kind == null) kind = PortalCorridorKind.DEFAULT;
+    }
+
+    /** The eight-part form, before a test could reseed a room. */
+    public PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
+                           PortalRoomSettings settings, PortalRoomTiling tiling,
+                           PortalExitCopies exitCopies, PortalRoomTiling.Tile exitTile,
+                           PortalCorridorKind kind) {
+        this(origin, roomName, roomSize, settings, tiling, exitCopies, exitTile, kind, NO_SALT);
     }
 
     /** Back-compat 3-arg form — a default-mode structure with only its base room standing. */
@@ -163,7 +177,11 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      * rather than a fresh roll.</p>
      */
     public int variantIndexFor(PortalRoomTiling.Tile tile, int pairKey) {
-        int base = Objects.hash(roomName.hashCode(), pairKey);
+        // The unsalted hash is exactly what it was before the salt existed: a live pair must
+        // reproduce the room a player walked out of, across restarts and across mod updates.
+        int base = seedSalt == NO_SALT
+            ? Objects.hash(roomName.hashCode(), pairKey)
+            : Objects.hash(roomName.hashCode(), pairKey, seedSalt);
         if (settings.effectiveCopies().kind() != PortalRoomCopies.Kind.DYNAMIC) return base;
         return Objects.hash(base, tile.x(), tile.z());
     }
@@ -372,25 +390,25 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
      */
     public PortalStructure movedTo(BlockPos newOrigin) {
         return new PortalStructure(newOrigin, roomName, roomSize, settings, PortalRoomTiling.base(),
-            PortalExitCopies.NONE, exitTile, kind);
+            PortalExitCopies.NONE, exitTile, kind, seedSalt);
     }
 
     /** The same structure with a different set of room copies standing. */
     public PortalStructure withTiling(PortalRoomTiling newTiling) {
         return new PortalStructure(origin, roomName, roomSize, settings, newTiling, exitCopies,
-            exitTile, kind);
+            exitTile, kind, seedSalt);
     }
 
     /** The same structure with a different set of extra corridors standing. */
     public PortalStructure withExitCopies(PortalExitCopies newCopies) {
         return new PortalStructure(origin, roomName, roomSize, settings, tiling, newCopies,
-            exitTile, kind);
+            exitTile, kind, seedSalt);
     }
 
     /** The same structure standing its exit beside a different tile. */
     public PortalStructure withExitTile(PortalRoomTiling.Tile newExitTile) {
         return new PortalStructure(origin, roomName, roomSize, settings, tiling, exitCopies,
-            newExitTile, kind);
+            newExitTile, kind, seedSalt);
     }
 
     /**
@@ -423,7 +441,7 @@ public record PortalStructure(BlockPos origin, String roomName, Vec3i roomSize,
         return new PortalStructure(
             origin.offset(tile.x() * roomLength(), 0, tile.z() * roomWidth()),
             roomName, roomSize, settings, PortalRoomTiling.base(), PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE, kind);
+            PortalRoomTiling.Tile.BASE, kind, seedSalt);
     }
 
     /** Minimum corner of the corridor an extra {@code role} copy anchored at {@code tile} occupies. */

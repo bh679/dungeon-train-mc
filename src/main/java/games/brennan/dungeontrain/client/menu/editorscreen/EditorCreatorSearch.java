@@ -48,7 +48,7 @@ public final class EditorCreatorSearch {
     static final int SEARCH_DELAY_TICKS = 8;
 
     /** What a click did, for the screen that hosts the panel. */
-    public enum Outcome { NONE, CONSUMED, PICKED, CLEARED, ALL, RELAY_TOGGLED }
+    public enum Outcome { NONE, CONSUMED, PICKED, CLEARED, ALL, RELAY_TOGGLED, PICKED_ME, PICKED_NONE }
 
     public record Result(Outcome outcome, BuilderCreatorResultsPacket.Creator creator) {
         static final Result NONE = new Result(Outcome.NONE, null);
@@ -56,6 +56,15 @@ public final class EditorCreatorSearch {
     }
 
     private boolean open;
+    /**
+     * The command a pick should complete, or null when a pick opens the builder's profile.
+     *
+     * <p>Same panel, other question. Opened from the data sheet's Built-by cell the panel asks "who
+     * built this?" rather than "whose builds shall I look at?", and the host turns the pick into
+     * that command. The rows above the names change with it: no "All builders" / "My builds" (there
+     * is nothing to browse), and instead <b>Me</b> and <b>No builder</b>.</p>
+     */
+    private String pickPrefix;
     private String query = "";
     /** The query the rows on screen answer, so a late reply to an older one can be recognised. */
     private String answered = "";
@@ -70,6 +79,10 @@ public final class EditorCreatorSearch {
 
     // Geometry from the last frame, so a click lands on what was drawn.
     private InventoryEditorLayout.Rect panel;
+    private InventoryEditorLayout.Rect meRect;
+    private InventoryEditorLayout.Rect noneRect;
+    private boolean hoveredMe;
+    private boolean hoveredNone;
     private InventoryEditorLayout.Rect clearRect;
     private InventoryEditorLayout.Rect allRect;
     private boolean hoveredAll;
@@ -84,6 +97,30 @@ public final class EditorCreatorSearch {
 
     /** Show the panel, and ask for the stars an empty box lists. */
     public void open() {
+        this.pickPrefix = null;
+        show();
+    }
+
+    /**
+     * Show the panel to credit a builder: a pick completes {@code commandPrefix} with
+     * {@code <uuid> <name>}. See {@link #pickPrefix}.
+     */
+    public void openForPick(String commandPrefix) {
+        this.pickPrefix = commandPrefix;
+        show();
+    }
+
+    /** True while the panel is asking who built something rather than whose builds to browse. */
+    public boolean isPicking() {
+        return open && pickPrefix != null;
+    }
+
+    /** The command a pick completes — see {@link #openForPick}; null outside pick mode. */
+    public String pickPrefix() {
+        return pickPrefix;
+    }
+
+    private void show() {
         this.open = true;
         this.hoveredRow = -1;
         BuilderProfileState.listenForCreators(this::onResults);
@@ -96,6 +133,7 @@ public final class EditorCreatorSearch {
     /** Hide the panel and stop listening. The query is kept — reopening resumes where it was. */
     public void close() {
         this.open = false;
+        this.pickPrefix = null;
         this.ticksUntilSearch = -1;
         this.searching = false;
         BuilderProfileState.listenForCreators(null);
@@ -202,6 +240,12 @@ public final class EditorCreatorSearch {
         if (lightRect != null && lightRect.contains(mx, my)) {
             return new Result(Outcome.RELAY_TOGGLED, null);
         }
+        if (meRect != null && meRect.contains(mx, my)) {
+            return new Result(Outcome.PICKED_ME, null);
+        }
+        if (noneRect != null && noneRect.contains(mx, my)) {
+            return new Result(Outcome.PICKED_NONE, null);
+        }
         if (allRect != null && allRect.contains(mx, my)) {
             return new Result(Outcome.ALL, null);
         }
@@ -281,7 +325,8 @@ public final class EditorCreatorSearch {
             lightRect.y() + (lightRect.h() - font.lineHeight) / 2 + 1, live ? LIGHT_ON : LIGHT_OFF, false);
 
         // Title, stopping short of the light.
-        String title = EditorScreenLang.text(EditorScreenLang.CREATORS_TITLE);
+        String title = EditorScreenLang.text(pickPrefix != null
+            ? EditorScreenLang.CREATORS_PICK_TITLE : EditorScreenLang.CREATORS_TITLE);
         g.drawString(font, font.plainSubstrByWidth(title, lightRect.x() - x - PAD * 2), x + PAD, y + PAD,
             MenuRowPainter.TEXT_HEADER, false);
 
@@ -301,7 +346,19 @@ public final class EditorCreatorSearch {
         // for the reviewer who has nobody in mind yet, which is how this panel is usually reached.
         int listTop = fieldY + FIELD_H + 2;
         allRect = null;
-        if (!EditorCreatorBuilds.pooled()) {
+        meRect = null;
+        noneRect = null;
+        if (pickPrefix != null) {
+            // Crediting: the two answers a search cannot give — the player themself, and nobody.
+            meRect = new InventoryEditorLayout.Rect(x + PAD, listTop, w - PAD * 2, ROW_H);
+            hoveredMe = meRect.contains(mouseX, mouseY);
+            drawPlainRow(g, font, meRect, EditorScreenLang.text(EditorScreenLang.CREATORS_PICK_ME), hoveredMe);
+            listTop += ROW_H + 1;
+            noneRect = new InventoryEditorLayout.Rect(x + PAD, listTop, w - PAD * 2, ROW_H);
+            hoveredNone = noneRect.contains(mouseX, mouseY);
+            drawPlainRow(g, font, noneRect, EditorScreenLang.text(EditorScreenLang.CREATORS_PICK_NONE), hoveredNone);
+            listTop += ROW_H + 1;
+        } else if (!EditorCreatorBuilds.pooled()) {
             allRect = new InventoryEditorLayout.Rect(x + PAD, listTop, w - PAD * 2, ROW_H);
             hoveredAll = allRect.contains(mouseX, mouseY);
             g.fill(allRect.x(), allRect.y(), allRect.right(), allRect.bottom(),
@@ -316,7 +373,8 @@ public final class EditorCreatorSearch {
         clearRect = null;
         // Whenever the browser is showing relay builds at all, pooled ones included — it is the way
         // back to this world's own templates, and the pool is not a profile with a name to test.
-        if (EditorCreatorBuilds.active()) {
+        // Not while crediting: the browser is not what the panel is about then.
+        if (pickPrefix == null && EditorCreatorBuilds.active()) {
             clearRect = new InventoryEditorLayout.Rect(x + PAD, listTop, w - PAD * 2, ROW_H);
             hoveredClear = clearRect.contains(mouseX, mouseY);
             g.fill(clearRect.x(), clearRect.y(), clearRect.right(), clearRect.bottom(),
@@ -362,6 +420,15 @@ public final class EditorCreatorSearch {
             g.drawString(font, font.plainSubstrByWidth(note, w - PAD * 2), x + PAD,
                 y + h - PAD - font.lineHeight, NOTE_TEXT, false);
         }
+    }
+
+    /** One full-width text row above the names, drawn like the All / My builds rows. */
+    private static void drawPlainRow(GuiGraphics g, Font font, InventoryEditorLayout.Rect r, String text,
+                                     boolean hovered) {
+        g.fill(r.x(), r.y(), r.right(), r.bottom(),
+            hovered ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+        g.drawString(font, text, r.x() + 3, r.y() + (ROW_H - font.lineHeight) / 2 + 1,
+            hovered ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF, false);
     }
 
     /**

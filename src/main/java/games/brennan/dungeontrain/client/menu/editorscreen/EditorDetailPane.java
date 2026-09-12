@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.PortalTestSessionState;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
@@ -12,6 +13,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
 
@@ -35,7 +37,10 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, PREVIEW, SHEET, GO_HERE, OLDER, NEWER }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT }
+
+    /** How wide each arrow cell of the pager is, as a share of the row. */
+    static final double PAGER_ARROW_SHARE = 0.18;
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -60,8 +65,9 @@ public final class EditorDetailPane {
     private List<TemplateDataSheet.Line> sheetLines = List.of();
     private List<TemplateDataSheet.Placed> sheetCells = List.of();
     private CommandMenuEntry test;
-    private int scroll;
-    private int visibleRows;
+    private int page;
+    private Pages pages = Pages.NONE;
+    private VariantKey pagedFor;
     private Hit hovered = Hit.NONE;
     private int[] iconX = new int[0];
     private int iconCell = ICON_CELL;
@@ -72,6 +78,12 @@ public final class EditorDetailPane {
     public List<EditorScreenActions.Icon> icons() { return icons; }
     public List<CommandMenuEntry> rows() { return rows; }
     public CommandMenuEntry testEntry() { return test; }
+
+    /** The Reseed cell beside the test button — the world switch, or in a test the re-roll button. */
+    public CommandMenuEntry reseedEntry() { return EditorScreenActions.reseedEntry(); }
+
+    /** Where the Reseed cell sits: the right end of the test row. Null before the first layout. */
+    private InventoryEditorLayout.Rect reseedRect;
     /** The teleport button in the header, or null when the author is already standing there. */
     public CommandMenuEntry goHereEntry() { return goHere; }
     public EditorScreenActions.Ctx ctx() { return ctx; }
@@ -85,16 +97,19 @@ public final class EditorDetailPane {
         icons = EditorScreenActions.icons(ctx, DungeonTrainNet::sendToServer, relayId);
         // Read once: the Size line takes the room's own dimensions from these, and the rows below
         // take everything else. Reading them twice could show two different numbers for one axis.
-        roomRows = ctx.standingInSelection() && ctx.category() == PlotCategory.PORTALS
-            ? EditorMenuScreen.portalRows() : List.of();
-        rows = EditorScreenActions.settingRows(ctx, () -> roomRows, EditorStatusHudOverlay::roomMode);
+        roomRows = EditorScreenActions.roomRows(ctx);
+        rows = EditorScreenActions.settingRows(ctx, () -> roomRows,
+            () -> EditorScreenActions.roomModeOf(ctx, EditorStatusHudOverlay::roomMode));
         test = EditorScreenActions.testEntry(ctx);
         // Standing somewhere else is not just a fact to report — it is the one thing in the way of
         // half these controls, so the header offers the walk rather than only naming it.
         goHere = ctx.hasSelection() && !ctx.standingInSelection()
             ? EditorScreenActions.enterEntry(ctx) : null;
-        visibleRows = Math.max(0, layout.settings().h() / ROW_H);
-        scroll = Math.max(0, Math.min(scroll, Math.max(0, rows.size() - visibleRows)));
+        // A new selection starts on its first page; a shorter list clamps the page it was on.
+        if (ctx.selection() == null || !ctx.selection().equals(pagedFor)) page = 0;
+        pagedFor = ctx.selection();
+        pages = Pages.of(rows.size(), Math.max(0, body().h() / ROW_H));
+        page = pages.clamp(page);
 
         IconRow row = layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
         iconX = row.x();
@@ -156,20 +171,113 @@ public final class EditorDetailPane {
         return n;
     }
 
+    /**
+     * The body: everything between the icon row and the Test button — preview, sheet and the space
+     * under the sheet, plus the pager slot the layout keeps below them. Paged as one.
+     */
+    InventoryEditorLayout.Rect body() {
+        InventoryEditorLayout.Rect p = layout.preview();
+        InventoryEditorLayout.Rect t = layout.test();
+        return new InventoryEditorLayout.Rect(layout.settings().x(), p.y(), layout.settings().w(),
+            Math.max(0, t.y() - 2 - p.y()));
+    }
+
+    /** The slots of the body a page of rows fills: all of it but the pager's slot. */
+    private InventoryEditorLayout.Rect rowArea() {
+        InventoryEditorLayout.Rect b = body();
+        return new InventoryEditorLayout.Rect(b.x(), b.y(), b.w(), Math.max(0, b.h() - ROW_H));
+    }
+
+    /** Where the pager sits: the body's last slot. */
+    private InventoryEditorLayout.Rect pagerRect() {
+        InventoryEditorLayout.Rect b = body();
+        return new InventoryEditorLayout.Rect(b.x(), b.bottom() - ROW_H, b.w(), ROW_H);
+    }
+
     public boolean overSettings(double mx, double my) {
-        return layout != null && layout.settings().contains(mx, my);
+        return layout != null && body().contains(mx, my);
     }
 
     public boolean overPreview(double mx, double my) {
         return layout != null && layout.preview().contains(mx, my);
     }
 
+    /**
+     * Turn the page — the wheel over the body, or the pager's arrows.
+     *
+     * <p>Pages rather than a scroll: the rows are controls, and a control half hidden under the
+     * pane's edge is one the author cannot read the value of before tapping it. A page shows whole
+     * rows or none, and the pager says where in the list they are.</p>
+     */
     public boolean scrollBy(int dir) {
-        int max = Math.max(0, rows.size() - visibleRows);
-        int next = Math.max(0, Math.min(scroll + dir, max));
-        boolean moved = next != scroll;
-        scroll = next;
-        return moved || max > 0;
+        int next = pages.clamp(page + dir);
+        boolean moved = next != page;
+        page = next;
+        return moved || pages.pageCount() > 1;
+    }
+
+    /** The page the body is on, zero-based: 0 is the model and its sheet, the rest are the rows. */
+    public int page() { return page; }
+
+    /** How the body is cut into pages this frame. */
+    public Pages pages() { return pages; }
+
+    /** True while the model and its sheet are showing rather than a page of rows. */
+    public boolean onModelPage() { return page == 0; }
+
+    /**
+     * The body cut into pages.
+     *
+     * <p>The first page is always the model and its data sheet — path, size, blocks, weight, stage,
+     * levels. The room's rows come after, as many per page as the whole body holds less the pager's
+     * slot, so a long list of walls sub-options takes over the space the model had rather than
+     * squeezing under its sheet. With no rows there is one page and no pager.</p>
+     *
+     * <p>Pure, so it can be tested without a screen.</p>
+     *
+     * @param count   how many rows there are
+     * @param perPage rows on each row page — the body's slots, less the pager's
+     */
+    public record Pages(int count, int perPage) {
+        public static final Pages NONE = new Pages(0, 0);
+
+        public static Pages of(int count, int bodySlots) {
+            return new Pages(Math.max(0, count), Math.max(0, bodySlots - 1));
+        }
+
+        /** True when there is anything past the model page. */
+        public boolean paged() {
+            return count > 0 && perPage > 0;
+        }
+
+        /** How many row pages follow the model page. */
+        public int rowPages() {
+            return paged() ? (count + perPage - 1) / perPage : 0;
+        }
+
+        /** The model page plus the row pages; at least one. */
+        public int pageCount() {
+            return 1 + rowPages();
+        }
+
+        public int clamp(int page) {
+            return Math.max(0, Math.min(page, pageCount() - 1));
+        }
+
+        /** The first row index on {@code page}; meaningless on the model page. */
+        public int first(int page) {
+            return Math.max(0, clamp(page) - 1) * perPage;
+        }
+
+        /** One past the last row index on {@code page}. */
+        public int end(int page) {
+            return clamp(page) == 0 ? 0 : Math.min(count, first(page) + perPage);
+        }
+
+        /** True when the pager is drawn — only when there is a page to turn to. */
+        public boolean hasPager() {
+            return paged();
+        }
     }
 
     public void render(GuiGraphics g, Font font, EditorScreenTheme theme, TemplateArt art,
@@ -178,16 +286,23 @@ public final class EditorDetailPane {
         hovered = hitTest(mouseX, mouseY);
         drawHeader(g, font, theme);
         String name = tile == null ? "" : tile.variant().displayName();
-        PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
-        versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
-        sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
-            tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
-            ctx.selection(), roomRows);
-        sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
-        TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
-            hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
+        if (onModelPage()) {
+            PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
+            versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
+            sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
+                tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
+                ctx.selection(), roomRows);
+            sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
+            TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
+                hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
+        } else {
+            // Nothing of the model page is hittable while a row page is up.
+            sheetLines = List.of();
+            sheetCells = List.of();
+            drawRows(g, font, theme);
+        }
+        if (pages.hasPager()) drawPager(g, font);
         drawIcons(g);
-        drawRows(g, font, theme);
         drawTest(g, font);
     }
 
@@ -257,39 +372,78 @@ public final class EditorDetailPane {
     }
 
     private void drawRows(GuiGraphics g, Font font, EditorScreenTheme theme) {
-        InventoryEditorLayout.Rect r = layout.settings();
+        InventoryEditorLayout.Rect r = rowArea();
         g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
-        for (int k = 0; k < visibleRows && scroll + k < rows.size(); k++) {
-            int idx = scroll + k;
-            int top = r.y() + k * ROW_H;
+        int first = pages.first(page);
+        int end = pages.end(page);
+        for (int idx = first; idx < end; idx++) {
+            int top = r.y() + (idx - first) * ROW_H;
             boolean hov = hovered.kind() == HitKind.ROW && hovered.index() == idx;
             MenuRowPainter.drawRow(g, font, rows.get(idx), r.x(), top, r.right(), ROW_H - 1,
                 idx, hov, hovered.sub(), null);
         }
         g.disableScissor();
-        if (rows.size() > visibleRows && visibleRows > 0) {
-            int trackH = r.h();
-            int thumbH = Math.max(6, trackH * visibleRows / rows.size());
-            int thumbY = r.y() + (trackH - thumbH) * scroll / Math.max(1, rows.size() - visibleRows);
-            g.fill(r.right() - 2, r.y(), r.right(), r.bottom(), 0x40FFFFFF);
-            g.fill(r.right() - 2, thumbY, r.right(), thumbY + thumbH, 0xC0FFEEBB);
-        }
+    }
+
+    /** {@code <  n / N  >} in the body's last slot, on every page. */
+    private void drawPager(GuiGraphics g, Font font) {
+        InventoryEditorLayout.Rect r = pagerRect();
+        int top = r.y();
+        int bottom = r.bottom() - 1;
+        int arrowW = (int) Math.round(r.w() * PAGER_ARROW_SHARE);
+        boolean first = page == 0;
+        boolean last = page >= pages.pageCount() - 1;
+        drawPagerCell(g, font, r.x(), top, r.x() + arrowW, bottom, "<", !first,
+            hovered.kind() == HitKind.PAGE_PREV);
+        drawPagerCell(g, font, r.right() - arrowW, top, r.right(), bottom, ">", !last,
+            hovered.kind() == HitKind.PAGE_NEXT);
+        String label = (page + 1) + " / " + pages.pageCount();
+        g.drawString(font, label, (r.x() + r.right() - font.width(label)) / 2,
+            top + (ROW_H - 1 - font.lineHeight) / 2 + 1, DIM_TEXT, false);
+    }
+
+    private static void drawPagerCell(GuiGraphics g, Font font, int x1, int y1, int x2, int y2,
+                                      String glyph, boolean enabled, boolean hov) {
+        int fill = !enabled ? DISABLED : hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE;
+        g.fill(x1, y1, x2, y2, fill);
+        int color = !enabled ? 0x80FFFFFF : hov ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF;
+        g.drawString(font, glyph, (x1 + x2 - font.width(glyph)) / 2,
+            y1 + (y2 - y1 - font.lineHeight) / 2 + 1, color, false);
     }
 
     private void drawTest(GuiGraphics g, Font font) {
-        InventoryEditorLayout.Rect r = layout.test();
+        InventoryEditorLayout.Rect row = layout.test();
+        // The Reseed cell takes the right end of the row, with a one-pixel gap; the button the rest.
+        CommandMenuEntry reseed = reseedEntry();
+        int cellW = font.width(MenuRowPainter.labelFor(reseed)) + 2 * MenuRowPainter.CELL_PAD_X + 8;
+        reseedRect = new InventoryEditorLayout.Rect(row.right() - cellW, row.y(), cellW, row.h());
+        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(row.x(), row.y(),
+            Math.max(0, row.w() - cellW - 1), row.h());
+        MenuRowPainter.drawCell(g, font, reseed, reseedRect.x(), reseedRect.y(), reseedRect.right(),
+            reseedRect.h(), hovered.kind() == HitKind.RESEED, 0, 0, null);
+
         boolean enabled = test != null;
         boolean hov = enabled && hovered.kind() == HitKind.TEST;
         g.fill(r.x(), r.y(), r.right(), r.bottom(), !enabled ? DISABLED : hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
-        String label = EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE);
+        String label = testLabel();
         int tw = font.width(label) + 12;
         int x = r.x() + (r.w() - tw) / 2;
         if (!enabled) tint(g, DISABLED_ICON);
         else if (hov) tint(g, 0xFF000000);
-        g.blitSprite(EditorIcons.PLAY, x, r.y() + (r.h() - 10) / 2, 10, 10);
+        g.blitSprite(testIcon(), x, r.y() + (r.h() - 10) / 2, 10, 10);
         g.setColor(1f, 1f, 1f, 1f);
         g.drawString(font, label, x + 12, r.y() + (r.h() - font.lineHeight) / 2 + 1,
             !enabled ? 0x80FFFFFF : hov ? 0xFF000000 : 0xFFFFFFFF, false);
+    }
+
+    /** The test button's name: the way in, or — while a test is running — the way back out. */
+    private static String testLabel() {
+        return EditorScreenLang.text(PortalTestSessionState.active()
+            ? EditorScreenLang.EXIT_TEST : EditorScreenLang.TEST_CARRIAGE);
+    }
+
+    private static ResourceLocation testIcon() {
+        return PortalTestSessionState.active() ? EditorIcons.EXIT : EditorIcons.PLAY;
     }
 
     private static void tint(GuiGraphics g, int argb) {
@@ -299,14 +453,25 @@ public final class EditorDetailPane {
 
     public Hit hitTest(double mx, double my) {
         if (layout == null) return Hit.NONE;
-        switch (versions.hit(mx, my)) {
-            case OLDER -> { return new Hit(HitKind.OLDER, 0, 0); }
-            case NEWER -> { return new Hit(HitKind.NEWER, 0, 0); }
-            case NONE -> { }
+        if (onModelPage()) {
+            switch (versions.hit(mx, my)) {
+                case OLDER -> { return new Hit(HitKind.OLDER, 0, 0); }
+                case NEWER -> { return new Hit(HitKind.NEWER, 0, 0); }
+                case NONE -> { }
+            }
         }
         if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
-        if (layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
-        int sheetCell = TemplateDataSheet.hit(sheetCells, mx, my);
+        if (pages.hasPager() && pagerRect().contains(mx, my)) {
+            InventoryEditorLayout.Rect pr = pagerRect();
+            int arrowW = (int) Math.round(pr.w() * PAGER_ARROW_SHARE);
+            if (mx < pr.x() + arrowW) return page > 0 ? new Hit(HitKind.PAGE_PREV, 0, 0) : Hit.NONE;
+            if (mx >= pr.right() - arrowW) {
+                return page < pages.pageCount() - 1 ? new Hit(HitKind.PAGE_NEXT, 0, 0) : Hit.NONE;
+            }
+            return Hit.NONE;
+        }
+        if (onModelPage() && layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
+        int sheetCell = onModelPage() ? TemplateDataSheet.hit(sheetCells, mx, my) : -1;
         if (sheetCell >= 0) return new Hit(HitKind.SHEET, sheetCell, 0);
         InventoryEditorLayout.Rect ir = layout.icons();
         if (my >= ir.y() && my < ir.y() + iconCell) {
@@ -314,16 +479,17 @@ public final class EditorDetailPane {
                 if (mx >= iconX[i] && mx < iconX[i] + iconCell) return new Hit(HitKind.ICON, i, 0);
             }
         }
-        InventoryEditorLayout.Rect r = layout.settings();
-        if (r.contains(mx, my)) {
+        InventoryEditorLayout.Rect r = rowArea();
+        if (!onModelPage() && r.contains(mx, my)) {
             int k = (int) ((my - r.y()) / ROW_H);
-            int idx = scroll + k;
-            if (k < visibleRows && idx < rows.size()) {
+            int idx = pages.first(page) + k;
+            if (k < pages.perPage() && idx < pages.end(page)) {
                 int sub = MenuRowPainter.hitCell(rows.get(idx), (int) mx, r.x(), r.right());
                 if (sub >= 0) return new Hit(HitKind.ROW, idx, sub);
             }
             return Hit.NONE;
         }
+        if (reseedRect != null && reseedRect.contains(mx, my)) return new Hit(HitKind.RESEED, 0, 0);
         if (layout.test().contains(mx, my)) return new Hit(HitKind.TEST, 0, 0);
         return Hit.NONE;
     }
@@ -349,16 +515,21 @@ public final class EditorDetailPane {
             }
             case SHEET -> {
                 TemplateDataSheet.Placed placed = sheetCell(hit.index());
+                // A cell's tooltip may carry a second line (the step-gesture hint under a bound).
                 yield placed == null || placed.cell().tooltip() == null
-                    ? List.of() : List.of(placed.cell().tooltip());
+                    ? List.of() : List.of(placed.cell().tooltip().split("\n"));
             }
             case GO_HERE -> goHere == null || ctx.selection() == null ? List.of()
                 : List.of(EditorScreenLang.text(EditorScreenLang.GO_HERE),
                           EditorScreenLang.text(EditorScreenLang.STANDING_IN, ctx.selection().displayName()));
             // Only dimensions can be stood up, and that is the whole of why the button is off —
             // it no longer asks the author to stand anywhere.
+            case RESEED -> List.of(EditorScreenLang.text(EditorScreenLang.RESEED),
+                EditorScreenLang.text(PortalTestSessionState.active() ? EditorScreenLang.RESEED_TIP_NOW
+                    : PortalTestSessionState.reseed() ? EditorScreenLang.RESEED_TIP_ON
+                    : EditorScreenLang.RESEED_TIP_OFF));
             case TEST -> test == null
-                ? List.of(EditorScreenLang.text(EditorScreenLang.TEST_CARRIAGE),
+                ? List.of(testLabel(),
                           EditorScreenLang.text(EditorScreenLang.DISABLED_DIMENSIONS_ONLY))
                 : List.of();
             default -> List.of();

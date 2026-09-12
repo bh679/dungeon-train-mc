@@ -147,6 +147,12 @@ public class DungeonTrain {
      * and is a read of the cap that every release jar already carries, not a way around any gate.</p>
      */
     public static String liveRelayBaseUrl() {
+        // Dev/test override, the live-pool twin of DUNGEONTRAIN_RELAY_BASE_URL: a local relay run
+        // with both a dev and a live cap can then stand in for both pools at once.
+        String override = System.getenv("DUNGEONTRAIN_RELAY_LIVE_BASE_URL");
+        if (override != null && !override.isBlank()) {
+            return override;
+        }
         return RELAY_LIVE_BASE_URL;
     }
 
@@ -255,6 +261,10 @@ public class DungeonTrain {
         // + per-player run-state attachment.
         ModAdvancementTriggers.register(modBus);
         ModDataAttachments.register(modBus);
+        // The relay's live milestone values (e.g. carts_1000's threshold), fetched once per
+        // session and applied at datapack load. Kicked off here rather than at client init so
+        // dedicated servers — where advancements are actually evaluated — get them too.
+        games.brennan.dungeontrain.advancement.requirement.AdvancementRequirementOverrides.ensureFetched();
 
         modContainer.registerConfig(
                 ModConfig.Type.SERVER,

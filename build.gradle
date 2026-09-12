@@ -121,6 +121,19 @@ neoForge {
             if (localRelay) {
                 environment.put('DUNGEONTRAIN_RELAY_BASE_URL', localRelay.toString())
             }
+            // Its live-pool twin: -PrelayLiveBaseUrl=http://127.0.0.1:3005/<LIVE_CAP> — for the reads a
+            // dev build deliberately makes against live data (My Builds' live toggle, the Credits
+            // page's builder list). Same daemon-environment reason. Unset → the compiled-in live cap.
+            def localLiveRelay = project.findProperty('relayLiveBaseUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_LIVE_BASE_URL')
+            if (localLiveRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_LIVE_BASE_URL', localLiveRelay.toString())
+            }
+            // And the operator route the editor's live builder search + credit mirror go through:
+            // -PrelayAdminUrl=http://127.0.0.1:3005/<ADMIN_CAP> (RelayTarget.adminSearchBase reads it).
+            def localAdminRelay = project.findProperty('relayAdminUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_ADMIN_URL')
+            if (localAdminRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_ADMIN_URL', localAdminRelay.toString())
+            }
             // Server-perf-harness seam: ./gradlew runClient -PquickJoin=127.0.0.1:25571 auto-connects
             // the dev client to a dedicated server instead of stopping at the main menu. The A/B
             // harness measures the SERVER's [mspt], but the train is player-gated (TrainCarriageAppender
@@ -193,6 +206,19 @@ neoForge {
             def localRelay = project.findProperty('relayBaseUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_BASE_URL')
             if (localRelay) {
                 environment.put('DUNGEONTRAIN_RELAY_BASE_URL', localRelay.toString())
+            }
+            // Its live-pool twin: -PrelayLiveBaseUrl=http://127.0.0.1:3005/<LIVE_CAP> — for the reads a
+            // dev build deliberately makes against live data (My Builds' live toggle, the Credits
+            // page's builder list). Same daemon-environment reason. Unset → the compiled-in live cap.
+            def localLiveRelay = project.findProperty('relayLiveBaseUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_LIVE_BASE_URL')
+            if (localLiveRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_LIVE_BASE_URL', localLiveRelay.toString())
+            }
+            // And the operator route the editor's live builder search + credit mirror go through:
+            // -PrelayAdminUrl=http://127.0.0.1:3005/<ADMIN_CAP> (RelayTarget.adminSearchBase reads it).
+            def localAdminRelay = project.findProperty('relayAdminUrl') ?: System.getenv('DUNGEONTRAIN_RELAY_ADMIN_URL')
+            if (localAdminRelay) {
+                environment.put('DUNGEONTRAIN_RELAY_ADMIN_URL', localAdminRelay.toString())
             }
             // Determinism-harness seam: ./gradlew runServer -PgenDetLog enables the flag-gated
             // [gen.det] worldgen diagnostics (GenDeterminismLog). A project property rather than an
@@ -365,6 +391,13 @@ dependencies {
     // entry. DT compiles against EdibleBackpacksApi to opt DT worlds into reset-on-death.
     implementation "bh679:ediblebackpacks:${ediblebackpacks_version}"
     jarJar(group: 'bh679', name: 'ediblebackpacks', version: ediblebackpacks_version)
+
+    // Keep Trim — crafting-grid repair keeps the left-most item's armor trim. TEMPORARILY
+    // jarJar-bundled (like DiscordPresence/EdibleBackpacks) until its Modrinth/CurseForge
+    // listings are approved; then flip to the external-required-dep contract + modpack entry.
+    // DT does not compile against it — the mod is a single vanilla mixin, no API.
+    implementation "bh679:keeptrim:${keeptrim_version}"
+    jarJar(group: 'bh679', name: 'keeptrim', version: keeptrim_version)
 
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
@@ -632,6 +665,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
+        keeptrim_version                 : keeptrim_version,
         // Declared-minimum floors for the five EXTERNAL sibling deps. Deliberately
         // separate from the *_version values above (which the auto-release cascade
         // bumps freely) — see gradle.properties for the rationale.

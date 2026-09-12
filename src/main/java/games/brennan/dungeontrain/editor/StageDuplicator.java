@@ -8,7 +8,6 @@ import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.jetbrains.annotations.Nullable;
@@ -89,7 +88,7 @@ public final class StageDuplicator {
                 continue;
             }
             String newName = copyPartName(ref.kind(), ref.name(), newId);
-            copyPart(ref, newName, template.get(), dims);
+            copyPart(ref, newName, template.get());
             partCopies.put(ref, newName);
             CarriagePartRegistry.register(ref.kind(), newName);
         }
@@ -149,9 +148,9 @@ public final class StageDuplicator {
         return result;
     }
 
-    /** Copy one part's structural NBT, variants sidecar (incl. lock-ids + mirror flags). */
+    /** Copy one part's structural NBT and every sidecar (variants incl. lock-ids + mirror flags). */
     private static void copyPart(StageBlockIndex.PartRef ref, String newName,
-                                 StructureTemplate template, CarriageDims dims) throws IOException {
+                                 StructureTemplate template) throws IOException {
         CarriagePartKind kind = ref.kind();
         CarriagePartTemplateStore.save(kind, newName, template);
         if (EditorDevMode.isEnabled()) {
@@ -163,29 +162,9 @@ public final class StageDuplicator {
             }
         }
 
-        Vec3i partSize = kind.dims(dims);
-        CarriagePartEditor.copyVariantSidecar(kind, ref.name(), newName, dims);
-        // copyVariantSidecar carries entries + lock-ids but drops the editor mirror flags — copy
-        // them separately when the source has any set (also covers an entry-less flagged sidecar).
-        CarriagePartVariantBlocks sourceSidecar =
-            CarriagePartVariantBlocks.loadFor(kind, ref.name(), partSize);
-        if (sourceSidecar.mirrorX() || sourceSidecar.mirrorY() || sourceSidecar.mirrorZ()
-                || sourceSidecar.mirrorVariants()) {
-            CarriagePartVariantBlocks copySidecar =
-                CarriagePartVariantBlocks.loadFor(kind, newName, partSize);
-            copySidecar.setMirrorAxes(sourceSidecar.mirrorX(), sourceSidecar.mirrorY(),
-                sourceSidecar.mirrorZ());
-            copySidecar.setMirrorVariants(sourceSidecar.mirrorVariants());
-            copySidecar.save(kind, newName);
-        }
-        if (EditorDevMode.isEnabled()) {
-            try {
-                CarriagePartVariantBlocks.loadFor(kind, newName, partSize).saveToSource(kind, newName);
-            } catch (IOException e) {
-                LOGGER.warn("[DungeonTrain] Stage duplicate: sidecar source write failed for {}:{}: {} "
-                    + "(config write succeeded).", kind.id(), newName, e.toString());
-            }
-        }
+        // The sidecar file goes across verbatim — entries, lock-ids and the editor mirror flags all
+        // arrive together — and TemplateCopy lays down the dev-mode source twin itself.
+        CarriagePartEditor.copyVariantSidecar(kind, ref.name(), newName);
     }
 
     /**

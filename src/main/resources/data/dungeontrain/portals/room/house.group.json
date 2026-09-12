@@ -33,7 +33,7 @@
     {
       "id": "cvspharmacy",
       "weight": 1,
-      "minLevel": 80
+      "minLevel": 65
     },
     {
       "id": "abandonedroom",
@@ -99,6 +99,46 @@
     {
       "id": "nostalgia",
       "weight": 1
+    },
+    {
+      "id": "squidwardshouse_2",
+      "weight": 1,
+      "minLevel": 30,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS"
+      ]
+    },
+    {
+      "id": "bearcave",
+      "weight": 1,
+      "minLevel": 16
+    },
+    {
+      "id": "gravityfalls",
+      "weight": 1,
+      "minLevel": 27
+    },
+    {
+      "id": "dreamcore",
+      "weight": 1
+    },
+    {
+      "id": "kfc",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "NETHER",
+        "UPSIDE_DOWN"
+      ]
+    },
+    {
+      "id": "safehaven",
+      "weight": 1,
+      "maxLevel": 9
     }
   ]
 }

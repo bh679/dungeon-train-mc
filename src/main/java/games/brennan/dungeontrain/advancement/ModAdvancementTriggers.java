@@ -43,6 +43,13 @@ public final class ModAdvancementTriggers {
     public static final Supplier<GameplayActionTrigger> GAMEPLAY_ACTION =
         TRIGGERS.register("gameplay_action", GameplayActionTrigger::new);
 
+    /**
+     * A typed "impossible" carrying the requirement number for code-granted advancements
+     * (pacifist tiers, the far start). Never fires — see {@link CodeGrantedTrigger}.
+     */
+    public static final Supplier<CodeGrantedTrigger> CODE_GRANTED =
+        TRIGGERS.register("code_granted", CodeGrantedTrigger::new);
+
     public static final Supplier<TrainTimeTrigger> TRAIN_TIME =
         TRIGGERS.register("train_time", TrainTimeTrigger::new);
 

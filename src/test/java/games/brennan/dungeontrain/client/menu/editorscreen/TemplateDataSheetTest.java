@@ -66,20 +66,28 @@ final class TemplateDataSheetTest {
         return assertInstanceOf(TemplateDataSheet.Action.Run.class, cell.action()).command();
     }
 
+    /** A stepping cell's three commands must share one prefix: {@code prefix}, {@code prefix dec}, {@code prefix inc}. */
+    private static String stepPrefix(TemplateDataSheet.Cell cell) {
+        TemplateDataSheet.Action.Step step = assertInstanceOf(TemplateDataSheet.Action.Step.class, cell.action());
+        assertEquals(step.prefix() + " dec", step.dec());
+        assertEquals(step.prefix() + " inc", step.inc());
+        return step.prefix();
+    }
+
     @Test
-    @DisplayName("the weight types over itself and carries its own nudge buttons")
+    @DisplayName("the weight steps in place (cmd-click types) and carries its own nudge buttons")
     void weightIsEditable() {
         TemplateDataSheet.Line weight = line(carriageSheet(15, List.of()), EditorScreenLang.SHEET_WEIGHT);
         assertNotNull(weight);
         assertEquals(3, weight.cells().size());
         assertEquals("15", weight.cells().get(0).text());
-        assertEquals("dungeontrain editor weight pen", typePrefix(weight.cells().get(0)));
+        assertEquals("dungeontrain editor weight pen", stepPrefix(weight.cells().get(0)));
         assertEquals("dungeontrain editor weight pen dec", runCommand(weight.cells().get(1)));
         assertEquals("dungeontrain editor weight pen inc", runCommand(weight.cells().get(2)));
     }
 
     @Test
-    @DisplayName("Custom opens the picker, both bounds type, and each phase toggles the way it is not set")
+    @DisplayName("Custom opens the picker, both bounds step, and each phase toggles the way it is not set")
     void stageLineIsEditableWhenCustom() {
         TemplateDataSheet.Line stage = line(carriageSheet(15, List.of()), EditorScreenLang.SHEET_STAGE);
         assertNotNull(stage);
@@ -93,9 +101,10 @@ final class TemplateDataSheetTest {
 
         List<TemplateDataSheet.Cell> gate = gateCells(carriageSheet(15, List.of()));
         assertEquals("10", gate.get(1).text());
-        assertEquals("dungeontrain editor minlevel pen", typePrefix(gate.get(1)));
+        assertEquals("dungeontrain editor minlevel pen", stepPrefix(gate.get(1)));
+        assertTrue(gate.get(1).tooltip().contains(EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP)));
         assertEquals("60", gate.get(3).text());
-        assertEquals("dungeontrain editor maxlevel pen", typePrefix(gate.get(3)));
+        assertEquals("dungeontrain editor maxlevel pen", stepPrefix(gate.get(3)));
 
         // Phase mask 1 is Overworld only: it turns off, and every other dimension turns on.
         cells = gate;
@@ -182,7 +191,7 @@ final class TemplateDataSheetTest {
     void placementAndHits() {
         List<TemplateDataSheet.Line> lines = carriageSheet(15, List.of());
         // Wide, because with no language loaded a label renders as its whole lang key.
-        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(10, 20, 800, 62);
+        InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(10, 20, 800, InventoryEditorLayout.SHEET_H);
         List<TemplateDataSheet.Placed> placed = TemplateDataSheet.place(lines, r, new FixedFont());
         assertFalse(placed.isEmpty());
         for (TemplateDataSheet.Placed p : placed) {
@@ -216,5 +225,35 @@ final class TemplateDataSheetTest {
         public int width(String text) {
             return text.length() * 6;
         }
+    }
+
+    @Test
+    @DisplayName("Built by is read-only in play and a picker in dev mode, per category")
+    void builderLine() {
+        VariantKey pen = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
+        EditorTypeMenusPacket.Variant anon = variant("CARRIAGES", "pen", "pen", 10, 0, -1, 1, List.of());
+        EditorTypeMenusPacket.Variant credited = anon.withBuilder("380df991f603344ca090369bad2a924a", "Mika");
+
+        TemplateDataSheet.Line play = TemplateDataSheet.builderLine(credited, pen, false);
+        assertEquals(EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER), play.label());
+        assertEquals("Mika", play.cells().get(0).text());
+        assertNull(play.cells().get(0).action());
+
+        TemplateDataSheet.Line dev = TemplateDataSheet.builderLine(anon, pen, true);
+        assertEquals(EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER_NONE), dev.cells().get(0).text());
+        assertFalse(dev.cells().get(0).on());
+        TemplateDataSheet.Action.PickBuilder pick =
+            assertInstanceOf(TemplateDataSheet.Action.PickBuilder.class, dev.cells().get(0).action());
+        assertEquals("dungeontrain editor builder pen", pick.prefix());
+
+        // A room is addressed as <kind> <name>, like its label; a part has no verb at all.
+        assertEquals("dungeontrain editor portals builder portal_room lobby",
+            TemplateDataSheet.builderCommandPrefix(VariantKey.of(PlotCategory.PORTALS, "portal_room", "lobby")));
+        assertEquals("dungeontrain editor contents builder tomes",
+            TemplateDataSheet.builderCommandPrefix(VariantKey.of(PlotCategory.CONTENTS, "tomes", "tomes")));
+        assertNull(TemplateDataSheet.builderCommandPrefix(VariantKey.of(PlotCategory.PARTS, "floor", "standard")));
+        TemplateDataSheet.Line part = TemplateDataSheet.builderLine(credited,
+            VariantKey.of(PlotCategory.PARTS, "floor", "standard"), true);
+        assertNull(part.cells().get(0).action());
     }
 }

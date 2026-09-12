@@ -61,15 +61,15 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Lock, Contents, Books, Sky, Enter and actions")
+    @DisplayName("A portal room in-plot shows name, weight, L/W/H, Walls, Lock, Contents, Books, Sky, Fog, Enter and actions")
     void portalInPlot_rowOrder() {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.LOCK, RowKind.DOOR_OFFSET,
                 RowKind.ROOM_CONTENTS,
-                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER, RowKind.ACTION},
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(portalInPlot()));
-        assertEquals(13, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
+        assertEquals(14, EditorPlotLabelsRenderer.rowCount(portalInPlot()));
     }
 
     @Test
@@ -118,7 +118,7 @@ class EditorPlotLabelsRendererTest {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL, RowKind.DOOR_OFFSET,
-                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
                 entry("PORTALS", true, 1, 11, 13, 7, "endless_repetition")));
@@ -129,7 +129,7 @@ class EditorPlotLabelsRendererTest {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_OFFSET, RowKind.ROOM_CONTENTS,
-                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.ENTER, RowKind.ACTION},
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.EXITS, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "endless_open")));
 
         // Single adds a Floor row and a Roof row directly under Copies, because that is the one
@@ -140,7 +140,7 @@ class EditorPlotLabelsRendererTest {
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.COPIES_FLOOR,
                 RowKind.COPIES_ROOF, RowKind.DOOR_OFFSET,
-                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.ENTER,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.EXITS, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(
                 entry("PORTALS", true, 1, 11, 13, 7, "endless_open/single:minecraft:sandstone")));
@@ -150,7 +150,7 @@ class EditorPlotLabelsRendererTest {
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL, RowKind.DOOR_OFFSET,
                 RowKind.ROOM_CONTENTS,
-                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER,
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7,
                 "endless_repetition/single:minecraft:sandstone")));
@@ -159,7 +159,7 @@ class EditorPlotLabelsRendererTest {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.LOCK, RowKind.DOOR_OFFSET,
-                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.ENTER,
                 RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(entry("PORTALS", true, 1, 11, 13, 7, "bedrock_lock")));
     }
@@ -370,7 +370,7 @@ class EditorPlotLabelsRendererTest {
         assertArrayEquals(
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.COPIES, RowKind.DOOR_WALL, RowKind.DOOR_OFFSET,
-                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY,
+                RowKind.ROOM_CONTENTS, RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG,
                 RowKind.EXITS, RowKind.EXIT_EVERY, RowKind.EXIT_MOVE, RowKind.ENTER, RowKind.ACTION},
             EditorPlotLabelsRenderer.rows(random));
         assertEquals("Moved exit: 6/10", EditorPlotLabelsRenderer.exitMoveLabel(random.roomMode()));
@@ -480,7 +480,7 @@ class EditorPlotLabelsRendererTest {
             new RowKind[]{RowKind.NAME, RowKind.WEIGHT, RowKind.LENGTH, RowKind.WIDTH,
                 RowKind.HEIGHT, RowKind.MODE, RowKind.LOCK, RowKind.DOOR_OFFSET,
                 RowKind.ROOM_CONTENTS,
-                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ENTER,
+                RowKind.ROOM_BOOKS, RowKind.ROOM_SKY, RowKind.ROOM_FOG, RowKind.ENTER,
                 RowKind.ACTION, RowKind.CONTENTS},
             EditorPlotLabelsRenderer.rows(on));
 

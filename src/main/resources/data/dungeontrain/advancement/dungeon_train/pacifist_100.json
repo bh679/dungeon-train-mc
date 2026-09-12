@@ -11,7 +11,8 @@
   },
   "criteria": {
     "pacifist": {
-      "trigger": "minecraft:impossible"
+      "trigger": "dungeontrain:code_granted",
+      "conditions": { "threshold": 100 }
     }
   },
   "requirements": [["pacifist"]]

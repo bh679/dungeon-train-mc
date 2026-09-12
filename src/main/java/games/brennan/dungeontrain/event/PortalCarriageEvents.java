@@ -639,6 +639,7 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.PortalRoomAuthorLocks.clear();
         games.brennan.dungeontrain.portal.PortalRoomLibrarian.clear();
         games.brennan.dungeontrain.narrative.PortalLibraryGreeter.clear();
+        games.brennan.dungeontrain.narrative.PortalBuilderGreeter.clear();
         ACTIVE_PAIRS.clear();
         PortalSwapDrift.clear();
         LAST_FOG.clear();
@@ -1236,6 +1237,17 @@ public final class PortalCarriageEvents {
     }
 
     /**
+     * The {@code portal_room} variant standing at {@code pairKey}, or {@code null} for an unknown
+     * pair (retired, or never stamped). The STANDING structure's name, for the same reason as
+     * {@link #portalRoomBooksFor}: it is what the builder greeter must credit, whatever the lottery
+     * would roll now. Another adapter that keeps {@link #STRUCTURES} private.
+     */
+    public static String portalRoomNameFor(int pairKey) {
+        PortalStructure structure = STRUCTURES.get(pairKey);
+        return structure == null ? null : structure.roomName();
+    }
+
+    /**
      * Tell whoever is inside a structure where its corridors are, so the engine sound can follow them
      * through the corridor copy and fade out in the room.
      *
@@ -1386,7 +1398,7 @@ public final class PortalCarriageEvents {
     private static void sendFogFor(List<ServerPlayer> players, CarriageDims dims,
                                    PortalCarriageLayout layout, PortalStructure structure,
                                    Set<UUID> fogged) {
-        if (!structure.mode().fogs()) return;
+        if (!structure.settings().fogs()) return;
 
         // Bedrockless reaches past its own copies — there are none — into the clearance it swept, so
         // that mining out through the room's shell does not leave the fog behind while the player is

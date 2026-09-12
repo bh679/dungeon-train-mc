@@ -11808,9 +11808,9 @@
         "A name another translator already uses is refused"
       ],
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "minecarts-in-templates",
@@ -11826,9 +11826,9 @@
       ],
       "pr": 1341,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "random-potion-loot-entries",
@@ -11845,9 +11845,9 @@
       ],
       "pr": 1342,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "trade-anything-fixes-update",
@@ -11861,9 +11861,9 @@
         "Clicking the Trade Anything row fills it with the previewed item"
       ],
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "editor-tick-rate-provenance-cache-registry-snapshots",
@@ -11879,9 +11879,9 @@
       ],
       "pr": 1344,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "observers-silent-on-placement",
@@ -11896,9 +11896,9 @@
       ],
       "pr": 1345,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "editor-six-phase-letters",
@@ -11913,9 +11913,9 @@
       ],
       "pr": 1346,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "traps-group-level-gating",
@@ -11930,9 +11930,9 @@
       ],
       "pr": 1345,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "door-labels-carriage-contents-plots",
@@ -11948,9 +11948,9 @@
       ],
       "pr": 1347,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "curseforge-pack-catch-up",
@@ -11965,9 +11965,9 @@
         "The CurseForge pack is current again as of 0.828.0"
       ],
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "free-play-advancement-profile-fix",
@@ -11981,9 +11981,9 @@
       ],
       "pr": 1350,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "devmode-delete-cleans-up-after-itself",
@@ -11997,9 +11997,9 @@
       ],
       "pr": 1348,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "stall-watchdog-ignores-pause-menu",
@@ -12010,9 +12010,9 @@
       "highlights": [],
       "pr": 1352,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "editor-menu-tabs-layout-filters",
@@ -12029,6 +12029,364 @@
       ],
       "pr": 1353,
       "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "house-dimensional-carriages-little-detective-crunch",
+      "version": "0.834.0",
+      "type": "content",
+      "title": "Six new house dimensional carriages by Little Detective Crunch",
+      "summary": "Six new dimensional carriages join the house group \u2014 Squidward's House, Bear Cave, Gravity Falls, Dreamcore, KFC and Safe Haven \u2014 all designed and built by Little Detective Crunch in the in-game editor and shared through the relay. Our thanks go to them for the set! Each one rolls in at its own level, so some greet you early and others wait until you have a few carriages behind you. Alongside them, a few existing rooms were tidied: the abandoned room gained extra stone and cobble variations and a new mob spot, Nostalgia picked up new variations, and a couple of level floors and weights were nudged.",
+      "highlights": [
+        "Six new house dimensional carriages, designed and built by Little Detective Crunch \u2014 thank you!",
+        "Abandoned room and Nostalgia gain new variations; a few level floors and weights adjusted"
+      ],
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "sheet-level-step-click",
+      "version": "0.835.0",
+      "type": "feat",
+      "title": "Editor: level bounds step on click, and max never drops below min",
+      "summary": "In the editor's build sheet the min and max level cells now work like the weight cell: click to raise, shift-click to lower, cmd-click to type a value. Across every editor menu the level range keeps itself sensible \u2014 max is floored by min and never moves it, and raising min past max drags max up with it.",
+      "highlights": [
+        "Build sheet: click a level bound +1, shift-click \u22121, cmd-click to type (weight number too)",
+        "Max level can no longer be set below min \u2014 stepping down from min goes straight to 'all'",
+        "Raising min past max pushes max up; changing max never touches min"
+      ],
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "editor-book-custom-author",
+      "version": "0.836.0",
+      "type": "feat",
+      "title": "Sign editor prop books as any author",
+      "summary": "When you sign a book & quill while standing in an editor plot, the sign screen now asks who the book is by. Type any name \u2014 an in-fiction author, a character, a pen name \u2014 and the book you stock into your carriage is credited to it instead of your Minecraft username. Once you have a title, the Sign and Close button becomes \"Next: Author\" and takes you to the author line; an author name is required before the book can be signed. Books signed out on the live train are unchanged and still carry your real name.",
+      "highlights": [
+        "Editable author line on the sign screen inside editor plots (Tab or click to switch between title and author)",
+        "\"Next: Author\" step button \u2014 an author name is required before signing a prop book",
+        "Available in all 21 languages"
+      ],
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "x-menu-exit-test-mode",
+      "version": "0.837.0",
+      "type": "feat",
+      "title": "Exit Test Mode and Reseed in the editor's X menu",
+      "summary": "Testing a dimensional carriage from the editor X menu got two things it was missing. While you stand in a test copy, the Test the Carriage button becomes Exit Test Mode \u2014 one click takes you back to your plot and sweeps the copy. And a Reseed cell now sits beside it: outside a test it is a world switch that makes every test roll fresh contents; inside one it re-rolls the carriage you are standing in, leaving you where you are.",
+      "highlights": [
+        "Test the Carriage flips to Exit Test Mode (with an exit icon) while a test is running",
+        "Reseed switch beside it: on, each test rolls new contents; off, the same roll every time",
+        "Inside a test, Reseed re-rolls the copy around you without moving you (unless the new roll fills your spot)"
+      ],
+      "pr": 1355,
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "parent-deletion-confirmation",
+      "version": "0.838.0",
+      "type": "feat",
+      "title": "Editor: safer removal of templates with sub-variants",
+      "summary": "Removing a contents template or dimensional carriage that has sub-variants now asks what to do with them: delete everything, keep them as top-level templates, or hand the group to the first sub-variant. The editor takes you to where the work continued, and re-parenting a sub-variant now lands you in its plot.",
+      "highlights": [],
+      "pr": 1360,
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "keep-trim-repair",
+      "version": "0.838.0",
+      "type": "feat",
+      "title": "Repairing armor keeps its trim",
+      "summary": "Combining two damaged trimmed armor pieces in a crafting grid no longer strips the trim. The repaired piece keeps the trim of the left-most piece (top-most if both are in the same column) \u2014 put the trim you want to keep on the left. Powered by the new Keep Trim sibling mod, bundled inside Dungeon Train.",
+      "highlights": [
+        "Works in the 2x2 inventory grid and the crafting table",
+        "An untrimmed piece on the left gives an untrimmed result, so you always know which trim you get",
+        "The anvil already kept the left item's trim and is unchanged"
+      ],
+      "pr": 1359,
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "portal-room-fog-toggle-and-paged-room-settings",
+      "version": "0.840.0",
+      "type": "feat",
+      "title": "Fog toggle for dimensional carriages; every room setting in the editor screen, paged",
+      "summary": "Dimensional carriages can now force their fog On or Off (Auto keeps following the walls mode, so nothing changes unless you say so). The editor screen shows every setting of whichever room you select \u2014 Walls and its sub-options, Contents, Books, Sky, Fog \u2014 without standing in it, paged under the 3D preview, and contents templates show their Flip axes there too.",
+      "highlights": [
+        "Fog row (Auto / On / Off) on dimensional carriages, in the world-space panel and the editor screen",
+        "Editor screen: room settings for the selected room, no need to stand in it; paged under the 3D preview",
+        "Editor screen: Flip X/Y/Z/Rooms for contents templates",
+        "peateargriffin: fog off, moss floor and skybox roof"
+      ],
+      "pr": 1361,
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "template-builder-credits",
+      "version": "0.841.0",
+      "type": "feat",
+      "title": "Credits for the builders and writers behind the train",
+      "summary": "The Credits page now thanks the people whose work rides every train: a Translations list, a new Writers list (players with 20 or more well-loved community books), and a new Builders list (whoever originally built each shipped carriage, room or contents template). Each list shows its top names first with See more, and the writers and builders lists stay current from the community relay. Two new Tallyman leaderboards to find aboard: Most Templates Built and Most Praised Writers.",
+      "highlights": [
+        "Credits page: Writers and Builders sections, with See more / See less and pages of ten",
+        "New leaderboards: Most Templates Built, Most Praised Writers (books with more than 10:1 up-votes)",
+        "Editor: a Built by field on every template's data sheet; developers can credit a builder straight from the relay"
+      ],
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "community-videos-page",
+      "version": "0.842.0",
+      "type": "feat",
+      "title": "Community Videos page on the main menu",
+      "summary": "A new play-button icon on the title screen (between Credits and Discord) opens Dungeon Train Community Videos \u2014 every video the community has made about the game, across YouTube, Bilibili, Twitch and Instagram. Filter by platform, uploader or the developer's picks, sort by views, newest or dev picks, and open any video in your browser.",
+      "highlights": [
+        "Uploader search with suggestions as you type; platform and dev-fave toggles on one row",
+        "Know a video that isn't listed? Submit the link from the page \u2014 it's reviewed before it appears",
+        "Flag a video as not about Dungeon Train or not safe for kids; kid-mode players only see videos that pass",
+        "Creator Tools (the filming guide) and the Videos page now link to each other",
+        "Brennan's YouTube, Bilibili, Instagram and Discord are one click away at the bottom of the page"
+      ],
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "crash-recovery-enderchest-salvage",
+      "version": "0.842.0",
+      "type": "feat",
+      "title": "Crashed mid-run? Salvage your gear into the Ender Chest",
+      "summary": "If the game crashes in the middle of a run, the next launch now offers to put you back into that world for one purpose: reach an Ender Chest and stash what you can, because that is the one thing that carries to your next run. The card is upfront that a world saved mid-crash will be buggy \u2014 grab your things, then start fresh.",
+      "highlights": [
+        "Title-screen offer after a crash: Salvage / Not now / Discard",
+        "No experimental-settings warning on the way back in"
+      ],
+      "pr": 1364,
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "randomized-carriage-builder-credit",
+      "version": "0.843.0",
+      "type": "content",
+      "title": "Randomized dimensional carriage credited to AutisticMime",
+      "summary": "The randomized dimensional carriage now shows its builder \u2014 AutisticMime \u2014 in the editor's Built by line and on the Credits page's Builders list.",
+      "highlights": [],
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "advancement-unlock-fix-returning-players",
+      "version": "0.844.0",
+      "type": "fix",
+      "title": "Advancement unlock fix for returning players",
+      "summary": "A late-journey advancement now unlocks only when it is actually reached, regardless of progress carried over from earlier runs.",
+      "highlights": [
+        "Fixed a late-journey advancement unlock for returning players"
+      ],
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
+    },
+    {
+      "id": "dimensional-carriage-builder-line",
+      "version": "0.845.0",
+      "type": "feat",
+      "title": "Dimensional carriages now tell you who built them",
+      "summary": "Step into a dimensional carriage whose builder is credited and the train says so \u2014 a quiet gray line in chat, one of eight, naming the builder (\"The train speaks of AntonioMacarely here.\"). Walk into one of your own and it reads \"You built this one.\" Uncredited rooms stay as silent as before. Translated into all 20 languages.",
+      "highlights": [
+        "Builder credit line on entering a credited dimensional carriage, once per visit",
+        "Eight phrasings plus a 'You built this one.' line for your own builds",
+        "Fully localised (20 locales)"
+      ],
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
+    },
+    {
+      "id": "pause-menu-icon-strip-translate",
+      "version": "0.846.0",
+      "type": "feat",
+      "title": "Translate, Discord and Videos from the pause menu",
+      "summary": "The pause (ESC) menu now carries a row of icons beside Mods and Shaders: Discord, the community Videos page, and the Help Translate editor \u2014 so translators can work on the game's text without leaving the train. The translation screens get a darker backdrop when opened in-world so they stay readable over a moving train. Support the Mod now takes the full row that Feedback and Report Bugs used to occupy.",
+      "highlights": [
+        "Help Translate, Discord and Videos icons on the pause menu's Mods | Shaders row",
+        "Translation editor usable in-world, with a darker backdrop over the train",
+        "Support the Mod is a full-width pause-menu button",
+        "Slightly smaller icon buttons on the title screen, pause menu and Videos page; one consistent Bilibili mark on the Videos page"
+      ],
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
+    },
+    {
+      "id": "twitch-streamers-live",
+      "version": "0.847.0",
+      "type": "feat",
+      "title": "Twitch streamers on the Videos page \u2014 live dot, own filter, submit while live",
+      "summary": "The Videos page now tells Twitch streamers apart from clips. Each streamer is one purple row (how many days they've streamed Dungeon Train, when last) behind a new toolbar toggle, and a streamer who is live with the game right now gets a pulsing green dot and sits at the top of the list. Sorting opens on a new Default order (live, dev faves, views, recent). Submit a video has a Video | Livestream switch: paste your Twitch channel while you're live with \"Dungeon Train\" in the title and you're listed at once \u2014 the relay checks Twitch and re-checks every half hour.",
+      "highlights": [
+        "One purple row per Twitch streamer instead of a marker per stream day; new Twitch streamers toggle in the toolbar",
+        "Green LIVE dot on streamers verified live with the game right now; Default sort puts them first",
+        "Submit a video: Video | Livestream switch \u2014 livestreams need to be live with \"Dungeon Train\" in the stream title",
+        "Live sort removed; Recent now leads with live streams"
+      ],
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
+    },
+    {
+      "id": "advancement-requirement-values",
+      "version": "0.848.0",
+      "type": "feat",
+      "title": "Advancement tweaks",
+      "summary": "Advancement descriptions now always match their requirements.",
+      "highlights": [],
+      "pr": 1366,
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
+    },
+    {
+      "id": "credits-self-edit",
+      "version": "0.849.0",
+      "type": "feat",
+      "title": "Edit your own line on the Credits page",
+      "summary": "If you're credited on the Credits page \u2014 as a translator, a writer whose books the community praised, or the builder of a shipped template \u2014 an Edit button now sits beside your name. Change it, take it off (your line stays, listed as Anonymous with its count), or put it back, and every card follows at once. Needs the internet connection turned on in Dungeon Train Options.",
+      "highlights": [
+        "Edit beside your own row on the Translations, Writers and Builders cards",
+        "Rename yourself \u2014 one name across every card",
+        "Remove my name: listed as Anonymous, nothing deleted; Restore my name brings it back"
+      ],
+      "pr": 1371,
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
+    },
+    {
+      "id": "lucky-potion-bonus-loot",
+      "version": "0.850.0",
+      "type": "feat",
+      "title": "Luck potions add bonus loot to train chests",
+      "summary": "Drink a Luck potion before opening chests and barrels on the train and the first open turns up extra loot on top of what's already there \u2014 and the stronger the Luck, the more turns up. The bonus is drawn from the same loot pool as the chest, so it fits the carriage you're in. It's decided on the first open \u2014 a chest looted without Luck stays as it was.",
+      "highlights": [
+        "Luck potions add extra items to a chest's first open; stronger Luck, more items",
+        "Bonus loot is themed to the chest's own pool and never replaces what was already inside",
+        "Decided on first open \u2014 no farming already-looted chests with a potion"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "subvariant-rename-ui-sync",
+      "version": "0.851.0",
+      "type": "fix",
+      "title": "Editor: renamed sub-variants show their new name everywhere",
+      "summary": "Renaming a sub-variant in the train editor now updates its name on the floating Sub-Variants panel, the nav menu, the editor header and chat right away, instead of showing the old id until something else changed.",
+      "highlights": [
+        "Sub-Variants panel and nav menu show the display name, not the id",
+        "Editor header reads the renamed name for contents and portal rooms"
+      ],
+      "pr": 1373,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "subvariant-weight-keeps-gate",
+      "version": "0.852.0",
+      "type": "fix",
+      "title": "Editor: changing a sub-variant's weight no longer resets its level gate",
+      "summary": "In the editor's Sub-Variants panel, stepping or typing a member's weight used to wipe that member's min/max Diff-Level gate, its phase selection and any Stage link back to defaults. Weight edits now change only the weight.",
+      "highlights": [
+        "Sub-variant weight edits keep min/max level, phases and Stage links intact"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "more-trap-carriages",
+      "version": "0.853.0",
+      "type": "content",
+      "title": "More traps on the train",
+      "summary": "The trap carriages have company. Several new traps now ride the train, spread across the journey so the early carriages stay forgiving and the later ones don't. Watch your step.",
+      "highlights": [
+        "New trap carriages, from mild to mean",
+        "Traps are tuned to how far along the train you are"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-editor-midday-clock",
+      "version": "0.854.0",
+      "type": "feat",
+      "title": "Train Editor rests at midday; a dimensional carriage's Sky takes over while you stand in it",
+      "summary": "The Train Editor now holds a stopped noon so every build is authored under the same light. Stand in a dimensional-carriage plot whose Sky is Day/Night and the clock runs at 10x \u2014 a full day in two minutes \u2014 then snaps back to noon when you step out. Rooms under a Nether or End sky now fog to match (wastes red / End dark), on the plot and in the live carriage alike.",
+      "highlights": [
+        "Editor world: day/night cycle off, clock rests at midday",
+        "Day/Night sky plots run the clock at 10x while you stand in them",
+        "Nether and End skies colour the room's fog, in the editor and in play"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-new-copies-settings",
+      "version": "0.855.0",
+      "type": "fix",
+      "title": "Editor: New copies a template's settings, not just its blocks",
+      "summary": "Pressing New on a dimensional carriage or a carriage in the editor now carries its sky, walls, block variants and loot links across with the blocks, instead of starting the copy as a bare box.",
+      "highlights": [],
+      "pr": 1377,
+      "date": "2026-09-12",
       "released": false,
       "released_in": null,
       "released_at": null

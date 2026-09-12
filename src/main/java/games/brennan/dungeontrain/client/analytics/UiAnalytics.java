@@ -57,6 +57,9 @@ public final class UiAnalytics {
     // (opened → picked a pack → downloaded → applied) does not have to be teased back out of the
     // title screen's traffic.
     public static final String SURFACE_SHADERS = "shaders";
+    // The main-menu Videos page (VideosScreen): each row opened is a TARGET_VIDEO_OPEN click, then
+    // the confirm from vanilla's link screen. Whitelisted relay-side as `videos_page`.
+    public static final String SURFACE_VIDEOS = "videos_page";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
@@ -96,6 +99,21 @@ public final class UiAnalytics {
     // event 400s and is dropped; the Discord button ON that page reports as TARGET_DISCORD from the
     // title-screen surface, so the funnel keeps counting Discord clicks either way.
     public static final String TARGET_VIDEO_TOOLS = "video_tools";
+    // The title-screen play-mark icon → the Videos page (TitleScreenCreditsButton), and a row on
+    // that page → the browser (VideosScreen). Both whitelisted in the relay's ui-events.js TARGETS
+    // alongside this change. Which video was opened is deliberately not recorded — the funnel wants
+    // "do players open the page and follow through", not a per-creator scoreboard.
+    public static final String TARGET_VIDEOS = "videos";
+    public static final String TARGET_VIDEO_OPEN = "video_open";
+    // "Submit a video" on the Videos page: the click opens the submit screen, the confirm is the
+    // relay accepting the link (yes) or refusing it (no). Whitelisted alongside the two above.
+    public static final String TARGET_VIDEO_SUBMIT = "video_submit";
+    // The ⚑ on a Videos-page row: click = the flag screen opened, confirm = the relay recorded a flag.
+    public static final String TARGET_VIDEO_FLAG = "video_flag";
+    // Brennan's channel icons at the bottom of the Videos page (Bilibili and Discord reuse their
+    // targets above, on the videos_page surface).
+    public static final String TARGET_YOUTUBE = "youtube";
+    public static final String TARGET_INSTAGRAM = "instagram";
     // "Reset Everything" on the Video Tools page — opening the confirm screen, not the wipe itself.
     // Same whitelist caveat as above: until the relay knows "video_tools_reset" this 400s silently,
     // which costs a funnel row and nothing else.

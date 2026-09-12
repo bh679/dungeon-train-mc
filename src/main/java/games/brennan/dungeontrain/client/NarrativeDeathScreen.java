@@ -2001,12 +2001,17 @@ public final class NarrativeDeathScreen extends Screen {
         // when reboarding? On (default) draws in the reboard accent; off draws
         // muted with a strike. Persists to the client config on click. Absent on a
         // server, where there is no save of ours to delete and nothing reboards.
+        // Hidden by default: it is a destructive option one click from the reboard chip, and
+        // the default is the one nearly everyone wants. Shift reveals it (the same
+        // Shift-shows-the-sharp-controls idiom as the pause menu); and it stays visible while
+        // OFF, so a player who opted out can see that state and switch back without knowing
+        // the modifier.
         // Left edge of the leftmost chip so far — what the photos / "$" chips hang off, so they
         // close the gap themselves when the trash toggle isn't drawn.
         int chipLeftX = reboardX;
         deleteWorldRect = null;
-        if (!remote()) {
-            boolean deleteOn = ClientDisplayConfig.isDeleteWorldOnReboard();
+        boolean deleteOn = ClientDisplayConfig.isDeleteWorldOnReboard();
+        if (!remote() && (shiftHeld || !deleteOn)) {
             int trashW = 14;
             chipLeftX = reboardX - 6 - trashW;
             deleteWorldRect = drawTrashChip(g, chipLeftX, 8, deleteOn);

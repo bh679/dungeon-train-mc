@@ -192,4 +192,23 @@ class TranslationCreditsMergeTest {
             List.of(baked("Ada", "de_de", 900, 1200)), Map.of(), (l) -> 1200);
         assertEquals(List.of("Ada"), names(out));
     }
+
+    @Test
+    @DisplayName("anonymous relay credits and this player's hidden names fold into the one Anonymous line")
+    void anonymousFold() {
+        List<TranslationContributor> out = TranslationCreditsMerge.merge(
+            List.of(baked("Ada", "de_de", 900, 1200), baked("Bea", "fr_fr", 30, 100)),
+            Map.of("de_de", List.of(new Credit("", 12, true), new Credit("Cy", 5)),
+                   "fr_fr", List.of(new Credit("Ada", 7))),
+            (l) -> 100, Map.of(), java.util.Set.of("Ada"));
+        assertEquals(List.of(TranslationContributor.ANONYMOUS, "Bea", "Cy"), names(out));
+        TranslationContributor anon = find(out, TranslationContributor.ANONYMOUS);
+        assertTrue(anon.isAnonymous());
+        assertEquals(2, anon.languages().size(), "Ada's two languages, with the relay's anonymous de_de credit folded");
+        assertEquals(900, anon.languages().get(0).contributed(), "the baked share still wins for the hidden name");
+        assertTrue(anon.url().isEmpty(), "an anonymous line links to nobody");
+        // A blank, unflagged relay name is still nobody.
+        assertEquals(List.of("Ada"), names(TranslationCreditsMerge.merge(List.of(),
+            Map.of("de_de", List.of(new Credit("", 3), new Credit("Ada", 1))), (l) -> 10)));
+    }
 }

@@ -458,7 +458,7 @@ public final class ContainerContentsStore {
     public static synchronized boolean deleteFromSource(String plotKey) throws IOException {
         if (!sourceTreeAvailable()) return false;
         Path file = sourcePathFor(plotKey);
-        boolean existed = Files.deleteIfExists(file);
+        boolean existed = SourceTreeFiles.deleteWithClasspathTwin(file);
         if (existed) LOGGER.info("[DungeonTrain] Deleted bundled container contents sidecar for {} ({})", plotKey, file);
         return existed;
     }

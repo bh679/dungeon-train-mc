@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
@@ -22,9 +23,10 @@ import java.util.List;
  *
  * <p>The sheet is the editing surface rather than a read-out with a matching set of controls
  * underneath. A weight, a level bound, a phase and a room's dimensions are all edited on the line
- * that shows them: click a number to type over it, click a phase letter to toggle it, and the
- * weight carries its own pair of nudge buttons. The pane used to show each of those twice — once
- * as a fact and once as a stepper row — and the two could disagree.</p>
+ * that shows them: click a number to nudge it up (shift-click down, cmd-click to type over it),
+ * click a phase letter to toggle it, and the weight carries its own pair of nudge buttons besides.
+ * The pane used to show each of those twice — once as a fact and once as a stepper row — and the
+ * two could disagree.</p>
  *
  * <p>Command strings are never written here. Every editable cell takes its command from the same
  * builders the old menu's rows use ({@code EditorMenuScreen.weightTripleFor} and friends), read
@@ -47,8 +49,25 @@ public final class TemplateDataSheet {
         /** Run a command and leave the menu open. */
         record Run(String command) implements Action {}
 
+        /**
+         * A number that steps: click runs {@code inc}, shift-click runs {@code dec}, and cmd-click
+         * types a value over the cell with {@code prefix} — the same three gestures as the weight
+         * cell in the world-space menus and on the Layout tab.
+         */
+        record Step(String prefix, String dec, String inc) implements Action {
+            static Step of(Stepper stepper) {
+                return new Step(stepper.prefix(), stepper.dec(), stepper.inc());
+            }
+        }
+
         /** Open a screen as a modal. */
         record Open(MenuScreen screen) implements Action {}
+
+        /**
+         * Pick a builder from the relay and credit them; the command is
+         * {@code prefix + " " + uuid + " " + name} (or {@code prefix + " none"} to clear).
+         */
+        record PickBuilder(String prefix) implements Action {}
     }
 
     /**
@@ -106,12 +125,46 @@ public final class TemplateDataSheet {
         if (v.isLabelled()) {
             out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_ID), v.name()));
         }
+        out.add(builderLine(v, key, EditorStatusHudOverlay.isDevModeOn()));
         out.add(sizeLine(summary, roomRows, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS), blocks(summary, pending)));
         out.add(weightLine(tile, key, pending));
         out.addAll(stageLines(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
         return out;
+    }
+
+    /**
+     * Built by: who originally made this template.
+     *
+     * <p>Read-only in play. In dev mode the cell is a picker — a click opens the builder search and
+     * the pick runs the kind's {@code builder} command — because crediting somebody is the
+     * developer's call and the credit writes through to the source tree. Categories with no
+     * {@code builder} verb (parts, tracks) show the value and nothing else.</p>
+     */
+    static Line builderLine(EditorTypeMenusPacket.Variant v, VariantKey key, boolean devMode) {
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER);
+        String shown = v.hasBuilder() ? v.builderDisplay()
+            : EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER_NONE);
+        String prefix = devMode ? builderCommandPrefix(key) : null;
+        if (prefix == null) return Line.of(label, shown);
+        return new Line(label, List.of(new Cell(shown, new Action.PickBuilder(prefix), v.hasBuilder())
+            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER_TOOLTIP))));
+    }
+
+    /**
+     * The {@code builder} command for {@code key}, minus its {@code <uuid> [name]} tail; null for a
+     * category without the verb. Mirrors {@code EditorScreenActions.renameEntry}'s spellings: a room
+     * is addressed as {@code <kind> <name>}, everything else by id.
+     */
+    static String builderCommandPrefix(VariantKey key) {
+        if (key == null) return null;
+        return switch (key.category()) {
+            case CARRIAGES -> "dungeontrain editor builder " + key.modelId();
+            case CONTENTS -> "dungeontrain editor contents builder " + key.modelId();
+            case PORTALS -> "dungeontrain editor portals builder " + key.modelId() + " " + key.modelName();
+            case PARTS, TRACKS, ARCHITECTURE -> null;
+        };
     }
 
     /**
@@ -183,7 +236,7 @@ public final class TemplateDataSheet {
         return blocks.toString();
     }
 
-    /** Weight: the number types, and a pair of nudge buttons sits after it. */
+    /** Weight: the number steps (cmd-click types), and a pair of nudge buttons sits after it. */
     static Line weightLine(EditorRosterIndex.Tile tile, VariantKey key, String pending) {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT);
         EditorTypeMenusPacket.Variant v = tile.variant();
@@ -195,8 +248,8 @@ public final class TemplateDataSheet {
         if (stepper == null) {
             cells.add(Cell.plain(Integer.toString(weight)));
         } else {
-            cells.add(new Cell(Integer.toString(weight), new Action.Type(stepper.prefix()), true)
-                .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_TOOLTIP)));
+            cells.add(new Cell(Integer.toString(weight), Action.Step.of(stepper), true)
+                .withTooltip(EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP)));
             cells.add(new Cell("-", new Action.Run(stepper.dec()), true)
                 .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_DOWN)));
             cells.add(new Cell("+", new Action.Run(stepper.inc()), true)
@@ -275,9 +328,14 @@ public final class TemplateDataSheet {
     private static void addLevelCell(List<Cell> cells, VariantKey key, String sub, String shown,
                                      boolean linked, String tooltipKey) {
         Stepper stepper = linked ? null : Stepper.of(EditorScreenActions.levelRow(key, sub, shown));
-        Cell cell = stepper == null ? new Cell(shown, null, true)
-            : new Cell(shown, new Action.Type(stepper.prefix()), true);
-        cells.add(cell.withTooltip(EditorScreenLang.text(tooltipKey)));
+        String tooltip = EditorScreenLang.text(tooltipKey);
+        if (stepper == null) {
+            cells.add(new Cell(shown, null, true).withTooltip(tooltip));
+            return;
+        }
+        // Live bounds step like a weight, so the tooltip carries the same gesture hint.
+        cells.add(new Cell(shown, Action.Step.of(stepper), true)
+            .withTooltip(tooltip + "\n" + EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP)));
     }
 
     static String sourceLabel(EditorRosterIndex.Provenance p) {
@@ -375,8 +433,9 @@ public final class TemplateDataSheet {
 
         /** A room axis row is the one whose command sets length, width or height. */
         boolean isRoomAxis() {
-            return prefix.contains(" portals length") || prefix.contains(" portals width")
-                || prefix.contains(" portals height");
+            // Matched on the axis word rather than the whole root, so a stepper built for a named
+            // room (`portals room <name> length`) is the same Size cell as a stood-in one.
+            return prefix.endsWith(" length") || prefix.endsWith(" width") || prefix.endsWith(" height");
         }
 
         /** The number inside a label like {@code "Weight (20)"}, or the whole label without one. */
