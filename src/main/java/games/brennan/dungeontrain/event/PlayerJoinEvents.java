@@ -272,6 +272,8 @@ public final class PlayerJoinEvents {
             // locked room is greeted again when they come back — the line is the only thing that
             // says whose books these are, and a rejoin is exactly when it is worth repeating.
             games.brennan.dungeontrain.narrative.PortalLibraryGreeter.forget(player.getUUID());
+            // Same for the builder line: a rejoin inside a credited room is worth repeating it.
+            games.brennan.dungeontrain.narrative.PortalBuilderGreeter.forget(player.getUUID());
         }
     }
 

@@ -639,6 +639,7 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.portal.PortalRoomAuthorLocks.clear();
         games.brennan.dungeontrain.portal.PortalRoomLibrarian.clear();
         games.brennan.dungeontrain.narrative.PortalLibraryGreeter.clear();
+        games.brennan.dungeontrain.narrative.PortalBuilderGreeter.clear();
         ACTIVE_PAIRS.clear();
         PortalSwapDrift.clear();
         LAST_FOG.clear();
@@ -1233,6 +1234,17 @@ public final class PortalCarriageEvents {
         return structure == null
             ? games.brennan.dungeontrain.portal.PortalRoomBooks.DEFAULT
             : structure.settings().books();
+    }
+
+    /**
+     * The {@code portal_room} variant standing at {@code pairKey}, or {@code null} for an unknown
+     * pair (retired, or never stamped). The STANDING structure's name, for the same reason as
+     * {@link #portalRoomBooksFor}: it is what the builder greeter must credit, whatever the lottery
+     * would roll now. Another adapter that keeps {@link #STRUCTURES} private.
+     */
+    public static String portalRoomNameFor(int pairKey) {
+        PortalStructure structure = STRUCTURES.get(pairKey);
+        return structure == null ? null : structure.roomName();
     }
 
     /**
