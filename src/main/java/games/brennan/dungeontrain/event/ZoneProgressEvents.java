@@ -8,8 +8,6 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
-import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -29,8 +27,8 @@ import java.util.List;
  *   <li>{@code VOID} → {@code reached_void} ("Voided Warranty")</li>
  *   <li>{@code END_ISLANDS} → {@code reached_end_islands} ("End of the Line")</li>
  *   <li>{@code OVERWORLD} → {@code reached_overworld_again} ("Re-Over-World") — only once the
- *       player has already reached the void or the End islands (so it never fires from the spawn
- *       overworld) AND is outside the upside-down band/exit crossfade (see below — {@code zoneAt}
+ *       player is on the second or later cycle repeat (via {@link DisintegrationBand#cyclePassIndex},
+ *       positional so the cross-world sidecar can't satisfy it from the spawn overworld) AND is outside the upside-down band/exit crossfade (see below — {@code zoneAt}
  *       alone would otherwise fire this the instant the mirrored band begins) AND outside the
  *       chuncks band and its run-up (see below), so it lands on the overworld that follows the
  *       whole journey rather than the gap leading into the last band.</li>
@@ -109,11 +107,6 @@ public final class ZoneProgressEvents {
      */
     private static final int CHUNCKS_DEPTH_BLOCKS = 500;
 
-    private static final ResourceLocation REACHED_VOID =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_void");
-    private static final ResourceLocation REACHED_END_ISLANDS =
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_end_islands");
-
     private ZoneProgressEvents() {}
 
     @SubscribeEvent
@@ -181,7 +174,11 @@ public final class ZoneProgressEvents {
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_end_islands");
                 case OVERWORLD -> {
                     // "Reach the OW again" — guard against the spawn overworld by requiring the
-                    // player to have already been to the void or the End islands at least once.
+                    // player to be on the SECOND (or later) cycle repeat, i.e. every band of the first
+                    // pass is behind them. Gated purely on world position, NOT on an earned
+                    // advancement: reached_void / reached_end_islands are cross-world sidecar
+                    // advancements a returning player already holds on login, so an advancement gate
+                    // fired this a few hundred blocks into a fresh world's spawn overworld.
                     // Also exclude the ENTIRE upside-down stretch — the band, its entry lead-in, and
                     // its exit crossfade — so this fires only once the player is back on real ground
                     // AFTER the upside-down islands finish. The entry lead-in covers the End band's
@@ -192,7 +189,7 @@ public final class ZoneProgressEvents {
                     // Finally, exclude the chuncks band AND the plain-overworld run-up to it — those
                     // gaps read as OVERWORLD but the world breaks apart again straight after them, so
                     // the overworld has not actually restarted until the band is behind the player.
-                    if ((earned(player, REACHED_VOID) || earned(player, REACHED_END_ISLANDS))
+                    if (DisintegrationBand.cyclePassIndex(level, px) >= 1
                         && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)
                         && !ChuncksBand.isInApproachOrBand(level, px)) {
                         ModAdvancementTriggers.GAMEPLAY_ACTION.get()
@@ -201,16 +198,5 @@ public final class ZoneProgressEvents {
                 }
             }
         }
-    }
-
-    /**
-     * True when {@code player} has already completed the advancement {@code id}. A persistent,
-     * data-driven gate (mirrors {@link games.brennan.dungeontrain.advancement.FarStartAdvancement}'s
-     * progress lookup) — survives relogs and the cross-world achievement sidecar, unlike a
-     * transient in-memory flag.
-     */
-    private static boolean earned(ServerPlayer player, ResourceLocation id) {
-        AdvancementHolder holder = player.getServer().getAdvancements().get(id);
-        return holder != null && player.getAdvancements().getOrStartProgress(holder).isDone();
     }
 }

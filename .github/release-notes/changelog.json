@@ -12208,8 +12208,22 @@
       "released_at": "2026-09-11T18:54:08Z"
     },
     {
-      "id": "dimensional-carriage-builder-line",
+      "id": "advancement-unlock-fix-returning-players",
       "version": "0.844.0",
+      "type": "fix",
+      "title": "Advancement unlock fix for returning players",
+      "summary": "A late-journey advancement now unlocks only when it is actually reached, regardless of progress carried over from earlier runs.",
+      "highlights": [
+        "Fixed a late-journey advancement unlock for returning players"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-builder-line",
+      "version": "0.845.0",
       "type": "feat",
       "title": "Dimensional carriages now tell you who built them",
       "summary": "Step into a dimensional carriage whose builder is credited and the train says so \u2014 a quiet gray line in chat, one of eight, naming the builder (\"The train speaks of AntonioMacarely here.\"). Walk into one of your own and it reads \"You built this one.\" Uncredited rooms stay as silent as before. Translated into all 20 languages.",
