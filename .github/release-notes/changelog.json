@@ -12316,6 +12316,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "more-trap-carriages",
+      "version": "0.851.0",
+      "type": "content",
+      "title": "More traps on the train",
+      "summary": "The trap carriages have company. Several new traps now ride the train, spread across the journey so the early carriages stay forgiving and the later ones don't. Watch your step.",
+      "highlights": [
+        "New trap carriages, from mild to mean",
+        "Traps are tuned to how far along the train you are"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
