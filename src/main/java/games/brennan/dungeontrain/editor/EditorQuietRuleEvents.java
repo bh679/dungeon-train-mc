@@ -9,13 +9,14 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import org.slf4j.Logger;
 
 /**
- * Re-applies {@link EditorQuietRules} on every start of a Train Editor world.
+ * Re-applies {@link EditorQuietRules} on every start of a Train Editor world, and sets the clock
+ * to midday.
  *
- * <p>The rule is baked in at creation, which is enough for a world made today and left alone. This
- * hook covers the two cases where that is not the whole story: an editor world saved before the
- * default existed, and one where the rule was changed after the fact by {@code /gamerule}. Without
- * it, "nothing wanders into your plots" would be true of new editor worlds only — and a mob that
- * wanders in now ends up saved into somebody's template.</p>
+ * <p>The rules are baked in at creation, which is enough for a world made today and left alone.
+ * This hook covers the two cases where that is not the whole story: an editor world saved before
+ * the defaults existed, and one where a rule was changed after the fact by {@code /gamerule}.
+ * Without it, "nothing wanders into your plots" and "it is always noon" would be true of new editor
+ * worlds only — and a mob that wanders in now ends up saved into somebody's template.</p>
  *
  * <h2>Two markers</h2>
  * <p>Editor worlds made since {@link EditorWorldLayout} exist are their own dimension type, and
@@ -57,8 +58,11 @@ public final class EditorQuietRuleEvents {
             return; // not an editor world — leave the rules alone
         }
         EditorQuietRules.apply(server.getGameRules(), server);
-        LOGGER.info("[DungeonTrain] Train Editor world — {} quiet game rule applied "
-                + "(natural mob spawning off, so nothing wanders into a plot and gets saved).",
+        // A new-type editor world is pinned to noon by its dimension type regardless of this; a
+        // legacy one only has the stopped clock, so put it at noon rather than wherever it was left.
+        server.overworld().setDayTime(EditorQuietRules.MIDDAY_TICKS);
+        LOGGER.info("[DungeonTrain] Train Editor world — {} quiet game rules applied "
+                + "(natural mob spawning off, clock stopped at midday).",
             EditorQuietRules.RULE_COUNT);
     }
 }
