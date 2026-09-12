@@ -318,27 +318,31 @@
   },
   "statue2": {
     "weight": 1,
-    "mode": "endless_open/dynamic/off/off/off/cycle"
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
   },
   "statue3": {
     "weight": 1,
-    "mode": "endless_open/dynamic/off/off/off/cycle"
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
   },
   "statue4": {
     "weight": 1,
-    "mode": "endless_open/dynamic/off/off/off/cycle"
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
   },
   "statue5": {
     "weight": 1,
-    "mode": "endless_open/dynamic/off/off/off/cycle"
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
   },
   "statue6": {
     "weight": 1,
-    "mode": "endless_open/dynamic/off/off/off/cycle"
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
   },
   "statue7": {
     "weight": 1,
-    "mode": "endless_open/dynamic/off/off/off/cycle"
+    "mode": "endless_open/single:minecraft:stone/off/off/off/cycle"
+  },
+  "statue9": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone"
   },
   "statues": {
     "weight": 1,
