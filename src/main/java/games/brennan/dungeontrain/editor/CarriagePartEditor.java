@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -609,12 +610,30 @@ public final class CarriagePartEditor {
      * <b>compacted to the front of the row with the hidden parts' frames removed entirely</b>.</p>
      */
     public static void stampAllPlots(ServerLevel level, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
+        for (EditorStampQueue.Job job : stampAllPlotJobs(level, dims)) {
+            job.work().run();
+        }
+    }
+
+    /**
+     * {@link #stampAllPlots} as one job per row clear and one per part, in the order it runs them,
+     * for the category entry to spread across ticks. A kind's row clear precedes its stamps, which
+     * the queue's in-order execution preserves.
+     */
+    public static List<EditorStampQueue.Job> stampAllPlotJobs(ServerLevel level, CarriageDims dims) {
+        List<EditorStampQueue.Job> jobs = new ArrayList<>();
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            clearRowExtent(level, kind, CarriagePartRegistry.registeredNames(kind).size(), dims);
+            int slots = CarriagePartRegistry.registeredNames(kind).size();
+            jobs.add(new EditorStampQueue.Job("clear parts row " + kind,
+                () -> clearRowExtent(level, kind, slots, dims)));
             for (String name : layoutNames(kind)) {
-                stampPlot(level, kind, name, dims);
+                jobs.add(new EditorStampQueue.Job("stamp part " + kind + "/" + name,
+                    () -> stampPlot(level, kind, name, dims)));
             }
         }
+        return jobs;
     }
 
     /** Erase footprint + cage for the first {@code slots} slots on {@code kind}'s row (the widest it can be). */

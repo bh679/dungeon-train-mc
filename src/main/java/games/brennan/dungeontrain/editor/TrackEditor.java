@@ -101,13 +101,21 @@ public final class TrackEditor {
     }
 
     public static void enter(ServerPlayer player, boolean onTop) {
+        enter(player, onTop, true);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the plots before teleporting. The category entry
+     *              passes {@code false}: it has stamped, or queued, every plot itself.
+     */
+    public static void enter(ServerPlayer player, boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         CarriageEditor.rememberReturn(player);
-        stampAllPlots(overworld, dims);
+        if (stamp) stampAllPlots(overworld, dims);
 
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
         double tx = origin.getX() + TrackPlacer.TILE_LENGTH / 2.0;
@@ -234,6 +242,8 @@ public final class TrackEditor {
     }
 
     private static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         List<String> names = TrackVariantRegistry.namesFor(TrackKind.TILE);
         for (String name : names) {
             BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);

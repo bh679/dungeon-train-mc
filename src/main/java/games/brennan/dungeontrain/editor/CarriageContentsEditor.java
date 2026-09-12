@@ -323,6 +323,15 @@ public final class CarriageContentsEditor {
     }
 
     public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant, boolean onTop) {
+        enter(player, contents, shellVariant, onTop, true);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the shell and contents before teleporting. The
+     *              category entry passes {@code false}: it has just stamped this plot itself.
+     */
+    public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant,
+                             boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -339,19 +348,21 @@ public final class CarriageContentsEditor {
 
         CarriageEditor.rememberReturn(player);
 
-        CarriagePlacer.eraseAt(overworld, origin, box);
-        // Also discard any entities left from a previous edit session
-        // (armor stands / item frames / paintings don't get cleared by the
-        // block-only erase above). Must run before the shell + contents stamp
-        // so the freshly stamped NBT entities don't get caught up in this.
-        CarriageContentsPlacer.eraseAt(overworld, origin, box);
-        // Stamp the shell first — this fills floor/walls/ceiling as context.
-        // Uses the 4-arg placeAt so variant-block sidecar entries don't get
-        // applied here (the author is editing contents, not the shell).
-        CarriagePlacer.placeAt(overworld, origin, shell, dims);
-        // Stamp the current contents template on top of the air interior.
-        CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, box);
+        if (stamp) {
+            CarriagePlacer.eraseAt(overworld, origin, box);
+            // Also discard any entities left from a previous edit session
+            // (armor stands / item frames / paintings don't get cleared by the
+            // block-only erase above). Must run before the shell + contents stamp
+            // so the freshly stamped NBT entities don't get caught up in this.
+            CarriageContentsPlacer.eraseAt(overworld, origin, box);
+            // Stamp the shell first — this fills floor/walls/ceiling as context.
+            // Uses the 4-arg placeAt so variant-block sidecar entries don't get
+            // applied here (the author is editing contents, not the shell).
+            CarriagePlacer.placeAt(overworld, origin, shell, dims);
+            // Stamp the current contents template on top of the air interior.
+            CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
+            setOutline(overworld, origin, OUTLINE_BLOCK, box);
+        }
 
         double tx = origin.getX() + box.length() / 2.0;
         double ty = onTop
