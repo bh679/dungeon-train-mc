@@ -12334,8 +12334,22 @@
       "released_at": null
     },
     {
-      "id": "more-trap-carriages",
+      "id": "subvariant-weight-keeps-gate",
       "version": "0.852.0",
+      "type": "fix",
+      "title": "Editor: changing a sub-variant's weight no longer resets its level gate",
+      "summary": "In the editor's Sub-Variants panel, stepping or typing a member's weight used to wipe that member's min/max Diff-Level gate, its phase selection and any Stage link back to defaults. Weight edits now change only the weight.",
+      "highlights": [
+        "Sub-variant weight edits keep min/max level, phases and Stage links intact"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "more-trap-carriages",
+      "version": "0.853.0",
       "type": "content",
       "title": "More traps on the train",
       "summary": "The trap carriages have company. Several new traps now ride the train, spread across the journey so the early carriages stay forgiving and the later ones don't. Watch your step.",
