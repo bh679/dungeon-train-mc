@@ -12,21 +12,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
- * The edits this client has made to its own Credits-page lines, remembered so the page shows them
- * at once — the relay's boards rebuild on a five-minute sweep and the jar's baked credits only
- * change at the next release.
+ * The edit this client has made to its own Credits-page lines, remembered so the page shows it at
+ * once — the relay's boards rebuild on a five-minute sweep and the jar's baked credits only change
+ * at the next release.
  *
- * <p>Per section: the name the player chose ({@code from → to}) and whether they asked to be
- * anonymous. {@link #apply} lays that over what the relay (or the jar) currently says about the
- * player's own row, and <b>forgets an entry the moment the relay has caught up</b> — a rename is
- * needed only while the relay still shows {@code from}, an opt-out only until the relay's row is
- * already anonymous — so a change made from another machine later is never masked by a stale
- * local copy. Translators are the exception: the jar bakes their names, so their opt-out is kept
- * until they restore ({@code TranslatorRenames} already keeps their aliases the same way).</p>
+ * <p>One identity: the name the player chose ({@code from → to}) and whether they asked to be
+ * anonymous, applied to their row on <b>every</b> card. {@link #apply} lays that over what the relay
+ * (or the jar) currently says about the row, and <b>forgets the rename the moment the relay has
+ * caught up</b> on that card — it is needed only while the relay still shows {@code from} — so a
+ * change made from another machine later is never masked by a stale local copy. The opt-out is
+ * kept until the player restores: the jar bakes translator and builder names, so the relay's rows
+ * catching up is not the whole page catching up.</p>
  *
  * <p>Only ever about <i>this</i> player. It says nothing about anybody else's line, and the page
  * applies it to rows it has already identified as the player's own.</p>
@@ -70,41 +69,65 @@ public final class CreditsSelfEdits {
     /** What the page should print for the player's own row after the overlay. */
     public record Shown(String name, boolean anonymous) {}
 
-    private static final Map<Section, Entry> ENTRIES = new EnumMap<>(Section.class);
+    private static Entry entry = Entry.NONE;
     private static boolean loaded;
 
     private CreditsSelfEdits() {}
 
-    /** This section's remembered edits, {@link Entry#NONE} when there are none. */
-    public static synchronized Entry get(Section section) {
+    /** The remembered edit, {@link Entry#NONE} when there is none. */
+    public static synchronized Entry get() {
         ensureLoaded();
-        return ENTRIES.getOrDefault(section, Entry.NONE);
+        return entry;
     }
 
-    /** Remember that the player's credit in {@code section} is now {@code to} (was {@code from}). */
-    public static synchronized void recordRename(Section section, String from, String to) {
+    /** Remember that the player's credit is now {@code to} (was {@code from}). */
+    public static synchronized void recordRename(String from, String to) {
         ensureLoaded();
-        put(section, get(section).withRename(from, to));
+        put(entry.withRename(from, to));
     }
 
-    /** Remember that the player asked to be anonymous in {@code section} — or not. */
-    public static synchronized void setHidden(Section section, boolean hidden) {
+    /** Remember that the player asked to be anonymous — or not. */
+    public static synchronized void setHidden(boolean hidden) {
         ensureLoaded();
-        put(section, get(section).withHidden(hidden));
+        put(entry.withHidden(hidden));
     }
 
     /**
-     * The player's own row as it should be shown: the overlay laid over what the source currently
-     * says ({@code name}, and whether it is already anonymous). Pure — see {@link #apply(Entry,
-     * String, boolean)}; this form also drops the entry once the source has caught up.
+     * The player's own row on one card as it should be shown: the overlay laid over what the
+     * source currently says ({@code name}, and whether it is already anonymous). Pure — see
+     * {@link #apply(Entry, String, boolean)}. Between {@link #beginPage} and {@link #endPage} the
+     * page reports every own row it lays out; the rename is dropped at {@link #endPage} once none
+     * of them still shows {@code from}.
      */
     public static synchronized Shown apply(Section section, String name, boolean anonymous) {
         ensureLoaded();
-        Entry entry = get(section);
         Shown shown = apply(entry, name, anonymous);
-        Entry trimmed = caughtUp(section, entry, name, anonymous);
-        if (!trimmed.equals(entry)) put(section, trimmed);
+        noteSeen(section, name, anonymous);
         return shown;
+    }
+
+    /** Which cards, this page open, still show {@code from}; reset by {@link #beginPage}. */
+    private static final Map<Section, Boolean> STILL_OLD = new EnumMap<>(Section.class);
+
+    /** A new lay-out of the page: start counting afresh which cards still show the old name. */
+    public static synchronized void beginPage() {
+        STILL_OLD.clear();
+    }
+
+    /**
+     * The page is laid out. Forget the rename once every own row it showed has moved on from
+     * {@code from} — one card lagging (the boards sweep every five minutes) must not bring the old
+     * name back on the others, and a card the player is not on says nothing either way.
+     */
+    public static synchronized void endPage() {
+        if (entry.hasRename() && !STILL_OLD.isEmpty() && !STILL_OLD.containsValue(true)) {
+            put(entry.withoutRename());
+        }
+        STILL_OLD.clear();
+    }
+
+    private static void noteSeen(Section section, String name, boolean anonymous) {
+        if (entry.hasRename()) STILL_OLD.put(section, stillOld(entry, name, anonymous));
     }
 
     /** The overlay rule, pure. Hidden wins; a rename applies only while the source still shows {@code from}. */
@@ -116,21 +139,17 @@ public final class CreditsSelfEdits {
     }
 
     /**
-     * The entry with whatever the source now agrees on removed — the rename once the source shows
-     * {@code to} (or anything but {@code from}), the opt-out once the source's row is anonymous.
-     * Translators keep their opt-out: their baked names would otherwise reappear next launch.
+     * Whether one card's current row still needs the rename: it is not anonymous and still shows
+     * {@code from}. Pure, for the tests; the page-level rule that forgets the rename is in
+     * {@link #apply(Section, String, boolean)}.
      */
-    static Entry caughtUp(Section section, Entry entry, String name, boolean anonymous) {
-        Entry out = entry;
+    static boolean stillOld(Entry entry, String name, boolean anonymous) {
         String n = name == null ? "" : name;
-        if (out.hasRename() && !anonymous && !n.equalsIgnoreCase(out.from())) out = out.withoutRename();
-        if (out.hidden() && anonymous && section != Section.TRANSLATIONS) out = out.withHidden(false);
-        return out;
+        return entry.hasRename() && !anonymous && n.equalsIgnoreCase(entry.from());
     }
 
-    private static void put(Section section, Entry entry) {
-        if (entry.isEmpty()) ENTRIES.remove(section);
-        else ENTRIES.put(section, entry);
+    private static void put(Entry e) {
+        entry = e;
         save();
     }
 
@@ -153,12 +172,7 @@ public final class CreditsSelfEdits {
         try {
             JsonElement root = JsonParser.parseString(Files.readString(path, StandardCharsets.UTF_8));
             if (!root.isJsonObject()) return;
-            for (Section section : Section.values()) {
-                JsonElement el = root.getAsJsonObject().get(section.wire());
-                if (el == null || !el.isJsonObject()) continue;
-                Entry entry = parseEntry(el.getAsJsonObject());
-                if (!entry.isEmpty()) ENTRIES.put(section, entry);
-            }
+            entry = parseEntry(root.getAsJsonObject());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Credits: could not read {} — {}", path, e.toString());
         }
@@ -178,15 +192,11 @@ public final class CreditsSelfEdits {
             Path path = file();
             Files.createDirectories(path.getParent());
             JsonObject root = new JsonObject();
-            for (Map.Entry<Section, Entry> e : ENTRIES.entrySet()) {
-                JsonObject o = new JsonObject();
-                if (e.getValue().hasRename()) {
-                    o.addProperty("from", e.getValue().from());
-                    o.addProperty("to", e.getValue().to());
-                }
-                if (e.getValue().hidden()) o.addProperty("hidden", true);
-                root.add(e.getKey().name().toLowerCase(Locale.ROOT), o);
+            if (entry.hasRename()) {
+                root.addProperty("from", entry.from());
+                root.addProperty("to", entry.to());
             }
+            if (entry.hidden()) root.addProperty("hidden", true);
             Files.writeString(path, root.toString(), StandardCharsets.UTF_8);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Credits: could not save {} — {}", FILE, e.toString());
@@ -195,7 +205,8 @@ public final class CreditsSelfEdits {
 
     /** Test seam — forget everything read from disk. */
     static synchronized void reset() {
-        ENTRIES.clear();
+        entry = Entry.NONE;
+        STILL_OLD.clear();
         loaded = false;
     }
 }

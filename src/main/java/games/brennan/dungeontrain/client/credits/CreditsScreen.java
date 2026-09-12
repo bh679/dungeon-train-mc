@@ -137,6 +137,7 @@ public final class CreditsScreen extends Screen {
     @Override
     protected void init() {
         editSlots.clear();
+        CreditsSelfEdits.beginPage();
         int colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
         canvas.beginLayout((this.width - colW) / 2, colW);
 
@@ -159,7 +160,7 @@ public final class CreditsScreen extends Screen {
         List<TranslationContributor> contributors = TranslationCreditsMerge.merge(
                 TranslationContributorsRegistry.all(), TranslationCoverageClient.allCredits(),
                 LocalizationCreditRegistry::totalKeysFor, TranslatorRenames.snapshot(),
-                CreditsSelfEdits.get(Section.TRANSLATIONS).hidden() ? ownNames : Set.of());
+                CreditsSelfEdits.get().hidden() ? ownNames : Set.of());
         if (!contributors.isEmpty()) {
             y += CardCanvas.CARD_GAP;
             y = addTranslationsCard(contributors, y);
@@ -189,6 +190,7 @@ public final class CreditsScreen extends Screen {
         // ends just above the row so scrolling content never overlaps the buttons.
         int rowY = this.height - 28;
         canvas.finishLayout(y, TOP, rowY - 8);
+        CreditsSelfEdits.endPage();
 
         int gap = 4;
         int supportW = 150;
@@ -256,25 +258,23 @@ public final class CreditsScreen extends Screen {
         Set<String> names = new java.util.HashSet<>(ownNames);
         switch (action) {
             case RENAME -> {
-                if (section == Section.TRANSLATIONS) {
-                    TranslatorRenames.record(from, to);
-                    TranslatorName.set(to);
-                    names.remove(from);
-                    names.add(to);
-                } else {
-                    CreditsSelfEdits.recordRename(section, from, to);
-                }
+                // One identity: every name the player translated under is now `to` on the relay
+                // (translations.renameAll), so every own name folds into it here too.
+                for (String old : ownNames) TranslatorRenames.record(old, to);
+                if (!from.isEmpty()) TranslatorRenames.record(from, to);
+                TranslatorName.set(to);
+                names.clear();
+                names.add(to);
+                CreditsSelfEdits.recordRename(from, to);
             }
-            case REMOVE -> CreditsSelfEdits.setHidden(section, true);
-            case RESTORE -> CreditsSelfEdits.setHidden(section, false);
+            case REMOVE -> CreditsSelfEdits.setHidden(true);
+            case RESTORE -> CreditsSelfEdits.setHidden(false);
         }
         // Refetch WITHOUT clearing: the overlay already renders the change from the cached lists,
         // and an empty cache while the answer is in flight would drop them from the page.
-        switch (section) {
-            case TRANSLATIONS -> TranslationCoverageClient.refetch();
-            case WRITERS -> RelayWriters.refresh(null);
-            case BUILDERS -> RelayTemplateBuilders.refresh(null);
-        }
+        TranslationCoverageClient.refetch();
+        RelayWriters.refresh(null);
+        RelayTemplateBuilders.refresh(null);
         CreditsScreen fresh = new CreditsScreen(parent);
         fresh.ownNames = Set.copyOf(names);
         fresh.writerStanding = writerStanding;
@@ -460,7 +460,7 @@ public final class CreditsScreen extends Screen {
         // Everyone above 1% of a language first; See more opens the whole list, ten to a page.
         List<TranslationContributor> notable = contributors.stream().filter(CreditsScreen::aboveMinShare).toList();
         CreditsPaging.View<TranslationContributor> view = translatorsPaging.view(notable, contributors);
-        boolean hiddenSelf = CreditsSelfEdits.get(Section.TRANSLATIONS).hidden() && !ownNames.isEmpty();
+        boolean hiddenSelf = CreditsSelfEdits.get().hidden() && !ownNames.isEmpty();
         for (TranslationContributor contributor : view.rows()) {
             // The Anonymous line is this player's own while they have asked to be on it — that is
             // where their names were folded (see merge above) and where Restore lives.

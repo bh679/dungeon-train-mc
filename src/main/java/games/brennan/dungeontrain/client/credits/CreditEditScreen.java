@@ -17,13 +17,13 @@ import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
- * The small form behind the Credits page's <b>Edit</b> button, for any of its three cards: one
- * box holding the name the player is credited under, Save, <b>Remove</b> (be listed as Anonymous —
+ * The small form behind the Credits page's <b>Edit</b> button, on any of its three cards: one box
+ * holding the name the player is credited under, Save, <b>Remove</b> (be listed as Anonymous —
  * behind a confirm), Cancel, and a line saying what happened. A line that is already anonymous
- * offers <b>Restore</b> instead of the box.
+ * offers <b>Restore</b> instead of the box. Whichever card it was opened from, the edit is to the
+ * player's <b>one</b> identity — every card follows.
  *
  * <p>Deliberately not a settings option. The credited name is the player's, not the game's, and
  * the place to change it is beside where it is shown. Every button is a relay call — the change has
@@ -107,8 +107,7 @@ public final class CreditEditScreen extends Screen {
         Component hint = !RelayChatClient.canConnect()
             ? Component.translatable("gui.dungeontrain.credits.rename.no_consent")
             : hidden ? Component.translatable("gui.dungeontrain.credits.rename.hint.hidden")
-            : section == Section.TRANSLATIONS ? Component.translatable("gui.dungeontrain.credits.rename.hint")
-            : Component.translatable("gui.dungeontrain.credits.rename.hint." + section.name().toLowerCase(Locale.ROOT));
+            : Component.translatable("gui.dungeontrain.credits.rename.hint");
         hintLines = font.split(FormattedText.of(hint.getString()), formW);
         updateButtons();
     }
@@ -146,7 +145,7 @@ public final class CreditEditScreen extends Screen {
             return;
         }
         if (!consentOk()) return;
-        begin(Action.RENAME, to, CreditEditClient.rename(section, from, to));
+        begin(Action.RENAME, to, CreditEditClient.rename(from, to));
     }
 
     /** Remove is the one action that changes what everybody sees without a name to type — confirm it. */
@@ -154,7 +153,7 @@ public final class CreditEditScreen extends Screen {
         if (!consentOk()) return;
         Minecraft.getInstance().setScreen(new ConfirmScreen(yes -> {
             Minecraft.getInstance().setScreen(this);
-            if (yes) begin(Action.REMOVE, "", CreditEditClient.remove(section));
+            if (yes) begin(Action.REMOVE, "", CreditEditClient.remove());
         },
             Component.translatable("gui.dungeontrain.credits.rename.remove.confirm_title"),
             Component.translatable("gui.dungeontrain.credits.rename.remove.confirm_body")));
@@ -162,7 +161,7 @@ public final class CreditEditScreen extends Screen {
 
     private void restore() {
         if (!consentOk()) return;
-        begin(Action.RESTORE, "", CreditEditClient.restore(section));
+        begin(Action.RESTORE, "", CreditEditClient.restore());
     }
 
     private void begin(Action action, String to, java.util.concurrent.CompletableFuture<CreditEditClient.Result> call) {

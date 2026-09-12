@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client.credits;
 
 import com.google.gson.JsonParser;
-import games.brennan.dungeontrain.client.credits.CreditEditClient.Section;
 import games.brennan.dungeontrain.client.credits.CreditsSelfEdits.Entry;
 import games.brennan.dungeontrain.client.credits.CreditsSelfEdits.Shown;
 import org.junit.jupiter.api.DisplayName;
@@ -35,19 +34,14 @@ final class CreditsSelfEditsTest {
     }
 
     @Test
-    @DisplayName("an entry is forgotten once the source agrees with it — except a translator's opt-out")
-    void caughtUp() {
+    @DisplayName("a card still needs the rename only while it shows the old name and is not anonymous")
+    void stillOld() {
         Entry renamed = Entry.NONE.withRename("Ada", "Ada L");
-        assertEquals(renamed, CreditsSelfEdits.caughtUp(Section.WRITERS, renamed, "Ada", false), "still needed");
-        assertTrue(CreditsSelfEdits.caughtUp(Section.WRITERS, renamed, "Ada L", false).isEmpty(), "relay shows the new name");
-        assertEquals(renamed, CreditsSelfEdits.caughtUp(Section.WRITERS, renamed, "", true),
-            "an anonymous row says nothing about the name — keep the rename for the restore");
-
-        Entry hidden = Entry.NONE.withHidden(true);
-        assertEquals(hidden, CreditsSelfEdits.caughtUp(Section.BUILDERS, hidden, "Ada", false));
-        assertTrue(CreditsSelfEdits.caughtUp(Section.BUILDERS, hidden, "", true).isEmpty(), "the relay row is anonymous now");
-        assertEquals(hidden, CreditsSelfEdits.caughtUp(Section.TRANSLATIONS, hidden, "", true),
-            "the jar still bakes a translator's name, so their opt-out stays until they restore");
+        assertTrue(CreditsSelfEdits.stillOld(renamed, "Ada", false));
+        assertTrue(CreditsSelfEdits.stillOld(renamed, "ada", false));
+        assertFalse(CreditsSelfEdits.stillOld(renamed, "Ada L", false), "the relay caught up");
+        assertFalse(CreditsSelfEdits.stillOld(renamed, "", true), "an anonymous row says nothing about the name");
+        assertFalse(CreditsSelfEdits.stillOld(Entry.NONE, "Ada", false));
     }
 
     @Test

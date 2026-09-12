@@ -16,11 +16,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CreditEditPayloadTest {
 
     @Test
-    @DisplayName("a rename body is {uuid, section, action, from, to}, matching the relay's contract")
+    @DisplayName("a rename body is {uuid, section: all, action, from, to}, matching the relay's contract")
     void renamePayload() {
-        JsonObject body = CreditEditClient.buildPayload("abc", Section.WRITERS, Action.RENAME, "Old", "New");
+        JsonObject body = CreditEditClient.buildPayload("abc", Action.RENAME, "Old", "New");
         assertEquals("abc", body.get("uuid").getAsString());
-        assertEquals("writers", body.get("section").getAsString());
+        assertEquals("all", body.get("section").getAsString(), "one identity — every card at once");
         assertEquals("rename", body.get("action").getAsString());
         assertEquals("Old", body.get("from").getAsString());
         assertEquals("New", body.get("to").getAsString());
@@ -30,20 +30,27 @@ class CreditEditPayloadTest {
     @Test
     @DisplayName("remove and restore carry no names")
     void removeRestorePayload() {
-        JsonObject remove = CreditEditClient.buildPayload("abc", Section.TRANSLATIONS, Action.REMOVE, "x", "y");
-        assertEquals("translations", remove.get("section").getAsString());
+        JsonObject remove = CreditEditClient.buildPayload("abc", Action.REMOVE, "x", "y");
+        assertEquals("all", remove.get("section").getAsString());
         assertEquals("remove", remove.get("action").getAsString());
         assertEquals(3, remove.size());
-        assertEquals("restore", CreditEditClient.buildPayload("abc", Section.BUILDERS, Action.RESTORE, null, null)
+        assertEquals("restore", CreditEditClient.buildPayload("abc", Action.RESTORE, null, null)
             .get("action").getAsString());
     }
 
     @Test
-    @DisplayName("writers and builders are edited on the live pool, translations on this build's own")
-    void poolPerSection() {
-        assertTrue(Section.WRITERS.onLivePool());
-        assertTrue(Section.BUILDERS.onLivePool());
-        assertFalse(Section.TRANSLATIONS.onLivePool());
+    @DisplayName("on a dev build the live pool's answer wins unless the branch cap is the one that owned the credit")
+    void twoPools() {
+        CreditEditClient.Result ok = new CreditEditClient.Result(true, CreditEditClient.Error.NONE, 2);
+        CreditEditClient.Result notYours = CreditEditClient.Result.of(CreditEditClient.Error.NOT_YOURS);
+        CreditEditClient.Result taken = CreditEditClient.Result.of(CreditEditClient.Error.NAME_TAKEN);
+        assertEquals(4, CreditEditClient.either(ok, ok).updated());
+        assertTrue(CreditEditClient.either(ok, notYours).ok());
+        assertTrue(CreditEditClient.either(notYours, ok).ok());
+        assertEquals(CreditEditClient.Error.NAME_TAKEN, CreditEditClient.either(notYours, taken).error());
+        assertEquals(CreditEditClient.Error.NAME_TAKEN, CreditEditClient.either(taken, notYours).error());
+        assertEquals(CreditEditClient.Error.NOT_YOURS, CreditEditClient.either(notYours, notYours).error());
+        assertEquals("translations", Section.TRANSLATIONS.wire());
     }
 
     @Test

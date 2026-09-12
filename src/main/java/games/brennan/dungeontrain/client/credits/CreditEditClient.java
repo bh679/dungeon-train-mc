@@ -28,10 +28,11 @@ import java.util.concurrent.CompletableFuture;
  * HTTP/1.1-pinned, never blocking, no-throw at every entry point. The body and the response
  * mapping are pure functions so they can be tested without a relay.</p>
  *
- * <p>Which relay pool the edit goes to follows where that section's credits are <i>read</i> from:
- * translations live on this build's branch-routed cap ({@code /translations/*}), writers and
- * builders on the live pool ({@code RelayWriters}, {@code RelayTemplateBuilders}) — an edit made
- * against the wrong pool would report {@code NOT_YOURS} and change nothing the page shows.</p>
+ * <p><b>One identity.</b> The body carries {@code section: "all"}: the relay applies the edit to
+ * every card the player is credited on, so a name changed beside one card changes beside all
+ * three. It goes to the <b>live</b> pool, where the writers and builders are read from; a dev
+ * build whose branch-routed cap differs (its translations live there) posts to that cap too, and
+ * the edit is ok when either pool accepted it.</p>
  *
  * <p>The relay's refusals are surfaced as distinct {@link Error}s rather than one "failed",
  * because a player can act on them: {@code NAME_TAKEN} wants a different name, {@code
@@ -55,31 +56,18 @@ public final class CreditEditClient {
 
     private CreditEditClient() {}
 
-    /** The three cards of the Credits page, by the relay's name for each. */
+    /** The three cards of the Credits page — which one an Edit button sits on. The edit itself is for all. */
     public enum Section {
-        TRANSLATIONS(false), WRITERS(true), BUILDERS(true);
-
-        private final boolean live;
-
-        Section(boolean live) {
-            this.live = live;
-        }
+        TRANSLATIONS, WRITERS, BUILDERS;
 
         /** The relay's wire name. */
         public String wire() {
             return name().toLowerCase(Locale.ROOT);
         }
-
-        /** Whether this section's credits are read from — and so edited on — the live pool. */
-        public boolean onLivePool() {
-            return live;
-        }
-
-        /** The base URL the edit goes to. */
-        String baseUrl() {
-            return RelayTarget.of(live);
-        }
     }
+
+    /** The wire value asking for every section at once. */
+    static final String ALL = "all";
 
     /** What the player asked for. */
     public enum Action {
@@ -101,10 +89,10 @@ public final class CreditEditClient {
     }
 
     /** The {@code /credits/edit} body — matches the contract in the relay's README. */
-    static JsonObject buildPayload(String uuid, Section section, Action action, String from, String to) {
+    static JsonObject buildPayload(String uuid, Action action, String from, String to) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid == null ? "" : uuid);
-        body.addProperty("section", section.wire());
+        body.addProperty("section", ALL);
         body.addProperty("action", action.wire());
         if (action == Action.RENAME) {
             body.addProperty("from", from == null ? "" : from);
@@ -113,34 +101,50 @@ public final class CreditEditClient {
         return body;
     }
 
-    /** Rename this player's credit in {@code section} from {@code from} to {@code to}. */
-    public static CompletableFuture<Result> rename(Section section, String from, String to) {
-        return send(section, Action.RENAME, from, to);
+    /** Rename this player's credit, on every card, from {@code from} to {@code to}. */
+    public static CompletableFuture<Result> rename(String from, String to) {
+        return send(Action.RENAME, from, to);
     }
 
-    /** Take this player's name off {@code section} (their line renders as Anonymous, count kept). */
-    public static CompletableFuture<Result> remove(Section section) {
-        return send(section, Action.REMOVE, "", "");
+    /** Take this player's name off every card (their lines render as Anonymous, counts kept). */
+    public static CompletableFuture<Result> remove() {
+        return send(Action.REMOVE, "", "");
     }
 
-    /** Put this player's name back on {@code section}. */
-    public static CompletableFuture<Result> restore(Section section) {
-        return send(section, Action.RESTORE, "", "");
+    /** Put this player's name back on every card. */
+    public static CompletableFuture<Result> restore() {
+        return send(Action.RESTORE, "", "");
     }
 
     /**
      * Ask the relay for one edit. Resolves on the calling thread of the HTTP client — hop to the
      * render thread before touching a screen.
      */
-    public static CompletableFuture<Result> send(Section section, Action action, String from, String to) {
+    public static CompletableFuture<Result> send(Action action, String from, String to) {
         Minecraft mc = Minecraft.getInstance();
         UUID uuid = mc != null && mc.getUser() != null ? mc.getUser().getProfileId() : null;
         if (uuid == null || !RelayChatClient.canConnect()) {
             return CompletableFuture.completedFuture(Result.of(Error.NO_CONSENT));
         }
+        String json = buildPayload(uuid.toString().replace("-", ""), action, from, to).toString();
+        CompletableFuture<Result> live = post(RelayTarget.live(), json, action);
+        if (RelayTarget.dev().equals(RelayTarget.live())) {
+            return live;
+        }
+        // A dev build: its translations live on the branch cap. Either pool accepting is a success;
+        // otherwise the live pool's verdict is the one the page can act on.
+        return live.thenCombine(post(RelayTarget.dev(), json, action), CreditEditClient::either);
+    }
+
+    static Result either(Result live, Result dev) {
+        if (live.ok()) return dev.ok() ? new Result(true, Error.NONE, live.updated() + dev.updated()) : live;
+        if (dev.ok()) return dev;
+        return live.error() == Error.NOT_YOURS && dev.error() != Error.NOT_YOURS ? dev : live;
+    }
+
+    private static CompletableFuture<Result> post(String base, String json, Action action) {
         try {
-            String json = buildPayload(uuid.toString().replace("-", ""), section, action, from, to).toString();
-            HttpRequest req = HttpRequest.newBuilder(URI.create(section.baseUrl() + PATH))
+            HttpRequest req = HttpRequest.newBuilder(URI.create(base + PATH))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json))
@@ -148,11 +152,11 @@ public final class CreditEditClient {
             return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> interpret(resp.statusCode(), resp.body()))
                 .exceptionally(t -> {
-                    LOGGER.debug("[DungeonTrain] Credits: {} {} failed — {}", action, section, t.toString());
+                    LOGGER.debug("[DungeonTrain] Credits: {} failed — {}", action, t.toString());
                     return Result.of(Error.FAILED);
                 });
         } catch (Throwable t) {
-            LOGGER.debug("[DungeonTrain] Credits: {} {} could not start — {}", action, section, t.toString());
+            LOGGER.debug("[DungeonTrain] Credits: {} could not start — {}", action, t.toString());
             return CompletableFuture.completedFuture(Result.of(Error.FAILED));
         }
     }
