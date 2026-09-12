@@ -20,9 +20,11 @@ public enum ChangelogTag {
     COMMUNITY("community"),
     TRANSLATIONS("translations"),
     COMPATIBILITY("compatibility"),
+    TRAIN("train"),
     WORLD("world"),
     MOBS("mobs"),
     LOOT("loot"),
+    BOOKS("books"),
     ADVANCEMENTS("advancements"),
     UI("ui"),
     BALANCE("balance");

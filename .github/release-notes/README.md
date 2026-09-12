@@ -51,7 +51,7 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
       "id": "toolsmith-shop-carriage",
       "version": "0.291.0",
       "type": "feat",
-      "tags": ["feature", "loot", "balance"],
+      "tags": ["feature", "train", "loot", "balance"],
       "title": "Toolsmith shop carriage + armorer loot rebalance",
       "summary": "A toolsmith shop carriage now rides the train, trading tools…",
       "highlights": ["New toolsmith shop carriage", "Rebalanced armorer chest loot"],
@@ -98,9 +98,11 @@ that apply — an editor bug fix is `["fix", "editor"]`. Ids are stored in the c
 | `community` | Community | relay-backed: shared carriages & books, leaderboards, credits, videos, chat, Discord |
 | `translations` | Translations | locale additions, i18n fixes |
 | `compatibility` | Compatibility | shaders, Distant Horizons, modpack, companion mods, Sable |
-| `world` | Train & World | carriages, worldgen, biomes, Nether/End bands |
+| `train` | Train | carriages, flatbeds, tracks, dimensional carriages |
+| `world` | World | worldgen, biomes, Nether/End bands, terrain |
 | `mobs` | Mobs | echoes, villagers, hostiles, spawning |
-| `loot` | Loot & Books | chests, potions, gear, playerbooks |
+| `loot` | Loot | chests, potions, gear, trades |
+| `books` | Books | playerbooks, letters, lecterns, narrative |
 | `advancements` | Advancements | |
 | `ui` | Menus & UI | menu pages, HUD, death screen, screens |
 | `balance` | Balance | difficulty, loot/spawn weights, rebalances |
@@ -136,7 +138,7 @@ python3 scripts/release-notes/append-entry.py \
   --summary "A toolsmith shop carriage now rides the train…" \
   --highlight "New toolsmith shop carriage" \
   --highlight "Rebalanced armorer chest loot" \
-  --tag loot --tag balance \
+  --tag train --tag loot --tag balance \
   --pr 360
 
 # Release — preview the notes the user will confirm:

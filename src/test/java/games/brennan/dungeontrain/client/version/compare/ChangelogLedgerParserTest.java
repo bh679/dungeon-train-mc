@@ -77,6 +77,6 @@ class ChangelogLedgerParserTest {
         }
         assertTrue(ChangelogTag.fromJson("nope").isEmpty());
         assertTrue(ChangelogTag.fromJson(null).isEmpty());
-        assertEquals(15, ChangelogTag.values().length);
+        assertEquals(17, ChangelogTag.values().length);
     }
 }

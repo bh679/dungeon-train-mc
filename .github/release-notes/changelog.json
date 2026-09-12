@@ -6,7 +6,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Cinematic spawn-on-train intro",
@@ -27,8 +27,7 @@
       "version": "0.294.0",
       "type": "ci",
       "tags": [
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Auto-publish CurseForge modpack after each release",
       "summary": "Dungeon Train now ships as a CurseForge modpack that updates automatically about 15 minutes after every mod release, bundling the matching mod build plus the tested Sable dependency.",
@@ -76,7 +75,6 @@
       "tags": [
         "fix",
         "editor",
-        "world",
         "advancements"
       ],
       "title": "Advancements only earnable in survival or adventure",
@@ -98,7 +96,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "mobs",
         "loot",
         "balance"
@@ -166,7 +164,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -189,7 +187,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Reliable spawn on the train's front deck",
       "summary": "Joining or respawning onto the moving train now reliably lands you standing on the front flatbed deck. Before, if the train hadn't fully settled or had already grown past its first carriage, you could occasionally drop through to the tracks under the train or get stuck inside the deck floor.",
@@ -209,7 +207,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
         "mobs"
       ],
       "title": "Empty enemy spots no longer leave a stray block behind",
@@ -230,7 +227,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "advancements",
         "ui"
       ],
@@ -253,6 +249,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world",
         "advancements"
       ],
@@ -277,7 +274,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Armor stands as randomized carriage contents",
@@ -321,7 +318,6 @@
         "feature",
         "performance",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Quality-of-life mods in the modpack: AppleSkin + Mouse Tweaks",
@@ -342,7 +338,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "advancements"
       ],
       "title": "Know The Rules advancement + clearer ride-time goals",
@@ -364,8 +359,8 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
-        "loot",
+        "train",
+        "books",
         "advancements",
         "ui"
       ],
@@ -389,7 +384,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Jade tooltips available as an optional modpack add-on",
@@ -454,7 +448,6 @@
       "tags": [
         "fix",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "AppleSkin listed as an optional dependency",
@@ -474,6 +467,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world"
       ],
       "title": "Archways fade between elevated track pillars",
@@ -537,7 +531,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "loot"
       ],
       "title": "New decor carriages (house, tree, cherry blossom) + broken roof",
@@ -558,7 +552,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Fixed players spawning under the train",
       "summary": "Spawning or respawning onto the train no longer occasionally drops you through the deck and leaves you stuck underneath. On busy world loads the client could free-fall off the deck before the train's collision finished loading; the game now holds you on the deck through that window so you always start standing on the train.",
@@ -576,7 +570,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
         "loot",
         "balance"
@@ -665,8 +658,7 @@
       "tags": [
         "feature",
         "editor",
-        "community",
-        "world"
+        "community"
       ],
       "title": "Editor welcome shows Brennan's Discord \"last seen online\"",
       "summary": "The Dungeon Train editor welcome can again end with whether Brennan is online on Discord right now, or how long ago he was last seen \u2014 so creators know if a quick reply is likely. Powered by Discord Presence's presence query over the community relay; gracefully hidden when his presence is unknown.",
@@ -686,7 +678,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "balance"
       ],
       "title": "Fewer trees in carriage contents",
@@ -705,7 +697,7 @@
       "tags": [
         "feature",
         "world",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "All advancements now persist across worlds",
@@ -748,7 +740,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
         "advancements"
       ],
       "title": "\"Reboarder\" advancement now unlocks reliably",
@@ -770,6 +761,7 @@
       "tags": [
         "content",
         "loot",
+        "books",
         "ui"
       ],
       "title": "New book: \"All the Creator Asks\"",
@@ -790,7 +782,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "ui"
       ],
       "title": "Replay the intro cinematic on demand",
@@ -812,7 +803,7 @@
       "tags": [
         "feature",
         "community",
-        "world",
+        "train",
         "advancements",
         "ui",
         "balance"
@@ -855,7 +846,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "advancements",
         "ui"
       ],
@@ -878,9 +868,9 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
         "loot",
+        "books",
         "ui"
       ],
       "title": "Narrative death screen",
@@ -903,7 +893,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
         "ui"
       ],
       "title": "Disable vanilla movement tutorial on world creation",
@@ -923,7 +912,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "ui"
       ],
       "title": "TrainCinematographer mode",
@@ -980,7 +968,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Death screen: lectern stories count as books, plus first-death send-off",
@@ -1022,6 +1010,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world",
         "loot",
         "ui"
@@ -1063,7 +1052,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "loot",
         "ui"
       ],
@@ -1086,9 +1074,9 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "mobs",
-        "loot",
+        "books",
         "balance"
       ],
       "title": "Tougher zombie rooms + book carriage refresh",
@@ -1110,7 +1098,6 @@
       "tags": [
         "fix",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Death-screen ride photos only snap when you're in clear view",
@@ -1134,7 +1121,6 @@
         "feature",
         "performance",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "FerriteCore added to the modpack for lower memory use",
@@ -1221,7 +1207,6 @@
       "tags": [
         "performance",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Modpack: ModernFix bundled by default (faster launch, less memory)",
@@ -1243,7 +1228,6 @@
       "type": "chore",
       "tags": [
         "compatibility",
-        "world",
         "loot"
       ],
       "title": "Wire Ender Chest Persistence as embedded dependency in release metadata",
@@ -1327,7 +1311,7 @@
       "tags": [
         "feature",
         "performance",
-        "world",
+        "books",
         "ui",
         "balance"
       ],
@@ -1367,7 +1351,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "advancements"
       ],
       "title": "Over the Top advancement",
@@ -1424,7 +1407,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "advancements",
         "ui"
       ],
@@ -1505,7 +1487,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "loot"
       ],
       "title": "Uncraftable arrows now pack an escalating punch",
@@ -1570,8 +1551,8 @@
       "tags": [
         "feature",
         "performance",
-        "world",
         "loot",
+        "books",
         "advancements",
         "ui"
       ],
@@ -1595,7 +1576,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "advancements",
         "ui"
       ],
@@ -1618,8 +1598,7 @@
       "type": "chore",
       "tags": [
         "performance",
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Sable physics updated to 2.0.2",
       "summary": "Updated the Sable physics dependency from 1.2.1 to 2.0.2. Server tick-time is equal-or-better \u2014 worst-case lag spikes are roughly halved \u2014 and the long-standing save-and-quit hang (Sable #679) no longer occurs. Verified API-compatible, so no gameplay changes. Full compatibility & benchmark notes: [Compatibility wiki](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#sable-202mc1211).",
@@ -1639,7 +1618,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "mobs"
       ],
       "title": "PlayerMobs follow you on the train, echoes wear real skins",
@@ -1660,8 +1639,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Modpack: AmbientSounds on by default",
       "summary": "The Dungeon Train modpack now bundles AmbientSounds \u2014 an immersive ambient/environmental sound engine \u2014 enabled by default, along with its CreativeCore library. Client-side audio only; no effect on the train or Sable physics.",
@@ -1681,7 +1659,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "loot"
+        "books"
       ],
       "title": "Update 'Collecting Stories' hint",
       "summary": "Changed the hint text to 'The lecterns hold the key.'",
@@ -1697,7 +1675,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "loot"
+        "books"
       ],
       "title": "Breaking a narrative lectern drops a lectern and its book",
       "summary": "Mining a narrative lectern now gives you a normal lectern instead of a non-craftable special block, and the story book that was on it pops out too \u2014 so you can pick it back up and keep reading.",
@@ -1717,9 +1695,8 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
         "mobs",
-        "loot"
+        "books"
       ],
       "title": "Echo lore books",
       "summary": "Added two new echo-themed variants to Quiet Rules of the Train, and two new echo/past-life observations to Adventurer's Field Notes.",
@@ -1735,7 +1712,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "mobs"
       ],
       "title": "Stray command block removed from the vindicator carriage",
@@ -1788,7 +1765,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "loot",
         "ui"
       ],
@@ -1837,8 +1813,8 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
-        "loot",
+        "train",
+        "books",
         "advancements"
       ],
       "title": "\"The Far Start\" advancement \u2014 carry your first book past 150 carriages",
@@ -1921,7 +1897,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "mobs",
         "ui"
       ],
@@ -1944,7 +1919,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "mobs",
         "ui"
       ],
@@ -1988,7 +1963,6 @@
       "tags": [
         "feature",
         "performance",
-        "world",
         "ui"
       ],
       "title": "Arrival death-photo",
@@ -2010,7 +1984,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "Themed cause of death when you abandon a run",
@@ -2048,6 +2021,7 @@
         "content",
         "world",
         "loot",
+        "books",
         "ui"
       ],
       "title": "More to read at the end of the line",
@@ -2068,7 +2042,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "mobs"
       ],
       "title": "Cross-world reincarnation \u2014 passengers return as echoes from other worlds",
@@ -2109,8 +2082,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "community",
-        "world"
+        "community"
       ],
       "title": "Deaths now share to a public Discord channel",
       "summary": "Death reports now post to a dedicated public Discord deaths channel \u2014 the redesigned 'manifest' report, with your run's ride photo and the train's account of how it ended. Free Play (creative / cheats) runs are kept out of the public feed.",
@@ -2167,7 +2139,7 @@
       "tags": [
         "feature",
         "compatibility",
-        "world"
+        "train"
       ],
       "title": "Dungeon Train modpack now on Modrinth",
       "summary": "The curated Dungeon Train modpack \u2014 the mod plus Sable and its recommended companions \u2014 now publishes to Modrinth alongside CurseForge, so you can install it straight from the Modrinth App. It ships the same mods at the same versions as the CurseForge pack.",
@@ -2188,8 +2160,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
-        "mobs"
+        "mobs",
+        "books"
       ],
       "title": "Echo encounter stories on Discord",
       "summary": "When you cross paths with a remote echo \u2014 a traveller who died in another world, now walking your train \u2014 the game quietly chronicles the meeting and shares the tale to Discord when it ends.",
@@ -2235,8 +2207,8 @@
         "feature",
         "performance",
         "community",
-        "world",
-        "mobs"
+        "mobs",
+        "books"
       ],
       "title": "Echo encounter stories now include a photo of the echo",
       "summary": "When the game shares the tale of your meeting with a remote echo on Discord, it now adds a snapshot of that traveller \u2014 framed against the train and captured the moment you first lay eyes on one another.",
@@ -2256,7 +2228,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Backward train generation no longer stalls",
       "summary": "Walking toward the back of a moving train used to hit a dead end where new carriages stopped appearing \u2014 most noticeably when travelling slowly. The trailing carriages are now kept loaded long enough to lock into place, so the train keeps building behind you for as far as you care to walk.",
@@ -2275,8 +2247,7 @@
       "version": "0.344.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "world"
+        "feature"
       ],
       "title": "Short abandoned runs stay off the public death feed",
       "summary": "Bailing out of a run early no longer broadcasts it. If you hit \"Abandon This Run\" before reaching 20 carriages, your run is kept out of the public death feed \u2014 only runs that actually went somewhere get posted. Your own run summary and death recap are unchanged.",
@@ -2297,7 +2268,8 @@
       "tags": [
         "fix",
         "community",
-        "mobs"
+        "mobs",
+        "books"
       ],
       "title": "Echo encounter stories now post to the public death feed",
       "summary": "The remote-echo encounter story now appears in the public death-report channel alongside the death manifests, instead of the live community feed \u2014 keeping its distinct greyish-blue colour so it still reads apart from a death.",
@@ -2316,7 +2288,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "mobs"
       ],
       "title": "Spider and Husk/Skeleton enemy carriages",
@@ -2333,8 +2305,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
-        "loot"
+        "books"
       ],
       "title": "New story: Tomas Aaro, \"The Walking Father\"",
       "summary": "A new findable story rides the train: Tomas Aaro, \"The Walking Father.\" A farmer leaves his dying village chasing a rumor that the train holds \"what you need,\" and the endless carriages take their toll. The third of the Aaro stories, completing the family begun by Pip and Della.",
@@ -2429,7 +2400,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Seamless train when you travel toward the back",
       "summary": "Walking toward the rear of a moving train no longer opens permanent gaps between carriages or hits a dead-end where the train just stops \u2014 carriages now keep generating smoothly behind you, the same way they do ahead. Also fixes a rare crash (and save corruption) that could happen as far-back carriages were unloaded and reloaded.",
@@ -2472,7 +2443,7 @@
       "type": "content",
       "tags": [
         "content",
-        "loot"
+        "books"
       ],
       "title": "Complete Della and Soren Aaro stories",
       "summary": "Ships 'The Searching Mother' (Pip's Mum) and 'The Keeper of the Door' (Soren) in full. All three Aaro family stories \u2014 Pip, Della, and Tomas \u2014 are now complete.",
@@ -2575,7 +2546,8 @@
       "version": "0.350.0",
       "type": "perf",
       "tags": [
-        "performance"
+        "performance",
+        "world"
       ],
       "title": "Leaner void/End band generation",
       "summary": "A follow-up to the smoother disintegration band: the empty void and floating-End stretches no longer run the full overworld decoration and structure pass just to have it erased, so those chunks generate a little leaner still.",
@@ -2595,6 +2567,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world"
       ],
       "title": "The train carves through the End islands",
@@ -2658,9 +2631,9 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
         "mobs",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "\"Weakness, Then Gold\" \u2014 a zombie's-cure story",
       "summary": "A new book rides the train: seven letters by a zombie hunting its own cure \u2014 a Potion of Weakness from a witch, then a Golden Apple. The writing climbs from groans to human speech as the cure takes, and the last letter leaves the recipe for the next lost soul.",
@@ -2679,7 +2652,8 @@
       "version": "0.353.0",
       "type": "fix",
       "tags": [
-        "fix"
+        "fix",
+        "world"
       ],
       "title": "End islands no longer missing whole chunks",
       "summary": "Fixed the floating End-stone islands in the world-disintegration band sometimes dropping whole chunks \u2014 clean square gaps with full islands all around them. Islands now generate complete across the whole band.",
@@ -2698,7 +2672,7 @@
       "type": "content",
       "tags": [
         "content",
-        "loot"
+        "books"
       ],
       "title": "Soren: excited opener on Letter Two",
       "summary": "Soren's second letter now opens with a burst of excitement as she realises the door is truly real.",
@@ -2714,7 +2688,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Trains stay put when you pause and resume",
@@ -2735,6 +2709,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world"
       ],
       "title": "The train climbs real mountains into the Nether",
@@ -2940,6 +2915,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world"
       ],
       "title": "Train stays dry \u2014 external water & lava kept out",
@@ -2960,6 +2936,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "Nether train tunnel stays clean and dry",
@@ -2981,8 +2958,8 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "New Quiet Rule: mend worn gear by combining it",
       "summary": "The Quiet Rules of the Train book can now turn up a new rule hinting that worn-down weapons and armour can be mended by combining two of the same item \u2014 and that the result keeps the stats of whichever piece you place on the left.",
@@ -2998,7 +2975,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Temporarily roll back the pause/resume train fix",
@@ -3059,7 +3036,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -3103,9 +3080,10 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "mobs",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "New carriages: shops, library rooms, maze rooms, and shrines",
       "summary": "A fresh batch of carriages now rides the train. Two new villager shops (an archer stall and a cleric), three new maze rooms, two new library cars, and four landmark feature carriages \u2014 a statue, a grave, a worship shrine, and a wither room \u2014 all appear as variants of their existing carriage types.",
@@ -3168,7 +3146,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -3186,6 +3164,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "No more basalt on the Nether train tracks",
@@ -3205,7 +3184,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -3227,8 +3206,8 @@
       "tags": [
         "fix",
         "community",
-        "world",
-        "mobs"
+        "mobs",
+        "books"
       ],
       "title": "Remote echo encounter stories now always post to Discord",
       "summary": "A passenger's Discord story was silently skipped when a remote echo (a traveller from another world's past life) spawned on a distant carriage and the player walked up later. The encounter journal now opens retroactively on first close approach, so every remote echo meeting \u2014 however it starts \u2014 gets its story.",
@@ -3269,6 +3248,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world",
         "ui",
         "balance"
@@ -3293,6 +3273,7 @@
       "tags": [
         "content",
         "editor",
+        "train",
         "world"
       ],
       "title": "Dark Nether carriage parts",
@@ -3313,6 +3294,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world",
         "ui"
       ],
@@ -3355,6 +3337,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world"
       ],
       "title": "Tunnels & tracks fade into the Nether block by block",
@@ -3396,7 +3379,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Editor Menus toggle hides all world-space editor panels",
@@ -3418,9 +3400,9 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "mobs",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Echo encounter stories describe the echo's gear and your words",
       "summary": "When you meet a remote echo aboard the train, its Discord story now paints a fuller picture: it names the echo's two finest items \u2014 enchantments, armour trim and all \u2014 notes any better gear it claims along the way, and remembers if you spoke to it. Your words are sometimes quoted in the tale, sometimes just hinted at, and are always kept private if you'd recently been in touch with the dev.",
@@ -3442,7 +3424,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Editor mirror now reflects block variants",
@@ -3487,8 +3468,8 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
-        "loot",
+        "train",
+        "books",
         "advancements",
         "ui"
       ],
@@ -3554,7 +3535,6 @@
       "tags": [
         "fix",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Editor part menus stay open by look direction",
@@ -3575,7 +3555,7 @@
       "tags": [
         "content",
         "editor",
-        "world"
+        "train"
       ],
       "title": "New sandstone carriage parts",
       "summary": "Fresh sandstone carriage parts join the rotation \u2014 windowed, broken, and open-lattice sandstone walls plus an open sandstone roof \u2014 woven into several existing carriages for more variety on the train.",
@@ -3610,8 +3590,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Duplicating a template keeps its block-variant grouping",
       "summary": "When you create a new part, carriage, or contents template from 'Current', the editor now also copies the block-variant grouping (locked cells that roll the same variant together), not just the per-cell variant options. Duplicated locked groups stay grouped instead of having to be re-linked by hand.",
@@ -3630,6 +3609,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "Carriages switch theme in step with the world around them",
@@ -3649,6 +3629,7 @@
       "tags": [
         "content",
         "editor",
+        "train",
         "world"
       ],
       "title": "Copper carriages, new floors, and a copper stage",
@@ -3669,7 +3650,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -3715,7 +3696,6 @@
       "tags": [
         "feature",
         "performance",
-        "world",
         "ui"
       ],
       "title": "Report bugs from the death screen",
@@ -3832,7 +3812,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Train no longer vanishes when the world saves",
       "summary": "Fixed the train disappearing (and regenerating from scratch) when the world autosaved. The whole train is now held in place across every save, so riding through an autosave \u2014 or running /save-all \u2014 keeps every carriage and its contents intact.",
@@ -3852,7 +3832,6 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
         "balance"
       ],
       "title": "Maze room variety rebalance",
@@ -3870,7 +3849,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Carriages no longer vanish at low simulation distance",
       "summary": "Fixed the train permanently losing carriages \u2014 appearing to vanish or regenerate \u2014 when playing at a low Simulation Distance. Carriages generated ahead of the train are now kept loaded until they've been saved, so they reliably come back instead of disappearing for good.",
@@ -3891,7 +3870,7 @@
       "tags": [
         "fix",
         "compatibility",
-        "world"
+        "train"
       ],
       "title": "Quieter logs while riding long trains",
       "summary": "Long trains no longer flood the server log with a harmless, repeated Sable holding-handshake message during travel, and the matching redundant per-tick work is trimmed. No gameplay change.",
@@ -3908,8 +3887,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Locked to the tested Sable version",
       "summary": "Dungeon Train now requires the exact version of Sable it was built and tested against. If a different Sable is installed, the game stops at startup with a clear message naming the version it needs, instead of loading against an untested physics build (which could crash or break the train). The modpacks already include the correct Sable, so most players won't notice a change.",
@@ -3953,7 +3931,7 @@
       "tags": [
         "fix",
         "performance",
-        "world"
+        "train"
       ],
       "title": "Smoother rides on long trains \u2014 carriages no longer stutter or teleport",
       "summary": "Fixed carriages jittering or jumping across large distances while you ride a long, moving train, and cleared the physics-desync errors that came with it. Carriages near you now stay loaded smoothly as the train slides along, so the ride holds together even far from where the train started.",
@@ -3975,7 +3953,7 @@
         "feature",
         "performance",
         "compatibility",
-        "world",
+        "train",
         "mobs"
       ],
       "title": "Basic Vivecraft (VR) support on the train",
@@ -3997,8 +3975,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Quieter world-load \u2014 no more Sable sub-level log spam",
       "summary": "Freshly-loaded trains now settle for a brief moment before departing, so entering a world no longer prints a one-time burst of harmless \"non-existent sub-level\" errors to the log. The train runs identically once it's moving \u2014 this is a startup and logging cleanup, not a gameplay change.",
@@ -4081,7 +4058,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
         "loot",
         "ui",
@@ -4143,7 +4119,8 @@
       "version": "0.388.0",
       "type": "content",
       "tags": [
-        "content"
+        "content",
+        "world"
       ],
       "title": "New maze stages (Stone, Desert, Quartz) + mushroom rooms",
       "summary": "The maze dungeon now has Stone, Desert, and Quartz stages alongside the existing Copper stage, so its theme changes as you go deeper into a run. Two new mushroom-themed rooms can also show up \u2014 a mushroom feature room, and a fuller mushroom grove later on. Bookshelf and pot arrangements in library rooms also look a bit more consistent.",
@@ -4186,7 +4163,6 @@
       "tags": [
         "performance",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Editor tooling no longer runs during normal play",
@@ -4229,6 +4205,7 @@
       "type": "perf",
       "tags": [
         "performance",
+        "train",
         "world"
       ],
       "title": "Smoother train growth",
@@ -4248,7 +4225,7 @@
       "type": "perf",
       "tags": [
         "performance",
-        "world"
+        "train"
       ],
       "title": "Smoother performance on long trains",
       "summary": "Very long trains no longer bog down the server tick. Once a train grows large, its physics switches to a lighter step rate that roughly halves the heaviest part of the per-tick cost, so TPS holds up on big trains and busy multiplayer servers. Short and medium trains are unaffected and keep full-fidelity collision.",
@@ -4308,7 +4285,7 @@
       "tags": [
         "feature",
         "community",
-        "world",
+        "train",
         "advancements"
       ],
       "title": "Pacifist advancement chain (100/250/1000 carriages)",
@@ -4356,7 +4333,6 @@
       "tags": [
         "fix",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Editor Menus toggle now works in every template",
@@ -4374,7 +4350,8 @@
       "type": "fix",
       "tags": [
         "fix",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Random books no longer reshuffle their story on reselect",
       "summary": "Random books found in chests could quietly swap to a different title and story every time you scrolled past them in your hotbar. They now lock in their story the first time you pick one up.",
@@ -4414,6 +4391,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world"
       ],
       "title": "Quartz & obsidian carriage parts + a desert temple",
@@ -4435,6 +4413,7 @@
       "tags": [
         "feature",
         "editor",
+        "world",
         "mobs",
         "balance"
       ],
@@ -4453,8 +4432,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "loot",
+        "books",
         "balance"
       ],
       "title": "Community shared books: write, burn, and discover",
@@ -4479,6 +4458,7 @@
         "feature",
         "community",
         "loot",
+        "books",
         "advancements"
       ],
       "title": "Advancements for signing and reading shared books",
@@ -4501,7 +4481,7 @@
       "tags": [
         "content",
         "world",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "Advancement rework: Nether Return Again, End of the Line, Inter-Reality Passenger",
@@ -4568,7 +4548,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Carriage interiors are properly lit again",
       "summary": "Fixed train carriage interiors rendering too dark \u2014 floors, walls, and light sources like torches and lanterns inside carriages now light up correctly as you ride through the train.",
@@ -4585,8 +4565,10 @@
       "type": "content",
       "tags": [
         "content",
+        "world",
         "mobs",
         "loot",
+        "books",
         "balance"
       ],
       "title": "Rainbow flag, desert maze room, and campfire writing loot",
@@ -4610,7 +4592,8 @@
       "tags": [
         "feature",
         "community",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Community books ease into a fair share of chest loot",
       "summary": "Player-written community books found in dungeon chests now taper off as your world reads more of them. Instead of staying loot-heavy once you've discovered them, they settle toward an even share alongside the built-in book pool, so late-run chest loot feels more varied.",
@@ -4650,6 +4633,7 @@
       "type": "content",
       "tags": [
         "content",
+        "world",
         "balance"
       ],
       "title": "Desert vault: reduced hidden-feature frequency",
@@ -4687,8 +4671,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "Advancements reveal as you play, plus three new ones",
@@ -4712,8 +4695,8 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "loot",
+        "books",
         "ui"
       ],
       "title": "Books-written tally on the death screen",
@@ -4734,9 +4717,9 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
         "loot",
+        "books",
         "advancements",
         "ui"
       ],
@@ -4757,7 +4740,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "advancements",
         "ui"
       ],
@@ -4776,8 +4759,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
-        "loot"
+        "books"
       ],
       "title": "Chiseled bookshelves sometimes come stocked with books",
       "summary": "Chiseled bookshelves you find around the train that don't already have a curated stash now have a chance of holding a few books of their own \u2014 and they'll visibly show the right number of books at a glance, instead of always looking empty.",
@@ -4815,8 +4797,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
-        "loot"
+        "train",
+        "books"
       ],
       "title": "Signed books remember which carriage they were written in",
       "summary": "Every book and quill you sign now quietly records which carriage you were standing in at the moment of signing \u2014 laying the groundwork for future features that make use of where a story was written.",
@@ -4835,7 +4817,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "\"Burn without reading\" book advancement",
@@ -4918,7 +4900,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "\"Nothing But Books\" advancement",
@@ -4963,7 +4945,8 @@
       "tags": [
         "feature",
         "community",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Player-written books burn after being read",
       "summary": "Books you write and sign yourself, and real books other players wrote that you discover as chest loot, now catch fire and burn away once you've read them \u2014 the same way welcome and found-in-chest story books already do.",
@@ -4983,8 +4966,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "Pure of Heart",
@@ -5002,7 +4984,8 @@
       "type": "fix",
       "tags": [
         "fix",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Enchanted books actually enchant now",
       "summary": "Books rolled as loot with a chance to be enchanted were quietly coming out as plain, unenchanted books \u2014 the enchantment was being rolled but never actually applied. Chests, barrels, and shulker boxes that carry a book entry now hand you a real Enchanted Book with a genuine random enchantment.",
@@ -5045,9 +5028,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "mobs",
-        "loot",
+        "books",
         "advancements",
         "ui"
       ],
@@ -5073,6 +5055,7 @@
         "community",
         "world",
         "loot",
+        "books",
         "ui"
       ],
       "title": "Find your own shared book out in the world and it tells you how it's doing",
@@ -5095,7 +5078,7 @@
       "tags": [
         "feature",
         "mobs",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "Death Note advancements: Self-Fulfilling Prophecy & Assassination Attempt",
@@ -5135,7 +5118,6 @@
       "tags": [
         "content",
         "editor",
-        "world",
         "mobs"
       ],
       "title": "Deepdark stage: Warden, Wither Reality, and a new Ancient City",
@@ -5177,7 +5159,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "loot"
+        "books"
       ],
       "title": "Narrative books burn when taken off the lectern",
       "summary": "Story letters read in place at a lectern stay safe forever, but a copy you take into your hands now burns to ash if you drop it or read it and close the book \u2014 so lecterns are the one place a story is guaranteed to keep.",
@@ -5219,7 +5201,6 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
         "loot"
       ],
       "title": "New vase-room chest and barrel variants",
@@ -5263,7 +5244,7 @@
       "tags": [
         "feature",
         "community",
-        "loot"
+        "books"
       ],
       "title": "Player-written lectern letters",
       "summary": "Write in a book & quill, place it on a lectern and sign it to add it as the next Letter in this life's narrative series \u2014 a new life begins a new series. Signing burns the letter away at the lectern and shares it with the community; close without signing and the book rests on the lectern as a \"Letter X\" draft to finish later.",
@@ -5285,7 +5266,8 @@
       "tags": [
         "feature",
         "community",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Travelers' letters turn up on lecterns",
       "summary": "The narratives other players write and sign on their own runs now surface on narrative lecterns, woven in among the built-in stories. They stay hidden until a world has read its way through half the hand-authored tales, then mix in more and more and settle into a fair share \u2014 and once a series begins, later lecterns carry it on, letter by letter. The built-in stories never disappear.",
@@ -5306,7 +5288,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "ui"
       ],
       "title": "One continuous loading screen, with a story to read",
@@ -5327,7 +5308,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "books",
         "ui"
       ],
       "title": "Four more loading-screen stories",
@@ -5348,6 +5329,7 @@
       "tags": [
         "feature",
         "performance",
+        "train",
         "world"
       ],
       "title": "The train rides into an upside-down world",
@@ -5369,7 +5351,6 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
         "ui"
       ],
       "title": "A ninth loading-screen story",
@@ -5387,7 +5368,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "/dtp command \u2014 teleport anywhere on the track and always land on a train",
       "summary": "Added an admin command, /dtp <x>, that teleports you to any point along the track and makes sure a train is waiting there for you \u2014 no more jumping ahead with nothing around. It always sets you down on the nearest open flatbed car.",
@@ -5406,7 +5387,8 @@
       "version": "0.437.0",
       "type": "feat",
       "tags": [
-        "feature"
+        "feature",
+        "world"
       ],
       "title": "The upside-down world dissolves back to the overworld through floating islands",
       "summary": "Leaving the upside-down stretch of the world is no longer an abrupt wall. The inverted ceiling-world now breaks apart into shrinking, drifting floating islands while the normal overworld fades back in from below as growing islands over the void \u2014 a long, dreamlike descent until solid ground returns beneath you.",
@@ -5426,7 +5408,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
         "loot",
         "balance"
@@ -5469,6 +5450,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "Train stays right-side up in the Upside Down",
@@ -5587,7 +5569,7 @@
         "feature",
         "community",
         "translations",
-        "loot"
+        "books"
       ],
       "title": "Books you write remember your language",
       "summary": "When you sign a community book or lectern letter, the game now records the language your client is set to and saves it with your writing. This is groundwork so player-written content can be matched to each reader's language in a future update.",
@@ -5622,7 +5604,8 @@
         "feature",
         "community",
         "translations",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Player-written books and letters now match your language",
       "summary": "Community books you find in chests and player-written stories on lecterns are now matched to the language your game is set to. If your language has no player-written content yet, you'll get English instead \u2014 so you always have something to read. Language variants are grouped together (all English styles including Pirate; all Chinese including Classical), so you see every book written in a language you can actually read.",
@@ -5643,7 +5626,6 @@
       "type": "chore",
       "tags": [
         "translations",
-        "world",
         "ui"
       ],
       "title": "Remaining menu text is now translatable",
@@ -5665,6 +5647,7 @@
       "type": "perf",
       "tags": [
         "performance",
+        "train",
         "world"
       ],
       "title": "Upside-down band re-flip keeps pace with the train",
@@ -5686,8 +5669,9 @@
       "tags": [
         "feature",
         "translations",
-        "world",
+        "train",
         "loot",
+        "books",
         "ui"
       ],
       "title": "Translate the train's books & death messages with a datapack",
@@ -5732,7 +5716,6 @@
       "tags": [
         "content",
         "editor",
-        "world",
         "mobs"
       ],
       "title": "Room lighting improvements across most rooms",
@@ -5753,7 +5736,7 @@
       "tags": [
         "fix",
         "world",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "Welcome Back no longer needs a Nether/End start",
@@ -5771,7 +5754,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "advancements",
         "ui"
       ],
@@ -5808,7 +5791,7 @@
       "type": "perf",
       "tags": [
         "performance",
-        "world",
+        "train",
         "balance"
       ],
       "title": "Long trains cost less server physics time",
@@ -5848,6 +5831,7 @@
       "type": "perf",
       "tags": [
         "performance",
+        "train",
         "world"
       ],
       "title": "Smoother Nether crossings \u2014 big cut in moving-train gen lag",
@@ -5868,7 +5852,8 @@
       "tags": [
         "feature",
         "community",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Player-written books in loot: the random_playerbook item",
       "summary": "A new loot book that pulls exclusively from books other players wrote and shared. When it lands in a chest before the community pool has loaded, it fills in with a regular random book and quietly upgrades to a real player-written one the moment you pick it up to read it.",
@@ -5889,6 +5874,7 @@
       "type": "perf",
       "tags": [
         "performance",
+        "train",
         "world"
       ],
       "title": "Smoother Nether-band crossings on long trains",
@@ -6001,7 +5987,6 @@
         "fix",
         "community",
         "translations",
-        "world",
         "ui"
       ],
       "title": "Network-consent popup fully translatable",
@@ -6042,7 +6027,7 @@
       "tags": [
         "feature",
         "translations",
-        "loot"
+        "books"
       ],
       "title": "Localizable book & narrative flavour messages (+ Simplified Chinese)",
       "summary": "The gray flavour lines shown when you write, share, or find a book \u2014 plus the Death Note messages, the narrative 'sealed and sent' line, and the Developer-message prompt \u2014 are now translatable and ship with Simplified Chinese. They were previously hard-coded English on every client.",
@@ -6065,8 +6050,7 @@
       "tags": [
         "feature",
         "community",
-        "translations",
-        "world"
+        "translations"
       ],
       "title": "Chinese players can ping Brennan with @\u5f00\u53d1\u8005",
       "summary": "Discord Presence 0.50.0 shows a localized @dev chat-tag alias for non-English clients (@\u5f00\u53d1\u8005 on Simplified Chinese); Dungeon Train now accepts that alias as a real trigger too, so typing it actually reaches Brennan instead of just highlighting. Also picks up DP's newly self-localized \"whispers into the darkness\" idle chat lines.",
@@ -6146,7 +6130,7 @@
         "feature",
         "translations",
         "compatibility",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Simplified Chinese (zh_cn) translation refreshed & expanded",
@@ -6169,7 +6153,8 @@
       "type": "fix",
       "tags": [
         "fix",
-        "performance"
+        "performance",
+        "world"
       ],
       "title": "No lava in the upside-down band",
       "summary": "Lava no longer creeps into the upside-down region. Vanilla lava from the surrounding overworld could previously flow into the mirrored band; now it's held back at the edges, so the flipped world stays lava-free while its hanging water still sits perfectly still.",
@@ -6188,7 +6173,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "mobs"
       ],
       "title": "Fix crash when animals ride near a vanishing train car",
@@ -6208,7 +6193,8 @@
       "version": "0.461.0",
       "type": "fix",
       "tags": [
-        "fix"
+        "fix",
+        "world"
       ],
       "title": "Snow no longer crumbles off the upside-down ceiling",
       "summary": "In the upside-down band, snow layers on the mirrored ceiling used to pop out of existence the moment anything updated nearby, because the game expected solid ground beneath them. They now stay frozen in place, matching the grass and water that already hold fast in the band.",
@@ -6229,7 +6215,7 @@
       "tags": [
         "fix",
         "editor",
-        "world"
+        "train"
       ],
       "title": "Copper carriage part uses the right blocks",
       "summary": "The copper carriage part was mistakenly built from the mud block set; it now uses copper as intended.",
@@ -6246,7 +6232,7 @@
       "tags": [
         "feature",
         "translations",
-        "loot"
+        "books"
       ],
       "title": "Death Notes in your own language",
       "summary": "You can now create a Death Note by naming your book & quill in your own language \u2014 not just English. A book titled \u6b7b\u4ea1\u7b14\u8bb0 (Chinese) or \"Nota de Muerte\" (Spanish) casts the curse exactly like \"Death Note\" does, and any language's title works for every player, ignoring capitals and spacing. Simplified Chinese and Spanish versions of the in-world Death Note instruction book are included, so the name the book teaches you is the name that actually works.",
@@ -6270,6 +6256,7 @@
         "world",
         "mobs",
         "loot",
+        "books",
         "balance"
       ],
       "title": "New lamppost content + enemy spawn tuning",
@@ -6309,8 +6296,7 @@
         "feature",
         "translations",
         "compatibility",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Play in 8 more languages",
@@ -6356,7 +6342,6 @@
       "tags": [
         "feature",
         "translations",
-        "world",
         "ui"
       ],
       "title": "Human-reviewed translations marked in the language menu",
@@ -6414,6 +6399,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "Chorus no longer blocks the train in the End band",
@@ -6434,7 +6420,6 @@
       "tags": [
         "content",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Kinetic Hosting banner in the modpacks",
@@ -6456,8 +6441,7 @@
         "feature",
         "translations",
         "compatibility",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Play in 10 more languages",
@@ -6481,7 +6465,6 @@
       "tags": [
         "fix",
         "performance",
-        "world",
         "ui"
       ],
       "title": "Ride photos no longer jolt your camera",
@@ -6522,7 +6505,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Tighter, consistent gaps between train carriage groups",
       "summary": "The seams between carriage groups on the train now settle at a small, even gap instead of varying in size or occasionally clipping into each other. Also fixes the seam jitter that happened when groups landed too close together.",
@@ -6542,7 +6525,6 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
         "mobs",
         "loot"
       ],
@@ -6565,7 +6547,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Loose carriage blocks stay part of the train",
       "summary": "Mining part of a carriage no longer breaks a disconnected chunk off into its own drifting mini-ship. Any blocks left floating inside a carriage group now stay welded to the train and ride along with it.",
@@ -6623,7 +6605,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Clear stray blocks from the train's path",
       "summary": "Fixed rare cases where trees (especially large/dark oak) could leave wood blocking the tracks in the train's path. The corridor now clears anything that strays into the train's collision path, not just leaves.",
@@ -6640,7 +6622,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "loot"
       ],
       "title": "The train smashes through blocks in its path",
@@ -6662,6 +6644,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world",
         "mobs"
       ],
@@ -6684,7 +6667,6 @@
       "tags": [
         "community",
         "compatibility",
-        "world",
         "mobs",
         "loot",
         "ui"
@@ -6771,7 +6753,6 @@
       "tags": [
         "fix",
         "compatibility",
-        "world",
         "loot",
         "balance"
       ],
@@ -6791,8 +6772,7 @@
       "version": "0.482.0",
       "type": "perf",
       "tags": [
-        "performance",
-        "world"
+        "performance"
       ],
       "title": "Pausing or minimising the game now lets your computer rest",
       "summary": "Pausing Minecraft never actually stopped it drawing \u2014 it kept rendering the world as fast as your graphics card could manage, so fans stayed loud and laptops kept draining even while you were away from the keyboard. Dungeon Train now caps the frame rate while the game is paused, unfocused, or minimised, and restores it the instant you come back.",
@@ -6854,7 +6834,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Suspicious sand on the train digs up real loot",
@@ -6877,8 +6857,8 @@
         "feature",
         "community",
         "translations",
-        "world",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Player-written loot books are now chosen for you",
       "summary": "Community books found in chests are now picked per player instead of at random. You'll be handed books you haven't read yet, and the same one won't turn up twice in a life \u2014 unless it's still unread and you've left it two whole carriage groups behind. And once you've read a community book, it stays read in every new world you start.",
@@ -6900,6 +6880,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world",
         "loot",
         "balance"
@@ -6920,7 +6901,9 @@
       "id": "death-distance-travelled-telemetry",
       "version": "0.485.0",
       "type": "chore",
-      "tags": [],
+      "tags": [
+        "world"
+      ],
       "title": "Truer distance stats behind the scenes",
       "summary": "Death and run reports now record how far down the line you actually reached \u2014 measured from where you spawned \u2014 plus which world band you died in. This sharpens the private stats dashboard only; there is no in-game change.",
       "highlights": [],
@@ -6936,7 +6919,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "New 'Ways to Help' menu",
@@ -6978,7 +6960,6 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
         "mobs",
         "loot",
         "balance"
@@ -7023,7 +7004,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "In-game update notifications",
@@ -7045,7 +7025,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "Official links now stay up to date",
@@ -7067,8 +7046,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "loot",
+        "books",
         "ui",
         "balance"
       ],
@@ -7092,8 +7071,8 @@
       "tags": [
         "fix",
         "community",
-        "world",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Found books always burn again",
       "summary": "Fixed a wedge where chest books could get stuck as their built-in stand-in when the community pool had nothing new to offer \u2014 they now resolve properly (repeats allowed) and always burn after reading, like any other book of the train.",
@@ -7109,8 +7088,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "translations",
-        "world"
+        "translations"
       ],
       "title": "AI label on machine-translated languages",
       "summary": "The language-selection list now marks Dungeon Train translations that have not been human-reviewed with a small faded blue AI label next to the Dungeon Train logo, so you can tell at a glance which translations are machine-generated.",
@@ -7187,8 +7165,7 @@
         "feature",
         "community",
         "translations",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Book voting in your language",
@@ -7251,7 +7228,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Old worlds clean themselves up when you reboard",
@@ -7292,7 +7268,6 @@
       "tags": [
         "feature",
         "translations",
-        "world",
         "ui"
       ],
       "title": "AI-translation ring in the language list",
@@ -7314,7 +7289,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "Support-funnel usage telemetry + Finances dashboard",
@@ -7337,7 +7311,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "advancements",
         "balance"
       ],
@@ -7382,6 +7355,7 @@
       "tags": [
         "fix",
         "performance",
+        "train",
         "world",
         "mobs",
         "ui"
@@ -7405,7 +7379,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "mobs",
         "loot"
       ],
@@ -7428,7 +7401,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "mobs",
         "loot",
         "balance"
@@ -7473,8 +7446,7 @@
         "feature",
         "community",
         "translations",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "New Credits page in the main menu",
@@ -7499,7 +7471,6 @@
         "feature",
         "performance",
         "compatibility",
-        "world",
         "ui",
         "balance"
       ],
@@ -7522,8 +7493,7 @@
       "tags": [
         "feature",
         "performance",
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Modpack now includes Sodium + Iris",
       "summary": "The Dungeon Train modpack now bundles Sodium for a rendering-performance boost and Iris so you can drop in your own shaderpacks. Both are enabled by default; Iris ships with no shaderpack selected, so there's no performance cost until you add one. (Modpack only \u2014 the standalone mod jar is unchanged.)",
@@ -7544,7 +7514,7 @@
       "tags": [
         "feature",
         "editor",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Dungeon Train settings in the Options menu",
@@ -7585,6 +7555,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "End Crystals stay with the train",
@@ -7606,7 +7577,6 @@
         "feature",
         "editor",
         "compatibility",
-        "world",
         "advancements",
         "balance"
       ],
@@ -7628,7 +7598,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
         "loot",
         "balance"
@@ -7692,8 +7661,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Your own community books tell you their vote tally",
       "summary": "When you come across one of your own player-written books out in the world and pick it up, the train's quiet 'a familiar book\u2026' note can now tell you how it's being received \u2014 how many readers gave it a thumbs up, and how many thumbed it down. Only you, the author, ever sees those numbers.",
@@ -7735,7 +7704,7 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Modpack: Jade block tooltips now work on the moving train",
@@ -7756,7 +7725,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
         "mobs",
         "loot",
         "balance"
@@ -7776,7 +7744,7 @@
       "tags": [
         "community",
         "translations",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Simplified Chinese revision pass",
@@ -7821,7 +7789,7 @@
       "tags": [
         "feature",
         "mobs",
-        "loot"
+        "books"
       ],
       "title": "Free Play echoes stay in Free Play",
       "summary": "Deaths on a Free Play (creative/cheated) run are now sealed off from normal play. An echo of someone who died in Free Play \u2014 and a Death Note curse written in Free Play \u2014 will only ever appear to other players who are themselves in Free Play; a legit run only meets echoes and curses from other legit runs. No more sandbox deaths leaking into real games, or vice versa.",
@@ -7843,7 +7811,7 @@
         "feature",
         "community",
         "translations",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -7889,7 +7857,7 @@
       "tags": [
         "feature",
         "community",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Shared carriages \u2014 community-built rooms that travel between trains",
@@ -7914,7 +7882,7 @@
       "tags": [
         "feature",
         "community",
-        "world"
+        "train"
       ],
       "title": "Your own shared carriages find their way back to you",
       "summary": "Shared carriages you build no longer disappear into the pool for good. Around a third of shared carriage slots now hand you back a room you built yourself \u2014 travelled out to other players' worlds and returned, exactly as you last left it \u2014 while most slots still show you someone else's work and a few stay blank canvases. A carriage you've already met won't turn up twice in the same world, and builds only ever reappear in the kind of place they were made. Creative and survival keep entirely separate pools, so a room built in Free Play never turns up in a survival run, or the other way round.",
@@ -7956,7 +7924,7 @@
         "feature",
         "editor",
         "community",
-        "world"
+        "train"
       ],
       "title": "Shared carriages now credit the people who built them",
       "summary": "Step into a carriage that has travelled from another world and it tells you whose hands shaped it \u2014 the original builder, and the travellers who changed it along the way.",
@@ -7979,7 +7947,7 @@
       "tags": [
         "content",
         "editor",
-        "world",
+        "train",
         "loot"
       ],
       "title": "New crafting carriage content variants",
@@ -8033,8 +8001,7 @@
       "tags": [
         "feature",
         "community",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Adult and Kid modes",
@@ -8058,8 +8025,8 @@
         "feature",
         "community",
         "translations",
-        "world",
         "loot",
+        "books",
         "ui"
       ],
       "title": "Political Content Filter for Chinese-language players",
@@ -8082,8 +8049,7 @@
         "feature",
         "community",
         "translations",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "The settings screen and the first-launch card now speak all 19 languages",
@@ -8131,6 +8097,7 @@
         "world",
         "mobs",
         "loot",
+        "books",
         "ui",
         "balance"
       ],
@@ -8156,7 +8123,7 @@
       "tags": [
         "fix",
         "community",
-        "world"
+        "train"
       ],
       "title": "Shared carriages are actually switched on",
       "summary": "They shipped with their master switch off, so no one ever met one. Now on by default, including on worlds you have already been playing.",
@@ -8174,7 +8141,7 @@
         "feature",
         "community",
         "translations",
-        "world",
+        "train",
         "loot",
         "advancements"
       ],
@@ -8198,7 +8165,6 @@
       "tags": [
         "fix",
         "translations",
-        "world",
         "loot",
         "advancements"
       ],
@@ -8218,8 +8184,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
-        "loot"
+        "books"
       ],
       "title": "Someone aboard has been keeping notes",
       "summary": "There is a passenger who stopped reading books for what they say, and started reading them for how they arrive \u2014 which book reaches whose hands, in what tongue, how often. They kept a ledger. Copies of it have started turning up in the carriages.\n\nWhether the train arranged any of it, or the one who built the train, the ledger declines to say.",
@@ -8235,8 +8200,9 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "loot",
+        "books",
         "ui"
       ],
       "title": "Three new books ride the train",
@@ -8279,7 +8245,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "loot",
         "ui"
       ],
@@ -8301,7 +8267,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "balance"
       ],
       "title": "Drifting carriages turn up more often",
@@ -8322,7 +8288,8 @@
         "community",
         "world",
         "mobs",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Cursed books \u2014 find out what your Death Note did",
       "summary": "Sign a Death Note, die, and your echo goes hunting in a world you will never see. Until now that was the end of it for you. Now, once your curse actually lands, the next lightning strike brings you a black-violet book telling the story of it: who it found, the carriage it waited at, how long it waited, what it was still carrying, how the fight went, and how it ended. One story per curse \u2014 read it and it is gone; ignore it and it comes back next life.",
@@ -8344,8 +8311,8 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "New found book: Where the Writing Goes",
       "summary": "A new book to find in the train's chests. Eight passengers, eight separate accounts, all circling the same discovery: they kept writing books that burned, until each of them worked out what a lectern does with a book you write on it.",
@@ -8366,7 +8333,7 @@
         "content",
         "community",
         "translations",
-        "loot"
+        "books"
       ],
       "title": "Where the Writing Goes, in 19 languages",
       "summary": "The found book added last release is now readable in every language the mod supports \u2014 all eight accounts, translated.",
@@ -8384,7 +8351,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Resetting the train no longer strands drifting carriages",
       "summary": "Spawning a fresh train used to quietly abandon any drifting carriages riding on the old one: edits you'd made to them were lost along with the deleted train, and the builds stayed locked to your world for up to an hour before anyone else could receive them. They're now handed back properly before the old train is taken apart. The reset command itself also got two fixes \u2014 it always places the new train on the track now, instead of wherever you happened to be standing, and it can no longer leave you with no train at all.",
@@ -8407,9 +8374,8 @@
       "tags": [
         "feature",
         "translations",
-        "world",
         "mobs",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "Love Notes \u2014 an echo that comes back loving you",
@@ -8433,7 +8399,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Recommend your favourite mods from the death screen",
@@ -8470,8 +8435,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Editing a weight no longer unlinks a template from its Stage",
       "summary": "In the in-world editor, changing the weight of a carriage, contents, or track-side variant that was linked to a Stage silently detached it \u2014 the row quietly stopped following its Stage and froze on whatever stale spawn gate had been snapshotted. Weight and gate edits now keep the Stage link.",
@@ -8492,7 +8456,6 @@
       "tags": [
         "feature",
         "translations",
-        "world",
         "ui"
       ],
       "title": "Pick an amount: three price points on the support pages",
@@ -8515,7 +8478,7 @@
       "type": "perf",
       "tags": [
         "performance",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -8538,6 +8501,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world"
       ],
       "title": "New \"Dungeon Train (Flat)\" world type",
@@ -8560,8 +8524,7 @@
       "tags": [
         "content",
         "translations",
-        "world",
-        "loot",
+        "books",
         "advancements",
         "ui"
       ],
@@ -8606,7 +8569,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "Discord and Support the Mod are now in the pause menu",
@@ -8647,7 +8609,6 @@
         "feature",
         "community",
         "translations",
-        "world",
         "ui"
       ],
       "title": "Fix your language's own text, from inside the game",
@@ -8698,7 +8659,7 @@
       "tags": [
         "feature",
         "multiplayer",
-        "world",
+        "books",
         "ui"
       ],
       "title": "The death screen recap now works in multiplayer",
@@ -8740,6 +8701,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world",
         "loot"
       ],
@@ -8781,6 +8743,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world",
         "loot"
       ],
@@ -8824,7 +8787,6 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
         "loot"
       ],
       "title": "More variety in one of the small path rooms",
@@ -8840,8 +8802,7 @@
       "version": "0.539.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "world"
+        "feature"
       ],
       "title": "Breaking into a portal corridor closes it for good",
       "summary": "Dig through the outer wall of a portal corridor past the halfway point and the portal breaks \u2014 glass shatters, a beacon dies away, and that portal never takes you through again. You can always still walk back out of a portal room, so a broken portal can strand nothing and nobody.",
@@ -8862,8 +8823,7 @@
       "version": "0.539.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "world"
+        "fix"
       ],
       "title": "Portal transitions no longer flash",
       "summary": "Stepping through a portal corridor used to flash the world for a moment on the other side \u2014 sometimes a wash of pale sky, sometimes the skybox showing through where the room should be. The arrival is now drawn properly, so walking a portal looks like walking through a doorway.",
@@ -8883,7 +8843,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "mobs"
       ],
       "title": "Portal rooms can hold enemies, and no two corridors are alike",
@@ -8904,6 +8864,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world"
       ],
       "title": "The void around a bedrockless portal room closes in as you walk out",
@@ -8924,7 +8885,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "mobs"
       ],
       "title": "Portal rooms no longer fill up with broken blocks and doubled-up mobs",
@@ -8944,8 +8905,7 @@
       "version": "0.539.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "world"
+        "feature"
       ],
       "title": "The music fades out as you walk into a portal",
       "summary": "Head down a portal corridor and the soundtrack sinks away with every step, gone by the time you reach the door. Portal rooms are silent \u2014 nothing plays in there, however long you stay. Walk back out onto the train and the music doesn't come blaring back mid-song either; the quiet holds for a while, then a fresh track starts on its own.",
@@ -8966,6 +8926,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world",
         "mobs",
         "advancements"
@@ -8990,6 +8951,7 @@
       "tags": [
         "fix",
         "performance",
+        "train",
         "world"
       ],
       "title": "The endless portal rooms now carry on past their tunnels",
@@ -9010,7 +8972,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
         "mobs"
       ],
       "title": "Monsters no longer spawn in the empty dark below the world",
@@ -9030,8 +8991,7 @@
       "version": "0.539.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "world"
+        "fix"
       ],
       "title": "Nothing generates in the empty space beneath the world",
       "summary": "The space under the world's bedrock is kept clear for portal rooms, but structures anchored at a fixed depth \u2014 trial chambers, ancient cities \u2014 were resolving into it and building there anyway: sealed beneath the bedrock, impossible to reach, and pointed at by /locate as though you could go and find them. Nothing generates below the bedrock now, and a structure that straddles it keeps only the part that reaches real ground.",
@@ -9052,6 +9012,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world"
       ],
       "title": "Cave noises carry through the portal rooms",
@@ -9074,7 +9035,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Every portal room is its own room",
@@ -9095,7 +9056,7 @@
       "tags": [
         "feature",
         "editor",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -9119,7 +9080,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Portal rooms stop breaking their own furnishings",
       "summary": "Furnishing a portal room knocked loose whatever was resting on the floor it was decorating. The single-pillar room showed it worst: the ring of pressure plates around the pillar was broken off and left lying on the floor as items, every time, alongside a fresh set of plates. Rooms are now furnished without disturbing anything standing on them.",
@@ -9139,7 +9100,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "loot"
       ],
       "title": "More ways out of an endless portal room",
@@ -9163,7 +9124,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "mobs",
         "balance"
       ],
@@ -9188,7 +9149,7 @@
       "tags": [
         "fix",
         "performance",
-        "world"
+        "train"
       ],
       "title": "Portal doorways stay with their carriage instead of being left behind",
       "summary": "A portal's doorway belongs to the carriage carrying it. If that carriage was set aside while the train rolled on, the doorway could be left behind hanging where the train used to be \u2014 and riding an ordinary carriage through that spot would pull you in and drop you into the empty space beneath the world, without you ever having walked into a portal. A doorway now travels with its carriage or stops existing entirely, and a portal that has nowhere solid on the other side quietly does nothing instead of dropping you.",
@@ -9208,7 +9169,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "balance"
       ],
       "title": "Portals stay out of your opening carriages",
@@ -9229,7 +9190,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "advancements"
       ],
       "title": "The rooms beyond the corridors count toward your journey, and two new advancements",
@@ -9250,8 +9210,7 @@
       "version": "0.554.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "world"
+        "fix"
       ],
       "title": "A broken portal can be walked through, and portals stop failing silently",
       "summary": "Breaking open a portal corridor's shell still closes the portal for good, but the pair no longer leaves three carriages of dead end behind it: the blocks between its two doors are removed, so you can walk straight through the group and carry on down the train. Separately, a portal you lingered in could quietly stop working \u2014 its destination was left behind as the train rolled on, and walking past the midpoint then did nothing at all. It now keeps up with you.",
@@ -9274,7 +9233,6 @@
         "editor",
         "community",
         "translations",
-        "world",
         "ui"
       ],
       "title": "Help Translate on the Ways to Help page",
@@ -9296,7 +9254,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "Video Tools page for content creators",
@@ -9320,7 +9277,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Armor stands you place on a train now stay with the train",
@@ -9342,6 +9299,7 @@
       "tags": [
         "feature",
         "performance",
+        "train",
         "world",
         "ui"
       ],
@@ -9364,7 +9322,7 @@
       "tags": [
         "feature",
         "performance",
-        "world"
+        "train"
       ],
       "title": "Shorter portal carriages, and a seamless crossing",
       "summary": "Portal corridors now come in two lengths. Alongside the long corridor that stretches into the carriage behind it, there is a new one exactly the size of an ordinary carriage \u2014 and each portal on the train picks between them, so they no longer all feel the same. Crossing one is smoother too: the door ahead of you is always a real one, changing your mind partway along works, and standing in a doorway never moves you.",
@@ -9388,7 +9346,7 @@
       "tags": [
         "content",
         "performance",
-        "world"
+        "train"
       ],
       "title": "Portal-side carriages hang together",
       "summary": "Blocks in the portal-side carriages no longer each pick their own look in isolation \u2014 some of them now follow the carriage's stonework, so a run of wall or floor reads as one surface instead of a patchwork. Which blocks follow and which stay independent varies per carriage, so the effect changes as you ride.",
@@ -9407,6 +9365,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "Train Dimensions: the way back always works",
@@ -9428,6 +9387,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "Train Dimensions: fixed rooms losing their train",
@@ -9449,6 +9409,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "Train Dimensions: improvements to the lost-train fix",
@@ -9465,6 +9426,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "Sealed Train Dimensions are properly sealed",
@@ -9482,6 +9444,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world",
         "loot"
       ],
@@ -9524,6 +9487,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world",
         "mobs",
         "ui"
@@ -9548,8 +9512,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
-        "loot"
+        "train",
+        "books"
       ],
       "title": "The train tells you when a book went unsigned",
       "summary": "Shelve a book & quill you wrote in but never signed, and a quiet line tells you the train won't carry it. Signing is what sends a book out into the world \u2014 an unsigned one just sits on the shelf, and now the game says so instead of leaving you guessing.",
@@ -9570,8 +9534,7 @@
       "tags": [
         "content",
         "editor",
-        "community",
-        "world"
+        "community"
       ],
       "title": "The house \u2014 a player-built room",
       "summary": "Built in the Train Editor by Twitch streamer xxx606xxx_, and the first player-made package to ship with Dungeon Train.",
@@ -9590,8 +9553,9 @@
         "feature",
         "editor",
         "community",
+        "train",
         "world",
-        "loot"
+        "books"
       ],
       "title": "Portal rooms can be one author's library",
       "summary": "A portal room can now be a single community author's library. Its bookshelves are stocked with that person's whole catalogue and every shelf past the end of it is left empty, so a hall of bare shelves with a dozen books in it tells you exactly how much they wrote. The room announces whose library you have walked into.",
@@ -9613,6 +9577,7 @@
       "tags": [
         "content",
         "performance",
+        "train",
         "world"
       ],
       "title": "Two new Train Dimension rooms",
@@ -9634,6 +9599,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world",
         "mobs",
         "loot"
@@ -9735,8 +9701,7 @@
       "version": "0.578.0",
       "type": "chore",
       "tags": [
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Effortless Building now bundled in the modpack (off by default)",
       "summary": "The Dungeon Train modpack now ships Effortless Building alongside the rest of the pack, switched off. Flip it on in the launcher's mod list if you want its building tools \u2014 multi-block placement, mirrors and arrays \u2014 while you build out your train.",
@@ -9755,7 +9720,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriages can be built up to 80 blocks tall",
       "summary": "The room inside a dimensional carriage was capped at 11 blocks tall. It can now be built up to 80.",
@@ -9772,6 +9737,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world",
         "loot",
         "balance"
@@ -9813,6 +9779,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world",
         "mobs"
       ],
@@ -9831,7 +9798,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Drifting-carriage messages no longer flood chat",
       "summary": "Walking a run of drifting carriages used to fill chat with a new gray line every few seconds. Those messages are now capped at three per ten seconds, so the train still tells you when you have stepped into someone else's carriage without burying everything else you were reading.",
@@ -9851,7 +9818,7 @@
       "tags": [
         "fix",
         "editor",
-        "world"
+        "train"
       ],
       "title": "Crops saved into carriage templates stay planted",
       "summary": "Wheat, carrots, potatoes and beetroot saved into a carriage template no longer break the moment the carriage appears \u2014 farm carriages now ride the train intact. Crops inside a carriage no longer need light to stay planted, so an unlit farm carriage keeps its crops at the age you saved them. They still need light to grow, and still need farmland underneath: break the soil and the crop pops just like anywhere else. Also fixes saved crops vanishing from the carriage editor when you reopened a template.",
@@ -9906,7 +9873,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs"
       ],
       "title": "Fewer trivial runs in the passenger log",
@@ -9927,6 +9893,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world"
       ],
       "title": "Improving dimensional carriages in the Upside Down",
@@ -9945,7 +9912,7 @@
         "content",
         "editor",
         "community",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Six player-built portal rooms",
@@ -9967,7 +9934,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Water and lava in carriages",
       "summary": "Carriages can now feature water and lava. Train builders can drop a liquid into a block variant, so a carriage might roll a flooded floor, a lava channel, or stay dry \u2014 and the liquid always arrives as a proper source block rather than a puddle that drains away.",
@@ -9987,7 +9954,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Sky block and portal room tweaks",
       "summary": "Small adjustments to sky blocks and portal rooms.",
@@ -10003,8 +9970,8 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "loot",
+        "books",
         "ui"
       ],
       "title": "Edible Backpacks",
@@ -10080,8 +10047,7 @@
       "version": "0.595.0",
       "type": "chore",
       "tags": [
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Tectonic removed from the modpack",
       "summary": "The modpack no longer bundles Tectonic or Lithostitched. Dungeon Train still works with Tectonic if you install it yourself; if you had it switched on, it goes away on your next pack update.",
@@ -10098,7 +10064,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "loot",
         "advancements"
       ],
@@ -10122,7 +10087,6 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
         "loot"
       ],
       "title": "Rave room",
@@ -10141,7 +10105,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Drifting carriages remember who died in them",
       "summary": "A drifting carriage already tells you a little about itself when you step aboard \u2014 that somebody built it, and who. It now tells you one more thing: who died in it. These are real deaths, in other people's runs, in worlds you will never see; the carriage carried the fact along with the build. A carriage nobody has died in says nothing at all, which makes the ones that do speak worth reading.",
@@ -10164,7 +10128,7 @@
         "performance",
         "editor",
         "community",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -10208,7 +10172,6 @@
       "type": "chore",
       "tags": [
         "compatibility",
-        "world",
         "loot",
         "ui"
       ],
@@ -10230,8 +10193,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Punchy! now in the modpack (off by default)",
       "summary": "The Dungeon Train modpack now ships Punchy!, a first-person animation mod that adds weight and personality to swinging, mining and movement. It's included but switched off \u2014 flip it on in your launcher's mod list if you want it.",
@@ -10272,7 +10234,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world"
+        "train"
       ],
       "title": "Miniword \u2014 a new House portal room",
       "summary": "Step through a portal into Miniword, a hand-built world in a box and by far the largest portal room in the game at 48x30x48. It turns up as a House room from Diff-Level 12 onward.",
@@ -10328,7 +10290,6 @@
         "feature",
         "community",
         "compatibility",
-        "world",
         "mobs",
         "loot"
       ],
@@ -10351,7 +10312,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "ui"
       ],
       "title": "Immediate Respawn now rolls straight into a new run",
@@ -10393,7 +10353,7 @@
       "tags": [
         "fix",
         "community",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Community books can't break your game \u2014 and can still be styled",
@@ -10417,8 +10377,7 @@
       "tags": [
         "feature",
         "community",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Report a community book",
@@ -10440,7 +10399,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Open-plain portal rooms can vary their floor",
       "summary": "Endless Open portal rooms can now reroll their floor and ceiling per tile instead of repeating one pattern to the horizon.",
@@ -10458,8 +10417,7 @@
       "tags": [
         "feature",
         "editor",
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "WorldEdit available in the modpack",
       "summary": "The modpack now ships WorldEdit as an optional extra. It's switched off by default \u2014 tick it on in the launcher's optional-mods list if you want an in-game map editor for building. Best used off the moving train: WorldEdit's block edits aren't aware of the train's physics sub-level.",
@@ -10513,8 +10471,7 @@
       "version": "0.613.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "world"
+        "feature"
       ],
       "title": "Player heads remember who died there",
       "summary": "The player heads scattered through the train are no longer anonymous. Each one now wears the face and name of a real player whose run ended at that same carriage \u2014 the fourth carriage remembers people who fell in a fourth carriage. Mine one and the head keeps them, so you can carry a fallen traveller with you or set them up somewhere of your choosing.",
@@ -10574,7 +10531,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Endless Open rooms can repeat a single block variant",
@@ -10643,8 +10599,7 @@
         "editor",
         "community",
         "translations",
-        "world",
-        "loot",
+        "books",
         "advancements",
         "ui",
         "balance"
@@ -10687,7 +10642,7 @@
       "tags": [
         "feature",
         "editor",
-        "world",
+        "train",
         "loot",
         "ui"
       ],
@@ -10710,8 +10665,7 @@
       "version": "0.622.0",
       "type": "chore",
       "tags": [
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Sable updated to 2.0.5",
       "summary": "Dungeon Train now runs on Sable 2.0.5, which fixes several upstream crashes \u2014 most notably a panic when you close the CurseForge or Modrinth launcher before entering a world. Sable is a required download, so update it too.",
@@ -10731,6 +10685,7 @@
       "type": "fix",
       "tags": [
         "fix",
+        "train",
         "world",
         "mobs"
       ],
@@ -10802,6 +10757,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world"
       ],
       "title": "Dimensional carriages can stand under their own sky",
@@ -10823,7 +10779,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "ui"
       ],
       "title": "Version number now shown on the pause menu",
@@ -10846,7 +10801,7 @@
       "tags": [
         "fix",
         "multiplayer",
-        "world"
+        "train"
       ],
       "title": "Endless portal rooms no longer vanish under other players",
       "summary": "In multiplayer, the endless portal rooms only followed one player \u2014 usually the host. Anyone else could watch the floor disappear from around them and drop out of the world, and the room stopped growing ahead of them. Every player in the room now gets their own window of rooms.",
@@ -10889,7 +10844,6 @@
         "feature",
         "community",
         "compatibility",
-        "world",
         "advancements",
         "ui",
         "balance"
@@ -10914,8 +10868,8 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
-        "loot",
+        "train",
+        "books",
         "ui"
       ],
       "title": "Find the books you wrote, even the ones the train hasn't let out",
@@ -10939,7 +10893,7 @@
       "tags": [
         "feature",
         "community",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "See how your own books are landing",
@@ -10959,7 +10913,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "balance"
       ],
       "title": "Portal room variety restored",
@@ -10980,7 +10934,7 @@
       "tags": [
         "feature",
         "editor",
-        "world",
+        "train",
         "advancements"
       ],
       "title": "Custom train content now asks before it changes your run",
@@ -11004,7 +10958,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "loot"
       ],
       "title": "Move, turn and mirror a whole template in the editor",
@@ -11043,7 +10996,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "loot",
         "advancements",
         "ui"
@@ -11066,8 +11018,8 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
-        "loot"
+        "train",
+        "books"
       ],
       "title": "Dimensional carriage libraries follow your network-access choice",
       "summary": "A dimensional carriage that stocks its shelves from your own writing has to ask the server which books are yours, which means sending your player ID. It now does that only if you allowed network access; if you declined, the carriage stocks from another player's library instead.",
@@ -11105,7 +11057,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriages, and more of them in Creative",
       "summary": "The room between a portal's two corridors is now called a dimensional carriage in-game, matching what the notes have been calling it. In Creative they arrive on an exact beat \u2014 every 5 carriage groups \u2014 instead of at random, so you always know where the next one is. Survival is unchanged. Set the rate for a world with /dungeontrain portal carriage <n>; doing so puts the world into Free Play.",
@@ -11124,8 +11076,7 @@
         "feature",
         "community",
         "translations",
-        "world",
-        "loot"
+        "books"
       ],
       "title": "Library rooms stock authors you can read",
       "summary": "A library portal room fills its shelves with one community author's whole catalogue \u2014 and now it only ever picks somebody writing in your game's language. Play in \u4e2d\u6587 and the room is a Chinese author's library; play in English and it is an English one. When nobody writes in your language yet, the room falls back to an English author rather than standing empty.",
@@ -11145,8 +11096,7 @@
       "version": "0.640.0",
       "type": "ci",
       "tags": [
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Modpack releases stop silently going missing from CurseForge",
       "summary": "The CurseForge modpack is published from a manifest that points at that release's Dungeon Train file. If CurseForge has not approved that file yet, it rejects the whole pack \u2014 quietly, after the upload looked fine. The release pipeline now waits for the file to actually be approved before building the pack, and stops with a clear reason if it never is, instead of shipping nothing and reporting success.",
@@ -11169,8 +11119,7 @@
         "editor",
         "community",
         "translations",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Find your language, and ask for one that isn't there",
@@ -11194,8 +11143,7 @@
       "tags": [
         "fix",
         "translations",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Numbers read correctly in languages that decline them",
@@ -11218,6 +11166,7 @@
       "tags": [
         "fix",
         "editor",
+        "train",
         "world",
         "ui"
       ],
@@ -11244,8 +11193,9 @@
       "tags": [
         "feature",
         "editor",
-        "world",
-        "loot"
+        "train",
+        "loot",
+        "books"
       ],
       "title": "Hand-written lore books can be stocked in train loot chests",
       "summary": "Books written and signed inside an editor plot are now ordinary written books while you build with them \u2014 they no longer catch fire when you read or drop them, so you can proof-read one and place it in a carriage's chest. Once that carriage rides the live train, the first player to take the book out of the chest arms it, and it burns after being read like any other book you find out there.",
@@ -11268,7 +11218,7 @@
         "feature",
         "compatibility",
         "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Better book writing",
@@ -11313,7 +11263,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "mobs"
       ],
       "title": "Your pets come back with your echo",
@@ -11336,7 +11285,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Only dimensional carriages take you to their rooms",
       "summary": "An ordinary carriage could send you into a dimensional carriage's room without you ever walking through one. It no longer can.",
@@ -11353,8 +11302,9 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "loot",
+        "books",
         "ui"
       ],
       "title": "The train refuses a book you have already sent",
@@ -11377,7 +11327,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "loot"
       ],
       "title": "A cat rides the train, and netherite scrap turns up in loot",
@@ -11398,8 +11348,8 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
-        "loot"
+        "train",
+        "books"
       ],
       "title": "A book the train never confirmed is no longer counted twice",
       "summary": "If the train stored your book but the reply never got back to you \u2014 a restart, a timeout, a bad connection \u2014 your game sends it again, as it always has. That resend was being read as you uploading the same book twice, and it briefly cost four writers an upload pause they had not earned. Each upload now carries a handle the train recognises, so a resend is understood as the same book arriving again rather than a new offence.",
@@ -11418,7 +11368,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Choose your train before the world starts",
@@ -11440,7 +11390,7 @@
       "tags": [
         "fix",
         "editor",
-        "world",
+        "train",
         "ui"
       ],
       "title": "The train question now shows up wherever a run starts",
@@ -11462,8 +11412,7 @@
       "tags": [
         "fix",
         "community",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "The vote page lines up with the book again",
@@ -11508,6 +11457,7 @@
         "editor",
         "translations",
         "loot",
+        "books",
         "ui"
       ],
       "title": "Translators can read the whole English string again",
@@ -11551,8 +11501,7 @@
       "tags": [
         "feature",
         "editor",
-        "translations",
-        "world"
+        "translations"
       ],
       "title": "Jump from a translation to its source",
       "summary": "The translation editor now shows a View source link beside the English heading. It opens a search of the Dungeon Train repository for that string's key, so you can see where the game actually uses the line you are translating.",
@@ -11573,7 +11522,7 @@
         "fix",
         "community",
         "translations",
-        "loot"
+        "books"
       ],
       "title": "Library rooms have their books back",
       "summary": "Portal library rooms had been turning up with completely bare shelves. They are stocked again \u2014 and when nobody has written enough books in your language to fill one, the room now settles for the closest author it can find instead of standing empty. Expect a shorter shelf in that case rather than none at all. A dropped connection to the community book service no longer empties every library in your world for the rest of the session either; a room that comes up short quietly tries again a few minutes later.",
@@ -11595,8 +11544,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Ctrl+Z takes back Effortless Building work in the editor",
       "summary": "Building part of a carriage with Effortless Building and then pressing Ctrl+Z used to undo whatever you'd placed by hand before it, leaving the Effortless Building work sitting there. It now goes on the editor's own undo stack like everything else \u2014 one press takes back a whole line, cube or mirrored build, and Ctrl+Y puts it back.",
@@ -11620,7 +11568,7 @@
         "feature",
         "performance",
         "editor",
-        "world"
+        "train"
       ],
       "title": "Portal room editor shows where the doors go",
       "summary": "Authoring a dimensional carriage room now shows you the two corridor doorways it has to be built around. A translucent door stands in each opening \u2014 the same door the corridor really hangs \u2014 so a wall across the walkway centre line is something you see while you build rather than something you discover by walking a portal.",
@@ -11640,6 +11588,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world",
         "ui"
       ],
@@ -11666,7 +11615,6 @@
       "tags": [
         "fix",
         "compatibility",
-        "world",
         "mobs",
         "loot"
       ],
@@ -11691,8 +11639,7 @@
         "feature",
         "editor",
         "translations",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Translate a whole set of variations in one go",
@@ -11715,7 +11662,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Hours spent on the engine room ledger",
       "summary": "Once running costs and the current goal are both covered, the engine room shows the hours spent building Dungeon Train.",
@@ -11731,7 +11678,6 @@
       "version": "0.660.0",
       "type": "chore",
       "tags": [
-        "world",
         "mobs"
       ],
       "title": "PlayerMobs put flint and steel to work",
@@ -11764,8 +11710,9 @@
       "tags": [
         "feature",
         "community",
-        "world",
-        "loot"
+        "train",
+        "loot",
+        "books"
       ],
       "title": "The Tallyman's books \u2014 29 leaderboards riding the train",
       "summary": "A new kind of book turns up in chests: a leaderboard, kept by The Tallyman. Each one covers a single board \u2014 furthest carriage, longest aboard, most chests opened, kindest benefactors and twenty-five more \u2014 lists the top players on it, and closes by telling you where you stand. If you are not on it, it says so rather than inventing a rank for you. Boards that make sense both ways come in a matched pair, one life and all lives, so you can see whether you are good at a run or good at the game. Among the new ones: distance covered, measured from where you started rather than by how far you have paced up and down a carriage.",
@@ -11790,8 +11737,7 @@
       "tags": [
         "feature",
         "community",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "A heads-up when a connection blocker is in the way",
@@ -11814,7 +11760,7 @@
       "tags": [
         "feature",
         "performance",
-        "world"
+        "train"
       ],
       "title": "Paintings now stay put in dimensional carriages",
       "summary": "Paintings and item frames hung in dimensional carriages now stick around properly.",
@@ -11830,8 +11776,7 @@
       "version": "0.665.0",
       "type": "content",
       "tags": [
-        "content",
-        "world"
+        "content"
       ],
       "title": "",
       "summary": "Some of the named pigs riding the train answer to a more famous name. A small tribute, and a rare one \u2014 you will not meet one every trip.",
@@ -11848,7 +11793,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriage lighting fades instead of jumping",
       "summary": "Walking into a dimensional carriage no longer snaps the lighting. The corridor now fades once from the light of the world the train is running through to the light of the room at the far end, so crossing between the carriage and its copy is something you feel rather than something you see happen. Turn it off with the new crossingFade client setting.",
@@ -11871,6 +11816,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world"
       ],
       "title": "Dimensional carriages can keep their own walls as they repeat",
@@ -11892,9 +11838,10 @@
       "tags": [
         "content",
         "community",
-        "world",
+        "train",
         "mobs",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "The Tallyman's books turn up all over the train",
       "summary": "Leaderboard books are no longer something you mostly find on a bookshelf. They now surface across the train's chests, pots and villager stashes, so a board can turn up wherever you are rather than only where the books are kept. Where a container already offered reading matter, the leaderboard book takes a share of that rather than adding to it, so your odds of finding some book are unchanged \u2014 only which book shifts.",
@@ -11957,8 +11904,8 @@
         "performance",
         "community",
         "translations",
-        "world",
         "loot",
+        "books",
         "ui"
       ],
       "title": "Faulthurst leaves you a note about your own run",
@@ -11982,8 +11929,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "loot",
+        "books",
         "ui"
       ],
       "title": "A book that counts, and a room full of them",
@@ -12006,7 +11953,7 @@
       "tags": [
         "feature",
         "editor",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Test the dimensional carriage you're building",
@@ -12028,7 +11975,7 @@
       "tags": [
         "fix",
         "editor",
-        "world"
+        "train"
       ],
       "title": "Leaving the dimensional carriage editor works again",
       "summary": "Exiting the editor after opening a dimensional carriage directly now returns you to where you came from, in the game mode you were in. Before, it told you there was no session to exit and left you standing in the plot in creative.",
@@ -12066,8 +12013,7 @@
         "feature",
         "editor",
         "community",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "See who wrote a book as it burns",
@@ -12093,8 +12039,7 @@
         "community",
         "translations",
         "compatibility",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Nineteen languages catch up with the game",
@@ -12131,7 +12076,7 @@
       "tags": [
         "content",
         "translations",
-        "loot"
+        "books"
       ],
       "title": "The book-author chat line speaks every language too",
       "summary": "The v0.673.0 book-author setting and the Stats Book shipped English-only. Both are now translated into all nineteen languages, along with the chat line that names whoever wrote a book as it burns.",
@@ -12150,7 +12095,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Close the editor's Welcome panel",
@@ -12172,7 +12116,7 @@
       "tags": [
         "fix",
         "editor",
-        "world"
+        "train"
       ],
       "title": "Your builds now upload and can go on the train",
       "summary": "Saving a build in the Train Builder or Train Editor now uploads it to your builder profile, so it follows you between worlds and a finished carriage can be submitted to the train for everyone. Before, \"My Builds\" told every player that builder profiles were off on their world \u2014 the switch shipped off, no server ever turned it on, and so nobody's build was ever uploaded anywhere.",
@@ -12193,7 +12137,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
         "ui"
       ],
       "title": "Spectator cinematic no longer leaves you frozen",
@@ -12211,7 +12154,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "loot"
+        "books"
       ],
       "title": "Copy an author's name from the burn line",
       "summary": "In the Book Author Chat line, click the author's name to copy it.",
@@ -12229,7 +12172,7 @@
       "tags": [
         "fix",
         "mobs",
-        "loot"
+        "books"
       ],
       "title": "One Death Note per target per life",
       "summary": "A second Death Note naming a player you've already noted this life no longer arms a second echo. The repeat book still burns, now telling you they've already been death noted this life. Love Notes follow the same rule, tracked separately from Death Notes.",
@@ -12346,7 +12289,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "loot"
+        "books"
       ],
       "title": "Finish and sign books left on ordinary lecterns",
       "summary": "A book & quill you leave on a plain lectern is now a draft you can come back to: right-click the lectern empty-handed to pick it up and keep writing, then sign it to seal it as a letter. Pressing Done leaves the book on the lectern exactly as you wrote it \u2014 your text is kept, nothing is handed back to you, and the book is no longer renamed behind your back.",
@@ -12390,7 +12333,7 @@
       "tags": [
         "fix",
         "editor",
-        "world"
+        "train"
       ],
       "title": "Empty carriages no longer turn up in the train",
       "summary": "A leftover test template was shipping with the mod, and it could be picked for any carriage slot like a normal one. When it was, you got a completely empty carriage \u2014 no floor, no walls, no roof, nothing inside \u2014 a gap in the middle of the train you could fall straight through. It has been removed, so every carriage the train builds is a real one.",
@@ -12411,8 +12354,7 @@
       "tags": [
         "feature",
         "editor",
-        "community",
-        "world"
+        "community"
       ],
       "title": "Builds are submitted for review",
       "summary": "Your saved builds go to your builder profile on the server, and a finished carriage can be submitted for review. Community carriages are paused on the train in the meantime.",
@@ -12429,7 +12371,7 @@
       "tags": [
         "feature",
         "editor",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Dungeon Train options screen redone with tabs",
@@ -12452,7 +12394,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Choose how each editor menu appears",
@@ -12476,7 +12417,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "loot",
         "ui"
       ],
@@ -12520,7 +12460,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "advancements",
         "ui"
       ],
@@ -12545,7 +12484,7 @@
       "tags": [
         "fix",
         "editor",
-        "world"
+        "train"
       ],
       "title": "Clearing a dimensional carriage in the editor really clears it",
       "summary": "The editor's Clear on a dimensional carriage left the room standing: it wiped the plot and then stamped the built-in room straight back over it, and the block variants it said it had removed reappeared the next time the plot was stamped. Clear now leaves the plot empty inside its cage, keeps the room's authored size, and the variants it drops stay dropped.",
@@ -12567,8 +12506,8 @@
       "tags": [
         "fix",
         "community",
-        "world",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Stats books burn after reading, like every other book",
       "summary": "Leaderboard boards and Faulthurst's notes were the only books on the train you could keep. They now catch fire once you've read them, the same as a random chest book \u2014 and a board found in a chest could never burn at all until now.",
@@ -12590,6 +12529,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world",
         "ui"
       ],
@@ -12630,7 +12570,6 @@
         "fix",
         "editor",
         "compatibility",
-        "world",
         "advancements",
         "ui"
       ],
@@ -12655,8 +12594,8 @@
         "editor",
         "community",
         "translations",
-        "world",
-        "loot",
+        "train",
+        "books",
         "advancements",
         "ui"
       ],
@@ -12681,7 +12620,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Choose where your backups are kept",
@@ -12704,8 +12642,7 @@
         "feature",
         "editor",
         "community",
-        "world",
-        "loot"
+        "books"
       ],
       "title": "The game now counts the time you spend building",
       "summary": "Hours in the Train Builder used to count for nothing \u2014 every stat Dungeon Train kept was about riding. Time spent building is now tracked and ranked, alongside a board for the builds you have had approved onto other people's trains.",
@@ -12746,8 +12683,7 @@
       "version": "0.700.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "world"
+        "fix"
       ],
       "title": "OH MY LORD I DID IT! I FIXED THE BACKWARD BUG",
       "summary": "This dam bug has been plaguing me for months. Since the start of this project, I wanted the train to go infinitely backwards. Well today, I am proud to say - it goes a god dam long way backwards! How far? Im sure one of you will tell me if its not infinite. Please go forth and explore! Sincerely, Brennan.",
@@ -12764,7 +12700,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Load your builds from your profile into the editor",
@@ -12786,8 +12721,7 @@
       "version": "0.699.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "world"
+        "feature"
       ],
       "title": "Night and sunrise skybox blocks",
       "summary": "Two more skies to punch a window through to. The Night Skybox Block is night on both halves of the day: the stars wheel overhead and the moon crosses with the right phase, but the sun never comes up, so a room built around one stays under a night sky no matter what time it is outside. The Sunrise Skybox Block holds a permanent dawn and turns sideways the way the upside-down skybox does, with the sun and its glow sweeping right around the horizon instead of climbing, the moon trailing opposite and the stars turning with them.",
@@ -12807,7 +12741,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "ui"
       ],
       "title": "Control how many backups you keep, and clear them",
@@ -12849,7 +12782,7 @@
       "tags": [
         "feature",
         "editor",
-        "world",
+        "train",
         "advancements",
         "ui"
       ],
@@ -12871,7 +12804,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "The carriage at the edge of view stops changing on you",
       "summary": "A single carriage near the edge of your render distance could quietly rebuild itself as a different type, from a different stage, when it reloaded. It now comes back as the carriage that was there. Carriages that slip out of line are also pulled back into place instead of being abandoned mid-train.",
@@ -12910,7 +12843,7 @@
         "feature",
         "editor",
         "community",
-        "world"
+        "train"
       ],
       "title": "Community carriages now ride your train",
       "summary": "Carriages other players built and changed while riding now turn up in your run. A shared slot leases an approved build from the pool, places it, and hands it back with whatever you changed in it \u2014 so a room you rearrange travels on to somebody else's train, credited to everyone who has worked on it. Train Builder builds stay separate for now: they still upload to My Builds and can be submitted, but they aren't placed into runs yet.",
@@ -12930,7 +12863,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "loot",
         "advancements",
         "ui"
@@ -12988,7 +12920,6 @@
       "tags": [
         "performance",
         "community",
-        "world",
         "loot"
       ],
       "title": "Two runaway relay requests that were costing you frame time",
@@ -13011,7 +12942,6 @@
       "tags": [
         "fix",
         "community",
-        "world",
         "mobs",
         "loot"
       ],
@@ -13035,7 +12965,6 @@
         "feature",
         "editor",
         "compatibility",
-        "world",
         "mobs",
         "loot"
       ],
@@ -13059,7 +12988,7 @@
       "tags": [
         "fix",
         "community",
-        "loot",
+        "books",
         "advancements"
       ],
       "title": "Leaderboards now start from scores the game can vouch for",
@@ -13177,7 +13106,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "mobs"
       ],
       "title": "Fixed mobs getting stuck behind in endless dimensional carriage rooms",
@@ -13230,7 +13159,6 @@
       "tags": [
         "fix",
         "compatibility",
-        "world",
         "mobs",
         "loot",
         "balance"
@@ -13253,7 +13181,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "loot",
         "ui"
       ],
@@ -13295,8 +13222,7 @@
       "version": "0.725.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "world"
+        "fix"
       ],
       "title": "Portal corridors fade instead of switching at the door",
       "summary": "Walking a portal carriage now changes over the whole walk rather than in the single step through the far door. The fog, the corridor's own light and a daylit room's brightness all shift together as you go, easing in as you leave the train and settling a block before you reach the room \u2014 so arriving is a non-event instead of a visible switch.",
@@ -13317,6 +13243,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world"
       ],
       "title": "Dimensional carriage doorways can be moved off centre",
@@ -13339,7 +13266,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs"
       ],
       "title": "Traps are remembered",
@@ -13358,9 +13284,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "mobs",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "AI Policy screen",
@@ -13402,7 +13327,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Shulker boxes near dimensional carriages",
       "summary": "Shulker boxes can no longer be placed inside rooms adjacent to a dimensional carriage. Dimensional carriages themselves are unaffected.",
@@ -13461,7 +13386,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriage doorways can be placed independently",
       "summary": "A dimensional carriage's two doorways no longer have to line up. Builders can put the way in and the way out at different points along a room's wall and at different heights, so a portal room can bend your path instead of running you straight through it. Place a door on the mouth you want to move and only that mouth moves; rooms built before this keep both doorways where they were.",
@@ -13506,7 +13431,6 @@
         "performance",
         "community",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Crash Assistant now ships with the modpack",
@@ -13529,7 +13453,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
         "loot"
       ],
@@ -13576,7 +13499,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "Submit a build for review, and see where it stands",
@@ -13602,7 +13524,7 @@
         "community",
         "translations",
         "world",
-        "loot",
+        "books",
         "advancements",
         "ui"
       ],
@@ -13673,7 +13595,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "The portal room's two doorways now say which is which",
       "summary": "Building a portal room, the two corridor doorways used to be identical amber outlines, so there was no way to tell the way in from the way out until you had already clicked one. The entrance is now blue and the exit yellow, and standing near either one names it.",
@@ -13694,7 +13616,6 @@
       "tags": [
         "feature",
         "performance",
-        "world",
         "ui"
       ],
       "title": "The loading screen starts themed",
@@ -13714,7 +13635,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Testing a dimensional carriage offers to save it first",
       "summary": "Test the Carriage stamps the room from its last save, so an unsaved edit was quietly missing from the room you walked into. It now offers to save that one carriage first \u2014 save and test, or test the saved version anyway. A carriage with nothing to save goes straight in, as before.",
@@ -13735,7 +13656,7 @@
       "tags": [
         "feature",
         "editor",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Growing a portal room gives you empty space, not a room you have to demolish",
@@ -13834,8 +13755,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Editor fixes",
       "summary": "Assorted fixes to the dimensional carriage editor.",
@@ -13892,8 +13812,7 @@
       "version": "0.751.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "world"
+        "fix"
       ],
       "title": "Big endless rooms stop rebuilding themselves on the spot",
       "summary": "A large endless portal room used to rebuild one of its copies every tick \u2014 tearing one down and putting another up \u2014 for as long as anyone was standing in it. It now settles once the room is fully built around you, and only moves copies when you actually walk.",
@@ -13966,8 +13885,7 @@
         "feature",
         "editor",
         "translations",
-        "world",
-        "loot"
+        "books"
       ],
       "title": "Translation editor catches a book losing its numbers",
       "summary": "When you translate a story book in the in-game translation editor, the editor now tells you if your text has lost one of the numbers the game fills in \u2014 the death count in an epitaph, the carriage you fell in. Those are written as {deaths} or {deaths_nth} in the English, and until now nothing noticed when one went missing on the way through: the line would ship with the number simply gone. Only bracketed figures are checked, so a percent sign or a stray brace in a story is still just prose.",
@@ -13987,8 +13905,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Loading your own build from My Builds works again",
       "summary": "Loading one of your own builds back from My Builds could refuse with \"you already have a build by that name here\" when you didn't. Any name Dungeon Train itself ships counted as one you already had \u2014 which is every sub-variant of a contents group, so those could never be loaded at all. Your own builds now load; a build by somebody else still asks before it replaces anything built in. Loading a dimensional carriage also opens it properly instead of failing with \"Unknown dimensional carriage\" straight after downloading it.",
@@ -14009,8 +13926,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Saving a build you've submitted always syncs",
       "summary": "Saving a template in the Train Editor could tell you it was \"out on someone's train\" and quietly skip the upload to My Builds \u2014 and saying it would sync next time was wrong, because every later save stopped in the same place. Your own saves no longer wait for anyone: they go straight to your build, whoever happens to be riding it.",
@@ -14030,7 +13946,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "The train catches up when it gets ahead of you",
       "summary": "When the train outran you \u2014 you sprinted ahead, or it rolled past while you stood still \u2014 its ends could only grow back one group of carriages at a time, so a fast train just left you behind. Each end now fills in every carriage it is missing the moment it falls behind, and settles back to its normal pace once it has caught up. A new Catch-up spawning setting under Options \u2192 Dungeon Train \u2192 Train chooses how hard it tries: Fill all, the default, keeps adding carriages every moment until the train has caught up; Burst 2 adds two at a time for a gentler catch-up; and Off keeps the old one-group-at-a-time pace. It applies to the train you are already riding.",
@@ -14095,7 +14011,7 @@
       "type": "perf",
       "tags": [
         "performance",
-        "world"
+        "train"
       ],
       "title": "Smoother carriage catch-up, and carriages that no longer touch",
       "summary": "When the train gets ahead of you \u2014 or rolls past while you stand still \u2014 it adds the carriages it is missing one at a time over successive moments, instead of dropping the whole missing stretch in at once. Catching up now happens just as quickly without the brief stutter it used to cost. Freshly appeared carriages also settle straight into place: the game had been judging the gap to a new carriage's neighbour before that carriage had finished moving into position, which could shunt it around and leave two carriages briefly touching.",
@@ -14117,7 +14033,7 @@
       "tags": [
         "fix",
         "community",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Friends you kill no longer count as friends you made",
@@ -14156,7 +14072,7 @@
       "tags": [
         "fix",
         "community",
-        "loot"
+        "books"
       ],
       "title": "Your leaderboard position keeps up with you",
       "summary": "A leaderboard book ends by telling you where you stand on that board. That position was worked out once, when you joined, and never again \u2014 so on a long session it slowly went stale, and a book you found late in the evening could still be quoting the number you had hours earlier. Your standing is now looked up again after each death, which is the moment it actually moves.",
@@ -14176,8 +14092,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
-        "loot"
+        "books"
       ],
       "title": "Adjustments to in-built narratives",
       "summary": "Some of the train's built-in books and story series have been retuned.",
@@ -14194,7 +14109,6 @@
       "type": "chore",
       "tags": [
         "compatibility",
-        "world",
         "mobs",
         "loot"
       ],
@@ -14215,9 +14129,8 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
-        "loot"
+        "books"
       ],
       "title": "Death Note and Love Note echoes read the note aloud",
       "summary": "An echo sent by a Death Note or a Love Note now speaks the note it came from. When it reaches the player it was written for, it calls their name and then reads the note out one line at a time, pausing between lines the way someone reading aloud would. It looks like any other player talking in chat, because that is what it is meant to feel like.",
@@ -14261,7 +14174,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "ui"
       ],
       "title": "Updates card on the death screen",
@@ -14300,7 +14212,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Clearer 'step off the train' confirmation",
       "summary": "The confirmation that appears when you abandon a run now puts both options side by side and says plainly what happens: you die, it counts as a death, and there is no undo.",
@@ -14320,7 +14232,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "ui"
       ],
       "title": "Builds the build server lost come back on their own",
@@ -14342,8 +14253,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Loading your own builds back is less of a maze",
       "summary": "Loading a build from My Builds no longer dead-ends. A dimensional carriage you move aside or load under a new name is usable straight away instead of after a restart, the name box opens on a name that is actually free, and a name already in use is a warning you can edit rather than a refusal that throws your answer away. Loading also stops asking you to save every unrelated plot in the editor, and asks about the one build it is going to replace instead.",
@@ -14364,6 +14274,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "ui"
       ],
       "title": "The engine room speaks, and the menu joins in",
@@ -14380,7 +14291,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
         "ui"
       ],
@@ -14403,7 +14313,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "mobs",
         "loot"
       ],
@@ -14427,6 +14336,7 @@
       "type": "refactor",
       "tags": [
         "compatibility",
+        "train",
         "world"
       ],
       "title": "VR support for trains moved to a separate mod",
@@ -14449,7 +14359,7 @@
         "feature",
         "editor",
         "community",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Submit any build you make, not just carriages",
@@ -14491,6 +14401,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world"
       ],
       "title": "Pick what you're building before the Train Editor opens",
@@ -14527,7 +14438,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
         "ui"
       ],
       "title": "Catch-up spawning is now a single setting you can reach from the title screen",
@@ -14550,7 +14460,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "ui"
       ],
       "title": "The train no longer ends when you travel backward along it",
@@ -14572,8 +14482,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "performance",
-        "world"
+        "performance"
       ],
       "title": "Catch-up spawning now suits your computer instead of guessing",
       "summary": "Catch-up spawning decides how quickly the train re-extends after an end of it falls behind you. It was set to Fill all for everyone, which closes the gap fastest but asks the most of your machine \u2014 great on a desktop, a stutter on a thin laptop. It now has an Automatic setting, which is the new default: it looks at your processor and the memory the launcher gave Minecraft, picks the pacing that suits, and tells you which one it chose. You can still pick a mode yourself at any time and it will be left alone from then on.",
@@ -14595,7 +14504,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Parked carriage groups no longer vanish from the train or pile up behind it",
       "summary": "Carriage groups that no one is near are parked to keep physics cheap on long trains. A parked group used to stay at the spot where it was parked while the rest of the train rolled on, so after a long ride backward you could walk into a hole the size of a whole group \u2014 the group was still there, hundreds of blocks back, stacked on top of other parked groups, and it never woke up because the game was looking for it in the wrong place. Parked groups now keep their place in the train the whole time they are parked, so every group is where it should be when you reach it, seams stay tight, and a save made mid-ride puts the train back together correctly.",
@@ -14616,7 +14525,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriages always lead somewhere",
       "summary": "A dimensional carriage whose portal isn't connecting no longer ends in a wall. Walking the train backwards into one now works, and if a crossing still can't happen, the plate between its doors opens after a couple of seconds so you can walk on through. Each life's dimensional-carriage crossings and any that failed are counted in the run stats to help find why.",
@@ -14637,6 +14546,7 @@
       "tags": [
         "fix",
         "compatibility",
+        "train",
         "world",
         "mobs"
       ],
@@ -14658,7 +14568,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "The train is there when you come back to the track",
       "summary": "Leaving the train, wandering off, and returning to the track somewhere else used to find nothing: once you were more than 128 blocks from any loaded carriage the train was unloaded and never came back. Now anyone within 128 blocks of the track line, anywhere along it, counts as near the train. If the train has moved on, carriages are generated toward you until the usual window around you is full; if you return to a stretch the train was unloaded from, those carriages are brought back rather than rebuilt. Standing beside the track now keeps the train rolling past you indefinitely.",
@@ -14682,8 +14592,8 @@
       "tags": [
         "feature",
         "community",
-        "world",
-        "loot"
+        "loot",
+        "books"
       ],
       "title": "Your own book knows it's yours wherever you find it",
       "summary": "Find a book you wrote out in the world \u2014 in a chest, rather than on the shelves of your own library room \u2014 and it now knows it is yours. The train tells you how it has been received and offers the padlock that takes it out of circulation, instead of asking you to rate your own writing.",
@@ -14722,7 +14632,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Editor menu: one width on every tab, and a Save icon that shows when you need it",
@@ -14760,6 +14669,7 @@
       "tags": [
         "performance",
         "editor",
+        "train",
         "world",
         "ui"
       ],
@@ -14799,7 +14709,7 @@
       "tags": [
         "fix",
         "community",
-        "loot"
+        "books"
       ],
       "title": "Rename Death Note leaderboard wording",
       "summary": "Rename Death Note leaderboard wording.",
@@ -14815,7 +14725,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "loot"
+        "books"
       ],
       "title": "Fix Nothing But Books",
       "summary": "Fix Nothing But Books.",
@@ -14830,7 +14740,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Portal carriage fix",
       "summary": "Portal carriages now only take you through if you are actually inside them.",
@@ -14899,7 +14809,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "advancements"
       ],
       "title": "Editor advancements tab hidden in survival",
@@ -14939,7 +14848,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -14962,7 +14871,7 @@
       "tags": [
         "fix",
         "compatibility",
-        "world"
+        "train"
       ],
       "title": "Portal carriage lighting eases in instead of snapping",
       "summary": "Walking a portal corridor, or arriving in a dimensional carriage, used to brighten the room's dim corners in one hard step. The light now comes up and drops away smoothly, gentlest at the very start of the change rather than harshest.",
@@ -14983,7 +14892,6 @@
         "feature",
         "performance",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Shaders, from the menu",
@@ -15033,7 +14941,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world"
+        "train"
       ],
       "title": "A new dimensional carriage: the Terrarium",
       "summary": "Firefly_on_ytb built the Terrarium \u2014 a tall glass house of sand, grass and trees, open to the daylight \u2014 and it joins House's rooms, so a dimensional carriage can now drop you into it from level 4 onward.",
@@ -15051,7 +14959,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "mobs",
         "loot",
         "balance"
@@ -15076,6 +14983,7 @@
       "type": "feat",
       "tags": [
         "feature",
+        "train",
         "world",
         "mobs",
         "loot",
@@ -15102,6 +15010,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world"
       ],
       "title": "Sealed portal rooms can be walled in any block",
@@ -15124,7 +15033,7 @@
       "tags": [
         "feature",
         "editor",
-        "world",
+        "train",
         "loot",
         "ui"
       ],
@@ -15147,8 +15056,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Downloaded builds remember who made them",
       "summary": "A carriage, room or part you load from another player's profile now keeps their name. Open it in the Train Builder and the info panel says who built it \u2014 and it stays theirs when you edit it, rename it, or pass it on to somebody else.",
@@ -15170,9 +15078,10 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world",
         "mobs",
-        "loot",
+        "books",
         "ui",
         "balance"
       ],
@@ -15199,7 +15108,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriage polish",
       "summary": "A small refinement to dimensional carriages.",
@@ -15216,7 +15125,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "Your clock pauses when you stop playing",
@@ -15306,7 +15214,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "mobs",
         "loot"
       ],
@@ -15328,7 +15236,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "mobs",
         "balance"
       ],
@@ -15350,7 +15258,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "pr": 1313,
       "title": "No more duplicate carriages when you come back to the train",
@@ -15370,7 +15278,7 @@
       "type": "content",
       "tags": [
         "content",
-        "loot"
+        "books"
       ],
       "title": "Welcome book tweaks",
       "summary": "Small changes to the books you get when you arrive.",
@@ -15387,6 +15295,7 @@
       "type": "content",
       "tags": [
         "content",
+        "train",
         "world"
       ],
       "title": "Seven new dimensional carriages",
@@ -15407,7 +15316,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world",
+        "train",
         "mobs",
         "balance"
       ],
@@ -15430,7 +15339,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world"
+        "train"
       ],
       "title": "Three new dimensional carriages",
       "summary": "Three new dimensional carriages join the rotation, and the pillared ones have more block variety.",
@@ -15448,6 +15357,7 @@
       "tags": [
         "fix",
         "community",
+        "train",
         "world"
       ],
       "title": "Building on the train no longer tips or shakes the carriage",
@@ -15469,7 +15379,6 @@
       "tags": [
         "feature",
         "translations",
-        "world",
         "advancements"
       ],
       "title": "Advancement wording fixes arrive without an update",
@@ -15490,8 +15399,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "performance",
-        "world"
+        "performance"
       ],
       "title": "Long rides stop eating memory",
       "summary": "Carriages the train left behind were never released \u2014 every one stayed in memory with all of its blocks, so a long session slowly filled up and the server started stuttering after several hours. They are now let go once the train has moved on.",
@@ -15512,7 +15420,7 @@
       "tags": [
         "fix",
         "editor",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Clearer wording across the editor and Train Builder",
@@ -15535,7 +15443,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world"
+        "train"
       ],
       "title": "Four new dimensional carriages",
       "summary": "A handful of new dimensional carriages have joined the rotation, and one older one has stepped aside.",
@@ -15575,7 +15483,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Dimensional carriage rooms can vary block by block",
@@ -15596,7 +15504,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriages arrive cleanly",
       "summary": "Stepping through a dimensional carriage no longer flashes the world for a moment as you arrive, and the lighting now carries you across the doorway instead of dropping dark on the other side.",
@@ -15615,7 +15523,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriage fixes",
       "summary": "Some fixes to dimensional carriages.",
@@ -15631,8 +15539,7 @@
       "version": "0.820.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "world"
+        "fix"
       ],
       "title": "Time aboard fix",
       "summary": "Time aboard now keeps counting inside dimensional carriages.",
@@ -15649,8 +15556,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Editing a room no longer strips its block variety",
       "summary": "Saving a dimensional carriage from the editor could quietly delete most of its block variants \u2014 the per-cell lists that make one copy of a room look different from the next. A room larger than the built-in size was measured against that smaller size before its own had been read, every cell outside the smaller box was dropped, and the next save wrote the shortened version over the original. One room lost 437 of its 488 variant cells this way; another had its variant file deleted outright. Rooms now keep every variant cell through a save, whatever size they are.",
@@ -15671,7 +15577,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world"
+        "train"
       ],
       "title": "Seven statue dimensional carriages",
       "summary": "A statues dimensional carriage joins the rotation, with six more statue rooms grouped under it so a portal draws a different one each time it opens. The existing singlesomething room moves into the same group.",
@@ -15691,7 +15597,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriages no longer nudge you on the way in",
       "summary": "Stepping into a dimensional carriage could give you a small unwanted shove. It doesn't any more.",
@@ -15707,8 +15613,7 @@
       "type": "fix",
       "tags": [
         "fix",
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "Shader compatibility fixes",
       "summary": "Fixed a crash on launch when Sodium or Iris is installed, and a flash when stepping into a dimensional carriage with shaders on.",
@@ -15727,7 +15632,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world",
+        "train",
         "balance"
       ],
       "title": "Crafting stations, new dimensional carriages, and parkour that scales with you",
@@ -15773,6 +15678,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world",
         "mobs",
         "loot"
@@ -15797,7 +15703,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
         "loot",
         "ui"
       ],
@@ -15845,6 +15750,7 @@
       "tags": [
         "performance",
         "editor",
+        "train",
         "world",
         "ui"
       ],
@@ -15869,7 +15775,7 @@
       "tags": [
         "fix",
         "editor",
-        "world"
+        "train"
       ],
       "title": "Observers no longer fire when the train builds around them",
       "summary": "An observer saved into a carriage pulsed every time Dungeon Train placed that carriage: when a template opened in the editor, when the carriage spawned onto the train, and again as its contents and parts were filled in. Redstone contraptions fired themselves on load. Observers now stay quiet while the mod is doing its own building and only react to real causes: you breaking or placing a block, a piston, a door.",
@@ -15891,8 +15797,7 @@
       "tags": [
         "fix",
         "editor",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Editor phase gates cover the whole line",
@@ -15937,6 +15842,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world"
       ],
       "title": "The Train Editor names both ends of a carriage",
@@ -15959,8 +15865,7 @@
       "type": "ci",
       "tags": [
         "performance",
-        "compatibility",
-        "world"
+        "compatibility"
       ],
       "title": "The CurseForge modpack catches up on its own",
       "summary": "The CurseForge modpack is built around that release's Dungeon Train file, and CurseForge rejects a pack that points at a file it has not approved yet. The pipeline already waited for approval \u2014 but when approval took longer than it was willing to wait, which turned out to be most of the time, that release was simply never added to the pack, and nothing ever tried again. The CurseForge pack had quietly fallen forty releases behind the Modrinth one. A scheduled check now looks every few hours for the newest release whose file CurseForge has since approved, and publishes the pack for it. A slow approval is a delay of a few hours now, not a missing version.",
@@ -16002,7 +15907,6 @@
       "tags": [
         "fix",
         "editor",
-        "world",
         "loot",
         "balance"
       ],
@@ -16025,7 +15929,7 @@
       "tags": [
         "fix",
         "performance",
-        "loot"
+        "books"
       ],
       "title": "Pausing no longer logs false stall warnings",
       "summary": "Pausing, reading a book or tabbing away in singleplayer no longer fills your log with stall warnings and stack dumps. Real freezes are still reported as before.",
@@ -16043,7 +15947,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "The editor menu gets tabs, folding filters and a spawn table",
@@ -16069,6 +15972,7 @@
         "content",
         "editor",
         "community",
+        "train",
         "world",
         "mobs"
       ],
@@ -16113,8 +16017,7 @@
         "editor",
         "community",
         "translations",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Sign editor prop books as any author",
@@ -16136,7 +16039,6 @@
       "tags": [
         "feature",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Exit Test Mode and Reseed in the editor's X menu",
@@ -16158,8 +16060,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "editor",
-        "world"
+        "editor"
       ],
       "title": "Editor: safer removal of templates with sub-variants",
       "summary": "Removing a contents template or dimensional carriage that has sub-variants now asks what to do with them: delete everything, keep them as top-level templates, or hand the group to the first sub-variant. The editor takes you to where the work continued, and re-parenting a sub-variant now lands you in its plot.",
@@ -16177,7 +16078,6 @@
       "tags": [
         "feature",
         "compatibility",
-        "world",
         "loot"
       ],
       "title": "Repairing armor keeps its trim",
@@ -16200,8 +16100,8 @@
       "tags": [
         "feature",
         "editor",
-        "world",
-        "loot",
+        "train",
+        "books",
         "ui"
       ],
       "title": "Fog toggle for dimensional carriages; every room setting in the editor screen, paged",
@@ -16227,8 +16127,8 @@
         "editor",
         "community",
         "translations",
-        "world",
-        "loot",
+        "train",
+        "books",
         "ui"
       ],
       "title": "Credits for the builders and writers behind the train",
@@ -16250,7 +16150,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "Community Videos page on the main menu",
@@ -16296,7 +16195,7 @@
         "content",
         "editor",
         "community",
-        "world",
+        "train",
         "ui"
       ],
       "title": "Randomized dimensional carriage credited to AutisticMime",
@@ -16334,7 +16233,7 @@
         "editor",
         "community",
         "translations",
-        "world"
+        "train"
       ],
       "title": "Dimensional carriages now tell you who built them",
       "summary": "Step into a dimensional carriage whose builder is credited and the train says so \u2014 a quiet gray line in chat, one of eight, naming the builder (\"The train speaks of AntonioMacarely here.\"). Walk into one of your own and it reads \"You built this one.\" Uncredited rooms stay as silent as before. Translated into all 20 languages.",
@@ -16358,7 +16257,6 @@
         "community",
         "translations",
         "compatibility",
-        "world",
         "ui"
       ],
       "title": "Translate, Discord and Videos from the pause menu",
@@ -16381,7 +16279,6 @@
       "tags": [
         "feature",
         "community",
-        "world",
         "ui"
       ],
       "title": "Twitch streamers on the Videos page \u2014 live dot, own filter, submit while live",
@@ -16423,8 +16320,7 @@
         "editor",
         "community",
         "translations",
-        "world",
-        "loot",
+        "books",
         "ui"
       ],
       "title": "Edit your own line on the Credits page",
@@ -16446,7 +16342,7 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world",
+        "train",
         "loot"
       ],
       "title": "Luck potions add bonus loot to train chests",
@@ -16468,7 +16364,6 @@
       "tags": [
         "fix",
         "editor",
-        "world",
         "ui"
       ],
       "title": "Editor: renamed sub-variants show their new name everywhere",
@@ -16507,7 +16402,7 @@
       "type": "content",
       "tags": [
         "content",
-        "world"
+        "train"
       ],
       "title": "More traps on the train",
       "summary": "The trap carriages have company. Several new traps now ride the train, spread across the journey so the early carriages stay forgiving and the later ones don't. Watch your step.",
@@ -16527,6 +16422,7 @@
       "tags": [
         "feature",
         "editor",
+        "train",
         "world"
       ],
       "title": "Train Editor rests at midday; a dimensional carriage's Sky takes over while you stand in it",
@@ -16548,7 +16444,6 @@
       "tags": [
         "fix",
         "editor",
-        "world",
         "loot"
       ],
       "title": "Editor: New copies a template's settings, not just its blocks",
@@ -16567,7 +16462,7 @@
       "tags": [
         "performance",
         "editor",
-        "world"
+        "train"
       ],
       "title": "Train Editor opens without freezing",
       "summary": "Entering a Train Editor category (Carriages, Contents, Tracks, Dimensional carriages) no longer holds the game until every plot has been built. You land on the first plot straight away and the rest fill in around you over the next seconds, with a progress line above the hotbar. On slower machines this was taking minutes \u2014 one dimensional-carriage load took nine \u2014 during which the world sat empty and the editor looked stuck.",
@@ -16614,6 +16509,7 @@
       "tags": [
         "feature",
         "compatibility",
+        "loot",
         "ui"
       ],
       "title": "Versions page \u2014 see what you're missing, on your launcher",

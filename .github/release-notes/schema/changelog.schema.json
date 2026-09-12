@@ -39,7 +39,8 @@
             "type": "string",
             "enum": [
               "feature", "content", "fix", "performance", "editor", "multiplayer", "community",
-              "translations", "compatibility", "world", "mobs", "loot", "advancements", "ui", "balance"
+              "translations", "compatibility", "train", "world", "mobs", "loot", "books", "advancements",
+              "ui", "balance"
             ]
           },
           "description": "Player-facing classification the Versions page filters by. The type-derived tag (feat→feature, fix→fix, content→content, perf→performance) is always present; topical tags are added on top. May be empty only for non-player-facing types (chore/ci/refactor/docs/test)."

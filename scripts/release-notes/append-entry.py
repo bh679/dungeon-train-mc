@@ -14,13 +14,13 @@ Usage:
     --summary "A toolsmith shop carriage now rides the train, trading tools…" \
     --highlight "New toolsmith shop carriage" \
     --highlight "Rebalanced armorer chest loot" \
-    --tag loot --tag balance \
+    --tag train --tag loot --tag balance \
     --pr 360
 
 Tags: the type-derived tag (feat→feature, fix→fix, content→content,
 perf→performance) is added automatically; pass --tag for each topical tag on top
-(editor, multiplayer, community, translations, compatibility, world, mobs, loot,
-advancements, ui, balance). The Versions page filters release notes by these.
+(editor, multiplayer, community, translations, compatibility, train, world, mobs,
+loot, books, advancements, ui, balance). The Versions page filters release notes by these.
 
 Optional:
   --version X.Y.Z   Override the computed version (rarely needed).

@@ -33,7 +33,7 @@ import changelog_io
 # change is about it. The title says what the change is about. Multiplayer was
 # 50 tagged / ~5 real on body matching; keep any tag whose vocabulary doubles as
 # everyday narration in TITLE_ONLY.
-TITLE_ONLY = {"multiplayer"}
+TITLE_ONLY = {"multiplayer", "train"}  # "rides the train" is in half the summaries
 
 RULES: dict[str, str] = {
     "editor": (
@@ -60,10 +60,14 @@ RULES: dict[str, str] = {
         r"|\btrade everything\b|\bkeep trim\b|\bworldedit\b|\bvivecraft\b|\bjade\b|\bneoforge\b"
         r"|\bsable\b|\bc2me\b|\bmodernfix\b|\bferritecore\b|\bappleskin\b|\bjourneymap\b|\bxaero"
     ),
+    "train": (
+        r"\btrains?\b|\bcarriages?\b|\bflatbed\b|\btracks?\b|\bengine\b|\bportal rooms?\b"
+        r"|\bdimensional carriages?\b|\bwagons?\b"
+    ),
     "world": (
-        r"\btrains?\b|\bcarriages?\b|\bworld ?gen|\bbiomes?\b|\bnether\b|\bthe end\b|\bend (city|dimension)"
-        r"|\bterrain\b|\btunnels?\b|\bbridges?\b|\bportal rooms?\b|\bdimension"
-        r"|\bupside down\b|\bflatbed\b|\btracks?\b"
+        r"\bworld ?gen|\bbiomes?\b|\bnether\b|\bthe end\b|\bend (city|dimension|band)"
+        r"|\bterrain\b|\btunnels?\b|\bbridges?\b|\bdimensions?\b|\bupside down\b|\bbands?\b"
+        r"|\bvoid\b|\bcaves?\b|\bocean|\bmountains?\b|\bforest|\bdesert"
     ),
     "mobs": (
         r"\bmobs?\b|\bechoe?s?\b|\bvillagers?\b|\bzombies?\b|\bskeletons?\b|\bcreepers?\b|\bghasts?\b"
@@ -73,9 +77,12 @@ RULES: dict[str, str] = {
         r"|\bhorses?\b|\banimals?\b|\bwardens?\b|\bwither\b|\billagers?\b|\bpillagers?\b"
     ),
     "loot": (
-        r"\bloot\b|\bchests?\b|\bpotions?\b|\bbooks?\b|\btreasure\b|\barmou?r\b"
-        r"|\bweapons?\b|\benchant|\btrades?\b|\bshop\b|\bbrush(ing|able)|\blectern"
-        r"|\bbackpack|\bdeath note\b|\bplayerbooks?\b|\bletters?\b|\bgear\b"
+        r"\bloot\b|\bchests?\b|\bpotions?\b|\btreasure\b|\barmou?r\b|\bweapons?\b"
+        r"|\benchant|\btrades?\b|\bshop\b|\bbrush(ing|able)|\bbackpack|\bgear\b"
+    ),
+    "books": (
+        r"\bbooks?\b|\blectern|\bdeath note\b|\bplayerbooks?\b|\bletters?\b|\bstories\b"
+        r"|\bnarrative|\blove note\b"
     ),
     "advancements": r"\badvancements?\b|\bachievements?\b|\bunlock",
     "ui": (
