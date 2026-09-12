@@ -1376,6 +1376,60 @@
       ]
     }
   },
+  "chat.dungeontrain.portal_builder.1": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.2": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.3": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.4": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.5": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.6": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
   "chat.dungeontrain.presence.last_seen": {
     "1": {
       "label": "how long ago, as a whole clause",
