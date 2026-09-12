@@ -1376,6 +1376,78 @@
       ]
     }
   },
+  "chat.dungeontrain.portal_builder.1": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.2": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.3": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.4": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.5": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.6": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.7": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.8": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
   "chat.dungeontrain.presence.last_seen": {
     "1": {
       "label": "how long ago, as a whole clause",
@@ -4287,6 +4359,28 @@
       "examples": [
         "Dungeon Train 1757400000000",
         "World 1757400000000"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.streamer.sub": {
+    "1": {
+      "label": "how many days the streamer has streamed the game",
+      "examples": [
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the date of their most recent stream, YYYY-MM-DD",
+      "examples": [
+        "2026-08-30"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.streamer.sub.undated": {
+    "1": {
+      "label": "how many days the streamer has streamed the game",
+      "examples": [
+        "3"
       ]
     }
   },

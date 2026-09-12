@@ -12208,8 +12208,72 @@
       "released_at": "2026-09-11T18:54:08Z"
     },
     {
-      "id": "advancement-requirement-values",
+      "id": "advancement-unlock-fix-returning-players",
       "version": "0.844.0",
+      "type": "fix",
+      "title": "Advancement unlock fix for returning players",
+      "summary": "A late-journey advancement now unlocks only when it is actually reached, regardless of progress carried over from earlier runs.",
+      "highlights": [
+        "Fixed a late-journey advancement unlock for returning players"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-builder-line",
+      "version": "0.845.0",
+      "type": "feat",
+      "title": "Dimensional carriages now tell you who built them",
+      "summary": "Step into a dimensional carriage whose builder is credited and the train says so \u2014 a quiet gray line in chat, one of eight, naming the builder (\"The train speaks of AntonioMacarely here.\"). Walk into one of your own and it reads \"You built this one.\" Uncredited rooms stay as silent as before. Translated into all 20 languages.",
+      "highlights": [
+        "Builder credit line on entering a credited dimensional carriage, once per visit",
+        "Eight phrasings plus a 'You built this one.' line for your own builds",
+        "Fully localised (20 locales)"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "pause-menu-icon-strip-translate",
+      "version": "0.846.0",
+      "type": "feat",
+      "title": "Translate, Discord and Videos from the pause menu",
+      "summary": "The pause (ESC) menu now carries a row of icons beside Mods and Shaders: Discord, the community Videos page, and the Help Translate editor \u2014 so translators can work on the game's text without leaving the train. The translation screens get a darker backdrop when opened in-world so they stay readable over a moving train. Support the Mod now takes the full row that Feedback and Report Bugs used to occupy.",
+      "highlights": [
+        "Help Translate, Discord and Videos icons on the pause menu's Mods | Shaders row",
+        "Translation editor usable in-world, with a darker backdrop over the train",
+        "Support the Mod is a full-width pause-menu button",
+        "Slightly smaller icon buttons on the title screen, pause menu and Videos page; one consistent Bilibili mark on the Videos page"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "twitch-streamers-live",
+      "version": "0.847.0",
+      "type": "feat",
+      "title": "Twitch streamers on the Videos page \u2014 live dot, own filter, submit while live",
+      "summary": "The Videos page now tells Twitch streamers apart from clips. Each streamer is one purple row (how many days they've streamed Dungeon Train, when last) behind a new toolbar toggle, and a streamer who is live with the game right now gets a pulsing green dot and sits at the top of the list. Sorting opens on a new Default order (live, dev faves, views, recent). Submit a video has a Video | Livestream switch: paste your Twitch channel while you're live with \"Dungeon Train\" in the title and you're listed at once \u2014 the relay checks Twitch and re-checks every half hour.",
+      "highlights": [
+        "One purple row per Twitch streamer instead of a marker per stream day; new Twitch streamers toggle in the toolbar",
+        "Green LIVE dot on streamers verified live with the game right now; Default sort puts them first",
+        "Submit a video: Video | Livestream switch \u2014 livestreams need to be live with \"Dungeon Train\" in the stream title",
+        "Live sort removed; Recent now leads with live streams"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "advancement-requirement-values",
+      "version": "0.848.0",
       "type": "feat",
       "title": "Advancement tweaks",
       "summary": "Advancement descriptions now always match their requirements.",

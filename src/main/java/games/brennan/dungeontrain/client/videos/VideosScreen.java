@@ -32,10 +32,12 @@ import java.util.List;
 /**
  * The <b>Videos</b> page, opened from the title screen's icon column: every video about Dungeon
  * Train the relay has saved — YouTube, Bilibili, Twitch, Instagram — with one toolbar row over the
- * list. A row opens the video in the browser through vanilla's link-confirm screen.
+ * list. A row opens the video in the browser through vanilla's link-confirm screen. Twitch
+ * <em>streamers</em> (the relay's bare-channel markers, one per stream day) fold into one row per
+ * channel ({@link TwitchStreamers}) behind a toggle of their own, drawn unlike a video.
  *
  * <p>The toolbar, left to right: one <b>icon toggle per platform</b> present (lit = shown), the
- * <b>★ dev-faves</b> toggle, the <b>uploader box</b> — type to narrow, with a suggestion list under
+ * <b>Twitch streamers</b> toggle, the <b>★ dev-faves</b> toggle, the <b>uploader box</b> — type to narrow, with a suggestion list under
  * it that starts as every uploader and shrinks to matches (the shape of the editor's builder
  * search) — and the <b>sort</b> cycle button. Every icon carries a tooltip saying what it is and
  * which way it is set. Filter and sort state survive a resize (fields on the screen); the catalogue
@@ -52,7 +54,9 @@ public final class VideosScreen extends Screen {
     private static final int GAP = 4;
     private static final int TOP = 32;
     private static final int BUTTON_H = 20;
-    private static final int ICON = 20;
+    /** Icon buttons run two pixels under the text buttons they share a row with, centred on it. */
+    private static final int ICON = 18;
+    private static final int ICON_INSET = (BUTTON_H - ICON) / 2;
     private static final int SORT_W = 110;
     private static final int UPLOADER_MIN_W = 80;
     private static final int BOTTOM_ROW_H = 20;
@@ -63,7 +67,7 @@ public final class VideosScreen extends Screen {
     private final Screen parent;
 
     private VideoQuery.Filter filter = VideoQuery.Filter.ALL;
-    private VideoQuery.Sort sort = VideoQuery.Sort.VIEWS;
+    private VideoQuery.Sort sort = VideoQuery.Sort.DEFAULT;
 
     private final List<PlatformToggleButton> platformButtons = new ArrayList<>();
     private StarToggleButton starButton;
@@ -71,6 +75,7 @@ public final class VideosScreen extends Screen {
     private UploaderDropdown dropdown;
     private Button sortButton;
     private Button retryButton;
+    private StreamerToggleButton streamerButton;
     private VideoList list;
 
     public VideosScreen(Screen parent) {
@@ -91,13 +96,24 @@ public final class VideosScreen extends Screen {
         List<VideoEntry.Platform> platforms = VideoCatalog.state() == VideoCatalog.State.LOADED
                 ? VideoQuery.platforms(VideoCatalog.entries()) : List.of(VideoEntry.Platform.values());
         for (VideoEntry.Platform p : platforms) {
-            PlatformToggleButton b = new PlatformToggleButton(x, TOP, ICON, p, () -> filter.has(p),
+            PlatformToggleButton b = new PlatformToggleButton(x, TOP + ICON_INSET, ICON, p, () -> filter.has(p),
                     btn -> togglePlatform(p));
             platformButtons.add(addRenderableWidget(b));
             x += ICON + GAP;
         }
 
-        starButton = addRenderableWidget(new StarToggleButton(x, TOP, ICON, () -> filter.devFavOnly(),
+        // Twitch streamers have a toggle of their own beside the platform icons — the Twitch icon is
+        // VODs and clips, this one is the channels that stream the game. Present until the catalogue
+        // proves there are none, for the same no-jump reason as above.
+        boolean hasStreamers = VideoCatalog.state() != VideoCatalog.State.LOADED
+                || !TwitchStreamers.group(VideoCatalog.entries()).isEmpty();
+        streamerButton = new StreamerToggleButton(x, TOP + ICON_INSET, ICON, () -> filter.streamers(), b -> toggleStreamers());
+        if (hasStreamers) {
+            addRenderableWidget(streamerButton);
+            x += ICON + GAP;
+        }
+
+        starButton = addRenderableWidget(new StarToggleButton(x, TOP + ICON_INSET, ICON, () -> filter.devFavOnly(),
                 b -> toggleDevFav()));
         x += ICON + GAP;
 
@@ -134,7 +150,7 @@ public final class VideosScreen extends Screen {
         int listTop = TOP + BUTTON_H + GAP;
         int listBottom = this.height - MARGIN - BOTTOM_ROW_H - GAP;
         list = addRenderableWidget(new VideoList(this.font, MARGIN, listTop, rowW, listBottom - listTop,
-                this::open, this::flag));
+                this::open, this::flag, this::openStreamer));
         // The suggestion panel hangs over the list: while it is open, the rows under it neither
         // highlight nor answer clicks.
         list.setCoveredBy((mx, my) -> dropdown.isMouseOver(mx, my));
@@ -156,13 +172,14 @@ public final class VideosScreen extends Screen {
         // vanilla confirm screen and comes back here.
         int channelsW = 4 * ICON + 3 * GAP;
         int cx = MARGIN + rowW - channelsW;
-        addChannelIcon(new YouTubeIconButton(cx, bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.youtube"),
+        int iconY = bottomY + ICON_INSET;
+        addChannelIcon(new YouTubeIconButton(cx, iconY, ICON, Component.translatable("gui.dungeontrain.videos.channels.youtube"),
                 b -> openChannel(UiAnalytics.TARGET_YOUTUBE, OfficialLinks.youtube())), "youtube");
-        addChannelIcon(new BilibiliIconButton(cx + (ICON + GAP), bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.bilibili"),
+        addChannelIcon(new BilibiliIconButton(cx + (ICON + GAP), iconY, ICON, Component.translatable("gui.dungeontrain.videos.channels.bilibili"),
                 b -> openChannel(UiAnalytics.TARGET_BILIBILI, OfficialLinks.bilibili())), "bilibili");
-        addChannelIcon(new InstagramIconButton(cx + 2 * (ICON + GAP), bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.instagram"),
+        addChannelIcon(new InstagramIconButton(cx + 2 * (ICON + GAP), iconY, ICON, Component.translatable("gui.dungeontrain.videos.channels.instagram"),
                 b -> openChannel(UiAnalytics.TARGET_INSTAGRAM, OfficialLinks.instagram())), "instagram");
-        addChannelIcon(new DiscordIconButton(cx + 3 * (ICON + GAP), bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.discord"),
+        addChannelIcon(new DiscordIconButton(cx + 3 * (ICON + GAP), iconY, ICON, Component.translatable("gui.dungeontrain.videos.channels.discord"),
                 b -> openChannel(UiAnalytics.TARGET_DISCORD, OfficialLinks.discord())), "discord");
 
         // The three text buttons centre in what is left of the row to the icons' left.
@@ -202,6 +219,11 @@ public final class VideosScreen extends Screen {
         refresh();
     }
 
+    private void toggleStreamers() {
+        filter = filter.withStreamers(!filter.streamers());
+        refresh();
+    }
+
     private void toggleDevFav() {
         filter = filter.withDevFavOnly(!filter.devFavOnly());
         refresh();
@@ -225,6 +247,7 @@ public final class VideosScreen extends Screen {
         List<VideoEntry> all = VideoCatalog.entries();
 
         for (PlatformToggleButton b : platformButtons) b.refreshTooltip();
+        streamerButton.refreshTooltip();
         starButton.refreshTooltip();
         sortButton.setMessage(Component.translatable("gui.dungeontrain.videos.sort",
                 Component.translatable("gui.dungeontrain.videos.sort." + sort.key())));
@@ -232,13 +255,14 @@ public final class VideosScreen extends Screen {
 
         boolean loaded = VideoCatalog.state() == VideoCatalog.State.LOADED;
         for (PlatformToggleButton b : platformButtons) b.active = loaded;
+        streamerButton.active = loaded;
         starButton.active = loaded;
         sortButton.active = loaded;
         uploaderBox.setEditable(loaded);
         retryButton.visible = VideoCatalog.state() == VideoCatalog.State.FAILED;
 
         dropdown.setRows(VideoQuery.channels(all, filter.channelQuery()));
-        list.setRows(VideoQuery.apply(all, filter, sort));
+        list.setRows(VideoQuery.applyRows(all, filter, sort));
     }
 
     // ---- dropdown plumbing ----------------------------------------------------------
@@ -314,6 +338,22 @@ public final class VideosScreen extends Screen {
         }, url, true));
     }
 
+    /**
+     * A streamer row: the channel page, through the same confirm screen as a video row. Counted as a
+     * video open in the funnel — the page's "did they follow a link out" question, not a per-target one.
+     */
+    private void openStreamer(TwitchStreamers.Streamer s) {
+        UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_OPEN);
+        String url = s.url();
+        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            UiAnalytics.confirm(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_OPEN, yes);
+            if (yes) {
+                Util.getPlatform().openUri(URI.create(url));
+            }
+            Minecraft.getInstance().setScreen(this);
+        }, url, true));
+    }
+
     /** The row's ⚑: report this video. The flag screen talks to the relay and comes back here. */
     private void flag(VideoEntry v) {
         UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_FLAG);
@@ -339,10 +379,12 @@ public final class VideosScreen extends Screen {
                     list.getY() + list.getHeight() / 2 - this.font.lineHeight, colour);
         }
 
-        // Row count on the title line, right-aligned, out of the toolbar's way.
+        // Row count on the title line, right-aligned, out of the toolbar's way. The total is what the
+        // list can show: every video plus one row per streamer (not per stream-day marker).
         if (VideoCatalog.state() == VideoCatalog.State.LOADED) {
+            List<VideoEntry> entries = VideoCatalog.entries();
             Component count = Component.translatable("gui.dungeontrain.videos.count",
-                    list.rowCount(), VideoCatalog.entries().size());
+                    list.rowCount(), VideoQuery.videoCount(entries) + TwitchStreamers.group(entries).size());
             g.drawString(this.font, count, this.width - MARGIN - this.font.width(count), 14, SUB_COLOUR);
         }
 

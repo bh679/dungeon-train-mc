@@ -13,8 +13,18 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 class VideoQueryTest {
 
+    /** A video row: every fixture carries a platform id, so a Twitch one is a VOD, not a streamer marker. */
     private static VideoEntry v(int id, VideoEntry.Platform p, String day, long views, String channel, boolean fav) {
-        return new VideoEntry(id, "https://example.com/" + id, p, null, "T" + id, day, views, channel, fav);
+        return new VideoEntry(id, "https://example.com/" + id, p, "v" + id, "T" + id, day, views, channel, fav, false);
+    }
+
+    /** A Twitch streamer marker: bare channel URL, no id — the strip's, never the list's. */
+    private static VideoEntry marker(int id, String login, String day) {
+        return marker(id, login, day, false);
+    }
+
+    private static VideoEntry marker(int id, String login, String day, boolean live) {
+        return new VideoEntry(id, "https://www.twitch.tv/" + login, TWITCH, null, login, day, VideoEntry.VIEWS_UNKNOWN, login, false, live);
     }
 
     private static final VideoEntry A = v(1, YOUTUBE, "2026-09-01", 500, "Alpha", false);
@@ -79,6 +89,42 @@ class VideoQueryTest {
     }
 
     @Test
+    void streamerMarkersNeverReachTheListButStillCountAsTwitchForTheToggles() {
+        VideoEntry m = marker(7, "droneleg", "2026-08-21");
+        List<VideoEntry> withMarker = List.of(m, C, A);
+        assertEquals(List.of(1, 3), ids(VideoQuery.apply(withMarker, VideoQuery.Filter.ALL, VideoQuery.Sort.VIEWS)), "marker dropped, VOD kept");
+        assertEquals(List.of(), ids(VideoQuery.apply(withMarker, VideoQuery.Filter.ALL.withChannelQuery("droneleg"), VideoQuery.Sort.VIEWS)), "no filter resurrects a marker");
+        assertEquals(2, VideoQuery.videoCount(withMarker));
+        assertEquals(List.of(TWITCH), VideoQuery.platforms(List.of(m)), "a marker alone still lights the Twitch toggle");
+        assertEquals(List.of("droneleg"), VideoQuery.channels(List.of(m)), "and still suggests its uploader");
+    }
+
+    private static List<String> rowKeys(List<VideoQuery.Row> rows) {
+        return rows.stream().map(r -> switch (r) {
+            case VideoQuery.VideoRow vr -> "v" + vr.video().id();
+            case VideoQuery.StreamerRow sr -> "s:" + sr.streamer().name();
+        }).toList();
+    }
+
+    @Test
+    void applyRowsMergesStreamersIntoTheOneListUnderTheirOwnToggle() {
+        // droneleg streamed on two days (newest marker id 8, day 09-03); C is a Twitch VOD with no views.
+        List<VideoEntry> all = List.of(marker(7, "droneleg", "2026-08-21"), C, A, B, marker(8, "droneleg", "2026-09-03"));
+        assertEquals(List.of("v1", "v2", "s:droneleg", "v3"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.VIEWS)),
+                "Views: the streamer sinks under every counted video, then ranks by last day against the undated VOD");
+        assertEquals(List.of("v2", "s:droneleg", "v1", "v3"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.RECENT)),
+                "Recent: interleaved by last stream day");
+        assertEquals(List.of("v1", "v2", "v3"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL.withStreamers(false), VideoQuery.Sort.VIEWS)),
+                "streamers toggle off drops streamer rows but keeps the Twitch VOD");
+        assertEquals(List.of("v1", "v2", "s:droneleg"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL.togglePlatform(TWITCH), VideoQuery.Sort.VIEWS)),
+                "Twitch platform toggle off drops the VOD but keeps the streamer");
+        assertEquals(List.of("s:droneleg"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL.withChannelQuery("drone"), VideoQuery.Sort.VIEWS)),
+                "uploader box narrows streamers too");
+        assertEquals(List.of("v2"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL.withDevFavOnly(true), VideoQuery.Sort.DEV_PICKS)),
+                "★ filter hides an unstarred streamer");
+    }
+
+    @Test
     void applyNeverMutatesItsInput() {
         List<VideoEntry> input = List.of(C, A, D, B);
         VideoQuery.apply(input, VideoQuery.Filter.ALL, VideoQuery.Sort.VIEWS);
@@ -108,10 +154,26 @@ class VideoQueryTest {
     }
 
     @Test
-    void sortCyclesThroughAllThree() {
+    void sortCyclesThroughAllFour() {
+        assertSame(VideoQuery.Sort.VIEWS, VideoQuery.Sort.DEFAULT.next());
         assertSame(VideoQuery.Sort.RECENT, VideoQuery.Sort.VIEWS.next());
         assertSame(VideoQuery.Sort.DEV_PICKS, VideoQuery.Sort.RECENT.next());
-        assertSame(VideoQuery.Sort.VIEWS, VideoQuery.Sort.DEV_PICKS.next());
+        assertSame(VideoQuery.Sort.DEFAULT, VideoQuery.Sort.DEV_PICKS.next());
+    }
+
+    @Test
+    void defaultAndRecentSortsPutLiveStreamsFirst() {
+        // A live streamer (no views), a starred low-view video (B), a popular unstarred one (A), a VOD (C).
+        List<VideoEntry> all = List.of(A, B, C, marker(9, "livenow", "2026-09-12", true), marker(7, "droneleg", "2026-08-21"));
+        assertEquals(List.of("s:livenow", "v2", "v1", "s:droneleg", "v3"),
+                rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.DEFAULT)),
+                "Default: live → ★ → views → recent");
+        assertEquals(List.of("s:livenow", "v2", "v1", "s:droneleg", "v3"),
+                rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.RECENT)),
+                "Recent: live first, then newest day (B 09-05, A 09-01, droneleg 08-21, C undated)");
+        assertEquals(List.of("v1", "v2", "s:livenow", "s:droneleg", "v3"),
+                rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.VIEWS)),
+                "Views: a live streamer is still view-less");
     }
 
     @Test
