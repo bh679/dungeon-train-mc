@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import games.brennan.dungeontrain.editor.TemplateSidecars;
+import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
@@ -18,6 +19,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 
 import java.util.Collection;
@@ -285,6 +287,12 @@ public final class BuilderRelayDownload {
         List<String> prefabsWritten = TemplateLootPrefabs.install(build.lootPrefabs(), prefabs.overwrite(),
                 prefabs.renames());
         TemplateLootPrefabs.relink(kind, build.subKind(), installedAs, prefabs.renames(), prefabsWritten);
+        // The creative tab lists prefabs from a client-side copy of the registry, pushed on join and
+        // after an in-game save. A prefab that arrived with a build is a new entry too, and without
+        // this push it exists on disk but not in the tab until the next join.
+        if (!prefabsWritten.isEmpty()) {
+            PacketDistributor.sendToAllPlayers(PrefabRegistrySyncPacket.fromRegistries());
+        }
         // Last, and only once the template is a template: a refused join leaves the build where it
         // installed, which is still the INSTALLED the screen was promised — the roster says where.
         if (!parentId.isBlank() && BuilderRelaySubVariant.supports(kind)) {
