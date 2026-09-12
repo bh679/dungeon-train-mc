@@ -12364,7 +12364,7 @@
     },
     {
       "id": "train-editor-midday-clock",
-      "version": "0.853.0",
+      "version": "0.854.0",
       "type": "feat",
       "title": "Train Editor rests at midday; a dimensional carriage's Sky takes over while you stand in it",
       "summary": "The Train Editor now holds a stopped noon so every build is authored under the same light. Stand in a dimensional-carriage plot whose Sky is Day/Night and the clock runs at 10x \u2014 a full day in two minutes \u2014 then snaps back to noon when you step out. Rooms under a Nether or End sky now fog to match (wastes red / End dark), on the plot and in the live carriage alike.",
