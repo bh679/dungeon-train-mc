@@ -731,7 +731,7 @@
   "gui.dungeontrain.version.compare.ahead": "You are ahead of every published release",
   "gui.dungeontrain.version.compare.platform.latest": "%s latest is v%s",
   "gui.dungeontrain.version.compare.platform.latest.unknown": "%s latest",
-  "gui.dungeontrain.version.compare.platform.lag": "%s is %s behind %s — %s is delaying Dungeon Train releases",
+  "gui.dungeontrain.version.compare.platform.lag": "%1$s is %2$s behind %3$s — %1$s is delaying Dungeon Train releases",
   "gui.dungeontrain.version.compare.platform.yours": "The newest release on your launcher",
   "gui.dungeontrain.version.compare.platform.newer": "Not yet available on %s",
   "gui.dungeontrain.version.compare.platform.loading": "Checking…",

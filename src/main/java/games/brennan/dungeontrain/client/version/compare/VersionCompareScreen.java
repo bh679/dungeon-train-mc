@@ -207,7 +207,7 @@ public final class VersionCompareScreen extends Screen {
         int lag = otherLatest.isPresent() ? lagBehind(platform.other(), latest.get()) : 0;
         if (lag > 0) {
             String otherName = platform.other().displayName();
-            detail = Component.translatable(KEY + "platform.lag", name, count(lag), otherName, name);
+            detail = Component.translatable(KEY + "platform.lag", name, count(lag), otherName);
         } else if (isLauncher) {
             detail = Component.translatable(KEY + "platform.yours");
         } else {
