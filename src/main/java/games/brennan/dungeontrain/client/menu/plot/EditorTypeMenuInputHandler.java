@@ -365,6 +365,7 @@ public final class EditorTypeMenuInputHandler {
      * <ul>
      *   <li>{@code + Add} → opens the Stages window (with its create-stage typing row).</li>
      *   <li>{@code – Remove} → toggles remove-mode; a stage-row click then deletes that stage.</li>
+     *   <li>A column title → sorts the rows by that column; the same title again flips the direction.</li>
      *   <li>A stage row's {@code ≥ / ≤ / O N V E} cells edit that stage's gate live (inline).</li>
      *   <li>A stage row's name → its edit screen (or deletes it while remove-mode is on).</li>
      * </ul>
@@ -374,6 +375,12 @@ public final class EditorTypeMenuInputHandler {
             case STAGE_ADD, HEADER -> CommandMenuState.openAt(
                 new games.brennan.dungeontrain.client.menu.StagesListScreen());
             case STAGE_REMOVE -> EditorTypeMenuRenderer.toggleStagesRemoveMode();
+            // Column title: sort by it, or flip the direction if it is already the sort. View state
+            // only — nothing goes to the server.
+            case STAGE_SORT -> {
+                StagesSort.Column[] columns = StagesSort.Column.values();
+                if (hit.slotIdx() >= 0 && hit.slotIdx() < columns.length) StagesSort.click(columns[hit.slotIdx()]);
+            }
             case NAME -> {
                 String id = stageIdAt(menu, hit);
                 if (id == null) return;
