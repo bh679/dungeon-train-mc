@@ -12270,6 +12270,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-requirement-values",
+      "version": "0.848.0",
+      "type": "feat",
+      "title": "Advancement tweaks",
+      "summary": "Advancement descriptions now always match their requirements.",
+      "highlights": [],
+      "pr": 1366,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
