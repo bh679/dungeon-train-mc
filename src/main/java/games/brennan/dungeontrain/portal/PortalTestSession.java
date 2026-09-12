@@ -97,6 +97,20 @@ public final class PortalTestSession {
         return !SESSIONS.isEmpty();
     }
 
+    /**
+     * Whether a stamp keyed {@code pairKey} is a Test-the-Carriage stamp: the test key, while a test
+     * is running.
+     *
+     * <p>Both halves matter. {@link #PAIR_KEY} is a legal index by design (see its note), and the
+     * dev-creative portal cadence can stand a real pair in group 0 — a pair a player rides to, where
+     * the gentle-onboarding ramp should apply as it does anywhere else. Only while a session exists is
+     * the key certainly a test's, and the session is registered before the room is stamped so the
+     * very first stamp already reads as one.</p>
+     */
+    public static boolean isTestStamp(int pairKey) {
+        return pairKey == PAIR_KEY && anyActive();
+    }
+
     public static boolean has(UUID player) {
         return SESSIONS.containsKey(player);
     }

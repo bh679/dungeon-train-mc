@@ -108,6 +108,8 @@ public final class EditorTypeMenuRenderer {
         STAGE_REMOVE,
         /** Stages panel row icon strip — click toggles the Stage Blocks panel for that stage. */
         STAGE_BLOCKS,
+        /** Stages panel column title — {@code slotIdx} = {@link StagesSort.Column} ordinal; click sorts by it. */
+        STAGE_SORT,
         /** Package row — clicking activates that package. */
         PKG_NAME,
         /** Package Save cell — falls through to the X-menu's flat package screen for typing. */
@@ -242,6 +244,11 @@ public final class EditorTypeMenuRenderer {
     /** Marker drawn in the Stage selector cell on a Custom (unlinked) template row. */
     private static final String STAGE_CUSTOM_MARKER = "◆?";
 
+    /** Rows above the first stage row in the Stages panel: header, Add/Remove toolbar, column titles. */
+    private static final int STAGE_ROWS_ABOVE = 3;
+    /** Dimmed title for a column that is not the sort key. */
+    private static final int STAGE_TITLE_COLOR = 0xFFBBAA88;
+
     /** Client-only "remove mode" for the Stages panel — a stage-row click then deletes that stage. */
     private static volatile boolean stagesRemoveMode = false;
 
@@ -335,6 +342,7 @@ public final class EditorTypeMenuRenderer {
             HOVERED = Hovered.NONE;
             PACKAGE_BASIS = null;
             stagesRemoveMode = false;
+            StagesSort.clear();
             // Editor exited — drop the row icon strips and close the Stage Blocks panel too.
             games.brennan.dungeontrain.client.menu.ClientStageBlocks.clear();
             games.brennan.dungeontrain.client.menu.ClientPartVisibility.clear();
@@ -756,9 +764,9 @@ public final class EditorTypeMenuRenderer {
             if (!menu.variants().isEmpty()) total += 1;
             return total;
         }
-        // Stages: header + Add/Remove toolbar + one row per stage (no "+ New" footer).
+        // Stages: header + Add/Remove toolbar + column titles + one row per stage (no "+ New" footer).
         if (menu.isStagesMenu()) {
-            return 2 + menu.variants().size();
+            return STAGE_ROWS_ABOVE + menu.variants().size();
         }
         return 1 + menu.variants().size() + (menu.variants().isEmpty() ? 0 : 1);
     }
@@ -1566,9 +1574,10 @@ public final class EditorTypeMenuRenderer {
     }
 
     /**
-     * The global Stages management panel: a "Stages" header, an Add / Remove toolbar row, and one
-     * inline-editable row per stage ({@code name | ≥min | ≤max | O N V E}). In remove-mode every stage
-     * row tints red and a click deletes it; otherwise the gate cells edit the stage's gate live.
+     * The global Stages management panel: a "Stages" header, an Add / Remove toolbar row, a row of
+     * column titles (click to sort, again to flip — {@link StagesSort}), and one inline-editable row
+     * per stage ({@code name | ≥min | ≤max | O N V E}). In remove-mode every stage row tints red and a
+     * click deletes it; otherwise the gate cells edit the stage's gate live.
      */
     private static void drawStagesMenu(PoseStack ps, MultiBufferSource buffer, Font font,
                                        EditorTypeMenusPacket.Menu menu, Hovered hovered) {
@@ -1595,10 +1604,16 @@ public final class EditorTypeMenuRenderer {
         drawCenteredText(ps, buffer, font, "+ Add", -halfW / 2.0, tbCY, STAGE_ADD_COLOR);
         drawCenteredText(ps, buffer, font, removeMode ? "– Remove ✓" : "– Remove", halfW / 2.0, tbCY, STAGE_REMOVE_COLOR);
 
-        // Stage rows.
-        for (int vi = 0; vi < menu.variants().size(); vi++) {
+        // Column titles: click one to sort by it, again to flip. Same cell bounds as the rows below.
+        drawStageColumnTitles(ps, buffer, font, halfW, tbBottom, hovered);
+
+        // Stage rows, in the sorted order: display row -> server index. The hit test walks the same
+        // permutation, so a click on a sorted row is sent back as the stage drawn there.
+        int[] order = stageOrder(menu);
+        for (int row = 0; row < order.length; row++) {
+            int vi = order[row];
             EditorTypeMenusPacket.Variant v = menu.variants().get(vi);
-            double rowTop = topY - (vi + 2) * ROW_H;
+            double rowTop = topY - (row + STAGE_ROWS_ABOVE) * ROW_H;
             double rowBottom = rowTop - ROW_H;
             double rowCY = (rowTop + rowBottom) / 2.0;
             drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
@@ -1638,6 +1653,56 @@ public final class EditorTypeMenuRenderer {
                 drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY, on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
             }
         }
+    }
+
+    /** Display row → server index for the Stages panel under the live sort. */
+    private static int[] stageOrder(EditorTypeMenusPacket.Menu menu) {
+        return StagesSort.order(menu.variants(),
+            id -> games.brennan.dungeontrain.client.menu.ClientStageBlocks.stripFor(id).totalUnique());
+    }
+
+    /**
+     * The Stages panel's column-title row, directly under the toolbar: {@code Name | Blocks | Min |
+     * Max | Phases} over the same cell bounds the stage rows use. The sorted column is drawn bright
+     * with a {@code ▲} / {@code ▼}; the rest are dimmed so the row reads as labels, not data.
+     */
+    private static void drawStageColumnTitles(PoseStack ps, MultiBufferSource buffer, Font font,
+                                              double halfW, double rowTop, Hovered hovered) {
+        double rowBottom = rowTop - ROW_H, rowCY = (rowTop + rowBottom) / 2.0;
+        drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
+        StageRowCells rc = stageRowCells(-halfW, halfW);
+        StagesSort.Column[] columns = StagesSort.Column.values();
+        for (int c = 0; c < columns.length; c++) {
+            double l = stageColumnLeft(rc, halfW, c), r = stageColumnRight(rc, halfW, c);
+            if (hovered.cell == CellKind.STAGE_SORT && hovered.slotIdx() == c) {
+                drawQuad(ps, buffer, l + 0.005, rowBottom + 0.005, r - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
+            boolean sorted = StagesSort.column() == columns[c];
+            String label = columns[c].title() + (sorted ? (StagesSort.descending() ? " ▼" : " ▲") : "");
+            drawCenteredText(ps, buffer, font, label, (l + r) / 2.0, rowCY, sorted ? HEADER_COLOR : STAGE_TITLE_COLOR);
+        }
+    }
+
+    /** Left edge of Stages-panel column {@code c} (ordinal of {@link StagesSort.Column}). */
+    private static double stageColumnLeft(StageRowCells rc, double halfW, int c) {
+        return switch (c) {
+            case 0 -> -halfW;
+            case 1 -> rc.nameRight();
+            case 2 -> rc.iconsRight();
+            case 3 -> rc.minR();
+            default -> rc.maxR();
+        };
+    }
+
+    /** Right edge of Stages-panel column {@code c}; the phase column runs to the panel's edge. */
+    private static double stageColumnRight(StageRowCells rc, double halfW, int c) {
+        return switch (c) {
+            case 0 -> rc.nameRight();
+            case 1 -> rc.iconsRight();
+            case 2 -> rc.minR();
+            case 3 -> rc.maxR();
+            default -> halfW;
+        };
     }
 
     /**
@@ -1681,9 +1746,16 @@ public final class EditorTypeMenuRenderer {
             return hitX < 0 ? new Hovered(menuIdx, -1, CellKind.STAGE_ADD)
                             : new Hovered(menuIdx, -1, CellKind.STAGE_REMOVE);
         }
-        int variantIdx = rowFromTop - 2;
-        if (variantIdx < 0 || variantIdx >= menu.variants().size()) return Hovered.NONE;
         StageRowCells rc = stageRowCells(-halfW, halfW);
+        if (rowFromTop == 2) {
+            int column = hitX < rc.nameRight() ? 0 : hitX < rc.iconsRight() ? 1
+                : hitX < rc.minR() ? 2 : hitX < rc.maxR() ? 3 : 4;
+            return new Hovered(menuIdx, -1, CellKind.STAGE_SORT, column);
+        }
+        int displayRow = rowFromTop - STAGE_ROWS_ABOVE;
+        int[] order = stageOrder(menu);
+        if (displayRow < 0 || displayRow >= order.length) return Hovered.NONE;
+        int variantIdx = order[displayRow];
         if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
         if (hitX < rc.iconsRight()) return new Hovered(menuIdx, variantIdx, CellKind.STAGE_BLOCKS);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
