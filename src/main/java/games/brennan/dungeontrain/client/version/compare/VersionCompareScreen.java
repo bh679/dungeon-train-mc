@@ -25,7 +25,9 @@ import net.neoforged.api.distmarker.OnlyIn;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The Versions page, opened from the version label in the top-left of the title and pause
@@ -108,6 +110,8 @@ public final class VersionCompareScreen extends Screen {
 
     private List<Row> rows = List.of();
     private ShaderDetailPane notes;
+    /** Which page of tag chips the strip shows; reset when the selected row changes. */
+    private int chipPage;
     /** x, y, w, h of the notes box, for the background fill. */
     private int[] paneRect = new int[4];
 
@@ -144,12 +148,22 @@ public final class VersionCompareScreen extends Screen {
         }
 
         int bottomY = this.height - MARGIN - BOTTOM_ROW_H;
-        int paneTop = y + GAP - ROW_GAP;
+        y += GAP - ROW_GAP;
+        Row current = rowFor(selected);
+        Map<ChangelogTag, Integer> counts = tagCountsFor(current);
+        if (!counts.isEmpty()) {
+            TagFilterBar bar = new TagFilterBar(this.font, x, y, w, counts, VersionCompareState.tagFilter(),
+                    chipPage, this::onFilterChanged, this::onChipPage);
+            chipPage = bar.page();
+            bar.chips().forEach(this::addRenderableWidget);
+            y += bar.height() + GAP;
+        }
+        int paneTop = y;
         int paneBottom = bottomY - GAP;
         ShaderDetailPane previous = notes;
         notes = addRenderableWidget(new ShaderDetailPane(this.font, x + 2, paneTop + 2, w - 4,
                 Math.max(this.font.lineHeight, paneBottom - paneTop - 4)));
-        notes.setLines(NotesSection.flatten(sectionsFor(rowFor(selected))));
+        notes.setLines(NotesSection.flatten(sectionsFor(current)));
         if (previous == null) {
             notes.resetScroll();
         }
@@ -187,16 +201,33 @@ public final class VersionCompareScreen extends Screen {
         }
         selected = row.key();
         selectionMade = true;
+        chipPage = 0;
         rebuildWidgets();
         if (notes != null) {
             notes.resetScroll();
         }
     }
 
+    private void onFilterChanged(Set<ChangelogTag> filter) {
+        VersionCompareState.setTagFilter(filter);
+        rebuildWidgets();
+        if (notes != null) {
+            notes.resetScroll();
+        }
+    }
+
+    private void onChipPage(int page) {
+        chipPage = page;
+        rebuildWidgets();
+    }
+
     private void openFullscreen() {
         Row row = rowFor(selected);
         if (row == null) return;
-        Minecraft.getInstance().setScreen(new ChangelogFullscreenScreen(this, row.heading(), sectionsFor(row), 0));
+        ChangelogFullscreenScreen screen = row.isSiblings()
+                ? ChangelogFullscreenScreen.forSections(this, row.heading(), siblingSections())
+                : ChangelogFullscreenScreen.forReleases(this, row.heading(), releasesFor(row));
+        Minecraft.getInstance().setScreen(screen);
     }
 
     private void openUpdatePage() {
@@ -400,11 +431,28 @@ public final class VersionCompareScreen extends Screen {
 
     // ---- notes ------------------------------------------------------------------------------
 
-    /** The selected row's notes, one section per version (or per companion mod). */
+    /** The selected row's notes, one section per version (or per companion mod), tag-filtered. */
     private List<NotesSection> sectionsFor(@Nullable Row row) {
         if (row != null && row.isSiblings()) {
             return siblingSections();
         }
+        return NotesBuilder.sections(releasesFor(row), VersionCompareState.ledger().orElse(null),
+                VersionCompareState.tagFilter());
+    }
+
+    /** Entry counts per tag across the row's releases; empty for the companion row or without the ledger. */
+    private Map<ChangelogTag, Integer> tagCountsFor(@Nullable Row row) {
+        if (row == null || row.isSiblings()) {
+            return Map.of();
+        }
+        return NotesBuilder.tagCounts(releasesFor(row), VersionCompareState.ledger().orElse(null));
+    }
+
+    /**
+     * The releases a row's notes cover. The installed row, or a build ahead of the listing, is just
+     * that version. A newer release is everything between the installed build and it, newest first.
+     */
+    private List<ReleaseEntry> releasesFor(@Nullable Row row) {
         if (row == null || row.version() == null) {
             return List.of();
         }
@@ -412,19 +460,16 @@ public final class VersionCompareScreen extends Screen {
         if (source.isEmpty()) {
             return List.of();
         }
-        // The installed row, or a build ahead of the listing, shows just that version. A newer
-        // release shows everything between the installed build and it, newest first.
         boolean cumulative = !row.isInstalled() && installed.isPresent()
                 && row.version().isNewerThan(installed.get());
         if (cumulative) {
             List<ReleaseEntry> between = source.get().entriesBetween(installed.get(), row.version());
             if (!between.isEmpty()) {
-                return between.stream().map(NotesSection::forEntry).toList();
+                return between;
             }
         }
-        ReleaseEntry entry = source.get().find(row.version())
-                .orElse(new ReleaseEntry(row.version(), null, ""));
-        return List.of(NotesSection.forEntry(entry));
+        return List.of(source.get().find(row.version())
+                .orElse(new ReleaseEntry(row.version(), null, "")));
     }
 
     // ---- render -----------------------------------------------------------------------------

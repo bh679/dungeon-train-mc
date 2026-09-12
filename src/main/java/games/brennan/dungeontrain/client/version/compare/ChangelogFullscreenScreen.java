@@ -12,6 +12,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * The Versions page's notes box, taking the whole screen, with a tab per section across the top —
@@ -21,6 +23,11 @@ import java.util.List;
  * <p>Tabs are laid out left to right at a shared width; when more exist than fit, the arrows at
  * either end scroll the strip one tab at a time rather than shrinking tabs until their labels
  * vanish.</p>
+ *
+ * <p>For a release row the tabs are the releases themselves and the tag chips under them describe
+ * only the selected tab's release: its counts, its entries filtered. Tabs never disappear when a
+ * filter empties a release — that tab says so instead — so paging through versions stays stable
+ * while a filter is on. The companion row has no ledger, so no chips.</p>
  */
 @OnlyIn(Dist.CLIENT)
 final class ChangelogFullscreenScreen extends Screen {
@@ -36,8 +43,11 @@ final class ChangelogFullscreenScreen extends Screen {
     private static final float SELECTED_R = 0.45F, SELECTED_G = 0.6F, SELECTED_B = 1.0F;
 
     private final Screen parent;
+    /** One per tab. For a release row, {@link #releases} holds the matching release at each index. */
     private final List<NotesSection> sections;
+    private final List<ReleaseEntry> releases;
     private int selected;
+    private int chipPage;
     /** Index of the first tab shown in the strip. */
     private int firstTab;
     /** Set when the selection moved, so the next layout brings that tab into view — and only then. */
@@ -45,11 +55,37 @@ final class ChangelogFullscreenScreen extends Screen {
     private ShaderDetailPane pane;
     private int paneX, paneY, paneW, paneH;
 
-    ChangelogFullscreenScreen(Screen parent, Component title, List<NotesSection> sections, int initial) {
+    /** A release row: a tab per release, notes and chips from the ledger where it has them. */
+    static ChangelogFullscreenScreen forReleases(Screen parent, Component title, List<ReleaseEntry> releases) {
+        return new ChangelogFullscreenScreen(parent, title, List.of(), releases);
+    }
+
+    /** The companion row: fixed sections, one per mod, no tag chips. */
+    static ChangelogFullscreenScreen forSections(Screen parent, Component title, List<NotesSection> sections) {
+        return new ChangelogFullscreenScreen(parent, title, sections, List.of());
+    }
+
+    private ChangelogFullscreenScreen(Screen parent, Component title, List<NotesSection> sections,
+                                      List<ReleaseEntry> releases) {
         super(title);
         this.parent = parent;
-        this.sections = List.copyOf(sections);
-        this.selected = Math.max(0, Math.min(initial, this.sections.size() - 1));
+        this.releases = List.copyOf(releases);
+        this.sections = releases.isEmpty() ? List.copyOf(sections)
+                : releases.stream().map(r -> NotesSection.forEntry(r)).toList();
+        this.selected = 0;
+    }
+
+    /** The selected tab's lines: for a release, the ledger's filtered view of it; otherwise as given. */
+    private List<ShaderDetailPane.Line> selectedLines() {
+        if (sections.isEmpty()) return List.of();
+        if (releases.isEmpty()) return sections.get(selected).lines();
+        return NotesBuilder.sectionOrNotice(releases.get(selected), VersionCompareState.ledger().orElse(null),
+                VersionCompareState.tagFilter()).lines();
+    }
+
+    private Map<ChangelogTag, Integer> selectedCounts() {
+        if (releases.isEmpty()) return Map.of();
+        return NotesBuilder.tagCounts(List.of(releases.get(selected)), VersionCompareState.ledger().orElse(null));
     }
 
     @Override
@@ -59,15 +95,24 @@ final class ChangelogFullscreenScreen extends Screen {
         int tabY = MARGIN;
         layoutTabs(x, tabY, w);
 
+        int y = tabY + TAB_H + GAP;
+        Map<ChangelogTag, Integer> counts = selectedCounts();
+        if (!counts.isEmpty()) {
+            TagFilterBar bar = new TagFilterBar(this.font, x, y, w, counts, VersionCompareState.tagFilter(),
+                    chipPage, this::onFilterChanged, this::onChipPage);
+            chipPage = bar.page();
+            bar.chips().forEach(this::addRenderableWidget);
+            y += bar.height() + GAP;
+        }
         paneX = x;
-        paneY = tabY + TAB_H + GAP;
+        paneY = y;
         paneW = w;
         int bottomY = this.height - MARGIN - BOTTOM_ROW_H;
         paneH = bottomY - GAP - paneY;
         ShaderDetailPane previous = pane;
         pane = addRenderableWidget(new ShaderDetailPane(this.font, paneX + 2, paneY + 2, paneW - 4,
                 Math.max(this.font.lineHeight, paneH - 4)));
-        pane.setLines(sections.isEmpty() ? List.of() : sections.get(selected).lines());
+        pane.setLines(selectedLines());
         if (previous == null) {
             pane.resetScroll();
         }
@@ -125,8 +170,22 @@ final class ChangelogFullscreenScreen extends Screen {
         }
     }
 
+    private void onFilterChanged(Set<ChangelogTag> filter) {
+        VersionCompareState.setTagFilter(filter);
+        rebuildWidgets();
+        if (pane != null) {
+            pane.resetScroll();
+        }
+    }
+
+    private void onChipPage(int page) {
+        chipPage = page;
+        rebuildWidgets();
+    }
+
     private void selectTab(int index) {
         selected = index;
+        chipPage = 0;
         followSelection = true;
         rebuildWidgets();
         if (pane != null) {

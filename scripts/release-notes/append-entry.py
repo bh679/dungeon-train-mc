@@ -14,7 +14,13 @@ Usage:
     --summary "A toolsmith shop carriage now rides the train, trading tools…" \
     --highlight "New toolsmith shop carriage" \
     --highlight "Rebalanced armorer chest loot" \
+    --tag train --tag loot --tag balance \
     --pr 360
+
+Tags: the type-derived tag (feat→feature, fix→fix, content→content,
+perf→performance) is added automatically; pass --tag for each topical tag on top
+(editor, multiplayer, community, translations, compatibility, train, world, mobs,
+loot, books, advancements, ui, balance). The Versions page filters release notes by these.
 
 Optional:
   --version X.Y.Z   Override the computed version (rarely needed).
@@ -39,6 +45,16 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=[],
         dest="highlights",
         help="A bullet point (repeatable).",
+    )
+    p.add_argument(
+        "--tag",
+        action="append",
+        default=[],
+        dest="tags",
+        choices=changelog_io.VALID_TAGS,
+        metavar="TAG",
+        help="A topical tag (repeatable). One of: " + ", ".join(changelog_io.VALID_TAGS)
+        + ". The type-derived tag is always added.",
     )
     p.add_argument("--pr", type=int, default=None, help="PR number (optional).")
     p.add_argument(
@@ -85,6 +101,7 @@ def main(argv: list[str] | None = None) -> int:
         date=changelog_io.utc_today(),
         highlights=args.highlights,
         pr=args.pr,
+        tags=args.tags,
     )
     try:
         new_entries = changelog_io.append_entry(data["entries"], entry)

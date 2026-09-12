@@ -18,6 +18,9 @@ APPEND = os.path.join(HERE, "append-entry.py")
 RENDER = os.path.join(HERE, "render-unreleased.py")
 RENDER_LAST = os.path.join(HERE, "render-last-released.py")
 MARK = os.path.join(HERE, "mark-released.py")
+BACKFILL = os.path.join(HERE, "backfill-tags.py")
+sys.path.insert(0, HERE)
+import changelog_io  # noqa: E402
 SCHEMA_FILE = os.path.join(
     REPO_ROOT, ".github/release-notes/schema/changelog.schema.json"
 )
@@ -163,6 +166,139 @@ def test_append_creates_file_when_missing() -> None:
     assert not os.path.exists(changelog_path(ws))
     assert append(ws, "first").returncode == 0
     assert len(read_changelog(ws)["entries"]) == 1
+
+
+def test_append_type_derived_tag_always_present() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "tagged-feat")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["tags"] == ["feature"]
+    # tags sits right after type, in the same slot make_entry uses.
+    keys = list(e.keys())
+    assert keys.index("tags") == keys.index("type") + 1
+
+
+def test_append_topical_tags_merged_and_ordered() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = run(
+        APPEND, ws, "--id", "tagged-fix", "--type", "fix",
+        "--title", "t", "--summary", "s",
+        "--tag", "editor", "--tag", "fix", "--tag", "ui", "--tag", "editor",
+    )
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["tags"] == ["fix", "editor", "ui"]
+
+
+def test_append_unknown_tag_rejected() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "bad-tag", "--tag", "nonsense")
+    assert r.returncode != 0
+    assert not os.path.exists(changelog_path(ws))
+
+
+def test_normalise_tags_chore_may_be_empty() -> None:
+    assert changelog_io.normalise_tags("chore", []) == []
+    assert changelog_io.normalise_tags("chore", ["ui"]) == ["ui"]
+    assert changelog_io.normalise_tags("perf", None) == ["performance"]
+    try:
+        changelog_io.normalise_tags("feat", ["feature", "bogus"])
+    except ValueError as e:
+        assert "bogus" in str(e)
+    else:
+        raise AssertionError("unknown tag accepted")
+
+
+# ---------------------------------------------------------------------------
+# backfill-tags.py
+# ---------------------------------------------------------------------------
+
+def _untagged(entry_id: str, entry_type: str, title: str, summary: str = "") -> dict:
+    return {
+        "id": entry_id, "version": "0.1.0", "type": entry_type, "title": title,
+        "summary": summary, "highlights": [], "date": "2026-01-01",
+        "released": True, "released_in": "v0.1.0", "released_at": "2026-01-01T00:00:00Z",
+    }
+
+
+def test_backfill_tags_untagged_entries_and_leaves_tagged_alone() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        _untagged("ed", "fix", "Editor: sub-variant weight no longer resets"),
+        _untagged("tr", "feat", "Vietnamese translation refreshed"),
+        {**_untagged("kept", "feat", "Editor thing"), "tags": ["feature"]},
+        _untagged("chore", "chore", "Internal tooling"),
+    ]})
+    r = run(BACKFILL, ws)
+    assert r.returncode == 0, r.stderr
+    by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
+    assert by_id["ed"]["tags"] == ["fix", "editor"]
+    assert by_id["tr"]["tags"] == ["feature", "translations"]
+    assert by_id["kept"]["tags"] == ["feature"], "already-tagged entry must not be rewritten"
+    assert by_id["chore"]["tags"] == []
+    assert list(by_id["ed"].keys()).index("tags") == list(by_id["ed"].keys()).index("type") + 1
+    # Idempotent.
+    before = read_changelog(ws)
+    run(BACKFILL, ws)
+    assert read_changelog(ws) == before
+
+
+def test_render_leads_with_tag_counts() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    run(APPEND, ws, "--id", "one", "--type", "feat", "--title", "One", "--summary", "s",
+        "--tag", "editor")
+    run(APPEND, ws, "--id", "two", "--type", "fix", "--title", "Two", "--summary", "s",
+        "--tag", "editor", "--version", "0.292.0")
+    out = run(RENDER, ws).stdout
+    first = out.splitlines()[0]
+    assert first == "**Editor ×2 · New Feature ×1 · Bug Fix ×1**", first
+    assert out.index(first) < out.index("### 0.292.0")
+
+
+def test_render_tag_line_empty_when_untagged() -> None:
+    assert changelog_io.render_tag_line([{"tags": []}, {}]) == ""
+    assert changelog_io.tag_counts([{"tags": ["ui", "fix"]}, {"tags": ["ui"]}]) == [("ui", 2), ("fix", 1)]
+
+
+def test_backfill_title_only_tags_ignore_body_mentions() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        _untagged("aside", "perf", "Smoother long trains",
+                  "Most noticeable on multiplayer servers; other players see it too."),
+        _untagged("real", "fix", "Death recap now works in multiplayer"),
+    ]})
+    run(BACKFILL, ws)
+    by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
+    assert "multiplayer" not in by_id["aside"]["tags"], "a body mention is narration, not the subject"
+    assert "multiplayer" in by_id["real"]["tags"]
+
+
+def test_backfill_retag_recomputes_one_tag_only() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        {**_untagged("stale", "feat", "Death recap now works in multiplayer"),
+         "tags": ["feature", "editor"]},
+        {**_untagged("wrong", "feat", "Plain title", "mentions multiplayer"),
+         "tags": ["feature", "multiplayer", "ui"]},
+    ]})
+    r = run(BACKFILL, ws, "--retag", "multiplayer")
+    assert r.returncode == 0, r.stderr
+    by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
+    assert by_id["stale"]["tags"] == ["feature", "editor", "multiplayer"], "gained; editor kept"
+    assert by_id["wrong"]["tags"] == ["feature", "ui"], "lost; ui kept"
+
+
+def test_backfill_dry_run_writes_nothing() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [_untagged("x", "feat", "Anything")]})
+    r = run(BACKFILL, ws, "--dry-run")
+    assert r.returncode == 0, r.stderr
+    assert "tags" not in read_changelog(ws)["entries"][0]
 
 
 # ---------------------------------------------------------------------------
@@ -392,6 +528,16 @@ def main() -> int:
         test_append_duplicate_id_refused,
         test_append_bad_version_override_rejected,
         test_append_creates_file_when_missing,
+        test_append_type_derived_tag_always_present,
+        test_append_topical_tags_merged_and_ordered,
+        test_append_unknown_tag_rejected,
+        test_normalise_tags_chore_may_be_empty,
+        test_backfill_tags_untagged_entries_and_leaves_tagged_alone,
+        test_backfill_dry_run_writes_nothing,
+        test_backfill_title_only_tags_ignore_body_mentions,
+        test_backfill_retag_recomputes_one_tag_only,
+        test_render_leads_with_tag_counts,
+        test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,
         test_render_only_unreleased,
         test_render_empty_when_nothing_unreleased,

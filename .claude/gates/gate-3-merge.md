@@ -8,8 +8,8 @@
 2. Create a PR with a clear title and description
 3. **Draft + log the changelog entry** — unless the change is purely non-player-facing
    (CI/tooling/docs/refactors), draft a curated, player-facing summary and run
-   `scripts/release-notes/append-entry.py` on the feature branch (plus `--highlight` bullets and
-   `--pr <number>`), then commit and push so the entry is in the PR diff. The shipped version is
+   `scripts/release-notes/append-entry.py` on the feature branch (plus `--highlight` bullets,
+   `--tag <tag>` for each topical tag the Versions page filters by, and `--pr <number>`), then commit and push so the entry is in the PR diff. The shipped version is
    computed automatically. See `.github/release-notes/README.md`.
 4. Enter plan mode and present for approval:
    - **The changelog entry — surface the curated, player-facing notes explicitly for the user to
