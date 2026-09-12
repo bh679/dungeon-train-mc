@@ -40,13 +40,15 @@ public final class LuckyBonusRoller {
     /** NeoForge's per-BE persistent-data compound (see {@code BlockEntity#getPersistentData}). */
     static final String NBT_NEOFORGE_DATA = "NeoForgeData";
 
+    /** Luck I claims this many candidates (inclusive range). */
+    public static final int LUCK_I_MIN_BONUS = 3;
+    public static final int LUCK_I_MAX_BONUS = 7;
+    /** Luck II and up claims this many candidates (inclusive range). */
+    public static final int LUCK_II_MIN_BONUS = 5;
+    public static final int LUCK_II_MAX_BONUS = 10;
     /** How many candidate stacks are baked per chest — the most Luck can ever add. */
-    public static final int MAX_LUCKY_BONUS = 5;
-    /** The fewest a lucky opener ever claims. */
-    public static final int MIN_LUCKY_BONUS = 3;
-    /** Luck II and up always claims at least this many. */
-    private static final int LUCK_II_MIN_BONUS = 4;
-    /** Luck attribute value at which the Luck II floor kicks in. */
+    public static final int MAX_LUCKY_BONUS = LUCK_II_MAX_BONUS;
+    /** Luck attribute value at which the Luck II range applies. */
     private static final float LUCK_II_THRESHOLD = 2.0f;
 
     /**
@@ -129,14 +131,14 @@ public final class LuckyBonusRoller {
     }
 
     /**
-     * How many of the candidates a lucky opener claims: Luck I rolls 3–5, Luck II and up
-     * rolls 4–5. Zero for no or negative luck (Bad Luck never removes items).
+     * How many of the candidates a lucky opener claims: Luck I rolls 3–7, Luck II and up
+     * rolls 5–10. Zero for no or negative luck (Bad Luck never removes items).
      */
     public static int bonusCountFor(float luck, RandomSource random) {
         if (luck <= 0f) return 0;
-        int rolled = MIN_LUCKY_BONUS + random.nextInt(MAX_LUCKY_BONUS - MIN_LUCKY_BONUS + 1);
-        int floor = luck >= LUCK_II_THRESHOLD ? LUCK_II_MIN_BONUS : MIN_LUCKY_BONUS;
-        return Math.min(MAX_LUCKY_BONUS, Math.max(floor, rolled));
+        int min = luck >= LUCK_II_THRESHOLD ? LUCK_II_MIN_BONUS : LUCK_I_MIN_BONUS;
+        int max = luck >= LUCK_II_THRESHOLD ? LUCK_II_MAX_BONUS : LUCK_I_MAX_BONUS;
+        return min + random.nextInt(max - min + 1);
     }
 
     private static ContainerContentsPool withoutBookPlaceholders(ContainerContentsPool pool) {
