@@ -295,6 +295,27 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
     }
 
     /**
+     * Give {@code to} a copy of {@code from}'s entry — weight, inline gate, Stage link, mode,
+     * flip and builder credit — leaving {@code from} as it was. The display label is the one
+     * field that stays behind: the copy is labelled by its own id until its author names it.
+     * A source with no entry has nothing to copy and answers false without touching the file.
+     */
+    public static synchronized boolean copy(String from, String to) throws IOException {
+        String src = from.toLowerCase(Locale.ROOT);
+        String dst = to.toLowerCase(Locale.ROOT);
+        TemplateMeta meta = current.byId().get(src);
+        if (meta == null) return false;
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        next.put(dst, meta.asCopy());
+        current = new CarriageContentsWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Copied contents weight entry {} -> {} (persisted to {}).",
+                src, dst, configPath());
+        return true;
+    }
+
+    /**
      * Remove an override for {@code id} (reverts it to {@link #DEFAULT} on the
      * next lookup). Persists immediately. Returns true if an entry was removed.
      */

@@ -2221,6 +2221,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s wyłączył(a) własne treści pociągu w tym świecie. Nowe wagony będą korzystać z wbudowanych projektów.",
   "chat.dungeontrain.custom_content.already_kept": "Własne treści pociągu są w tym świecie już włączone.",
   "chat.dungeontrain.custom_content.already_disabled": "Własne treści pociągu są w tym świecie już wyłączone.",
+  "chat.dungeontrain.lucky_loot.bonus": "Szczęście! W tej skrzyni pojawiło się %s dodatkowych przedmiotów.",
   "gui.dungeontrain.custom_content.title": "Własne treści pociągu",
   "gui.dungeontrain.custom_content.card.custom.name": "Własny pociąg",
   "gui.dungeontrain.custom_content.card.custom.tag": "Swobodna Gra",

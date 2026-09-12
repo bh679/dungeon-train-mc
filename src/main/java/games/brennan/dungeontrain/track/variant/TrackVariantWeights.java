@@ -294,6 +294,34 @@ public final class TrackVariantWeights {
         return true;
     }
 
+    /**
+     * Give {@code (kind, to)} a copy of {@code (kind, from)}'s entry — weight, inline gate, Stage
+     * link, mode, flip and builder credit — leaving {@code from} exactly as it was.
+     *
+     * <p>The one field that does <b>not</b> travel is the display label: two rooms answering to the
+     * same label would be indistinguishable in every menu, so the copy is labelled by its own id
+     * until its author names it. The mode tag travels whole, which for a portal room is its sky,
+     * walls, copies and door settings — a copy without it is a bare box.</p>
+     *
+     * <p>A source with no entry has nothing to copy — the defaults follow the new name anyway — and
+     * answers false without touching the file.</p>
+     */
+    public static synchronized boolean copy(TrackKind kind, String from, String to) throws IOException {
+        String src = from.toLowerCase(Locale.ROOT);
+        String dst = to.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> cur = CURRENT.get(kind);
+        TemplateMeta meta = cur.get(src);
+        if (meta == null) return false;
+        Map<String, TemplateMeta> next = new HashMap<>(cur);
+        next.put(dst, meta.asCopy());
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Copied track weight entry {}:{} -> {}:{} (persisted to {}).",
+            kind.id(), src, kind.id(), dst, configPath(kind));
+        return true;
+    }
+
     /** Reload every kind from disk. Wired to {@link ServerStartingEvent}. */
     public static synchronized void reload() {
         int total = 0;

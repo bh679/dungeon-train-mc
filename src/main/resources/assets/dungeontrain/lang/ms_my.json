@@ -2157,6 +2157,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s mematikan kandungan kereta api tersuai bagi dunia ini. Gerabak baharu akan menggunakan reka bentuk terbina dalam.",
   "chat.dungeontrain.custom_content.already_kept": "Kandungan kereta api tersuai sudah pun dihidupkan bagi dunia ini.",
   "chat.dungeontrain.custom_content.already_disabled": "Kandungan kereta api tersuai sudah pun dimatikan bagi dunia ini.",
+  "chat.dungeontrain.lucky_loot.bonus": "Bertuah! %s item tambahan muncul dalam peti ini.",
   "gui.dungeontrain.custom_content.title": "Kandungan kereta api tersuai",
   "gui.dungeontrain.custom_content.card.custom.name": "Kereta Api Tersuai",
   "gui.dungeontrain.custom_content.card.custom.tag": "Permainan Bebas",

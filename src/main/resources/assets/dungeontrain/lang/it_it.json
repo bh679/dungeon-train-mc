@@ -2189,6 +2189,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s ha disattivato i contenuti del treno personalizzati in questo mondo. I nuovi vagoni useranno i modelli integrati.",
   "chat.dungeontrain.custom_content.already_kept": "I contenuti del treno personalizzati sono già attivi in questo mondo.",
   "chat.dungeontrain.custom_content.already_disabled": "I contenuti del treno personalizzati sono già disattivati in questo mondo.",
+  "chat.dungeontrain.lucky_loot.bonus": "Che fortuna! %s oggetto/i in più sono comparsi in questo baule.",
   "gui.dungeontrain.custom_content.title": "Contenuti del treno personalizzati",
   "gui.dungeontrain.custom_content.card.custom.name": "Treno personalizzato",
   "gui.dungeontrain.custom_content.card.custom.tag": "Gioco Libero",

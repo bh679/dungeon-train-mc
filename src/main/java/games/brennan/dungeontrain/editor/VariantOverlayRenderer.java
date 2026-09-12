@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.portal.PortalRoomSky;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -270,6 +271,9 @@ public final class VariantOverlayRenderer {
 
         long tickStart = System.nanoTime();
         int atPlots = 0;
+        // Whether anyone is standing under a Day/Night sky this tick — what decides if the
+        // editor's clock runs or rests. See EditorClock.
+        boolean cycleSeen = false;
         for (ServerPlayer player : players) {
             if (EditorLayout.isAtPlotHeight(player.getBlockY())) atPlots++;
             // The two snapshots the block-variant menu draws itself against, and nothing else: the
@@ -307,7 +311,7 @@ public final class VariantOverlayRenderer {
             pushDoorGhostsSnapshot(player, dims);
             // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
             // rather than the dark box it was authored in until now.
-            EditorPlotSky.update(player, dims);
+            if (EditorPlotSky.update(player, dims) == PortalRoomSky.CYCLE) cycleSeen = true;
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -405,6 +409,7 @@ public final class VariantOverlayRenderer {
             // Outside every plot — clear any stale HUD state.
             clearHoverIfStale(player);
         }
+        EditorClock.tick(level, cycleSeen);
         recordEditorTiming(level, System.nanoTime() - tickStart, atPlots);
     }
 
@@ -534,7 +539,18 @@ public final class VariantOverlayRenderer {
                 games.brennan.dungeontrain.train.CarriageContentsWeights.current().flipFor(cm.contents().id()))
             : EditorStatusPacket.NO_FLIP;
 
-        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
+        // Header string: the weights.json display label for contents / portal rooms (falls back to
+        // the id when unlabelled) so a Rename reads the same here as on the panels; other kinds
+        // keep their richer Template.displayName(). modelId / modelName below stay the id —
+        // command dispatch never sees the label.
+        String headerName = l.model() instanceof Template.Contents cm
+            ? games.brennan.dungeontrain.train.CarriageContentsWeights.current().nameFor(cm.contents().id())
+            : l.category() == EditorCategory.PORTALS && roomSize != null
+                ? games.brennan.dungeontrain.track.variant.TrackVariantWeights.nameFor(
+                    games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, modelName)
+                : l.model().displayName();
+
+        String key = l.category().name() + "|" + headerName + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
             + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey
             + "|" + roomLength + "x" + roomHeight + "x" + roomWidth + "/" + roomMode
@@ -542,7 +558,7 @@ public final class VariantOverlayRenderer {
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-            l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
+            l.category().displayName(), headerName, l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
             roomLength, roomWidth, roomHeight, roomMode, flipMask));
@@ -895,16 +911,13 @@ public final class VariantOverlayRenderer {
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
                 .append(':').append(m.typeName()).append('[');
             for (EditorTypeMenusPacket.Variant v : m.variants()) {
-                // Include the spawn gate (min/max level + phase mask) in the dedup key so editing it
-                // from the world-space panel re-pushes the snapshot and the cells update live —
-                // otherwise only weight changes would refresh the panel.
-                keyBuf.append(v.name()).append('=').append(v.weight())
-                    .append('@').append(v.minLevel()).append('-').append(v.maxLevel())
-                    .append('p').append(v.phaseMask())
-                    // Include the Stage link(s) so linking / detaching / toggling re-pushes the
-                    // snapshot (the chip replaces the cells) and the stage rows refresh as stages are
-                    // added/edited. Joined so a multi-Stage member's edits change the key.
-                    .append('s').append(String.join("|", v.stageIds())).append(',');
+                appendVariantKey(keyBuf, v);
+                // Nested sub-variant chips ride inside the row; without them in the key a member's
+                // rename or gate edit would not re-push until the parent row itself changed.
+                for (EditorTypeMenusPacket.Variant sv : v.subVariants()) {
+                    keyBuf.append('>');
+                    appendVariantKey(keyBuf, sv);
+                }
             }
             keyBuf.append("];");
         }
@@ -942,6 +955,22 @@ public final class VariantOverlayRenderer {
     }
 
     /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */
+    /**
+     * One row's contribution to the type-menus dedup key. Includes the spawn gate (min/max level +
+     * phase mask) so editing it from the world-space panel re-pushes the snapshot and the cells
+     * update live — otherwise only weight changes would refresh the panel. Includes the display
+     * label as well as the id so a Rename (weights.json {@code name}, id unchanged) re-pushes
+     * instead of waiting for some unrelated edit to move the key. Includes the Stage link(s) so
+     * linking / detaching / toggling re-pushes (the chip replaces the cells) and the stage rows
+     * refresh as stages are added/edited; joined so a multi-Stage member's edits change the key.
+     */
+    private static void appendVariantKey(StringBuilder keyBuf, EditorTypeMenusPacket.Variant v) {
+        keyBuf.append(v.name()).append('~').append(v.displayName()).append('=').append(v.weight())
+            .append('@').append(v.minLevel()).append('-').append(v.maxLevel())
+            .append('p').append(v.phaseMask())
+            .append('s').append(String.join("|", v.stageIds())).append(',');
+    }
+
     private static void clearTypeMenusIfStale(ServerPlayer player) {
         if (LAST_TYPE_MENUS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, EditorTypeMenusPacket.empty());
@@ -1294,11 +1323,17 @@ public final class VariantOverlayRenderer {
             : games.brennan.dungeontrain.net.EditorPlotLabelsPacket.NO_WEIGHT;
         EditorPlotLabels.Provenance parentProv = EditorPlotLabels.provenanceOf(
             games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(parentId));
+        // Rows are keyed by id (name/modelId — click routing and the dedup key) but DRAWN by the
+        // weights.json display label, the same as the nav-menu chips in EditorTypeMenus, so a
+        // Rename shows here and not just on the per-plot label panel.
+        games.brennan.dungeontrain.train.CarriageContentsWeights weights =
+            games.brennan.dungeontrain.train.CarriageContentsWeights.current();
         rows.add(new EditorTypeMenusPacket.Variant(
             parentId + " (default)",
             defaultRowWeight,
             cat, parentId, parentId,
-            parentProv.isUser(), parentProv.isImported()));
+            parentProv.isUser(), parentProv.isImported())
+            .withDisplayName(weights.nameFor(parentId) + " (default)"));
         if (groupOpt.isPresent()) {
             for (var m : groupOpt.get().members()) {
                 EditorPlotLabels.Provenance memberProv = EditorPlotLabels.provenanceOf(
@@ -1317,7 +1352,7 @@ public final class VariantOverlayRenderer {
                     games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
                     cat, m.id(), m.id(),
                     memberProv.isUser(), memberProv.isImported(),
-                    java.util.List.of(), m.stageIds()));
+                    java.util.List.of(), m.stageIds()).withDisplayName(weights.nameFor(m.id())));
             }
         }
 
@@ -1375,9 +1410,12 @@ public final class VariantOverlayRenderer {
         List<EditorTypeMenusPacket.Variant> rows = new java.util.ArrayList<>();
         EditorPlotLabels.Provenance parentProv = EditorPlotLabels.provenanceOf(
             games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, parent));
+        // Drawn by the room's display label (id stays in name/modelId for routing), as the
+        // contents companion does.
         rows.add(new EditorTypeMenusPacket.Variant(
             parent + " (default)", selfRowWeight,
-            cat, parent, parent, parentProv.isUser(), parentProv.isImported()));
+            cat, parent, parent, parentProv.isUser(), parentProv.isImported())
+            .withDisplayName(games.brennan.dungeontrain.track.variant.TrackVariantWeights.nameFor(kind, parent) + " (default)"));
         if (hasMembers) {
             for (var m : groupOpt.get().members()) {
                 EditorPlotLabels.Provenance prov = EditorPlotLabels.provenanceOf(
@@ -1395,7 +1433,8 @@ public final class VariantOverlayRenderer {
                     games.brennan.dungeontrain.worldgen.TrainPhase.toMask(g.phases()),
                     cat, m.id(), m.id(),
                     prov.isUser(), prov.isImported(),
-                    java.util.List.of(), m.stageIds()));
+                    java.util.List.of(), m.stageIds())
+                    .withDisplayName(games.brennan.dungeontrain.track.variant.TrackVariantWeights.nameFor(kind, m.id())));
             }
         }
 

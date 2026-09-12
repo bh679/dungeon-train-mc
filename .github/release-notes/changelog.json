@@ -12217,9 +12217,9 @@
         "Fixed a late-journey advancement unlock for returning players"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "dimensional-carriage-builder-line",
@@ -12233,9 +12233,9 @@
         "Fully localised (20 locales)"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "pause-menu-icon-strip-translate",
@@ -12250,9 +12250,9 @@
         "Slightly smaller icon buttons on the title screen, pause menu and Videos page; one consistent Bilibili mark on the Videos page"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "twitch-streamers-live",
@@ -12267,9 +12267,9 @@
         "Live sort removed; Recent now leads with live streams"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "advancement-requirement-values",
@@ -12280,9 +12280,9 @@
       "highlights": [],
       "pr": 1366,
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "credits-self-edit",
@@ -12296,6 +12296,96 @@
         "Remove my name: listed as Anonymous, nothing deleted; Restore my name brings it back"
       ],
       "pr": 1371,
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
+    },
+    {
+      "id": "lucky-potion-bonus-loot",
+      "version": "0.850.0",
+      "type": "feat",
+      "title": "Luck potions add bonus loot to train chests",
+      "summary": "Drink a Luck potion before opening chests and barrels on the train and the first open turns up extra loot on top of what's already there \u2014 and the stronger the Luck, the more turns up. The bonus is drawn from the same loot pool as the chest, so it fits the carriage you're in. It's decided on the first open \u2014 a chest looted without Luck stays as it was.",
+      "highlights": [
+        "Luck potions add extra items to a chest's first open; stronger Luck, more items",
+        "Bonus loot is themed to the chest's own pool and never replaces what was already inside",
+        "Decided on first open \u2014 no farming already-looted chests with a potion"
+      ],
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
+    },
+    {
+      "id": "subvariant-rename-ui-sync",
+      "version": "0.851.0",
+      "type": "fix",
+      "title": "Editor: renamed sub-variants show their new name everywhere",
+      "summary": "Renaming a sub-variant in the train editor now updates its name on the floating Sub-Variants panel, the nav menu, the editor header and chat right away, instead of showing the old id until something else changed.",
+      "highlights": [
+        "Sub-Variants panel and nav menu show the display name, not the id",
+        "Editor header reads the renamed name for contents and portal rooms"
+      ],
+      "pr": 1373,
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
+    },
+    {
+      "id": "subvariant-weight-keeps-gate",
+      "version": "0.852.0",
+      "type": "fix",
+      "title": "Editor: changing a sub-variant's weight no longer resets its level gate",
+      "summary": "In the editor's Sub-Variants panel, stepping or typing a member's weight used to wipe that member's min/max Diff-Level gate, its phase selection and any Stage link back to defaults. Weight edits now change only the weight.",
+      "highlights": [
+        "Sub-variant weight edits keep min/max level, phases and Stage links intact"
+      ],
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
+    },
+    {
+      "id": "more-trap-carriages",
+      "version": "0.853.0",
+      "type": "content",
+      "title": "More traps on the train",
+      "summary": "The trap carriages have company. Several new traps now ride the train, spread across the journey so the early carriages stay forgiving and the later ones don't. Watch your step.",
+      "highlights": [
+        "New trap carriages, from mild to mean",
+        "Traps are tuned to how far along the train you are"
+      ],
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
+    },
+    {
+      "id": "train-editor-midday-clock",
+      "version": "0.854.0",
+      "type": "feat",
+      "title": "Train Editor rests at midday; a dimensional carriage's Sky takes over while you stand in it",
+      "summary": "The Train Editor now holds a stopped noon so every build is authored under the same light. Stand in a dimensional-carriage plot whose Sky is Day/Night and the clock runs at 10x \u2014 a full day in two minutes \u2014 then snaps back to noon when you step out. Rooms under a Nether or End sky now fog to match (wastes red / End dark), on the plot and in the live carriage alike.",
+      "highlights": [
+        "Editor world: day/night cycle off, clock rests at midday",
+        "Day/Night sky plots run the clock at 10x while you stand in them",
+        "Nether and End skies colour the room's fog, in the editor and in play"
+      ],
+      "date": "2026-09-12",
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
+    },
+    {
+      "id": "editor-new-copies-settings",
+      "version": "0.855.0",
+      "type": "fix",
+      "title": "Editor: New copies a template's settings, not just its blocks",
+      "summary": "Pressing New on a dimensional carriage or a carriage in the editor now carries its sky, walls, block variants and loot links across with the blocks, instead of starting the copy as a bare box.",
+      "highlights": [],
+      "pr": 1377,
       "date": "2026-09-12",
       "released": false,
       "released_in": null,

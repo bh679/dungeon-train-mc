@@ -481,21 +481,11 @@ public final class CarriageEditor {
         }
         CarriageTemplateStore.save(target, template);
 
-        // Copy the source's variant sidecar into the new variant so the
-        // duplicate shares the "pick from these blocks" authoring.
-        CarriageVariantBlocks sourceSidecar = CarriageVariantBlocks.loadFor(source, plotDims(source, dims));
-        if (!sourceSidecar.isEmpty()) {
-            CarriageVariantBlocks copy = CarriageVariantBlocks.empty();
-            for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-                copy.put(e.localPos(), e.states());
-            }
-            // Carry over the lock-id grouping so duplicated cells that share a
-            // random pick stay grouped (states pass only copies candidate lists).
-            for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
-                copy.setLockId(lk.getKey(), lk.getValue());
-            }
-            copy.save(target);
-        }
+        // Everything beside the .nbt goes with it — the variant sidecar ("pick from these blocks"
+        // authoring, lock-ids, mirror flags), the part assignments, the contents allow-list, the
+        // container links and the weights entry — so the duplicate is the source, not just its shape.
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CARRIAGE, null,
+            source.id(), target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 

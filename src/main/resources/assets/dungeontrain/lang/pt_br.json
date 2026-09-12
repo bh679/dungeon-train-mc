@@ -2189,6 +2189,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s desligou o conteúdo de trem personalizado neste mundo. Os vagões novos vão usar os modelos originais.",
   "chat.dungeontrain.custom_content.already_kept": "O conteúdo de trem personalizado já está ligado neste mundo.",
   "chat.dungeontrain.custom_content.already_disabled": "O conteúdo de trem personalizado já está desligado neste mundo.",
+  "chat.dungeontrain.lucky_loot.bonus": "Que sorte! %s item(ns) extra apareceram neste baú.",
   "gui.dungeontrain.custom_content.title": "Conteúdo de trem personalizado",
   "gui.dungeontrain.custom_content.card.custom.name": "Trem personalizado",
   "gui.dungeontrain.custom_content.card.custom.tag": "Jogo Livre",
