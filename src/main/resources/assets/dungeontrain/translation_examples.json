@@ -1430,6 +1430,24 @@
       ]
     }
   },
+  "chat.dungeontrain.portal_builder.7": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.8": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
   "chat.dungeontrain.presence.last_seen": {
     "1": {
       "label": "how long ago, as a whole clause",

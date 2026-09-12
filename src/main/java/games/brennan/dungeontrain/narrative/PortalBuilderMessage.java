@@ -28,7 +28,7 @@ public final class PortalBuilderMessage {
     private static final String KEY = "chat.dungeontrain.portal_builder.";
 
     /** How many {@code KEY}{@code <n>} variants exist, 1-based. */
-    private static final int VARIANTS = 6;
+    private static final int VARIANTS = 8;
 
     /** Key for the line shown when the credited builder is the player themselves. */
     private static final String SELF_KEY = KEY + "self";

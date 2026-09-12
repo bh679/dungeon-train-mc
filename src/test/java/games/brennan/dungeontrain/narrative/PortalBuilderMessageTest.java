@@ -41,7 +41,7 @@ class PortalBuilderMessageTest {
             assertEquals("Faulthurst", ((Component) t.getArgs()[0]).getString());
             keys.add(t.getKey());
         }
-        assertEquals(6, keys.size(), keys.toString());
+        assertEquals(8, keys.size(), keys.toString());
     }
 
     @Test
