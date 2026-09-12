@@ -9,8 +9,8 @@ import java.util.Optional;
  * <p>Distinct from {@link games.brennan.dungeontrain.client.version.SemverCompare}, which ignores
  * PATCH on purpose so the title-screen badge does not nag during the auto-release cascade. Here
  * the question is "how many releases apart are these", and every release is a distinct value, so
- * nothing is ignored. A leading {@code v} is tolerated; anything else that is not
- * {@code digits.digits.digits} is rejected rather than guessed at.</p>
+ * nothing is ignored. A leading {@code v} and trailing {@code +build} metadata are tolerated; anything
+ * else that is not {@code digits.digits.digits} is rejected rather than guessed at.</p>
  */
 public record FullSemver(int major, int minor, int patch) implements Comparable<FullSemver> {
 
@@ -26,6 +26,11 @@ public record FullSemver(int major, int minor, int patch) implements Comparable<
         String s = text.strip();
         if (s.startsWith("v") || s.startsWith("V")) {
             s = s.substring(1);
+        }
+        // Build metadata ("0.52.0+neoforge-1.21.1") is ignorable by definition; the siblings' uploads carry it.
+        int plus = s.indexOf('+');
+        if (plus >= 0) {
+            s = s.substring(0, plus);
         }
         String[] parts = s.split("\\.", -1);
         if (parts.length != 3) {

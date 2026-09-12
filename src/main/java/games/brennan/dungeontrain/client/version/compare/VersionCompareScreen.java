@@ -52,18 +52,34 @@ public final class VersionCompareScreen extends Screen {
     private static final int MAX_W = 420;
     private static final int PANE_BG = 0x66000000;
 
-    /** What a row stands for: the installed build, or one platform's newest listing. */
-    private record Row(@Nullable Platform platform, @Nullable FullSemver version,
+    private static final String KEY_INSTALLED = "installed";
+    private static final String KEY_SIBLINGS = "siblings";
+
+    /**
+     * What a row stands for: the installed build, one platform's newest listing, or the companion
+     * mods. {@code key} is the row's identity across rebuilds; {@code version} is null for rows that
+     * are not one version (loading, unavailable, the companion summary).
+     */
+    private record Row(String key, @Nullable FullSemver version,
                        Component heading, Component detail, boolean available) {
-        boolean isInstalled() { return platform == null; }
+        boolean isInstalled() { return KEY_INSTALLED.equals(key); }
+        boolean isSiblings() { return KEY_SIBLINGS.equals(key); }
+    }
+
+    /** One companion mod's standing: what is installed and what Modrinth lists as newest. */
+    private record SiblingStanding(SiblingMod mod, FullSemver installed, @Nullable PlatformVersions listing,
+                                   VersionCompareState.Status status) {
+        boolean behind() {
+            return listing != null && listing.countNewerThan(installed) > 0;
+        }
     }
 
     private final Screen parent;
     private final Platform launcher = Platform.current();
     private final Optional<FullSemver> installed = FullSemver.parse(VersionInfo.VERSION);
 
-    /** Identity of the selected row across rebuilds: the platform, or {@code null} for installed. */
-    @Nullable private Platform selected;
+    /** Identity of the selected row across rebuilds — a {@link Row#key()}. */
+    @Nullable private String selected;
     private boolean selectionMade;
 
     private List<Row> rows = List.of();
@@ -89,7 +105,7 @@ public final class VersionCompareScreen extends Screen {
         int x = (this.width - w) / 2;
         int y = TOP;
         for (Row row : rows) {
-            boolean isSelected = row.platform() == selected;
+            boolean isSelected = row.key().equals(selected);
             addRenderableWidget(new VersionRowButton(x, y, w, row.heading(), row.detail(),
                     !row.available(), isSelected, b -> onRowClick(row)));
             y += VersionRowButton.HEIGHT + ROW_GAP;
@@ -125,7 +141,7 @@ public final class VersionCompareScreen extends Screen {
         if (!row.available() && !row.isInstalled()) {
             VersionCompareState.ensureFetched();
         }
-        selected = row.platform();
+        selected = row.key();
         selectionMade = true;
         rebuildWidgets();
         if (notes != null) {
@@ -139,9 +155,9 @@ public final class VersionCompareScreen extends Screen {
     }
 
     @Nullable
-    private Row rowFor(@Nullable Platform platform) {
+    private Row rowFor(@Nullable String key) {
         for (Row row : rows) {
-            if (row.platform() == platform) {
+            if (row.key().equals(key)) {
                 return row;
             }
         }
@@ -166,6 +182,10 @@ public final class VersionCompareScreen extends Screen {
         if (otherAhead) {
             out.add(platformRow(launcher.other(), theirsLatest, mineLatest, false));
         }
+        List<SiblingStanding> siblings = siblingStandings();
+        if (!siblings.isEmpty()) {
+            out.add(siblingsRow(siblings));
+        }
         return List.copyOf(out);
     }
 
@@ -188,7 +208,7 @@ public final class VersionCompareScreen extends Screen {
                 detail = Component.translatable(KEY + "behind", count(behind));
             }
         }
-        return new Row(null, installed.orElse(null), heading, detail, true);
+        return new Row(KEY_INSTALLED, installed.orElse(null), heading, detail, true);
     }
 
     private Row platformRow(Platform platform, Optional<FullSemver> latest, Optional<FullSemver> otherLatest,
@@ -200,7 +220,7 @@ public final class VersionCompareScreen extends Screen {
             Component detail = status == VersionCompareState.Status.ERROR
                     ? Component.translatable(KEY + "platform.unavailable")
                     : Component.translatable(KEY + "platform.loading");
-            return new Row(platform, null, heading, detail, false);
+            return new Row(platform.name(), null, heading, detail, false);
         }
         Component heading = Component.translatable(KEY + "platform.latest", name, latest.get().toString());
         Component detail;
@@ -213,7 +233,69 @@ public final class VersionCompareScreen extends Screen {
         } else {
             detail = Component.translatable(KEY + "platform.newer", platform.other().displayName());
         }
-        return new Row(platform, latest.get(), heading, detail, true);
+        return new Row(platform.name(), latest.get(), heading, detail, true);
+    }
+
+    // ---- companion mods -----------------------------------------------------------------------
+
+    /** Every sibling on this client, in roster order. Absent siblings have nothing to say. */
+    private static List<SiblingStanding> siblingStandings() {
+        List<SiblingStanding> out = new ArrayList<>();
+        for (SiblingMod mod : SiblingMod.values()) {
+            Optional<FullSemver> installed = mod.installedVersion();
+            if (installed.isEmpty()) continue;
+            out.add(new SiblingStanding(mod, installed.get(),
+                    VersionCompareState.siblingVersions(mod).orElse(null),
+                    VersionCompareState.siblingStatus(mod)));
+        }
+        return out;
+    }
+
+    private Row siblingsRow(List<SiblingStanding> siblings) {
+        Component heading = Component.translatable(KEY + "siblings");
+        long behind = siblings.stream().filter(SiblingStanding::behind).count();
+        boolean anyLoading = siblings.stream().anyMatch(s -> s.status() == VersionCompareState.Status.LOADING);
+        boolean anyFailed = siblings.stream().anyMatch(s -> s.status() == VersionCompareState.Status.ERROR);
+        Component detail;
+        boolean available = true;
+        if (behind > 0) {
+            detail = PluralRules.clause(ClientLanguage.selected(), KEY + "siblings.updates", behind);
+        } else if (anyLoading) {
+            detail = Component.translatable(KEY + "platform.loading");
+            available = false;
+        } else if (anyFailed) {
+            detail = Component.translatable(KEY + "platform.unavailable");
+            available = false;
+        } else {
+            detail = Component.translatable(KEY + "siblings.uptodate", siblings.size());
+        }
+        return new Row(KEY_SIBLINGS, null, heading, detail, available);
+    }
+
+    /** One block per companion: its standing, then for a lagging one the notes it is missing. */
+    private static List<ShaderDetailPane.Line> siblingNotes() {
+        List<ShaderDetailPane.Line> out = new ArrayList<>();
+        for (SiblingStanding s : siblingStandings()) {
+            String name = s.mod().displayName();
+            String have = s.installed().toString();
+            if (s.listing() == null) {
+                Component text = Component.translatable(KEY + "siblings.mod.unknown", name, have,
+                        Component.translatable(s.status() == VersionCompareState.Status.ERROR
+                                ? KEY + "platform.unavailable" : KEY + "platform.loading"));
+                out.add(new ShaderDetailPane.Line(text, ChangelogLines.COLOUR_MUTED));
+                continue;
+            }
+            Optional<FullSemver> latest = s.listing().latest().map(ReleaseEntry::version);
+            if (!s.behind() || latest.isEmpty()) {
+                out.add(new ShaderDetailPane.Line(
+                        Component.translatable(KEY + "siblings.mod.uptodate", name, have), ChangelogLines.COLOUR_BULLET));
+                continue;
+            }
+            out.add(ChangelogLines.heading(Component.translatable(KEY + "siblings.mod.update", name, have,
+                    latest.get().toString())));
+            out.addAll(ChangelogLines.forEntries(s.listing().entriesBetween(s.installed(), latest.get())));
+        }
+        return out;
     }
 
     /** How many of {@code counter}'s listed versions are newer than {@code version}. */
@@ -232,7 +314,7 @@ public final class VersionCompareScreen extends Screen {
     }
 
     @Nullable
-    private static Platform defaultSelection(List<Row> rows) {
+    private static String defaultSelection(List<Row> rows) {
         Row best = null;
         for (Row row : rows) {
             if (row.version() == null) continue;
@@ -240,12 +322,15 @@ public final class VersionCompareScreen extends Screen {
                 best = row;
             }
         }
-        return best == null ? null : best.platform();
+        return best == null ? null : best.key();
     }
 
     // ---- notes ------------------------------------------------------------------------------
 
     private List<ShaderDetailPane.Line> notesFor(@Nullable Row row) {
+        if (row != null && row.isSiblings()) {
+            return siblingNotes();
+        }
         if (row == null || row.version() == null) {
             return List.of();
         }

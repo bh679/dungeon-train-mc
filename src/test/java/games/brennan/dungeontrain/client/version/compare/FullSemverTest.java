@@ -14,6 +14,7 @@ class FullSemverTest {
         assertEquals(new FullSemver(0, 849, 0), FullSemver.parse("0.849.0").orElseThrow());
         assertEquals(new FullSemver(0, 849, 0), FullSemver.parse("v0.849.0").orElseThrow());
         assertEquals(new FullSemver(1, 2, 3), FullSemver.parse(" 1.2.3 ").orElseThrow());
+        assertEquals(new FullSemver(0, 52, 0), FullSemver.parse("v0.52.0+neoforge-1.21.1").orElseThrow());
         assertTrue(FullSemver.parse("0.849").isEmpty());
         assertTrue(FullSemver.parse("0.849.0-beta").isEmpty());
         assertTrue(FullSemver.parse("latest").isEmpty());

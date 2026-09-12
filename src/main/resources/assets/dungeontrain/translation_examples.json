@@ -4328,6 +4328,89 @@
       ]
     }
   },
+  "gui.dungeontrain.version.compare.siblings.uptodate": {
+    "1": {
+      "label": "how many companion mods are installed",
+      "examples": [
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.updates.one": {
+    "1": {
+      "label": "how many companion mods have an update",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.updates.other": {
+    "1": {
+      "label": "how many companion mods have an update",
+      "examples": [
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.mod.uptodate": {
+    "1": {
+      "label": "a companion mod's name",
+      "examples": [
+        "Trade Everything",
+        "Adventure Item Names"
+      ]
+    },
+    "2": {
+      "label": "a version number",
+      "examples": [
+        "0.9.0",
+        "0.13.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.mod.update": {
+    "1": {
+      "label": "a companion mod's name",
+      "examples": [
+        "Trade Everything",
+        "Adventure Item Names"
+      ]
+    },
+    "2": {
+      "label": "the installed version",
+      "examples": [
+        "0.9.0"
+      ]
+    },
+    "3": {
+      "label": "the newest version",
+      "examples": [
+        "0.13.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.mod.unknown": {
+    "1": {
+      "label": "a companion mod's name",
+      "examples": [
+        "Trade Everything",
+        "Adventure Item Names"
+      ]
+    },
+    "2": {
+      "label": "a version number",
+      "examples": [
+        "0.9.0",
+        "0.13.0"
+      ]
+    },
+    "3": {
+      "label": "a status line, e.g. Checking…",
+      "examples": [
+        "Checking…"
+      ]
+    }
+  },
   "gui.dungeontrain.version.compare.get": {
     "1": {
       "label": "a launcher name (Modrinth or CurseForge)",

@@ -11,6 +11,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -42,6 +43,8 @@ final class PackVersionFetcher {
     private static final URI CURSEFORGE_URL = URI.create(
             "https://api.cfwidget.com/" + CURSEFORGE_PACK_PROJECT);
 
+    private static final String MODRINTH_MOD_FILTER = "?loaders=%5B%22neoforge%22%5D&game_versions=%5B%221.21.1%22%5D";
+
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor(r -> {
@@ -63,7 +66,20 @@ final class PackVersionFetcher {
         Function<String, PlatformVersions> parser = platform == Platform.MODRINTH
                 ? VersionCatalogParser::parseModrinth
                 : VersionCatalogParser::parseCurseForge;
+        fetch("Pack versions (" + platform + ")", url, parser,
+                VersionCompareState::accept, () -> VersionCompareState.fail(platform));
+    }
 
+    /** One sibling's Modrinth listing, narrowed to this loader + Minecraft version. */
+    static void fetchSiblingAsync(SiblingMod mod) {
+        URI url = URI.create("https://api.modrinth.com/v2/project/" + mod.modrinthSlug() + "/version" + MODRINTH_MOD_FILTER);
+        fetch("Sibling versions (" + mod.modId() + ")", url, VersionCatalogParser::parseModrinth,
+                versions -> VersionCompareState.acceptSibling(mod, versions),
+                () -> VersionCompareState.failSibling(mod));
+    }
+
+    private static void fetch(String what, URI url, Function<String, PlatformVersions> parser,
+                              Consumer<PlatformVersions> onOk, Runnable onFail) {
         HttpRequest req = HttpRequest.newBuilder(url)
                 .header("User-Agent", "DungeonTrain-Mod/" + VersionInfo.VERSION + " (github.com/bh679/dungeon-train-mc)")
                 .header("Accept", "application/json")
@@ -72,29 +88,29 @@ final class PackVersionFetcher {
                 .build();
 
         CLIENT.sendAsync(req, HttpResponse.BodyHandlers.ofString())
-                .thenAcceptAsync(resp -> handle(platform, resp, parser), EXECUTOR)
+                .thenAcceptAsync(resp -> handle(what, resp, parser, onOk, onFail), EXECUTOR)
                 .exceptionallyAsync(t -> {
-                    LOGGER.warn("Pack versions ({}): request failed: {}", platform, t.toString());
-                    VersionCompareState.fail(platform);
+                    LOGGER.warn("{}: request failed: {}", what, t.toString());
+                    onFail.run();
                     return null;
                 }, EXECUTOR);
     }
 
-    private static void handle(Platform platform, HttpResponse<String> resp,
-                               Function<String, PlatformVersions> parser) {
+    private static void handle(String what, HttpResponse<String> resp, Function<String, PlatformVersions> parser,
+                               Consumer<PlatformVersions> onOk, Runnable onFail) {
         if (resp.statusCode() != 200) {
-            LOGGER.warn("Pack versions ({}): HTTP {}", platform, resp.statusCode());
-            VersionCompareState.fail(platform);
+            LOGGER.warn("{}: HTTP {}", what, resp.statusCode());
+            onFail.run();
             return;
         }
         try {
             PlatformVersions versions = parser.apply(resp.body());
-            LOGGER.info("Pack versions ({}): {} listed, latest {}", platform, versions.entries().size(),
+            LOGGER.info("{}: {} listed, latest {}", what, versions.entries().size(),
                     versions.latest().map(e -> e.version().toString()).orElse("none"));
-            VersionCompareState.accept(versions);
+            onOk.accept(versions);
         } catch (RuntimeException e) {
-            LOGGER.warn("Pack versions ({}): could not parse listing", platform, e);
-            VersionCompareState.fail(platform);
+            LOGGER.warn("{}: could not parse listing", what, e);
+            onFail.run();
         }
     }
 }

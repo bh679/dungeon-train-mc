@@ -21,10 +21,14 @@ public final class VersionCompareState {
     public enum Status { LOADING, OK, ERROR }
 
     private static final Map<Platform, Slot> SLOTS = new EnumMap<>(Platform.class);
+    private static final Map<SiblingMod, Slot> SIBLINGS = new EnumMap<>(SiblingMod.class);
 
     static {
         for (Platform p : Platform.values()) {
             SLOTS.put(p, new Slot());
+        }
+        for (SiblingMod m : SiblingMod.values()) {
+            SIBLINGS.put(m, new Slot());
         }
     }
 
@@ -33,13 +37,26 @@ public final class VersionCompareState {
     /** Kick off any fetch that has not succeeded yet. Idempotent while one is in flight. */
     public static void ensureFetched() {
         for (Platform p : Platform.values()) {
-            Slot slot = SLOTS.get(p);
-            if (!slot.attempted || slot.status == Status.ERROR) {
-                slot.attempted = true;
-                slot.status = Status.LOADING;
+            if (arm(SLOTS.get(p))) {
                 PackVersionFetcher.fetchAsync(p);
             }
         }
+        for (SiblingMod m : SiblingMod.values()) {
+            // A sibling that is not on this client has nothing to compare against.
+            if (m.installedVersion().isPresent() && arm(SIBLINGS.get(m))) {
+                PackVersionFetcher.fetchSiblingAsync(m);
+            }
+        }
+    }
+
+    /** Mark a slot as in flight if it has never succeeded; false when a fetch is already running or done. */
+    private static boolean arm(Slot slot) {
+        if (slot.attempted && slot.status != Status.ERROR) {
+            return false;
+        }
+        slot.attempted = true;
+        slot.status = Status.LOADING;
+        return true;
     }
 
     public static Status status(Platform platform) {
@@ -60,6 +77,26 @@ public final class VersionCompareState {
     static void fail(Platform platform) {
         Slot slot = SLOTS.get(platform);
         slot.status = Status.ERROR;
+        notifyScreen();
+    }
+
+    public static Status siblingStatus(SiblingMod mod) {
+        return SIBLINGS.get(mod).status;
+    }
+
+    public static Optional<PlatformVersions> siblingVersions(SiblingMod mod) {
+        return Optional.ofNullable(SIBLINGS.get(mod).versions);
+    }
+
+    static void acceptSibling(SiblingMod mod, PlatformVersions versions) {
+        Slot slot = SIBLINGS.get(mod);
+        slot.versions = versions;
+        slot.status = Status.OK;
+        notifyScreen();
+    }
+
+    static void failSibling(SiblingMod mod) {
+        SIBLINGS.get(mod).status = Status.ERROR;
         notifyScreen();
     }
 

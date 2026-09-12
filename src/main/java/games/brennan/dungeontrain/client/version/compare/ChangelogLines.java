@@ -73,7 +73,12 @@ public final class ChangelogLines {
     }
 
     private static ShaderDetailPane.Line heading(String text) {
-        return new ShaderDetailPane.Line(Component.literal(text).withStyle(ChatFormatting.BOLD), COLOUR_HEADING);
+        return heading(Component.literal(text));
+    }
+
+    /** A gold, bold heading line — the same weight the version headings get. */
+    static ShaderDetailPane.Line heading(Component text) {
+        return new ShaderDetailPane.Line(text.copy().withStyle(ChatFormatting.BOLD), COLOUR_HEADING);
     }
 
     /** Drop the inline markers we do not render: bold, italics, code, and link syntax. */
