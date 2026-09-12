@@ -4642,9 +4642,14 @@ public final class EditorCommand {
             CarriageContentsEditor.enter(player, contents, shell);
             final CarriageVariant shellUsed = CarriageContentsEditor.resolveShellOrDefault(shellRaw);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+            // Echo the display label when one is set (id in parens) so chat matches the panels.
+            final String label = CarriageContentsWeights.current().nameFor(contents.id());
+            final String shown = label.equals(contents.id())
+                ? "'" + contents.id() + "'"
+                : "'" + label + "' (id " + contents.id() + ")";
             source.sendSuccess(() -> Component.literal(
-                "Editor: entered contents '" + contents.id()
-                    + "' (shell=" + shellUsed.id() + ") plot at "
+                "Editor: entered contents " + shown
+                    + " (shell=" + shellUsed.id() + ") plot at "
                     + CarriageContentsEditor.plotOrigin(contents, dims)
             ), true);
             return 1;
