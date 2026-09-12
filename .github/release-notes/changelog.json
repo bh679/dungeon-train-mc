@@ -12306,9 +12306,9 @@
       "version": "0.850.0",
       "type": "feat",
       "title": "Luck potions add bonus loot to train chests",
-      "summary": "Drink a Luck potion before opening chests and barrels on the train and the first open turns up extra loot on top of what's already there: 3\u20137 extra items with Luck I, 5\u201310 with Luck II. The bonus is drawn from the same loot pool as the chest, so it fits the carriage you're in. It's decided on the first open \u2014 a chest looted without Luck stays as it was.",
+      "summary": "Drink a Luck potion before opening chests and barrels on the train and the first open turns up extra loot on top of what's already there \u2014 and the stronger the Luck, the more turns up. The bonus is drawn from the same loot pool as the chest, so it fits the carriage you're in. It's decided on the first open \u2014 a chest looted without Luck stays as it was.",
       "highlights": [
-        "Luck I: 3\u20137 bonus items on a chest's first open; Luck II: 5\u201310",
+        "Luck potions add extra items to a chest's first open; stronger Luck, more items",
         "Bonus loot is themed to the chest's own pool and never replaces what was already inside",
         "Decided on first open \u2014 no farming already-looted chests with a potion"
       ],
