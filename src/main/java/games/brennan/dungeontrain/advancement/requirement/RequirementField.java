@@ -36,9 +36,21 @@ public enum RequirementField {
     public static final long TICKS_PER_HOUR = 72_000L;
     private static final long HOURS_PER_DAY = 24L;
 
-    /** Lang keys the tick argument renders through — plural-aware, one per whole-unit form. */
+    /**
+     * Lang keys the tick argument renders through. The description is ONE component sent to every
+     * client, so the grammatical form cannot be chosen per recipient the way {@code PluralRules}
+     * does for chat lines. Instead each key has three fixed forms every locale fills in —
+     * {@code .single} (1), {@code .some} (2–4) and {@code .plural} (everything else) — which is
+     * enough to read correctly for the counts DT ships in every language it ships (the 2–4 band is
+     * what Russian, Polish and Romanian need for "2 часа" vs "5 часов"). Deliberately NOT the
+     * reserved CLDR suffixes ({@code .one/.few/.many/.other}): those are validated per locale's
+     * rule family, and a family-less English client would then have no {@code .few} to show.
+     */
     public static final String HOURS_KEY = "dungeontrain.requirement.hours";
     public static final String DAYS_KEY = "dungeontrain.requirement.days";
+    public static final String FORM_SINGLE = ".single";
+    public static final String FORM_SOME = ".some";
+    public static final String FORM_PLURAL = ".plural";
 
     private static final NumberFormat GROUPED = NumberFormat.getIntegerInstance(Locale.US);
 
@@ -103,13 +115,20 @@ public enum RequirementField {
         return pluralTranslatable(HOURS_KEY, pluralCount, shown);
     }
 
-    /** {@code {translate: key.one|key.other, with:[shown]}} — the mod's plural-key convention. */
+    /** {@code {translate: key.single|key.some|key.plural, with:[shown]}}. */
     private static JsonElement pluralTranslatable(String key, long count, String shown) {
         JsonObject o = new JsonObject();
-        o.addProperty("translate", key + (count == 1 ? ".one" : ".other"));
+        o.addProperty("translate", key + formSuffix(count));
         JsonArray with = new JsonArray();
         with.add(shown);
         o.add("with", with);
         return o;
+    }
+
+    /** {@link #FORM_SINGLE} for 1, {@link #FORM_SOME} for 2–4, {@link #FORM_PLURAL} otherwise. */
+    public static String formSuffix(long count) {
+        if (count == 1) return FORM_SINGLE;
+        if (count >= 2 && count <= 4) return FORM_SOME;
+        return FORM_PLURAL;
     }
 }

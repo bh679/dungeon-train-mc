@@ -79,18 +79,18 @@ final class RequirementJsonRewriterTest {
         JsonObject desc = RequirementJsonRewriter.rewrite(obj(json), null).json()
             .getAsJsonObject("display").getAsJsonObject("description");
         JsonObject arg = desc.getAsJsonArray("with").get(0).getAsJsonObject();
-        assertEquals(RequirementField.HOURS_KEY + ".other", arg.get("translate").getAsString());
+        assertEquals(RequirementField.HOURS_KEY + ".some", arg.get("translate").getAsString());
         assertEquals("2", arg.getAsJsonArray("with").get(0).getAsString());
 
         JsonObject one = RequirementJsonRewriter.rewrite(obj(json), 72000L).json()
             .getAsJsonObject("display").getAsJsonObject("description")
             .getAsJsonArray("with").get(0).getAsJsonObject();
-        assertEquals(RequirementField.HOURS_KEY + ".one", one.get("translate").getAsString());
+        assertEquals(RequirementField.HOURS_KEY + ".single", one.get("translate").getAsString());
 
         JsonObject days = RequirementJsonRewriter.rewrite(obj(json), 5_184_000L).json()
             .getAsJsonObject("display").getAsJsonObject("description")
             .getAsJsonArray("with").get(0).getAsJsonObject();
-        assertEquals(RequirementField.DAYS_KEY + ".other", days.get("translate").getAsString());
+        assertEquals(RequirementField.DAYS_KEY + ".some", days.get("translate").getAsString());
         assertEquals("3", days.getAsJsonArray("with").get(0).getAsString());
     }
 
