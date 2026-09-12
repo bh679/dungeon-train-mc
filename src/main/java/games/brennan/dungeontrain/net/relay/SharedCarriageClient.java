@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -14,6 +15,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -176,6 +178,22 @@ public final class SharedCarriageClient {
                                                                        String text, String stage, String mode,
                                                                        String kind, String subKind, String buildName,
                                                                        String visibility, String sidecars) {
+        return submitBuild(ownerUuid, ownerName, blocksBase64, l, h, w, text, stage, mode, kind, subKind,
+                buildName, visibility, sidecars, null);
+    }
+
+    /**
+     * As above, carrying the loot prefabs the build's chests link to as well.
+     *
+     * @param lootPrefabs the document from {@code TemplateLootPrefabs.collect}; null or empty says
+     *                    nothing, and the relay leaves the build's prefab links as they were
+     */
+    public static CompletableFuture<Optional<BuildUpload>> submitBuild(String ownerUuid, String ownerName,
+                                                                       String blocksBase64, int l, int h, int w,
+                                                                       String text, String stage, String mode,
+                                                                       String kind, String subKind, String buildName,
+                                                                       String visibility, String sidecars,
+                                                                       String lootPrefabs) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
         if (ownerName != null && !ownerName.isEmpty()) body.addProperty("name", ownerName);
@@ -189,6 +207,7 @@ public final class SharedCarriageClient {
         // contents allow-lists, weights (a portal room's door position among them). Opaque to the
         // relay, which stores and returns it verbatim.
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        addLootPrefabs(body, lootPrefabs);
         body.addProperty("kind", kind == null ? "" : kind);
         if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
         if (buildName != null && !buildName.isEmpty()) body.addProperty("buildName", buildName);
@@ -610,7 +629,20 @@ public final class SharedCarriageClient {
      */
     public record BuildFetch(int id, String kind, String subKind, String buildName, String stage,
                              String visibility, String blocks, int l, int h, int w, int baseSeq,
-                             List<DeltaRec> deltas, String secret, String sidecars) {
+                             List<DeltaRec> deltas, String secret, String sidecars,
+                             Map<String, String> lootPrefabs) {
+
+        public BuildFetch {
+            lootPrefabs = lootPrefabs == null ? Map.of() : Map.copyOf(lootPrefabs);
+        }
+
+        /** A fetch from a relay that said nothing about loot prefabs. */
+        public BuildFetch(int id, String kind, String subKind, String buildName, String stage,
+                          String visibility, String blocks, int l, int h, int w, int baseSeq,
+                          List<DeltaRec> deltas, String secret, String sidecars) {
+            this(id, kind, subKind, buildName, stage, visibility, blocks, l, h, w, baseSeq, deltas,
+                    secret, sidecars, Map.of());
+        }
 
         /** Whether the relay has this build out on the train rather than sitting in the profile. */
         public boolean published() {
@@ -668,7 +700,10 @@ public final class SharedCarriageClient {
                     // Empty from a relay that predates the field, which reads as "said nothing" all
                     // the way down to TemplateSidecars.apply — an install that leaves local sidecars
                     // exactly as they were rather than clearing them.
-                    parseDeltas(o), str(o, "secret"), str(o, "sidecars")));
+                    parseDeltas(o), str(o, "secret"), str(o, "sidecars"),
+                    // Empty from a relay that predates the field — "nothing to install", the same
+                    // way blank sidecars read as "leave mine alone".
+                    TemplateLootPrefabs.decode(o.get("lootPrefabs"))));
         });
     }
 
@@ -910,6 +945,12 @@ public final class SharedCarriageClient {
      */
     public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
                                                      int baseSeq, String sidecars) {
+        return save(id, token, blocksBase64, text, baseSeq, sidecars, null);
+    }
+
+    /** As above, with the loot prefabs the build's chests link to — see {@link #submitBuild}. */
+    public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
+                                                     int baseSeq, String sidecars, String lootPrefabs) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("token", token);
@@ -917,7 +958,24 @@ public final class SharedCarriageClient {
         body.addProperty("baseSeq", baseSeq);
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        addLootPrefabs(body, lootPrefabs);
         return statusPost("/carriages/save", body);
+    }
+
+    /**
+     * The {@code lootPrefabs} field: the prefab document is a JSON object of id → file text, sent as
+     * an object rather than a string so the relay can file each prefab under the author without a
+     * second parse. Silence (null/blank/unparseable) sends nothing, which the relay reads as
+     * "leave the links alone".
+     */
+    private static void addLootPrefabs(JsonObject body, String lootPrefabs) {
+        if (lootPrefabs == null || lootPrefabs.isBlank()) return;
+        try {
+            JsonElement doc = JsonParser.parseString(lootPrefabs);
+            if (doc.isJsonObject() && doc.getAsJsonObject().size() > 0) body.add("lootPrefabs", doc);
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Loot prefabs document would not parse — sending the build without it");
+        }
     }
 
     /**
@@ -950,6 +1008,13 @@ public final class SharedCarriageClient {
      */
     public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
                                                           String text, int baseSeq, String sidecars) {
+        return ownerSave(id, secret, blocksBase64, text, baseSeq, sidecars, null);
+    }
+
+    /** As above, with the loot prefabs the build's chests link to — see {@link #submitBuild}. */
+    public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq, String sidecars,
+                                                          String lootPrefabs) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
@@ -958,6 +1023,7 @@ public final class SharedCarriageClient {
         body.addProperty("world", WORLD);
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
+        addLootPrefabs(body, lootPrefabs);
         return statusPost("/carriages/owner-save", body);
     }
 

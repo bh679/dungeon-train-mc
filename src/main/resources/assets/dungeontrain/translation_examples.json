@@ -2938,6 +2938,90 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.prefab_conflict.hint": {
+    "1": {
+      "label": "the build being loaded",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.block": {
+    "1": {
+      "label": "the container block the prefab was saved on",
+      "examples": [
+        "Chest",
+        "Barrel"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.fill": {
+    "1": {
+      "label": "the fewest slots filled",
+      "examples": [
+        "0",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the most slots filled",
+      "examples": [
+        "5",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.fill_all": {
+    "1": {
+      "label": "the fewest slots filled",
+      "examples": [
+        "0",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.entry": {
+    "1": {
+      "label": "how many of the item",
+      "examples": [
+        "3",
+        "16"
+      ]
+    },
+    "2": {
+      "label": "the item",
+      "examples": [
+        "Gold Ingot",
+        "Diamond"
+      ]
+    },
+    "3": {
+      "label": "the entry's weight",
+      "examples": [
+        "10",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.renamed_to": {
+    "1": {
+      "label": "the new name their version will be saved under",
+      "examples": [
+        "test2_2",
+        "gold_relay"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.rename_prompt": {
+    "1": {
+      "label": "the prefab being renamed",
+      "examples": [
+        "Test2",
+        "Gold"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.upload_failed": {
     "1": {
       "label": "the build that saved locally but could not be uploaded",

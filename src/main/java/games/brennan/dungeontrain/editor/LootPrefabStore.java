@@ -314,6 +314,71 @@ public final class LootPrefabStore {
         LOAD_CACHE.clear();
     }
 
+    // ---- text-level access, for prefabs that travel with a relay build ----
+
+    /**
+     * Parse one prefab from its file text, without touching the store. Empty on anything that is
+     * not a readable prefab document — the caller is comparing or previewing, and a document that
+     * will not parse is one it should say nothing about.
+     */
+    public static Optional<Data> parse(String id, String jsonText) {
+        if (id == null || jsonText == null || jsonText.isBlank()) return Optional.empty();
+        try (Reader r = new java.io.StringReader(jsonText)) {
+            return parseData(r, id.toLowerCase(Locale.ROOT));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    /** Whether this install holds {@code id} in the config tier (user-authored, or an override). */
+    public static boolean hasConfigFile(String id) {
+        return id != null && UserContentPaths.findFile(SUBDIR, id.toLowerCase(Locale.ROOT) + EXT) != null;
+    }
+
+    /**
+     * The text of prefab {@code id} as this install has it — the config tier first, then the
+     * bundled resource — or empty when it has neither. The same resolution order {@link #load}
+     * uses, at the level of the file rather than the parsed pool.
+     */
+    public static Optional<String> localText(String id) {
+        if (id == null) return Optional.empty();
+        String key = id.toLowerCase(Locale.ROOT);
+        Path file = UserContentPaths.findFile(SUBDIR, key + EXT);
+        try {
+            if (file != null) return Optional.of(Files.readString(file, StandardCharsets.UTF_8));
+            try (InputStream in = LootPrefabStore.class.getResourceAsStream(bundledResourceFor(key))) {
+                if (in == null) return Optional.empty();
+                return Optional.of(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+            }
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Could not read loot prefab '{}': {}", key, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Write prefab {@code id} into the config tier from its file text, verbatim, and register it.
+     * The relay-install counterpart of {@link #save}: the text is another install's file, already
+     * in the store's own format, and re-encoding it here would make this a second writer to keep
+     * in step with {@link #toJsonText}. Validated by parsing first — a document that will not parse
+     * is refused rather than filed where {@link #load} would choke on it.
+     */
+    public static synchronized void writeText(String id, String jsonText) throws IOException {
+        if (!isValidName(id)) {
+            throw new IOException("Invalid prefab name '" + id + "' — must match " + NAME_PATTERN.pattern());
+        }
+        if (parse(id, jsonText).isEmpty()) {
+            throw new IOException("Loot prefab '" + id + "' is not a readable prefab document");
+        }
+        String key = id.toLowerCase(Locale.ROOT);
+        Path file = fileFor(key);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, jsonText, StandardCharsets.UTF_8);
+        IDS.add(key);
+        LOAD_CACHE.remove(key);
+        LOGGER.info("[DungeonTrain] Installed loot prefab '{}' at {}", key, file);
+    }
+
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
         reload();

@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
+import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -30,15 +31,35 @@ import java.util.List;
  */
 public record BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome outcome, String kindId,
                                                  String id, String subKind,
-                                                 List<String> takenNames) implements CustomPacketPayload {
+                                                 List<String> takenNames,
+                                                 List<TemplateLootPrefabs.Conflict> conflicts)
+        implements CustomPacketPayload {
 
     /** As many names as a naming prompt could ever usefully show — a guard on the wire, not a rule. */
     private static final int MAX_TAKEN_NAMES = 512;
+    /** As many prefabs as one build may carry (TemplateLootPrefabs.MAX_PER_BUILD). */
+    static final int MAX_CONFLICTS = 64;
+    /**
+     * Cap on one side of one conflict's text — the largest {@code writeUtf} allows. A real prefab is
+     * a few hundred bytes; past this the text is cut and the screen says it cannot show it.
+     */
+    static final int MAX_CONFLICT_TEXT = 32767;
+
+    public BuilderProfileDownloadResultPacket {
+        takenNames = takenNames == null ? List.of() : List.copyOf(takenNames);
+        conflicts = conflicts == null ? List.of() : List.copyOf(conflicts);
+    }
 
     /** An answer that asks for no name, and so carries none. */
     public BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome outcome, String kindId,
                                               String id, String subKind) {
-        this(outcome, kindId, id, subKind, List.of());
+        this(outcome, kindId, id, subKind, List.of(), List.of());
+    }
+
+    /** An answer that asks about names but not prefabs. */
+    public BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome outcome, String kindId,
+                                              String id, String subKind, List<String> takenNames) {
+        this(outcome, kindId, id, subKind, takenNames, List.of());
     }
 
     public static final Type<BuilderProfileDownloadResultPacket> TYPE =
@@ -56,19 +77,41 @@ public record BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome ou
                                 ? packet.takenNames.subList(0, MAX_TAKEN_NAMES)
                                 : packet.takenNames,
                         (b, name) -> b.writeUtf(name, 32));
+                buf.writeCollection(
+                        packet.conflicts.size() > MAX_CONFLICTS
+                                ? packet.conflicts.subList(0, MAX_CONFLICTS)
+                                : packet.conflicts,
+                        (b, c) -> {
+                            b.writeUtf(c.id(), 32);
+                            b.writeUtf(clip(c.localText()), MAX_CONFLICT_TEXT);
+                            b.writeUtf(clip(c.incomingText()), MAX_CONFLICT_TEXT);
+                        });
             },
             buf -> new BuilderProfileDownloadResultPacket(
                     buf.readEnum(BuilderRelayDownload.Outcome.class),
                     buf.readUtf(16), buf.readUtf(64), buf.readUtf(32),
                     buf.readCollection(size -> new ArrayList<String>(Math.min(size, MAX_TAKEN_NAMES)),
-                            b -> b.readUtf(32)))
+                            b -> b.readUtf(32)),
+                    buf.readCollection(size -> new ArrayList<TemplateLootPrefabs.Conflict>(Math.min(size, MAX_CONFLICTS)),
+                            b -> new TemplateLootPrefabs.Conflict(b.readUtf(32),
+                                    b.readUtf(MAX_CONFLICT_TEXT), b.readUtf(MAX_CONFLICT_TEXT))))
         );
+
+    /**
+     * A conflict text the wire can carry. Cut rather than dropped: the screen still lists the
+     * prefab and offers the choice, it just cannot show what is inside (a cut file will not parse).
+     */
+    static String clip(String text) {
+        if (text == null) return "";
+        return text.length() > MAX_CONFLICT_TEXT ? text.substring(0, MAX_CONFLICT_TEXT) : text;
+    }
 
     /** The wire form of one {@link BuilderRelayDownload.Result}. */
     public static BuilderProfileDownloadResultPacket of(BuilderRelayDownload.Result result) {
         BuilderPhotoPaths.Kind kind = result.kind();
         return new BuilderProfileDownloadResultPacket(result.outcome(),
-                kind == null ? "" : kind.id(), result.id(), result.subKind(), result.takenNames());
+                kind == null ? "" : kind.id(), result.id(), result.subKind(), result.takenNames(),
+                result.conflicts());
     }
 
     @Override
