@@ -2130,6 +2130,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s mematikan konten kereta buatan sendiri untuk dunia ini. Gerbong baru akan memakai rancangan bawaan.",
   "chat.dungeontrain.custom_content.already_kept": "Konten kereta buatan sendiri sudah menyala untuk dunia ini.",
   "chat.dungeontrain.custom_content.already_disabled": "Konten kereta buatan sendiri sudah mati untuk dunia ini.",
+  "chat.dungeontrain.lucky_loot.bonus": "Beruntung! %s item tambahan muncul di peti ini.",
   "gui.dungeontrain.custom_content.title": "Konten kereta buatan sendiri",
   "gui.dungeontrain.custom_content.card.custom.name": "Kereta Buatan Sendiri",
   "gui.dungeontrain.custom_content.card.custom.tag": "Permainan Bebas",

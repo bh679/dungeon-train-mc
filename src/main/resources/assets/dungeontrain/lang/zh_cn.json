@@ -2144,6 +2144,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s 关闭了本世界的自定义列车内容。新车厢将使用内置设计。",
   "chat.dungeontrain.custom_content.already_kept": "本世界的自定义列车内容已经是开启状态。",
   "chat.dungeontrain.custom_content.already_disabled": "本世界的自定义列车内容已经是关闭状态。",
+  "chat.dungeontrain.lucky_loot.bonus": "好运！这个箱子里多出了 %s 件物品。",
   "gui.dungeontrain.custom_content.title": "自定义列车内容",
   "gui.dungeontrain.custom_content.card.custom.name": "自定义列车",
   "gui.dungeontrain.custom_content.card.custom.tag": "自由游玩",

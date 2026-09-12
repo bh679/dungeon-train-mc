@@ -1201,6 +1201,7 @@
       "gui.dungeontrain.translate.edit.blocked.bare_percent",
       "gui.dungeontrain.translate.edit.blocked.missing_vars",
       "gui.dungeontrain.translate.edit.blocked.extra_vars",
+      "chat.dungeontrain.lucky_loot.bonus",
       "gui.dungeontrain.options.confirm_build_restore",
       "gui.dungeontrain.options.confirm_build_restore.tip",
       "gui.dungeontrain.options.clear_backups.confirm.both",

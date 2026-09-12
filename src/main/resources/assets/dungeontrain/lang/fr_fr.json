@@ -2162,6 +2162,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s a désactivé le contenu de train personnalisé dans ce monde. Les nouveaux wagons utiliseront les modèles d'origine.",
   "chat.dungeontrain.custom_content.already_kept": "Le contenu de train personnalisé est déjà activé dans ce monde.",
   "chat.dungeontrain.custom_content.already_disabled": "Le contenu de train personnalisé est déjà désactivé dans ce monde.",
+  "chat.dungeontrain.lucky_loot.bonus": "Quelle chance ! %s objet(s) en plus sont apparus dans ce coffre.",
   "gui.dungeontrain.custom_content.title": "Contenu de train personnalisé",
   "gui.dungeontrain.custom_content.card.custom.name": "Train personnalisé",
   "gui.dungeontrain.custom_content.card.custom.tag": "Jeu Libre",

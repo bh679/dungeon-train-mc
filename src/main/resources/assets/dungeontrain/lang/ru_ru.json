@@ -2194,6 +2194,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s выключил пользовательский контент поезда для этого мира. Новые вагоны будут иметь стандартный дизайн.",
   "chat.dungeontrain.custom_content.already_kept": "Пользовательский контент уже включён для мира.",
   "chat.dungeontrain.custom_content.already_disabled": "Пользовательский контент уже выключён для мира.",
+  "chat.dungeontrain.lucky_loot.bonus": "Повезло! В этом сундуке появилось ещё %s предмет(ов).",
   "gui.dungeontrain.custom_content.title": "Пользовательский контент поезда",
   "gui.dungeontrain.custom_content.card.custom.name": "Пользовательский поезд",
   "gui.dungeontrain.custom_content.card.custom.tag": "Свободная игра",

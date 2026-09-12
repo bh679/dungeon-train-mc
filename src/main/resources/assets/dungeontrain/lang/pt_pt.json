@@ -2162,6 +2162,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s desligou o conteúdo de comboio personalizado neste mundo. As carruagens novas vão usar os modelos originais.",
   "chat.dungeontrain.custom_content.already_kept": "O conteúdo de comboio personalizado já está ligado neste mundo.",
   "chat.dungeontrain.custom_content.already_disabled": "O conteúdo de comboio personalizado já está desligado neste mundo.",
+  "chat.dungeontrain.lucky_loot.bonus": "Que sorte! Apareceram %s item(ns) extra neste baú.",
   "gui.dungeontrain.custom_content.title": "Conteúdo de comboio personalizado",
   "gui.dungeontrain.custom_content.card.custom.name": "Comboio personalizado",
   "gui.dungeontrain.custom_content.card.custom.tag": "Jogo Livre",

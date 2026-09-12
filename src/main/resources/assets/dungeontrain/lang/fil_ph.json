@@ -2130,6 +2130,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "In-off ni %s ang sariling nilalaman ng tren para sa mundong ito. Gagamit ng orihinal na disenyo ang mga bagong bagon.",
   "chat.dungeontrain.custom_content.already_kept": "Naka-on na ang sariling nilalaman ng tren para sa mundong ito.",
   "chat.dungeontrain.custom_content.already_disabled": "Naka-off na ang sariling nilalaman ng tren para sa mundong ito.",
+  "chat.dungeontrain.lucky_loot.bonus": "Suwerte! May %s dagdag na item na lumitaw sa kabang ito.",
   "gui.dungeontrain.custom_content.title": "Sariling nilalaman ng tren",
   "gui.dungeontrain.custom_content.card.custom.name": "Sariling Tren",
   "gui.dungeontrain.custom_content.card.custom.tag": "Malayang Paglalaro",

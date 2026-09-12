@@ -2130,6 +2130,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s ปิดเนื้อหาขบวนรถแบบกำหนดเองในโลกนี้ ตู้ใหม่จะใช้แบบที่มากับเกม",
   "chat.dungeontrain.custom_content.already_kept": "เนื้อหาขบวนรถแบบกำหนดเองเปิดอยู่แล้วในโลกนี้",
   "chat.dungeontrain.custom_content.already_disabled": "เนื้อหาขบวนรถแบบกำหนดเองปิดอยู่แล้วในโลกนี้",
+  "chat.dungeontrain.lucky_loot.bonus": "โชคดี! มีไอเทมเพิ่มอีก %s ชิ้นโผล่มาในหีบนี้",
   "gui.dungeontrain.custom_content.title": "เนื้อหาขบวนรถแบบกำหนดเอง",
   "gui.dungeontrain.custom_content.card.custom.name": "ขบวนรถแบบกำหนดเอง",
   "gui.dungeontrain.custom_content.card.custom.tag": "เล่นอิสระ",

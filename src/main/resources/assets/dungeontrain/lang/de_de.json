@@ -2162,6 +2162,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s hat eigene Zuginhalte für diese Welt abgeschaltet. Neue Waggons verwenden die eingebauten Entwürfe.",
   "chat.dungeontrain.custom_content.already_kept": "Eigene Zuginhalte sind für diese Welt bereits eingeschaltet.",
   "chat.dungeontrain.custom_content.already_disabled": "Eigene Zuginhalte sind für diese Welt bereits abgeschaltet.",
+  "chat.dungeontrain.lucky_loot.bonus": "Glück gehabt! %s zusätzliche(r) Gegenstand/Gegenstände in dieser Truhe aufgetaucht.",
   "gui.dungeontrain.custom_content.title": "Eigene Zuginhalte",
   "gui.dungeontrain.custom_content.card.custom.name": "Eigener Zug",
   "gui.dungeontrain.custom_content.card.custom.tag": "Freies Spiel",

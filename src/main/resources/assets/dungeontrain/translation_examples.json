@@ -4361,5 +4361,14 @@
         "World 1757400000000"
       ]
     }
+  },
+  "chat.dungeontrain.lucky_loot.bonus": {
+    "1": {
+      "label": "how many extra items the Luck effect added (1 to 3)",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
   }
 }

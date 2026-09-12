@@ -2162,6 +2162,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s heeft eigen treininhoud uitgezet voor deze wereld. Nieuwe wagons gebruiken de ingebouwde ontwerpen.",
   "chat.dungeontrain.custom_content.already_kept": "Eigen treininhoud staat al aan voor deze wereld.",
   "chat.dungeontrain.custom_content.already_disabled": "Eigen treininhoud staat al uit voor deze wereld.",
+  "chat.dungeontrain.lucky_loot.bonus": "Geluk gehad! Er zijn %s extra voorwerp(en) in deze kist opgedoken.",
   "gui.dungeontrain.custom_content.title": "Eigen treininhoud",
   "gui.dungeontrain.custom_content.card.custom.name": "Eigen trein",
   "gui.dungeontrain.custom_content.card.custom.tag": "Vrij Spel",
