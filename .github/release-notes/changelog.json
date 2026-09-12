@@ -12428,8 +12428,27 @@
       "released_at": null
     },
     {
-      "id": "stage-duplicate-auto-focus",
+      "id": "versions-page",
       "version": "0.858.0",
+      "type": "feat",
+      "title": "Versions page \u2014 see what you're missing, on your launcher",
+      "summary": "Click the version in the top-left of the main menu to open the new Versions page: the version you're on, the newest Dungeon Train modpack release on your launcher, and \u2014 when it's ahead \u2014 the newest on the other launcher, with the release notes for everything you've missed underneath. It counts how many versions behind you are, tells CurseForge players when CurseForge's approval queue is holding a release back that Modrinth already has, checks the companion mods (Adventure Item Names, Adventure Item Stats, Interactive Player Mobs, Ender Chest Persistence, Trade Everything) against their newest versions, and opens by itself at launch when you're behind. If you run the modpack's pinned Distant Horizons build, DH's own \"update available\" screen no longer appears at launch \u2014 the pack is tied to that build on purpose.",
+      "highlights": [
+        "Versions page from the main-menu version label: installed, newest on your launcher, newest elsewhere",
+        "Release notes for every version you've missed, with a fullscreen view and a tab per version",
+        "Companion mods checked against their newest releases",
+        "Opens automatically at launch when a newer release is out",
+        "Distant Horizons' update prompt is silenced when you're on the modpack's pinned DH build"
+      ],
+      "pr": 1381,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stage-duplicate-auto-focus",
+      "version": "0.859.0",
       "type": "feat",
       "title": "Duplicating a stage now selects the copy",
       "summary": "In the editor, duplicating a stage from the Stage Blocks panel now switches straight over to the new copy \u2014 it becomes the focused stage, the carriage plots preview it, and the Stage Blocks panel shows the copy instead of the original \u2014 so you can start editing it immediately.",

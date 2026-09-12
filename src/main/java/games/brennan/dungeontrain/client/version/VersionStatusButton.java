@@ -1,19 +1,16 @@
 package games.brennan.dungeontrain.client.version;
 
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.minecraft.Util;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-
-import java.net.URI;
 
 /**
  * Label-styled {@link Button} that combines the existing top-left
@@ -104,23 +101,19 @@ public final class VersionStatusButton extends Button {
         return s == null ? "?" : s;
     }
 
+    /**
+     * Opens the Versions page, which carries the launcher link that used to open directly from
+     * here plus how far behind the build is and what changed. An error keeps its retry — there is
+     * nothing to compare until the check has run.
+     */
     private static void handleClick() {
         VersionCheckState.Status s = VersionCheckState.status();
         Screen parent = Minecraft.getInstance().screen;
         switch (s) {
             case LATEST, UPDATE_AVAILABLE, AHEAD ->
-                openLink(parent, LauncherDetector.getUpdateUrl());
+                Minecraft.getInstance().setScreen(new VersionCompareScreen(parent));
             case ERROR -> VersionCheckState.ensureChecked();
             case CHECKING -> { /* no-op while in flight */ }
         }
-    }
-
-    private static void openLink(Screen parent, String url) {
-        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
-            if (yes) {
-                Util.getPlatform().openUri(URI.create(url));
-            }
-            Minecraft.getInstance().setScreen(parent);
-        }, url, true));
     }
 }
