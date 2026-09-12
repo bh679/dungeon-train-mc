@@ -166,6 +166,30 @@
         "END"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "mudwindows_wood_oak_darkwood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudopen_wood_oak_darkwood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudwindows_wood_oak_darkw_spruce",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "spruce"
+    },
+    {
+      "name": "mudopen_wood_oak_darkwood_spruce",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "spruce"
     }
   ],
   "roof": [
@@ -284,6 +308,26 @@
         "END"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "mud_wood_oak_darkwood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudopen_wood_oak_darkwood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mud_wood_oak_darkwood_spruce",
+      "weight": 1,
+      "stage": "spruce"
+    },
+    {
+      "name": "mudopen_wood_oak_darkwood_spruce",
+      "weight": 1,
+      "stage": "spruce"
     }
   ],
   "doors": [
@@ -329,6 +373,20 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "obsidian"
+    },
+    {
+      "name": "mud_wood_oak_darkwood",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "darkwood"
+    },
+    {
+      "name": "mud_wood_oak_darkwood_spruce",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "spruce"
     }
   ]
 }

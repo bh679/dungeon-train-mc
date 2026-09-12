@@ -10,6 +10,17 @@
       "CHUNCKS"
     ]
   },
+  "darkwood": {
+    "name": "darkwood",
+    "minLevel": 161,
+    "maxLevel": 190,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
   "deepdark": {
     "name": "deepdark",
     "minLevel": 87,
@@ -72,6 +83,16 @@
       "CHUNCKS"
     ]
   },
+  "spruce": {
+    "name": "spruce",
+    "minLevel": 192,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
   "stone": {
     "name": "stone",
     "maxLevel": 10,
@@ -85,6 +106,7 @@
   "wood_oak": {
     "name": "wood_oak",
     "minLevel": 131,
+    "maxLevel": 160,
     "phases": [
       "OVERWORLD",
       "VOID",

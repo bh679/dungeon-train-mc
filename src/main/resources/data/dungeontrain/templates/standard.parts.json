@@ -126,6 +126,16 @@
       "name": "wool",
       "weight": 1,
       "stage": "deepdark"
+    },
+    {
+      "name": "mudbricks_wood_oak_darkwood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudbricks_wood_oak_darkwo_spruce",
+      "weight": 1,
+      "stage": "spruce"
     }
   ],
   "walls": [
@@ -211,6 +221,16 @@
         "END"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "mudbricks_wood_oak_darkwood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mudbricks_wood_oak_darkwo_spruce",
+      "weight": 1,
+      "stage": "spruce"
     }
   ],
   "roof": [
@@ -258,6 +278,16 @@
       "name": "standard_deepdark",
       "weight": 1,
       "stage": "deepdark"
+    },
+    {
+      "name": "mud_wood_oak_darkwood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mud_wood_oak_darkwood_spruce",
+      "weight": 1,
+      "stage": "spruce"
     }
   ],
   "doors": [
@@ -388,6 +418,16 @@
         "END"
       ],
       "stage": "deepdark"
+    },
+    {
+      "name": "mud_wood_oak_darkwood",
+      "weight": 1,
+      "stage": "darkwood"
+    },
+    {
+      "name": "mud_wood_oak_darkwood_spruce",
+      "weight": 1,
+      "stage": "spruce"
     }
   ]
 }
