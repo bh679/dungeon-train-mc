@@ -12217,9 +12217,9 @@
         "Fixed a late-journey advancement unlock for returning players"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "dimensional-carriage-builder-line",
@@ -12233,9 +12233,9 @@
         "Fully localised (20 locales)"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "pause-menu-icon-strip-translate",
@@ -12250,9 +12250,9 @@
         "Slightly smaller icon buttons on the title screen, pause menu and Videos page; one consistent Bilibili mark on the Videos page"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "twitch-streamers-live",
@@ -12267,9 +12267,9 @@
         "Live sort removed; Recent now leads with live streams"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "advancement-requirement-values",
@@ -12280,9 +12280,9 @@
       "highlights": [],
       "pr": 1366,
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     },
     {
       "id": "credits-self-edit",
@@ -12297,9 +12297,9 @@
       ],
       "pr": 1371,
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.849.0",
+      "released_at": "2026-09-12T07:34:52Z"
     }
   ]
 }
