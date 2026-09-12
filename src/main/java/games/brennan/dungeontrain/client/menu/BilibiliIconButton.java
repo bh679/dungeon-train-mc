@@ -55,12 +55,24 @@ public final class BilibiliIconButton extends Button {
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        draw(g, getX(), getY(), getWidth(), getHeight(), 1.0F, isHoveredOrFocused());
+    }
+
+    /**
+     * The mark itself, for any button that wants to wear it — the Videos page's platform filter
+     * uses this so the same artwork stands for Bilibili everywhere on that page.
+     *
+     * @param alpha 1 for the full tile; lower to dim it (a filter that is switched off)
+     */
+    public static void draw(GuiGraphics g, int x, int y, int w, int h, float alpha, boolean hovered) {
         RenderSystem.enableBlend();
-        g.blit(TEXTURE, getX(), getY(), getWidth(), getHeight(), 0.0F, 0.0F, TEX, TEX, TEX, TEX);
-        if (isHoveredOrFocused()) {
-            int inset = Math.max(1, Math.round(Math.min(getWidth(), getHeight()) * WASH_INSET));
-            g.fill(getX() + inset, getY(), getX() + getWidth() - inset, getY() + getHeight(), HOVER_WASH);
-            g.fill(getX(), getY() + inset, getX() + getWidth(), getY() + getHeight() - inset, HOVER_WASH);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
+        g.blit(TEXTURE, x, y, w, h, 0.0F, 0.0F, TEX, TEX, TEX, TEX);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        if (hovered) {
+            int inset = Math.max(1, Math.round(Math.min(w, h) * WASH_INSET));
+            g.fill(x + inset, y, x + w - inset, y + h, HOVER_WASH);
+            g.fill(x, y + inset, x + w, y + h - inset, HOVER_WASH);
         }
     }
 }
