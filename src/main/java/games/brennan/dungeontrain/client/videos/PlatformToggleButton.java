@@ -106,8 +106,8 @@ public final class PlatformToggleButton extends Button {
         g.fill(bodyR - Math.round(s * 0.14F) - eye, eyeY, bodyR - Math.round(s * 0.14F), eyeY + eye + 1, body);
     }
 
-    /** A speech bubble with a tail at the bottom-left and two vertical slits. */
-    private static void drawBubble(GuiGraphics g, int x, int y, int s, int mark, int body) {
+    /** A speech bubble with a tail at the bottom-left and two vertical slits. Shared with {@link StreamerStrip}. */
+    static void drawBubble(GuiGraphics g, int x, int y, int s, int mark, int body) {
         int l = x + Math.round(s * 0.22F);
         int r = x + s - Math.round(s * 0.22F);
         int t = y + Math.round(s * 0.22F);

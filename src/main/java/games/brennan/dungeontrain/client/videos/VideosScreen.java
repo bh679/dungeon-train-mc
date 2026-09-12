@@ -32,7 +32,9 @@ import java.util.List;
 /**
  * The <b>Videos</b> page, opened from the title screen's icon column: every video about Dungeon
  * Train the relay has saved — YouTube, Bilibili, Twitch, Instagram — with one toolbar row over the
- * list. A row opens the video in the browser through vanilla's link-confirm screen.
+ * list. A row opens the video in the browser through vanilla's link-confirm screen. Twitch
+ * <em>streamers</em> (the relay's bare-channel markers, one per stream day) are not list rows: they
+ * fold into one chip each on a {@link StreamerStrip} between the toolbar and the list.
  *
  * <p>The toolbar, left to right: one <b>icon toggle per platform</b> present (lit = shown), the
  * <b>★ dev-faves</b> toggle, the <b>uploader box</b> — type to narrow, with a suggestion list under
@@ -71,6 +73,7 @@ public final class VideosScreen extends Screen {
     private UploaderDropdown dropdown;
     private Button sortButton;
     private Button retryButton;
+    private StreamerStrip strip;
     private VideoList list;
 
     public VideosScreen(Screen parent) {
@@ -131,12 +134,22 @@ public final class VideosScreen extends Screen {
         sortButton = addRenderableWidget(new DarkTintedButton(sortX, TOP, sortW, BUTTON_H,
                 CommonComponents.EMPTY, b -> cycleSort()));
 
-        int listTop = TOP + BUTTON_H + GAP;
+        // Twitch streamers get a strip of chips between the toolbar and the list — sized for every
+        // streamer in the catalogue, not the filtered set, so filtering never moves the list. Zero
+        // lines (no markers) leaves the page exactly as it was without the strip.
+        int stripTop = TOP + BUTTON_H + GAP;
+        int stripLines = StreamerStrip.linesFor(this.font, rowW, TwitchStreamers.group(VideoCatalog.entries()));
+        int stripH = StreamerStrip.heightFor(stripLines);
+        strip = addRenderableWidget(new StreamerStrip(this.font, MARGIN, stripTop, rowW, stripH, this::openStreamer));
+        strip.visible = stripH > 0;
+
+        int listTop = stripH > 0 ? stripTop + stripH + GAP : stripTop;
         int listBottom = this.height - MARGIN - BOTTOM_ROW_H - GAP;
         list = addRenderableWidget(new VideoList(this.font, MARGIN, listTop, rowW, listBottom - listTop,
                 this::open, this::flag));
-        // The suggestion panel hangs over the list: while it is open, the rows under it neither
-        // highlight nor answer clicks.
+        // The suggestion panel hangs over the strip and the list: while it is open, whatever is
+        // under it neither highlights nor answers clicks.
+        strip.setCoveredBy((mx, my) -> dropdown.isMouseOver(mx, my));
         list.setCoveredBy((mx, my) -> dropdown.isMouseOver(mx, my));
 
         // Retry sits in the middle of the (empty) list and only shows when the fetch failed.
@@ -238,6 +251,7 @@ public final class VideosScreen extends Screen {
         retryButton.visible = VideoCatalog.state() == VideoCatalog.State.FAILED;
 
         dropdown.setRows(VideoQuery.channels(all, filter.channelQuery()));
+        strip.setRows(TwitchStreamers.filter(TwitchStreamers.group(all), filter));
         list.setRows(VideoQuery.apply(all, filter, sort));
     }
 
@@ -314,6 +328,22 @@ public final class VideosScreen extends Screen {
         }, url, true));
     }
 
+    /**
+     * A streamer chip: the channel page, through the same confirm screen as a video row. Counted as a
+     * video open in the funnel — the page's "did they follow a link out" question, not a per-target one.
+     */
+    private void openStreamer(TwitchStreamers.Streamer s) {
+        UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_OPEN);
+        String url = s.url();
+        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            UiAnalytics.confirm(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_OPEN, yes);
+            if (yes) {
+                Util.getPlatform().openUri(URI.create(url));
+            }
+            Minecraft.getInstance().setScreen(this);
+        }, url, true));
+    }
+
     /** The row's ⚑: report this video. The flag screen talks to the relay and comes back here. */
     private void flag(VideoEntry v) {
         UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_FLAG);
@@ -339,11 +369,23 @@ public final class VideosScreen extends Screen {
                     list.getY() + list.getHeight() / 2 - this.font.lineHeight, colour);
         }
 
-        // Row count on the title line, right-aligned, out of the toolbar's way.
+        // Row count on the title line, right-aligned, out of the toolbar's way. Streamer markers are
+        // not videos, so they are not in the total.
         if (VideoCatalog.state() == VideoCatalog.State.LOADED) {
             Component count = Component.translatable("gui.dungeontrain.videos.count",
-                    list.rowCount(), VideoCatalog.entries().size());
+                    list.rowCount(), VideoQuery.videoCount(VideoCatalog.entries()));
             g.drawString(this.font, count, this.width - MARGIN - this.font.width(count), 14, SUB_COLOUR);
+        }
+
+        // A streamer chip's tooltip is drawn here, after every widget, so the list (added after the
+        // strip) cannot paint over it. Skipped under the suggestion panel.
+        TwitchStreamers.Streamer hoveredStreamer = strip.hoveredChip(mouseX, mouseY);
+        if (hoveredStreamer != null && !dropdown.isMouseOver(mouseX, mouseY)) {
+            String last = hoveredStreamer.hasLastDay() ? hoveredStreamer.lastDay() : "—";
+            g.renderTooltip(this.font,
+                    this.font.split(Component.translatable("gui.dungeontrain.videos.streamers.tooltip",
+                            hoveredStreamer.name(), hoveredStreamer.streamDays(), last), 220),
+                    mouseX, mouseY);
         }
 
         // The suggestion list is open exactly while the box has focus; drawn last so it sits over

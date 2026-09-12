@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 /**
  * The Videos page's scrolling list: one row per video — thumbnail (or platform tile), title, and a
  * {@code uploader · views · date} line, with a ★ on the operator's picks. Clicking a row opens it.
+ * Twitch streamer markers never reach this list — {@link VideoQuery} keeps them for {@link StreamerStrip}.
  *
  * <p>Hand-rolled on {@link ListScrollbar} like every other list in the mod ({@code ShaderPackList},
  * {@code TranslationListWidget}) rather than an {@code ObjectSelectionList}, so the row geometry and

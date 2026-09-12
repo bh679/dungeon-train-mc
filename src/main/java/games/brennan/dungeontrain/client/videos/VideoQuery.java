@@ -54,6 +54,8 @@ public final class VideoQuery {
         }
 
         boolean matches(VideoEntry v) {
+            // Streamer markers are the strip's rows, never the list's — see TwitchStreamers.
+            if (v.isStreamMarker()) return false;
             if (!platforms.contains(v.platform())) return false;
             if (!channelQuery.isEmpty() && !contains(v.channel(), channelQuery)) return false;
             return !devFavOnly || v.devFav();
@@ -138,7 +140,19 @@ public final class VideoQuery {
         return List.copyOf(starts);
     }
 
-    /** The platforms actually present, in enum order — so the Platform filter never offers an empty state. */
+    /** Rows that are videos — everything but the Twitch streamer markers. The title line's "of N videos". */
+    public static int videoCount(List<VideoEntry> entries) {
+        int n = 0;
+        for (VideoEntry v : entries) {
+            if (!v.isStreamMarker()) n++;
+        }
+        return n;
+    }
+
+    /**
+     * The platforms actually present, in enum order — so the Platform filter never offers an empty
+     * state. Streamer markers count as Twitch: the toggle also governs the streamer strip.
+     */
     public static List<VideoEntry.Platform> platforms(List<VideoEntry> entries) {
         List<VideoEntry.Platform> out = new ArrayList<>();
         for (VideoEntry.Platform p : VideoEntry.Platform.values()) {

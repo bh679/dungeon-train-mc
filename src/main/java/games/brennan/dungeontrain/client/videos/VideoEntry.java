@@ -75,6 +75,16 @@ public record VideoEntry(int id, String url, Platform platform, String videoId, 
         return views != VIEWS_UNKNOWN;
     }
 
+    /**
+     * True for a Twitch <em>streamer marker</em>: a bare {@code twitch.tv/<login>} row the relay saves
+     * once per day a channel streamed the game, with no VOD id behind it. These are not videos — the
+     * Videos page groups them into one chip per streamer ({@link TwitchStreamers}) instead of listing
+     * them, and {@link VideoQuery} keeps them out of the video rows.
+     */
+    public boolean isStreamMarker() {
+        return platform == Platform.TWITCH && (videoId == null || videoId.isBlank());
+    }
+
     /** True when {@link #channel} names someone. */
     public boolean hasChannel() {
         return channel != null && !channel.isBlank();

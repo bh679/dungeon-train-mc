@@ -13,8 +13,14 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 class VideoQueryTest {
 
+    /** A video row: every fixture carries a platform id, so a Twitch one is a VOD, not a streamer marker. */
     private static VideoEntry v(int id, VideoEntry.Platform p, String day, long views, String channel, boolean fav) {
-        return new VideoEntry(id, "https://example.com/" + id, p, null, "T" + id, day, views, channel, fav);
+        return new VideoEntry(id, "https://example.com/" + id, p, "v" + id, "T" + id, day, views, channel, fav);
+    }
+
+    /** A Twitch streamer marker: bare channel URL, no id — the strip's, never the list's. */
+    private static VideoEntry marker(int id, String login, String day) {
+        return new VideoEntry(id, "https://www.twitch.tv/" + login, TWITCH, null, login, day, VideoEntry.VIEWS_UNKNOWN, login, false);
     }
 
     private static final VideoEntry A = v(1, YOUTUBE, "2026-09-01", 500, "Alpha", false);
@@ -76,6 +82,17 @@ class VideoQueryTest {
         assertEquals(List.of("Alpha", "Gamma Alpine"), VideoQuery.channels(more, "al"), "prefix match before substring match");
         assertEquals(List.of("beta"), VideoQuery.channels(more, "ET"));
         assertEquals(List.of(), VideoQuery.channels(more, "q"));
+    }
+
+    @Test
+    void streamerMarkersNeverReachTheListButStillCountAsTwitchForTheToggles() {
+        VideoEntry m = marker(7, "droneleg", "2026-08-21");
+        List<VideoEntry> withMarker = List.of(m, C, A);
+        assertEquals(List.of(1, 3), ids(VideoQuery.apply(withMarker, VideoQuery.Filter.ALL, VideoQuery.Sort.VIEWS)), "marker dropped, VOD kept");
+        assertEquals(List.of(), ids(VideoQuery.apply(withMarker, VideoQuery.Filter.ALL.withChannelQuery("droneleg"), VideoQuery.Sort.VIEWS)), "no filter resurrects a marker");
+        assertEquals(2, VideoQuery.videoCount(withMarker));
+        assertEquals(List.of(TWITCH), VideoQuery.platforms(List.of(m)), "a marker alone still lights the Twitch toggle");
+        assertEquals(List.of("droneleg"), VideoQuery.channels(List.of(m)), "and still suggests its uploader");
     }
 
     @Test
