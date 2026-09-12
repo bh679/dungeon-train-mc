@@ -981,7 +981,8 @@ public final class CarriageContentsPlacer {
                 Entity entity = created.get();
                 // Gentle onboarding: suppress a (rare) baked hostile in the no-hostiles stage, or
                 // replace it with a small slime/magma cube in the slimes stage; else spawn authored.
-                if (tryHandleOnboardingHostile(level, entity, new Vec3(worldX, worldY, worldZ), carriagePIdx)) continue;
+                if (tryHandleOnboardingHostile(level, entity, new Vec3(worldX, worldY, worldZ), carriagePIdx,
+                        /*asAuthored*/ false) != OnboardingOutcome.AS_AUTHORED) continue;
                 entity.moveTo(worldX, worldY, worldZ, entity.getYRot(), entity.getXRot());
                 // Diagnostic spawn-coords + tick on the persistent-data
                 // subtree (the standard cross-mod-safe location for custom
@@ -1234,29 +1235,36 @@ public final class CarriageContentsPlacer {
      * the current {@link DifficultyProgression.OnboardingStage}:
      * <ul>
      *   <li>{@link DifficultyProgression.OnboardingStage#NO_HOSTILES NO_HOSTILES} — suppresses the
-     *       mob entirely (returns {@code true} without spawning anything; the original is discarded
-     *       unadded, exactly like the slime path below);</li>
+     *       mob entirely ({@link OnboardingOutcome#SUPPRESSED} — nothing is spawned; the original is
+     *       discarded unadded, exactly like the slime path below);</li>
      *   <li>{@link DifficultyProgression.OnboardingStage#EASY_MOBS EASY_MOBS} — spawns a small Slime
      *       (or a small Magma Cube when {@code original}'s type is in {@link #FIRST_BAND_MAGMA_MOBS})
      *       at {@code pos}, tagged + persisted exactly like a carriage-contents mob, and returns
-     *       {@code true} so the caller skips the original; the slime / magma / no-substitute decision
+     *       {@link OnboardingOutcome#SUBSTITUTED} so the caller skips the original; the slime / magma / no-substitute decision
      *       is delegated to {@link DifficultyProgression#firstBandSubstitute};</li>
-     *   <li>{@link DifficultyProgression.OnboardingStage#NORMAL NORMAL} — returns {@code false} so the
-     *       caller spawns the original as authored.</li>
+     *   <li>{@link DifficultyProgression.OnboardingStage#NORMAL NORMAL} — returns
+     *       {@link OnboardingOutcome#AS_AUTHORED} so the caller spawns the original as authored.</li>
      * </ul>
-     * Also returns {@code false} (spawn as authored) for editor previews (sentinel pIdx) and
+     * Also returns {@link OnboardingOutcome#AS_AUTHORED} for editor previews (sentinel pIdx), for a
+     * stamp that asked to be spawned as authored ({@code asAuthored} — a Test-the-Carriage room,
+     * where the author is checking their build and the ramp would hide its hostiles), for
      * non-hostile mobs, and — in the {@code EASY_MOBS} stage only — for
      * {@link #FIRST_BAND_NO_SUBSTITUTE_MOBS} (never substituted, e.g. zombified piglin) or
      * {@link #FIRST_BAND_NETHER_ONLY_MOBS} outside the Nether. In the {@code NO_HOSTILES} stage every
      * hostile is suppressed regardless of those tags.
+     *
+     * <p>The outcome distinguishes a suppressed hostile from a substituted one on purpose: a caller
+     * counting what it placed must not count a mob that was never added. It used to return a single
+     * "handled" boolean, and {@code PortalRoomMobs} logged a spawn for every hostile the no-hostiles
+     * stage quietly dropped.</p>
      */
-    private static boolean tryHandleOnboardingHostile(ServerLevel level, Entity original,
-                                                      Vec3 pos, int carriagePIdx) {
-        if (carriagePIdx == EDITOR_SENTINEL_PIDX) return false;
-        if (!(original instanceof Enemy)) return false;
+    private static OnboardingOutcome tryHandleOnboardingHostile(ServerLevel level, Entity original,
+                                                                Vec3 pos, int carriagePIdx,
+                                                                boolean asAuthored) {
         DifficultyProgression.OnboardingStage stage = DifficultyProgression.onboardingStageFor(level);
-        if (stage == DifficultyProgression.OnboardingStage.NORMAL) return false;     // spawn as authored
-        if (stage == DifficultyProgression.OnboardingStage.NO_HOSTILES) return true; // suppress — add nothing
+        OnboardingOutcome outcome = onboardingOutcome(stage, original instanceof Enemy,
+            carriagePIdx == EDITOR_SENTINEL_PIDX, asAuthored);
+        if (outcome != OnboardingOutcome.SUBSTITUTED) return outcome;
 
         // EASY_MOBS stage: replace the authored hostile with a small slime / magma cube.
         var holder = original.getType().builtInRegistryHolder();
@@ -1265,11 +1273,11 @@ public final class CarriageContentsPlacer {
             holder.is(FIRST_BAND_NETHER_ONLY_MOBS),
             holder.is(FIRST_BAND_MAGMA_MOBS),
             level.dimension().equals(Level.NETHER));
-        if (kind == DifficultyProgression.FirstBandSubstitute.NONE) return false; // spawn as authored
+        if (kind == DifficultyProgression.FirstBandSubstitute.NONE) return OnboardingOutcome.AS_AUTHORED;
         Slime sub = kind == DifficultyProgression.FirstBandSubstitute.MAGMA_CUBE
             ? EntityType.MAGMA_CUBE.create(level)
             : EntityType.SLIME.create(level);
-        if (sub == null) return true; // creation failed — still suppress the original hostile
+        if (sub == null) return OnboardingOutcome.SUPPRESSED; // creation failed — still suppress the original hostile
         // "small or next size up" — size 1 or 2.
         sub.setSize(1 + level.getRandom().nextInt(2), true);
         sub.setUUID(UUID.randomUUID());
@@ -1285,8 +1293,35 @@ public final class CarriageContentsPlacer {
         if (!level.addFreshEntity(sub)) {
             LOGGER.warn("[DungeonTrain] First-band substitute: addFreshEntity rejected {} at {} pIdx={}",
                 sub.getType().getDescriptionId(), pos, carriagePIdx);
+            return OnboardingOutcome.SUPPRESSED;
         }
-        return true;
+        return OnboardingOutcome.SUBSTITUTED;
+    }
+
+    /**
+     * What the gentle-onboarding gate does with one authored mob. {@link #SUBSTITUTED} and
+     * {@link #SUPPRESSED} both mean "do not spawn the original"; only {@link #SUBSTITUTED} put
+     * something in its place.
+     */
+    enum OnboardingOutcome { AS_AUTHORED, SUPPRESSED, SUBSTITUTED }
+
+    /**
+     * The pure half of {@link #tryHandleOnboardingHostile}: which way the gate goes, from the stage
+     * and what is known about the mob, before any entity is created. Package-visible so the table
+     * is unit-tested without a level.
+     *
+     * @param hostile        whether the mob is an {@link Enemy}
+     * @param editorSentinel whether the stamp is an editor preview ({@link #EDITOR_SENTINEL_PIDX})
+     * @param asAuthored     whether the stamp asked for the room exactly as built (a test carriage)
+     */
+    static OnboardingOutcome onboardingOutcome(DifficultyProgression.OnboardingStage stage, boolean hostile,
+                                               boolean editorSentinel, boolean asAuthored) {
+        if (!hostile || editorSentinel || asAuthored) return OnboardingOutcome.AS_AUTHORED;
+        return switch (stage) {
+            case NO_HOSTILES -> OnboardingOutcome.SUPPRESSED;
+            case EASY_MOBS -> OnboardingOutcome.SUBSTITUTED;
+            case NORMAL -> OnboardingOutcome.AS_AUTHORED;
+        };
     }
 
     /**
@@ -1367,6 +1402,21 @@ public final class CarriageContentsPlacer {
      */
     public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
                                            VariantState picked, int carriagePIdx, long seed) {
+        return spawnVariantMob(level, worldPos, picked, carriagePIdx, seed, /*asAuthored*/ false);
+    }
+
+    /**
+     * {@link #spawnVariantMob(ServerLevel, BlockPos, VariantState, int, long)} with the
+     * gentle-onboarding hostile gate switched off when {@code asAuthored} is set. For a stamp that
+     * exists to show the author their own room — Test the Carriage — where the ramp that keeps the
+     * opening carriages of a run gentle would instead hide every hostile they placed.
+     *
+     * @return {@code true} only when a mob was actually added — a hostile the onboarding stage
+     *         withheld returns {@code false}, so callers counting placements stay honest.
+     */
+    public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
+                                           VariantState picked, int carriagePIdx, long seed,
+                                           boolean asAuthored) {
         if (picked == null || !picked.isMob()) return false;
         Optional<EntityType<?>> typeOpt = EntityType.byString(picked.entityId().toString());
         if (typeOpt.isEmpty()) {
@@ -1404,7 +1454,15 @@ public final class CarriageContentsPlacer {
         // Gentle onboarding: in the no-hostiles stage suppress an authored hostile entirely; in the
         // slimes stage replace it with a small slime (magma cube for nether/raider mobs); no-op
         // otherwise. The substitute is spawned + tagged inside the helper, so we early-return here.
-        if (tryHandleOnboardingHostile(level, entity, Vec3.atBottomCenterOf(worldPos), carriagePIdx)) return true;
+        switch (tryHandleOnboardingHostile(level, entity, Vec3.atBottomCenterOf(worldPos), carriagePIdx, asAuthored)) {
+            case SUBSTITUTED -> { return true; }
+            case SUPPRESSED -> {
+                LOGGER.debug("[DungeonTrain] Mob-variant: '{}' withheld by onboarding stage {} at {} pIdx={}",
+                    picked.entityId(), DifficultyProgression.onboardingStageFor(level), worldPos, carriagePIdx);
+                return false;
+            }
+            case AS_AUTHORED -> { }
+        }
         // Fresh UUID so the same template at multiple carriages doesn't
         // collide on the UUID index (MC silently drops duplicate UUIDs).
         entity.setUUID(UUID.randomUUID());

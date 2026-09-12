@@ -1,8 +1,85 @@
 {
+  "acacia": {
+    "name": "acacia",
+    "minLevel": 176,
+    "maxLevel": 205,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "bamboo": {
+    "name": "bamboo",
+    "minLevel": 356,
+    "maxLevel": 375,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "bamboo_mosaic": {
+    "name": "bamboo_mosaic",
+    "minLevel": 416,
+    "maxLevel": 435,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "birch": {
+    "name": "birch",
+    "minLevel": 161,
+    "maxLevel": 175,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "cherry": {
+    "name": "cherry",
+    "minLevel": 266,
+    "maxLevel": 285,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
   "copper": {
     "name": "copper",
     "minLevel": 36,
     "maxLevel": 50,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "crimson": {
+    "name": "crimson",
+    "minLevel": 286,
+    "maxLevel": 320,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "darkwood": {
+    "name": "darkwood",
+    "minLevel": 376,
+    "maxLevel": 415,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -25,6 +102,28 @@
     "name": "desert",
     "minLevel": 11,
     "maxLevel": 35,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "jungle": {
+    "name": "jungle",
+    "minLevel": 206,
+    "maxLevel": 225,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "mangrove": {
+    "name": "mangrove",
+    "minLevel": 226,
+    "maxLevel": 265,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -72,6 +171,16 @@
       "CHUNCKS"
     ]
   },
+  "spruce": {
+    "name": "spruce",
+    "minLevel": 436,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
   "stone": {
     "name": "stone",
     "maxLevel": 10,
@@ -82,9 +191,21 @@
       "CHUNCKS"
     ]
   },
+  "warped": {
+    "name": "warped",
+    "minLevel": 321,
+    "maxLevel": 355,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
   "wood_oak": {
     "name": "wood_oak",
     "minLevel": 131,
+    "maxLevel": 160,
     "phases": [
       "OVERWORLD",
       "VOID",

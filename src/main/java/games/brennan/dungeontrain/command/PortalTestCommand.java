@@ -241,8 +241,6 @@ public final class PortalTestCommand {
             PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
             saltFor(worldData, overworld, freshRoll));
 
-        PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
-
         // In the ENTRY DOORWAY looking down the room, not dropped in the middle of it — the same
         // view an author gets walking in off the train, which is the one they are building for.
         // Geometry from PortalRoomDoorCells rather than arithmetic here: it is read off the code
@@ -260,9 +258,16 @@ public final class PortalTestCommand {
             PortalRoomDoorCells.doorZ(roomOrigin, roomSize, doorOffset));
 
         GameType previous = player.gameMode.getGameModeForPlayer();
+        // Registered BEFORE the stamp: the room's mob cells ask PortalTestSession.isTestStamp while
+        // they are placed, and a test is the one stamp that spawns its hostiles as authored — the
+        // gentle-onboarding ramp reads the author's zero carriages travelled as the opening stretch of
+        // a run and would otherwise withhold every hostile in the build they are here to check.
         PortalTestSession.put(player.getUUID(), new PortalTestSession.Session(
             player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
             previous, structure, roomName, arrival));
+
+        PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
+
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
 
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
