@@ -202,6 +202,102 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "acacia"
+    },
+    {
+      "name": "mudwindows_wood_birch",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "birch"
+    },
+    {
+      "name": "mudopen_wood_birch",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "birch"
+    },
+    {
+      "name": "mudwindows_wood_jungle",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "jungle"
+    },
+    {
+      "name": "mudopen_wood_jungle",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "jungle"
+    },
+    {
+      "name": "mudwindows_wood_mangrove",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mangrove"
+    },
+    {
+      "name": "mudopen_wood_mangrove",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mangrove"
+    },
+    {
+      "name": "mudwindows_wood_cherry",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "cherry"
+    },
+    {
+      "name": "mudopen_wood_cherry",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "cherry"
+    },
+    {
+      "name": "mudwindows_wood_bamboo",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "bamboo"
+    },
+    {
+      "name": "mudopen_wood_bamboo",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "bamboo"
+    },
+    {
+      "name": "mudwindows_wood_bamboo_mosaic",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mudopen_wood_bamboo_mosaic",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mudwindows_wood_crimson",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "crimson"
+    },
+    {
+      "name": "mudopen_wood_crimson",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "crimson"
+    },
+    {
+      "name": "mudwindows_wood_warped",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "warped"
+    },
+    {
+      "name": "mudopen_wood_warped",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "warped"
     }
   ],
   "roof": [
@@ -350,6 +446,86 @@
       "name": "mudopen_wood_oak_darkwood_acacia",
       "weight": 1,
       "stage": "acacia"
+    },
+    {
+      "name": "mud_wood_birch",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mudopen_wood_birch",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mud_wood_jungle",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mudopen_wood_jungle",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mud_wood_mangrove",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mudopen_wood_mangrove",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mud_wood_cherry",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mudopen_wood_cherry",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mud_wood_bamboo",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mudopen_wood_bamboo",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mud_wood_bamboo_mosaic",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mudopen_wood_bamboo_mosaic",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mud_wood_crimson",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mudopen_wood_crimson",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mud_wood_warped",
+      "weight": 1,
+      "stage": "warped"
+    },
+    {
+      "name": "mudopen_wood_warped",
+      "weight": 1,
+      "stage": "warped"
     }
   ],
   "doors": [
@@ -416,6 +592,62 @@
       "sideMode": "either",
       "endMode": "end",
       "stage": "acacia"
+    },
+    {
+      "name": "mud_wood_birch",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "birch"
+    },
+    {
+      "name": "mud_wood_jungle",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "jungle"
+    },
+    {
+      "name": "mud_wood_mangrove",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "mangrove"
+    },
+    {
+      "name": "mud_wood_cherry",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "cherry"
+    },
+    {
+      "name": "mud_wood_bamboo",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "bamboo"
+    },
+    {
+      "name": "mud_wood_bamboo_mosaic",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mud_wood_crimson",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "crimson"
+    },
+    {
+      "name": "mud_wood_warped",
+      "weight": 1,
+      "sideMode": "either",
+      "endMode": "end",
+      "stage": "warped"
     }
   ]
 }

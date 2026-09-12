@@ -1,7 +1,52 @@
 {
   "acacia": {
     "name": "acacia",
-    "minLevel": 192,
+    "minLevel": 221,
+    "maxLevel": 250,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "bamboo": {
+    "name": "bamboo",
+    "minLevel": 371,
+    "maxLevel": 400,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "bamboo_mosaic": {
+    "name": "bamboo_mosaic",
+    "minLevel": 401,
+    "maxLevel": 430,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "birch": {
+    "name": "birch",
+    "minLevel": 251,
+    "maxLevel": 280,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "cherry": {
+    "name": "cherry",
+    "minLevel": 341,
+    "maxLevel": 370,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -13,6 +58,17 @@
     "name": "copper",
     "minLevel": 36,
     "maxLevel": 50,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "crimson": {
+    "name": "crimson",
+    "minLevel": 431,
+    "maxLevel": 460,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -46,6 +102,28 @@
     "name": "desert",
     "minLevel": 11,
     "maxLevel": 35,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "jungle": {
+    "name": "jungle",
+    "minLevel": 281,
+    "maxLevel": 310,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "mangrove": {
+    "name": "mangrove",
+    "minLevel": 311,
+    "maxLevel": 340,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -95,7 +173,8 @@
   },
   "spruce": {
     "name": "spruce",
-    "minLevel": 192,
+    "minLevel": 191,
+    "maxLevel": 220,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -106,6 +185,16 @@
   "stone": {
     "name": "stone",
     "maxLevel": 10,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
+  "warped": {
+    "name": "warped",
+    "minLevel": 461,
     "phases": [
       "OVERWORLD",
       "VOID",

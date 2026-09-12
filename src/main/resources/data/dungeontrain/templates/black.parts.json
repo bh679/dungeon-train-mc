@@ -62,6 +62,46 @@
       "name": "mudbricks_wood_oak_darkwo_acacia",
       "weight": 1,
       "stage": "acacia"
+    },
+    {
+      "name": "mudbricks_wood_birch",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mudbricks_wood_jungle",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mudbricks_wood_mangrove",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mudbricks_wood_cherry",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mudbricks_wood_bamboo",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mudbricks_wood_bamboo_mosaic",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mudbricks_wood_crimson",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mudbricks_wood_warped",
+      "weight": 1,
+      "stage": "warped"
     }
   ],
   "roof": [
@@ -124,6 +164,46 @@
       "name": "mud_wood_oak_darkwood_spr_acacia",
       "weight": 1,
       "stage": "acacia"
+    },
+    {
+      "name": "mud_wood_birch",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mud_wood_jungle",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mud_wood_mangrove",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mud_wood_cherry",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mud_wood_bamboo",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mud_wood_bamboo_mosaic",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mud_wood_crimson",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mud_wood_warped",
+      "weight": 1,
+      "stage": "warped"
     }
   ],
   "doors": [
@@ -186,6 +266,46 @@
       "name": "mud_wood_oak_darkwood_spr_acacia",
       "weight": 1,
       "stage": "acacia"
+    },
+    {
+      "name": "mud_wood_birch",
+      "weight": 1,
+      "stage": "birch"
+    },
+    {
+      "name": "mud_wood_jungle",
+      "weight": 1,
+      "stage": "jungle"
+    },
+    {
+      "name": "mud_wood_mangrove",
+      "weight": 1,
+      "stage": "mangrove"
+    },
+    {
+      "name": "mud_wood_cherry",
+      "weight": 1,
+      "stage": "cherry"
+    },
+    {
+      "name": "mud_wood_bamboo",
+      "weight": 1,
+      "stage": "bamboo"
+    },
+    {
+      "name": "mud_wood_bamboo_mosaic",
+      "weight": 1,
+      "stage": "bamboo_mosaic"
+    },
+    {
+      "name": "mud_wood_crimson",
+      "weight": 1,
+      "stage": "crimson"
+    },
+    {
+      "name": "mud_wood_warped",
+      "weight": 1,
+      "stage": "warped"
     }
   ]
 }
