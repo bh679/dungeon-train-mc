@@ -255,6 +255,11 @@ public final class TranslationSubmitScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        InWorldBackdrop.render(this, g, () -> super.renderBackground(g, mouseX, mouseY, partialTick));
+    }
+
+    @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(font, title, width / 2, MARGIN, 0xFFFFFFFF);

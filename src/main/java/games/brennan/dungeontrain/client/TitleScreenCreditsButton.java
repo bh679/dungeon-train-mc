@@ -74,7 +74,9 @@ public final class TitleScreenCreditsButton {
     /** DT's main-menu chat (envelope) icon narration, when present. */
     private static final Component CHAT_KEY = Component.translatable("gui.dungeontrain.menu_chat.button");
 
-    private static final int SIZE = 20;
+    /** Two pixels under the vanilla 20px icons the column stacks on, centred in that width. */
+    private static final int SIZE = 18;
+    private static final int ANCHOR_SIZE = 20;
     private static final int GAP = 4;
     private static final int MARGIN = 4;
 
@@ -93,7 +95,7 @@ public final class TitleScreenCreditsButton {
             // Sit above the chat icon when it is actually showing, else above accessibility.
             AbstractWidget chat = findWidget(event, CHAT_KEY);
             int topY = (chat != null && chat.visible) ? chat.getY() : accessibility.getY();
-            x = accessibility.getX();
+            x = accessibility.getX() + (ANCHOR_SIZE - SIZE) / 2;
             y = topY - SIZE - GAP;
         } else {
             // No accessibility button to anchor to — keep Credits reachable in the top-right corner.

@@ -11808,9 +11808,9 @@
         "A name another translator already uses is refused"
       ],
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "minecarts-in-templates",
@@ -11826,9 +11826,9 @@
       ],
       "pr": 1341,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "random-potion-loot-entries",
@@ -11845,9 +11845,9 @@
       ],
       "pr": 1342,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "trade-anything-fixes-update",
@@ -11861,9 +11861,9 @@
         "Clicking the Trade Anything row fills it with the previewed item"
       ],
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "editor-tick-rate-provenance-cache-registry-snapshots",
@@ -11879,9 +11879,9 @@
       ],
       "pr": 1344,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "observers-silent-on-placement",
@@ -11896,9 +11896,9 @@
       ],
       "pr": 1345,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "editor-six-phase-letters",
@@ -11913,9 +11913,9 @@
       ],
       "pr": 1346,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "traps-group-level-gating",
@@ -11930,9 +11930,9 @@
       ],
       "pr": 1345,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "door-labels-carriage-contents-plots",
@@ -11948,9 +11948,9 @@
       ],
       "pr": 1347,
       "date": "2026-09-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "curseforge-pack-catch-up",
@@ -11965,9 +11965,9 @@
         "The CurseForge pack is current again as of 0.828.0"
       ],
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "free-play-advancement-profile-fix",
@@ -11981,9 +11981,9 @@
       ],
       "pr": 1350,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "devmode-delete-cleans-up-after-itself",
@@ -11997,9 +11997,9 @@
       ],
       "pr": 1348,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "stall-watchdog-ignores-pause-menu",
@@ -12010,9 +12010,9 @@
       "highlights": [],
       "pr": 1352,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "editor-menu-tabs-layout-filters",
@@ -12029,9 +12029,9 @@
       ],
       "pr": 1353,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "house-dimensional-carriages-little-detective-crunch",
@@ -12044,9 +12044,9 @@
         "Abandoned room and Nostalgia gain new variations; a few level floors and weights adjusted"
       ],
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "sheet-level-step-click",
@@ -12060,9 +12060,9 @@
         "Raising min past max pushes max up; changing max never touches min"
       ],
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "editor-book-custom-author",
@@ -12076,9 +12076,9 @@
         "Available in all 21 languages"
       ],
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "x-menu-exit-test-mode",
@@ -12093,9 +12093,9 @@
       ],
       "pr": 1355,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "parent-deletion-confirmation",
@@ -12106,9 +12106,9 @@
       "highlights": [],
       "pr": 1360,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "keep-trim-repair",
@@ -12123,9 +12123,9 @@
       ],
       "pr": 1359,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "portal-room-fog-toggle-and-paged-room-settings",
@@ -12141,9 +12141,9 @@
       ],
       "pr": 1361,
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "template-builder-credits",
@@ -12157,9 +12157,9 @@
         "Editor: a Built by field on every template's data sheet; developers can credit a builder straight from the relay"
       ],
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "community-videos-page",
@@ -12175,9 +12175,9 @@
         "Brennan's YouTube, Bilibili, Instagram and Discord are one click away at the bottom of the page"
       ],
       "date": "2026-09-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
     },
     {
       "id": "crash-recovery-enderchest-salvage",
@@ -12191,6 +12191,65 @@
       ],
       "pr": 1364,
       "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "randomized-carriage-builder-credit",
+      "version": "0.843.0",
+      "type": "content",
+      "title": "Randomized dimensional carriage credited to AutisticMime",
+      "summary": "The randomized dimensional carriage now shows its builder \u2014 AutisticMime \u2014 in the editor's Built by line and on the Credits page's Builders list.",
+      "highlights": [],
+      "date": "2026-09-11",
+      "released": true,
+      "released_in": "v0.843.0",
+      "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "advancement-unlock-fix-returning-players",
+      "version": "0.844.0",
+      "type": "fix",
+      "title": "Advancement unlock fix for returning players",
+      "summary": "A late-journey advancement now unlocks only when it is actually reached, regardless of progress carried over from earlier runs.",
+      "highlights": [
+        "Fixed a late-journey advancement unlock for returning players"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-builder-line",
+      "version": "0.845.0",
+      "type": "feat",
+      "title": "Dimensional carriages now tell you who built them",
+      "summary": "Step into a dimensional carriage whose builder is credited and the train says so \u2014 a quiet gray line in chat, one of eight, naming the builder (\"The train speaks of AntonioMacarely here.\"). Walk into one of your own and it reads \"You built this one.\" Uncredited rooms stay as silent as before. Translated into all 20 languages.",
+      "highlights": [
+        "Builder credit line on entering a credited dimensional carriage, once per visit",
+        "Eight phrasings plus a 'You built this one.' line for your own builds",
+        "Fully localised (20 locales)"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "pause-menu-icon-strip-translate",
+      "version": "0.846.0",
+      "type": "feat",
+      "title": "Translate, Discord and Videos from the pause menu",
+      "summary": "The pause (ESC) menu now carries a row of icons beside Mods and Shaders: Discord, the community Videos page, and the Help Translate editor \u2014 so translators can work on the game's text without leaving the train. The translation screens get a darker backdrop when opened in-world so they stay readable over a moving train. Support the Mod now takes the full row that Feedback and Report Bugs used to occupy.",
+      "highlights": [
+        "Help Translate, Discord and Videos icons on the pause menu's Mods | Shaders row",
+        "Translation editor usable in-world, with a darker backdrop over the train",
+        "Support the Mod is a full-width pause-menu button",
+        "Slightly smaller icon buttons on the title screen, pause menu and Videos page; one consistent Bilibili mark on the Videos page"
+      ],
+      "date": "2026-09-12",
       "released": false,
       "released_in": null,
       "released_at": null
