@@ -16569,6 +16569,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "changelog-tags-versions-page-filter",
+      "version": "0.861.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Filter release notes by tag on the Versions page",
+      "summary": "Every entry in the release notes now carries tags \u2014 New Feature, Bug Fix, Editor, Train, World, Loot, Books, Mobs, Community, and more \u2014 and the Versions page lets you filter what you've missed by them. A row of chips above the notes shows each tag with how many changes carry it, most to least; pick one or several and only those changes remain, with versions that have none folding away. The fullscreen view keeps a tab per version and its chips describe just the version you're on. Release announcements now open with the same tag counts, so a glance tells you what a release is made of.",
+      "highlights": [
+        "Tag chips above the release notes, with counts, most to least",
+        "Pick several tags at once \u2014 any of them matches; All clears",
+        "Fullscreen notes: chips for the selected version's tab",
+        "Release posts on Discord, GitHub, Modrinth and CurseForge lead with the tag counts",
+        "Every past release is tagged, back to the first curated notes"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
