@@ -3,13 +3,14 @@ package games.brennan.dungeontrain.client.localization.edit;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
-import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -21,12 +22,14 @@ import org.slf4j.Logger;
  * Puts the translation editor on the pause menu, so a player can translate while riding the train
  * instead of going back to the title screen or three screens deep through Options → Language.
  *
- * <p>It joins the <b>Mods | Shaders</b> row as a third button — Mods | Shaders | Help Translate —
- * the row that already answers "what else is here besides the game". {@code PauseMenuLayoutHandler}
- * halves the Mods slot for Shaders at the default priority; this handler runs at
- * {@link EventPriority#LOWEST}, finds both by their translated labels, and re-lays the same span out
- * as thirds. If either is missing (another mod rewrote the row) nothing is added: an orphan third
- * button is worse than none.</p>
+ * <p>It joins the <b>Mods | Shaders</b> row as a square pencil icon at the right end — the same
+ * sprite the title screen uses — with the two text buttons sharing what is left. An icon rather
+ * than a third label: three labels in a 204px row stop fitting in most languages, and the row
+ * already answers "what else is here besides the game". {@code PauseMenuLayoutHandler} halves the
+ * Mods slot for Shaders at the default priority; this handler runs at
+ * {@link EventPriority#LOWEST}, finds both by their translated labels, and re-lays the same span
+ * out with the icon taken off the end. If either is missing (another mod rewrote the row) nothing
+ * is added: an orphan icon is worse than none.</p>
  *
  * <p>Hidden on {@code en_us} in a release build, exactly like the other two doorways — see
  * {@link TranslationTarget}. The editor itself already works in-world: book-prose edits are pushed
@@ -43,7 +46,11 @@ public final class PauseMenuTranslateButton {
     private static final Component LABEL = Component.translatable("gui.dungeontrain.translate.button");
     /** Same spacing {@code PauseMenuLayoutHandler} uses between Mods and Shaders. */
     private static final int GAP = 4;
-    private static final int COLUMNS = 3;
+    /** Realms' pencil-and-paper icon — the same one {@link TitleScreenTranslateButton} uses. */
+    private static final ResourceLocation EDIT_SPRITE =
+        ResourceLocation.withDefaultNamespace("icon/draft_report");
+    private static final int SPRITE_W = 15;
+    private static final int SPRITE_H = 15;
 
     private PauseMenuTranslateButton() {}
 
@@ -82,8 +89,11 @@ public final class PauseMenuTranslateButton {
         // Init.Post fires again on every window resize; re-place the existing button rather than
         // stacking a twin on it.
         AbstractWidget existing = findWidget(event, LABEL);
-        DarkTintedButton button = existing instanceof DarkTintedButton reused ? reused
-            : new DarkTintedButton(0, 0, 0, mods.getHeight(), LABEL, b -> openEditor(pauseScreen, target));
+        SpriteIconButton button = existing instanceof SpriteIconButton reused ? reused
+            : SpriteIconButton.builder(LABEL, b -> openEditor(pauseScreen, target), true)
+                .width(mods.getHeight())
+                .sprite(EDIT_SPRITE, SPRITE_W, SPRITE_H)
+                .build();
         layoutRow(mods, shaders, button, existing != null);
         button.setTooltip(Tooltip.create(tooltip(target)));
         if (existing == null) {
@@ -102,29 +112,36 @@ public final class PauseMenuTranslateButton {
     }
 
     /**
-     * Re-lay the row out as three equal cells across the full slot: from Mods' left edge to the
-     * right edge of whichever button currently ends the row — Shaders on a fresh init, our own
-     * button if a previous pass already placed it. Measured from those edges rather than from any
-     * one width, so a repeat pass derives the same answer instead of shrinking the row a third at
-     * a time.
+     * Re-lay the row out across the full slot: from Mods' left edge to the right edge of whichever
+     * widget currently ends the row — Shaders on a fresh init, our own icon if a previous pass
+     * already placed it. The icon is a square (the row's height) at the right end; Mods and Shaders
+     * split what is left equally. Measured from the edges rather than from any one width, so a
+     * repeat pass derives the same answer instead of shrinking the row each time.
      */
     private static void layoutRow(AbstractWidget mods, AbstractWidget shaders, AbstractWidget translate,
                                   boolean alreadyPlaced) {
         int left = mods.getX();
+        int y = mods.getY();
+        int height = mods.getHeight();
         AbstractWidget last = alreadyPlaced ? translate : shaders;
         int span = last.getX() + last.getWidth() - left;
-        int cell = (span - GAP * (COLUMNS - 1)) / COLUMNS;
-        int y = mods.getY();
-        AbstractWidget[] row = {mods, shaders, translate};
-        int x = left;
-        for (AbstractWidget widget : row) {
-            widget.setWidth(cell);
-            widget.setX(x);
-            widget.setY(y);
-            x += cell + GAP;
-        }
-        // Give any rounding remainder to the last cell so the row still ends flush with the slot.
-        translate.setWidth(left + span - translate.getX());
+
+        int iconSize = height;
+        int textSpan = span - iconSize - GAP;
+        int halfW = (textSpan - GAP) / 2;
+
+        mods.setX(left);
+        mods.setY(y);
+        mods.setWidth(halfW);
+
+        shaders.setX(left + halfW + GAP);
+        shaders.setY(y);
+        shaders.setWidth(textSpan - halfW - GAP);
+
+        translate.setX(left + span - iconSize);
+        translate.setY(y);
+        translate.setWidth(iconSize);
+        translate.setHeight(height);
     }
 
     private static void openEditor(PauseScreen pauseScreen, String target) {
