@@ -65,6 +65,8 @@ public final class PauseMenuIconRow {
     private static final Component TRANSLATE_LABEL = Component.translatable("gui.dungeontrain.translate.button");
     /** Same spacing {@code PauseMenuLayoutHandler} uses between Mods and Shaders. */
     private static final int GAP = 4;
+    /** Icons sit two pixels under the row's buttons, centred on the row — same as the title column. */
+    private static final int ICON_INSET = 1;
     /** Realms' pencil-and-paper icon — the same one {@code TitleScreenTranslateButton} uses. */
     private static final ResourceLocation EDIT_SPRITE =
         ResourceLocation.withDefaultNamespace("icon/draft_report");
@@ -94,7 +96,7 @@ public final class PauseMenuIconRow {
                 mods != null, shaders != null);
             return;
         }
-        int size = mods.getHeight();
+        int size = mods.getHeight() - 2 * ICON_INSET;
 
         // A client that launched straight into a world may never have built the title
         // screen, so this can be the first chance to pick up relay-rotated links.
@@ -189,7 +191,7 @@ public final class PauseMenuIconRow {
         int x = left + textSpan + GAP;
         for (AbstractWidget icon : icons) {
             icon.setX(x);
-            icon.setY(y);
+            icon.setY(y + ICON_INSET);
             icon.setWidth(size);
             icon.setHeight(size);
             x += size + GAP;
