@@ -6,6 +6,9 @@ import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.ALR
 import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.ALREADY_PENDING;
 import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.BAD_URL;
 import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.FAILED;
+import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.LIVE;
+import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.LIVE_CHECK_UNAVAILABLE;
+import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.TITLE_MISSING;
 import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.NOT_LIVE;
 import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.PUBLISHED;
 import static games.brennan.dungeontrain.client.videos.VideoSubmitter.Result.QUEUED;
@@ -22,7 +25,10 @@ class VideoSubmitterTest {
         assertEquals(ALREADY_LISTED, VideoSubmitter.interpret(200, "{\"ok\":true,\"status\":\"already_listed\"}"));
         assertEquals(ALREADY_PENDING, VideoSubmitter.interpret(200, "{\"ok\":true,\"status\":\"already_pending\"}"));
         assertEquals(PUBLISHED, VideoSubmitter.interpret(200, "{\"ok\":true,\"status\":\"published\",\"id\":7}"));
+        assertEquals(LIVE, VideoSubmitter.interpret(200, "{\"ok\":true,\"status\":\"live\",\"id\":7}"));
         assertEquals(NOT_LIVE, VideoSubmitter.interpret(400, "{\"error\":\"not_live\"}"));
+        assertEquals(TITLE_MISSING, VideoSubmitter.interpret(400, "{\"error\":\"title_missing\"}"));
+        assertEquals(LIVE_CHECK_UNAVAILABLE, VideoSubmitter.interpret(503, "{\"error\":\"live_check_unavailable\"}"));
         assertEquals(BAD_URL, VideoSubmitter.interpret(400, "{\"error\":\"bad_url\"}"));
         assertEquals(RATE_LIMITED, VideoSubmitter.interpret(429, "{\"error\":\"rate_limited\"}"));
     }

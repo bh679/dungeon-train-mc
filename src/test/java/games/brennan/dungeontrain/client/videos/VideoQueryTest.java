@@ -15,12 +15,16 @@ class VideoQueryTest {
 
     /** A video row: every fixture carries a platform id, so a Twitch one is a VOD, not a streamer marker. */
     private static VideoEntry v(int id, VideoEntry.Platform p, String day, long views, String channel, boolean fav) {
-        return new VideoEntry(id, "https://example.com/" + id, p, "v" + id, "T" + id, day, views, channel, fav);
+        return new VideoEntry(id, "https://example.com/" + id, p, "v" + id, "T" + id, day, views, channel, fav, false);
     }
 
     /** A Twitch streamer marker: bare channel URL, no id — the strip's, never the list's. */
     private static VideoEntry marker(int id, String login, String day) {
-        return new VideoEntry(id, "https://www.twitch.tv/" + login, TWITCH, null, login, day, VideoEntry.VIEWS_UNKNOWN, login, false);
+        return marker(id, login, day, false);
+    }
+
+    private static VideoEntry marker(int id, String login, String day, boolean live) {
+        return new VideoEntry(id, "https://www.twitch.tv/" + login, TWITCH, null, login, day, VideoEntry.VIEWS_UNKNOWN, login, false, live);
     }
 
     private static final VideoEntry A = v(1, YOUTUBE, "2026-09-01", 500, "Alpha", false);
@@ -150,10 +154,27 @@ class VideoQueryTest {
     }
 
     @Test
-    void sortCyclesThroughAllThree() {
+    void sortCyclesThroughAllFive() {
+        assertSame(VideoQuery.Sort.LIVE, VideoQuery.Sort.DEFAULT.next());
+        assertSame(VideoQuery.Sort.VIEWS, VideoQuery.Sort.LIVE.next());
         assertSame(VideoQuery.Sort.RECENT, VideoQuery.Sort.VIEWS.next());
         assertSame(VideoQuery.Sort.DEV_PICKS, VideoQuery.Sort.RECENT.next());
-        assertSame(VideoQuery.Sort.VIEWS, VideoQuery.Sort.DEV_PICKS.next());
+        assertSame(VideoQuery.Sort.DEFAULT, VideoQuery.Sort.DEV_PICKS.next());
+    }
+
+    @Test
+    void defaultAndLiveSortsPutLiveStreamsFirst() {
+        // A live streamer (no views), a starred low-view video (B), a popular unstarred one (A), a VOD (C).
+        List<VideoEntry> all = List.of(A, B, C, marker(9, "livenow", "2026-09-12", true), marker(7, "droneleg", "2026-08-21"));
+        assertEquals(List.of("s:livenow", "v2", "v1", "s:droneleg", "v3"),
+                rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.DEFAULT)),
+                "Default: live → ★ → views → recent");
+        assertEquals(List.of("s:livenow", "v1", "v2", "s:droneleg", "v3"),
+                rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.LIVE)),
+                "Live: live → views (★ ignored)");
+        assertEquals(List.of("v1", "v2", "s:livenow", "s:droneleg", "v3"),
+                rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.VIEWS)),
+                "Views: a live streamer is still view-less");
     }
 
     @Test

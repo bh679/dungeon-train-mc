@@ -6,8 +6,6 @@ import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Checkbox;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
@@ -18,18 +16,20 @@ import net.neoforged.api.distmarker.OnlyIn;
 import java.util.List;
 
 /**
- * <b>Submit a video</b> — paste a link, press Submit, and it goes to the operator's review queue
- * (never straight onto the list). A kind switch above the box says what the link is:
+ * <b>Submit a video</b> — paste a link, press Submit. A two-button switch above the box says what
+ * the link is, both halves always visible and the active one framed:
  *
  * <ul>
- *   <li><b>Video</b> — any YouTube / Bilibili / Twitch / Instagram video link.</li>
- *   <li><b>Streamer</b> — the player's own Twitch channel. Streamers are listed by the days they
- *       stream the game, so the page only takes the link while they are live: a checkbox says so,
- *       and Submit without it just says "come back when you're going live" and sends nothing.</li>
+ *   <li><b>Video</b> — any YouTube / Bilibili / Twitch / Instagram video link. Goes to the operator's
+ *       review queue (never straight onto the list).</li>
+ *   <li><b>Livestream</b> — the player's own Twitch channel, submitted <em>while live</em>. Under the
+ *       switch a pulsing green dot says "Currently live" and a grey line gives the one rule: the
+ *       stream title must include "Dungeon Train". The relay checks both on Twitch and, if they hold,
+ *       lists the streamer at once with a live dot; otherwise it says why. Nothing to tick.</li>
  * </ul>
  *
- * <p>On a dev build the relay's dev cap is the operator's own, so there is no checkbox and no queue —
- * either kind is published the moment it is sent, and the Videos page behind is refreshed.</p>
+ * <p>On a dev build the relay's dev cap is the operator's own, so videos skip the queue too and the
+ * Videos page behind is refreshed on success.</p>
  *
  * <p>The box is checked before anything is sent — {@code http(s)://} and no spaces, and for a
  * streamer a bare {@code twitch.tv/<login>} — so an obvious typo is caught without a round trip;
@@ -53,13 +53,16 @@ public final class VideoSubmitScreen extends Screen {
     private final Screen parent;
     private final boolean dev = DungeonTrain.isDevBuild();
 
-    private CycleButton<VideoSubmitter.Kind> kindButton;
+    /** Height of the "Currently live" + title-rule lines under the switch in Livestream mode. */
+    private static final int LIVE_LINES_H = 22;
+    private static final int LIVE_DOT = 6;
+
+    private Button videoButton;
+    private Button liveButton;
     private EditBox field;
-    private Checkbox liveBox;
     private Button submit;
     private VideoSubmitter.Kind kind = VideoSubmitter.Kind.VIDEO;
     private String url = "";
-    private boolean live;
     private boolean sending;
     private Component status;
     private int statusColour = BODY_COLOUR;
@@ -72,17 +75,19 @@ public final class VideoSubmitScreen extends Screen {
     @Override
     protected void init() {
         int fieldW = Math.min(FIELD_W, this.width - 32);
-        int fieldY = this.height / 2 - 20;
+        int fieldY = this.height / 2 - 12;
         int left = this.width / 2 - fieldW / 2;
 
-        // Kind switch above the box; the body text under the title describes whichever is chosen.
-        kindButton = addRenderableWidget(CycleButton.<VideoSubmitter.Kind>builder(
-                        k -> Component.translatable("gui.dungeontrain.videos.submit.kind." + k.key()))
-                .withValues(VideoSubmitter.Kind.values())
-                .withInitialValue(kind)
-                .create(left, fieldY - FIELD_H - GAP, fieldW, FIELD_H,
-                        Component.translatable("gui.dungeontrain.videos.submit.kind"),
-                        (b, k) -> setKind(k)));
+        // Kind switch above the box — two halves, both visible, the active one framed. The two
+        // "Currently live" lines sit between the switch and the box, so the box is placed for them.
+        int halfW = (fieldW - GAP) / 2;
+        int switchY = fieldY - LIVE_LINES_H - GAP - FIELD_H;
+        videoButton = addRenderableWidget(new KindSegmentButton(left, switchY, halfW, FIELD_H,
+                Component.translatable("gui.dungeontrain.videos.submit.kind.video"),
+                () -> kind == VideoSubmitter.Kind.VIDEO, b -> setKind(VideoSubmitter.Kind.VIDEO)));
+        liveButton = addRenderableWidget(new KindSegmentButton(left + halfW + GAP, switchY, fieldW - halfW - GAP, FIELD_H,
+                Component.translatable("gui.dungeontrain.videos.submit.kind.livestream"),
+                () -> kind == VideoSubmitter.Kind.STREAMER, b -> setKind(VideoSubmitter.Kind.STREAMER)));
 
         field = new EditBox(this.font, left, fieldY, fieldW, FIELD_H,
                 Component.translatable("gui.dungeontrain.videos.submit.field"));
@@ -95,15 +100,7 @@ public final class VideoSubmitScreen extends Screen {
         addRenderableWidget(field);
         setInitialFocus(field);
 
-        // The streamer's "I'm live" tick, under the box. Dev builds have no queue to gate, so no box.
-        liveBox = Checkbox.builder(Component.translatable("gui.dungeontrain.videos.submit.live"), this.font)
-                .pos(left, fieldY + FIELD_H + GAP)
-                .selected(live)
-                .onValueChange((box, value) -> live = value)
-                .build();
-        addRenderableWidget(liveBox);
-
-        int buttonsY = fieldY + FIELD_H + GAP + FIELD_H + GAP;
+        int buttonsY = fieldY + FIELD_H + 8;
         int totalW = 2 * BUTTON_W + GAP;
         submit = addRenderableWidget(new DarkTintedButton(this.width / 2 - totalW / 2, buttonsY, BUTTON_W, FIELD_H,
                 Component.translatable("gui.dungeontrain.videos.submit.button"), b -> send()));
@@ -121,12 +118,11 @@ public final class VideoSubmitScreen extends Screen {
         refreshSubmit();
     }
 
-    /** Hint and checkbox follow the kind; the URL text survives a switch. */
+    /** The hint follows the kind; the URL text survives a switch. */
     private void applyKind() {
         boolean streamer = kind == VideoSubmitter.Kind.STREAMER;
         field.setHint(Component.translatable(streamer
                 ? "gui.dungeontrain.videos.submit.hint.streamer" : "gui.dungeontrain.videos.submit.hint"));
-        liveBox.visible = streamer && !dev;
     }
 
     /**
@@ -149,41 +145,38 @@ public final class VideoSubmitScreen extends Screen {
     private void send() {
         String u = url.trim();
         if (sending || !VideoCatalogFetcher.isValidUrl(u)) return;
-        if (kind == VideoSubmitter.Kind.STREAMER) {
-            // A streamer link must be a bare channel, and — outside dev builds — they must be live
-            // now: a marker means "streamed the game today", so an off-air submission records nothing.
-            if (!VideoSubmitter.isTwitchChannelUrl(u)) {
-                setStatus(Component.translatable("gui.dungeontrain.videos.submit.bad_channel"), ERROR_COLOUR);
-                return;
-            }
-            if (!dev && !live) {
-                setStatus(Component.translatable("gui.dungeontrain.videos.submit.not_live"), WARN_COLOUR);
-                return;
-            }
+        if (kind == VideoSubmitter.Kind.STREAMER && !VideoSubmitter.isTwitchChannelUrl(u)) {
+            // A streamer link must be a bare channel; whether they are live is the relay's check.
+            setStatus(Component.translatable("gui.dungeontrain.videos.submit.bad_channel"), ERROR_COLOUR);
+            return;
         }
         sending = true;
         setStatus(Component.translatable("gui.dungeontrain.videos.submit.sending"), BODY_COLOUR);
         refreshSubmit();
-        VideoSubmitter.submitAsync(u, kind, live, result -> Minecraft.getInstance().execute(() -> onResult(result)));
+        VideoSubmitter.submitAsync(u, kind, result -> Minecraft.getInstance().execute(() -> onResult(result)));
     }
 
     /** Render thread. */
     private void onResult(VideoSubmitter.Result result) {
         sending = false;
-        boolean accepted = result == VideoSubmitter.Result.QUEUED || result == VideoSubmitter.Result.PUBLISHED;
+        boolean accepted = result == VideoSubmitter.Result.QUEUED || result == VideoSubmitter.Result.PUBLISHED
+                || result == VideoSubmitter.Result.LIVE;
         UiAnalytics.confirm(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_SUBMIT, accepted);
         switch (result) {
             case QUEUED -> {
                 setStatus(Component.translatable("gui.dungeontrain.videos.submit.queued"), OK_COLOUR);
                 clearField();
             }
-            case PUBLISHED -> {
-                setStatus(Component.translatable("gui.dungeontrain.videos.submit.published"), OK_COLOUR);
+            case PUBLISHED, LIVE -> {
+                setStatus(Component.translatable(kind == VideoSubmitter.Kind.STREAMER
+                        ? "gui.dungeontrain.videos.submit.live_ok" : "gui.dungeontrain.videos.submit.published"), OK_COLOUR);
                 clearField();
                 // It is on the list now; the Videos page behind this one should show it on return.
                 VideoCatalog.retry();
             }
             case NOT_LIVE -> setStatus(Component.translatable("gui.dungeontrain.videos.submit.not_live"), WARN_COLOUR);
+            case TITLE_MISSING -> setStatus(Component.translatable("gui.dungeontrain.videos.submit.title_missing"), WARN_COLOUR);
+            case LIVE_CHECK_UNAVAILABLE -> setStatus(Component.translatable("gui.dungeontrain.videos.submit.live_unavailable"), ERROR_COLOUR);
             case ALREADY_LISTED -> setStatus(Component.translatable("gui.dungeontrain.videos.submit.already_listed"), WARN_COLOUR);
             case ALREADY_PENDING -> setStatus(Component.translatable("gui.dungeontrain.videos.submit.already_pending"), WARN_COLOUR);
             case BAD_URL -> setStatus(Component.translatable(kind == VideoSubmitter.Kind.STREAMER
@@ -218,7 +211,7 @@ public final class VideoSubmitScreen extends Screen {
                         ? "gui.dungeontrain.videos.submit.body.streamer" : "gui.dungeontrain.videos.submit.body"), wrapW);
         List<net.minecraft.util.FormattedCharSequence> note = dev
                 ? this.font.split(Component.translatable("gui.dungeontrain.videos.submit.dev_note"), wrapW) : List.of();
-        int y = kindButton.getY() - 6 - (body.size() + note.size()) * this.font.lineHeight - (note.isEmpty() ? 0 : 2);
+        int y = videoButton.getY() - 6 - (body.size() + note.size()) * this.font.lineHeight - (note.isEmpty() ? 0 : 2);
         for (var line : body) {
             g.drawCenteredString(this.font, line, this.width / 2, y, BODY_COLOUR);
             y += this.font.lineHeight;
@@ -227,6 +220,18 @@ public final class VideoSubmitScreen extends Screen {
         for (var line : note) {
             g.drawCenteredString(this.font, line, this.width / 2, y, NOTE_COLOUR);
             y += this.font.lineHeight;
+        }
+
+        // Livestream: "● Currently live" and the title rule, between the switch and the box.
+        if (streamer) {
+            int ly = videoButton.getY() + FIELD_H + GAP;
+            Component liveLine = Component.translatable("gui.dungeontrain.videos.submit.currently_live");
+            int lw = LIVE_DOT + 4 + this.font.width(liveLine);
+            int lx = this.width / 2 - lw / 2;
+            VideoList.drawLiveDot(g, lx, ly + (this.font.lineHeight - LIVE_DOT) / 2, LIVE_DOT);
+            g.drawString(this.font, liveLine, lx + LIVE_DOT + 4, ly, VideoList.LIVE_COLOUR);
+            g.drawCenteredString(this.font, Component.translatable("gui.dungeontrain.videos.submit.title_rule"),
+                    this.width / 2, ly + this.font.lineHeight + 2, NOTE_COLOUR);
         }
 
         if (status != null) {

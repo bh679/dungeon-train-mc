@@ -20,8 +20,8 @@ import java.util.function.Consumer;
 /**
  * Off-thread poster for {@code POST /<CAP>/videos/submit} — a player-suggested link into the
  * operator's review queue, or (dev builds: the dev cap is the operator's) straight onto the list.
- * Anonymous: the body is the URL, what kind of link it is, and for a streamer whether they are live
- * right now. The relay answers with what happened, mapped here to a {@link Result} the submit screen
+ * Anonymous: the body is the URL and what kind of link it is; for a streamer the relay checks Twitch
+ * itself for "live right now with the game in the title". It answers with what happened, mapped here to a {@link Result} the submit screen
  * can put into words.
  */
 public final class VideoSubmitter {
@@ -49,8 +49,14 @@ public final class VideoSubmitter {
         QUEUED,
         /** On the list already — the dev cap publishes without review. */
         PUBLISHED,
-        /** A streamer who did not say they are live: nothing recorded, come back when streaming. */
+        /** A streamer already listed today, re-marked live. */
+        LIVE,
+        /** The channel is not live on Twitch: nothing recorded, come back when streaming. */
         NOT_LIVE,
+        /** Live, but the stream title does not say "Dungeon Train". */
+        TITLE_MISSING,
+        /** The relay could not ask Twitch just now. */
+        LIVE_CHECK_UNAVAILABLE,
         /** The relay already lists this video. */
         ALREADY_LISTED,
         /** Somebody (maybe this player) already suggested it; it is waiting for review. */
@@ -73,15 +79,14 @@ public final class VideoSubmitter {
     private VideoSubmitter() {}
 
     /**
-     * Post {@code url} as a {@code kind}; {@code live} is the streamer's "I'm live now" tick (ignored
-     * for videos). {@code onDone} runs on the HTTP thread — marshal to the render thread yourself.
+     * Post {@code url} as a {@code kind}. {@code onDone} runs on the HTTP thread — marshal to the
+     * render thread yourself.
      */
-    public static void submitAsync(String url, Kind kind, boolean live, Consumer<Result> onDone) {
+    public static void submitAsync(String url, Kind kind, Consumer<Result> onDone) {
         try {
             JsonObject body = new JsonObject();
             body.addProperty("url", url);
             body.addProperty("kind", (kind == null ? Kind.VIDEO : kind).key());
-            if (kind == Kind.STREAMER) body.addProperty("live", live);
             HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/videos/submit"))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Content-Type", "application/json")
@@ -110,14 +115,17 @@ public final class VideoSubmitter {
             String e = field(body, "error");
             if ("bad_url".equals(e)) return Result.BAD_URL;
             if ("not_live".equals(e)) return Result.NOT_LIVE;
+            if ("title_missing".equals(e)) return Result.TITLE_MISSING;
             return Result.FAILED;
         }
+        if (status == 503 && "live_check_unavailable".equals(field(body, "error"))) return Result.LIVE_CHECK_UNAVAILABLE;
         if (status / 100 != 2) return Result.FAILED;
         String s = field(body, "status");
         if (s == null) return Result.FAILED;
         return switch (s) {
             case "queued" -> Result.QUEUED;
             case "published" -> Result.PUBLISHED;
+            case "live" -> Result.LIVE;
             case "already_listed" -> Result.ALREADY_LISTED;
             case "already_pending" -> Result.ALREADY_PENDING;
             default -> Result.FAILED;

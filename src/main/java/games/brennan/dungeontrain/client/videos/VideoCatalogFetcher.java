@@ -134,12 +134,10 @@ public final class VideoCatalogFetcher {
                     ? o.get("views").getAsLong() : VideoEntry.VIEWS_UNKNOWN;
             String day = str(o, "day", 10);
             if (day != null && !day.matches("\\d{4}-\\d{2}-\\d{2}")) day = null;
-            boolean fav = o.has("devFav") && o.get("devFav").isJsonPrimitive()
-                    && (o.get("devFav").getAsJsonPrimitive().isBoolean()
-                        ? o.get("devFav").getAsBoolean()
-                        : o.get("devFav").getAsJsonPrimitive().isNumber() && o.get("devFav").getAsInt() != 0);
+            boolean fav = flag(o, "devFav");
             return new VideoEntry(id, url, VideoEntry.Platform.fromWire(str(o, "platform", 20)),
-                    str(o, "videoId", 100), str(o, "title", MAX_TEXT), day, views, str(o, "channel", MAX_TEXT), fav);
+                    str(o, "videoId", 100), str(o, "title", MAX_TEXT), day, views, str(o, "channel", MAX_TEXT), fav,
+                    flag(o, "live"));
         } catch (RuntimeException e) {
             return null;
         }
@@ -157,6 +155,13 @@ public final class VideoCatalogFetcher {
         String s = e.getAsString().replaceAll("\\s+", " ").trim();
         if (s.isEmpty()) return null;
         return s.length() > max ? s.substring(0, max) : s;
+    }
+
+    /** A 0/1 or true/false field; absent or anything else → false. */
+    private static boolean flag(JsonObject o, String key) {
+        if (!o.has(key) || !o.get(key).isJsonPrimitive()) return false;
+        var p = o.get(key).getAsJsonPrimitive();
+        return p.isBoolean() ? p.getAsBoolean() : p.isNumber() && p.getAsInt() != 0;
     }
 
     /** Same rule as {@code OfficialLinks.isValidUrl}: http(s), no whitespace, bounded. */

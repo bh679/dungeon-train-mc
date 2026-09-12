@@ -20,9 +20,11 @@ import java.util.Locale;
  * @param views    best-effort view count, or {@link #VIEWS_UNKNOWN} when no platform gave one
  * @param channel  uploader / channel display name, or {@code null} when unknown
  * @param devFav   the operator's ★ — the "Dev faves" filter and the "Dev picks" sort key
+ * @param live     a Twitch streamer marker whose channel the relay has verified live with the game
+ *                 right now (cleared by the relay when the stream ends)
  */
 public record VideoEntry(int id, String url, Platform platform, String videoId, String title, String day,
-                         long views, String channel, boolean devFav) {
+                         long views, String channel, boolean devFav, boolean live) {
 
     /** {@link #views} when the relay served no count — sorted below every known count. */
     public static final long VIEWS_UNKNOWN = -1L;

@@ -60,6 +60,9 @@ public final class VideoList extends AbstractWidget {
     /** Streamer rows: a purple accent bar down the left edge and a faint purple wash over the row. */
     private static final int STREAMER_BAR_W = 2;
     private static final int STREAMER_TINT_ALPHA = 0x22;
+    /** The "live now" dot beside the ★: Twitch-ish green, pulsing so it reads as live, not as a bullet. */
+    static final int LIVE_COLOUR = 0xFF3DDC84;
+    private static final int LIVE_DOT = 5;
 
     private final Font font;
     private final Consumer<VideoEntry> onOpen;
@@ -212,13 +215,40 @@ public final class VideoList extends AbstractWidget {
             g.drawString(font, star, textRight - font.width(star), thumbY, STAR_COLOUR);
             titleRight = textRight - font.width(star) - PAD;
         }
+        if (s.live()) {
+            // The green dot sits left of the ★ (or where it would be), on the title line.
+            int dx = titleRight - LIVE_DOT;
+            int dy = thumbY + (font.lineHeight - LIVE_DOT) / 2;
+            drawLiveDot(g, dx, dy, LIVE_DOT);
+            titleRight = dx - PAD;
+        }
         int textY = thumbY + (THUMB_H - font.lineHeight * 2 - 2) / 2;
         g.drawString(font, font.plainSubstrByWidth(s.name(), titleRight - textX), textX, textY, TITLE_COLOUR);
         Component sub = s.hasLastDay()
                 ? Component.translatable("gui.dungeontrain.videos.streamer.sub", s.streamDays(), s.lastDay())
                 : Component.translatable("gui.dungeontrain.videos.streamer.sub.undated", s.streamDays());
-        g.drawString(font, font.plainSubstrByWidth(sub.getString(), textRight - textX), textX,
+        String subText = sub.getString();
+        int subX = textX;
+        if (s.live()) {
+            // "LIVE now · " in green ahead of the usual sub-line.
+            String liveText = Component.translatable("gui.dungeontrain.videos.streamer.live").getString() + " · ";
+            g.drawString(font, liveText, subX, textY + font.lineHeight + 2, LIVE_COLOUR);
+            subX += font.width(liveText);
+        }
+        g.drawString(font, font.plainSubstrByWidth(subText, textRight - subX), subX,
                 textY + font.lineHeight + 2, SUB_COLOUR);
+    }
+
+    /**
+     * A pulsing green dot: a {@code size}-px square with its corners knocked off, alpha breathing on
+     * a ~1.6 s cycle. Shared with the submit screen's "Currently live" line.
+     */
+    static void drawLiveDot(GuiGraphics g, int x, int y, int size) {
+        double phase = (System.currentTimeMillis() % 1600L) / 1600.0;
+        int alpha = 0x90 + (int) Math.round(0x6F * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2)));
+        int colour = (LIVE_COLOUR & 0x00FFFFFF) | (alpha << 24);
+        g.fill(x + 1, y, x + size - 1, y + size, colour);
+        g.fill(x, y + 1, x + size, y + size - 1, colour);
     }
 
     /** Is the cursor on the row's ⚑ hit square (bottom-right corner)? */

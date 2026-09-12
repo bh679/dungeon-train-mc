@@ -33,9 +33,10 @@ public final class TwitchStreamers {
      *                   marker carried a day
      * @param devFav     true when any marker is the operator's ★
      * @param newestId   the newest marker's relay id — the list's final sort tiebreak
+     * @param live       true when any marker (in practice today's) is relay-verified live right now
      */
     public record Streamer(String key, String name, String url, int streamDays, String lastDay, boolean devFav,
-                           int newestId) {
+                           int newestId, boolean live) {
         public boolean hasLastDay() {
             return lastDay != null;
         }
@@ -104,6 +105,7 @@ public final class TwitchStreamers {
         private final TreeSet<String> days = new TreeSet<>();
         private boolean undated;
         private boolean devFav;
+        private boolean live;
         private VideoEntry newest;
 
         Acc(String key) {
@@ -114,6 +116,7 @@ public final class TwitchStreamers {
             if (v.day() != null) days.add(v.day());
             else undated = true;
             devFav |= v.devFav();
+            live |= v.live();
             if (newest == null || isNewer(v, newest)) newest = v;
         }
 
@@ -130,7 +133,7 @@ public final class TwitchStreamers {
             // Every undated marker is one more day we know of but cannot place.
             int count = days.size() + (undated ? 1 : 0);
             return new Streamer(key, name, newest.url(), count, days.isEmpty() ? null : days.last(), devFav,
-                    newest.id());
+                    newest.id(), live);
         }
     }
 }

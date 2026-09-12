@@ -14,11 +14,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TwitchStreamersTest {
 
     private static VideoEntry marker(int id, String url, String channel, String day, boolean fav) {
-        return new VideoEntry(id, url, TWITCH, null, channel, day, VideoEntry.VIEWS_UNKNOWN, channel, fav);
+        return marker(id, url, channel, day, fav, false);
+    }
+
+    private static VideoEntry marker(int id, String url, String channel, String day, boolean fav, boolean live) {
+        return new VideoEntry(id, url, TWITCH, null, channel, day, VideoEntry.VIEWS_UNKNOWN, channel, fav, live);
     }
 
     private static VideoEntry vod(int id, String channel, String day) {
-        return new VideoEntry(id, "https://www.twitch.tv/videos/" + id, TWITCH, "" + id, "VOD " + id, day, 10, channel, false);
+        return new VideoEntry(id, "https://www.twitch.tv/videos/" + id, TWITCH, "" + id, "VOD " + id, day, 10, channel, false, false);
     }
 
     // The live relay's shape on 2026-09-12: one regular, two occasional, spelled inconsistently.
@@ -32,7 +36,7 @@ class TwitchStreamersTest {
             marker(53, "https://www.twitch.tv/droneleg", "DrOneLeg", "2026-08-21", false),
             marker(51, "https://Twitch.tv/DrOneLeg?x=1", "droneleg", "2026-08-20", false),
             marker(16, "https://www.twitch.tv/droneleg", "droneleg", "2026-07-13", false),
-            new VideoEntry(1, "https://youtu.be/abc", YOUTUBE, "abc", "yt", "2026-09-01", 5, "Someone", false));
+            new VideoEntry(1, "https://youtu.be/abc", YOUTUBE, "abc", "yt", "2026-09-01", 5, "Someone", false, false));
 
     @Test
     void groupsMarkersByCanonicalChannelIgnoringVodsAndOtherPlatforms() {
@@ -79,6 +83,15 @@ class TwitchStreamersTest {
     @Test
     void newestIdIsTheSortTiebreak() {
         assertEquals(53, TwitchStreamers.group(LIVE).get(0).newestId());
+    }
+
+    @Test
+    void liveFollowsAnyLiveMarker() {
+        assertFalse(TwitchStreamers.group(LIVE).get(0).live());
+        List<TwitchStreamers.Streamer> s = TwitchStreamers.group(List.of(
+                marker(1, "https://www.twitch.tv/x", "x", "2026-09-01", false, false),
+                marker(2, "https://www.twitch.tv/x", "x", "2026-09-12", false, true)));
+        assertTrue(s.get(0).live());
     }
 
     @Test

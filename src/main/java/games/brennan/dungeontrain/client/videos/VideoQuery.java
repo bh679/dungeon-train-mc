@@ -83,6 +83,10 @@ public final class VideoQuery {
 
     /** How to order. Each carries its lang-key suffix under {@code gui.dungeontrain.videos.sort.}. */
     public enum Sort {
+        /** The page's opening order: live streams, then ★ picks, then by views, then newest. */
+        DEFAULT("default"),
+        /** Live streams first, then by views. */
+        LIVE("live"),
         /** Most viewed first; rows with no count sink to the bottom, newest of those first. */
         VIEWS("views"),
         /** Newest publish day first; undated rows last. */
@@ -116,6 +120,7 @@ public final class VideoQuery {
      * streamed, its id the newest marker's, and it is starred when any marker is.
      */
     public sealed interface Row permits VideoRow, StreamerRow {
+        boolean sortLive();
         long sortViews();
         String sortDay();
         int sortId();
@@ -123,6 +128,7 @@ public final class VideoQuery {
     }
 
     public record VideoRow(VideoEntry video) implements Row {
+        public boolean sortLive() { return video.live(); }
         public long sortViews() { return video.views(); }
         public String sortDay() { return video.day(); }
         public int sortId() { return video.id(); }
@@ -130,6 +136,7 @@ public final class VideoQuery {
     }
 
     public record StreamerRow(TwitchStreamers.Streamer streamer) implements Row {
+        public boolean sortLive() { return streamer.live(); }
         public long sortViews() { return VideoEntry.VIEWS_UNKNOWN; }
         public String sortDay() { return streamer.lastDay(); }
         public int sortId() { return streamer.newestId(); }
@@ -145,7 +152,7 @@ public final class VideoQuery {
         for (VideoEntry v : entries) {
             if (f.matches(v)) out.add(v);
         }
-        out.sort(Comparator.comparing(VideoRow::new, comparator(sort == null ? Sort.VIEWS : sort)));
+        out.sort(Comparator.comparing(VideoRow::new, comparator(sort == null ? Sort.DEFAULT : sort)));
         return List.copyOf(out);
     }
 
@@ -162,7 +169,7 @@ public final class VideoQuery {
         for (TwitchStreamers.Streamer s : TwitchStreamers.group(entries)) {
             if (f.matches(s)) out.add(new StreamerRow(s));
         }
-        out.sort(comparator(sort == null ? Sort.VIEWS : sort));
+        out.sort(comparator(sort == null ? Sort.DEFAULT : sort));
         return List.copyOf(out);
     }
 
@@ -244,11 +251,14 @@ public final class VideoQuery {
         Comparator<Row> byDay = Comparator.comparing(Row::sortDay,
                 Comparator.nullsLast(Comparator.<String>reverseOrder()));
         Comparator<Row> byId = Comparator.comparingInt(Row::sortId).reversed();
+        Comparator<Row> byLive = Comparator.comparing(Row::sortLive, Comparator.reverseOrder());
+        Comparator<Row> byFav = Comparator.comparing(Row::sortFav, Comparator.reverseOrder());
         return switch (sort) {
+            case DEFAULT -> byLive.thenComparing(byFav).thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
+            case LIVE -> byLive.thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
             case VIEWS -> byViews.thenComparing(byDay).thenComparing(byId);
             case RECENT -> byDay.thenComparing(byViews).thenComparing(byId);
-            case DEV_PICKS -> Comparator.comparing(Row::sortFav, Comparator.reverseOrder())
-                    .thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
+            case DEV_PICKS -> byFav.thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
         };
     }
 }

@@ -65,7 +65,7 @@ public final class VideosScreen extends Screen {
     private final Screen parent;
 
     private VideoQuery.Filter filter = VideoQuery.Filter.ALL;
-    private VideoQuery.Sort sort = VideoQuery.Sort.VIEWS;
+    private VideoQuery.Sort sort = VideoQuery.Sort.DEFAULT;
 
     private final List<PlatformToggleButton> platformButtons = new ArrayList<>();
     private StarToggleButton starButton;
