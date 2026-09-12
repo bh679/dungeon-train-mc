@@ -200,6 +200,15 @@ public final class CarriageEditor {
     }
 
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop) {
+        enter(player, variant, onTop, true);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the plot before teleporting. The category entry
+     *              passes {@code false}: it has just stamped this plot itself, and a second stamp
+     *              would double the one synchronous cost it kept.
+     */
+    public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -211,7 +220,7 @@ public final class CarriageEditor {
         }
 
         rememberReturn(player);
-        stampPlot(overworld, variant, dims);
+        if (stamp) stampPlot(overworld, variant, dims);
 
         CarriageDims box = plotDims(variant, dims);
         double tx = origin.getX() + box.length() / 2.0;
@@ -272,6 +281,8 @@ public final class CarriageEditor {
      * category being stamped; see {@code EditorCommand.restampCarriagePlotsForStage}.
      */
     public static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
             stampPlot(overworld, variant, dims);
         }

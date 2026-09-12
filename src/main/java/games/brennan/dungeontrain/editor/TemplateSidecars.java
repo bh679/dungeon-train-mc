@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Everything a template knows about itself that is <b>not</b> its blocks, gathered into one document
@@ -57,8 +58,9 @@ import java.util.Map;
  * <h2>What is deliberately absent</h2>
  * <ul>
  *   <li><b>Loot prefabs and contents-pool definitions</b> — library objects shared by every template,
- *       not sidecars of one. The links to them travel; the prefabs themselves do not, because
- *       installing a build must never overwrite an unrelated local prefab.</li>
+ *       not sidecars of one. The links to them travel here; the prefabs themselves travel as their
+ *       own relay field through {@link TemplateLootPrefabs}, which is what knows how to land one
+ *       without silently overwriting an unrelated local prefab.</li>
  *   <li><b>The stage link</b> — it has its own relay field and its own install step.</li>
  *   <li><b>The {@code .nbt}</b> — that is the build, and it travels as the blocks blob.</li>
  * </ul>
@@ -104,43 +106,83 @@ public final class TemplateSidecars {
                         id + CarriageVariantPartsStore.EXT));
                 out.add(new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR,
                         id + ContentsAllowStore.EXT));
-                out.add(containers("carriage:" + id));
             }
-            case CONTENTS -> {
-                out.add(new Sidecar("variants", CarriageContentsVariantBlocks.SUBDIR,
-                        id + CarriageContentsVariantBlocks.EXT));
-                out.add(containers("contents:" + id));
-            }
+            case CONTENTS -> out.add(new Sidecar("variants", CarriageContentsVariantBlocks.SUBDIR,
+                    id + CarriageContentsVariantBlocks.EXT));
             case PART -> {
                 CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
                 if (partKind == null) return out;
                 out.add(new Sidecar("variants",
                         CarriagePartVariantBlocks.SUBDIR_BASE + "/" + partKind.id(),
                         id + CarriagePartVariantBlocks.EXT));
-                out.add(containers("part:" + partKind.id() + ":" + id));
             }
             case TRACK -> {
                 TrackKind trackKind = TrackKind.fromId(subKind);
                 if (trackKind == null) return out;
                 out.add(new Sidecar("variants", trackKind.subdir(), id + TrackKind.VARIANTS_EXT));
-                out.add(containers(ContainerContentsStore.trackPlotKey(trackKind, id)));
             }
             case PORTAL_ROOM -> {
                 TrackKind room = TrackKind.PORTAL_ROOM;
                 out.add(new Sidecar("variants", room.subdir(), id + TrackKind.VARIANTS_EXT));
                 out.add(new Sidecar("contents-allow", room.subdir(), id + ContentsAllowStore.EXT));
                 out.add(new Sidecar("copies", room.subdir(), id + PortalRoomCopiesVariant.COPIES_EXT));
-                out.add(containers(ContainerContentsStore.trackPlotKey(room, id)));
             }
             // A group is a list of carriage ids and nothing else — its members carry their own.
             case CARRIAGE_GROUP -> { }
         }
+        // Every kind with sidecars at all has a containers store, keyed by the same plot key the
+        // editor uses — shared with TemplateLootPrefabs, which follows that store's links outward.
+        String plotKey = plotKeyFor(kind, subKind, id);
+        if (plotKey != null) out.add(containers(plotKey));
         return out;
     }
 
+    /**
+     * The {@link ContainerContentsStore} plot key for template {@code id} of {@code kind}, or null
+     * for a kind that has no containers store (a group) or a sub kind this install cannot resolve.
+     * The one place these are spelled: the store keys its files by them, and a key spelled
+     * differently here would upload one build's chests and install another's.
+     */
+    public static String plotKeyFor(BuilderPhotoPaths.Kind kind, String subKind, String id) {
+        if (kind == null || id == null || id.isEmpty()) return null;
+        return switch (kind) {
+            case CARRIAGE -> "carriage:" + id;
+            case CONTENTS -> "contents:" + id;
+            case PART -> {
+                CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
+                yield partKind == null ? null : "part:" + partKind.id() + ":" + id;
+            }
+            case TRACK -> {
+                TrackKind trackKind = TrackKind.fromId(subKind);
+                yield trackKind == null ? null : ContainerContentsStore.trackPlotKey(trackKind, id);
+            }
+            case PORTAL_ROOM -> ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, id);
+            case CARRIAGE_GROUP -> null;
+        };
+    }
+
+    /** The role name under which the containers store travels in the document. */
+    public static final String ROLE_CONTAINERS = "containers";
+
     private static Sidecar containers(String plotKey) {
-        return new Sidecar("containers", ContainerContentsStore.SUBDIR,
+        return new Sidecar(ROLE_CONTAINERS, ContainerContentsStore.SUBDIR,
                 ContainerContentsStore.basenameFor(plotKey));
+    }
+
+    /**
+     * The containers-store text a document carries, or empty when it carries none. What the
+     * download side reads the chest → prefab links from before the store is on disk.
+     */
+    public static Optional<String> containersTextOf(String doc) {
+        if (doc == null || doc.isBlank()) return Optional.empty();
+        try {
+            JsonObject root = JsonParser.parseString(doc).getAsJsonObject();
+            if (!root.has(K_FILES) || !root.get(K_FILES).isJsonObject()) return Optional.empty();
+            JsonElement text = root.getAsJsonObject(K_FILES).get(ROLE_CONTAINERS);
+            return text != null && text.isJsonPrimitive() ? Optional.of(text.getAsString()) : Optional.empty();
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     // ---- collect (upload side) ----

@@ -2938,6 +2938,90 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.prefab_conflict.hint": {
+    "1": {
+      "label": "the build being loaded",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.block": {
+    "1": {
+      "label": "the container block the prefab was saved on",
+      "examples": [
+        "Chest",
+        "Barrel"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.fill": {
+    "1": {
+      "label": "the fewest slots filled",
+      "examples": [
+        "0",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the most slots filled",
+      "examples": [
+        "5",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.fill_all": {
+    "1": {
+      "label": "the fewest slots filled",
+      "examples": [
+        "0",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.entry": {
+    "1": {
+      "label": "how many of the item",
+      "examples": [
+        "3",
+        "16"
+      ]
+    },
+    "2": {
+      "label": "the item",
+      "examples": [
+        "Gold Ingot",
+        "Diamond"
+      ]
+    },
+    "3": {
+      "label": "the entry's weight",
+      "examples": [
+        "10",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.renamed_to": {
+    "1": {
+      "label": "the new name their version will be saved under",
+      "examples": [
+        "test2_2",
+        "gold_relay"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.rename_prompt": {
+    "1": {
+      "label": "the prefab being renamed",
+      "examples": [
+        "Test2",
+        "Gold"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.upload_failed": {
     "1": {
       "label": "the build that saved locally but could not be uploaded",
@@ -4228,6 +4312,230 @@
       "label": "the newest version number",
       "examples": [
         "0.648.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.installed": {
+    "1": {
+      "label": "a version number",
+      "examples": [
+        "0.849.0",
+        "0.828.0"
+      ]
+    },
+    "2": {
+      "label": "how the installed build stands, e.g. \"25 versions behind\" or \"up to date\"",
+      "examples": [
+        "25 versions behind",
+        "up to date"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.one": {
+    "1": {
+      "label": "the number of versions",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.other": {
+    "1": {
+      "label": "the number of versions",
+      "examples": [
+        "4",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.behind": {
+    "1": {
+      "label": "how many versions, already worded as \"N versions\"",
+      "examples": [
+        "54 versions",
+        "1 version"
+      ]
+    },
+    "2": {
+      "label": "how many releases, already worded as \"N releases\"",
+      "examples": [
+        "25 releases"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.releases.one": {
+    "1": {
+      "label": "the number of releases",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.releases.other": {
+    "1": {
+      "label": "the number of releases",
+      "examples": [
+        "25"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.releases.capped": {
+    "1": {
+      "label": "the listing cap, the count is at least this",
+      "examples": [
+        "200"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.latest": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "a version number",
+      "examples": [
+        "0.849.0",
+        "0.828.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.latest.unknown": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.lag": {
+    "1": {
+      "label": "the launcher that is behind",
+      "examples": [
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "how many versions, already worded as \"N versions\"",
+      "examples": [
+        "4 versions",
+        "1 version"
+      ]
+    },
+    "3": {
+      "label": "the launcher that is ahead",
+      "examples": [
+        "Modrinth"
+      ]
+    },
+    "4": {
+      "label": "how many releases, already worded as \"N releases\"",
+      "examples": [
+        "8 releases"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.newer": {
+    "1": {
+      "label": "the launcher that does not have it yet",
+      "examples": [
+        "CurseForge"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.uptodate": {
+    "1": {
+      "label": "how many companion mods are installed",
+      "examples": [
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.updates.one": {
+    "1": {
+      "label": "how many companion mods have an update",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.updates.other": {
+    "1": {
+      "label": "how many companion mods have an update",
+      "examples": [
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.mod.uptodate": {
+    "1": {
+      "label": "a companion mod's name",
+      "examples": [
+        "Trade Everything",
+        "Adventure Item Names"
+      ]
+    },
+    "2": {
+      "label": "a version number",
+      "examples": [
+        "0.9.0",
+        "0.13.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.mod.update": {
+    "1": {
+      "label": "a companion mod's name",
+      "examples": [
+        "Trade Everything",
+        "Adventure Item Names"
+      ]
+    },
+    "2": {
+      "label": "the installed version",
+      "examples": [
+        "0.9.0"
+      ]
+    },
+    "3": {
+      "label": "the newest version",
+      "examples": [
+        "0.13.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.mod.unknown": {
+    "1": {
+      "label": "a companion mod's name",
+      "examples": [
+        "Trade Everything",
+        "Adventure Item Names"
+      ]
+    },
+    "2": {
+      "label": "a version number",
+      "examples": [
+        "0.9.0",
+        "0.13.0"
+      ]
+    },
+    "3": {
+      "label": "a status line, e.g. Checking…",
+      "examples": [
+        "Checking…"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.get": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
       ]
     }
   },

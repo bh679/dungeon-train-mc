@@ -33,6 +33,7 @@ import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomResize;
 import games.brennan.dungeontrain.editor.EditorDevMode;
+import games.brennan.dungeontrain.editor.EditorStampQueue;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.editor.PillarEditor;
@@ -1860,20 +1861,11 @@ public final class EditorCommand {
         }
         boolean nowSelected = !games.brennan.dungeontrain.editor.EditorStageSelection.isSelected(id);
         if (nowSelected) {
-            games.brennan.dungeontrain.editor.EditorStageSelection.select(id);
+            focusStage(source, id);
         } else {
             games.brennan.dungeontrain.editor.EditorStageSelection.clear();
-        }
-        restampCarriagePlotsForStage(source);
-        // Parts-grid visibility is decoupled from selection now (it's driven by the hide-unused
-        // snapshot + per-part checkboxes), so changing the focused stage does not re-filter it.
-        // Auto-open the Stage Blocks panel for the selecting player on the focused stage (close on
-        // deselect) — the panel follows the selection.
-        net.minecraft.server.level.ServerPlayer selPlayer = source.getPlayer();
-        if (nowSelected) {
-            games.brennan.dungeontrain.editor.StagePanelController.openFor(selPlayer, id);
-        } else {
-            games.brennan.dungeontrain.editor.StagePanelController.closeFor(selPlayer);
+            restampCarriagePlotsForStage(source);
+            games.brennan.dungeontrain.editor.StagePanelController.closeFor(source.getPlayer());
         }
         if (nowSelected) {
             source.sendSuccess(() -> Component.literal("Editor: previewing carriages for stage '" + id
@@ -1883,6 +1875,19 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.YELLOW), false);
         }
         return 1;
+    }
+
+    /**
+     * Focus stage {@code id} without toggling: set the selection, re-stamp the carriage plots for
+     * the per-stage preview, and open the Stage Blocks panel for the acting player (replacing any
+     * panel already open for them). Parts-grid visibility is decoupled from selection (it's driven
+     * by the hide-unused snapshot + per-part checkboxes), so this does not re-filter it. Shared by
+     * {@code select} and {@code duplicate} (which lands on the new copy).
+     */
+    private static void focusStage(CommandSourceStack source, String id) {
+        games.brennan.dungeontrain.editor.EditorStageSelection.select(id);
+        restampCarriagePlotsForStage(source);
+        games.brennan.dungeontrain.editor.StagePanelController.openFor(source.getPlayer(), id);
     }
 
     /** Clear any focused stage and restore the normal carriage preview. */
@@ -1905,12 +1910,16 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.StageDuplicator.Result r =
                 games.brennan.dungeontrain.editor.StageDuplicator.duplicate(
                     source.getServer().overworld(), rawId, rawNewId);
+            // The copy is what the user wants to edit next — switch the focus (selection, preview,
+            // Stage Blocks panel) over to it, replacing the source stage's panel.
+            focusStage(source, r.newStageId());
             String skippedNote = r.skippedParts().isEmpty() ? ""
                 : ", " + r.skippedParts().size() + " part(s) skipped (missing template)";
             source.sendSuccess(() -> Component.literal("Editor: duplicated stage '" + r.sourceStageId()
                 + "' → '" + r.newStageId() + "' — " + r.partCopies().size() + " part(s) copied, "
                 + r.entriesAdded() + " assignment entr" + (r.entriesAdded() == 1 ? "y" : "ies")
-                + " added across " + r.touchedVariantIds().size() + " template(s)" + skippedNote + ".")
+                + " added across " + r.touchedVariantIds().size() + " template(s)" + skippedNote
+                + ". Now previewing '" + r.newStageId() + "'.")
                 .withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
@@ -2043,6 +2052,8 @@ public final class EditorCommand {
         if (EditorStampedCategoryState.current().orElse(null) != EditorCategory.CARRIAGES) return;
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        // A category fill still in flight must land first, or it would repaint plots behind this.
+        EditorStampQueue.flush();
         for (games.brennan.dungeontrain.train.CarriageVariant v
                 : games.brennan.dungeontrain.train.CarriageVariantRegistry.allVariants()) {
             CarriageEditor.stampPlot(overworld, v, dims);
@@ -3205,57 +3216,76 @@ public final class EditorCommand {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        // Clear every plot from every category first — switching from one
-        // category to another should leave no stale models behind.
-        EditorCategory.clearAllPlots(overworld, dims);
+        // Only the plot the player lands on is stamped here, on this tick. Everything else — the
+        // erase of every other category's plots and the stamp of every other plot in this one — is
+        // queued on EditorStampQueue and spread across the ticks that follow. Stamping it all inline
+        // held the server thread for as long as the whole category took (nine minutes for Portals
+        // on a slow laptop, in a player's log), with the client sat in an empty world and every
+        // extra "Editor" press queuing another full pass behind the first.
+        //
+        // The state half of the clear (labels, strays, undo history, the previous queue) happens
+        // now; the entering category's own erases are left out because every stamp erases its own
+        // footprint first.
+        List<EditorStampQueue.Job> queued = new ArrayList<>(
+            EditorCategory.clearAllPlotJobs(overworld, dims, category));
 
-        // Stamp every plot so the full list is visible at once.
-        for (Template model : category.models()) {
-            stampCategoryModel(overworld, model, dims);
-        }
-
-        // CARRIAGES also paints the parts grid — floor / walls / roof / doors
-        // templates laid out on new Z rows past the carriage plots so every
-        // authorable part is visible at a glance inside the category.
-        if (category == EditorCategory.CARRIAGES) {
-            CarriagePartEditor.stampAllPlots(overworld, dims);
-        }
-
-        // Remember which category is actively stamped so VariantOverlayRenderer
-        // can keep the floating plot labels visible for as long as the
-        // structures themselves are present — not just while the player is
-        // standing inside a cage.
-        EditorStampedCategoryState.set(category);
-
-        // Teleport to the first via the existing enter path (also handles session + outline).
+        Template head = first.get();
         try {
-            Template head = first.get();
-            if (head instanceof Template.Carriage cm) {
-                CarriageEditor.enter(player, cm.variant());
-            } else if (head instanceof Template.Contents cm) {
-                CarriageContentsEditor.enter(player, cm.contents(), null);
-            } else if (head instanceof Template.Pillar pm) {
-                PillarEditor.enter(player, pm.section());
-            } else if (head instanceof Template.Adjunct am) {
-                PillarEditor.enter(player, am.adjunct());
-            } else if (head instanceof Template.Tunnel tm) {
-                TunnelEditor.enter(player, tm.variant());
-            } else if (head instanceof Template.Track) {
-                TrackEditor.enter(player);
-            } else if (head instanceof Template.PortalRoom rm) {
-                games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, rm.name());
-            }
-            final Template firstModel = head;
-            source.sendSuccess(() -> Component.literal(
-                "Editor: entered '" + category.displayName() + "' at '" + firstModel.displayName() + "'."
-            ), true);
-            return 1;
+            // The landing plot, stamped now so the teleport puts the player on something real.
+            stampCategoryModel(overworld, head, dims);
+            enterFirstModel(player, head);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor enter-category failed", t);
             source.sendFailure(Component.literal("enter failed: "
                 + t.getClass().getSimpleName() + ": " + t.getMessage()
             ).withStyle(ChatFormatting.RED));
             return 0;
+        }
+
+        // Remember which category is actively stamped so VariantOverlayRenderer
+        // can keep the floating plot labels visible for as long as the
+        // structures themselves are present — not just while the player is
+        // standing inside a cage. Set before the fill completes on purpose: the labels are
+        // registry-driven, so they appear over every plot at once and show the fill's progress.
+        EditorStampedCategoryState.set(category);
+
+        for (Template model : category.models()) {
+            if (model.equals(head) || model instanceof Template.Part) continue;   // parts: below
+            queued.add(new EditorStampQueue.Job("stamp " + model.displayName(),
+                () -> stampCategoryModel(overworld, model, dims)));
+        }
+        // CARRIAGES also paints the parts grid — floor / walls / roof / doors
+        // templates laid out on new Z rows past the carriage plots so every
+        // authorable part is visible at a glance inside the category.
+        if (category == EditorCategory.CARRIAGES) {
+            queued.addAll(CarriagePartEditor.stampAllPlotJobs(overworld, dims));
+        }
+        EditorStampQueue.start(queued, category.id());
+
+        final int pending = queued.size();
+        source.sendSuccess(() -> Component.literal(
+            "Editor: entered '" + category.displayName() + "' at '" + head.displayName() + "'."
+            + (pending > 0 ? " Setting up the other plots in the background…" : "")
+        ), true);
+        return 1;
+    }
+
+    /** Teleport onto {@code head}'s plot via its editor's enter path, without restamping it. */
+    private static void enterFirstModel(ServerPlayer player, Template head) {
+        if (head instanceof Template.Carriage cm) {
+            CarriageEditor.enter(player, cm.variant(), true, false);
+        } else if (head instanceof Template.Contents cm) {
+            CarriageContentsEditor.enter(player, cm.contents(), null, true, false);
+        } else if (head instanceof Template.Pillar pm) {
+            PillarEditor.enter(player, pm.section(), true, false);
+        } else if (head instanceof Template.Adjunct am) {
+            PillarEditor.enter(player, am.adjunct(), true, false);
+        } else if (head instanceof Template.Tunnel tm) {
+            TunnelEditor.enter(player, tm.variant(), true, false);
+        } else if (head instanceof Template.Track) {
+            TrackEditor.enter(player, true, false);
+        } else if (head instanceof Template.PortalRoom rm) {
+            games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, rm.name(), true, false);
         }
     }
 
