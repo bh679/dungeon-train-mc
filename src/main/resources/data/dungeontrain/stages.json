@@ -1,4 +1,14 @@
 {
+  "acacia": {
+    "name": "acacia",
+    "minLevel": 192,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ]
+  },
   "copper": {
     "name": "copper",
     "minLevel": 36,

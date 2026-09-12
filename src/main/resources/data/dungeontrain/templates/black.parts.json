@@ -57,6 +57,11 @@
       "name": "mudbricks_wood_oak_darkwo_spruce",
       "weight": 1,
       "stage": "spruce"
+    },
+    {
+      "name": "mudbricks_wood_oak_darkwo_acacia",
+      "weight": 1,
+      "stage": "acacia"
     }
   ],
   "roof": [
@@ -114,6 +119,11 @@
       "name": "mud_wood_oak_darkwood_spruce",
       "weight": 1,
       "stage": "spruce"
+    },
+    {
+      "name": "mud_wood_oak_darkwood_spr_acacia",
+      "weight": 1,
+      "stage": "acacia"
     }
   ],
   "doors": [
@@ -171,6 +181,11 @@
       "name": "mud_wood_oak_darkwood_spruce",
       "weight": 1,
       "stage": "spruce"
+    },
+    {
+      "name": "mud_wood_oak_darkwood_spr_acacia",
+      "weight": 1,
+      "stage": "acacia"
     }
   ]
 }

@@ -64,6 +64,11 @@
       "name": "mudbricks_wood_oak_darkwo_spruce",
       "weight": 1,
       "stage": "spruce"
+    },
+    {
+      "name": "mudbricks_wood_oak_darkwo_acacia",
+      "weight": 1,
+      "stage": "acacia"
     }
   ],
   "walls": [
@@ -227,6 +232,18 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "spruce"
+    },
+    {
+      "name": "mudopen_wood_oak_darkwood_acacia",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "acacia"
+    },
+    {
+      "name": "mudbricks_wood_oak_darkwo_acacia",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "acacia"
     }
   ],
   "roof": [
@@ -352,6 +369,16 @@
       "name": "mudopen_wood_oak_darkwood_spruce",
       "weight": 1,
       "stage": "spruce"
+    },
+    {
+      "name": "mud_wood_oak_darkwood_spr_acacia",
+      "weight": 1,
+      "stage": "acacia"
+    },
+    {
+      "name": "mudopen_wood_oak_darkwood_acacia",
+      "weight": 1,
+      "stage": "acacia"
     }
   ],
   "doors": [
@@ -446,6 +473,11 @@
       "name": "mud_wood_oak_darkwood_spruce",
       "weight": 1,
       "stage": "spruce"
+    },
+    {
+      "name": "mud_wood_oak_darkwood_spr_acacia",
+      "weight": 1,
+      "stage": "acacia"
     }
   ]
 }
