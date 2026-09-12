@@ -2157,6 +2157,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s님이 이 세계의 사용자 지정 열차 콘텐츠를 껐습니다. 새 객차는 기본 설계를 사용합니다.",
   "chat.dungeontrain.custom_content.already_kept": "이 세계에서는 사용자 지정 열차 콘텐츠가 이미 켜져 있습니다.",
   "chat.dungeontrain.custom_content.already_disabled": "이 세계에서는 사용자 지정 열차 콘텐츠가 이미 꺼져 있습니다.",
+  "chat.dungeontrain.lucky_loot.bonus": "행운! 이 상자에 추가 아이템 %s개가 나타났습니다.",
   "gui.dungeontrain.custom_content.title": "사용자 지정 열차 콘텐츠",
   "gui.dungeontrain.custom_content.card.custom.name": "사용자 지정 열차",
   "gui.dungeontrain.custom_content.card.custom.tag": "자유 플레이",

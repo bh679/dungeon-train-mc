@@ -2160,6 +2160,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s a oprit conținutul personalizat pentru tren în această lume. Vagoanele noi vor folosi designurile încorporate.",
   "chat.dungeontrain.custom_content.already_kept": "Conținutul personalizat pentru tren este deja pornit în această lume.",
   "chat.dungeontrain.custom_content.already_disabled": "Conținutul personalizat pentru tren este deja oprit în această lume.",
+  "chat.dungeontrain.lucky_loot.bonus": "Noroc! %s obiect(e) în plus au apărut în acest cufăr.",
   "gui.dungeontrain.custom_content.title": "Conținut personalizat pentru tren",
   "gui.dungeontrain.custom_content.card.custom.name": "Tren personalizat",
   "gui.dungeontrain.custom_content.card.custom.tag": "Joc Liber",

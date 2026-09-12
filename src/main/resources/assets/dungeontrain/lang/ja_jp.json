@@ -2157,6 +2157,7 @@
   "chat.dungeontrain.custom_content.now_disabled": "%s がこのワールドのカスタム列車コンテンツを無効にしました。新しい車両には内蔵の設計が使われます。",
   "chat.dungeontrain.custom_content.already_kept": "このワールドではカスタムの列車コンテンツはすでに有効です。",
   "chat.dungeontrain.custom_content.already_disabled": "このワールドではカスタムの列車コンテンツはすでに無効です。",
+  "chat.dungeontrain.lucky_loot.bonus": "ラッキー！このチェストに追加のアイテムが%s個現れた。",
   "gui.dungeontrain.custom_content.title": "カスタムの列車コンテンツ",
   "gui.dungeontrain.custom_content.card.custom.name": "カスタム列車",
   "gui.dungeontrain.custom_content.card.custom.tag": "フリープレイ",
