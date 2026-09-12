@@ -4,7 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
+import org.slf4j.Logger;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,6 +25,8 @@ import java.util.Optional;
  * that already supplies {@code with}, or inlines a literal string, has made its own choice.</p>
  */
 public final class RequirementJsonRewriter {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     /** The tab whose advancements can carry a requirement. Matches the relay's allowlist. */
     public static final String PATH_PREFIX = "dungeon_train/";
@@ -62,6 +66,14 @@ public final class RequirementJsonRewriter {
             r.requirement().ifPresent(req -> found.put(id, req));
         }
         AdvancementRequirements.replace(found);
+        // One line per datapack load: the operator's proof that a relay edit reached this server.
+        java.util.List<String> overridden = found.entrySet().stream()
+            .filter(e -> e.getValue().overridden())
+            .map(e -> e.getKey().getPath().substring(PATH_PREFIX.length()) + "="
+                + e.getValue().effective() + " (jar " + e.getValue().shipped() + ")")
+            .toList();
+        LOGGER.info("[DungeonTrain] Advancement requirements: {} loaded, {} overridden by relay{}",
+            found.size(), overridden.size(), overridden.isEmpty() ? "" : ": " + String.join(", ", overridden));
         return out;
     }
 
