@@ -12,6 +12,9 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * The Versions page's notes box, taking the whole screen, with a tab per section across the top —
@@ -21,6 +24,10 @@ import java.util.List;
  * <p>Tabs are laid out left to right at a shared width; when more exist than fit, the arrows at
  * either end scroll the strip one tab at a time rather than shrinking tabs until their labels
  * vanish.</p>
+ *
+ * <p>The tag filter chips sit under the tabs when the row has any. Sections come from a supplier
+ * because a chip click changes which versions have anything to show — the strip is rebuilt from
+ * the parent's own rule so the two views can never disagree.</p>
  */
 @OnlyIn(Dist.CLIENT)
 final class ChangelogFullscreenScreen extends Screen {
@@ -36,7 +43,9 @@ final class ChangelogFullscreenScreen extends Screen {
     private static final float SELECTED_R = 0.45F, SELECTED_G = 0.6F, SELECTED_B = 1.0F;
 
     private final Screen parent;
-    private final List<NotesSection> sections;
+    private final Supplier<List<NotesSection>> source;
+    private final Map<ChangelogTag, Integer> tagCounts;
+    private List<NotesSection> sections;
     private int selected;
     /** Index of the first tab shown in the strip. */
     private int firstTab;
@@ -45,11 +54,14 @@ final class ChangelogFullscreenScreen extends Screen {
     private ShaderDetailPane pane;
     private int paneX, paneY, paneW, paneH;
 
-    ChangelogFullscreenScreen(Screen parent, Component title, List<NotesSection> sections, int initial) {
+    ChangelogFullscreenScreen(Screen parent, Component title, Supplier<List<NotesSection>> source,
+                              Map<ChangelogTag, Integer> tagCounts) {
         super(title);
         this.parent = parent;
-        this.sections = List.copyOf(sections);
-        this.selected = Math.max(0, Math.min(initial, this.sections.size() - 1));
+        this.source = source;
+        this.tagCounts = Map.copyOf(tagCounts);
+        this.sections = List.copyOf(source.get());
+        this.selected = 0;
     }
 
     @Override
@@ -59,8 +71,15 @@ final class ChangelogFullscreenScreen extends Screen {
         int tabY = MARGIN;
         layoutTabs(x, tabY, w);
 
+        int y = tabY + TAB_H + GAP;
+        if (!tagCounts.isEmpty()) {
+            TagFilterBar bar = new TagFilterBar(this.font, x, y, w, tagCounts, VersionCompareState.tagFilter(),
+                    this::onFilterChanged);
+            bar.chips().forEach(this::addRenderableWidget);
+            y += bar.height() + GAP;
+        }
         paneX = x;
-        paneY = tabY + TAB_H + GAP;
+        paneY = y;
         paneW = w;
         int bottomY = this.height - MARGIN - BOTTOM_ROW_H;
         paneH = bottomY - GAP - paneY;
@@ -122,6 +141,17 @@ final class ChangelogFullscreenScreen extends Screen {
                     : new DarkTintedButton(tx, y, tabW, TAB_H, sections.get(index).title(), b -> selectTab(index));
             addRenderableWidget(tab);
             tx += tabW + spacing;
+        }
+    }
+
+    private void onFilterChanged(Set<ChangelogTag> filter) {
+        VersionCompareState.setTagFilter(filter);
+        sections = List.copyOf(source.get());
+        selected = Math.max(0, Math.min(selected, sections.size() - 1));
+        followSelection = true;
+        rebuildWidgets();
+        if (pane != null) {
+            pane.resetScroll();
         }
     }
 

@@ -42,6 +42,13 @@ final class PackVersionFetcher {
             "https://api.modrinth.com/v2/project/" + MODRINTH_PACK_PROJECT + "/version?limit=" + MODRINTH_PAGE);
     private static final URI CURSEFORGE_URL = URI.create(
             "https://api.cfwidget.com/" + CURSEFORGE_PACK_PROJECT);
+    /**
+     * The curated changelog ledger, straight from {@code main}. It is what the release notes are
+     * rendered from, and it carries the tags the page filters by; the platforms' own changelog
+     * text does not. ~180 KB gzipped, fetched once per session.
+     */
+    static final URI LEDGER_URL = URI.create(
+            "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/changelog.json");
 
     private static final String MODRINTH_MOD_FILTER = "?loaders=%5B%22neoforge%22%5D&game_versions=%5B%221.21.1%22%5D";
 
@@ -78,8 +85,14 @@ final class PackVersionFetcher {
                 () -> VersionCompareState.failSibling(mod));
     }
 
-    private static void fetch(String what, URI url, Function<String, PlatformVersions> parser,
-                              Consumer<PlatformVersions> onOk, Runnable onFail) {
+    /** The changelog ledger, for tags and structured notes on every release it covers. */
+    static void fetchLedgerAsync() {
+        fetch("Changelog ledger", LEDGER_URL, ChangelogLedgerParser::parse,
+                VersionCompareState::acceptLedger, VersionCompareState::failLedger);
+    }
+
+    private static <T> void fetch(String what, URI url, Function<String, T> parser,
+                                  Consumer<T> onOk, Runnable onFail) {
         HttpRequest req = HttpRequest.newBuilder(url)
                 .header("User-Agent", "DungeonTrain-Mod/" + VersionInfo.VERSION + " (github.com/bh679/dungeon-train-mc)")
                 .header("Accept", "application/json")
@@ -96,18 +109,28 @@ final class PackVersionFetcher {
                 }, EXECUTOR);
     }
 
-    private static void handle(String what, HttpResponse<String> resp, Function<String, PlatformVersions> parser,
-                               Consumer<PlatformVersions> onOk, Runnable onFail) {
+    private static String describe(Object parsed) {
+        if (parsed instanceof PlatformVersions versions) {
+            return versions.entries().size() + " listed, latest "
+                    + versions.latest().map(e -> e.version().toString()).orElse("none");
+        }
+        if (parsed instanceof ChangelogLedger ledger) {
+            return ledger.size() + " released entries";
+        }
+        return String.valueOf(parsed);
+    }
+
+    private static <T> void handle(String what, HttpResponse<String> resp, Function<String, T> parser,
+                                   Consumer<T> onOk, Runnable onFail) {
         if (resp.statusCode() != 200) {
             LOGGER.warn("{}: HTTP {}", what, resp.statusCode());
             onFail.run();
             return;
         }
         try {
-            PlatformVersions versions = parser.apply(resp.body());
-            LOGGER.info("{}: {} listed, latest {}", what, versions.entries().size(),
-                    versions.latest().map(e -> e.version().toString()).orElse("none"));
-            onOk.accept(versions);
+            T parsed = parser.apply(resp.body());
+            LOGGER.info("{}: {}", what, describe(parsed));
+            onOk.accept(parsed);
         } catch (RuntimeException e) {
             LOGGER.warn("{}: could not parse listing", what, e);
             onFail.run();

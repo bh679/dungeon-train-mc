@@ -3,8 +3,10 @@ package games.brennan.dungeontrain.client.version.compare;
 import net.minecraft.client.Minecraft;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Session-scoped holder for each platform's modpack listing, the data behind
@@ -22,6 +24,12 @@ public final class VersionCompareState {
 
     private static final Map<Platform, Slot> SLOTS = new EnumMap<>(Platform.class);
     private static final Map<SiblingMod, Slot> SIBLINGS = new EnumMap<>(SiblingMod.class);
+    private static final LedgerSlot LEDGER = new LedgerSlot();
+    /**
+     * The tags the player has chosen to see, empty for all. Session-scoped and shared by the page
+     * and its fullscreen view so a choice survives switching between them. Render thread only.
+     */
+    private static Set<ChangelogTag> tagFilter = Set.of();
 
     static {
         for (Platform p : Platform.values()) {
@@ -46,6 +54,9 @@ public final class VersionCompareState {
             if (m.installedVersion().isPresent() && arm(SIBLINGS.get(m))) {
                 PackVersionFetcher.fetchSiblingAsync(m);
             }
+        }
+        if (arm(LEDGER)) {
+            PackVersionFetcher.fetchLedgerAsync();
         }
     }
 
@@ -100,6 +111,35 @@ public final class VersionCompareState {
         notifyScreen();
     }
 
+    public static Status ledgerStatus() {
+        return LEDGER.status;
+    }
+
+    /** The curated ledger, once it has loaded; empty while loading or after a failed fetch. */
+    public static Optional<ChangelogLedger> ledger() {
+        return Optional.ofNullable(LEDGER.ledger);
+    }
+
+    static void acceptLedger(ChangelogLedger ledger) {
+        LEDGER.ledger = ledger;
+        LEDGER.status = Status.OK;
+        notifyScreen();
+    }
+
+    static void failLedger() {
+        LEDGER.status = Status.ERROR;
+        notifyScreen();
+    }
+
+    public static Set<ChangelogTag> tagFilter() {
+        return tagFilter;
+    }
+
+    /** Replace the filter with an immutable copy of {@code tags}; empty means show everything. */
+    public static void setTagFilter(Set<ChangelogTag> tags) {
+        tagFilter = tags.isEmpty() ? Set.of() : Set.copyOf(EnumSet.copyOf(tags));
+    }
+
     /** Runs on the HTTP thread; everything Minecraft-side is deferred to the render thread. */
     private static void notifyScreen() {
         Minecraft mc = Minecraft.getInstance();
@@ -112,9 +152,13 @@ public final class VersionCompareState {
         });
     }
 
-    private static final class Slot {
+    private static class Slot {
         volatile Status status = Status.LOADING;
         volatile PlatformVersions versions;
         volatile boolean attempted;
+    }
+
+    private static final class LedgerSlot extends Slot {
+        volatile ChangelogLedger ledger;
     }
 }
