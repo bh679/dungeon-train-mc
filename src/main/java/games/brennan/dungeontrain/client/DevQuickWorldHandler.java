@@ -319,6 +319,10 @@ public final class DevQuickWorldHandler {
      * EditorQuietRuleEvents} re-applies it on every start, so this is the default rather than the
      * only enforcement.</p>
      *
+     * <p><b>Midday, stopped</b> — the same rules stop the daylight cycle, and {@code EditorClock}
+     * holds it at noon, so a plot is authored under the same full light as in the Train Builder;
+     * the one exception is a Day/Night sky, which runs the clock while you stand under it.</p>
+     *
      * <p><b>Void, overworld only</b> — {@link #DT_EDITOR_PRESET}. The plots are the only thing
      * the editor ever looks at, so the terrain that used to be generated under them (and the nether
      * and end alongside) was load time spent on nothing. {@code TrainBootstrapEvents} anchors the

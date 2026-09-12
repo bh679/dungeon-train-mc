@@ -43,10 +43,13 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class NetherFogEvents {
 
-    /** Target fog colour at full intensity — vanilla nether_wastes fog (0x330808). */
-    private static final float NETHER_FOG_R = 0.2f;
-    private static final float NETHER_FOG_G = 0.03f;
-    private static final float NETHER_FOG_B = 0.03f;
+    /**
+     * Target fog colour at full intensity — vanilla nether_wastes fog (0x330808). Shared with
+     * {@link PortalRoomSkyFogEvents}, so a room under a Nether sky fogs the same red as the band.
+     */
+    static final float NETHER_FOG_R = 0.2f;
+    static final float NETHER_FOG_G = 0.03f;
+    static final float NETHER_FOG_B = 0.03f;
 
     /**
      * The vanilla nether_wastes music ({@code minecraft:music.nether.nether_wastes}), but with
