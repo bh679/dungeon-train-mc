@@ -4364,10 +4364,10 @@
   },
   "chat.dungeontrain.lucky_loot.bonus": {
     "1": {
-      "label": "how many extra items the Luck effect added (1 to 3)",
+      "label": "how many extra items the Luck effect added (3 to 5)",
       "examples": [
-        "1",
-        "3"
+        "3",
+        "5"
       ]
     }
   }

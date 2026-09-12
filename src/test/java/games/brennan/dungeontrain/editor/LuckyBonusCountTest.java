@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Locks in the Luck → bonus-count rule behind {@link LuckyBonusRoller#bonusCountFor}:
- * no bonus without Luck, Luck I rolls 1–3, Luck II and up rolls 2–3. The roll itself
+ * no bonus without Luck, Luck I rolls 3–5, Luck II and up rolls 4–5. The roll itself
  * ({@code preRoll}) needs the item registry and is covered by the Gate 2 in-game flow.
  */
 final class LuckyBonusCountTest {
@@ -34,16 +34,16 @@ final class LuckyBonusCountTest {
     }
 
     @Test
-    @DisplayName("Luck I rolls 1–3 and reaches every value")
-    void luckOne_oneToThree() {
-        assertEquals(Set.of(1, 2, 3), sample(1f));
+    @DisplayName("Luck I rolls 3–5 and reaches every value")
+    void luckOne_threeToFive() {
+        assertEquals(Set.of(3, 4, 5), sample(1f));
     }
 
     @Test
-    @DisplayName("Luck II floors the roll at 2 — never a single lonely item")
-    void luckTwo_twoToThree() {
-        assertEquals(Set.of(2, 3), sample(2f));
-        assertEquals(Set.of(2, 3), sample(5f));
+    @DisplayName("Luck II floors the roll at 4")
+    void luckTwo_fourToFive() {
+        assertEquals(Set.of(4, 5), sample(2f));
+        assertEquals(Set.of(4, 5), sample(5f));
     }
 
     @Test

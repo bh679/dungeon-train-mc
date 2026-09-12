@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * Spends a train chest's pre-rolled Luck bonus ({@link LuckyBonusRoller}) the first time
- * a player opens it. A lucky opener gets 1–3 of the candidates dropped into empty slots
+ * a player opens it. A lucky opener gets 3–5 of the candidates dropped into empty slots
  * before the menu opens; an unlucky opener gets nothing — and either way the bonus is
  * consumed, so an already-looted chest can't be revisited with a potion.
  *
