@@ -2225,7 +2225,11 @@ public final class EditorCommand {
 
         CarriageContentsGroup existing = CarriageContentsGroupStore.get(parent.id())
             .orElse(CarriageContentsGroup.EMPTY);
-        CarriageContentsGroup updated = existing.withMember(new CarriageContentsGroup.Member(child.id(), weight));
+        // Re-adding an existing member only updates its weight — keep its gate + Stage links.
+        CarriageContentsGroup.Member member = existing.member(child.id())
+            .map(m -> m.withWeight(weight))
+            .orElseGet(() -> new CarriageContentsGroup.Member(child.id(), weight));
+        CarriageContentsGroup updated = existing.withMember(member);
         try {
             CarriageContentsGroupStore.save(parent.id(), updated);
             source.sendSuccess(() -> Component.literal(
@@ -2278,8 +2282,11 @@ public final class EditorCommand {
             updated = existing.get().withSelfWeight(value);
             stored = updated.selfWeight();
         } else {
-            // Member constructor clamps to [MIN_WEIGHT, MAX_WEIGHT]; withMember replaces in place.
-            CarriageContentsGroup.Member updatedMember = new CarriageContentsGroup.Member(child.id(), value);
+            // withWeight clamps to [MIN_WEIGHT, MAX_WEIGHT] and keeps the member's gate + Stage
+            // links intact (a fresh Member(id, weight) would reset both); withMember replaces in place.
+            CarriageContentsGroup.Member updatedMember = existing.get().member(child.id())
+                .orElseThrow()
+                .withWeight(value);
             updated = existing.get().withMember(updatedMember);
             stored = updatedMember.weight();
         }
