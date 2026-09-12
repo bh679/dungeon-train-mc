@@ -12236,6 +12236,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "pause-menu-icon-strip-translate",
+      "version": "0.846.0",
+      "type": "feat",
+      "title": "Translate, Discord and Videos from the pause menu",
+      "summary": "The pause (ESC) menu now carries a row of icons beside Mods and Shaders: Discord, the community Videos page, and the Help Translate editor \u2014 so translators can work on the game's text without leaving the train. The translation screens get a darker backdrop when opened in-world so they stay readable over a moving train. Support the Mod now takes the full row that Feedback and Report Bugs used to occupy.",
+      "highlights": [
+        "Help Translate, Discord and Videos icons on the pause menu's Mods | Shaders row",
+        "Translation editor usable in-world, with a darker backdrop over the train",
+        "Support the Mod is a full-width pause-menu button",
+        "Slightly smaller icon buttons on the title screen, pause menu and Videos page; one consistent Bilibili mark on the Videos page"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
