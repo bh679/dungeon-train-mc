@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.LuckyBonusRoller;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,6 +19,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -61,28 +63,34 @@ public final class LuckyLootEvents {
         int wanted = LuckyBonusRoller.bonusCountFor(player.getLuck(), level.getRandom());
         if (wanted <= 0 || candidates.isEmpty()) return;
 
-        int added = placeIntoEmptySlots(container, candidates, wanted);
+        List<String> placed = new ArrayList<>();
+        int added = placeIntoEmptySlots(container, candidates, wanted, placed);
         if (added <= 0) return;
         be.setChanged();
         player.displayClientMessage(Component.translatable(MSG_BONUS, added), true);
-        LOGGER.debug("[lucky-loot] {} opened {} at {} with luck {} -> +{} bonus item(s)",
+        LOGGER.debug("[lucky-loot] {} opened {} at {} with luck {} -> +{} bonus item(s) slots={}",
             player.getGameProfile().getName(), state.getBlock().getName().getString(), pos,
-            player.getLuck(), added);
+            player.getLuck(), added, placed);
     }
 
     /**
      * Drop up to {@code wanted} of {@code candidates} into the container's empty slots, in
      * order. Stops when the container is full — leftovers are simply forfeited.
      *
+     * @param placedOut receives one {@code slot:item xCount} entry per stack placed, for the log
      * @return how many stacks were placed
      */
-    private static int placeIntoEmptySlots(Container container, List<ItemStack> candidates, int wanted) {
+    private static int placeIntoEmptySlots(Container container, List<ItemStack> candidates, int wanted,
+                                           List<String> placedOut) {
         int placed = 0;
         int slot = 0;
         int limit = Math.min(wanted, candidates.size());
         while (placed < limit && slot < container.getContainerSize()) {
             if (container.getItem(slot).isEmpty()) {
-                container.setItem(slot, candidates.get(placed).copy());
+                ItemStack stack = candidates.get(placed).copy();
+                container.setItem(slot, stack);
+                placedOut.add(slot + ":" + BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath()
+                    + " x" + stack.getCount());
                 placed++;
             }
             slot++;
