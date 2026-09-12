@@ -45,10 +45,11 @@ final class PackVersionFetcher {
     /**
      * The curated changelog ledger, straight from {@code main}. It is what the release notes are
      * rendered from, and it carries the tags the page filters by; the platforms' own changelog
-     * text does not. ~180 KB gzipped, fetched once per session.
+     * text does not. ~180 KB gzipped, fetched once per session. {@code -Ddungeontrain.changelogUrl}
+     * (gradle {@code -PchangelogUrl}) points a dev client at an unmerged ledger.
      */
-    static final URI LEDGER_URL = URI.create(
-            "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/changelog.json");
+    static final URI LEDGER_URL = URI.create(System.getProperty("dungeontrain.changelogUrl",
+            "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/changelog.json"));
 
     private static final String MODRINTH_MOD_FILTER = "?loaders=%5B%22neoforge%22%5D&game_versions=%5B%221.21.1%22%5D";
 

@@ -163,6 +163,12 @@ neoForge {
             if (project.hasProperty('mockInstalledVersion')) {
                 systemProperty 'dungeontrain.mockInstalledVersion', project.property('mockInstalledVersion').toString()
             }
+            // Changelog-ledger seam: ./gradlew runClient -PchangelogUrl=<url> fetches the tagged
+            // ledger the Versions page filters by from there instead of raw main — needed to test
+            // a ledger change (new tags, new entries) before it has merged.
+            if (project.hasProperty('changelogUrl')) {
+                systemProperty 'dungeontrain.changelogUrl', project.property('changelogUrl').toString()
+            }
             // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes
             // DpiBypassDetector report that process without looking at the real process table, so
             // the title-screen notice can be seen and screenshotted on a machine that isn't running
