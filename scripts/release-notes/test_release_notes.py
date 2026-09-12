@@ -256,13 +256,41 @@ def test_render_leads_with_tag_counts() -> None:
         "--tag", "editor", "--version", "0.292.0")
     out = run(RENDER, ws).stdout
     first = out.splitlines()[0]
-    assert first == "**New Feature ×1 · Bug Fix ×1 · Editor ×2**", first
+    assert first == "**Editor ×2 · New Feature ×1 · Bug Fix ×1**", first
     assert out.index(first) < out.index("### 0.292.0")
 
 
 def test_render_tag_line_empty_when_untagged() -> None:
     assert changelog_io.render_tag_line([{"tags": []}, {}]) == ""
-    assert changelog_io.tag_counts([{"tags": ["ui", "fix"]}, {"tags": ["ui"]}]) == [("fix", 1), ("ui", 2)]
+    assert changelog_io.tag_counts([{"tags": ["ui", "fix"]}, {"tags": ["ui"]}]) == [("ui", 2), ("fix", 1)]
+
+
+def test_backfill_title_only_tags_ignore_body_mentions() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        _untagged("aside", "perf", "Smoother long trains",
+                  "Most noticeable on multiplayer servers; other players see it too."),
+        _untagged("real", "fix", "Death recap now works in multiplayer"),
+    ]})
+    run(BACKFILL, ws)
+    by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
+    assert "multiplayer" not in by_id["aside"]["tags"], "a body mention is narration, not the subject"
+    assert "multiplayer" in by_id["real"]["tags"]
+
+
+def test_backfill_retag_recomputes_one_tag_only() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        {**_untagged("stale", "feat", "Death recap now works in multiplayer"),
+         "tags": ["feature", "editor"]},
+        {**_untagged("wrong", "feat", "Plain title", "mentions multiplayer"),
+         "tags": ["feature", "multiplayer", "ui"]},
+    ]})
+    r = run(BACKFILL, ws, "--retag", "multiplayer")
+    assert r.returncode == 0, r.stderr
+    by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
+    assert by_id["stale"]["tags"] == ["feature", "editor", "multiplayer"], "gained; editor kept"
+    assert by_id["wrong"]["tags"] == ["feature", "ui"], "lost; ui kept"
 
 
 def test_backfill_dry_run_writes_nothing() -> None:
@@ -506,6 +534,8 @@ def main() -> int:
         test_normalise_tags_chore_may_be_empty,
         test_backfill_tags_untagged_entries_and_leaves_tagged_alone,
         test_backfill_dry_run_writes_nothing,
+        test_backfill_title_only_tags_ignore_body_mentions,
+        test_backfill_retag_recomputes_one_tag_only,
         test_render_leads_with_tag_counts,
         test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,

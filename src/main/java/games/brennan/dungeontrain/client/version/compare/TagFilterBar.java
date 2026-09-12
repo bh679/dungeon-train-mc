@@ -8,6 +8,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ import java.util.function.IntConsumer;
 
 /**
  * One row of tag chips above the notes box: "All", then a chip per tag that has at least one entry
- * in the notes being shown, each labelled with its count. The row never grows: when the chips do
+ * in the notes being shown, most to least, each labelled with its count. The row never grows: when the chips do
  * not fit, arrows at either end page through them, the way the fullscreen view pages its tabs.
  * "All" is pinned so clearing the filter is always one click. Clicking a chip toggles it; the
  * selection is a set — any chosen tag matches — kept in {@link VersionCompareState} so both views
@@ -47,9 +48,8 @@ final class TagFilterBar {
     TagFilterBar(Font font, int x, int y, int width, Map<ChangelogTag, Integer> counts,
                  Set<ChangelogTag> selected, int page, Consumer<Set<ChangelogTag>> onChange, IntConsumer onPage) {
         List<Chip> tags = new ArrayList<>();
-        for (ChangelogTag tag : ChangelogTag.values()) {
-            int n = counts.getOrDefault(tag, 0);
-            if (n == 0) continue;
+        for (ChangelogTag tag : byCount(counts)) {
+            int n = counts.get(tag);
             tags.add(new Chip(tag, Component.empty().append(tag.label()).append(" (" + n + ")"),
                     selected.contains(tag)));
         }
@@ -82,6 +82,16 @@ final class TagFilterBar {
             right.active = this.page < pages.size() - 1;
             chips.add(right);
         }
+    }
+
+    /** Tags with at least one entry, most to least; ties keep the taxonomy's order. */
+    static List<ChangelogTag> byCount(Map<ChangelogTag, Integer> counts) {
+        return counts.entrySet().stream()
+                .filter(e -> e.getValue() > 0)
+                .sorted(Comparator.<Map.Entry<ChangelogTag, Integer>>comparingInt(Map.Entry::getValue).reversed()
+                        .thenComparing(Map.Entry::getKey))
+                .map(Map.Entry::getKey)
+                .toList();
     }
 
     /** Split {@code tags} into pages that each fit {@code width}, reserving arrow room when paging. */

@@ -410,7 +410,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community"
       ],
       "title": "Type @Dev in chat: autocomplete + highlight",
@@ -1921,7 +1920,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world",
         "mobs",
@@ -2637,7 +2635,6 @@
       "tags": [
         "content",
         "performance",
-        "multiplayer",
         "world",
         "mobs",
         "advancements"
@@ -3512,7 +3509,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "compatibility",
         "balance"
@@ -4085,7 +4081,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "world",
         "mobs",
         "loot",
@@ -4191,7 +4186,6 @@
       "tags": [
         "performance",
         "editor",
-        "multiplayer",
         "world",
         "ui"
       ],
@@ -4254,7 +4248,6 @@
       "type": "perf",
       "tags": [
         "performance",
-        "multiplayer",
         "world"
       ],
       "title": "Smoother performance on long trains",
@@ -4459,7 +4452,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world",
         "loot",
@@ -4970,7 +4962,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "loot"
       ],
@@ -5293,7 +5284,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "loot"
       ],
@@ -5695,7 +5685,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "translations",
         "world",
         "loot",
@@ -5819,7 +5808,6 @@
       "type": "perf",
       "tags": [
         "performance",
-        "multiplayer",
         "world",
         "balance"
       ],
@@ -5879,7 +5867,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "loot"
       ],
@@ -6303,8 +6290,7 @@
       "version": "0.463.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "multiplayer"
+        "fix"
       ],
       "title": "Whitelisted /playanimation for Free Play runs",
       "summary": "Running /playanimation to play a cosmetic entity animation no longer marks your run as cheated \u2014 it has no gameplay effect, so it's now treated the same as harmless commands like /help and /me.",
@@ -6411,8 +6397,7 @@
       "version": "0.466.0",
       "type": "fix",
       "tags": [
-        "fix",
-        "multiplayer"
+        "fix"
       ],
       "title": "Whitelisted /stopsound for Free Play runs",
       "summary": "Running /stopsound to silence a sound no longer marks your run as cheated \u2014 it has no gameplay effect, so it's now treated the same as /playanimation, /help, and /me.",
@@ -6448,7 +6433,6 @@
       "type": "content",
       "tags": [
         "content",
-        "multiplayer",
         "compatibility",
         "world",
         "ui"
@@ -6656,7 +6640,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "world",
         "loot"
       ],
@@ -6892,7 +6875,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "translations",
         "world",
@@ -6953,7 +6935,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world",
         "ui"
@@ -7063,7 +7044,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world",
         "ui"
@@ -7086,7 +7066,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world",
         "loot",
@@ -7449,7 +7428,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "world",
         "mobs",
         "loot",
@@ -7756,7 +7734,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "compatibility",
         "world",
         "ui"
@@ -7843,7 +7820,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "mobs",
         "loot"
       ],
@@ -7912,7 +7888,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world",
         "loot"
@@ -7938,7 +7913,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world"
       ],
@@ -8023,9 +7997,7 @@
       "id": "multiplayer-play-mode-telemetry",
       "version": "0.524.0",
       "type": "chore",
-      "tags": [
-        "multiplayer"
-      ],
+      "tags": [],
       "title": "Play-mode telemetry for the data explorer",
       "summary": "The world-info report the game already sends on join now notes whether that session was multiplayer, so the private data dashboard can show how the player base splits between single-player, multiplayer, and both. No change to how the game plays.",
       "highlights": [],
@@ -8060,7 +8032,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world",
         "loot",
@@ -8085,7 +8056,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "translations",
         "world",
@@ -8331,7 +8301,6 @@
       "type": "content",
       "tags": [
         "content",
-        "multiplayer",
         "world",
         "balance"
       ],
@@ -8463,7 +8432,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "compatibility",
         "world",
         "ui"
@@ -8547,7 +8515,6 @@
       "type": "perf",
       "tags": [
         "performance",
-        "multiplayer",
         "world",
         "mobs",
         "loot"
@@ -8752,7 +8719,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "multiplayer",
         "balance"
       ],
       "title": "Difficulty set by command no longer follows you into a new world or a new life",
@@ -9441,7 +9407,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "multiplayer",
         "world"
       ],
       "title": "Train Dimensions: the way back always works",
@@ -9463,7 +9428,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "multiplayer",
         "world"
       ],
       "title": "Train Dimensions: fixed rooms losing their train",
@@ -10177,7 +10141,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "world"
       ],
       "title": "Drifting carriages remember who died in them",
@@ -10200,7 +10163,6 @@
         "feature",
         "performance",
         "editor",
-        "multiplayer",
         "community",
         "world",
         "mobs",
@@ -10268,7 +10230,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "compatibility",
         "world"
       ],
@@ -10390,7 +10351,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "world",
         "ui"
       ],
@@ -10432,7 +10392,6 @@
       "type": "fix",
       "tags": [
         "fix",
-        "multiplayer",
         "community",
         "loot",
         "ui"
@@ -10457,7 +10416,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world",
         "loot",
@@ -10865,7 +10823,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "world",
         "ui"
       ],
@@ -11210,7 +11167,6 @@
       "tags": [
         "feature",
         "editor",
-        "multiplayer",
         "community",
         "translations",
         "world",
@@ -12724,7 +12680,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "compatibility",
         "world",
         "ui"
@@ -12954,7 +12909,6 @@
       "tags": [
         "feature",
         "editor",
-        "multiplayer",
         "community",
         "world"
       ],
@@ -13550,7 +13504,6 @@
       "tags": [
         "feature",
         "performance",
-        "multiplayer",
         "community",
         "compatibility",
         "world",
@@ -13622,7 +13575,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "world",
         "ui"
@@ -15798,7 +15750,6 @@
       "type": "feat",
       "tags": [
         "feature",
-        "multiplayer",
         "community",
         "translations",
         "ui"

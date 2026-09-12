@@ -11,6 +11,7 @@ Usage:
   python3 scripts/release-notes/backfill-tags.py            # rewrite the ledger
   python3 scripts/release-notes/backfill-tags.py --dry-run  # report only
   python3 scripts/release-notes/backfill-tags.py --show TAG # list entries a tag would get
+  python3 scripts/release-notes/backfill-tags.py --retag TAG # recompute one tag after tuning its rule
 
 Path honours the CHANGELOG_FILE env override.
 """
@@ -24,15 +25,24 @@ import changelog_io
 # Keyword rules: tag -> regex matched (case-insensitively) against the entry's
 # title + summary + highlights. Deliberately word-bounded and specific: a broad
 # word ("item", "spawn") drags in half the ledger and makes the tag useless.
+#
+# Tags in TITLE_ONLY are matched against the title alone. Lesson from the first
+# pass: the summaries talk *around* a topic constantly — "the books other players
+# wrote", "most noticeable on multiplayer servers", "server owners can set this
+# in the config" — so a body match says the topic was mentioned, not that the
+# change is about it. The title says what the change is about. Multiplayer was
+# 50 tagged / ~5 real on body matching; keep any tag whose vocabulary doubles as
+# everyday narration in TITLE_ONLY.
+TITLE_ONLY = {"multiplayer"}
+
 RULES: dict[str, str] = {
     "editor": (
         r"\beditor\b|\bbuilder\b|\btemplates?\b|\bstage organi[sz]er|\bsub-?variants?\b"
         r"|\bx menu\b|\bworkshop\b|\bstamp(ing)?\b|\bportal room author|\bcarriage part"
     ),
     "multiplayer": (
-        r"\bmultiplayer\b|\bdedicated servers?\b|\bserver (owners?|admins?|operators?)\b|\blan\b"
-        r"|\bother players\b|\bremote players?\b|\bwhitelist|\beveryone on the (train|server)"
-        r"|\bplayers? (joins?|joining|leav(e|es|ing))\b|\bhost(ing|ed)?\b"
+        r"\bmultiplayer\b|\bdedicated servers?\b|\blan\b|\bremote players?\b"
+        r"|\bplayers? (joins?|joining|leav(e|es|ing))\b"
     ),
     "community": (
         r"\brelay\b|\bshared (carriage|book|build|content)s?|\bleaderboards?\b|\bcredits\b"
@@ -93,10 +103,17 @@ def entry_text(entry: dict) -> str:
     return "\n".join(parts)
 
 
+def rule_matches(tag: str, entry: dict) -> bool:
+    rx = _COMPILED.get(tag)
+    if rx is None:
+        return False
+    text = entry.get("title") or "" if tag in TITLE_ONLY else entry_text(entry)
+    return rx.search(text) is not None
+
+
 def topical_tags(entry: dict) -> list[str]:
     """Topical tags the keyword rules assign to `entry` (canonical order)."""
-    text = entry_text(entry)
-    return [tag for tag in changelog_io.VALID_TAGS if tag in _COMPILED and _COMPILED[tag].search(text)]
+    return [tag for tag in changelog_io.VALID_TAGS if rule_matches(tag, entry)]
 
 
 def tags_for(entry: dict) -> list[str]:
@@ -125,6 +142,30 @@ def backfill(entries: list[dict]) -> tuple[list[dict], int]:
     return out, changed
 
 
+def retag(entries: list[dict], tag: str) -> tuple[list[dict], int]:
+    """Recompute ONE topical tag on every entry from the current rule.
+
+    For re-running after a rule is tuned: other tags are untouched, the
+    type-derived tag is never removed. Returns (new entries, count changed).
+    """
+    if tag in changelog_io.TYPE_TAGS.values() and tag not in RULES:
+        raise ValueError(f"'{tag}' is type-derived only; nothing to recompute")
+    out: list[dict] = []
+    changed = 0
+    for e in entries:
+        current = list(e.get("tags") or [])
+        wanted = set(current) - {tag}
+        if rule_matches(tag, e) or changelog_io.TYPE_TAGS.get(e.get("type")) == tag:
+            wanted.add(tag)
+        tags = [t for t in changelog_io.VALID_TAGS if t in wanted]
+        if tags == current:
+            out.append(e)
+        else:
+            out.append({**e, "tags": tags})
+            changed += 1
+    return out, changed
+
+
 def report(entries: list[dict]) -> None:
     counts: Counter[str] = Counter()
     untagged: list[dict] = []
@@ -146,10 +187,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dry-run", action="store_true", help="Report; do not write.")
     p.add_argument("--show", metavar="TAG", choices=changelog_io.VALID_TAGS,
                    help="List the titles the rules give TAG, then exit.")
+    p.add_argument("--retag", metavar="TAG", choices=changelog_io.VALID_TAGS,
+                   help="Recompute TAG on every entry from its (tuned) rule; other tags untouched.")
     args = p.parse_args(argv)
 
     data = changelog_io.load_changelog()
     new_entries, changed = backfill(data["entries"])
+    if args.retag:
+        new_entries, changed = retag(new_entries, args.retag)
 
     if args.show:
         for e in new_entries:
@@ -165,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Nothing to backfill.")
         return 0
     changelog_io.save_changelog({**data, "entries": new_entries})
-    print(f"Tagged {changed} entries.")
+    print(f"{'Retagged' if args.retag else 'Tagged'} {changed} entries.")
     return 0
 
 

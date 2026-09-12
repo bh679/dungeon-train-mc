@@ -109,7 +109,15 @@ The list lives in three places that must agree: `changelog_io.VALID_TAGS`, the s
 the client's `ChangelogTag` enum (`client/version/compare/ChangelogTag.java`, with a lang key per
 tag). The 792 entries that predate tags were classified once by
 `scripts/release-notes/backfill-tags.py` (type-derived tag + keyword rules); the script is a no-op
-on entries that already have `tags`, so it is safe to re-run after tuning a rule.
+on entries that already have `tags`, so it is safe to re-run; `--retag <tag>` recomputes one tag
+across every entry after its rule is tuned.
+
+**Keyword rules match the title only for tags whose vocabulary doubles as narration.** The first
+pass tagged 50 entries `multiplayer` of which ~5 were about multiplayer — summaries say "the books
+other players wrote", "most noticeable on multiplayer servers", "server owners can set this in the
+config" all the time. The title says what a change is *about*; the body says what it *mentions*.
+`TITLE_ONLY` in the script lists such tags. When appending an entry by hand, tag what the change is
+about, not what its prose touches.
 
 ## Scripts
 

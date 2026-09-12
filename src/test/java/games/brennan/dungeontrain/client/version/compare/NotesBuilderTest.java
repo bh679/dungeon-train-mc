@@ -106,6 +106,17 @@ class NotesBuilderTest {
     }
 
     @Test
+    @DisplayName("chips run most to least, ties in taxonomy order, zero-count tags left out")
+    void chipOrder() {
+        Map<ChangelogTag, Integer> counts = new java.util.EnumMap<>(ChangelogTag.class);
+        counts.put(ChangelogTag.UI, 2);
+        counts.put(ChangelogTag.FEATURE, 5);
+        counts.put(ChangelogTag.EDITOR, 2);
+        counts.put(ChangelogTag.MOBS, 0);
+        assertEquals(List.of(ChangelogTag.FEATURE, ChangelogTag.EDITOR, ChangelogTag.UI), TagFilterBar.byCount(counts));
+    }
+
+    @Test
     @DisplayName("toggling a chip flips that tag; the All chip clears")
     void toggle() {
         Set<ChangelogTag> one = TagFilterBar.toggle(Set.of(), ChangelogTag.FIX);

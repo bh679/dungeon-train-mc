@@ -284,12 +284,14 @@ TAG_LABELS = {
 
 
 def tag_counts(entries: list[dict]) -> list[tuple[str, int]]:
-    """(tag, count) over `entries`, in VALID_TAGS order, tags with none omitted."""
+    """(tag, count) over `entries`, most to least (ties in VALID_TAGS order);
+    tags with none omitted."""
     counts: dict[str, int] = {}
     for e in entries:
         for t in e.get("tags") or []:
             counts[t] = counts.get(t, 0) + 1
-    return [(t, counts[t]) for t in VALID_TAGS if t in counts]
+    ordered = [t for t in VALID_TAGS if t in counts]
+    return sorted(((t, counts[t]) for t in ordered), key=lambda tc: -tc[1])
 
 
 def render_tag_line(entries: list[dict]) -> str:
