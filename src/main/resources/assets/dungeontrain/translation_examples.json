@@ -4231,6 +4231,112 @@
       ]
     }
   },
+  "gui.dungeontrain.version.compare.installed": {
+    "1": {
+      "label": "a version number",
+      "examples": [
+        "0.849.0",
+        "0.828.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.one": {
+    "1": {
+      "label": "the number of versions",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.other": {
+    "1": {
+      "label": "the number of versions",
+      "examples": [
+        "4",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.behind": {
+    "1": {
+      "label": "how many versions, already worded as \"N versions\"",
+      "examples": [
+        "4 versions",
+        "1 version"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.behind.atleast": {
+    "1": {
+      "label": "how many versions, already worded as \"N versions\"",
+      "examples": [
+        "200 versions"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.latest": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "a version number",
+      "examples": [
+        "0.849.0",
+        "0.828.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.latest.unknown": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.lag": {
+    "1": {
+      "label": "the launcher that is behind",
+      "examples": [
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "how many versions, already worded as \"N versions\"",
+      "examples": [
+        "4 versions",
+        "1 version"
+      ]
+    },
+    "3": {
+      "label": "the launcher that is ahead",
+      "examples": [
+        "Modrinth"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.newer": {
+    "1": {
+      "label": "the launcher that does not have it yet",
+      "examples": [
+        "CurseForge"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.get": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    }
+  },
   "gui.dungeontrain.video_tools.reset.done_profile": {
     "1": {
       "label": "how many profile items were cleared",
