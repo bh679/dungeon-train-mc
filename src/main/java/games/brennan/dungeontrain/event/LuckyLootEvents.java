@@ -63,14 +63,30 @@ public final class LuckyLootEvents {
         int wanted = LuckyBonusRoller.bonusCountFor(player.getLuck(), level.getRandom());
         if (wanted <= 0 || candidates.isEmpty()) return;
 
+        List<String> existing = describeContents(container);
         List<String> placed = new ArrayList<>();
         int added = placeIntoEmptySlots(container, candidates, wanted, placed);
         if (added <= 0) return;
         be.setChanged();
         player.displayClientMessage(Component.translatable(MSG_BONUS, added), true);
-        LOGGER.debug("[lucky-loot] {} opened {} at {} with luck {} -> +{} bonus item(s) slots={}",
+        LOGGER.debug("[lucky-loot] {} opened {} at {} with luck {} -> +{} bonus item(s) placed={} "
+                + "existing(before)={} nonEmpty(after)={}",
             player.getGameProfile().getName(), state.getBlock().getName().getString(), pos,
-            player.getLuck(), added, placed);
+            player.getLuck(), added, placed, existing, describeContents(container).size());
+    }
+
+    /** {@code slot:item xCount} for every non-empty slot — the log's before/after evidence. */
+    private static List<String> describeContents(Container container) {
+        List<String> out = new ArrayList<>();
+        for (int slot = 0; slot < container.getContainerSize(); slot++) {
+            ItemStack stack = container.getItem(slot);
+            if (!stack.isEmpty()) out.add(describe(slot, stack));
+        }
+        return out;
+    }
+
+    private static String describe(int slot, ItemStack stack) {
+        return slot + ":" + BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath() + " x" + stack.getCount();
     }
 
     /**
@@ -89,8 +105,7 @@ public final class LuckyLootEvents {
             if (container.getItem(slot).isEmpty()) {
                 ItemStack stack = candidates.get(placed).copy();
                 container.setItem(slot, stack);
-                placedOut.add(slot + ":" + BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath()
-                    + " x" + stack.getCount());
+                placedOut.add(describe(slot, stack));
                 placed++;
             }
             slot++;
