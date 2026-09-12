@@ -12461,6 +12461,23 @@
       "released_in": null,
       "released_at": null,
       "pr": 1382
+    },
+    {
+      "id": "test-carriage-hostile-eggs-wood-stages",
+      "version": "0.860.0",
+      "type": "fix",
+      "title": "Test the Carriage shows your hostiles; a wood stage for every wood type",
+      "summary": "Testing a room from the Train Editor now spawns the hostile mobs you placed in it \u2014 before, the gentle opening-of-the-run rule silently withheld every zombie, skeleton and pillager from a test carriage, so spawn-egg cells looked like they never rolled. On the train, the long wooden stretch now changes timber as you go: after oak come birch, acacia, jungle, mangrove, cherry, crimson, warped, bamboo, dark oak, bamboo mosaic and finally spruce, each with its own floors, walls, roofs and doors. Stage authors get column titles on the Stages panel \u2014 click one to sort, click again to flip.",
+      "highlights": [
+        "Test the Carriage spawns authored hostiles as built (the onboarding ramp no longer applies to a test room)",
+        "Twelve wooden stages in sequence from level 131, spruce running to the end of the line",
+        "Stages panel: column titles, click to sort ascending, again for descending",
+        "Fixed dark oak / spruce / acacia roof cells that rolled stripped wood where stripped log was meant"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
