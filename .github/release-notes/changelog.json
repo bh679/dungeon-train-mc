@@ -12390,6 +12390,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-incremental-plot-stamping",
+      "version": "0.856.0",
+      "type": "perf",
+      "title": "Train Editor opens without freezing",
+      "summary": "Entering a Train Editor category (Carriages, Contents, Tracks, Dimensional carriages) no longer holds the game until every plot has been built. You land on the first plot straight away and the rest fill in around you over the next seconds, with a progress line above the hotbar. On slower machines this was taking minutes \u2014 one dimensional-carriage load took nine \u2014 during which the world sat empty and the editor looked stuck.",
+      "highlights": [
+        "Editor categories open in under a second; remaining plots build in the background",
+        "Progress shown above the hotbar: 'Setting up plots\u2026 12/86' then 'Plots ready.'",
+        "Pressing Editor again mid-load restarts the fill instead of queuing another full pass",
+        "Servers: a category load no longer stalls the tick long enough to disconnect players"
+      ],
+      "pr": 1380,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

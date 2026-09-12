@@ -112,6 +112,16 @@ public final class PortalRoomEditor {
     }
 
     public static void enter(ServerPlayer player, String name, boolean onTop) {
+        enter(player, name, onTop, true);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp every room plot before teleporting. The category
+     *              entry passes {@code false}: it stamps the first room itself and queues the rest
+     *              on {@link EditorStampQueue}, so a full pass here would double the whole cost.
+     *              Sizes are still primed either way — the layout needs them before the teleport.
+     */
+    public static void enter(ServerPlayer player, String name, boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -138,7 +148,7 @@ public final class PortalRoomEditor {
             }
         }
 
-        stampAllPlots(overworld, dims);
+        if (stamp) stampAllPlots(overworld, dims);
 
         double tx = origin.getX() + size.getX() / 2.0;
         double ty = onTop ? origin.getY() + size.getY() + 1.0 : origin.getY() + 1.0;
@@ -178,6 +188,8 @@ public final class PortalRoomEditor {
      * under the plots already stamped.</p>
      */
     public static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         primeSizes(overworld, dims);
         for (String name : stampOrder()) {
             stampPlot(overworld, name, dims);
