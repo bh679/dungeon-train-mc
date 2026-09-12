@@ -25,7 +25,8 @@ Public surface:
   find_entry / make_entry / append_entry — entry construction (immutable).
   normalise_tags(type, tags) — type-derived tag + topical tags, canonical order.
   unreleased_entries / mark_all_released — the released-flag boundary.
-  render_markdown(entries) — player-facing Markdown grouped by version desc.
+  render_markdown(entries) — player-facing Markdown: tag-count line, then
+      entries grouped by version desc.
   write_github_output(**kv) — append step outputs to $GITHUB_OUTPUT.
 
 Env overrides (mirror scripts/auto-release for testability):
@@ -261,8 +262,51 @@ def _render_entry(entry: dict) -> str:
     return "\n\n".join(block)
 
 
+# Display labels for the tag-count line that opens the rendered notes. Mirrors
+# the client's en_us lang strings for the same tags.
+TAG_LABELS = {
+    "feature": "New Feature",
+    "content": "New Content",
+    "fix": "Bug Fix",
+    "performance": "Performance",
+    "editor": "Editor",
+    "multiplayer": "Multiplayer",
+    "community": "Community",
+    "translations": "Translations",
+    "compatibility": "Compatibility",
+    "world": "Train & World",
+    "mobs": "Mobs",
+    "loot": "Loot & Books",
+    "advancements": "Advancements",
+    "ui": "Menus & UI",
+    "balance": "Balance",
+}
+
+
+def tag_counts(entries: list[dict]) -> list[tuple[str, int]]:
+    """(tag, count) over `entries`, in VALID_TAGS order, tags with none omitted."""
+    counts: dict[str, int] = {}
+    for e in entries:
+        for t in e.get("tags") or []:
+            counts[t] = counts.get(t, 0) + 1
+    return [(t, counts[t]) for t in VALID_TAGS if t in counts]
+
+
+def render_tag_line(entries: list[dict]) -> str:
+    """"**New Feature ×3 · Bug Fix ×2**" — what a release is made of, at a glance.
+
+    Leads the rendered notes so Discord's embed (the first ~500 characters of
+    the release body) opens with it. Empty when nothing is tagged.
+    """
+    counts = tag_counts(entries)
+    if not counts:
+        return ""
+    return "**" + " · ".join(f"{TAG_LABELS.get(t, t)} ×{n}" for t, n in counts) + "**"
+
+
 def render_markdown(entries: list[dict]) -> str:
-    """Render entries as player-facing Markdown, grouped by version (desc).
+    """Render entries as player-facing Markdown: a tag-count line, then the
+    entries grouped by version (desc).
 
     Returns "" when there are no entries (so a release with nothing logged
     simply falls back to the workflow's generate-notes path).
@@ -276,6 +320,9 @@ def render_markdown(entries: list[dict]) -> str:
         groups, key=lambda v: parse_semver(v) or (-1, -1, -1), reverse=True
     )
     sections: list[str] = []
+    tag_line = render_tag_line(entries)
+    if tag_line:
+        sections.append(tag_line)
     for version in ordered_versions:
         body = "\n\n".join(_render_entry(e) for e in groups[version])
         sections.append(f"### {version}\n\n{body}")

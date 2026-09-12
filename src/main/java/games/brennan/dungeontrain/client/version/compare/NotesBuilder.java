@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.version.compare;
 
+import games.brennan.dungeontrain.client.shaders.ShaderDetailPane;
 import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nullable;
@@ -25,6 +26,8 @@ import java.util.Set;
  * </ul>
  */
 public final class NotesBuilder {
+
+    private static final String KEY_NO_MATCH = "gui.dungeontrain.version.compare.tag.nomatch";
 
     private NotesBuilder() {}
 
@@ -55,6 +58,19 @@ public final class NotesBuilder {
         }
         return Optional.of(new NotesSection(Component.literal("v" + version),
                 ChangelogLines.forLedgerEntries(version, matching)));
+    }
+
+    /**
+     * The section for one release when it must be shown regardless — the fullscreen view keeps a
+     * tab per release, so a release the filter empties shows its heading and a note saying so
+     * rather than vanishing from the strip.
+     */
+    public static NotesSection sectionOrNotice(ReleaseEntry release, @Nullable ChangelogLedger ledger,
+                                               Set<ChangelogTag> filter) {
+        return section(release, ledger, filter).orElseGet(() -> new NotesSection(
+                Component.literal("v" + release.version()),
+                List.of(ChangelogLines.heading("v" + release.version()),
+                        new ShaderDetailPane.Line(Component.translatable(KEY_NO_MATCH), ChangelogLines.COLOUR_MUTED))));
     }
 
     /**

@@ -645,6 +645,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.version.compare.tag.ui": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.version.compare.tag.balance": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.version.compare.tag.nomatch": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.version.compare.siblings": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.version.compare.siblings.uptodate": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.version.compare.siblings.updates.one": {"author": "Opus 5 (Claude)", "reviewer": ""},

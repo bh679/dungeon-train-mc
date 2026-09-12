@@ -640,6 +640,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "Postępy",
   "gui.dungeontrain.version.compare.tag.ui": "Menu i interfejs",
   "gui.dungeontrain.version.compare.tag.balance": "Balans",
+  "gui.dungeontrain.version.compare.tag.nomatch": "Nic z tymi tagami w tej wersji",
   "gui.dungeontrain.version.compare.siblings": "Mody towarzyszące",
   "gui.dungeontrain.version.compare.siblings.uptodate": "Wszystkie %s aktualne",
   "gui.dungeontrain.version.compare.siblings.updates.one": "%s aktualizacja dostępna",

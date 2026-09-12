@@ -781,6 +781,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "Progrese",
   "gui.dungeontrain.version.compare.tag.ui": "Meniuri și UI",
   "gui.dungeontrain.version.compare.tag.balance": "Echilibrare",
+  "gui.dungeontrain.version.compare.tag.nomatch": "Nimic cu aceste etichete în această versiune",
   "gui.dungeontrain.version.compare.siblings": "Moduri însoțitoare",
   "gui.dungeontrain.version.compare.siblings.uptodate": "Toate cele %s sunt la zi",
   "gui.dungeontrain.version.compare.siblings.updates.one": "%s actualizare disponibilă",

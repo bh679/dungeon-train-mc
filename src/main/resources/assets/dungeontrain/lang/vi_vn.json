@@ -590,6 +590,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "Thành tựu",
   "gui.dungeontrain.version.compare.tag.ui": "Menu & Giao diện",
   "gui.dungeontrain.version.compare.tag.balance": "Cân bằng",
+  "gui.dungeontrain.version.compare.tag.nomatch": "Không có gì với các thẻ đó trong phiên bản này",
   "gui.dungeontrain.version.compare.siblings": "Mod đi kèm",
   "gui.dungeontrain.version.compare.siblings.uptodate": "Cả %s đều mới nhất",
   "gui.dungeontrain.version.compare.siblings.updates.other": "Có %s bản cập nhật",

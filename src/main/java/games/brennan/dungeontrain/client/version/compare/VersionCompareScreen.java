@@ -110,6 +110,8 @@ public final class VersionCompareScreen extends Screen {
 
     private List<Row> rows = List.of();
     private ShaderDetailPane notes;
+    /** Which page of tag chips the strip shows; reset when the selected row changes. */
+    private int chipPage;
     /** x, y, w, h of the notes box, for the background fill. */
     private int[] paneRect = new int[4];
 
@@ -151,7 +153,8 @@ public final class VersionCompareScreen extends Screen {
         Map<ChangelogTag, Integer> counts = tagCountsFor(current);
         if (!counts.isEmpty()) {
             TagFilterBar bar = new TagFilterBar(this.font, x, y, w, counts, VersionCompareState.tagFilter(),
-                    this::onFilterChanged);
+                    chipPage, this::onFilterChanged, this::onChipPage);
+            chipPage = bar.page();
             bar.chips().forEach(this::addRenderableWidget);
             y += bar.height() + GAP;
         }
@@ -198,6 +201,7 @@ public final class VersionCompareScreen extends Screen {
         }
         selected = row.key();
         selectionMade = true;
+        chipPage = 0;
         rebuildWidgets();
         if (notes != null) {
             notes.resetScroll();
@@ -212,11 +216,18 @@ public final class VersionCompareScreen extends Screen {
         }
     }
 
+    private void onChipPage(int page) {
+        chipPage = page;
+        rebuildWidgets();
+    }
+
     private void openFullscreen() {
         Row row = rowFor(selected);
         if (row == null) return;
-        Minecraft.getInstance().setScreen(new ChangelogFullscreenScreen(this, row.heading(),
-                () -> sectionsFor(row), tagCountsFor(row)));
+        ChangelogFullscreenScreen screen = row.isSiblings()
+                ? ChangelogFullscreenScreen.forSections(this, row.heading(), siblingSections())
+                : ChangelogFullscreenScreen.forReleases(this, row.heading(), releasesFor(row));
+        Minecraft.getInstance().setScreen(screen);
     }
 
     private void openUpdatePage() {

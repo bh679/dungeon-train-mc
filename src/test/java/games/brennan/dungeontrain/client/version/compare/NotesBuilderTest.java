@@ -80,6 +80,19 @@ class NotesBuilderTest {
     }
 
     @Test
+    @DisplayName("the fullscreen tab for a release the filter empties keeps its heading and says so")
+    void notice() {
+        NotesSection kept = NotesBuilder.sectionOrNotice(RELEASES.get(0), LEDGER, Set.of(ChangelogTag.EDITOR));
+        assertTrue(texts(kept).contains("Title e1"));
+        NotesSection emptied = NotesBuilder.sectionOrNotice(RELEASES.get(0), LEDGER, Set.of(ChangelogTag.MOBS));
+        assertEquals("v0.853.0", emptied.title().getString());
+        assertEquals(2, emptied.lines().size(), "heading + notice line");
+        assertEquals(ChangelogLines.COLOUR_MUTED, emptied.lines().get(1).colour());
+        // A markdown-only tick under a filter gets the same notice rather than vanishing.
+        assertEquals(2, NotesBuilder.sectionOrNotice(RELEASES.get(1), LEDGER, Set.of(ChangelogTag.FIX)).lines().size());
+    }
+
+    @Test
     @DisplayName("tag counts cover the releases given, and omit tags with nothing")
     void counts() {
         Map<ChangelogTag, Integer> counts = NotesBuilder.tagCounts(RELEASES, LEDGER);

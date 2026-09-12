@@ -590,6 +590,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "ความก้าวหน้า",
   "gui.dungeontrain.version.compare.tag.ui": "เมนูและ UI",
   "gui.dungeontrain.version.compare.tag.balance": "สมดุล",
+  "gui.dungeontrain.version.compare.tag.nomatch": "ไม่มีรายการที่ตรงกับแท็กเหล่านั้นในเวอร์ชันนี้",
   "gui.dungeontrain.version.compare.siblings": "ม็อดเสริม",
   "gui.dungeontrain.version.compare.siblings.uptodate": "ทั้ง %s รายการเป็นเวอร์ชันล่าสุด",
   "gui.dungeontrain.version.compare.siblings.updates.other": "มีอัปเดต %s รายการ",

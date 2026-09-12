@@ -590,6 +590,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "발전 과제",
   "gui.dungeontrain.version.compare.tag.ui": "메뉴와 UI",
   "gui.dungeontrain.version.compare.tag.balance": "밸런스",
+  "gui.dungeontrain.version.compare.tag.nomatch": "이 버전에는 해당 태그의 변경 사항이 없습니다",
   "gui.dungeontrain.version.compare.siblings": "동반 모드",
   "gui.dungeontrain.version.compare.siblings.uptodate": "%s개 모두 최신",
   "gui.dungeontrain.version.compare.siblings.updates.other": "업데이트 %s개 있음",

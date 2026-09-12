@@ -590,6 +590,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "Kemajuan",
   "gui.dungeontrain.version.compare.tag.ui": "Menu & UI",
   "gui.dungeontrain.version.compare.tag.balance": "Keseimbangan",
+  "gui.dungeontrain.version.compare.tag.nomatch": "Tiada apa-apa dengan tag itu dalam versi ini",
   "gui.dungeontrain.version.compare.siblings": "Mod pengiring",
   "gui.dungeontrain.version.compare.siblings.uptodate": "Kesemua %s terkini",
   "gui.dungeontrain.version.compare.siblings.updates.other": "%s kemas kini tersedia",

@@ -645,6 +645,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "Достижения",
   "gui.dungeontrain.version.compare.tag.ui": "Меню и интерфейс",
   "gui.dungeontrain.version.compare.tag.balance": "Баланс",
+  "gui.dungeontrain.version.compare.tag.nomatch": "В этой версии нет изменений с такими тегами",
   "gui.dungeontrain.version.compare.siblings": "Сопутствующие моды",
   "gui.dungeontrain.version.compare.siblings.uptodate": "Все %s актуальны",
   "gui.dungeontrain.version.compare.siblings.updates.one": "Доступно %s обновление",

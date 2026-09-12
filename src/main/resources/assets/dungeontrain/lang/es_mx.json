@@ -615,6 +615,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "Progresos",
   "gui.dungeontrain.version.compare.tag.ui": "Menús e interfaz",
   "gui.dungeontrain.version.compare.tag.balance": "Balance",
+  "gui.dungeontrain.version.compare.tag.nomatch": "Nada con esas etiquetas en esta versión",
   "gui.dungeontrain.version.compare.siblings": "Mods complementarios",
   "gui.dungeontrain.version.compare.siblings.uptodate": "Los %s están al día",
   "gui.dungeontrain.version.compare.siblings.updates.one": "%s actualización disponible",

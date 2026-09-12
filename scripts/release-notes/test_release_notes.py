@@ -247,6 +247,24 @@ def test_backfill_tags_untagged_entries_and_leaves_tagged_alone() -> None:
     assert read_changelog(ws) == before
 
 
+def test_render_leads_with_tag_counts() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    run(APPEND, ws, "--id", "one", "--type", "feat", "--title", "One", "--summary", "s",
+        "--tag", "editor")
+    run(APPEND, ws, "--id", "two", "--type", "fix", "--title", "Two", "--summary", "s",
+        "--tag", "editor", "--version", "0.292.0")
+    out = run(RENDER, ws).stdout
+    first = out.splitlines()[0]
+    assert first == "**New Feature ×1 · Bug Fix ×1 · Editor ×2**", first
+    assert out.index(first) < out.index("### 0.292.0")
+
+
+def test_render_tag_line_empty_when_untagged() -> None:
+    assert changelog_io.render_tag_line([{"tags": []}, {}]) == ""
+    assert changelog_io.tag_counts([{"tags": ["ui", "fix"]}, {"tags": ["ui"]}]) == [("fix", 1), ("ui", 2)]
+
+
 def test_backfill_dry_run_writes_nothing() -> None:
     ws = make_workspace()
     write_changelog(ws, {"entries": [_untagged("x", "feat", "Anything")]})
@@ -488,6 +506,8 @@ def main() -> int:
         test_normalise_tags_chore_may_be_empty,
         test_backfill_tags_untagged_entries_and_leaves_tagged_alone,
         test_backfill_dry_run_writes_nothing,
+        test_render_leads_with_tag_counts,
+        test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,
         test_render_only_unreleased,
         test_render_empty_when_nothing_unreleased,

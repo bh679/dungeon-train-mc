@@ -114,7 +114,7 @@ public final class ChangelogLines {
         return out;
     }
 
-    private static ShaderDetailPane.Line heading(String text) {
+    static ShaderDetailPane.Line heading(String text) {
         return heading(Component.literal(text));
     }
 

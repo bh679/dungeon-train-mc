@@ -590,6 +590,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "Mga Advancement",
   "gui.dungeontrain.version.compare.tag.ui": "Menu at UI",
   "gui.dungeontrain.version.compare.tag.balance": "Balanse",
+  "gui.dungeontrain.version.compare.tag.nomatch": "Walang tugma sa mga tag na iyon sa bersyong ito",
   "gui.dungeontrain.version.compare.siblings": "Mga kasamang mod",
   "gui.dungeontrain.version.compare.siblings.uptodate": "Updated na lahat ng %s",
   "gui.dungeontrain.version.compare.siblings.updates.other": "%s update ang available",

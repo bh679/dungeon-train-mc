@@ -590,6 +590,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "進度",
   "gui.dungeontrain.version.compare.tag.ui": "選單與介面",
   "gui.dungeontrain.version.compare.tag.balance": "平衡",
+  "gui.dungeontrain.version.compare.tag.nomatch": "此版本中沒有帶這些標籤的變更",
   "gui.dungeontrain.version.compare.siblings": "配套模組",
   "gui.dungeontrain.version.compare.siblings.uptodate": "全部 %s 個均為最新",
   "gui.dungeontrain.version.compare.siblings.updates.other": "有 %s 個更新可用",

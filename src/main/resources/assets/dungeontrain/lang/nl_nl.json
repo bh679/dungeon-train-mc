@@ -615,6 +615,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "Vorderingen",
   "gui.dungeontrain.version.compare.tag.ui": "Menu's & UI",
   "gui.dungeontrain.version.compare.tag.balance": "Balans",
+  "gui.dungeontrain.version.compare.tag.nomatch": "Niets met die tags in deze versie",
   "gui.dungeontrain.version.compare.siblings": "Begeleidende mods",
   "gui.dungeontrain.version.compare.siblings.uptodate": "Alle %s up-to-date",
   "gui.dungeontrain.version.compare.siblings.updates.one": "%s update beschikbaar",
