@@ -1,15 +1,20 @@
 package games.brennan.dungeontrain.client.version.compare;
 
 import games.brennan.dungeontrain.client.ClientLanguage;
-import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.shaders.ShaderDetailPane;
 import games.brennan.dungeontrain.client.version.LauncherDetector;
 import games.brennan.dungeontrain.narrative.PluralRules;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.math.Axis;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.LogoRenderer;
+import net.minecraft.util.Mth;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
@@ -45,11 +50,26 @@ public final class VersionCompareScreen extends Screen {
 
     private static final int MARGIN = 16;
     private static final int GAP = 8;
-    private static final int TOP = 32;
+    /** The wordmark at 60 % of the main menu's size — the page's title, not a competing menu. */
+    private static final int LOGO_TOP = 8;
+    private static final int LOGO_SRC_W = 776;
+    private static final int LOGO_SRC_H = 214;
+    private static final int LOGO_W = Math.round(LogoRenderer.LOGO_WIDTH * 0.6F);
+    private static final int LOGO_H = Math.round((float) LOGO_W * LOGO_SRC_H / LOGO_SRC_W);
+    /** The version in the main menu's splash slot, at the splash's own size. */
+    private static final float SPLASH_MULTIPLIER = 1.6F;
+    private static final float SPLASH_ANGLE = -20.0F;
+    private static final int SPLASH_COLOUR = 0xFFFF00;
+    /** Below this window height the header shrinks with the window so the rows still fit. */
+    private static final int FULL_HEADER_HEIGHT = 400;
     private static final int ROW_GAP = 4;
     private static final int BOTTOM_ROW_H = 20;
     private static final int BOTTOM_GAP = 4;
     private static final int MAX_W = 420;
+    private static final int FULLSCREEN_BTN = 14;
+    private static final String FULLSCREEN_GLYPH = "⤢";
+    /** The launcher row's share of the line it splits with the companion-mods row. */
+    private static final float LAUNCHER_ROW_SHARE = 0.6F;
     private static final int PANE_BG = 0x66000000;
 
     private static final String KEY_INSTALLED = "installed";
@@ -76,7 +96,11 @@ public final class VersionCompareScreen extends Screen {
 
     private final Screen parent;
     private final Platform launcher = Platform.current();
-    private final Optional<FullSemver> installed = FullSemver.parse(VersionInfo.VERSION);
+    private final Optional<FullSemver> installed = InstalledVersion.get();
+    /** Where the rows begin once the header has taken its space; set in {@link #init()}. */
+    private int top;
+    private String headerVersion = "";
+    private float headerScale = 1.0F;
 
     /** Identity of the selected row across rebuilds — a {@link Row#key()}. */
     @Nullable private String selected;
@@ -101,14 +125,22 @@ public final class VersionCompareScreen extends Screen {
             selected = defaultSelection(rows);
         }
 
+        layoutHeader();
         int w = Math.min(this.width - MARGIN * 2, MAX_W);
         int x = (this.width - w) / 2;
-        int y = TOP;
+        // The launcher row and the companion-mods row share a line, 60:40 — both are "what your
+        // launcher can update", and side by side they read as one status rather than two.
+        Row siblings = rowFor(KEY_SIBLINGS);
+        int y = top;
         for (Row row : rows) {
-            boolean isSelected = row.key().equals(selected);
-            addRenderableWidget(new VersionRowButton(x, y, w, row.heading(), row.detail(),
-                    !row.available(), isSelected, b -> onRowClick(row)));
-            y += VersionRowButton.HEIGHT + ROW_GAP;
+            if (row.isSiblings()) continue;
+            int rowW = w;
+            if (row.key().equals(launcher.name()) && siblings != null) {
+                rowW = Math.round(w * LAUNCHER_ROW_SHARE) - ROW_GAP / 2;
+                int sibX = x + rowW + ROW_GAP;
+                addRow(siblings, sibX, y, x + w - sibX);
+            }
+            y += addRow(row, x, y, rowW) + ROW_GAP;
         }
 
         int bottomY = this.height - MARGIN - BOTTOM_ROW_H;
@@ -117,11 +149,17 @@ public final class VersionCompareScreen extends Screen {
         ShaderDetailPane previous = notes;
         notes = addRenderableWidget(new ShaderDetailPane(this.font, x + 2, paneTop + 2, w - 4,
                 Math.max(this.font.lineHeight, paneBottom - paneTop - 4)));
-        notes.setLines(notesFor(rowFor(selected)));
+        notes.setLines(NotesSection.flatten(sectionsFor(rowFor(selected))));
         if (previous == null) {
             notes.resetScroll();
         }
         paneRect = new int[] {x, paneTop, w, paneBottom - paneTop};
+
+        // Fullscreen, tucked into the notes box's top-right corner, inside the border.
+        DarkTintedButton fullscreen = addRenderableWidget(new DarkTintedButton(
+                x + w - FULLSCREEN_BTN - 3, paneTop + 3, FULLSCREEN_BTN, FULLSCREEN_BTN,
+                Component.literal(FULLSCREEN_GLYPH), b -> openFullscreen()));
+        fullscreen.setTooltip(Tooltip.create(Component.translatable(KEY + "fullscreen")));
 
         int half = (w - BOTTOM_GAP) / 2;
         addRenderableWidget(new DarkTintedButton(x, bottomY, half, BOTTOM_ROW_H,
@@ -130,6 +168,12 @@ public final class VersionCompareScreen extends Screen {
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(x + half + BOTTOM_GAP, bottomY, w - half - BOTTOM_GAP, BOTTOM_ROW_H)
                 .build());
+    }
+
+    /** Adds the row's button and returns its height — a row with no detail line is shorter. */
+    private int addRow(Row row, int x, int y, int width) {
+        return addRenderableWidget(new VersionRowButton(x, y, width, row.heading(), row.detail(),
+                !row.available(), row.key().equals(selected), b -> onRowClick(row))).getHeight();
     }
 
     /** Called on the render thread when a platform listing lands or fails. */
@@ -147,6 +191,12 @@ public final class VersionCompareScreen extends Screen {
         if (notes != null) {
             notes.resetScroll();
         }
+    }
+
+    private void openFullscreen() {
+        Row row = rowFor(selected);
+        if (row == null) return;
+        Minecraft.getInstance().setScreen(new ChangelogFullscreenScreen(this, row.heading(), sectionsFor(row), 0));
     }
 
     private void openUpdatePage() {
@@ -190,25 +240,27 @@ public final class VersionCompareScreen extends Screen {
     }
 
     private Row installedRow() {
-        Component heading = Component.translatable(KEY + "installed", VersionInfo.VERSION);
+        // One line: "You are on v0.800.0 — 25 versions behind". The standing is a clause after the
+        // dash, so the row stays a single sentence in every state.
         Optional<PlatformVersions> reference = referenceListing();
-        Component detail;
+        Component standing;
         if (installed.isEmpty() || reference.isEmpty()) {
-            detail = Component.translatable(KEY + "behind.unknown");
+            standing = Component.translatable(KEY + "behind.unknown");
         } else {
-            int behind = reference.get().countNewerThan(installed.get());
-            boolean ahead = reference.get().latest().map(e -> installed.get().isNewerThan(e.version())).orElse(false);
+            Optional<FullSemver> latest = reference.get().latest().map(ReleaseEntry::version);
+            int releases = reference.get().countNewerThan(installed.get());
+            boolean ahead = latest.map(installed.get()::isNewerThan).orElse(false);
             if (ahead) {
-                detail = Component.translatable(KEY + "ahead");
-            } else if (behind == 0) {
-                detail = Component.translatable(KEY + "uptodate");
-            } else if (behind >= PackVersionFetcher.MODRINTH_PAGE) {
-                detail = Component.translatable(KEY + "behind.atleast", count(behind));
+                standing = Component.translatable(KEY + "ahead");
+            } else if (releases == 0) {
+                standing = Component.translatable(KEY + "uptodate");
             } else {
-                detail = Component.translatable(KEY + "behind", count(behind));
+                Gap gap = gap(installed.get(), latest.get(), releases);
+                standing = Component.translatable(KEY + "behind", gap.versions(), gap.releases());
             }
         }
-        return new Row(KEY_INSTALLED, installed.orElse(null), heading, detail, true);
+        Component heading = Component.translatable(KEY + "installed", InstalledVersion.display(), standing);
+        return new Row(KEY_INSTALLED, installed.orElse(null), heading, Component.empty(), true);
     }
 
     private Row platformRow(Platform platform, Optional<FullSemver> latest, Optional<FullSemver> otherLatest,
@@ -227,7 +279,8 @@ public final class VersionCompareScreen extends Screen {
         int lag = otherLatest.isPresent() ? lagBehind(platform.other(), latest.get()) : 0;
         if (lag > 0) {
             String otherName = platform.other().displayName();
-            detail = Component.translatable(KEY + "platform.lag", name, count(lag), otherName);
+            Gap gap = gap(latest.get(), otherLatest.get(), lag);
+            detail = Component.translatable(KEY + "platform.lag", name, gap.versions(), otherName, gap.releases());
         } else if (isLauncher) {
             detail = Component.translatable(KEY + "platform.yours");
         } else {
@@ -272,28 +325,30 @@ public final class VersionCompareScreen extends Screen {
         return new Row(KEY_SIBLINGS, null, heading, detail, available);
     }
 
-    /** One block per companion: its standing, then for a lagging one the notes it is missing. */
-    private static List<ShaderDetailPane.Line> siblingNotes() {
-        List<ShaderDetailPane.Line> out = new ArrayList<>();
+    /** One section per companion: its standing, then for a lagging one the notes it is missing. */
+    private static List<NotesSection> siblingSections() {
+        List<NotesSection> out = new ArrayList<>();
         for (SiblingStanding s : siblingStandings()) {
             String name = s.mod().displayName();
             String have = s.installed().toString();
+            List<ShaderDetailPane.Line> lines = new ArrayList<>();
             if (s.listing() == null) {
                 Component text = Component.translatable(KEY + "siblings.mod.unknown", name, have,
                         Component.translatable(s.status() == VersionCompareState.Status.ERROR
                                 ? KEY + "platform.unavailable" : KEY + "platform.loading"));
-                out.add(new ShaderDetailPane.Line(text, ChangelogLines.COLOUR_MUTED));
-                continue;
+                lines.add(new ShaderDetailPane.Line(text, ChangelogLines.COLOUR_MUTED));
+            } else {
+                Optional<FullSemver> latest = s.listing().latest().map(ReleaseEntry::version);
+                if (!s.behind() || latest.isEmpty()) {
+                    lines.add(new ShaderDetailPane.Line(
+                            Component.translatable(KEY + "siblings.mod.uptodate", name, have), ChangelogLines.COLOUR_BULLET));
+                } else {
+                    lines.add(ChangelogLines.heading(Component.translatable(KEY + "siblings.mod.update", name, have,
+                            latest.get().toString())));
+                    lines.addAll(ChangelogLines.forEntries(s.listing().entriesBetween(s.installed(), latest.get())));
+                }
             }
-            Optional<FullSemver> latest = s.listing().latest().map(ReleaseEntry::version);
-            if (!s.behind() || latest.isEmpty()) {
-                out.add(new ShaderDetailPane.Line(
-                        Component.translatable(KEY + "siblings.mod.uptodate", name, have), ChangelogLines.COLOUR_BULLET));
-                continue;
-            }
-            out.add(ChangelogLines.heading(Component.translatable(KEY + "siblings.mod.update", name, have,
-                    latest.get().toString())));
-            out.addAll(ChangelogLines.forEntries(s.listing().entriesBetween(s.installed(), latest.get())));
+            out.add(new NotesSection(Component.literal(name), lines));
         }
         return out;
     }
@@ -309,8 +364,26 @@ public final class VersionCompareScreen extends Screen {
         return modrinth.isPresent() ? modrinth : VersionCompareState.versions(Platform.CURSEFORGE);
     }
 
-    private static Component count(int n) {
-        return PluralRules.clause(ClientLanguage.selected(), KEY + "count", n);
+    /**
+     * "54 versions behind (25 releases)": the headline number is the MINOR-version gap — the
+     * number players see in version strings — and the release count is the number of listed
+     * uploads between the two, which is smaller because releases skip numbers. Across a MAJOR
+     * bump the minor gap means nothing, so the release count stands alone. The release count is
+     * capped by the listing page; past the cap it reads "200+ releases".
+     */
+    private record Gap(Component versions, Component releases) {}
+
+    private static Gap gap(FullSemver from, FullSemver to, int releases) {
+        String locale = ClientLanguage.selected();
+        boolean capped = releases >= PackVersionFetcher.MODRINTH_PAGE;
+        Component releasesClause = capped
+                ? Component.translatable(KEY + "count.releases.capped", releases)
+                : PluralRules.clause(locale, KEY + "count.releases", releases);
+        if (from.major() != to.major()) {
+            return new Gap(releasesClause, releasesClause);
+        }
+        int minorGap = to.minor() - from.minor();
+        return new Gap(PluralRules.clause(locale, KEY + "count", minorGap), releasesClause);
     }
 
     @Nullable
@@ -327,9 +400,10 @@ public final class VersionCompareScreen extends Screen {
 
     // ---- notes ------------------------------------------------------------------------------
 
-    private List<ShaderDetailPane.Line> notesFor(@Nullable Row row) {
+    /** The selected row's notes, one section per version (or per companion mod). */
+    private List<NotesSection> sectionsFor(@Nullable Row row) {
         if (row != null && row.isSiblings()) {
-            return siblingNotes();
+            return siblingSections();
         }
         if (row == null || row.version() == null) {
             return List.of();
@@ -345,12 +419,12 @@ public final class VersionCompareScreen extends Screen {
         if (cumulative) {
             List<ReleaseEntry> between = source.get().entriesBetween(installed.get(), row.version());
             if (!between.isEmpty()) {
-                return ChangelogLines.forEntries(between);
+                return between.stream().map(NotesSection::forEntry).toList();
             }
         }
         ReleaseEntry entry = source.get().find(row.version())
                 .orElse(new ReleaseEntry(row.version(), null, ""));
-        return ChangelogLines.forEntry(entry);
+        return List.of(NotesSection.forEntry(entry));
     }
 
     // ---- render -----------------------------------------------------------------------------
@@ -365,7 +439,66 @@ public final class VersionCompareScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        g.drawCenteredString(this.font, this.title, this.width / 2, 14, 0xFFFFFF);
+        renderLogo(g);
+        renderVersionSplash(g);
+    }
+
+    // ---- header -----------------------------------------------------------------------------
+
+    /**
+     * Sizes the header and decides where the rows start. The splash text is the newest version
+     * on the page (the one the default selection lands on) — or the installed one when nothing
+     * newer is listed, so the header never reads as empty. Its scale is the main menu's splash
+     * formula (times {@link #SPLASH_MULTIPLIER}, kept as the one knob for the size), capped to the
+     * window so a short window still shows the rows underneath.
+     */
+    private void layoutHeader() {
+        headerVersion = "v" + newestVersion().map(FullSemver::toString).orElse(InstalledVersion.display());
+        float shrink = Mth.clamp((float) this.height / FULL_HEADER_HEIGHT, 0.5F, 1.0F);
+        float vanilla = 1.8F * 100.0F / (this.font.width(headerVersion) + 32);
+        float wanted = vanilla * SPLASH_MULTIPLIER * shrink;
+        float widthCap = this.width * 0.45F / this.font.width(headerVersion);
+        headerScale = Math.min(wanted, widthCap);
+        top = Math.max(LOGO_TOP + LOGO_H, splashAnchorY() + splashHalfHeight()) + GAP;
+    }
+
+    private Optional<FullSemver> newestVersion() {
+        return rows.stream().map(Row::version).filter(v -> v != null).max(FullSemver::compareTo);
+    }
+
+    private int logoX() { return (this.width - LOGO_W) / 2; }
+
+    /**
+     * Splash centre: off the logo's right edge, level with its upper half. Higher and further
+     * right than the main menu's so the rows can start straight under the logo.
+     */
+    private int splashAnchorX() { return logoX() + LOGO_W + Math.round(this.font.width(headerVersion) * headerScale * 0.45F); }
+    private int splashAnchorY() { return LOGO_TOP + Math.round(LOGO_H * 0.4F); }
+
+    /** Half the vertical extent of the rotated text, so the rows can start clear of it. */
+    private int splashHalfHeight() {
+        float w = this.font.width(headerVersion) * headerScale;
+        float h = this.font.lineHeight * headerScale;
+        double a = Math.toRadians(-SPLASH_ANGLE);
+        return Mth.ceil((w * Math.sin(a) + h * Math.cos(a)) / 2.0);
+    }
+
+    private void renderLogo(GuiGraphics g) {
+        RenderSystem.enableBlend();
+        g.blit(LogoRenderer.MINECRAFT_LOGO, logoX(), LOGO_TOP, LOGO_W, LOGO_H,
+                0.0F, 0.0F, LOGO_SRC_W, LOGO_SRC_H, LOGO_SRC_W, LOGO_SRC_H);
+    }
+
+    /** Vanilla's splash draw — same slot, same tilt, same breathing pulse — at the page's scale. */
+    private void renderVersionSplash(GuiGraphics g) {
+        g.pose().pushPose();
+        g.pose().translate(splashAnchorX(), splashAnchorY(), 0.0F);
+        g.pose().mulPose(Axis.ZP.rotationDegrees(SPLASH_ANGLE));
+        float pulse = 1.0F - Mth.abs(Mth.sin((float) (Util.getMillis() % 1000L) / 1000.0F * (float) (Math.PI * 2))) * 0.055F;
+        float scale = headerScale * pulse;
+        g.pose().scale(scale, scale, scale);
+        g.drawCenteredString(this.font, headerVersion, 0, -this.font.lineHeight / 2, SPLASH_COLOUR | 0xFF000000);
+        g.pose().popPose();
     }
 
     @Override

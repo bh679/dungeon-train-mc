@@ -22,7 +22,9 @@ import net.neoforged.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 final class VersionRowButton extends DarkTintedButton {
 
-    static final int HEIGHT = 30;
+    static final int HEIGHT = 26;
+    /** A row with no detail line is a plain one-line button. */
+    static final int SINGLE_LINE_HEIGHT = 20;
 
     private static final float SELECTED_R = 0.45F;
     private static final float SELECTED_G = 0.6F;
@@ -38,7 +40,7 @@ final class VersionRowButton extends DarkTintedButton {
 
     VersionRowButton(int x, int y, int width, Component heading, Component detail, boolean muted,
                      boolean selected, OnPress onPress) {
-        super(x, y, width, HEIGHT, heading, onPress,
+        super(x, y, width, detail.getString().isBlank() ? SINGLE_LINE_HEIGHT : HEIGHT, heading, onPress,
                 selected ? SELECTED_R : PLAIN, selected ? SELECTED_G : PLAIN, selected ? SELECTED_B : PLAIN);
         this.detail = detail;
         this.muted = muted;
@@ -59,14 +61,17 @@ final class VersionRowButton extends DarkTintedButton {
         Font font = Minecraft.getInstance().font;
         int alpha = Mth.ceil(this.alpha * 255.0F) << 24;
         int textW = getWidth() - PAD_X * 2;
-        int headingY = getY() + 5;
+        boolean singleLine = detail.getString().isBlank();
+        int headingY = singleLine ? getY() + (getHeight() - font.lineHeight) / 2 + 1 : getY() + 3;
         int detailY = headingY + font.lineHeight + 3;
         int headingColour = (muted ? 0xA0A0A0 : 0xFFFFFF) | alpha;
         int detailColour = (muted ? COLOUR_DETAIL_MUTED : COLOUR_DETAIL) | alpha;
 
         g.enableScissor(getX() + PAD_X, getY(), getX() + PAD_X + textW, getY() + getHeight());
         g.drawString(font, clip(font, heading, textW), getX() + PAD_X, headingY, headingColour, true);
-        g.drawString(font, clip(font, detail, textW), getX() + PAD_X, detailY, detailColour, false);
+        if (!singleLine) {
+            g.drawString(font, clip(font, detail, textW), getX() + PAD_X, detailY, detailColour, false);
+        }
         g.disableScissor();
     }
 

@@ -156,6 +156,13 @@ neoForge {
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
+            // Versions-page seam: ./gradlew runClient -PmockInstalledVersion=0.800.0 makes the page
+            // (and its boot prompt) treat that as the installed version, so the behind state can be
+            // seen against real Modrinth/CurseForge listings on a dev build that is ahead of
+            // everything published. Only InstalledVersion reads it. Same daemon-environment reason.
+            if (project.hasProperty('mockInstalledVersion')) {
+                systemProperty 'dungeontrain.mockInstalledVersion', project.property('mockInstalledVersion').toString()
+            }
             // DPI-bypass notice seam: ./gradlew runClient -PdpiBypassTest=winws.exe makes
             // DpiBypassDetector report that process without looking at the real process table, so
             // the title-screen notice can be seen and screenshotted on a machine that isn't running
@@ -666,6 +673,9 @@ tasks.register('generateModMetadata', ProcessResources) {
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
         keeptrim_version                 : keeptrim_version,
+        // The DH build the modpack pins — VersionInfo reads it so DT can silence DH's own
+        // update prompt for players who are on exactly that build (see DistantHorizonsUpdatePromptSuppression).
+        distant_horizons_version         : distant_horizons_version,
         // Declared-minimum floors for the five EXTERNAL sibling deps. Deliberately
         // separate from the *_version values above (which the auto-release cascade
         // bumps freely) — see gradle.properties for the rationale.

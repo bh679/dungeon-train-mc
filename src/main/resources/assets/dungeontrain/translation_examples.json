@@ -4238,6 +4238,13 @@
         "0.849.0",
         "0.828.0"
       ]
+    },
+    "2": {
+      "label": "how the installed build stands, e.g. \"25 versions behind\" or \"up to date\"",
+      "examples": [
+        "25 versions behind",
+        "up to date"
+      ]
     }
   },
   "gui.dungeontrain.version.compare.count.one": {
@@ -4261,16 +4268,38 @@
     "1": {
       "label": "how many versions, already worded as \"N versions\"",
       "examples": [
-        "4 versions",
+        "54 versions",
         "1 version"
+      ]
+    },
+    "2": {
+      "label": "how many releases, already worded as \"N releases\"",
+      "examples": [
+        "25 releases"
       ]
     }
   },
-  "gui.dungeontrain.version.compare.behind.atleast": {
+  "gui.dungeontrain.version.compare.count.releases.one": {
     "1": {
-      "label": "how many versions, already worded as \"N versions\"",
+      "label": "the number of releases",
       "examples": [
-        "200 versions"
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.releases.other": {
+    "1": {
+      "label": "the number of releases",
+      "examples": [
+        "25"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.releases.capped": {
+    "1": {
+      "label": "the listing cap, the count is at least this",
+      "examples": [
+        "200"
       ]
     }
   },
@@ -4317,6 +4346,12 @@
       "label": "the launcher that is ahead",
       "examples": [
         "Modrinth"
+      ]
+    },
+    "4": {
+      "label": "how many releases, already worded as \"N releases\"",
+      "examples": [
+        "8 releases"
       ]
     }
   },

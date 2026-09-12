@@ -108,6 +108,7 @@ public final class VersionCompareState {
             if (mc.screen instanceof VersionCompareScreen screen) {
                 screen.onDataChanged();
             }
+            VersionCompareBootPrompt.onDataChanged();
         });
     }
 
