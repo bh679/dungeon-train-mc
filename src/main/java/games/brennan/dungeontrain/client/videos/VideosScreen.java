@@ -54,7 +54,9 @@ public final class VideosScreen extends Screen {
     private static final int GAP = 4;
     private static final int TOP = 32;
     private static final int BUTTON_H = 20;
-    private static final int ICON = 20;
+    /** Icon buttons run two pixels under the text buttons they share a row with, centred on it. */
+    private static final int ICON = 18;
+    private static final int ICON_INSET = (BUTTON_H - ICON) / 2;
     private static final int SORT_W = 110;
     private static final int UPLOADER_MIN_W = 80;
     private static final int BOTTOM_ROW_H = 20;
@@ -94,7 +96,7 @@ public final class VideosScreen extends Screen {
         List<VideoEntry.Platform> platforms = VideoCatalog.state() == VideoCatalog.State.LOADED
                 ? VideoQuery.platforms(VideoCatalog.entries()) : List.of(VideoEntry.Platform.values());
         for (VideoEntry.Platform p : platforms) {
-            PlatformToggleButton b = new PlatformToggleButton(x, TOP, ICON, p, () -> filter.has(p),
+            PlatformToggleButton b = new PlatformToggleButton(x, TOP + ICON_INSET, ICON, p, () -> filter.has(p),
                     btn -> togglePlatform(p));
             platformButtons.add(addRenderableWidget(b));
             x += ICON + GAP;
@@ -105,13 +107,13 @@ public final class VideosScreen extends Screen {
         // proves there are none, for the same no-jump reason as above.
         boolean hasStreamers = VideoCatalog.state() != VideoCatalog.State.LOADED
                 || !TwitchStreamers.group(VideoCatalog.entries()).isEmpty();
-        streamerButton = new StreamerToggleButton(x, TOP, ICON, () -> filter.streamers(), b -> toggleStreamers());
+        streamerButton = new StreamerToggleButton(x, TOP + ICON_INSET, ICON, () -> filter.streamers(), b -> toggleStreamers());
         if (hasStreamers) {
             addRenderableWidget(streamerButton);
             x += ICON + GAP;
         }
 
-        starButton = addRenderableWidget(new StarToggleButton(x, TOP, ICON, () -> filter.devFavOnly(),
+        starButton = addRenderableWidget(new StarToggleButton(x, TOP + ICON_INSET, ICON, () -> filter.devFavOnly(),
                 b -> toggleDevFav()));
         x += ICON + GAP;
 
@@ -170,13 +172,14 @@ public final class VideosScreen extends Screen {
         // vanilla confirm screen and comes back here.
         int channelsW = 4 * ICON + 3 * GAP;
         int cx = MARGIN + rowW - channelsW;
-        addChannelIcon(new YouTubeIconButton(cx, bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.youtube"),
+        int iconY = bottomY + ICON_INSET;
+        addChannelIcon(new YouTubeIconButton(cx, iconY, ICON, Component.translatable("gui.dungeontrain.videos.channels.youtube"),
                 b -> openChannel(UiAnalytics.TARGET_YOUTUBE, OfficialLinks.youtube())), "youtube");
-        addChannelIcon(new BilibiliIconButton(cx + (ICON + GAP), bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.bilibili"),
+        addChannelIcon(new BilibiliIconButton(cx + (ICON + GAP), iconY, ICON, Component.translatable("gui.dungeontrain.videos.channels.bilibili"),
                 b -> openChannel(UiAnalytics.TARGET_BILIBILI, OfficialLinks.bilibili())), "bilibili");
-        addChannelIcon(new InstagramIconButton(cx + 2 * (ICON + GAP), bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.instagram"),
+        addChannelIcon(new InstagramIconButton(cx + 2 * (ICON + GAP), iconY, ICON, Component.translatable("gui.dungeontrain.videos.channels.instagram"),
                 b -> openChannel(UiAnalytics.TARGET_INSTAGRAM, OfficialLinks.instagram())), "instagram");
-        addChannelIcon(new DiscordIconButton(cx + 3 * (ICON + GAP), bottomY, ICON, Component.translatable("gui.dungeontrain.videos.channels.discord"),
+        addChannelIcon(new DiscordIconButton(cx + 3 * (ICON + GAP), iconY, ICON, Component.translatable("gui.dungeontrain.videos.channels.discord"),
                 b -> openChannel(UiAnalytics.TARGET_DISCORD, OfficialLinks.discord())), "discord");
 
         // The three text buttons centre in what is left of the row to the icons' left.

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.videos;
 
+import games.brennan.dungeontrain.client.menu.BilibiliIconButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -50,6 +51,13 @@ public final class PlatformToggleButton extends Button {
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         boolean on = lit.getAsBoolean();
         int alpha = on ? 0xFF : OFF_ALPHA;
+        if (platform == VideoEntry.Platform.BILIBILI) {
+            // Real artwork, the same tile as the channel link at the bottom of the page — one
+            // Bilibili mark, not a drawn approximation beside the genuine one.
+            BilibiliIconButton.draw(g, getX(), getY(), getWidth(), getHeight(), alpha / 255.0F,
+                    isHoveredOrFocused());
+            return;
+        }
         int body = tileBody(platform.tileColour(), isHoveredOrFocused(), alpha);
         int mark = withAlpha(MARK, alpha);
         int x = getX();
@@ -62,7 +70,7 @@ public final class PlatformToggleButton extends Button {
 
         switch (platform) {
             case YOUTUBE -> drawPlay(g, x, y, s, mark);
-            case BILIBILI -> drawTv(g, x, y, s, mark, body);
+            case BILIBILI -> { } // handled above with the real artwork
             case TWITCH -> drawBubble(g, x, y, s, mark, body);
             case INSTAGRAM -> drawCamera(g, x, y, s, mark);
             case OTHER -> {
@@ -83,27 +91,6 @@ public final class PlatformToggleButton extends Button {
             int half = Math.round((triH / 2.0F) * (1.0F - i / (float) triW));
             g.fill(left + i, midY - half, left + i + 1, midY + half + 1, colour);
         }
-    }
-
-    /** A TV: rounded body, two antennae above, two eyes punched back out in the body colour. */
-    private static void drawTv(GuiGraphics g, int x, int y, int s, int mark, int body) {
-        int bodyL = x + Math.round(s * 0.2F);
-        int bodyR = x + s - Math.round(s * 0.2F);
-        int bodyT = y + Math.round(s * 0.4F);
-        int bodyB = y + s - Math.round(s * 0.22F);
-        g.fill(bodyL + 1, bodyT, bodyR - 1, bodyB, mark);
-        g.fill(bodyL, bodyT + 1, bodyR, bodyB - 1, mark);
-        // Antennae: two short diagonals meeting the body's top corners.
-        int len = Math.max(2, Math.round(s * 0.18F));
-        for (int i = 0; i < len; i++) {
-            g.fill(bodyL + 1 + i, bodyT - 1 - (len - i), bodyL + 2 + i, bodyT - (len - i), mark);
-            g.fill(bodyR - 2 - i, bodyT - 1 - (len - i), bodyR - 1 - i, bodyT - (len - i), mark);
-        }
-        // Eyes.
-        int eye = Math.max(1, Math.round(s * 0.08F));
-        int eyeY = bodyT + (bodyB - bodyT) / 2 - eye / 2;
-        g.fill(bodyL + Math.round(s * 0.14F), eyeY, bodyL + Math.round(s * 0.14F) + eye, eyeY + eye + 1, body);
-        g.fill(bodyR - Math.round(s * 0.14F) - eye, eyeY, bodyR - Math.round(s * 0.14F), eyeY + eye + 1, body);
     }
 
     /** A speech bubble with a tail at the bottom-left and two vertical slits. */
