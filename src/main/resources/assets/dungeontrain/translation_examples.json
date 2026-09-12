@@ -4362,6 +4362,454 @@
       ]
     }
   },
+  "gui.dungeontrain.videos.streamer.sub": {
+    "1": {
+      "label": "how many days the streamer has streamed the game",
+      "examples": [
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the date of their most recent stream, YYYY-MM-DD",
+      "examples": [
+        "2026-08-30"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.streamer.sub.undated": {
+    "1": {
+      "label": "how many days the streamer has streamed the game",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": {
+    "1": {
+      "label": "distinct chests to open, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.taking_notes.description": {
+    "1": {
+      "label": "random books to open, from the requirement",
+      "examples": [
+        "10",
+        "5"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.burned_unread.description": {
+    "1": {
+      "label": "books to burn, from the requirement",
+      "examples": [
+        "10",
+        "5"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.the_same_but_different.description": {
+    "1": {
+      "label": "starting books to open, from the requirement",
+      "examples": [
+        "10",
+        "5"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.carts_100.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.the_far_start.description": {
+    "1": {
+      "label": "carriages to carry the book past, from the requirement",
+      "examples": [
+        "150",
+        "200"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.pacifist_100.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.pacifist_250.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "250",
+        "300"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.pacifist_1000.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.biomes_10.description": {
+    "1": {
+      "label": "distinct biomes to ride through, from the requirement",
+      "examples": [
+        "10",
+        "8"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.biomes_17.description": {
+    "1": {
+      "label": "distinct biomes to ride through, from the requirement",
+      "examples": [
+        "17",
+        "15"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.biomes_25.description": {
+    "1": {
+      "label": "distinct biomes to ride through, from the requirement",
+      "examples": [
+        "25",
+        "20"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.carts_1000.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.encountered_1000_players.description": {
+    "1": {
+      "label": "players to encounter, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.carts_10000.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "10,000",
+        "5,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": {
+    "1": {
+      "label": "carriages each way, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.roof_runner.description": {
+    "1": {
+      "label": "carriage groups to run along, from the requirement",
+      "examples": [
+        "3",
+        "5"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.enjoying_the_ride.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.hours.some",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.plural",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.single",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.settling_in.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.hours.plural",
+          "args": [
+            "10"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.some",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.i_live_here_now.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.days.single",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.days.some",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.plural",
+          "args": [
+            "12"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.help_i_cant_get_off.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.days.some",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.days.single",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.one_for_the_road.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.hours.single",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.some",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.marathon_passenger.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.hours.some",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.single",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.going_the_distance.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "10,000",
+        "5,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.cross_country.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "100,000",
+        "50,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.the_long_run.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "250,000",
+        "100,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.seasoned_traveller.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "100,000",
+        "50,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.million_metre_club.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "1,000,000",
+        "500,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.no_container_100.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.no_container_1000.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.no_break_100.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.no_break_1000.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.contained_loop.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "dungeontrain.requirement.hours.single": {
+    "1": {
+      "label": "the number of hours",
+      "examples": [
+        "1",
+        "2",
+        "10"
+      ]
+    }
+  },
+  "dungeontrain.requirement.hours.some": {
+    "1": {
+      "label": "the number of hours",
+      "examples": [
+        "1",
+        "2",
+        "10"
+      ]
+    }
+  },
+  "dungeontrain.requirement.hours.plural": {
+    "1": {
+      "label": "the number of hours",
+      "examples": [
+        "1",
+        "2",
+        "10"
+      ]
+    }
+  },
+  "dungeontrain.requirement.days.single": {
+    "1": {
+      "label": "the number of days",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "dungeontrain.requirement.days.some": {
+    "1": {
+      "label": "the number of days",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "dungeontrain.requirement.days.plural": {
+    "1": {
+      "label": "the number of days",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
   "chat.dungeontrain.lucky_loot.bonus": {
     "1": {
       "label": "how many extra items the Luck effect added (3 to 10)",

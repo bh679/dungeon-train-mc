@@ -220,14 +220,15 @@ def check_manifests(authors: dict[str, str], lang_dir: Path, manifest_dir: Path,
 
 
 def check_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str],
-                       urls: dict[str, str], contributors_file: Path) -> list[str]:
+                       urls: dict[str, str], contributors_file: Path,
+                       hidden: set[str] | frozenset[str] = frozenset()) -> list[str]:
     """Hard lockstep between the shipped translator-credits file and the sidecars.
 
     The Credits page reads this file, so drift ships a player-visible lie (wrong names,
     languages, or %). Rebuilt from provenance + authors.json and compared exactly; a
     missing, unparseable, or drifted file is an error with the fix command.
     """
-    built = provenance_io.build_contributors(lang_dir, prov_dir, authors, urls)
+    built = provenance_io.build_contributors(lang_dir, prov_dir, authors, urls, hidden)
     if not contributors_file.is_file():
         return [f"{contributors_file.name}: missing generated translator-credits file — "
                 f"{FIX_HINT_COUNTS}"]
@@ -345,7 +346,8 @@ def check_namespace(ns: provenance_io.Namespace, args: argparse.Namespace,
     # (build_contributors reads them all), so gate it on a clean run so far.
     if not errors and ns.contributors_file is not None:
         errors.extend(check_contributors(ns.lang_dir, ns.prov_dir, authors, urls,
-                                         ns.contributors_file))
+                                         ns.contributors_file,
+                                         provenance_io.load_author_optouts(args.authors_file)))
     if not args.single_namespace:
         errors = [f"{ns.name}: {e}" for e in errors]
     return (errors, checkable)

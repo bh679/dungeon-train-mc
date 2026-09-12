@@ -19,9 +19,20 @@ import java.util.Optional;
  */
 public record TranslationContributor(String name, Optional<String> url, List<LanguageShare> languages) {
 
+    /**
+     * The name of the one line that thanks everybody who asked not to be named — a translator who
+     * removed themself from the credits keeps their count under it. Never in the generated file.
+     */
+    public static final String ANONYMOUS = "";
+
     public TranslationContributor {
         url = url == null ? Optional.empty() : url;
         languages = languages == null ? List.of() : List.copyOf(languages);
+    }
+
+    /** Whether this is the {@link #ANONYMOUS} line. */
+    public boolean isAnonymous() {
+        return ANONYMOUS.equals(name);
     }
 
     /**

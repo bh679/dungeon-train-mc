@@ -1,4 +1,5 @@
-# Pulls the operator's relay-authored English back into the repo, as a PR.
+# Pulls the operator's relay-authored English — and advancement requirement values — back into the
+# repo, as a PR.
 #
 # An advancement's title, description and pre-earn hint can be rewritten from the explorer's
 # #/advancements page. The relay serves the new text out of its source pool and every English
@@ -61,6 +62,18 @@ jobs:
             --deferred-out "$RUNNER_TEMP/deferred.json" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 
+      # The numbers next to the words. A milestone's requirement value is edited on the same page
+      # and served the same way (relay /advancement-requirements → applied at datapack load); this
+      # writes it back into the advancement JSON so the jar's own value catches up. Same secret,
+      # same defer-rather-than-clobber policy, one PR for both.
+      - name: Import the requirement values
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          python3 scripts/advancements/import-requirement-edits.py \
+            --deferred-out "$RUNNER_TEMP/deferred-values.json" \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+
       - name: Anything to ship?
         id: changed
         run: |
@@ -69,7 +82,7 @@ jobs:
             git --no-pager diff --stat
           else
             echo "yes=false" >> "$GITHUB_OUTPUT"
-            echo "No English edits since the last import — nothing to do."
+            echo "No English edits or requirement values since the last import — nothing to do."
           fi
 
       # build.yml's checks do not run on a PR opened with the default GITHUB_TOKEN (a token-authored
@@ -112,8 +125,8 @@ jobs:
           diff = subprocess.run(['git', '--no-pager', 'diff', '--stat'],
                                 capture_output=True, text=True).stdout.strip()
           body = [
-              "Advancement text rewritten from the explorer's #/advancements page, imported back "
-              "into `en_us.json`.",
+              "Advancement text and requirement values rewritten from the explorer's #/advancements "
+              "page, imported back into `en_us.json` and the advancement datapack.",
               '',
               'Players have **already been reading this text** — the relay serves it over the jar '
               'to every English client. What this PR changes is where it lives: the jar starts '
@@ -126,8 +139,11 @@ jobs:
               'Reviewing it is reviewing the wording. Reverting this PR does **not** revert what '
               'players see — that is the relay row, cleared with Revert on the advancement.',
           ]
-          skipped = temp / 'deferred.json'
-          left = json.loads(skipped.read_text(encoding='utf-8')) if skipped.is_file() else []
+          left = []
+          for name in ('deferred.json', 'deferred-values.json'):
+              skipped = temp / name
+              if skipped.is_file():
+                  left += json.loads(skipped.read_text(encoding='utf-8'))
           if left:
               # Named here because this is the only place anyone will look. The interesting case is
               # a key somebody has since edited in git: the repo's version won, and the relay is
@@ -156,9 +172,10 @@ jobs:
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git checkout -b "$branch"
-          git add -- src/main/resources/assets/dungeontrain/lang/en_us.json
-          git commit -m 'feat(advancements): import relay-authored English advancement text'
+          git add -- src/main/resources/assets/dungeontrain/lang/en_us.json \
+                     src/main/resources/data/dungeontrain/advancement/dungeon_train
+          git commit -m 'feat(advancements): import relay-authored advancement text and requirement values'
           git push origin "$branch"
           gh pr create --base main --head "$branch" \
-            --title 'feat(advancements): import relay-authored English advancement text' \
+            --title 'feat(advancements): import relay-authored advancement text and requirement values' \
             --body-file "$RUNNER_TEMP/pr-body.md"

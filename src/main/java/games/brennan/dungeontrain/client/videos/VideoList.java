@@ -20,6 +20,12 @@ import java.util.function.Consumer;
  * The Videos page's scrolling list: one row per video — thumbnail (or platform tile), title, and a
  * {@code uploader · views · date} line, with a ★ on the operator's picks. Clicking a row opens it.
  *
+ * <p>Twitch <em>streamers</em> share the list ({@link VideoQuery.StreamerRow}, one per channel folded
+ * from the relay's stream-day markers) and are drawn to look like what they are, not a video: a
+ * purple accent bar and tint, a purple "Streamer" tile with the live mark instead of a thumbnail,
+ * and a {@code Streamed on N days · last …} sub-line. They carry no ⚑ — a streamer row stands for
+ * many relay rows, and a flag is per row.</p>
+ *
  * <p>Hand-rolled on {@link ListScrollbar} like every other list in the mod ({@code ShaderPackList},
  * {@code TranslationListWidget}) rather than an {@code ObjectSelectionList}, so the row geometry and
  * scrollbar behaviour match the rest of the menus. Ninety rows is comfortably within "draw the
@@ -51,13 +57,20 @@ public final class VideoList extends AbstractWidget {
     /** Square hit target around the ⚑, so it is clickable without pixel aim. */
     private static final int FLAG_HIT = 12;
     private static final int TILE_TEXT = 0xFFFFFFFF;
+    /** Streamer rows: a purple accent bar down the left edge and a faint purple wash over the row. */
+    private static final int STREAMER_BAR_W = 2;
+    private static final int STREAMER_TINT_ALPHA = 0x22;
+    /** The "live now" dot beside the ★: Twitch-ish green, pulsing so it reads as live, not as a bullet. */
+    static final int LIVE_COLOUR = 0xFF3DDC84;
+    private static final int LIVE_DOT = 5;
 
     private final Font font;
     private final Consumer<VideoEntry> onOpen;
     private final Consumer<VideoEntry> onFlag;
+    private final Consumer<TwitchStreamers.Streamer> onOpenStreamer;
     private final ListScrollbar scrollbar = new ListScrollbar();
 
-    private List<VideoEntry> rows = List.of();
+    private List<VideoQuery.Row> rows = List.of();
     private int scroll;
     /**
      * Where something else is drawn over this list — the uploader suggestion panel. A point it
@@ -66,15 +79,17 @@ public final class VideoList extends AbstractWidget {
     private BiPredicate<Double, Double> covered = (mx, my) -> false;
 
     public VideoList(Font font, int x, int y, int width, int height,
-                     Consumer<VideoEntry> onOpen, Consumer<VideoEntry> onFlag) {
+                     Consumer<VideoEntry> onOpen, Consumer<VideoEntry> onFlag,
+                     Consumer<TwitchStreamers.Streamer> onOpenStreamer) {
         super(x, y, width, height, Component.translatable("gui.dungeontrain.videos.list"));
         this.font = font;
         this.onOpen = onOpen;
         this.onFlag = onFlag;
+        this.onOpenStreamer = onOpenStreamer;
     }
 
     /** Replace the rows (already filtered and sorted) and jump back to the top. */
-    public void setRows(List<VideoEntry> rows) {
+    public void setRows(List<VideoQuery.Row> rows) {
         this.rows = rows == null ? List.of() : rows;
         scroll = 0;
     }
@@ -115,15 +130,23 @@ public final class VideoList extends AbstractWidget {
             if (rowY + rowH < getY() || rowY > getY() + height) {
                 continue;
             }
-            renderRow(g, rows.get(i), i, rowY, rowH, mouseX, mouseY);
+            VideoQuery.Row row = rows.get(i);
+            switch (row) {
+                case VideoQuery.VideoRow vr -> renderRow(g, vr.video(), i, rowY, rowH, mouseX, mouseY);
+                case VideoQuery.StreamerRow sr -> renderStreamerRow(g, sr.streamer(), rowY, rowH, mouseX, mouseY);
+            }
         }
         g.disableScissor();
         scrollbar.render(g, getX(), getY(), width, height, totalHeight(), scroll, maxScroll());
     }
 
+    private boolean isRowHovered(int rowY, int rowH, int mouseX, int mouseY) {
+        return isMouseOver(mouseX, mouseY) && mouseY >= rowY && mouseY < rowY + rowH;
+    }
+
     private void renderRow(GuiGraphics g, VideoEntry v, int index, int rowY, int rowH, int mouseX, int mouseY) {
         int right = getX() + width - ListScrollbar.WIDTH - 1;
-        boolean hovered = isMouseOver(mouseX, mouseY) && mouseY >= rowY && mouseY < rowY + rowH;
+        boolean hovered = isRowHovered(rowY, rowH, mouseX, mouseY);
         if (hovered) {
             g.fill(getX(), rowY, right, rowY + rowH, ROW_HOVER);
         } else if ((index & 1) == 1) {
@@ -160,6 +183,72 @@ public final class VideoList extends AbstractWidget {
         int fx = textRight - FLAG_HIT + (FLAG_HIT - font.width(flag)) / 2;
         int fy = rowY + rowH - PAD - font.lineHeight;
         g.drawString(font, flag, fx, fy, colour);
+    }
+
+    /**
+     * A streamer's row: purple bar + wash, a purple "Streamer" tile with the live mark where the
+     * thumbnail would be, the channel name, and how often / how recently they streamed. No ⚑.
+     */
+    private void renderStreamerRow(GuiGraphics g, TwitchStreamers.Streamer s, int rowY, int rowH, int mouseX, int mouseY) {
+        int right = getX() + width - ListScrollbar.WIDTH - 1;
+        int purple = VideoEntry.Platform.TWITCH.tileColour();
+        g.fill(getX(), rowY, right, rowY + rowH, (purple & 0x00FFFFFF) | (STREAMER_TINT_ALPHA << 24));
+        if (isRowHovered(rowY, rowH, mouseX, mouseY)) {
+            g.fill(getX(), rowY, right, rowY + rowH, ROW_HOVER);
+        }
+        g.fill(getX(), rowY, getX() + STREAMER_BAR_W, rowY + rowH, purple);
+
+        int thumbX = getX() + PAD;
+        int thumbY = rowY + PAD;
+        g.fill(thumbX, thumbY, thumbX + THUMB_W, thumbY + THUMB_H, purple);
+        int mark = Math.round(THUMB_H * 0.7F);
+        StreamerToggleButton.drawLive(g, thumbX + 4, thumbY + (THUMB_H - mark) / 2, mark, TILE_TEXT);
+        String tile = Component.translatable("gui.dungeontrain.videos.streamer.tile").getString();
+        tile = font.plainSubstrByWidth(tile, THUMB_W - mark - 8);
+        g.drawString(font, tile, thumbX + mark + 6, thumbY + (THUMB_H - font.lineHeight) / 2, TILE_TEXT);
+
+        int textX = thumbX + THUMB_W + TEXT_GAP;
+        int textRight = right - PAD;
+        int titleRight = textRight;
+        if (s.devFav()) {
+            String star = "★";
+            g.drawString(font, star, textRight - font.width(star), thumbY, STAR_COLOUR);
+            titleRight = textRight - font.width(star) - PAD;
+        }
+        if (s.live()) {
+            // The green dot sits left of the ★ (or where it would be), on the title line.
+            int dx = titleRight - LIVE_DOT;
+            int dy = thumbY + (font.lineHeight - LIVE_DOT) / 2;
+            drawLiveDot(g, dx, dy, LIVE_DOT);
+            titleRight = dx - PAD;
+        }
+        int textY = thumbY + (THUMB_H - font.lineHeight * 2 - 2) / 2;
+        g.drawString(font, font.plainSubstrByWidth(s.name(), titleRight - textX), textX, textY, TITLE_COLOUR);
+        Component sub = s.hasLastDay()
+                ? Component.translatable("gui.dungeontrain.videos.streamer.sub", s.streamDays(), s.lastDay())
+                : Component.translatable("gui.dungeontrain.videos.streamer.sub.undated", s.streamDays());
+        String subText = sub.getString();
+        int subX = textX;
+        if (s.live()) {
+            // "LIVE now · " in green ahead of the usual sub-line.
+            String liveText = Component.translatable("gui.dungeontrain.videos.streamer.live").getString() + " · ";
+            g.drawString(font, liveText, subX, textY + font.lineHeight + 2, LIVE_COLOUR);
+            subX += font.width(liveText);
+        }
+        g.drawString(font, font.plainSubstrByWidth(subText, textRight - subX), subX,
+                textY + font.lineHeight + 2, SUB_COLOUR);
+    }
+
+    /**
+     * A pulsing green dot: a {@code size}-px square with its corners knocked off, alpha breathing on
+     * a ~1.6 s cycle. Shared with the submit screen's "Currently live" line.
+     */
+    static void drawLiveDot(GuiGraphics g, int x, int y, int size) {
+        double phase = (System.currentTimeMillis() % 1600L) / 1600.0;
+        int alpha = 0x90 + (int) Math.round(0x6F * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2)));
+        int colour = (LIVE_COLOUR & 0x00FFFFFF) | (alpha << 24);
+        g.fill(x + 1, y, x + size - 1, y + size, colour);
+        g.fill(x, y + 1, x + size, y + size - 1, colour);
     }
 
     /** Is the cursor on the row's ⚑ hit square (bottom-right corner)? */
@@ -234,12 +323,17 @@ public final class VideoList extends AbstractWidget {
         }
         playDownSound(Minecraft.getInstance().getSoundManager());
         int rowY = getY() + index * rowHeight() - scroll;
-        VideoEntry v = rows.get(index);
-        if (isOverFlag(mouseX, mouseY, rowY, rowHeight())) {
-            if (!VideoCatalog.isFlagged(v.id())) onFlag.accept(v);
-            return true;
+        switch (rows.get(index)) {
+            case VideoQuery.StreamerRow sr -> onOpenStreamer.accept(sr.streamer());
+            case VideoQuery.VideoRow vr -> {
+                VideoEntry v = vr.video();
+                if (isOverFlag(mouseX, mouseY, rowY, rowHeight())) {
+                    if (!VideoCatalog.isFlagged(v.id())) onFlag.accept(v);
+                } else {
+                    onOpen.accept(v);
+                }
+            }
         }
-        onOpen.accept(v);
         return true;
     }
 

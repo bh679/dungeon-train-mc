@@ -58,7 +58,7 @@ public final class PlatformToggleButton extends Button {
                     isHoveredOrFocused());
             return;
         }
-        int body = withAlpha(isHoveredOrFocused() ? lighten(platform.tileColour()) : platform.tileColour(), alpha);
+        int body = tileBody(platform.tileColour(), isHoveredOrFocused(), alpha);
         int mark = withAlpha(MARK, alpha);
         int x = getX();
         int y = getY();
@@ -132,6 +132,11 @@ public final class PlatformToggleButton extends Button {
         g.fill(rl + ring - 1, rt, rl + ring, rt + ring, mark);
         // Dot.
         g.fill(r - 3, t + 2, r - 2, t + 3, mark);
+    }
+
+    /** The tile fill for a toggle: the platform colour, nudged lighter under the cursor, at {@code alpha}. */
+    static int tileBody(int tileColour, boolean hovered, int alpha) {
+        return withAlpha(hovered ? lighten(tileColour) : tileColour, alpha);
     }
 
     private static int withAlpha(int argb, int alpha) {

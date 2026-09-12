@@ -115,14 +115,15 @@ def refresh_credit_counts(locale: str, prov: dict, authors: dict[str, str],
 
 
 def refresh_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str],
-                         urls: dict[str, str], contributors_file: Path) -> bool:
+                         urls: dict[str, str], contributors_file: Path,
+                         hidden: set[str] | frozenset[str] = frozenset()) -> bool:
     """Regenerate the shipped translator-credits file from ALL locales; True if it changed.
 
     Global (not per-locale), so it is rebuilt from every sidecar regardless of any
     ``--locale`` filter — the file must reflect the whole picture. Byte-identical writes
     are skipped so an unchanged file never churns.
     """
-    built = provenance_io.build_contributors(lang_dir, prov_dir, authors, urls)
+    built = provenance_io.build_contributors(lang_dir, prov_dir, authors, urls, hidden)
     if contributors_file.is_file():
         try:
             if provenance_io.load_contributors(contributors_file) == built:
@@ -209,7 +210,8 @@ def run_namespace(ns: provenance_io.Namespace, args: argparse.Namespace,
     # The translator-credits file is global — always rebuilt from every sidecar, whatever
     # the --locale filter, so it never goes stale relative to a review pass elsewhere.
     if ns.contributors_file is not None:
-        if refresh_contributors(ns.lang_dir, ns.prov_dir, authors, urls, ns.contributors_file):
+        if refresh_contributors(ns.lang_dir, ns.prov_dir, authors, urls, ns.contributors_file,
+                                provenance_io.load_author_optouts(args.authors_file)):
             print(f"OK: regenerated {ns.contributors_file.name}.")
     return 0
 
