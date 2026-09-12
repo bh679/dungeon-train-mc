@@ -12313,9 +12313,9 @@
         "Decided on first open \u2014 no farming already-looted chests with a potion"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "subvariant-rename-ui-sync",
@@ -12329,9 +12329,9 @@
       ],
       "pr": 1373,
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "subvariant-weight-keeps-gate",
@@ -12343,9 +12343,9 @@
         "Sub-variant weight edits keep min/max level, phases and Stage links intact"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "more-trap-carriages",
@@ -12358,9 +12358,9 @@
         "Traps are tuned to how far along the train you are"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "train-editor-midday-clock",
@@ -12374,9 +12374,9 @@
         "Nether and End skies colour the room's fog, in the editor and in play"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "editor-new-copies-settings",
