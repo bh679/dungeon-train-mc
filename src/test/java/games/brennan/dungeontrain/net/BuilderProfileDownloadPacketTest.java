@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.net;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
+import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import io.netty.buffer.Unpooled;
 
 import java.util.List;
@@ -136,6 +137,58 @@ final class BuilderProfileDownloadPacketTest {
                     new BuilderProfileDownloadResultPacket(outcome, "carriage", "brick_cabin", "");
             assertEquals(outcome, roundTrip(original).outcome());
         }
+    }
+
+    @Test
+    @DisplayName("the loot-prefab answer survives the wire, and a first press has none")
+    void prefabAnswerRoundTrip() {
+        BuilderProfileDownloadPacket first = new BuilderProfileDownloadPacket(
+                4271, BuilderRelayInstall.Resolution.LOAD_AS_NEW, "brick_cabin_2", "", "", false, true, "user_builds");
+        assertFalse(first.prefabsResolved(), "the prefab question has to be asked before anything is written");
+        assertEquals(List.of(), first.prefabOverwrite());
+
+        BuilderProfileDownloadPacket answered = first.answeringPrefabs(List.of("gold", "silver"));
+        BuilderProfileDownloadPacket back = roundTrip(answered);
+        assertTrue(back.prefabsResolved(), "an answer that arrived unresolved would re-ask forever");
+        assertEquals(List.of("gold", "silver"), back.prefabOverwrite());
+        assertEquals(answered, back);
+        // Everything the earlier presses settled rides along unchanged.
+        assertEquals(BuilderRelayInstall.Resolution.LOAD_AS_NEW, back.resolution());
+        assertEquals("brick_cabin_2", back.name());
+        assertTrue(back.overwriteUnsaved());
+        assertEquals("user_builds", back.parentId());
+
+        BuilderProfileDownloadPacket keepAll = first.answeringPrefabs(List.of());
+        assertTrue(roundTrip(keepAll).prefabsResolved(), "keeping every local prefab is still an answer");
+    }
+
+    @Test
+    @DisplayName("a prefab question carries both versions of every conflicting prefab")
+    void conflictsRoundTrip() {
+        List<TemplateLootPrefabs.Conflict> conflicts = List.of(
+                new TemplateLootPrefabs.Conflict("gold", "{\"entries\":[1]}", "{\"entries\":[2]}"),
+                new TemplateLootPrefabs.Conflict("silver", "{}", "{\"block\":\"minecraft:barrel\"}"));
+        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(
+                BuilderRelayDownload.Outcome.PREFAB_CONFLICT, "contents", "vault", "", List.of(), conflicts);
+        BuilderProfileDownloadResultPacket back = roundTrip(asking);
+        assertEquals(conflicts, back.conflicts(), "the screen compares exactly these two texts");
+        assertEquals(asking, back);
+        assertEquals(List.of(), new BuilderProfileDownloadResultPacket(
+                        BuilderRelayDownload.Outcome.INSTALLED, "contents", "vault", "").conflicts(),
+                "an outcome that asks about no prefab carries none");
+    }
+
+    @Test
+    @DisplayName("a conflict text too long for the wire is cut, not dropped")
+    void oversizeConflictTextIsClipped() {
+        String huge = "x".repeat(BuilderProfileDownloadResultPacket.MAX_CONFLICT_TEXT + 500);
+        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(
+                BuilderRelayDownload.Outcome.PREFAB_CONFLICT, "contents", "vault", "", List.of(),
+                List.of(new TemplateLootPrefabs.Conflict("gold", huge, "{}")));
+        BuilderProfileDownloadResultPacket back = roundTrip(asking);
+        assertEquals(1, back.conflicts().size(), "the prefab is still listed, and the choice still offered");
+        assertEquals(BuilderProfileDownloadResultPacket.MAX_CONFLICT_TEXT, back.conflicts().get(0).localText().length());
+        assertEquals("{}", back.conflicts().get(0).incomingText());
     }
 
     private static BuilderProfileDownloadResultPacket roundTrip(BuilderProfileDownloadResultPacket packet) {

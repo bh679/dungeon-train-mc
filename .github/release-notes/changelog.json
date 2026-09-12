@@ -12313,9 +12313,9 @@
         "Decided on first open \u2014 no farming already-looted chests with a potion"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "subvariant-rename-ui-sync",
@@ -12329,9 +12329,9 @@
       ],
       "pr": 1373,
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "subvariant-weight-keeps-gate",
@@ -12343,9 +12343,9 @@
         "Sub-variant weight edits keep min/max level, phases and Stage links intact"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "more-trap-carriages",
@@ -12358,9 +12358,9 @@
         "Traps are tuned to how far along the train you are"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "train-editor-midday-clock",
@@ -12374,9 +12374,9 @@
         "Nether and End skies colour the room's fog, in the editor and in play"
       ],
       "date": "2026-09-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.854.0",
+      "released_at": "2026-09-12T10:57:55Z"
     },
     {
       "id": "editor-new-copies-settings",
@@ -12386,6 +12386,42 @@
       "summary": "Pressing New on a dimensional carriage or a carriage in the editor now carries its sky, walls, block variants and loot links across with the blocks, instead of starting the copy as a bare box.",
       "highlights": [],
       "pr": 1377,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-incremental-plot-stamping",
+      "version": "0.856.0",
+      "type": "perf",
+      "title": "Train Editor opens without freezing",
+      "summary": "Entering a Train Editor category (Carriages, Contents, Tracks, Dimensional carriages) no longer holds the game until every plot has been built. You land on the first plot straight away and the rest fill in around you over the next seconds, with a progress line above the hotbar. On slower machines this was taking minutes \u2014 one dimensional-carriage load took nine \u2014 during which the world sat empty and the editor looked stuck.",
+      "highlights": [
+        "Editor categories open in under a second; remaining plots build in the background",
+        "Progress shown above the hotbar: 'Setting up plots\u2026 12/86' then 'Plots ready.'",
+        "Pressing Editor again mid-load restarts the fill instead of queuing another full pass",
+        "Servers: a category load no longer stalls the tick long enough to disconnect players"
+      ],
+      "pr": 1380,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "loot-prefabs-travel-with-builds",
+      "version": "0.857.0",
+      "type": "feat",
+      "title": "Your loot prefabs travel with your builds",
+      "summary": "A build saved to My Builds now carries the loot prefabs its chests use, so loading it on another machine \u2014 or someone else's build from Find a Builder \u2014 rolls the loot the author set up instead of empty chests. If a prefab you already have shares a name with one that arrives but differs, the game shows both side by side and asks: keep yours, use theirs, or save theirs under a new name and point that build's chests at it.",
+      "highlights": [
+        "Loot prefabs upload with the template they're linked to",
+        "Missing prefabs install with a downloaded build",
+        "A name clash asks \u2014 Yours vs Theirs, or Rename theirs",
+        "The relay keeps a per-builder loot-prefab library"
+      ],
+      "pr": 1378,
       "date": "2026-09-12",
       "released": false,
       "released_in": null,

@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.builder.relay;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import games.brennan.dungeontrain.editor.TemplateSidecars;
+import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
@@ -17,9 +19,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -53,21 +59,39 @@ public final class BuilderRelayDownload {
      * anything is read off the wire is written: the template this build would land on has in-world
      * edits nobody has saved, and installing would put them beyond reach. The player answers it and
      * presses again — see {@link #download(ServerPlayer, ServerLevel, int, BuilderRelayInstall.Resolution, String, String, String, boolean, boolean)}.</p>
+     *
+     * <p>{@link #PREFAB_CONFLICT} is the other question: the build arrived with loot prefabs whose
+     * ids this install already holds, with different contents. Installing would either silently
+     * change the loot of every local template sharing those ids, or silently leave this build's
+     * chests rolling something its author never meant — so the player is shown both and chooses,
+     * per prefab, and presses again. Asked before anything is written, like the edits question,
+     * and only ever once: a replay carries the answers.</p>
      */
-    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED }
+    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, UNSUPPORTED, FAILED, PREFAB_CONFLICT }
 
     /**
      * What an install produced: the outcome, and — when something landed — enough to name it, so the
      * screen can offer to open the thing that was just written.
      */
     public record Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind,
-                         List<String> takenNames) {
+                         List<String> takenNames, List<TemplateLootPrefabs.Conflict> conflicts) {
+        public Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind,
+                      List<String> takenNames) {
+            this(outcome, kind, id, subKind, takenNames, List.of());
+        }
+
         Result(Outcome outcome, BuilderPhotoPaths.Kind kind, String id, String subKind) {
-            this(outcome, kind, id, subKind, List.of());
+            this(outcome, kind, id, subKind, List.of(), List.of());
         }
 
         static Result of(Outcome outcome) {
-            return new Result(outcome, null, "", "", List.of());
+            return new Result(outcome, null, "", "", List.of(), List.of());
+        }
+
+        /** {@link Outcome#PREFAB_CONFLICT}, carrying what the player has to decide between. */
+        static Result askingAbout(BuilderPhotoPaths.Kind kind, String id, String subKind,
+                                  List<TemplateLootPrefabs.Conflict> conflicts) {
+            return new Result(Outcome.PREFAB_CONFLICT, kind, id, subKind, List.of(), conflicts);
         }
 
         /**
@@ -77,7 +101,7 @@ public final class BuilderRelayDownload {
          * {@link BuilderRelayInstall#takenNames}.</p>
          */
         Result withTakenNames(List<String> names) {
-            return new Result(outcome, kind, id, subKind, names);
+            return new Result(outcome, kind, id, subKind, names, conflicts);
         }
     }
 
@@ -109,6 +133,39 @@ public final class BuilderRelayDownload {
                                                      BuilderRelayInstall.Resolution resolution,
                                                      String newName, String ownerUuid, String ownerName,
                                                      boolean live, boolean overwriteUnsaved, String parentId) {
+        return download(player, level, relayId, resolution, newName, ownerUuid, ownerName, live,
+                overwriteUnsaved, parentId, PrefabAnswer.UNASKED);
+    }
+
+    /**
+     * The player's answer to {@link Outcome#PREFAB_CONFLICT}: which of the build's loot prefabs to
+     * write over this install's own. {@link #UNASKED} is the first press — a conflict stops the
+     * download to ask. A resolved answer never asks again, and any conflicting id it does not
+     * name is kept as it is here.
+     */
+    public record PrefabAnswer(boolean resolved, Set<String> overwrite, Map<String, String> renames) {
+        public static final PrefabAnswer UNASKED = new PrefabAnswer(false, Set.of(), Map.of());
+
+        public PrefabAnswer {
+            overwrite = overwrite == null ? Set.of() : Set.copyOf(overwrite);
+            renames = renames == null ? Map.of() : Map.copyOf(renames);
+        }
+
+        /** @param renames old id → the new id the build's version is filed under instead */
+        public static PrefabAnswer resolved(Collection<String> overwrite, Map<String, String> renames) {
+            return new PrefabAnswer(true, Set.copyOf(overwrite), renames);
+        }
+    }
+
+    /**
+     * As above, carrying the player's answer to the loot-prefab question as well — the third of the
+     * second-press replays, after the name and the unsaved edits.
+     */
+    public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
+                                                     BuilderRelayInstall.Resolution resolution,
+                                                     String newName, String ownerUuid, String ownerName,
+                                                     boolean live, boolean overwriteUnsaved, String parentId,
+                                                     PrefabAnswer prefabs) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
@@ -122,7 +179,8 @@ public final class BuilderRelayDownload {
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
                     case OK -> onServer(level, () -> install(level, result.build(), resolution, newName,
                             new BuildCredits.Credit(owner, ownerName, System.currentTimeMillis()), mine,
-                            overwriteUnsaved, parentId == null ? "" : parentId));
+                            overwriteUnsaved, parentId == null ? "" : parentId,
+                            prefabs == null ? PrefabAnswer.UNASKED : prefabs));
                 });
     }
 
@@ -137,7 +195,7 @@ public final class BuilderRelayDownload {
     private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build,
                                   BuilderRelayInstall.Resolution resolution, String newName,
                                   BuildCredits.Credit credit, boolean mine, boolean overwriteUnsaved,
-                                  String parentId) {
+                                  String parentId, PrefabAnswer prefabs) {
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
             // A kind this build of the mod does not know, or a build the relay never named. Neither
@@ -174,6 +232,21 @@ public final class BuilderRelayDownload {
         if (!overwriteUnsaved && hasUnsavedEdits(level, kind, build.subKind(), landsOn)) {
             return new Result(Outcome.UNSAVED_EDITS, kind, landsOn, build.subKind());
         }
+        // The loot prefabs the build brought, against the ones already here — asked about before
+        // anything is written, for the same reason as the edits question above: a fetch is a read,
+        // and "no" has to leave the install exactly as it was. Once answered, never asked again.
+        //
+        // Held until the NAME is settled: a first press on a build already here answers ALREADY_HERE
+        // and the collision screen replays with a resolution — asking about prefabs before that
+        // would ask, and then ask again on the replay. So only once install would actually go ahead.
+        boolean nameSettled = BuilderRelayInstall.refusal(kind, build.buildName(), build.subKind(),
+                resolution, newName, mine) == null;
+        if (nameSettled && !prefabs.resolved()) {
+            List<TemplateLootPrefabs.Conflict> conflicts = TemplateLootPrefabs.conflicts(build.lootPrefabs());
+            if (!conflicts.isEmpty()) {
+                return Result.askingAbout(kind, landsOn, build.subKind(), conflicts);
+            }
+        }
 
         BuilderRelayInstall.Outcome installed = BuilderRelayInstall.install(
                 kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName,
@@ -208,6 +281,18 @@ public final class BuilderRelayDownload {
         }
         credit(kind, build.subKind(), installedAs, credit, mine,
                 TemplateSidecars.hasCredit(build.sidecars()));
+        // The prefabs the chests link to, now that the links themselves are on disk: every id this
+        // install lacks, plus whichever conflicts the player answered "use theirs" to. The rest —
+        // identical files and "keep mine" — are left exactly as they were.
+        List<String> prefabsWritten = TemplateLootPrefabs.install(build.lootPrefabs(), prefabs.overwrite(),
+                prefabs.renames());
+        TemplateLootPrefabs.relink(kind, build.subKind(), installedAs, prefabs.renames(), prefabsWritten);
+        // The creative tab lists prefabs from a client-side copy of the registry, pushed on join and
+        // after an in-game save. A prefab that arrived with a build is a new entry too, and without
+        // this push it exists on disk but not in the tab until the next join.
+        if (!prefabsWritten.isEmpty()) {
+            PacketDistributor.sendToAllPlayers(PrefabRegistrySyncPacket.fromRegistries());
+        }
         // Last, and only once the template is a template: a refused join leaves the build where it
         // installed, which is still the INSTALLED the screen was promised — the roster says where.
         if (!parentId.isBlank() && BuilderRelaySubVariant.supports(kind)) {
