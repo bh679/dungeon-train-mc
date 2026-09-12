@@ -11,10 +11,11 @@ import java.util.TreeSet;
 
 /**
  * Folds the relay's Twitch <em>streamer markers</em> — one bare {@code twitch.tv/<login>} row per day
- * a channel streamed the game — into one {@link Streamer} per channel, for the Videos page's
- * streamer strip. The relay saves a marker because a live stream has no VOD to link yet, so the
+ * a channel streamed the game — into one {@link Streamer} per channel, for the Videos page
+ * list. The relay saves a marker because a live stream has no VOD to link yet, so the
  * catalogue carries a dozen identical rows for one regular streamer; players want the streamer
- * once, with how often and how recently they streamed.
+ * once, with how often and how recently they streamed. {@link VideoQuery#applyRows} puts these in
+ * the Videos list beside the videos, behind their own toolbar toggle.
  *
  * <p>Pure and Minecraft-free like {@link VideoQuery}, so {@code TwitchStreamersTest} pins the
  * grouping without a client. Every method returns a new list; inputs are never touched.</p>
@@ -31,8 +32,10 @@ public final class TwitchStreamers {
      * @param lastDay    the most recent of those days ({@code YYYY-MM-DD}), or {@code null} when no
      *                   marker carried a day
      * @param devFav     true when any marker is the operator's ★
+     * @param newestId   the newest marker's relay id — the list's final sort tiebreak
      */
-    public record Streamer(String key, String name, String url, int streamDays, String lastDay, boolean devFav) {
+    public record Streamer(String key, String name, String url, int streamDays, String lastDay, boolean devFav,
+                           int newestId) {
         public boolean hasLastDay() {
             return lastDay != null;
         }
@@ -60,23 +63,6 @@ public final class TwitchStreamers {
         out.sort(Comparator.comparingInt(Streamer::streamDays).reversed()
                 .thenComparing(Streamer::lastDay, Comparator.nullsLast(Comparator.<String>reverseOrder()))
                 .thenComparing(s -> s.name().toLowerCase(Locale.ROOT)));
-        return List.copyOf(out);
-    }
-
-    /**
-     * The streamers the current toolbar state shows: none while the Twitch toggle is off, otherwise
-     * those whose name contains the uploader query, narrowed to ★ ones when dev-faves is on. Order
-     * is preserved.
-     */
-    public static List<Streamer> filter(List<Streamer> streamers, VideoQuery.Filter filter) {
-        VideoQuery.Filter f = filter == null ? VideoQuery.Filter.ALL : filter;
-        if (!f.has(VideoEntry.Platform.TWITCH)) return List.of();
-        List<Streamer> out = new ArrayList<>();
-        for (Streamer s : streamers) {
-            if (!f.channelQuery().isEmpty() && !VideoQuery.contains(s.name(), f.channelQuery())) continue;
-            if (f.devFavOnly() && !s.devFav()) continue;
-            out.add(s);
-        }
         return List.copyOf(out);
     }
 
@@ -143,7 +129,8 @@ public final class TwitchStreamers {
             if (name == null || name.isBlank()) name = key;
             // Every undated marker is one more day we know of but cannot place.
             int count = days.size() + (undated ? 1 : 0);
-            return new Streamer(key, name, newest.url(), count, days.isEmpty() ? null : days.last(), devFav);
+            return new Streamer(key, name, newest.url(), count, days.isEmpty() ? null : days.last(), devFav,
+                    newest.id());
         }
     }
 }

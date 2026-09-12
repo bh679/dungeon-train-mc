@@ -95,6 +95,31 @@ class VideoQueryTest {
         assertEquals(List.of("droneleg"), VideoQuery.channels(List.of(m)), "and still suggests its uploader");
     }
 
+    private static List<String> rowKeys(List<VideoQuery.Row> rows) {
+        return rows.stream().map(r -> switch (r) {
+            case VideoQuery.VideoRow vr -> "v" + vr.video().id();
+            case VideoQuery.StreamerRow sr -> "s:" + sr.streamer().name();
+        }).toList();
+    }
+
+    @Test
+    void applyRowsMergesStreamersIntoTheOneListUnderTheirOwnToggle() {
+        // droneleg streamed on two days (newest marker id 8, day 09-03); C is a Twitch VOD with no views.
+        List<VideoEntry> all = List.of(marker(7, "droneleg", "2026-08-21"), C, A, B, marker(8, "droneleg", "2026-09-03"));
+        assertEquals(List.of("v1", "v2", "s:droneleg", "v3"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.VIEWS)),
+                "Views: the streamer sinks under every counted video, then ranks by last day against the undated VOD");
+        assertEquals(List.of("v2", "s:droneleg", "v1", "v3"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.RECENT)),
+                "Recent: interleaved by last stream day");
+        assertEquals(List.of("v1", "v2", "v3"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL.withStreamers(false), VideoQuery.Sort.VIEWS)),
+                "streamers toggle off drops streamer rows but keeps the Twitch VOD");
+        assertEquals(List.of("v1", "v2", "s:droneleg"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL.togglePlatform(TWITCH), VideoQuery.Sort.VIEWS)),
+                "Twitch platform toggle off drops the VOD but keeps the streamer");
+        assertEquals(List.of("s:droneleg"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL.withChannelQuery("drone"), VideoQuery.Sort.VIEWS)),
+                "uploader box narrows streamers too");
+        assertEquals(List.of("v2"), rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL.withDevFavOnly(true), VideoQuery.Sort.DEV_PICKS)),
+                "★ filter hides an unstarred streamer");
+    }
+
     @Test
     void applyNeverMutatesItsInput() {
         List<VideoEntry> input = List.of(C, A, D, B);

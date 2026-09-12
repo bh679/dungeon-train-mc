@@ -50,7 +50,7 @@ public final class PlatformToggleButton extends Button {
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         boolean on = lit.getAsBoolean();
         int alpha = on ? 0xFF : OFF_ALPHA;
-        int body = withAlpha(isHoveredOrFocused() ? lighten(platform.tileColour()) : platform.tileColour(), alpha);
+        int body = tileBody(platform.tileColour(), isHoveredOrFocused(), alpha);
         int mark = withAlpha(MARK, alpha);
         int x = getX();
         int y = getY();
@@ -106,8 +106,8 @@ public final class PlatformToggleButton extends Button {
         g.fill(bodyR - Math.round(s * 0.14F) - eye, eyeY, bodyR - Math.round(s * 0.14F), eyeY + eye + 1, body);
     }
 
-    /** A speech bubble with a tail at the bottom-left and two vertical slits. Shared with {@link StreamerStrip}. */
-    static void drawBubble(GuiGraphics g, int x, int y, int s, int mark, int body) {
+    /** A speech bubble with a tail at the bottom-left and two vertical slits. */
+    private static void drawBubble(GuiGraphics g, int x, int y, int s, int mark, int body) {
         int l = x + Math.round(s * 0.22F);
         int r = x + s - Math.round(s * 0.22F);
         int t = y + Math.round(s * 0.22F);
@@ -145,6 +145,11 @@ public final class PlatformToggleButton extends Button {
         g.fill(rl + ring - 1, rt, rl + ring, rt + ring, mark);
         // Dot.
         g.fill(r - 3, t + 2, r - 2, t + 3, mark);
+    }
+
+    /** The tile fill for a toggle: the platform colour, nudged lighter under the cursor, at {@code alpha}. */
+    static int tileBody(int tileColour, boolean hovered, int alpha) {
+        return withAlpha(hovered ? lighten(tileColour) : tileColour, alpha);
     }
 
     private static int withAlpha(int argb, int alpha) {

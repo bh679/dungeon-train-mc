@@ -77,15 +77,8 @@ class TwitchStreamersTest {
     }
 
     @Test
-    void filterFollowsTheToolbar() {
-        List<TwitchStreamers.Streamer> all = TwitchStreamers.group(LIVE);
-        assertEquals(3, TwitchStreamers.filter(all, VideoQuery.Filter.ALL).size());
-        assertEquals(List.of(), TwitchStreamers.filter(all, VideoQuery.Filter.ALL.togglePlatform(TWITCH)), "Twitch toggle off hides the strip");
-        assertEquals(List.of("Midnight_Catt".toLowerCase()), TwitchStreamers.filter(all, VideoQuery.Filter.ALL.withChannelQuery("NIGHT"))
-                .stream().map(s -> s.name().toLowerCase()).toList(), "uploader query is a case-insensitive substring");
-        assertEquals(List.of("xxx606xxx_"), TwitchStreamers.filter(all, VideoQuery.Filter.ALL.withDevFavOnly(true))
-                .stream().map(TwitchStreamers.Streamer::name).toList());
-        assertEquals(3, TwitchStreamers.filter(all, null).size());
+    void newestIdIsTheSortTiebreak() {
+        assertEquals(53, TwitchStreamers.group(LIVE).get(0).newestId());
     }
 
     @Test

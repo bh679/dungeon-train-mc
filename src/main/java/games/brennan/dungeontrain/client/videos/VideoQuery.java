@@ -22,10 +22,13 @@ public final class VideoQuery {
      * to begin with, and an empty set shows nothing (the player switched them all off, and the page
      * says so). {@link #channelQuery} is the uploader box's text, matched case-insensitively as a
      * substring so a half-typed name already narrows the list; blank means everyone. {@code
-     * devFavOnly} is the ★ toggle.
+     * devFavOnly} is the ★ toggle. {@code streamers} is the Twitch-streamers toggle: the Twitch
+     * platform toggle governs VODs and clips only — streamer rows ({@link TwitchStreamers}) have a
+     * button of their own, so a player can keep either kind without the other.
      */
-    public record Filter(Set<VideoEntry.Platform> platforms, String channelQuery, boolean devFavOnly) {
-        public static final Filter ALL = new Filter(EnumSet.allOf(VideoEntry.Platform.class), "", false);
+    public record Filter(Set<VideoEntry.Platform> platforms, String channelQuery, boolean devFavOnly,
+                         boolean streamers) {
+        public static final Filter ALL = new Filter(EnumSet.allOf(VideoEntry.Platform.class), "", false, true);
 
         public Filter {
             platforms = platforms == null ? EnumSet.allOf(VideoEntry.Platform.class)
@@ -38,7 +41,7 @@ public final class VideoQuery {
             EnumSet<VideoEntry.Platform> next = platforms.isEmpty()
                     ? EnumSet.noneOf(VideoEntry.Platform.class) : EnumSet.copyOf(platforms);
             if (!next.remove(p)) next.add(p);
-            return new Filter(next, channelQuery, devFavOnly);
+            return new Filter(next, channelQuery, devFavOnly, streamers);
         }
 
         public boolean has(VideoEntry.Platform p) {
@@ -46,11 +49,22 @@ public final class VideoQuery {
         }
 
         public Filter withChannelQuery(String q) {
-            return new Filter(platforms, q, devFavOnly);
+            return new Filter(platforms, q, devFavOnly, streamers);
         }
 
         public Filter withDevFavOnly(boolean only) {
-            return new Filter(platforms, channelQuery, only);
+            return new Filter(platforms, channelQuery, only, streamers);
+        }
+
+        public Filter withStreamers(boolean show) {
+            return new Filter(platforms, channelQuery, devFavOnly, show);
+        }
+
+        /** Streamer rows: the streamers toggle, then the uploader box and ★ like any row. */
+        boolean matches(TwitchStreamers.Streamer s) {
+            if (!streamers) return false;
+            if (!channelQuery.isEmpty() && !contains(s.name(), channelQuery)) return false;
+            return !devFavOnly || s.devFav();
         }
 
         boolean matches(VideoEntry v) {
@@ -95,14 +109,58 @@ public final class VideoQuery {
         }
     }
 
+    /**
+     * One row of the Videos list: a video, or a Twitch streamer folded from that channel's markers.
+     * Both sort by the same four keys so one comparator orders the mixed list — a streamer has no
+     * view count (it sinks under every counted video on the Views sort), its day is the last day it
+     * streamed, its id the newest marker's, and it is starred when any marker is.
+     */
+    public sealed interface Row permits VideoRow, StreamerRow {
+        long sortViews();
+        String sortDay();
+        int sortId();
+        boolean sortFav();
+    }
+
+    public record VideoRow(VideoEntry video) implements Row {
+        public long sortViews() { return video.views(); }
+        public String sortDay() { return video.day(); }
+        public int sortId() { return video.id(); }
+        public boolean sortFav() { return video.devFav(); }
+    }
+
+    public record StreamerRow(TwitchStreamers.Streamer streamer) implements Row {
+        public long sortViews() { return VideoEntry.VIEWS_UNKNOWN; }
+        public String sortDay() { return streamer.lastDay(); }
+        public int sortId() { return streamer.newestId(); }
+        public boolean sortFav() { return streamer.devFav(); }
+    }
+
     private VideoQuery() {}
 
-    /** Filter then sort — a new list; {@code entries} is untouched. */
+    /** Filter then sort the videos only — a new list; {@code entries} is untouched. */
     public static List<VideoEntry> apply(List<VideoEntry> entries, Filter filter, Sort sort) {
         Filter f = filter == null ? Filter.ALL : filter;
         List<VideoEntry> out = new ArrayList<>();
         for (VideoEntry v : entries) {
             if (f.matches(v)) out.add(v);
+        }
+        out.sort(Comparator.comparing(VideoRow::new, comparator(sort == null ? Sort.VIEWS : sort)));
+        return List.copyOf(out);
+    }
+
+    /**
+     * What the list shows: the matching videos and the matching streamers (from
+     * {@link TwitchStreamers#group}) in one order. A new list; {@code entries} is untouched.
+     */
+    public static List<Row> applyRows(List<VideoEntry> entries, Filter filter, Sort sort) {
+        Filter f = filter == null ? Filter.ALL : filter;
+        List<Row> out = new ArrayList<>();
+        for (VideoEntry v : entries) {
+            if (f.matches(v)) out.add(new VideoRow(v));
+        }
+        for (TwitchStreamers.Streamer s : TwitchStreamers.group(entries)) {
+            if (f.matches(s)) out.add(new StreamerRow(s));
         }
         out.sort(comparator(sort == null ? Sort.VIEWS : sort));
         return List.copyOf(out);
@@ -180,16 +238,16 @@ public final class VideoQuery {
         return s.endsWith(".0") ? s.substring(0, s.length() - 2) : s;
     }
 
-    private static Comparator<VideoEntry> comparator(Sort sort) {
-        Comparator<VideoEntry> byViews = Comparator.comparingLong(VideoEntry::views).reversed();
+    private static Comparator<Row> comparator(Sort sort) {
+        Comparator<Row> byViews = Comparator.comparingLong(Row::sortViews).reversed();
         // Nulls sort last: an undated row cannot claim "newest".
-        Comparator<VideoEntry> byDay = Comparator.comparing(VideoEntry::day,
+        Comparator<Row> byDay = Comparator.comparing(Row::sortDay,
                 Comparator.nullsLast(Comparator.<String>reverseOrder()));
-        Comparator<VideoEntry> byId = Comparator.comparingInt(VideoEntry::id).reversed();
+        Comparator<Row> byId = Comparator.comparingInt(Row::sortId).reversed();
         return switch (sort) {
             case VIEWS -> byViews.thenComparing(byDay).thenComparing(byId);
             case RECENT -> byDay.thenComparing(byViews).thenComparing(byId);
-            case DEV_PICKS -> Comparator.comparing(VideoEntry::devFav, Comparator.reverseOrder())
+            case DEV_PICKS -> Comparator.comparing(Row::sortFav, Comparator.reverseOrder())
                     .thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
         };
     }

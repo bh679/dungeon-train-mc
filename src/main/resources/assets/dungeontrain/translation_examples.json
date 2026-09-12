@@ -4290,53 +4290,25 @@
       ]
     }
   },
-  "gui.dungeontrain.videos.streamers.chip": {
+  "gui.dungeontrain.videos.streamer.sub": {
     "1": {
-      "label": "the Twitch streamer's channel name",
-      "examples": [
-        "DrOneLeg"
-      ]
-    },
-    "2": {
-      "label": "how many days they have streamed the game",
-      "examples": [
-        "12"
-      ]
-    }
-  },
-  "gui.dungeontrain.videos.streamers.tooltip": {
-    "1": {
-      "label": "the Twitch streamer's channel name",
-      "examples": [
-        "DrOneLeg"
-      ]
-    },
-    "2": {
-      "label": "how many days they have streamed the game",
+      "label": "how many days the streamer has streamed the game",
       "examples": [
         "12"
       ]
     },
-    "3": {
+    "2": {
       "label": "the date of their most recent stream, YYYY-MM-DD",
       "examples": [
         "2026-08-30"
       ]
     }
   },
-  "gui.dungeontrain.videos.streamers.more": {
+  "gui.dungeontrain.videos.streamer.sub.undated": {
     "1": {
-      "label": "how many more streamers did not fit on the strip",
+      "label": "how many days the streamer has streamed the game",
       "examples": [
         "3"
-      ]
-    }
-  },
-  "gui.dungeontrain.videos.streamers.narration": {
-    "1": {
-      "label": "how many Twitch streamers are shown",
-      "examples": [
-        "5"
       ]
     }
   }
