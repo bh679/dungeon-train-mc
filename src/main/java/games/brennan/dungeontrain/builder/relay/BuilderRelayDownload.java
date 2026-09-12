@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -140,15 +141,17 @@ public final class BuilderRelayDownload {
      * download to ask. A resolved answer never asks again, and any conflicting id it does not
      * name is kept as it is here.
      */
-    public record PrefabAnswer(boolean resolved, Set<String> overwrite) {
-        public static final PrefabAnswer UNASKED = new PrefabAnswer(false, Set.of());
+    public record PrefabAnswer(boolean resolved, Set<String> overwrite, Map<String, String> renames) {
+        public static final PrefabAnswer UNASKED = new PrefabAnswer(false, Set.of(), Map.of());
 
         public PrefabAnswer {
             overwrite = overwrite == null ? Set.of() : Set.copyOf(overwrite);
+            renames = renames == null ? Map.of() : Map.copyOf(renames);
         }
 
-        public static PrefabAnswer resolved(Collection<String> overwrite) {
-            return new PrefabAnswer(true, Set.copyOf(overwrite));
+        /** @param renames old id → the new id the build's version is filed under instead */
+        public static PrefabAnswer resolved(Collection<String> overwrite, Map<String, String> renames) {
+            return new PrefabAnswer(true, Set.copyOf(overwrite), renames);
         }
     }
 
@@ -230,7 +233,13 @@ public final class BuilderRelayDownload {
         // The loot prefabs the build brought, against the ones already here — asked about before
         // anything is written, for the same reason as the edits question above: a fetch is a read,
         // and "no" has to leave the install exactly as it was. Once answered, never asked again.
-        if (!prefabs.resolved()) {
+        //
+        // Held until the NAME is settled: a first press on a build already here answers ALREADY_HERE
+        // and the collision screen replays with a resolution — asking about prefabs before that
+        // would ask, and then ask again on the replay. So only once install would actually go ahead.
+        boolean nameSettled = BuilderRelayInstall.refusal(kind, build.buildName(), build.subKind(),
+                resolution, newName, mine) == null;
+        if (nameSettled && !prefabs.resolved()) {
             List<TemplateLootPrefabs.Conflict> conflicts = TemplateLootPrefabs.conflicts(build.lootPrefabs());
             if (!conflicts.isEmpty()) {
                 return Result.askingAbout(kind, landsOn, build.subKind(), conflicts);
@@ -273,7 +282,9 @@ public final class BuilderRelayDownload {
         // The prefabs the chests link to, now that the links themselves are on disk: every id this
         // install lacks, plus whichever conflicts the player answered "use theirs" to. The rest —
         // identical files and "keep mine" — are left exactly as they were.
-        TemplateLootPrefabs.install(build.lootPrefabs(), prefabs.overwrite());
+        List<String> prefabsWritten = TemplateLootPrefabs.install(build.lootPrefabs(), prefabs.overwrite(),
+                prefabs.renames());
+        TemplateLootPrefabs.relink(kind, build.subKind(), installedAs, prefabs.renames(), prefabsWritten);
         // Last, and only once the template is a template: a refused join leaves the build where it
         // installed, which is still the INSTALLED the screen was promised — the roster says where.
         if (!parentId.isBlank() && BuilderRelaySubVariant.supports(kind)) {

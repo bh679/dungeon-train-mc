@@ -337,7 +337,7 @@ public final class BuilderFavouritesScreen extends Screen {
         if (packet.outcome() == BuilderRelayDownload.Outcome.PREFAB_CONFLICT && lastDownload != null) {
             BuilderProfileDownloadPacket sent = lastDownload;
             this.minecraft.setScreen(new BuilderProfilePrefabConflictScreen(this, packet.id(),
-                    packet.conflicts(), useTheirs -> sendDownload(sent.answeringPrefabs(useTheirs))));
+                    packet.conflicts(), (useTheirs, renames) -> sendDownload(sent.answeringPrefabs(useTheirs, renames))));
             return;
         }
         if (packet.outcome() != BuilderRelayDownload.Outcome.INSTALLED) return;

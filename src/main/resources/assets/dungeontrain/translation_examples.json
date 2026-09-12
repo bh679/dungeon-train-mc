@@ -2932,6 +2932,24 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.prefab_conflict.renamed_to": {
+    "1": {
+      "label": "the new name their version will be saved under",
+      "examples": [
+        "test2_2",
+        "gold_relay"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.rename_prompt": {
+    "1": {
+      "label": "the prefab being renamed",
+      "examples": [
+        "Test2",
+        "Gold"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.upload_failed": {
     "1": {
       "label": "the build that saved locally but could not be uploaded",

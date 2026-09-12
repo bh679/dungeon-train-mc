@@ -658,9 +658,9 @@ public final class BuilderProfileScreen extends Screen {
      * whole point here is to send back exactly what was sent — including an unsaved-edits answer
      * given a press ago.
      */
-    private void answerPrefabs(java.util.Set<String> useTheirs) {
+    private void answerPrefabs(java.util.Set<String> useTheirs, java.util.Map<String, String> renames) {
         if (lastDownload == null) return;
-        sendDownload(lastDownload.answeringPrefabs(useTheirs));
+        sendDownload(lastDownload.answeringPrefabs(useTheirs, renames));
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
         if (this.downloadButton != null) this.downloadButton.active = false;
     }

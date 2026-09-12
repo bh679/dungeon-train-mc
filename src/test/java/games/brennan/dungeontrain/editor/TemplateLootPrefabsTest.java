@@ -164,7 +164,7 @@ final class TemplateLootPrefabsTest {
         incoming.put("bundled_keep", prefab("minecraft:barrel", 9, 9));
         incoming.put("fresh", prefab("minecraft:chest", 5, 5));
 
-        List<String> written = TemplateLootPrefabs.install(incoming, Set.of("replace"), lib);
+        List<String> written = TemplateLootPrefabs.install(incoming, Set.of("replace"), Map.of(), lib);
         assertEquals(List.of("replace", "fresh"), written);
         assertEquals(prefab("minecraft:chest", 1, 1), lib.config.get("keep"), "keep mine means keep mine");
         assertEquals(prefab("minecraft:chest", 9, 9), lib.config.get("replace"));
@@ -180,7 +180,26 @@ final class TemplateLootPrefabsTest {
         Map<String, String> incoming = new LinkedHashMap<>();
         incoming.put("broken", prefab("minecraft:chest", 1, 1));
         incoming.put("fine", prefab("minecraft:chest", 1, 1));
-        assertEquals(List.of("fine"), TemplateLootPrefabs.install(incoming, Set.of(), lib));
+        assertEquals(List.of("fine"), TemplateLootPrefabs.install(incoming, Set.of(), Map.of(), lib));
+    }
+
+    @Test
+    @DisplayName("a rename files their version under the new name and leaves the old id alone")
+    void installRenames() {
+        FakeLibrary lib = new FakeLibrary();
+        lib.config.put("gold", prefab("minecraft:chest", 1, 1));
+        lib.config.put("taken", prefab("minecraft:chest", 2, 2));
+        Map<String, String> incoming = new LinkedHashMap<>();
+        incoming.put("gold", prefab("minecraft:chest", 9, 9));
+        incoming.put("silver", prefab("minecraft:chest", 5, 5));
+
+        List<String> written = TemplateLootPrefabs.install(incoming, Set.of(),
+                Map.of("gold", "gold_relay", "silver", "taken"), lib);
+        assertEquals(List.of("gold_relay"), written,
+                "gold lands under its new name; silver's new name is already a prefab here and is refused");
+        assertEquals(prefab("minecraft:chest", 1, 1), lib.config.get("gold"), "the local gold is untouched");
+        assertEquals(prefab("minecraft:chest", 9, 9), lib.config.get("gold_relay"));
+        assertEquals(prefab("minecraft:chest", 2, 2), lib.config.get("taken"), "never renamed onto an existing prefab");
     }
 
     // ---- the store's text-level parse ----

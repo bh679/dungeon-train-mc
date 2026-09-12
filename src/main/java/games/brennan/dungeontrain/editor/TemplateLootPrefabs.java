@@ -219,22 +219,73 @@ public final class TemplateLootPrefabs {
      * Returns the ids actually written.</p>
      */
     public static List<String> install(Map<String, String> incoming, Set<String> overwrite) {
-        return install(incoming, overwrite, STORE);
+        return install(incoming, overwrite, Map.of(), STORE);
     }
 
-    static List<String> install(Map<String, String> incoming, Set<String> overwrite, Library library) {
+    /**
+     * As above, with the player's <b>rename</b> answers: for each {@code renames} entry the build's
+     * version of the old id is filed under the new id instead, and the local prefab under the old id
+     * is left alone. The template's chest links still name the old id at this point —
+     * {@link #relink} moves them, once the containers store is on disk.
+     *
+     * <p>A new name that is already taken here is refused, not overwritten: the player named a
+     * prefab they expected to be new, and silently replacing an existing one under that name is
+     * exactly what the whole question exists to prevent.</p>
+     */
+    public static List<String> install(Map<String, String> incoming, Set<String> overwrite,
+                                       Map<String, String> renames) {
+        return install(incoming, overwrite, renames, STORE);
+    }
+
+    static List<String> install(Map<String, String> incoming, Set<String> overwrite,
+                                Map<String, String> renames, Library library) {
         List<String> written = new ArrayList<>();
         for (Map.Entry<String, String> e : incoming.entrySet()) {
             String prefabId = e.getKey();
-            boolean present = library.localText(prefabId).isPresent();
-            if (present && !overwrite.contains(prefabId)) continue;
+            String target = renames.getOrDefault(prefabId, prefabId);
+            boolean renamed = !target.equals(prefabId);
+            boolean present = library.localText(target).isPresent();
+            if (present && (renamed || !overwrite.contains(prefabId))) {
+                if (renamed) {
+                    LOGGER.warn("[DungeonTrain] Loot prefabs: '{}' is already a prefab here — '{}' not renamed onto it.",
+                            target, prefabId);
+                }
+                continue;
+            }
             try {
-                library.write(prefabId, e.getValue());
-                written.add(prefabId);
+                library.write(target, e.getValue());
+                written.add(target);
             } catch (Exception ex) {
-                LOGGER.warn("[DungeonTrain] Loot prefabs: could not install '{}': {}", prefabId, ex.toString());
+                LOGGER.warn("[DungeonTrain] Loot prefabs: could not install '{}': {}", target, ex.toString());
             }
         }
         return written;
+    }
+
+    /**
+     * Point template {@code id}'s chest links at the renamed prefabs: every container linked to an
+     * old id in {@code renames} is re-linked to its new id, and the store is saved. Only renames
+     * that actually landed ({@code written}) are applied — a refused rename leaves the link on the
+     * old id, which is the local prefab the player kept.
+     */
+    public static void relink(BuilderPhotoPaths.Kind kind, String subKind, String id,
+                              Map<String, String> renames, Collection<String> written) {
+        if (renames.isEmpty()) return;
+        String plotKey = TemplateSidecars.plotKeyFor(kind, subKind, id);
+        if (plotKey == null) return;
+        try {
+            ContainerContentsStore store = ContainerContentsStore.loadFor(plotKey);
+            boolean changed = false;
+            for (Map.Entry<String, String> r : renames.entrySet()) {
+                if (!written.contains(r.getValue())) continue;
+                for (net.minecraft.core.BlockPos pos : store.positionsLinkedTo(r.getKey())) {
+                    store.setLink(pos, r.getValue());
+                    changed = true;
+                }
+            }
+            if (changed) store.save();
+        } catch (Exception ex) {
+            LOGGER.warn("[DungeonTrain] Loot prefabs: could not re-link '{}' to renamed prefabs: {}", id, ex.toString());
+        }
     }
 }
