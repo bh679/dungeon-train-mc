@@ -70,19 +70,20 @@ BAMBOO_MOSAIC = {**BAMBOO, "planks": "bamboo_mosaic", "slab": "bamboo_mosaic_sla
                  "stripped_wood": "bamboo_block", "log": "stripped_bamboo_block",
                  "stripped_log": "bamboo_block"}
 
-# Stage id → (block map, minLevel, maxLevel or None). Thirty-level bands continuing from darkwood
-# (161–190); the existing spruce/acacia stages are re-banded to fit the sequence.
+# Stage id → (block map, minLevel, maxLevel or None). The bands run on from wood_oak (131–160) in
+# the author's order and lengths; the editor-authored woods (block map None) are re-banded here too.
 WOODS = {
-    "spruce": (None, 191, 220),
-    "acacia": (None, 221, 250),
-    "birch": (overworld("birch"), 251, 280),
-    "jungle": (overworld("jungle"), 281, 310),
-    "mangrove": (overworld("mangrove"), 311, 340),
-    "cherry": (overworld("cherry"), 341, 370),
-    "bamboo": (BAMBOO, 371, 400),
-    "bamboo_mosaic": (BAMBOO_MOSAIC, 401, 430),
-    "crimson": (nether("crimson"), 431, 460),
-    "warped": (nether("warped"), 461, None),
+    "birch": (overworld("birch"), 161, 175),
+    "acacia": (None, 176, 205),
+    "jungle": (overworld("jungle"), 206, 225),
+    "mangrove": (overworld("mangrove"), 226, 265),
+    "cherry": (overworld("cherry"), 266, 285),
+    "crimson": (nether("crimson"), 286, 320),
+    "warped": (nether("warped"), 321, 355),
+    "bamboo": (BAMBOO, 356, 375),
+    "darkwood": (None, 376, 415),
+    "bamboo_mosaic": (BAMBOO_MOSAIC, 416, 435),
+    "spruce": (None, 436, None),
 }
 
 OAK_IDS = {f"minecraft:{overworld('oak')[k]}": k for k in OAK_KEYS}

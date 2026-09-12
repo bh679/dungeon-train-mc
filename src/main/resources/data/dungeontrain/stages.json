@@ -1,8 +1,8 @@
 {
   "acacia": {
     "name": "acacia",
-    "minLevel": 221,
-    "maxLevel": 250,
+    "minLevel": 176,
+    "maxLevel": 205,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -12,8 +12,8 @@
   },
   "bamboo": {
     "name": "bamboo",
-    "minLevel": 371,
-    "maxLevel": 400,
+    "minLevel": 356,
+    "maxLevel": 375,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -23,8 +23,8 @@
   },
   "bamboo_mosaic": {
     "name": "bamboo_mosaic",
-    "minLevel": 401,
-    "maxLevel": 430,
+    "minLevel": 416,
+    "maxLevel": 435,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -34,8 +34,8 @@
   },
   "birch": {
     "name": "birch",
-    "minLevel": 251,
-    "maxLevel": 280,
+    "minLevel": 161,
+    "maxLevel": 175,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -45,8 +45,8 @@
   },
   "cherry": {
     "name": "cherry",
-    "minLevel": 341,
-    "maxLevel": 370,
+    "minLevel": 266,
+    "maxLevel": 285,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -67,8 +67,8 @@
   },
   "crimson": {
     "name": "crimson",
-    "minLevel": 431,
-    "maxLevel": 460,
+    "minLevel": 286,
+    "maxLevel": 320,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -78,8 +78,8 @@
   },
   "darkwood": {
     "name": "darkwood",
-    "minLevel": 161,
-    "maxLevel": 190,
+    "minLevel": 376,
+    "maxLevel": 415,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -111,8 +111,8 @@
   },
   "jungle": {
     "name": "jungle",
-    "minLevel": 281,
-    "maxLevel": 310,
+    "minLevel": 206,
+    "maxLevel": 225,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -122,8 +122,8 @@
   },
   "mangrove": {
     "name": "mangrove",
-    "minLevel": 311,
-    "maxLevel": 340,
+    "minLevel": 226,
+    "maxLevel": 265,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -173,8 +173,7 @@
   },
   "spruce": {
     "name": "spruce",
-    "minLevel": 191,
-    "maxLevel": 220,
+    "minLevel": 436,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -194,7 +193,8 @@
   },
   "warped": {
     "name": "warped",
-    "minLevel": 461,
+    "minLevel": 321,
+    "maxLevel": 355,
     "phases": [
       "OVERWORLD",
       "VOID",
