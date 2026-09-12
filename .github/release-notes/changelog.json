@@ -12206,6 +12206,20 @@
       "released": true,
       "released_in": "v0.843.0",
       "released_at": "2026-09-11T18:54:08Z"
+    },
+    {
+      "id": "advancement-unlock-fix-returning-players",
+      "version": "0.844.0",
+      "type": "fix",
+      "title": "Advancement unlock fix for returning players",
+      "summary": "A late-journey advancement now unlocks only when it is actually reached, regardless of progress carried over from earlier runs.",
+      "highlights": [
+        "Fixed a late-journey advancement unlock for returning players"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
