@@ -3,14 +3,15 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import org.slf4j.Logger;
 
 /**
- * Re-applies {@link EditorQuietRules} on every start of a Train Editor world, and sets the clock
- * to midday.
+ * Re-applies {@link EditorQuietRules} on every start of a Train Editor world, and rests the clock
+ * at midday.
  *
  * <p>The rules are baked in at creation, which is enough for a world made today and left alone.
  * This hook covers the two cases where that is not the whole story: an editor world saved before
@@ -48,19 +49,31 @@ public final class EditorQuietRuleEvents {
         return levelName != null && levelName.startsWith(EDITOR_WORLD_PREFIX);
     }
 
+    /**
+     * Whether {@code level} belongs to a Train Editor world — either kind: one on the editor's own
+     * dimension type, or a legacy one recognised by its name.
+     *
+     * <p>The one test the start-up hook and {@link EditorClock} share, so the world that gets the
+     * quiet rules is exactly the world whose clock the editor runs.</p>
+     */
+    public static boolean isEditorWorld(ServerLevel level) {
+        if (level == null) return false;
+        if (EditorWorldLayout.isEditorWorld(level)) return true;
+        MinecraftServer server = level.getServer();
+        return server.getWorldData() != null
+            && isEditorWorldName(server.getWorldData().getLevelName());
+    }
+
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         MinecraftServer server = event.getServer();
-        boolean editorWorld = EditorWorldLayout.isEditorWorld(server.overworld())
-                || (server.getWorldData() != null
-                    && isEditorWorldName(server.getWorldData().getLevelName()));
-        if (!editorWorld) {
+        if (!isEditorWorld(server.overworld())) {
             return; // not an editor world — leave the rules alone
         }
         EditorQuietRules.apply(server.getGameRules(), server);
-        // A new-type editor world is pinned to noon by its dimension type regardless of this; a
-        // legacy one only has the stopped clock, so put it at noon rather than wherever it was left.
-        server.overworld().setDayTime(EditorQuietRules.MIDDAY_TICKS);
+        // Start at a stopped noon whatever the world was left at — including the 10x clock a
+        // Day/Night plot runs, which is saved in level.dat when the author quits standing in one.
+        EditorClock.restMidday(server.overworld());
         LOGGER.info("[DungeonTrain] Train Editor world — {} quiet game rules applied "
                 + "(natural mob spawning off, clock stopped at midday).",
             EditorQuietRules.RULE_COUNT);

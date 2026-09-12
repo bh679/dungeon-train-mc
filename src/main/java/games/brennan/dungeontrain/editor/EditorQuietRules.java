@@ -14,13 +14,12 @@ import org.jetbrains.annotations.Nullable;
  * the author placed" true, which is the assumption the capture rests on.</p>
  *
  * <p>The clock is held at midday so every plot is authored under the same full light — the same
- * decision the Train Builder makes. For an editor world on its own dimension type the sun is already
- * pinned there by {@code fixed_time: 6000} in {@code dimension_type/editor.json}, which nothing
- * in-game can move; the daylight rule here is what covers the legacy editor worlds
- * ({@link EditorQuietRuleEvents#EDITOR_WORLD_PREFIX}), which sit on the ordinary DT overworld type
- * and have no fixed time. {@link EditorQuietRuleEvents} pairs it with a {@code setDayTime} to
- * {@link #MIDDAY_TICKS} so a legacy save left at night is dragged to noon rather than frozen
- * wherever it was.</p>
+ * decision the Train Builder makes, though by a different mechanism: the builder pins the sun in
+ * its dimension type, the editor stops the clock, because one Sky an author can give a dimensional
+ * carriage is Day/Night and a pinned sun could never show it. {@link EditorClock} owns that
+ * exception — it runs the clock at speed while somebody stands in such a plot and rests it at
+ * {@link #MIDDAY_TICKS} the moment they step out — and {@link EditorQuietRuleEvents} rests it on
+ * every start.</p>
  *
  * <p>The sibling of {@code BuilderQuietRules}, minus its weather rule — the editor world has no
  * terrain for rain to fall on.</p>
@@ -38,7 +37,7 @@ public final class EditorQuietRules {
     /** How many rules {@link #apply} switches off — for log lines. */
     public static final int RULE_COUNT = 2;
 
-    /** The day time the editor holds: noon, matching {@code fixed_time} in {@code editor.json}. */
+    /** The day time the editor rests at: noon. */
     public static final long MIDDAY_TICKS = 6000L;
 
     private EditorQuietRules() {}

@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.portal.PortalRoomSky;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -270,6 +271,9 @@ public final class VariantOverlayRenderer {
 
         long tickStart = System.nanoTime();
         int atPlots = 0;
+        // Whether anyone is standing under a Day/Night sky this tick — what decides if the
+        // editor's clock runs or rests. See EditorClock.
+        boolean cycleSeen = false;
         for (ServerPlayer player : players) {
             if (EditorLayout.isAtPlotHeight(player.getBlockY())) atPlots++;
             // The two snapshots the block-variant menu draws itself against, and nothing else: the
@@ -307,7 +311,7 @@ public final class VariantOverlayRenderer {
             pushDoorGhostsSnapshot(player, dims);
             // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
             // rather than the dark box it was authored in until now.
-            EditorPlotSky.update(player, dims);
+            if (EditorPlotSky.update(player, dims) == PortalRoomSky.CYCLE) cycleSeen = true;
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -405,6 +409,7 @@ public final class VariantOverlayRenderer {
             // Outside every plot — clear any stale HUD state.
             clearHoverIfStale(player);
         }
+        EditorClock.tick(level, cycleSeen);
         recordEditorTiming(level, System.nanoTime() - tickStart, atPlots);
     }
 
