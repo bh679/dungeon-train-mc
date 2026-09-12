@@ -84,4 +84,22 @@ final class TemplateBuilderCreditsTest {
         assertTrue(RelayTemplateBuilders.parse("not json").isEmpty());
         assertTrue(RelayTemplateBuilders.parse("{\"builders\":5}").isEmpty());
     }
+
+    @Test
+    @DisplayName("a relay row flagged anonymous makes the line anonymous whatever name the jar bakes")
+    void anonymousRelayRowWins() {
+        List<TemplateBuilderCredits.Builder> bundled = TemplateBuilderCredits.aggregate(List.of(
+            new BuilderCredit(MIKA, "Mika"), new BuilderCredit(ARLO, "Arlo")));
+        List<TemplateBuilderCredits.Builder> out = TemplateBuilderCredits.merge(bundled, List.of(
+            new RelayTemplateBuilders.Row(MIKA, "", 1, true)));
+        TemplateBuilderCredits.Builder mika = out.stream().filter(b -> b.uuid().equals(MIKA)).findFirst().orElseThrow();
+        assertTrue(mika.anonymous());
+        assertEquals("", mika.name());
+        assertEquals(1, mika.templates(), "the count is kept");
+        assertEquals(MIKA, mika.uuid(), "and the uuid, so the page can find its own row");
+        // Parsed off the wire the same way.
+        List<RelayTemplateBuilders.Row> rows = RelayTemplateBuilders.parse(
+            "{\"builders\":[{\"uuid\":\"" + MIKA + "\",\"name\":\"\",\"templates\":2,\"anonymous\":true}]}");
+        assertEquals(new RelayTemplateBuilders.Row(MIKA, "", 2, true), rows.get(0));
+    }
 }

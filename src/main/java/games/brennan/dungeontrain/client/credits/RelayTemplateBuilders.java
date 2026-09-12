@@ -51,12 +51,20 @@ public final class RelayTemplateBuilders {
     static final String SUBDIR = "credits";
     static final String FILE = "template-builders.json";
 
-    /** One relay row: a person and how many shipped templates the relay credits them with. */
-    public record Row(String uuid, String name, int templates) {
+    /**
+     * One relay row: a person and how many shipped templates the relay credits them with.
+     * {@code anonymous} is a builder who took their name off the credits ({@code CreditEditClient}):
+     * the uuid is still on the wire (so the page can find the player's own row) but no name is.
+     */
+    public record Row(String uuid, String name, int templates, boolean anonymous) {
         public Row {
             uuid = BuilderCredit.normaliseUuid(uuid);
-            name = BuilderCredit.normaliseName(name);
+            name = anonymous ? "" : BuilderCredit.normaliseName(name);
             templates = Math.max(0, templates);
+        }
+
+        public Row(String uuid, String name, int templates) {
+            this(uuid, name, templates, false);
         }
 
         public boolean known() {
@@ -131,7 +139,8 @@ public final class RelayTemplateBuilders {
                 if (out.size() >= MAX_ROWS) break;
                 if (!el.isJsonObject()) continue;
                 JsonObject o = el.getAsJsonObject();
-                Row row = new Row(str(o.get("uuid")), str(o.get("name")), num(o.get("templates")));
+                boolean anonymous = o.has("anonymous") && o.get("anonymous").isJsonPrimitive() && o.get("anonymous").getAsBoolean();
+                Row row = new Row(str(o.get("uuid")), str(o.get("name")), num(o.get("templates")), anonymous);
                 if (row.known() && row.templates() > 0) out.add(row);
             }
         } catch (Exception e) {
@@ -180,6 +189,7 @@ public final class RelayTemplateBuilders {
                 if (!r.uuid().isEmpty()) o.addProperty("uuid", r.uuid());
                 o.addProperty("name", r.name());
                 o.addProperty("templates", r.templates());
+                if (r.anonymous()) o.addProperty("anonymous", true);
                 arr.add(o);
             }
             JsonObject root = new JsonObject();

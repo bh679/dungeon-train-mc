@@ -48,8 +48,15 @@ public final class TemplateBuilderCredits {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** One builder on the card. */
-    public record Builder(String uuid, String name, int templates) {
+    /**
+     * One builder on the card. {@code anonymous} is a builder who took their name off the credits
+     * on the relay — thanked by count, unnamed, whatever name the jar bakes for that uuid.
+     */
+    public record Builder(String uuid, String name, int templates, boolean anonymous) {
+        public Builder(String uuid, String name, int templates) {
+            this(uuid, name, templates, false);
+        }
+
         /** What the card prints — the cached name, or the uuid for a credit with none. */
         public String display() {
             return name.isEmpty() ? uuid : name;
@@ -73,7 +80,9 @@ public final class TemplateBuilderCredits {
 
     /**
      * Fold relay rows onto the bundled list: same person (uuid, else case-insensitive name) →
-     * one line at the larger count, first non-empty name kept; new people appended. Pure.
+     * one line at the larger count, first non-empty name kept; new people appended. A relay row
+     * flagged anonymous makes the line anonymous whatever the jar says — the relay is where the
+     * player asked for that, and the jar cannot know. Pure.
      */
     static List<Builder> merge(List<Builder> bundled, List<RelayTemplateBuilders.Row> relay) {
         Map<String, Builder> byPerson = new LinkedHashMap<>();
@@ -83,10 +92,10 @@ public final class TemplateBuilderCredits {
             String key = keyOf(r.uuid(), r.name());
             Builder prev = byPerson.get(key);
             if (prev == null) {
-                byPerson.put(key, new Builder(r.uuid(), r.name(), r.templates()));
+                byPerson.put(key, new Builder(r.uuid(), r.name(), r.templates(), r.anonymous()));
             } else {
-                String name = prev.name().isEmpty() ? r.name() : prev.name();
-                byPerson.put(key, new Builder(prev.uuid(), name, Math.max(prev.templates(), r.templates())));
+                String name = r.anonymous() ? "" : prev.name().isEmpty() ? r.name() : prev.name();
+                byPerson.put(key, new Builder(prev.uuid(), name, Math.max(prev.templates(), r.templates()), r.anonymous()));
             }
         }
         return sorted(byPerson.values());
