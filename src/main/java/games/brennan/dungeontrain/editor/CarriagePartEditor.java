@@ -363,7 +363,7 @@ public final class CarriagePartEditor {
         // CarriageContentsEditor.duplicate. Without this, the geometry copies
         // but each cell loses its randomized-state list.
         if (sourceName != null) {
-            copyVariantSidecar(kind, sourceName, name, dims);
+            copyVariantSidecar(kind, sourceName, name);
         }
 
         CarriageEditor.rememberReturn(player);
@@ -394,37 +394,18 @@ public final class CarriagePartEditor {
     }
 
     /**
-     * Copy the variant-blocks sidecar from {@code sourceName} onto
-     * {@code targetName} so a "new part from current/standard" duplicate
-     * keeps the per-cell "pick from these alternatives" authoring data.
-     * No-op when the source sidecar is empty. Package-private for tests.
+     * Carry every sidecar of {@code (kind, sourceName)} onto {@code targetName} so a "new part from
+     * current/standard" duplicate keeps the per-cell "pick from these alternatives" authoring data
+     * (entries, lock-ids and mirror flags — the file goes across verbatim) and its container links.
+     * No-op when the source has nothing on disk. Package-private for tests.
      *
-     * <p>Mirrors the same logic baked inline into
-     * {@link CarriageEditor#duplicate} and
-     * {@link CarriageContentsEditor#duplicate}. The {@link CarriageVariantBlocks.Entry}
-     * record only exposes {@code (localPos, states)}, so lock-id groupings —
-     * cells sharing a non-zero lock-id render the same random index together —
-     * are copied separately via {@link CarriagePartVariantBlocks#allLockIds()}
-     * after the states pass, so the duplicate keeps its variant grouping too.
+     * <p>One path with {@link CarriageEditor#duplicate} and {@link CarriageContentsEditor#duplicate}:
+     * {@link TemplateCopy} walks {@link TemplateSidecars#filesFor}, so a sidecar added there is
+     * carried here without a change.</p>
      */
-    static void copyVariantSidecar(CarriagePartKind kind, String sourceName, String targetName, CarriageDims dims) throws IOException {
-        Vec3i partSize = kind.dims(dims);
-        CarriagePartVariantBlocks sourceSidecar =
-            CarriagePartVariantBlocks.loadFor(kind, sourceName, partSize);
-        if (sourceSidecar.isEmpty()) return;
-        CarriagePartVariantBlocks copy = CarriagePartVariantBlocks.empty();
-        for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-            copy.put(e.localPos(), e.states());
-        }
-        // Carry over the lock-id grouping (states pass above only copies the
-        // candidate lists; lockIds live in a parallel map). setLockId requires
-        // the cell to exist — guaranteed since every entry was just put().
-        for (java.util.Map.Entry<BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
-            copy.setLockId(lk.getKey(), lk.getValue());
-        }
-        copy.save(kind, targetName);
-        LOGGER.info("[DungeonTrain] Part editor copyVariantSidecar: {} entries copied from {}:{} to {}:{}",
-            sourceSidecar.size(), kind.id(), sourceName, kind.id(), targetName);
+    static void copyVariantSidecar(CarriagePartKind kind, String sourceName, String targetName) throws IOException {
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.PART,
+            kind.id(), sourceName, targetName);
     }
 
     /**

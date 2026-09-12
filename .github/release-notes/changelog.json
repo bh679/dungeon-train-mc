@@ -12377,6 +12377,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-new-copies-settings",
+      "version": "0.855.0",
+      "type": "fix",
+      "title": "Editor: New copies a template's settings, not just its blocks",
+      "summary": "Pressing New on a dimensional carriage or a carriage in the editor now carries its sky, walls, block variants and loot links across with the blocks, instead of starting the copy as a bare box.",
+      "highlights": [],
+      "pr": 1377,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
