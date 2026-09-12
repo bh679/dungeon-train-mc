@@ -527,22 +527,11 @@ public final class CarriageContentsEditor {
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, sourceBox);
         CarriageContentsStore.save(target, template);
 
-        // Copy the source's variants sidecar onto the duplicate so authors get
-        // the random-pick set "for free" — same pattern as CarriageEditor.
-        net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(source, dims);
-        CarriageContentsVariantBlocks sourceSidecar = CarriageContentsVariantBlocks.loadFor(source, interiorSize);
-        if (!sourceSidecar.isEmpty()) {
-            CarriageContentsVariantBlocks copy = CarriageContentsVariantBlocks.empty();
-            for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-                copy.put(e.localPos(), e.states());
-            }
-            // Carry over the lock-id grouping so duplicated cells that share a
-            // random pick stay grouped (states pass only copies candidate lists).
-            for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
-                copy.setLockId(lk.getKey(), lk.getValue());
-            }
-            copy.save(target);
-        }
+        // Everything beside the .nbt goes with it — the variants sidecar (random-pick sets,
+        // lock-ids, mirror flags), the container links and the weights entry — same path as
+        // CarriageEditor.duplicate.
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, null,
+            source.id(), target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 

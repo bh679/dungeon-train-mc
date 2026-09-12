@@ -157,6 +157,17 @@ public record TemplateMeta(int weight, TemplateGate gate, String stageId, String
             : prev.withName(name);
     }
 
+    /**
+     * The entry a <b>duplicate</b> of this template inherits: weight, gate, Stage link, mode, flip
+     * and builder credit — everything but the display label. Two templates answering to one label
+     * are indistinguishable in every menu, so the copy is labelled by its own id until its author
+     * names it. The mode tag travels whole; for a portal room that is its sky, walls, copies and
+     * door settings, and a copy without it is a bare box.
+     */
+    public TemplateMeta asCopy() {
+        return withName(null);
+    }
+
     /** True when somebody is credited as this template's original builder. */
     public boolean hasBuilder() {
         return builder != null;

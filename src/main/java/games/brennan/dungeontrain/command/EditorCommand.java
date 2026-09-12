@@ -6353,7 +6353,7 @@ public final class EditorCommand {
                 // The geometry alone isn't the room: without the seed's variant-blocks sidecar
                 // the sub-variant stamps as a plain box, because applyRoomVariants early-outs on
                 // an empty sidecar. Inside this try so a failure rolls the membership back too.
-                copyTrackVariantSidecar(PORTAL_ROOM_KIND, seedRoom, key, dims);
+                copyTrackVariantSidecar(PORTAL_ROOM_KIND, seedRoom, key);
                 // Size follows the seed, not the parent: a copy of a smaller sibling that inherited
                 // the parent's box would stamp short and read back as an undersized template.
                 net.minecraft.core.Vec3i inherited =
@@ -7732,31 +7732,24 @@ public final class EditorCommand {
     }
 
     /**
-     * Mirror {@code (kind, sourceName)}'s variant-blocks sidecar onto {@code targetName} so a
-     * duplicate keeps the per-cell "pick from these alternatives" authoring data — the cells,
-     * their lock-group ids, and the mirror flags. Same job as
-     * {@code CarriageEditor.duplicate} / {@code CarriageContentsEditor.duplicate} do for
-     * carriages. No-op when the source has nothing worth persisting (e.g. duplicating the
-     * synthetic "default"); a mirror-only sidecar still copies, since axis toggles are authoring
-     * data too.
-     *
-     * <p>The footprint comes from {@link games.brennan.dungeontrain.editor.TrackSidePlots#footprint(
-     * games.brennan.dungeontrain.track.variant.TrackKind, String, CarriageDims)} rather than
-     * {@code kind.dims(dims)}: a portal room is whatever size its author made it, and the
-     * kind-level box would send every cell above that floor through
-     * {@code TrackVariantBlocks.parse}'s bounds check and out of the copy.</p>
+     * Carry every sidecar and the weights entry of {@code (kind, sourceName)} onto
+     * {@code targetName}, so a duplicate keeps everything that made the source what it was — the
+     * per-cell "pick from these alternatives" authoring data, and for a portal room its
+     * contents allow-list, copies palettes, container links and the {@code mode} tag holding its
+     * sky, walls and door settings. Same job as {@code CarriageEditor.duplicate} /
+     * {@code CarriageContentsEditor.duplicate} do for carriages, through the one enumeration in
+     * {@link games.brennan.dungeontrain.editor.TemplateSidecars}. A source with nothing on disk
+     * (duplicating the synthetic "default") copies nothing.
      */
     private static void copyTrackVariantSidecar(
         games.brennan.dungeontrain.track.variant.TrackKind kind, String sourceName,
-        String targetName, CarriageDims dims
+        String targetName
     ) throws IOException {
-        net.minecraft.core.Vec3i footprint =
-            games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, sourceName, dims);
-        games.brennan.dungeontrain.track.variant.TrackVariantBlocks sourceSidecar =
-            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, sourceName, footprint);
-        if (sourceSidecar.isEmpty() && sourceSidecar.isDefaultMirror()) return;
-        games.brennan.dungeontrain.track.variant.TrackVariantBlocks.copyOf(sourceSidecar)
-            .save(kind, targetName);
+        games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind photoKind =
+            kind == games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM
+                ? games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.PORTAL_ROOM
+                : games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.TRACK;
+        games.brennan.dungeontrain.editor.TemplateCopy.copy(photoKind, kind.id(), sourceName, targetName);
     }
 
     /**
@@ -7834,7 +7827,7 @@ public final class EditorCommand {
         }
 
         try {
-            copyTrackVariantSidecar(kind, sourceName, key, dims);
+            copyTrackVariantSidecar(kind, sourceName, key);
         } catch (java.io.IOException e) {
             source.sendFailure(Component.literal(
                 "Variant sidecar copy failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
