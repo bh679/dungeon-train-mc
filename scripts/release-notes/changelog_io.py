@@ -23,6 +23,7 @@ Public surface:
       the SAME rule as version-bump.yml (PATCH==0 -> unchanged, else MINOR+1).
   load_changelog / save_changelog — read/write the ledger object.
   find_entry / make_entry / append_entry — entry construction (immutable).
+  normalise_tags(type, tags) — type-derived tag + topical tags, canonical order.
   unreleased_entries / mark_all_released — the released-flag boundary.
   render_markdown(entries) — player-facing Markdown grouped by version desc.
   write_github_output(**kv) — append step outputs to $GITHUB_OUTPUT.
@@ -56,6 +57,53 @@ VALID_TYPES = (
     "ci",
     "test",
 )
+
+# Player-facing tags the Versions page filters by. Order here is display order
+# and the canonical order tags are stored in. Keep in sync with the schema enum
+# and the client's ChangelogTag enum.
+VALID_TAGS = (
+    "feature",
+    "content",
+    "fix",
+    "performance",
+    "editor",
+    "multiplayer",
+    "community",
+    "translations",
+    "compatibility",
+    "world",
+    "mobs",
+    "loot",
+    "advancements",
+    "ui",
+    "balance",
+)
+
+# The tag an entry always carries by virtue of its conventional-commit type.
+# Non-player-facing types (chore/ci/refactor/docs/test) derive nothing.
+TYPE_TAGS = {
+    "feat": "feature",
+    "fix": "fix",
+    "content": "content",
+    "perf": "performance",
+}
+
+
+def normalise_tags(entry_type: str, tags: list[str] | None) -> list[str]:
+    """The tag list an entry of `entry_type` stores: type-derived tag plus `tags`.
+
+    Deduplicated and ordered by VALID_TAGS so two entries tagged the same way
+    serialise identically. Raises ValueError on an unknown tag. Returns a new
+    list; the input is never mutated.
+    """
+    wanted = set(tags or [])
+    unknown = sorted(wanted - set(VALID_TAGS))
+    if unknown:
+        raise ValueError(f"unknown changelog tag(s): {', '.join(unknown)}")
+    derived = TYPE_TAGS.get(entry_type)
+    if derived is not None:
+        wanted = wanted | {derived}
+    return [t for t in VALID_TAGS if t in wanted]
 
 
 def read_json(path: str) -> Any:
@@ -142,12 +190,14 @@ def make_entry(
     date: str,
     highlights: list[str] | None = None,
     pr: int | None = None,
+    tags: list[str] | None = None,
 ) -> dict:
     """Build a normalized, unreleased entry. Keys are inserted in display order."""
     entry: dict = {
         "id": entry_id,
         "version": version,
         "type": entry_type,
+        "tags": normalise_tags(entry_type, tags),
         "title": title,
         "summary": summary,
         "highlights": list(highlights or []),

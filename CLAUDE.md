@@ -90,7 +90,9 @@ After implementation is complete:
 Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 1. Push branch, open PR with conventional commit title
 2. **Log + confirm the changelog entry** — append it on the feature branch with
-   `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
+   `scripts/release-notes/append-entry.py` (curated player-facing notes, plus `--tag` for each
+   topical tag — editor/multiplayer/community/translations/compatibility/world/mobs/loot/
+   advancements/ui/balance; the type-derived tag is automatic) so it lands in the PR
    diff, and present those notes to the user to confirm before merging — see
    `.github/release-notes/README.md`
 3. Verify CI green
