@@ -988,6 +988,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< Kembali",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Simpan dulu bangunan ini — hanya bangunan yang sudah diunggah bisa diajukan.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Berdirilah di petak ini untuk mengeditnya (klik dua kali ubin untuk pergi ke sana)",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "Buka bangunan ini di platform untuk mengeditnya (klik dua kali ubin)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Templat bawaan tidak dapat diganti namanya",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Tidak tersedia untuk templat ini",
   "gui.dungeontrain.editor_screen.test_carriage": "Uji Gerbong",

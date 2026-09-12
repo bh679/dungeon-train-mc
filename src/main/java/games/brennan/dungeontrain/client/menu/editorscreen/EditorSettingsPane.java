@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -35,6 +36,10 @@ final class EditorSettingsPane {
 
     /** The rows for the plot the player stands in — null category outside every plot. */
     static List<CommandMenuEntry> rows() {
+        if (BuilderBoundsState.isInBuilderWorld()) {
+            return EditorSettingsPage.builderRows(BuilderBoundsState.mirror(),
+                ClientDisplayConfig.getEditorScreenTheme(), ClientDisplayConfig::setEditorScreenTheme);
+        }
         VariantKey standing = EditorScreenState.standingIn();
         PlotCategory cat = standing == null ? null : standing.category();
         String name = standing == null ? "" : standing.displayName();

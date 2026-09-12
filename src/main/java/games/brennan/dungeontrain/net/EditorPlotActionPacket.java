@@ -152,6 +152,15 @@ public record EditorPlotActionPacket(
             MinecraftServer server = sender.getServer();
             if (server == null) return;
             ServerLevel overworld = server.overworld();
+            // Every action here is addressed to an editor plot in the sky. A builder world has no
+            // such plot — its save would capture empty air at that origin and write it over the
+            // template — so the request is refused there whatever the client thought it was doing.
+            if (overworld.dimensionTypeRegistration().is(
+                    games.brennan.dungeontrain.builder.BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
+                LOGGER.warn("[DungeonTrain] EditorPlotAction {} on '{}' refused in a builder world",
+                    packet.action, packet.modelId);
+                return;
+            }
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
             EditorCategory category = resolve(packet.category);

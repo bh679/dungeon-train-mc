@@ -43,6 +43,15 @@ public final class EditorTabBar {
      */
     public static List<Tab> layout(InventoryEditorLayout.Rect strip, ToIntFunction<String> widthOf,
                                    Function<EditorScreenPage, String> labelOf) {
+        return layout(strip, widthOf, labelOf, true);
+    }
+
+    /**
+     * As above; {@code withExit} false leaves the Exit tab out and right-locks Settings in its
+     * place — the Train Builder, whose way out is the pause menu, not the editor's exit command.
+     */
+    public static List<Tab> layout(InventoryEditorLayout.Rect strip, ToIntFunction<String> widthOf,
+                                   Function<EditorScreenPage, String> labelOf, boolean withExit) {
         List<Tab> out = new ArrayList<>();
         int x = strip.x();
         for (EditorScreenPage page : EditorScreenPage.values()) {
@@ -52,9 +61,14 @@ public final class EditorTabBar {
             x = t.x() + t.w() + GAP;
         }
         // Right-locked: Exit at the very end, Settings just before it.
-        int exitX = strip.right() - EXIT_W;
         String settingsLabel = labelOf.apply(EditorScreenPage.SETTINGS);
         int settingsW = widthOf.applyAsInt(settingsLabel) + PAD_X * 2;
+        if (!withExit) {
+            out.add(new Tab(Kind.PAGE, EditorScreenPage.SETTINGS, settingsLabel,
+                Math.max(x, strip.right() - settingsW), settingsW));
+            return out;
+        }
+        int exitX = strip.right() - EXIT_W;
         int settingsX = Math.max(x, exitX - GAP - settingsW);
         out.add(new Tab(Kind.PAGE, EditorScreenPage.SETTINGS, settingsLabel, settingsX, settingsW));
         out.add(new Tab(Kind.EXIT, null, "", Math.max(settingsX + settingsW + GAP, exitX), EXIT_W));

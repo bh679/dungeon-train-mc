@@ -1013,6 +1013,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< Indietro",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Salva prima questa costruzione: solo una costruzione caricata può essere proposta.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Mettiti su questo lotto per modificarlo (doppio clic sul riquadro per andarci)",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "Apri questa costruzione sulla piattaforma per modificarla (doppio clic sulla casella)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "I modelli integrati non possono essere rinominati",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Non disponibile per questo modello",
   "gui.dungeontrain.editor_screen.test_carriage": "Prova il vagone",

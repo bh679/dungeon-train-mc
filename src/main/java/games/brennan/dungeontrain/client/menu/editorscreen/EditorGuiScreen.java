@@ -1,10 +1,10 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
-import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
+import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
@@ -20,6 +20,7 @@ import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
+import games.brennan.dungeontrain.net.BuilderDirtyRequestPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadPacket;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
 import games.brennan.dungeontrain.net.BuilderProfileDownloadResultPacket;
@@ -117,8 +118,32 @@ public final class EditorGuiScreen extends Screen {
         // Opening it inside a plot is nearly always a question about that plot — see
         // EditorScreenState.requestStandingSelection.
         EditorScreenState.requestStandingSelection();
-        EditorSaveStatus.request();
+        requestDirty();
         Minecraft.getInstance().setScreen(new EditorGuiScreen());
+    }
+
+    /**
+     * Ask what is unsaved: the editor's per-plot scan, or in the Train Builder the one answer its
+     * dirty packet gives about the build on the platform.
+     */
+    private static void requestDirty() {
+        if (BuilderBoundsState.isInBuilderWorld()) {
+            DungeonTrainNet.sendToServer(new BuilderDirtyRequestPacket());
+            return;
+        }
+        EditorSaveStatus.request();
+    }
+
+    private static boolean inBuilder() {
+        return BuilderBoundsState.isInBuilderWorld();
+    }
+
+    /**
+     * Load all is the Templates tab's category switch, which stamps every model of a category in
+     * the editor's sky — not a thing a builder world has room for, so the button is the editor's.
+     */
+    private static boolean showLoadAll() {
+        return EditorScreenState.page().isBrowser() && !inBuilder();
     }
 
     @Override
@@ -130,7 +155,7 @@ public final class EditorGuiScreen extends Screen {
     protected void init() {
         layout = InventoryEditorLayout.of(this.width, this.height, EditorScreenState.filtersExpanded());
         InventoryEditorLayout.Rect f = layout.filter();
-        filterBar.layout(layout, this.font, EditorRosterClient.index(), EditorScreenState.page().isBrowser());
+        filterBar.layout(layout, this.font, EditorRosterClient.index(), showLoadAll());
         filterBox = new EditBox(this.font, filterBar.boxX(), f.y(), filterBar.boxW(), f.h(),
             Component.literal("filter"));
         filterBox.setBordered(false);
@@ -189,7 +214,7 @@ public final class EditorGuiScreen extends Screen {
         search.tick();
         tickWalk();
         if (refreshTicks > 0 && --refreshTicks == 0) {
-            EditorSaveStatus.request();
+            requestDirty();
         }
         if (submitTicks > 0 && --submitTicks == 0) {
             EditorCreatorBuilds.refresh();
@@ -253,14 +278,17 @@ public final class EditorGuiScreen extends Screen {
         filterBox.visible = filtering;
         filterBox.setEditable(filtering);
         if (filtering) {
-            filterBar.layout(layout, this.font, index, browsing);
+            filterBar.layout(layout, this.font, index, showLoadAll());
             placeFilterBox();
         }
 
         super.render(g, mouseX, mouseY, partialTick);   // background + the filter box
 
         drawPanel(g, theme);
-        tabs = EditorTabBar.layout(layout.tabs(), this.font::width, p -> EditorScreenLang.text(p.langKey()));
+        // No Exit tab in the builder: its way out is the pause menu, and the editor's exit command
+        // would clear plots this world never had.
+        tabs = EditorTabBar.layout(layout.tabs(), this.font::width, p -> EditorScreenLang.text(p.langKey()),
+            !inBuilder());
         hoveredTab = modal.isOpen() || search.isOpen() ? null
             : EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
         // The standing plot's category is a cell of the Templates tab now, so that is the tab that
@@ -441,6 +469,13 @@ public final class EditorGuiScreen extends Screen {
         BuilderProfilePacket.Entry entry = selectedCreatorBuild();
         EditorCreatorBuilds.Landed landed = EditorCreatorBuilds.here(EditorRosterClient.index(), entry);
         if (landed == null) return;
+        if (inBuilder()) {
+            // An open, not a walk: the platform is re-stamped and the screen closes with it, so
+            // there is no arrival to watch for.
+            BuilderOpenFlow.open(this, BuilderOpenTarget.of(
+                BuilderStanding.keyOf(landed.kind(), landed.subKind(), landed.id())));
+            return;
+        }
         if (!EditorTemplateJumpBridge.go(landed.kind(), landed.id(), landed.subKind())) return;
         goingTo = landed;
         goingTicks = GOING_TIMEOUT_TICKS;
@@ -510,7 +545,7 @@ public final class EditorGuiScreen extends Screen {
      */
     private void loadAllInCategory() {
         PlotCategory category = EditorScreenState.category().category();
-        if (category == null) return;
+        if (category == null || inBuilder()) return;
         CommandRunner.run("dungeontrain editor " + category.owner().id());
         afterCommand();
     }
@@ -563,18 +598,14 @@ public final class EditorGuiScreen extends Screen {
         VariantKey standing = EditorScreenState.standingIn();
         VariantKey selection = EditorScreenState.selection();
         EditorRosterIndex.Tile tile = selection == null ? null : index.find(selection);
-        boolean dirty = false;
-        if (tile != null) {
-            PlotCategory cat = tile.key().category();
-            dirty = EditorSaveStatus.isDirty(EditorStatusHudOverlay.unsavedList(), cat.id(),
-                EditorSaveStatus.dirtyKey(cat, tile.key().modelId(), tile.key().modelName()));
-        }
+        boolean dirty = tile != null && EditorScreenState.isDirty(tile.key());
         return new EditorScreenActions.Ctx(
             tile == null ? null : tile.key(),
             tile == null ? null : tile.variant(),
             tile == null ? -1 : tile.selfWeight(),
             standing, index.stampedCategory(), dirty,
-            tile == null ? null : tile.extras());
+            tile == null ? null : tile.extras(),
+            EditorScreenState.host());
     }
 
     private float frameSeconds() {
@@ -766,6 +797,7 @@ public final class EditorGuiScreen extends Screen {
                 else selectOrEnter(browser.subTiles().get(hit.index()).key());
             }
             case NEW -> {
+                if (inBuilder()) { BuilderOpenFlow.startNew(this); return; }
                 PlotCategory page = EditorScreenState.category().category();
                 EditorRosterIndex.TypeStrip strip = stripByName(index, page, EditorScreenState.effectiveTypeName(index));
                 if (strip == null) return;
@@ -773,8 +805,11 @@ public final class EditorGuiScreen extends Screen {
                 String first = all.isEmpty() ? "" : all.get(0).key().displayName();
                 dispatch(EditorScreenActions.newEntry(strip.category(), strip.modelId(), first, standing));
             }
-            case NEW_SUB -> dispatch(EditorScreenActions.newSubVariantEntry(
-                browser.subParent() == null ? null : browser.subParent().key(), standing));
+            case NEW_SUB -> {
+                if (inBuilder()) { BuilderOpenFlow.startNew(this); return; }
+                dispatch(EditorScreenActions.newSubVariantEntry(
+                    browser.subParent() == null ? null : browser.subParent().key(), standing));
+            }
             default -> { }
         }
     }
@@ -859,7 +894,7 @@ public final class EditorGuiScreen extends Screen {
         lastClickMillis = now;
         EditorScreenState.select(key);
         if (doubleClick) {
-            dispatch(EditorScreenActions.enterEntry(context(EditorRosterClient.index())));
+            dispatch(EditorScreenActions.enterEntry(context(EditorRosterClient.index()), this));
         }
     }
 

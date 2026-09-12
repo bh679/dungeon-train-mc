@@ -224,6 +224,11 @@ public final class BuilderBoundsState {
         return buildName.isEmpty();
     }
 
+    /** Carriages standing on the track — more than one means the build is a group. */
+    public static int parked() {
+        return parked;
+    }
+
     /** Mode id, or empty when the server hasn't said (or this isn't a builder world). */
     public static String modeId() {
         return modeId;

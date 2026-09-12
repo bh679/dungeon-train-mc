@@ -1,7 +1,10 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.builder.BuilderBoundsState;
+import games.brennan.dungeontrain.client.builder.BuilderDirtyState;
 import games.brennan.dungeontrain.client.builder.BuilderProfileFilters;
+import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 
@@ -123,10 +126,38 @@ public final class EditorScreenState {
         expandedSections = Set.copyOf(next);
     }
 
-    /** The plot the player stands in right now, or null outside a plot. */
+    /**
+     * The plot the player stands in right now, or null outside a plot.
+     *
+     * <p>In a Train Builder world it is the build on the platform: the builder pushes no editor
+     * status, so its own bounds packet answers, through {@link BuilderOpenFlow#standing}. Null for
+     * a draft there — a build with no name has no roster row to stand in.</p>
+     */
     public static VariantKey standingIn() {
+        if (BuilderBoundsState.isInBuilderWorld()) return BuilderOpenFlow.standing();
         return VariantKey.fromStatus(EditorStatusHudOverlay.category(),
             EditorStatusHudOverlay.modelId(), EditorStatusHudOverlay.modelName());
+    }
+
+    /** Which world the screen is up in — see {@link EditorScreenActions.Host}. */
+    public static EditorScreenActions.Host host() {
+        return BuilderBoundsState.isInBuilderWorld()
+            ? EditorScreenActions.Host.BUILDER : EditorScreenActions.Host.EDITOR;
+    }
+
+    /**
+     * Whether this template has unsaved edits: the editor's dirty scan by key, or in the builder
+     * the one answer its dirty packet carries — about the build on the platform and nothing else.
+     */
+    public static boolean isDirty(VariantKey key) {
+        if (key == null || key.category() == null) return false;
+        if (BuilderBoundsState.isInBuilderWorld()) {
+            VariantKey here = standingIn();
+            return here != null && here.sameTemplate(key) && BuilderDirtyState.hasUnsavedChanges();
+        }
+        PlotCategory cat = key.category();
+        return EditorSaveStatus.isDirty(EditorStatusHudOverlay.unsavedList(), cat.id(),
+            EditorSaveStatus.dirtyKey(cat, key.modelId(), key.modelName()));
     }
 
     /** Ask that the next roster the screen sees selects the plot the author is standing in. */

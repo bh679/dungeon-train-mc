@@ -34,6 +34,17 @@ final class EditorTabBarTest {
     }
 
     @Test
+    @DisplayName("without Exit — the Train Builder — Settings takes the right edge")
+    void withoutExit() {
+        Rect strip = new Rect(6, 4, 640 - 12, 16);
+        List<EditorTabBar.Tab> t = EditorTabBar.layout(strip, s -> s.length() * 6, EditorScreenPage::name, false);
+        assertEquals(3, t.size());
+        assertEquals(EditorScreenPage.SETTINGS, t.get(2).page());
+        assertEquals(strip.right(), t.get(2).x() + t.get(2).w());
+        assertTrue(t.get(1).x() + t.get(1).w() <= t.get(2).x());
+    }
+
+    @Test
     @DisplayName("tabs never overlap, even on a narrow strip")
     void noOverlap() {
         for (int width : new int[] {427, 480, 640, 1920}) {

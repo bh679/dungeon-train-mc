@@ -1,14 +1,12 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
-import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileFilters;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTileSpin;
 import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
-import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
@@ -248,9 +246,7 @@ public final class EditorBrowserPane {
         boolean selected = selection != null && selection.equals(key)
             || (asSelf && selection != null && selection.sameTemplate(key) && !selection.isSubVariant());
         boolean here = standing != null && standing.sameTemplate(key);
-        PlotCategory cat = key.category();
-        boolean dirty = EditorSaveStatus.isDirty(EditorStatusHudOverlay.unsavedList(), cat.id(),
-            EditorSaveStatus.dirtyKey(cat, key.modelId(), key.modelName()));
+        boolean dirty = EditorScreenState.isDirty(key);
         TemplateArt art = TemplateArt.of(key);
         float yaw = spin.advance(art == null ? key.toString() : art.spinKey(), hov, seconds);
         int weight = asSelf ? tile.selfWeight() : v.weight();

@@ -1043,6 +1043,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< Назад",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Сначала сохраните постройку — отправить можно только загруженную.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Встаньте на этот участок, чтобы редактировать его (дважды щёлкните по плитке, чтобы переместиться туда)",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "Откройте эту постройку на платформе, чтобы редактировать её (дважды щёлкните по плитке)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Встроенные шаблоны нельзя переименовать",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Недоступно для этого шаблона",
   "gui.dungeontrain.editor_screen.test_carriage": "Испытать вагон",

@@ -182,7 +182,9 @@ public final class CommandMenuState {
         boolean inPlot = EditorStatusHudOverlay.isActive();
         boolean inEditorWorld = games.brennan.dungeontrain.editor.EditorWorldLayout.isEditorWorld(
             Minecraft.getInstance().level);
-        if (EditorScreenGate.opensInventoryScreen(inPlot, inEditorWorld,
+        // The builder never pushes an editor status, so its own bounds packet answers instead.
+        boolean inBuilderWorld = games.brennan.dungeontrain.client.builder.BuilderBoundsState.isInBuilderWorld();
+        if (EditorScreenGate.opensInventoryScreen(inPlot, inEditorWorld, inBuilderWorld,
                 ClientDisplayConfig.getCommandMenuSpace().isScreenspace())) {
             games.brennan.dungeontrain.client.menu.editorscreen.EditorGuiScreen.open();
             return;

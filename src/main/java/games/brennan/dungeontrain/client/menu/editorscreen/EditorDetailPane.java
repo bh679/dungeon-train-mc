@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.config.EditorScreenTheme;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -104,7 +105,7 @@ public final class EditorDetailPane {
         // Standing somewhere else is not just a fact to report — it is the one thing in the way of
         // half these controls, so the header offers the walk rather than only naming it.
         goHere = ctx.hasSelection() && !ctx.standingInSelection()
-            ? EditorScreenActions.enterEntry(ctx) : null;
+            ? EditorScreenActions.enterEntry(ctx, Minecraft.getInstance().screen) : null;
         // A new selection starts on its first page; a shorter list clamps the page it was on.
         if (ctx.selection() == null || !ctx.selection().equals(pagedFor)) page = 0;
         pagedFor = ctx.selection();
@@ -414,13 +415,19 @@ public final class EditorDetailPane {
     private void drawTest(GuiGraphics g, Font font) {
         InventoryEditorLayout.Rect row = layout.test();
         // The Reseed cell takes the right end of the row, with a one-pixel gap; the button the rest.
-        CommandMenuEntry reseed = reseedEntry();
-        int cellW = font.width(MenuRowPainter.labelFor(reseed)) + 2 * MenuRowPainter.CELL_PAD_X + 8;
-        reseedRect = new InventoryEditorLayout.Rect(row.right() - cellW, row.y(), cellW, row.h());
+        // Not in the builder: the switch is about the editor's test copies, which it has none of —
+        // the row is the disabled Test button alone there.
+        int cellW = 0;
+        reseedRect = null;
+        if (!ctx.inBuilder()) {
+            CommandMenuEntry reseed = reseedEntry();
+            cellW = font.width(MenuRowPainter.labelFor(reseed)) + 2 * MenuRowPainter.CELL_PAD_X + 8;
+            reseedRect = new InventoryEditorLayout.Rect(row.right() - cellW, row.y(), cellW, row.h());
+            MenuRowPainter.drawCell(g, font, reseed, reseedRect.x(), reseedRect.y(), reseedRect.right(),
+                reseedRect.h(), hovered.kind() == HitKind.RESEED, 0, 0, null);
+        }
         InventoryEditorLayout.Rect r = new InventoryEditorLayout.Rect(row.x(), row.y(),
-            Math.max(0, row.w() - cellW - 1), row.h());
-        MenuRowPainter.drawCell(g, font, reseed, reseedRect.x(), reseedRect.y(), reseedRect.right(),
-            reseedRect.h(), hovered.kind() == HitKind.RESEED, 0, 0, null);
+            Math.max(0, row.w() - (cellW == 0 ? 0 : cellW + 1)), row.h());
 
         boolean enabled = test != null;
         boolean hov = enabled && hovered.kind() == HitKind.TEST;

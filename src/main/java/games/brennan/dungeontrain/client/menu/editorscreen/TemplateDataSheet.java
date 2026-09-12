@@ -194,6 +194,9 @@ public final class TemplateDataSheet {
      * with it.
      */
     private static List<Cell> trainSizeCells() {
+        // The builder's parked shells are stamped at the size the world was made with; the resize
+        // command would change the dims under them without a restamp, so the line only reads there.
+        if (games.brennan.dungeontrain.client.builder.BuilderBoundsState.isInBuilderWorld()) return List.of();
         EditorRosterPacket.TrainSize dims = EditorRosterClient.index().trainSize();
         if (!dims.isKnown()) return List.of();
         String warning = EditorScreenLang.text(EditorScreenLang.SHEET_TRAIN_SIZE);

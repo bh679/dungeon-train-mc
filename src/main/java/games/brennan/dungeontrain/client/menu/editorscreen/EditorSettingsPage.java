@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderMirrorFlags;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
@@ -36,6 +37,43 @@ public final class EditorSettingsPage {
         if (DungeonTrain.isDevBuild()) out.add(relayRow());
         out.addAll(EditorMenuScreen.settingsRows(standingCategory, standingName));
         return out;
+    }
+
+    /**
+     * The same page in the Train Builder: the screen's own rows, then Mirror and Stages. The editor
+     * preferences between them — DevMode, the world-space menus, plot lighting, the welcome panel —
+     * are about plots and panels a builder world does not have. Mirror reads the builder's bounds
+     * packet rather than the editor status, which the builder never sends; the commands are the
+     * ones the pause menu's mirror cells run.
+     */
+    public static List<CommandMenuEntry> builderRows(BuilderMirrorFlags mirror, EditorScreenTheme theme,
+                                                     Consumer<EditorScreenTheme> setTheme) {
+        List<CommandMenuEntry> out = new ArrayList<>();
+        out.add(themeRow(theme, setTheme));
+        out.add(skyboxRow());
+        if (DungeonTrain.isDevBuild()) out.add(relayRow());
+        out.addAll(mirrorRows(mirror));
+        out.add(new CommandMenuEntry.DrillIn("Stages",
+            new games.brennan.dungeontrain.client.menu.StagesListScreen()));
+        return out;
+    }
+
+    /** Mirror | X · Y · Z · V, tinted by the flags handed in — pure, so the row is testable. */
+    static List<CommandMenuEntry> mirrorRows(BuilderMirrorFlags mirror) {
+        List<CommandMenuEntry> out = new ArrayList<>(3);
+        out.add(new CommandMenuEntry.Label("Mirror"));
+        out.add(new CommandMenuEntry.Quad(
+            mirrorCell("X", "x", mirror.x()), mirrorCell("Y", "y", mirror.y()),
+            mirrorCell("Z", "z", mirror.z()), mirrorCell("V", "v", mirror.variants()),
+            0.25, 0.50, 0.75));
+        out.add(new CommandMenuEntry.Run("Rebuild", "dungeontrain editor mirror rebuild"));
+        return out;
+    }
+
+    private static CommandMenuEntry mirrorCell(String label, String axis, boolean on) {
+        return new CommandMenuEntry.Toggle(label, on,
+            "dungeontrain editor mirror " + axis + " on", "dungeontrain editor mirror " + axis + " off",
+            /*showStateText*/ false, /*cmdToToggleOthers*/ null);
     }
 
     /**

@@ -1013,6 +1013,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< Voltar",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Salve esta construção primeiro — só dá para enviar uma construção já carregada.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Fique nesta parcela para editá-la (clique duas vezes no bloco para ir até lá)",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "Abra esta construção na plataforma para editá-la (clique duas vezes no bloco)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Modelos embutidos não podem ser renomeados",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Não disponível para este modelo",
   "gui.dungeontrain.editor_screen.test_carriage": "Testar o Vagão",

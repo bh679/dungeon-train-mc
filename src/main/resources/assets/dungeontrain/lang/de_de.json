@@ -1013,6 +1013,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< Zurück",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Speichere diesen Bau zuerst — nur ein hochgeladener Bau kann eingereicht werden.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Betritt dieses Grundstück, um es zu bearbeiten (Doppelklick auf die Kachel, um dorthin zu gelangen)",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "Öffne diesen Bau auf der Plattform, um ihn zu bearbeiten (Doppelklick auf die Kachel)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Integrierte Vorlagen können nicht umbenannt werden",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Für diese Vorlage nicht verfügbar",
   "gui.dungeontrain.editor_screen.test_carriage": "Waggon testen",

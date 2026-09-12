@@ -1418,6 +1418,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< Back",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Save this build first \u2014 only an uploaded build can be submitted.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Stand in this plot to edit it (double-click the tile to go there)",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "Open this build on the platform to edit it (double-click the tile)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Parts and tracks cannot be renamed from here yet",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Not available for this template",
   "gui.dungeontrain.editor_screen.test_carriage": "Test the Carriage",

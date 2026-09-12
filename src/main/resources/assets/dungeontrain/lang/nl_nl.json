@@ -1013,6 +1013,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< Terug",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Sla dit bouwwerk eerst op — alleen een geüpload bouwwerk kan worden ingediend.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Sta in dit perceel om het te bewerken (dubbelklik de tegel om erheen te gaan)",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "Open deze bouw op het platform om hem te bewerken (dubbelklik op de tegel)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Ingebouwde sjablonen kunnen niet worden hernoemd",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Niet beschikbaar voor dit sjabloon",
   "gui.dungeontrain.editor_screen.test_carriage": "Test de wagon",

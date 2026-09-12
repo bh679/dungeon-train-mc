@@ -1013,6 +1013,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< Voltar",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Guarda primeiro esta construção — só uma construção já enviada pode ser submetida.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Fica nesta parcela para a editares (faz duplo clique no bloco para lá ires)",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "Abre esta construção na plataforma para a editares (duplo clique no mosaico)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Os modelos originais não podem ser renomeados",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Não disponível para este modelo",
   "gui.dungeontrain.editor_screen.test_carriage": "Testar a Carruagem",

@@ -1043,6 +1043,7 @@
   "gui.dungeontrain.editor_screen.move.back": {"author": "Fable 5.1 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.disabled.stand_here": {"author": "Fable 5.1 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.disabled.builtin": {"author": "Fable 5.1 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.disabled.not_here": {"author": "Fable 5.1 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.test_carriage": {"author": "Fable 5.1 (Claude)", "reviewer": ""},

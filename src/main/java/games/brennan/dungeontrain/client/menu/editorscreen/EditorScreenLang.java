@@ -166,6 +166,8 @@ public final class EditorScreenLang {
     public static final String ICON_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
     public static final String DISABLED_NOT_UPLOADED = PREFIX + "disabled.not_uploaded";
     public static final String DISABLED_STAND_HERE = PREFIX + "disabled.stand_here";
+    /** The Train Builder's reading of "stand here": the build on the platform is the one you can save. */
+    public static final String DISABLED_OPEN_IN_BUILDER = PREFIX + "disabled.open_in_builder";
     public static final String DISABLED_BUILTIN = PREFIX + "disabled.builtin";
     public static final String DISABLED_NOT_HERE = PREFIX + "disabled.not_here";
     public static final String DISABLED_DIMENSIONS_ONLY = PREFIX + "disabled.dimensions_only";

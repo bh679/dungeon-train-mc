@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfileActionPacket;
+import games.brennan.dungeontrain.net.BuilderSavePacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 /**
  * Every control of the inventory-style editor screen, resolved to the {@link CommandMenuEntry}
@@ -49,6 +51,13 @@ public final class EditorScreenActions {
     /** The way out of a test carriage — the same command the row-list menu's Back row runs. */
     static final String EXIT_TEST_COMMAND = "dungeontrain portal test back";
 
+    /**
+     * Which world the screen is up in. The editor stamps plots in the sky and its commands act on
+     * the one the player stands in; the Train Builder holds one build on a platform and has verbs of
+     * its own for it — open, save, new — while everything addressed by id is shared.
+     */
+    public enum Host { EDITOR, BUILDER }
+
     /** What the builders need to know about the selection and the player. */
     public record Ctx(
         VariantKey selection,
@@ -57,10 +66,19 @@ public final class EditorScreenActions {
         VariantKey standing,
         PlotCategory stampedCategory,
         boolean dirty,
-        EditorRosterIndex.Extras extras
+        EditorRosterIndex.Extras extras,
+        Host host
     ) {
         public Ctx {
             if (extras == null) extras = EditorRosterIndex.Extras.NONE;
+            if (host == null) host = Host.EDITOR;
+        }
+
+        /** The seven-field shape from before the screen opened in the Train Builder. */
+        public Ctx(VariantKey selection, EditorTypeMenusPacket.Variant variant, int selfWeight,
+                   VariantKey standing, PlotCategory stampedCategory, boolean dirty,
+                   EditorRosterIndex.Extras extras) {
+            this(selection, variant, selfWeight, standing, stampedCategory, dirty, extras, Host.EDITOR);
         }
 
         /** The six-field shape from before the selection carried its room's tag and box. */
@@ -76,6 +94,19 @@ public final class EditorScreenActions {
         /** True when the selected template is the plot the player stands in. */
         public boolean standingInSelection() {
             return hasSelection() && standing != null && standing.sameTemplate(selection);
+        }
+
+        public boolean inBuilder() {
+            return host == Host.BUILDER;
+        }
+
+        /**
+         * True when the stood-in status packet describes the selection: standing in it, in the
+         * editor. The builder pushes no such packet, so there the roster row is the fresh source
+         * even for the build on the platform.
+         */
+        public boolean hudFresh() {
+            return host == Host.EDITOR && standingInSelection();
         }
 
         public PlotCategory category() {
@@ -106,7 +137,7 @@ public final class EditorScreenActions {
     // ------------------------------------------------------------------
 
     /** As below, for a selection with no relay row of its own — see {@link #submitIcon}. */
-    public static List<Icon> icons(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket) {
+    public static List<Icon> icons(Ctx ctx, Consumer<CustomPacketPayload> sendPacket) {
         return icons(ctx, sendPacket, 0);
     }
 
@@ -117,7 +148,8 @@ public final class EditorScreenActions {
      * already holds for the version strip. Zero means this template has never been uploaded, which is
      * the one reason the last icon is off.</p>
      */
-    public static List<Icon> icons(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket, int relayId) {
+    public static List<Icon> icons(Ctx ctx, Consumer<CustomPacketPayload> sendPacket, int relayId) {
+        if (ctx.inBuilder()) return builderIcons(ctx, sendPacket, relayId);
         List<Icon> out = new ArrayList<>(8);
         boolean here = ctx.standingInSelection();
         PlotCategory cat = ctx.category();
@@ -155,6 +187,39 @@ public final class EditorScreenActions {
             clear != null ? clear : packetAction(ctx, EditorPlotActionPacket.Action.CLEAR, sendPacket),
             EditorScreenLang.DISABLED_STAND_HERE));
 
+        out.add(submitIcon(relayId));
+        return out;
+    }
+
+    /**
+     * The same row in the Train Builder. The one build on the platform is what Save and Reset act
+     * on, through the builder's own packets: Save is {@code BuilderSavePacket} (a draft is asked
+     * for a name first), Reset re-opens the template from disk. On any other tile they are off —
+     * never the addressed {@link EditorPlotActionPacket}, whose save captures the editor's sky plot,
+     * which in a builder world is empty air over a template that was fine. Clear has no builder
+     * verb and is off. Rename, Move, Remove and the history are addressed by id and unchanged; the
+     * history stacks are simply empty down here, which is the reason those two are off.
+     */
+    static List<Icon> builderIcons(Ctx ctx, Consumer<CustomPacketPayload> sendPacket, int relayId) {
+        List<Icon> out = new ArrayList<>(8);
+        boolean here = ctx.standingInSelection();
+        out.add(new Icon("save", EditorScreenLang.ICON_SAVE,
+            here ? new CommandMenuEntry.ClientAction("Save", () -> sendPacket.accept(new BuilderSavePacket())) : null,
+            EditorScreenLang.DISABLED_OPEN_IN_BUILDER));
+        out.add(new Icon("rename", EditorScreenLang.ICON_RENAME, renameEntry(ctx),
+            EditorScreenLang.DISABLED_BUILTIN));
+        out.add(new Icon("move", EditorScreenLang.ICON_MOVE, moveEntry(ctx),
+            EditorScreenLang.DISABLED_NO_GROUPS));
+        out.add(new Icon("remove", EditorScreenLang.ICON_REMOVE, removeEntry(ctx),
+            EditorScreenLang.DISABLED_NOT_HERE));
+        out.add(historyIcon("undo", EditorScreenLang.ICON_UNDO, "dungeontrain editor undo",
+            EditorHistoryState.undoLabel(), EditorScreenLang.UNDO_NOTHING));
+        out.add(historyIcon("redo", EditorScreenLang.ICON_REDO, "dungeontrain editor redo",
+            EditorHistoryState.redoLabel(), EditorScreenLang.REDO_NOTHING));
+        out.add(new Icon("reset", EditorScreenLang.ICON_RESET,
+            here ? new CommandMenuEntry.ClientAction("Reset", BuilderOpenFlow::reopenStanding) : null,
+            EditorScreenLang.DISABLED_OPEN_IN_BUILDER));
+        out.add(new Icon("clear", EditorScreenLang.ICON_CLEAR, null, EditorScreenLang.DISABLED_NOT_HERE));
         out.add(submitIcon(relayId));
         return out;
     }
@@ -304,7 +369,7 @@ public final class EditorScreenActions {
      * world-space panels use, for categories whose plots have an action row. Null otherwise.
      */
     static CommandMenuEntry packetAction(Ctx ctx, EditorPlotActionPacket.Action action,
-                                         Consumer<EditorPlotActionPacket> sendPacket) {
+                                         Consumer<CustomPacketPayload> sendPacket) {
         if (!ctx.hasSelection() || ctx.isSubVariant()) return null;
         PlotCategory cat = ctx.category();
         if (cat == null || !cat.hasActionRow()) return null;
@@ -324,8 +389,26 @@ public final class EditorScreenActions {
      * enter — the path every cross-category jump in the mod takes. Null when nothing is selected.
      */
     public static CommandMenuEntry enterEntry(Ctx ctx) {
+        return enterEntry(ctx, null);
+    }
+
+    /**
+     * As above; {@code screen} is the screen the Train Builder's unsaved-work prompt returns to.
+     *
+     * <p>In the builder "go there" is an open: the template is stamped onto the platform, switching
+     * mode when it is authored from somewhere else — the same request the Open grid sends, through
+     * {@link BuilderOpenFlow}. Standing in it already, there is nowhere to go.</p>
+     */
+    public static CommandMenuEntry enterEntry(Ctx ctx, net.minecraft.client.gui.screens.Screen screen) {
         if (!ctx.hasSelection()) return null;
         VariantKey sel = ctx.selection();
+        if (ctx.inBuilder()) {
+            if (ctx.standingInSelection()) return null;
+            BuilderOpenTarget target = BuilderOpenTarget.of(sel);
+            if (target == null) return null;
+            return new CommandMenuEntry.ClientAction(EditorScreenLang.text(EditorScreenLang.ENTER),
+                () -> BuilderOpenFlow.open(screen, target));
+        }
         String command = EditorPlotTeleport.commandFor(sel.category(), sel.modelId(), sel.modelName());
         if (command == null) return null;
         String label = EditorScreenLang.text(EditorScreenLang.ENTER);
@@ -354,6 +437,8 @@ public final class EditorScreenActions {
      * sits in the basement between plots, where nothing is "here" to select.</p>
      */
     public static CommandMenuEntry testEntry(Ctx ctx) {
+        // The test copy stands in the editor's basement, which a builder world does not have.
+        if (ctx.inBuilder()) return null;
         if (PortalTestSessionState.active()) {
             return new CommandMenuEntry.Run(EditorScreenLang.text(EditorScreenLang.EXIT_TEST),
                 EXIT_TEST_COMMAND);
@@ -428,7 +513,7 @@ public final class EditorScreenActions {
      */
     public static List<CommandMenuEntry> roomRows(Ctx ctx) {
         if (!ctx.hasSelection() || ctx.category() != PlotCategory.PORTALS) return List.of();
-        if (ctx.standingInSelection()) return EditorMenuScreen.portalRows();
+        if (ctx.hudFresh()) return EditorMenuScreen.portalRows();
         EditorRosterIndex.Extras x = ctx.extras();
         if (!x.hasRoom()) return List.of();
         return EditorMenuScreen.portalRows(x.roomMode(), x.roomLength(), x.roomWidth(), x.roomHeight(),
@@ -437,7 +522,7 @@ public final class EditorScreenActions {
 
     /** The selection's settings tag, from the same source {@link #roomRows} reads. */
     public static String roomModeOf(Ctx ctx, Supplier<String> stoodIn) {
-        if (ctx.hasSelection() && ctx.category() == PlotCategory.PORTALS && !ctx.standingInSelection()
+        if (ctx.hasSelection() && ctx.category() == PlotCategory.PORTALS && !ctx.hudFresh()
             && ctx.extras().hasRoom()) {
             return ctx.extras().roomMode();
         }
@@ -452,7 +537,7 @@ public final class EditorScreenActions {
     static List<CommandMenuEntry> flipRows(Ctx ctx) {
         if (ctx.category() != PlotCategory.CONTENTS || ctx.isSubVariant()) return List.of();
         String modelId = ctx.selection().modelId();
-        if (ctx.standingInSelection()) {
+        if (ctx.hudFresh()) {
             return EditorMenuScreen.flipRows(modelId, EditorStatusHudOverlay.flipX(),
                 EditorStatusHudOverlay.flipY(), EditorStatusHudOverlay.flipZ(), EditorStatusHudOverlay.flipRooms());
         }

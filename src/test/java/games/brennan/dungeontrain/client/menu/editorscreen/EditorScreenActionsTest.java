@@ -13,6 +13,8 @@ import games.brennan.dungeontrain.net.EditorPlotActionPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import games.brennan.dungeontrain.net.BuilderSavePacket;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +49,7 @@ final class EditorScreenActionsTest {
     }
 
     private static Map<String, EditorScreenActions.Icon> iconsById(EditorScreenActions.Ctx ctx,
-                                                                   List<EditorPlotActionPacket> sent) {
+                                                                   List<CustomPacketPayload> sent) {
         Map<String, EditorScreenActions.Icon> out = new java.util.LinkedHashMap<>();
         for (EditorScreenActions.Icon i : EditorScreenActions.icons(ctx, sent::add)) out.put(i.id(), i);
         return out;
@@ -93,7 +95,7 @@ final class EditorScreenActionsTest {
         VariantKey sel = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
         VariantKey standing = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
         EditorScreenActions.Ctx c = ctx(sel, gated("CARRIAGES", "pen", "pen", 15, List.of()), standing, PlotCategory.CARRIAGES);
-        List<EditorPlotActionPacket> sent = new ArrayList<>();
+        List<CustomPacketPayload> sent = new ArrayList<>();
         Map<String, EditorScreenActions.Icon> icons = iconsById(c, sent);
         assertFalse(icons.get("undo").enabled());
         assertFalse(icons.get("redo").enabled());
@@ -109,8 +111,8 @@ final class EditorScreenActionsTest {
         }
         assertEquals(3, sent.size());
         assertEquals(new EditorPlotActionPacket("carriages", "pen", "pen", EditorPlotActionPacket.Action.SAVE), sent.get(0));
-        assertEquals(EditorPlotActionPacket.Action.RESET, sent.get(1).action());
-        assertEquals(EditorPlotActionPacket.Action.CLEAR, sent.get(2).action());
+        assertEquals(EditorPlotActionPacket.Action.RESET, ((EditorPlotActionPacket) sent.get(1)).action());
+        assertEquals(EditorPlotActionPacket.Action.CLEAR, ((EditorPlotActionPacket) sent.get(2)).action());
         // Remove is addressed by id, so it stays live from anywhere.
         assertTrue(icons.get("remove").enabled());
     }
@@ -452,5 +454,78 @@ final class EditorScreenActionsTest {
         CommandMenuEntry.DrillIn subRemove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
             EditorScreenActions.removeEntry(ctx(new VariantKey(PlotCategory.CONTENTS, "copper", "copper", "maze"), sub, null, null)));
         assertInstanceOf(ConfirmScreen.class, subRemove.target());
+    }
+
+    // ---- Train Builder host ----
+
+    private static EditorScreenActions.Ctx builderCtx(VariantKey sel, EditorTypeMenusPacket.Variant v,
+                                                      VariantKey standing) {
+        return new EditorScreenActions.Ctx(sel, v, EditorPlotLabelsPacket.NO_WEIGHT, standing, null, false,
+            EditorRosterIndex.Extras.NONE, EditorScreenActions.Host.BUILDER);
+    }
+
+    @Test
+    @DisplayName("builder, build on the platform selected: Save is the builder's packet, Reset a re-open, Clear off")
+    void builderIconsOnThePlatform() {
+        VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
+        EditorScreenActions.Ctx c = builderCtx(k, gated("CARRIAGES", "windowed", "windowed", 20, List.of()), k);
+        List<CustomPacketPayload> sent = new ArrayList<>();
+        Map<String, EditorScreenActions.Icon> icons = iconsById(c, sent);
+        assertEquals(List.of("save", "rename", "move", "remove", "undo", "redo", "reset", "clear", "submit"),
+            new ArrayList<>(icons.keySet()));
+        assertTrue(icons.get("save").enabled());
+        ((CommandMenuEntry.ClientAction) icons.get("save").entry()).action().run();
+        assertEquals(1, sent.size());
+        assertInstanceOf(BuilderSavePacket.class, sent.get(0));
+        assertTrue(icons.get("reset").enabled());
+        assertInstanceOf(CommandMenuEntry.ClientAction.class, icons.get("reset").entry());
+        assertFalse(icons.get("clear").enabled());
+        // Addressed by id, so the same as the editor's.
+        assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
+        assertNotNull(icons.get("remove").entry());
+        assertFalse(icons.get("undo").enabled());
+    }
+
+    @Test
+    @DisplayName("builder, another tile selected: Save, Reset and Clear are off and never the addressed packet")
+    void builderIconsElsewhere() {
+        VariantKey here = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
+        VariantKey k = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");
+        EditorScreenActions.Ctx c = builderCtx(k, gated("CARRIAGES", "pen", "pen", 20, List.of()), here);
+        List<CustomPacketPayload> sent = new ArrayList<>();
+        Map<String, EditorScreenActions.Icon> icons = iconsById(c, sent);
+        for (String id : List.of("save", "reset", "clear")) {
+            assertFalse(icons.get(id).enabled(), id);
+        }
+        assertEquals(EditorScreenLang.DISABLED_OPEN_IN_BUILDER, icons.get("save").disabledKey());
+        assertEquals(EditorScreenLang.DISABLED_OPEN_IN_BUILDER, icons.get("reset").disabledKey());
+        assertTrue(sent.isEmpty());
+    }
+
+    @Test
+    @DisplayName("builder: Enter is an open of the tile, and nothing when it is already on the platform")
+    void builderEnter() {
+        VariantKey contents = VariantKey.of(PlotCategory.CONTENTS, "armor", "armor");
+        EditorTypeMenusPacket.Variant v = gated("CONTENTS", "armor", "armor", 5, List.of());
+        CommandMenuEntry open = EditorScreenActions.enterEntry(builderCtx(contents, v, null));
+        assertInstanceOf(CommandMenuEntry.ClientAction.class, open);
+        assertNull(EditorScreenActions.enterEntry(builderCtx(contents, v, contents)));
+        // A category the builder cannot hold has no open.
+        VariantKey arch = VariantKey.of(PlotCategory.ARCHITECTURE, "x", "x");
+        EditorTypeMenusPacket.Variant av = gated("ARCHITECTURE", "x", "x", 1, List.of());
+        assertNull(EditorScreenActions.enterEntry(builderCtx(arch, av, null)));
+    }
+
+    @Test
+    @DisplayName("builder: no Test the Carriage, and a stood-in room still reads its rows from the roster")
+    void builderTestAndRoomRows() {
+        VariantKey room = VariantKey.of(PlotCategory.PORTALS, "portal_room", "house");
+        EditorTypeMenusPacket.Variant v = gated("PORTALS", "portal_room", "house", 1, List.of());
+        assertNull(EditorScreenActions.testEntry(builderCtx(room, v, room)));
+        EditorScreenActions.Ctx standing = builderCtx(room, v, room);
+        assertTrue(standing.standingInSelection());
+        assertFalse(standing.hudFresh(), "the builder pushes no status packet");
+        // No roster extras either → no rows, rather than the stood-in rows the editor would show.
+        assertTrue(EditorScreenActions.roomRows(standing).isEmpty());
     }
 }

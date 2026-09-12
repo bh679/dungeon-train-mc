@@ -19,6 +19,16 @@ final class EditorScreenGateTest {
     }
 
     @Test
+    @DisplayName("a Train Builder world opens it too, with the same screen-space rule")
+    void builder() {
+        assertTrue(EditorScreenGate.opensInventoryScreen(false, false, true, true));
+        assertFalse(EditorScreenGate.opensInventoryScreen(false, false, true, false), "world space keeps the panel");
+        assertFalse(EditorScreenGate.opensInventoryScreen(false, false, false, true), "a play world keeps the panel");
+        // The three-cue form reads as "not in the builder".
+        assertFalse(EditorScreenGate.opensInventoryScreen(false, false, true));
+    }
+
+    @Test
     @DisplayName("world space never opens it")
     void worldspace() {
         assertFalse(EditorScreenGate.opensInventoryScreen(true, true, false));

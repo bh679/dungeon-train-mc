@@ -1013,6 +1013,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< Retour",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "Enregistre d’abord cette construction : seule une construction envoyée peut être proposée.",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "Tiens-toi sur cette parcelle pour la modifier (double-clique la tuile pour t'y rendre)",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "Ouvre cette construction sur la plateforme pour la modifier (double-clique la tuile)",
   "gui.dungeontrain.editor_screen.disabled.builtin": "Les modèles intégrés ne peuvent pas être renommés",
   "gui.dungeontrain.editor_screen.disabled.not_here": "Non disponible pour ce modèle",
   "gui.dungeontrain.editor_screen.test_carriage": "Tester le wagon",

@@ -988,6 +988,7 @@
   "gui.dungeontrain.editor_screen.move.back": "< 返回",
   "gui.dungeontrain.editor_screen.disabled.not_uploaded": "请先保存这个建筑——只有已上传的建筑才能提交。",
   "gui.dungeontrain.editor_screen.disabled.stand_here": "站在这块地块上即可编辑（双击图块可前往该处）",
+  "gui.dungeontrain.editor_screen.disabled.open_in_builder": "在平台上打开此建筑即可编辑（双击图块）",
   "gui.dungeontrain.editor_screen.disabled.builtin": "内置模板无法重命名",
   "gui.dungeontrain.editor_screen.disabled.not_here": "此模板不可用",
   "gui.dungeontrain.editor_screen.test_carriage": "测试车厢",

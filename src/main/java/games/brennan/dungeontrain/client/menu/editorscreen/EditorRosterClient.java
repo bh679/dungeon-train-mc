@@ -75,11 +75,13 @@ public final class EditorRosterClient {
         if (refreshTicks > 0 && --refreshTicks == 0) {
             request();
         }
-        // The editor world itself is the cue outside any plot: one boolean a tick until the first ask.
+        // The editor world itself is the cue outside any plot, and a builder world likewise: one
+        // boolean a tick until the first ask.
         if (!everRequested) {
             Minecraft mc = Minecraft.getInstance();
             if (mc.player != null && mc.level != null && mc.getConnection() != null
-                    && EditorWorldLayout.isEditorWorld(mc.level)) {
+                    && (EditorWorldLayout.isEditorWorld(mc.level)
+                        || games.brennan.dungeontrain.client.builder.BuilderBoundsState.isInBuilderWorld())) {
                 request();
             }
         }
