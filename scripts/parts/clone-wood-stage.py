@@ -202,6 +202,27 @@ def update_manifest(path: Path, check: bool) -> int:
     return added
 
 
+def sync_legacy_manifests(check: bool) -> int:
+    """Keep each slot's legacy `manifest.json` equal to the .nbt basenames actually on disk.
+
+    Parts auto-discover from a classpath scan; the manifest is only read to log
+    `Bundled drift in parts/<slot>` when the two disagree. Nothing loads or fails on it, but a
+    stale one logs a line per part every boot, so it is regenerated here rather than appended to.
+    """
+    changed = 0
+    for slot in SOURCE_PARTS:
+        path = PARTS / slot / "manifest.json"
+        names = sorted(f.stem for f in (PARTS / slot).glob("*.nbt"))
+        current = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+        if current == names:
+            continue
+        print(f"  legacy manifest parts/{slot}: {len(names)} parts")
+        changed += 1
+        if not check:
+            path.write_text(json.dumps(names), encoding="utf-8")
+    return changed
+
+
 def main() -> None:
     args = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     args.add_argument("--check", action="store_true", help="report what would change; write nothing")
@@ -212,9 +233,11 @@ def main() -> None:
     stages = update_stages(check)
     print("manifests:")
     entries = sum(update_manifest(TEMPLATES / f"{m}.parts.json", check) for m in MANIFESTS)
+    legacy = sync_legacy_manifests(check)
     verb = "would write" if check else "wrote"
-    print(f"{verb}: {parts} part files, {stages} stages, {entries} manifest entries")
-    if check and (parts or stages or entries):
+    print(f"{verb}: {parts} part files, {stages} stages, {entries} manifest entries, "
+          f"{legacy} legacy manifests")
+    if check and (parts or stages or entries or legacy):
         sys.exit(1)
 
 
