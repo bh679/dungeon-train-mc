@@ -1861,20 +1861,11 @@ public final class EditorCommand {
         }
         boolean nowSelected = !games.brennan.dungeontrain.editor.EditorStageSelection.isSelected(id);
         if (nowSelected) {
-            games.brennan.dungeontrain.editor.EditorStageSelection.select(id);
+            focusStage(source, id);
         } else {
             games.brennan.dungeontrain.editor.EditorStageSelection.clear();
-        }
-        restampCarriagePlotsForStage(source);
-        // Parts-grid visibility is decoupled from selection now (it's driven by the hide-unused
-        // snapshot + per-part checkboxes), so changing the focused stage does not re-filter it.
-        // Auto-open the Stage Blocks panel for the selecting player on the focused stage (close on
-        // deselect) — the panel follows the selection.
-        net.minecraft.server.level.ServerPlayer selPlayer = source.getPlayer();
-        if (nowSelected) {
-            games.brennan.dungeontrain.editor.StagePanelController.openFor(selPlayer, id);
-        } else {
-            games.brennan.dungeontrain.editor.StagePanelController.closeFor(selPlayer);
+            restampCarriagePlotsForStage(source);
+            games.brennan.dungeontrain.editor.StagePanelController.closeFor(source.getPlayer());
         }
         if (nowSelected) {
             source.sendSuccess(() -> Component.literal("Editor: previewing carriages for stage '" + id
@@ -1884,6 +1875,19 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.YELLOW), false);
         }
         return 1;
+    }
+
+    /**
+     * Focus stage {@code id} without toggling: set the selection, re-stamp the carriage plots for
+     * the per-stage preview, and open the Stage Blocks panel for the acting player (replacing any
+     * panel already open for them). Parts-grid visibility is decoupled from selection (it's driven
+     * by the hide-unused snapshot + per-part checkboxes), so this does not re-filter it. Shared by
+     * {@code select} and {@code duplicate} (which lands on the new copy).
+     */
+    private static void focusStage(CommandSourceStack source, String id) {
+        games.brennan.dungeontrain.editor.EditorStageSelection.select(id);
+        restampCarriagePlotsForStage(source);
+        games.brennan.dungeontrain.editor.StagePanelController.openFor(source.getPlayer(), id);
     }
 
     /** Clear any focused stage and restore the normal carriage preview. */
@@ -1906,12 +1910,16 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.StageDuplicator.Result r =
                 games.brennan.dungeontrain.editor.StageDuplicator.duplicate(
                     source.getServer().overworld(), rawId, rawNewId);
+            // The copy is what the user wants to edit next — switch the focus (selection, preview,
+            // Stage Blocks panel) over to it, replacing the source stage's panel.
+            focusStage(source, r.newStageId());
             String skippedNote = r.skippedParts().isEmpty() ? ""
                 : ", " + r.skippedParts().size() + " part(s) skipped (missing template)";
             source.sendSuccess(() -> Component.literal("Editor: duplicated stage '" + r.sourceStageId()
                 + "' → '" + r.newStageId() + "' — " + r.partCopies().size() + " part(s) copied, "
                 + r.entriesAdded() + " assignment entr" + (r.entriesAdded() == 1 ? "y" : "ies")
-                + " added across " + r.touchedVariantIds().size() + " template(s)" + skippedNote + ".")
+                + " added across " + r.touchedVariantIds().size() + " template(s)" + skippedNote
+                + ". Now previewing '" + r.newStageId() + "'.")
                 .withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
