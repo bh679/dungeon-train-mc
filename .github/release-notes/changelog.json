@@ -12316,6 +12316,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "subvariant-rename-ui-sync",
+      "version": "0.851.0",
+      "type": "fix",
+      "title": "Editor: renamed sub-variants show their new name everywhere",
+      "summary": "Renaming a sub-variant in the train editor now updates its name on the floating Sub-Variants panel, the nav menu, the editor header and chat right away, instead of showing the old id until something else changed.",
+      "highlights": [
+        "Sub-Variants panel and nav menu show the display name, not the id",
+        "Editor header reads the renamed name for contents and portal rooms"
+      ],
+      "pr": 1373,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
