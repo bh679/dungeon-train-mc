@@ -12,20 +12,51 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
  * Off-thread poster for {@code POST /<CAP>/videos/submit} — a player-suggested link into the
- * operator's review queue. Anonymous: the body is the URL and nothing else. The relay answers with
- * what happened, mapped here to a {@link Result} the submit screen can put into words.
+ * operator's review queue, or (dev builds: the dev cap is the operator's) straight onto the list.
+ * Anonymous: the body is the URL and what kind of link it is; for a streamer the relay checks Twitch
+ * itself for "live right now with the game in the title". It answers with what happened, mapped here to a {@link Result} the submit screen
+ * can put into words.
  */
 public final class VideoSubmitter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /** What the link is: a video (any platform) or a Twitch streamer's own channel. */
+    public enum Kind {
+        VIDEO("video"), STREAMER("streamer");
+
+        private final String wire;
+
+        Kind(String wire) {
+            this.wire = wire;
+        }
+
+        /** Lang-key suffix under {@code gui.dungeontrain.videos.submit.kind.} and the relay's value. */
+        public String key() {
+            return wire;
+        }
+    }
+
     public enum Result {
         /** In the review queue; it shows up in the list once approved. */
         QUEUED,
+        /** On the list already — the dev cap publishes without review. */
+        PUBLISHED,
+        /** A streamer already listed today, re-marked live. */
+        LIVE,
+        /** The channel is not live on Twitch: nothing recorded, come back when streaming. */
+        NOT_LIVE,
+        /** Live, but the stream title does not say "Dungeon Train". */
+        TITLE_MISSING,
+        /** The relay could not ask Twitch just now. */
+        LIVE_CHECK_UNAVAILABLE,
         /** The relay already lists this video. */
         ALREADY_LISTED,
         /** Somebody (maybe this player) already suggested it; it is waiting for review. */
@@ -47,11 +78,15 @@ public final class VideoSubmitter {
 
     private VideoSubmitter() {}
 
-    /** Post {@code url}; {@code onDone} runs on the HTTP thread — marshal to the render thread yourself. */
-    public static void submitAsync(String url, Consumer<Result> onDone) {
+    /**
+     * Post {@code url} as a {@code kind}. {@code onDone} runs on the HTTP thread — marshal to the
+     * render thread yourself.
+     */
+    public static void submitAsync(String url, Kind kind, Consumer<Result> onDone) {
         try {
             JsonObject body = new JsonObject();
             body.addProperty("url", url);
+            body.addProperty("kind", (kind == null ? Kind.VIDEO : kind).key());
             HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/videos/submit"))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Content-Type", "application/json")
@@ -77,18 +112,54 @@ public final class VideoSubmitter {
     static Result interpret(int status, String body) {
         if (status == 429) return Result.RATE_LIMITED;
         if (status == 400) {
-            return "bad_url".equals(field(body, "error")) ? Result.BAD_URL : Result.FAILED;
+            String e = field(body, "error");
+            if ("bad_url".equals(e)) return Result.BAD_URL;
+            if ("not_live".equals(e)) return Result.NOT_LIVE;
+            if ("title_missing".equals(e)) return Result.TITLE_MISSING;
+            return Result.FAILED;
         }
+        if (status == 503 && "live_check_unavailable".equals(field(body, "error"))) return Result.LIVE_CHECK_UNAVAILABLE;
         if (status / 100 != 2) return Result.FAILED;
         String s = field(body, "status");
         if (s == null) return Result.FAILED;
         return switch (s) {
             case "queued" -> Result.QUEUED;
+            case "published" -> Result.PUBLISHED;
+            case "live" -> Result.LIVE;
             case "already_listed" -> Result.ALREADY_LISTED;
             case "already_pending" -> Result.ALREADY_PENDING;
             default -> Result.FAILED;
         };
     }
+
+    /**
+     * Is this a Twitch <em>channel</em> link — {@code twitch.tv/<login>} and nothing more — the shape
+     * the relay accepts for a streamer? Mirrors its bare-channel rule (reserved first segments are site
+     * routes, not logins) so the obvious mistakes — a VOD, a clip, another platform — are caught
+     * before a round trip.
+     */
+    static boolean isTwitchChannelUrl(String v) {
+        if (!VideoCatalogFetcher.isValidUrl(v)) return false;
+        try {
+            URI u = URI.create(v.trim());
+            String host = u.getHost() == null ? "" : u.getHost().toLowerCase(Locale.ROOT);
+            if (host.startsWith("www.")) host = host.substring(4);
+            if (!host.equals("twitch.tv") && !host.equals("m.twitch.tv")) return false;
+            String path = u.getRawPath() == null ? "" : u.getRawPath();
+            String[] segs = Arrays.stream(path.split("/")).filter(x -> !x.isEmpty()).toArray(String[]::new);
+            if (segs.length != 1) return false;
+            String login = segs[0].toLowerCase(Locale.ROOT);
+            return login.matches("[a-z0-9_]{3,25}") && !TWITCH_RESERVED.contains(login);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /** twitch.tv first-path segments that are site routes, not channel logins — the relay's own list. */
+    private static final Set<String> TWITCH_RESERVED = Set.of(
+            "videos", "clip", "clips", "directory", "settings", "subscriptions", "following", "friends",
+            "inventory", "wallet", "drops", "prime", "turbo", "downloads", "jobs", "p", "u", "team", "teams",
+            "collections", "search", "login", "signup", "wp-login", "privacy", "about", "redeem", "store");
 
     private static String field(String body, String key) {
         try {

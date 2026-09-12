@@ -4361,5 +4361,27 @@
         "World 1757400000000"
       ]
     }
+  },
+  "gui.dungeontrain.videos.streamer.sub": {
+    "1": {
+      "label": "how many days the streamer has streamed the game",
+      "examples": [
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the date of their most recent stream, YYYY-MM-DD",
+      "examples": [
+        "2026-08-30"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.streamer.sub.undated": {
+    "1": {
+      "label": "how many days the streamer has streamed the game",
+      "examples": [
+        "3"
+      ]
+    }
   }
 }
