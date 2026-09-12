@@ -12426,6 +12426,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stage-duplicate-auto-focus",
+      "version": "0.858.0",
+      "type": "feat",
+      "title": "Duplicating a stage now selects the copy",
+      "summary": "In the editor, duplicating a stage from the Stage Blocks panel now switches straight over to the new copy \u2014 it becomes the focused stage, the carriage plots preview it, and the Stage Blocks panel shows the copy instead of the original \u2014 so you can start editing it immediately.",
+      "highlights": [
+        "Stage Duplicate lands on the new stage instead of leaving the source selected",
+        "Stage Blocks panel follows the duplicate"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
