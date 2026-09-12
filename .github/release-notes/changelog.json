@@ -12390,6 +12390,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "loot-prefabs-travel-with-builds",
+      "version": "0.856.0",
+      "type": "feat",
+      "title": "Your loot prefabs travel with your builds",
+      "summary": "A build saved to My Builds now carries the loot prefabs its chests use, so loading it on another machine \u2014 or someone else's build from Find a Builder \u2014 rolls the loot the author set up instead of empty chests. If a prefab you already have shares a name with one that arrives but differs, the game shows both side by side and asks: keep yours, use theirs, or save theirs under a new name and point that build's chests at it.",
+      "highlights": [
+        "Loot prefabs upload with the template they're linked to",
+        "Missing prefabs install with a downloaded build",
+        "A name clash asks \u2014 Yours vs Theirs, or Rename theirs",
+        "The relay keeps a per-builder loot-prefab library"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
