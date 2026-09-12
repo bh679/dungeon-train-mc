@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirements;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
@@ -122,6 +123,10 @@ public final class AchievementEvents {
      */
     private static final int CHEST_CLICK_DEBOUNCE_TICKS = 10;
 
+    // The milestone thresholds below are the jar's historical values, kept as FALLBACKS: the
+    // number in force is the advancement JSON's `threshold` (relay override applied), read through
+    // AdvancementRequirements so a rebalance needs no build. The ids are the advancements that
+    // carry them.
     /** Carriages travelled since the last chest/barrel open for "Not My Chest". */
     private static final int NO_CONTAINER_CARTS_TIER_1 = 100;
     /** Carriages travelled since the last chest/barrel open for "Still Not My Chest". */
@@ -132,6 +137,16 @@ public final class AchievementEvents {
     private static final int NO_BREAK_CARTS_TIER_2 = 1000;
     /** Carriages that must be exceeded in one life for "Contained Loop". */
     private static final int CONTAINED_LOOP_CARTS = 1000;
+
+    private static final ResourceLocation NO_CONTAINER_100_ID = dtAdvancement("no_container_100");
+    private static final ResourceLocation NO_CONTAINER_1000_ID = dtAdvancement("no_container_1000");
+    private static final ResourceLocation NO_BREAK_100_ID = dtAdvancement("no_break_100");
+    private static final ResourceLocation NO_BREAK_1000_ID = dtAdvancement("no_break_1000");
+    private static final ResourceLocation CONTAINED_LOOP_ID = dtAdvancement("contained_loop");
+
+    private static ResourceLocation dtAdvancement(String name) {
+        return ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/" + name);
+    }
 
     /** Per-player last-right-clicked chest pos + tick, for debouncing only. */
     private static final Map<UUID, BlockPos> LAST_CHEST_POS = new HashMap<>();
@@ -309,10 +324,10 @@ public final class AchievementEvents {
         // both terms, so it cancels in the subtraction.
         int sinceContainer = effectiveTravelled
             - player.getData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get());
-        if (sinceContainer >= NO_CONTAINER_CARTS_TIER_1) {
+        if (sinceContainer >= AdvancementRequirements.intValue(NO_CONTAINER_100_ID, NO_CONTAINER_CARTS_TIER_1)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_container_100_carts");
         }
-        if (sinceContainer >= NO_CONTAINER_CARTS_TIER_2) {
+        if (sinceContainer >= AdvancementRequirements.intValue(NO_CONTAINER_1000_ID, NO_CONTAINER_CARTS_TIER_2)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_container_1000_carts");
         }
         // "Look, Don't Touch" / "Museum Rules" — carriages travelled since the last
@@ -321,10 +336,10 @@ public final class AchievementEvents {
         // decorated pots included.
         int sinceBreak = effectiveTravelled
             - player.getData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get());
-        if (sinceBreak >= NO_BREAK_CARTS_TIER_1) {
+        if (sinceBreak >= AdvancementRequirements.intValue(NO_BREAK_100_ID, NO_BREAK_CARTS_TIER_1)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_break_100_carts");
         }
-        if (sinceBreak >= NO_BREAK_CARTS_TIER_2) {
+        if (sinceBreak >= AdvancementRequirements.intValue(NO_BREAK_1000_ID, NO_BREAK_CARTS_TIER_2)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_break_1000_carts");
         }
     }
@@ -353,7 +368,7 @@ public final class AchievementEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.getData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get())) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        if (effectiveTravelled(run) <= CONTAINED_LOOP_CARTS) return;
+        if (effectiveTravelled(run) <= AdvancementRequirements.intValue(CONTAINED_LOOP_ID, CONTAINED_LOOP_CARTS)) return;
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "contained_loop");
     }
 

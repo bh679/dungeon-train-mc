@@ -12255,8 +12255,38 @@
       "released_at": null
     },
     {
-      "id": "credits-self-edit",
+      "id": "twitch-streamers-live",
       "version": "0.847.0",
+      "type": "feat",
+      "title": "Twitch streamers on the Videos page \u2014 live dot, own filter, submit while live",
+      "summary": "The Videos page now tells Twitch streamers apart from clips. Each streamer is one purple row (how many days they've streamed Dungeon Train, when last) behind a new toolbar toggle, and a streamer who is live with the game right now gets a pulsing green dot and sits at the top of the list. Sorting opens on a new Default order (live, dev faves, views, recent). Submit a video has a Video | Livestream switch: paste your Twitch channel while you're live with \"Dungeon Train\" in the title and you're listed at once \u2014 the relay checks Twitch and re-checks every half hour.",
+      "highlights": [
+        "One purple row per Twitch streamer instead of a marker per stream day; new Twitch streamers toggle in the toolbar",
+        "Green LIVE dot on streamers verified live with the game right now; Default sort puts them first",
+        "Submit a video: Video | Livestream switch \u2014 livestreams need to be live with \"Dungeon Train\" in the stream title",
+        "Live sort removed; Recent now leads with live streams"
+      ],
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "advancement-requirement-values",
+      "version": "0.848.0",
+      "type": "feat",
+      "title": "Advancement tweaks",
+      "summary": "Advancement descriptions now always match their requirements.",
+      "highlights": [],
+      "pr": 1366,
+      "date": "2026-09-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "credits-self-edit",
+      "version": "0.849.0",
       "type": "feat",
       "title": "Edit your own line on the Credits page",
       "summary": "If you're credited on the Credits page \u2014 as a translator, a writer whose books the community praised, or the builder of a shipped template \u2014 an Edit button now sits beside your name. Change it, take it off (your line stays, listed as Anonymous with its count), or put it back, and every card follows at once. Needs the internet connection turned on in Dungeon Train Options.",
