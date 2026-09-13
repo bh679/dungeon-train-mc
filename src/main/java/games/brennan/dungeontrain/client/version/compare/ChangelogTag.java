@@ -27,7 +27,8 @@ public enum ChangelogTag {
     BOOKS("books"),
     ADVANCEMENTS("advancements"),
     UI("ui"),
-    BALANCE("balance");
+    BALANCE("balance"),
+    INTERNAL("internal");
 
     private static final String KEY = "gui.dungeontrain.version.compare.tag.";
 

@@ -8,9 +8,15 @@
 2. Create a PR with a clear title and description
 3. **Draft + log the changelog entry** — unless the change is purely non-player-facing
    (CI/tooling/docs/refactors), draft a curated, player-facing summary and run
-   `scripts/release-notes/append-entry.py` on the feature branch (plus `--highlight` bullets,
-   `--tag <tag>` for each topical tag the Versions page filters by, and `--pr <number>`), then commit and push so the entry is in the PR diff. The shipped version is
+   `scripts/release-notes/append-entry.py` on the feature branch (plus `--highlight` bullets and
+   `--pr <number>`), then commit and push so the entry is in the PR diff. The shipped version is
    computed automatically. See `.github/release-notes/README.md`.
+   **Pick the tags yourself, from the diff** — you know what the change is *about* better than any
+   keyword rule, and there is none. Run `append-entry.py --tag-guide`, answer its one question per
+   tag, and pass `--tag <tag>` for each yes (or `--no-topical-tags` if only the type-derived tag
+   applies — the script refuses to run without one or the other). Tag the subject, not what the
+   prose mentions: "rides the train" is not `train`, "other players' books" is not `multiplayer`.
+   Present the chosen tags with the notes at step 4 — they are part of what the user confirms.
 4. Enter plan mode and present for approval:
    - **The changelog entry — surface the curated, player-facing notes explicitly for the user to
      confirm. The changelog must be confirmed before the merge, not merely left in the diff.**

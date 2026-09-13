@@ -592,6 +592,7 @@
   "gui.dungeontrain.version.compare.tag.advancements": "進捗",
   "gui.dungeontrain.version.compare.tag.ui": "メニューとUI",
   "gui.dungeontrain.version.compare.tag.balance": "バランス",
+  "gui.dungeontrain.version.compare.tag.internal": "舞台裏",
   "gui.dungeontrain.version.compare.tag.nomatch": "このバージョンには該当するタグの変更はありません",
   "gui.dungeontrain.version.compare.siblings": "付属 Mod",
   "gui.dungeontrain.version.compare.siblings.uptodate": "%s 個すべて最新",
