@@ -2380,7 +2380,13 @@ public final class PortalCarriageEvents {
                 stampedAt == null ? -1 : level.getGameTime() - stampedAt);
         }
 
-        PortalCarriageBuilder.stampPairStructure(level, planned, dims, pairKey);
+        // The room resolves its stage placeholders for the entry corridor's stage (pairKey is the
+        // entry carriage index) — the pIdx-frame gate, since the room stands off the track.
+        String stageId = games.brennan.dungeontrain.template.StageResolver.stageIdFor(
+            games.brennan.dungeontrain.template.GateContext.forCarriage(level, pairKey, dims.length()));
+        final PortalStructure toStamp = planned;
+        games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
+            () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));
         STRUCTURES.put(pairKey, planned);
         STAMPED_AT.put(pairKey, level.getGameTime());
         // Where the exit stands, but only when it is not the ordinary place. A pair that moved it

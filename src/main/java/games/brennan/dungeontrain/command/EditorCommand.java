@@ -1699,6 +1699,13 @@ public final class EditorCommand {
                     .then(Commands.argument("newid", StringArgumentType.word())
                         .executes(c -> runStageDuplicate(c.getSource(), StringArgumentType.getString(c, "id"),
                             StringArgumentType.getString(c, "newid"))))))
+            // Re-derive the stage placeholder palette (what stage_block_N etc. become) from the
+            // stage's parts — `bake all` for every stage. Runs automatically on stage save; this is
+            // for after part edits.
+            .then(Commands.literal("bake")
+                .executes(c -> runStageBake(c.getSource(), "all"))
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
+                    .executes(c -> runStageBake(c.getSource(), StringArgumentType.getString(c, "id")))))
             // Chat listing of the stage's parts and their unique blocks (debug / discoverability).
             .then(Commands.literal("blocks")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
@@ -1771,6 +1778,7 @@ public final class EditorCommand {
                 .orElse(TemplateGate.DEFAULT);
             TemplateGate next = op.apply(current);
             games.brennan.dungeontrain.editor.StageStore.setGate(id, next);
+            games.brennan.dungeontrain.editor.StagePaletteBaker.bake(source.getServer().overworld(), id);
             // A Stage's own gate — nothing upstream to be linked to, so no detach note.
             gateSuccess(source, "stage:" + id, next,
                 games.brennan.dungeontrain.editor.StageStore.configPath().toString(), null);
@@ -1788,6 +1796,7 @@ public final class EditorCommand {
                 source.sendFailure(Component.literal("Invalid stage id: " + rawId).withStyle(ChatFormatting.RED));
                 return 0;
             }
+            games.brennan.dungeontrain.editor.StagePaletteBaker.bake(source.getServer().overworld(), created.id());
             source.sendSuccess(() -> Component.literal("Editor: created stage '" + created.id() + "'.")
                 .withStyle(ChatFormatting.GREEN), true);
             return 1;
@@ -1828,6 +1837,7 @@ public final class EditorCommand {
                 source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
                 return 0;
             }
+            games.brennan.dungeontrain.editor.StagePaletteBaker.bake(source.getServer().overworld(), renamed.id());
             source.sendSuccess(() -> Component.literal("Editor: renamed stage '" + renamed.id()
                 + "' → \"" + renamed.name() + "\".").withStyle(ChatFormatting.GREEN), true);
             return 1;
@@ -1937,6 +1947,33 @@ public final class EditorCommand {
     }
 
     /** Chat listing of a stage's linked parts and their unique blocks. */
+    /** {@code stage bake [<id>|all]} — see {@link games.brennan.dungeontrain.editor.StagePaletteBaker}. */
+    private static int runStageBake(CommandSourceStack source, String rawId) {
+        String id = rawId == null ? "" : rawId.toLowerCase(java.util.Locale.ROOT);
+        try {
+            if (id.equals("all")) {
+                int n = games.brennan.dungeontrain.editor.StagePaletteBaker.bakeAll(source.getServer().overworld());
+                source.sendSuccess(() -> Component.literal("Editor: baked placeholder palettes for " + n
+                    + " stage(s) → " + games.brennan.dungeontrain.editor.StageStore.configPath())
+                    .withStyle(ChatFormatting.GREEN), true);
+                return n;
+            }
+            java.util.Optional<games.brennan.dungeontrain.template.StagePalette> baked =
+                games.brennan.dungeontrain.editor.StagePaletteBaker.bake(source.getServer().overworld(), id);
+            if (baked.isEmpty()) {
+                source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+            games.brennan.dungeontrain.template.StagePalette p = baked.get();
+            source.sendSuccess(() -> Component.literal("Editor: baked stage '" + id + "' palette — solid "
+                + p.solid() + ", stairs " + p.stairs() + ", slabs " + p.slabs() + ", button " + p.button()
+                + ", plate " + p.pressurePlate() + ", wood " + p.wood()).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "stage bake", rawId, t);
+        }
+    }
+
     private static int runStageBlocks(CommandSourceStack source, String rawId) {
         String id = rawId == null ? "" : rawId.toLowerCase(java.util.Locale.ROOT);
         if (!games.brennan.dungeontrain.editor.StageStore.exists(id)) {

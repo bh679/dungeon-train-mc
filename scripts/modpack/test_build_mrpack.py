@@ -298,7 +298,14 @@ def test_real_config_every_mod_has_modrinth_pins():
     assert cfg["sable"].get("modrinth_project") and cfg["sable"].get("modrinth_version")
     for opt in cfg["optional_mods"]:
         assert opt.get("modrinth_project"), f"{opt.get('name')} missing modrinth_project"
-        assert opt.get("modrinth_version"), f"{opt.get('name')} missing modrinth_version"
+        assert opt.get("modrinth_version") or opt.get("modrinth_pending_url"), \
+            f"{opt.get('name')} missing modrinth_version / modrinth_pending_url"
+    # The pending-URL stopgap is for listings still in review — never both keys at once, and
+    # the only current rider is Keep Trim (CurseForge approved 2026-09-13, Modrinth pending).
+    pending = bm.pending_entries(cfg)
+    assert [o["slug"] for o in pending] == ["keep-trim"], pending
+    assert "modrinth_version" not in pending[0]
+    assert pending[0]["modrinth_pending_url"].startswith("https://github.com/bh679/keeptrim-mc/releases/download/")
     # Hard pins mirrored from the CurseForge pack.
     sable = cfg["sable"]
     assert sable["modrinth_version"] == "U678xqle", sable  # Sable 2.0.5+mc1.21.1

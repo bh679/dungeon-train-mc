@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.data;
 
-import games.brennan.dungeontrain.data.PlayerDataPaths.Kind;
-import games.brennan.dungeontrain.data.PlayerDataPaths.Relocation;
+import games.brennan.dungeonbackup.api.Kind;
+import games.brennan.dungeonbackup.api.Relocation;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;

@@ -150,6 +150,11 @@ neoForge {
             // is then created flat (dungeontrain:dungeon_train_flat) with a PINNED seed, and the quiet
             // game rules are applied on server start. See perf/PerfTestMode. Property rather than env
             // var for the same daemon-environment reason as relayBaseUrl above.
+            // Recovery-card seam: ./gradlew runClient -PbackupPrompt shows Dungeon Backup's
+            // "Missing … Data" card on a dev build (DungeonTrainBackup suppresses it otherwise).
+            if (project.hasProperty('backupPrompt')) {
+                systemProperty 'dungeontrain.backups.prompt', 'true'
+            }
             if (project.hasProperty('perfTest')) {
                 systemProperty 'dungeontrain.perfTest', 'true'
             }
@@ -405,12 +410,28 @@ dependencies {
     implementation "bh679:ediblebackpacks:${ediblebackpacks_version}"
     jarJar(group: 'bh679', name: 'ediblebackpacks', version: ediblebackpacks_version)
 
-    // Keep Trim — crafting-grid repair keeps the left-most item's armor trim. TEMPORARILY
-    // jarJar-bundled (like DiscordPresence/EdibleBackpacks) until its Modrinth/CurseForge
-    // listings are approved; then flip to the external-required-dep contract + modpack entry.
-    // DT does not compile against it — the mod is a single vanilla mixin, no API.
+    // Keep Trim — crafting-grid repair keeps the left-most item's armor trim. Same
+    // external-required-dep contract as AIN/AIS/PMOB/ECP/TE above; fetched via the shared
+    // bh679 Ivy repo (flat asset keeptrim-neoforge-<v>.jar). Un-bundled from jarJar once the
+    // CurseForge listing (1691315) went live so the launcher auto-installs it and Keep Trim's
+    // own page gets the download credit. (Modrinth listing still in review at the time —
+    // the Modrinth modpack references the GitHub release asset until then, see
+    // modpack.config.json `modrinth_pending_url`.)
+    // DT does not compile against it — the mod is a single vanilla mixin, no API; it is on
+    // the dev runtime classpath only so runClient/runServer satisfy mods.toml.
     implementation "bh679:keeptrim:${keeptrim_version}"
-    jarJar(group: 'bh679', name: 'keeptrim', version: keeptrim_version)
+
+    // Dungeon Backup — sibling mod: the player-data protection system (migration out of
+    // config/, rolling zip restore points inside + outside the instance, title-screen recovery)
+    // extracted from DT in v0.862.0. DT registers its data root once in
+    // data.DungeonTrainBackup and drops ~2000 lines. TEMPORARILY jarJar-bundled like
+    // DiscordPresence/EdibleBackpacks/KeepTrim (hence no _min_version) until its
+    // Modrinth/CurseForge listings are approved; then flip to the external-required-dep
+    // contract + modpack entry (see TradeEverything's note above / PR #1029).
+    // Fetched for compile from https://github.com/bh679/dungeonbackup-mc/releases via the
+    // shared Ivy `bh679` repo (asset dungeonbackup-neoforge-<v>.jar — flat, no +mc suffix).
+    implementation "bh679:dungeonbackup:${dungeonbackup_version}"
+    jarJar(group: 'bh679', name: 'dungeonbackup', version: dungeonbackup_version)
 
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
@@ -679,6 +700,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
         keeptrim_version                 : keeptrim_version,
+        dungeonbackup_version            : dungeonbackup_version,
+        keeptrim_min_version             : keeptrim_min_version,
         // The DH build the modpack pins — VersionInfo reads it so DT can silence DH's own
         // update prompt for players who are on exactly that build (see DistantHorizonsUpdatePromptSuppression).
         distant_horizons_version         : distant_horizons_version,

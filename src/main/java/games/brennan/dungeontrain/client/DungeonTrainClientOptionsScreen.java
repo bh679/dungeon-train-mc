@@ -9,9 +9,7 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.train.CatchUpBurstAuto;
 import games.brennan.dungeontrain.train.CatchUpBurstMode;
-import games.brennan.dungeontrain.data.PlayerDataBackup;
-import games.brennan.dungeontrain.data.PlayerDataPaths;
-import games.brennan.dungeontrain.data.BackupMode;
+import games.brennan.dungeonbackup.client.BackupOptionsWidgets;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
@@ -24,8 +22,6 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.OptionsList;
-import net.minecraft.client.gui.screens.ConfirmScreen;
-import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
@@ -37,8 +33,6 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
-import java.nio.file.Path;
-import java.util.Optional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -301,23 +295,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 }
                 yield out;
             }
-            case BACKUPS_HEADING -> List.of(
-                    Component.translatable("gui.dungeontrain.options.backups_heading"));
-            case BACKUPS_PER_VERSION -> List.of(backupsPerVersionLabel(
-                    Component.translatable("gui.dungeontrain.options.backups_per_version"),
-                    BACKUPS_PER_VERSION_MAX));
+            case BACKUPS_PER_VERSION -> List.of(BackupOptionsWidgets.perVersionWidestLabel());
             case CONFIRM_BUILD_RESTORE -> onOffCandidates("gui.dungeontrain.options.confirm_build_restore");
             // The size is read at build time, so the candidate has to stand in for the widest it
             // could ever be rather than whatever it happens to be right now.
-            case CLEAR_BACKUPS -> List.of(Component.translatable(
-                "gui.dungeontrain.options.clear_backups", "000.0 GB"));
-            case BACKUPS -> {
-                List<Component> out = new ArrayList<>();
-                for (BackupMode mode : BackupMode.values()) {
-                    out.add(value("gui.dungeontrain.options.backups", backupModeLabel(mode)));
-                }
-                yield out;
-            }
+            case CLEAR_BACKUPS -> List.of(BackupOptionsWidgets.clearWidestLabel());
+            case BACKUPS -> BackupOptionsWidgets.modeLabels();
             case SNAPSHOT_MAX_RES -> {
                 List<Component> out = new ArrayList<>();
                 for (int res : RESOLUTION_VALUES) {
@@ -471,24 +454,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     (btn, pref) -> ClientDisplayConfig.setCustomContentPreference(pref)),
                     "gui.dungeontrain.options.custom_content.tip");
 
-            // Where restore points of builds and progress are written. Unlike every other row here
-            // the tooltip is PER VALUE, not per row: "Instanced" means nothing on its own, and the
-            // whole point of the setting is the difference in what each option survives. The
-            // tooltip is therefore re-set on every change as well as seeded with the initial value.
-            case BACKUPS -> {
-                CycleButton<BackupMode> button = CycleButton.<BackupMode>builder(
-                                DungeonTrainClientOptionsScreen::backupModeLabel)
-                        .withValues(List.of(BackupMode.EXTERNAL, BackupMode.INSTANCE, BackupMode.OFF))
-                        .withInitialValue(ClientDisplayConfig.getBackupMode())
-                        .create(0, 0, width, ROW_H,
-                                Component.translatable("gui.dungeontrain.options.backups"),
-                                (btn, mode) -> {
-                                    ClientDisplayConfig.setBackupMode(mode);
-                                    btn.setTooltip(backupModeTip(mode));
-                                });
-                button.setTooltip(backupModeTip(ClientDisplayConfig.getBackupMode()));
-                yield button;
-            }
+            // The three backup controls are Dungeon Backup's: it owns the setting
+            // (config/dungeonbackup-client.toml) and the archives, so it builds the widgets; this
+            // screen only hosts them on the Backups tab.
+            case BACKUPS -> BackupOptionsWidgets.modeButton(width, ROW_H);
 
             // The bundled Edible Backpacks' open/close button on the survival inventory screen.
             // Reads and writes EB's OWN client config rather than mirroring it into
@@ -502,16 +471,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     Component.translatable("gui.dungeontrain.options.backpack_button"),
                                     (btn, on) -> setBackpackButtonEnabled(on)),
                     "gui.dungeontrain.options.backpack_button.tip");
-            // A caption, not a control: left-aligned and unfocusable, so keyboard navigation
-            // steps straight past it to the settings it introduces.
-            case BACKUPS_HEADING -> {
-                StringWidget heading = new StringWidget(width, ROW_H,
-                        Component.translatable("gui.dungeontrain.options.backups_heading"), this.font);
-                heading.alignLeft();
-                yield heading;
-            }
-
-            case BACKUPS_PER_VERSION -> slider(backupsPerVersionOption(), width);
+            case BACKUPS_PER_VERSION -> BackupOptionsWidgets.perVersionSlider(width);
 
             // Off by default: a restore is the same upload the build's next save would have made, so
             // there is normally nothing to decide. On, it shows the title-screen card instead.
@@ -522,13 +482,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     (btn, on) -> ClientDisplayConfig.setConfirmBuildRestore(on)),
                     "gui.dungeontrain.options.confirm_build_restore.tip");
 
-            case CLEAR_BACKUPS -> withTip(
-                    Button.builder(
-                            Component.translatable("gui.dungeontrain.options.clear_backups",
-                                PlayerDataBackup.formatBytes(totalBackupBytes())),
-                            b -> confirmClearBackups())
-                            .bounds(0, 0, width, ROW_H).build(),
-                    "gui.dungeontrain.options.clear_backups.tip");
+            // The label carries the size on disk, so after a clear the widgets are rebuilt —
+            // rebuildWidgets() is what re-runs init(); merely returning to the screen only
+            // repositions it and the button would keep reporting the space it just freed.
+            case CLEAR_BACKUPS -> BackupOptionsWidgets.clearButton(width, ROW_H, this, this::rebuildWidgets);
 
             // Snapshot max resolution ceiling (0 = AUTO).
             case SNAPSHOT_MAX_RES -> {
@@ -634,89 +591,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return value <= 0
                 ? Component.translatable("gui.dungeontrain.options.snapshot_max_res.auto")
                 : Component.literal(value + "p"); // "1080p" — a unit, not prose
-    }
-
-    /**
-     * The "Backups per version" slider, built like {@code DisplayScaleOption}: the stored value is
-     * read once, at construction, which is right because rows are built in {@code init()}.
-     *
-     * <p>The value commits through {@link ClientDisplayConfig#setBackupsPerVersion} — on release,
-     * and again via {@code applyUnsavedChanges()} when the screen closes, which {@link #onClose()}
-     * already calls for every tab.</p>
-     */
-    private static OptionInstance<Integer> backupsPerVersionOption() {
-        String key = "gui.dungeontrain.options.backups_per_version";
-        return new OptionInstance<>(
-                key,
-                OptionInstance.cachedConstantTooltip(Component.translatable(key + ".tip")),
-                DungeonTrainClientOptionsScreen::backupsPerVersionLabel,
-                new OptionInstance.IntRange(BACKUPS_PER_VERSION_MIN, BACKUPS_PER_VERSION_MAX),
-                Mth.clamp(ClientDisplayConfig.getBackupsPerVersion(),
-                        BACKUPS_PER_VERSION_MIN, BACKUPS_PER_VERSION_MAX),
-                ClientDisplayConfig::setBackupsPerVersion);
-    }
-
-    /** {@code "Backups per version: 5"}, through the shared caption/value pattern. */
-    private static Component backupsPerVersionLabel(Component caption, int perVersion) {
-        return Component.translatable("gui.dungeontrain.options.value_row",
-                caption, Integer.toString(perVersion));
-    }
-
-    /** Bytes held by archives in BOTH roots — the figure the Clear button reports. */
-    private static long totalBackupBytes() {
-        long total = PlayerDataBackup.totalSize(PlayerDataPaths.backupsRoot());
-        return total + PlayerDataPaths.externalBackupsRoot()
-            .map(PlayerDataBackup::totalSize).orElse(0L);
-    }
-
-    /**
-     * Ask before deleting, then delete from both roots.
-     *
-     * <p>The message names the out-of-instance folder explicitly. "Clear all backups" that quietly
-     * spared a folder the player cannot see would be the worse surprise of the two, and this is the
-     * only place that folder is ever surfaced.</p>
-     *
-     * <p>The label carries the size, so it has to be rebuilt afterwards. Returning to this screen is
-     * NOT enough on its own: {@code Screen.init(Minecraft, int, int)} only calls {@code init()} the
-     * first time and merely repositions an already-initialised screen, so the button kept reporting
-     * the space it had just freed. {@link #rebuildWidgets()} is the call that actually re-runs
-     * {@code init()}, and it happens after the screen is current again.</p>
-     */
-    private void confirmClearBackups() {
-        Path inside = PlayerDataPaths.backupsRoot();
-        Optional<Path> outside = PlayerDataPaths.externalBackupsRoot();
-        int count = PlayerDataBackup.listArchives(inside).size()
-            + outside.map(p -> PlayerDataBackup.listArchives(p).size()).orElse(0);
-        Component where = outside
-            .map(p -> (Component) Component.translatable(
-                "gui.dungeontrain.options.clear_backups.confirm.both", inside.toString(), p.toString()))
-            .orElseGet(() -> Component.translatable(
-                "gui.dungeontrain.options.clear_backups.confirm.one", inside.toString()));
-        this.minecraft.setScreen(new ConfirmScreen(
-                proceed -> {
-                    this.minecraft.setScreen(this);
-                    if (!proceed) return;
-                    PlayerDataBackup.clear(inside);
-                    outside.ifPresent(PlayerDataBackup::clear);
-                    // Re-run init() so the button re-reads the (now zero) size on disk.
-                    rebuildWidgets();
-                },
-                Component.translatable("gui.dungeontrain.options.clear_backups.confirm.title", count),
-                where,
-                Component.translatable("gui.dungeontrain.options.clear_backups.confirm.yes"),
-                CommonComponents.GUI_CANCEL));
-    }
-
-    /** On / Instanced / Off, each with its own translated label. */
-    private static Component backupModeLabel(BackupMode mode) {
-        return Component.translatable("gui.dungeontrain.options.backups."
-                + mode.name().toLowerCase(Locale.ROOT));
-    }
-
-    /** What the currently-selected backup mode actually protects against. */
-    private static Tooltip backupModeTip(BackupMode mode) {
-        return Tooltip.create(Component.translatable("gui.dungeontrain.options.backups."
-                + mode.name().toLowerCase(Locale.ROOT) + ".tip"));
     }
 
     /** ASK / CONTINUE / DISABLE, each with its own translated label. */

@@ -347,6 +347,7 @@ public final class EditorTypeMenuRenderer {
             games.brennan.dungeontrain.client.menu.ClientStageBlocks.clear();
             games.brennan.dungeontrain.client.menu.ClientPartVisibility.clear();
             games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenu.closeLocal();
+            games.brennan.dungeontrain.client.menu.stagepalette.StagePaletteMenu.closeLocal();
             LOGGER.info("[DungeonTrain] EditorTypeMenus: snapshot cleared");
             return;
         }

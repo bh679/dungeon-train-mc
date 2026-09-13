@@ -3,9 +3,9 @@ package games.brennan.dungeontrain.builder.relay;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderTemplateIdentity;
-import games.brennan.dungeontrain.data.PlayerDataBackup;
-import games.brennan.dungeontrain.data.PlayerDataBackupHook;
-import games.brennan.dungeontrain.data.PlayerDataPaths;
+import games.brennan.dungeonbackup.api.Source;
+import games.brennan.dungeonbackup.core.BackupArchiver;
+import games.brennan.dungeontrain.data.DungeonTrainBackup;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
@@ -197,7 +197,7 @@ public final class BuilderTemplateSource {
     /**
      * The same template, out of the newest archive that carries it.
      *
-     * <p>Archives are searched newest first ({@link PlayerDataBackup#listArchives} already orders
+     * <p>Archives are searched newest first ({@link DungeonTrainBackup#archives()} already orders
      * them that way), in-instance before the out-of-instance mirror, so a build comes back as the
      * most recent copy of itself that survives anywhere.</p>
      */
@@ -205,7 +205,7 @@ public final class BuilderTemplateSource {
         String entryName = entryNameFor(file);
         if (entryName == null) return Optional.empty();
         for (Path archive : archives()) {
-            Optional<CompoundTag> tag = PlayerDataBackup.readEntry(archive, entryName)
+            Optional<CompoundTag> tag = BackupArchiver.readEntry(archive, entryName)
                     .flatMap(bytes -> readCompressed(bytes, archive));
             if (tag.isPresent()) return Optional.of(new Found(tag.get(), Origin.BACKUP, archive));
         }
@@ -215,22 +215,22 @@ public final class BuilderTemplateSource {
     /**
      * The archive entry a file on disk was backed up as, or null when it is under no backed-up root.
      *
-     * <p>Derived from {@link PlayerDataBackupHook#sources()} rather than by rebuilding the
+     * <p>Derived from the registration's {@code sources()} rather than by rebuilding the
      * {@code "<label>/<path>"} shape here, so the two can never disagree about what a backup
      * contains — a new backed-up root becomes searchable with no change to this file.</p>
      */
     static String entryNameFor(Path file) {
-        return entryNameFor(file, PlayerDataBackupHook.sources());
+        return entryNameFor(file, DungeonTrainBackup.registration().sources());
     }
 
     /**
      * As {@link #entryNameFor(Path)}, against a given set of backed-up roots — the seam the tests
      * use, since resolving the real ones needs a game directory.
      */
-    static String entryNameFor(Path file, List<PlayerDataBackup.Source> sources) {
+    static String entryNameFor(Path file, List<Source> sources) {
         if (file == null) return null;
         Path absolute = file.toAbsolutePath().normalize();
-        for (PlayerDataBackup.Source source : sources) {
+        for (Source source : sources) {
             Path root = source.dir().toAbsolutePath().normalize();
             if (!absolute.startsWith(root)) continue;
             Path relative = root.relativize(absolute);
@@ -244,10 +244,7 @@ public final class BuilderTemplateSource {
 
     /** Every backup archive that could hold a build, newest first, in-instance before the mirror. */
     private static List<Path> archives() {
-        List<Path> all = new ArrayList<>(PlayerDataBackup.listArchives(PlayerDataPaths.backupsRoot()));
-        PlayerDataPaths.externalBackupsRoot()
-                .ifPresent(root -> all.addAll(PlayerDataBackup.listArchives(root)));
-        return all;
+        return DungeonTrainBackup.archives();
     }
 
     private static Optional<CompoundTag> readCompressed(Path path) {

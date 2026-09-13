@@ -266,7 +266,9 @@ public final class PortalTestCommand {
             player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
             previous, structure, roomName, arrival));
 
-        PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY);
+        // Test rig: no stage ⇒ placeholders resolve through the default palette.
+        games.brennan.dungeontrain.train.StagePlacementScope.run(null,
+            () -> PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY));
 
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
 
