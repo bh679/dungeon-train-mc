@@ -541,7 +541,7 @@ def test_produced_and_shipped_changelog_match_schema() -> None:
     run(
         APPEND, ws, "--id", "schema-feat", "--type", "feat",
         "--title", "Schema feat", "--summary", "Validates.",
-        "--highlight", "h1", "--pr", "42",
+        "--highlight", "h1", "--pr", "42", "--tag", "train",
     )
     run(MARK, ws, "--released-in", "v0.291.0")
     jsonschema.validate(read_changelog(ws), schema)
