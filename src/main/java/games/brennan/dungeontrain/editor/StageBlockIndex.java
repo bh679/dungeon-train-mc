@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -270,10 +271,15 @@ public final class StageBlockIndex {
         return List.copyOf(out);
     }
 
-    /** Block registry id of {@code state}, or {@code null} for air / the empty-placeholder sentinel. */
+    /**
+     * Block registry id of {@code state}, or {@code null} for air, the empty-placeholder sentinel and
+     * the stage placeholder blocks (they are what the tally <em>feeds</em> — counting them would let
+     * a placeholder rank itself into a stage's palette and show up in the editor strips).
+     */
     private static String blockId(BlockState state) {
         if (state == null || state.isAir()) return null;
         if (CarriageVariantBlocks.isEmptyPlaceholder(state)) return null;
+        if (StagePlaceholderBlocks.isPlaceholder(state)) return null;
         return BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
     }
 

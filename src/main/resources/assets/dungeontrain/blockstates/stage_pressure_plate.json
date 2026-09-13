@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "dungeontrain:block/stage_pressure_plate"
+    },
+    "powered=true": {
+      "model": "dungeontrain:block/stage_pressure_plate_down"
+    }
+  }
+}

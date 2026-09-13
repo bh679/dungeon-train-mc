@@ -127,6 +127,8 @@ public final class StageDuplicator {
         // 3. Create the Stage record last — a mid-flight failure above never leaves a content-less
         // stage behind.
         StageStore.save(new Stage(newId, newId, source.gate()));
+        // The copies are linked now, so the new stage's placeholder palette can be derived.
+        StagePaletteBaker.bake(level, newId);
 
         // 4. Refresh the editor world (only meaningful while CARRIAGES is stamped).
         if (EditorStampedCategoryState.current().orElse(null) == EditorCategory.CARRIAGES) {
