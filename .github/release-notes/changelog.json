@@ -16047,9 +16047,9 @@
       ],
       "pr": 1386,
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "dimensional-carriage-parkour-weights",
@@ -16064,9 +16064,9 @@
       "summary": "The parkour dimensional carriage now appears a little less often, and when it does, its Sky Maze and Jumps layouts are each twice as likely to be picked.",
       "highlights": [],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "keep-trim-unbundled",
@@ -16084,9 +16084,9 @@
       ],
       "pr": 1388,
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "stage-placeholder-blocks",
@@ -16107,9 +16107,9 @@
         "/dungeontrain debug stage-placeholders checks a live train for unresolved placeholders"
       ],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "dungeon-backup-sibling-extraction",
@@ -16129,9 +16129,9 @@
         "The -Ddungeontrain.backups launch flag still works; -Ddungeonbackup.backups is the new name."
       ],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "wood-stages-shared-parts",
@@ -16149,9 +16149,9 @@
         "Wood family locked per stage so re-bakes keep it"
       ],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "changelog-tags-chosen-by-hand",
@@ -16170,9 +16170,9 @@
         "Going forward, tags are chosen when the note is written, not by a word filter"
       ],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "editor-x-menu-stages-tab",
@@ -16193,9 +16193,9 @@
         "Five contents templates credited to Firefly_on_ytb"
       ],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "lucky-potion-vase-bonus",
@@ -16214,9 +16214,9 @@
       ],
       "pr": 1393,
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "editor-nav-tab",
@@ -16236,9 +16236,9 @@
       ],
       "pr": 1395,
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "editor-unsaved-tracking-accuracy",
@@ -16258,9 +16258,9 @@
       ],
       "pr": 1397,
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "portal-room-jumps-weight",
@@ -16275,9 +16275,9 @@
       "summary": "The Jumps room joins the dimensional carriage rotation (bedrockless variant).",
       "highlights": [],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "credits-funders-community-cards",
@@ -16297,9 +16297,9 @@
         "Funders can hide the amount beside their name from the Edit button, as well as rename or go anonymous."
       ],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "portal-room-safe-parkour-retune",
@@ -16314,9 +16314,9 @@
       "summary": "A new Safe room joins the dimensional carriage rotation from level 4. Parkour carriages now start appearing from level 2, with the harder Skymaze and Geometric Walk courses pushed a little deeper into the run.",
       "highlights": [],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "two-week-translation-catchup",
@@ -16337,9 +16337,9 @@
       ],
       "pr": 1400,
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "translation-outdated-flag",
@@ -16359,9 +16359,9 @@
         "Seeding the record surfaced ~100 outdated lines and ~25 outdated books per language that had never been re-translated"
       ],
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     },
     {
       "id": "portal-puppets-whole-room",
@@ -16384,9 +16384,9 @@
       ],
       "pr": 1402,
       "date": "2026-09-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.875.0",
+      "released_at": "2026-09-13T14:27:59Z"
     }
   ]
 }
