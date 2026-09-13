@@ -114,7 +114,7 @@ public final class EditorGuiScreen extends Screen {
     private int previewRelayId;
 
     public EditorGuiScreen() {
-        super(Component.literal("Dungeon Train Editor"));
+        super(Component.translatable("gui.dungeontrain.editor_screen.title"));
     }
 
     /** Ask for what the screen needs and show it. */
@@ -138,7 +138,7 @@ public final class EditorGuiScreen extends Screen {
         InventoryEditorLayout.Rect f = layout.filter();
         filterBar.layout(layout, this.font, EditorRosterClient.index(), EditorScreenState.page().isBrowser());
         filterBox = new EditBox(this.font, filterBar.boxX(), f.y(), filterBar.boxW(), f.h(),
-            Component.literal("filter"));
+            Component.translatable("gui.dungeontrain.editor_screen.filters"));
         filterBox.setBordered(false);
         filterBox.setMaxLength(32);
         placeFilterBox();
