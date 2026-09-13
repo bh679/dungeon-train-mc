@@ -78,9 +78,12 @@ public final class TranslationFilters {
     }
 
     /**
-     * Whether this string still wants a human — the "Needs a human" queue.
+     * Whether this string still wants a human — the "Needs a human" queue: machine translation
+     * nobody has reviewed ({@link TranslationUnit#aiUnreviewed()}), or a line whose English was
+     * edited after it was last translated or reviewed ({@link TranslationUnit#sourceChanged()}).
+     * Either way, nobody has confirmed it says what the English says now.
      *
-     * <p>Provenance ({@link TranslationUnit#aiUnreviewed()}) only knows what was true when the jar
+     * <p>Provenance only knows what was true when the jar
      * was built. An operator approving a player's fix on the relay IS the human review it was
      * waiting for, so an approved string leaves the queue: asking the next volunteer to redo work
      * that has already been done and released is the fastest way to waste the goodwill this
@@ -91,7 +94,18 @@ public final class TranslationFilters {
      * the separate "still to do" filter subtracts.</p>
      */
     public static boolean needsHuman(TranslationUnit unit, TranslationEdits approved) {
-        return unit != null && unit.aiUnreviewed() && overrideOf(unit, approved) == null;
+        return unit != null && (unit.aiUnreviewed() || unit.sourceChanged())
+            && overrideOf(unit, approved) == null;
+    }
+
+    /**
+     * Whether the English behind {@code unit} moved on after it was last translated or reviewed,
+     * and nobody has since approved a replacement. An approved override was written against the
+     * English of ITS moment (the relay keeps that text, and the repo import refuses one the
+     * English has since left behind), so it answers the newer question and clears the flag.
+     */
+    public static boolean sourceChanged(TranslationUnit unit, TranslationEdits approved) {
+        return unit != null && unit.sourceChanged() && overrideOf(unit, approved) == null;
     }
 
     /**

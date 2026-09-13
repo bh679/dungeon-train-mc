@@ -42,7 +42,7 @@ class TranslationGroupsShippedTest {
             for (Map.Entry<String, JsonElement> entry
                     : JsonParser.parseReader(reader).getAsJsonObject().entrySet()) {
                 units.add(new TranslationUnit(TranslationUnit.Type.LANG, "dungeontrain",
-                    entry.getKey(), entry.getValue().getAsString(), "", true));
+                    entry.getKey(), entry.getValue().getAsString(), "", true, false));
             }
         }
         return units;
@@ -53,7 +53,7 @@ class TranslationGroupsShippedTest {
         List<TranslationUnit> units = new ArrayList<>();
         for (Map.Entry<String, String> field : NarrativeBookFields.flatten(json).entrySet()) {
             units.add(new TranslationUnit(TranslationUnit.Type.BOOK, "dungeontrain",
-                bookPath + "#" + field.getKey(), field.getValue(), "", true));
+                bookPath + "#" + field.getKey(), field.getValue(), "", true, false));
         }
         return units;
     }

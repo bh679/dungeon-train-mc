@@ -2,8 +2,9 @@
 """Unit tests for build-review-package.py — the review-queue builder.
 
 The interesting half is ``source_changed_since_review``: a human-reviewed line whose ENGLISH
-was edited afterwards. No such line exists in the repo right now (0 across all 19 locales), so
-the detector is proved here against throwaway git repos instead of by observation.
+was edited afterwards. It is read from the sidecar's ``source_hash`` (the digest of the English
+each stamp attested) against the current English, so it is proved here on plain dicts. Git
+history is only used to DATE the columns; that walk keeps one regression test.
 
 Run: python3 scripts/localization/test_build_review_package.py   (or via pytest)
 """
@@ -18,13 +19,56 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import provenance_io as pio  # noqa: E402
+
 spec = importlib.util.spec_from_file_location("brp", HERE / "build-review-package.py")
 brp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(brp)
 
 AI = "Opus 5 (Claude)"
-AUTHORS = {AI: "ai", "老本願": "human"}
+HUMAN = "老本願"
+AUTHORS = {AI: "ai", HUMAN: "human"}
+HELLO = pio.source_hash("Hello")
+HELLO_THERE = pio.source_hash("Hello there")
 
+
+def reviewed(digest: str) -> dict:
+    return {"author": HUMAN, "reviewer": HUMAN, "source_hash": digest}
+
+
+def test_english_edit_after_review_is_flagged():
+    assert brp.classify(reviewed(HELLO), AUTHORS, HELLO_THERE) == brp.SOURCE_CHANGED
+
+
+def test_review_of_current_english_is_clean():
+    assert brp.classify(reviewed(HELLO), AUTHORS, HELLO) is None
+
+
+def test_unknown_recorded_source_is_not_stale():
+    """"" means the English was not in the repo at stamp time (siblings) — unknown, not changed."""
+    assert brp.classify(reviewed(""), AUTHORS, HELLO) is None
+
+
+def test_missing_current_english_is_not_stale():
+    """A key with no English to compare against (siblings, or a since-deleted key) can only
+    ever be a first-review item."""
+    assert brp.classify(reviewed(HELLO), AUTHORS, None) is None
+
+
+def test_unreviewed_ai_line_is_flagged_and_human_line_is_not():
+    assert brp.classify({"author": AI, "reviewer": "", "source_hash": HELLO}, AUTHORS,
+                        HELLO_THERE) == brp.NEEDS_FIRST
+    # A human's own untouched translation is not a machine-translation review item — and an
+    # unreviewed line is never "stale", whatever its English did: it was never attested.
+    assert brp.classify({"author": HUMAN, "reviewer": "", "source_hash": HELLO}, AUTHORS,
+                        HELLO_THERE) is None
+
+
+def test_legacy_entry_without_source_hash_is_clean():
+    assert brp.classify({"author": HUMAN, "reviewer": HUMAN}, AUTHORS, HELLO) is None
+
+
+# ---- the git dating used for the english_changed_at / reviewed_at columns ----
 
 def git(repo: Path, *args: str) -> None:
     subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
@@ -48,90 +92,24 @@ def repo() -> Path:
     return r
 
 
-def test_english_edit_after_review_is_flagged():
-    r = repo()
-    lang = r / "en_us.json"
-    commit(r, lang, {"a": "Hello"}, "add", "2026-01-01T00:00:00Z")
-    prov = r / "prov.json"
-    commit(r, prov, {"a": {"author": "老本願", "reviewer": "老本願"}}, "review",
-           "2026-02-01T00:00:00Z")
-    commit(r, lang, {"a": "Hello there"}, "reword the English", "2026-03-01T00:00:00Z")
-
-    en = brp.value_change_times(lang, r)
-    reviewed = brp.review_stamp_times(prov, r)
-    entry = {"author": "老本願", "reviewer": "老本願"}
-    assert brp.classify(entry, AUTHORS, en["a"], reviewed["a"]) == brp.SOURCE_CHANGED, \
-        f"en={en} reviewed={reviewed}"
-
-
-def test_review_after_english_edit_is_clean():
-    r = repo()
-    lang = r / "en_us.json"
-    commit(r, lang, {"a": "Hello"}, "add", "2026-01-01T00:00:00Z")
-    commit(r, lang, {"a": "Hello there"}, "reword", "2026-02-01T00:00:00Z")
-    prov = r / "prov.json"
-    commit(r, prov, {"a": {"author": "老本願", "reviewer": "老本願"}}, "review then",
-           "2026-03-01T00:00:00Z")
-
-    en = brp.value_change_times(lang, r)
-    reviewed = brp.review_stamp_times(prov, r)
-    assert brp.classify({"author": "老本願", "reviewer": "老本願"}, AUTHORS,
-                        en["a"], reviewed["a"]) is None
-
-
 def test_key_removed_and_readded_verbatim_is_not_an_edit():
-    """#868 dropped four consent-card keys; #869 re-added them with identical text. That is
-    not an English change, and flagging it would send a translator after nothing."""
+    """#868 dropped keys that #869 re-added with identical text — not an English change."""
     r = repo()
     lang = r / "en_us.json"
-    commit(r, lang, {"a": "Harvest your soul", "b": "x"}, "add", "2026-01-01T00:00:00Z")
+    commit(r, lang, {"a": "Hello", "b": "Other"}, "add", "2026-01-01T00:00:00Z")
+    commit(r, lang, {"b": "Other"}, "drop a", "2026-02-01T00:00:00Z")
+    commit(r, lang, {"a": "Hello", "b": "Other"}, "re-add a verbatim", "2026-03-01T00:00:00Z")
+    en = brp.value_change_times(lang, r)
+    assert brp.stamp(en["a"]) == "2026-01-01"
+
+
+def test_reviewer_change_moves_the_review_date():
+    r = repo()
     prov = r / "prov.json"
-    commit(r, prov, {"a": {"author": "老本願", "reviewer": "老本願"}}, "review",
-           "2026-02-01T00:00:00Z")
-    commit(r, lang, {"b": "x"}, "restructure: key gone", "2026-03-01T00:00:00Z")
-    commit(r, lang, {"a": "Harvest your soul", "b": "x"}, "key back, same text",
-           "2026-04-01T00:00:00Z")
-
-    en = brp.value_change_times(lang, r)
-    assert en["a"] < brp.review_stamp_times(prov, r)["a"], "re-add counted as an edit"
-    assert brp.classify({"author": "老本願", "reviewer": "老本願"}, AUTHORS,
-                        en["a"], brp.review_stamp_times(prov, r)["a"]) is None
-
-
-def test_same_commit_english_and_review_is_not_stale():
-    """A squash merge can carry an English edit and its review together; the review wins."""
-    r = repo()
-    lang, prov = r / "en_us.json", r / "prov.json"
-    lang.write_text(json.dumps({"a": "One"}), encoding="utf-8")
-    commit(r, prov, {"a": {"author": "老本願", "reviewer": "老本願"}}, "both at once",
-           "2026-01-01T00:00:00Z")
-    en = brp.value_change_times(lang, r)
-    reviewed = brp.review_stamp_times(prov, r)
-    assert en["a"] == reviewed["a"]
-    assert brp.classify({"author": "老本願", "reviewer": "老本願"}, AUTHORS,
-                        en["a"], reviewed["a"]) is None
-
-
-def test_unreviewed_ai_line_is_flagged_and_human_line_is_not():
-    assert brp.classify({"author": AI, "reviewer": ""}, AUTHORS, None, None) == brp.NEEDS_FIRST
-    # A human's own untouched translation is not a machine-translation review item.
-    assert brp.classify({"author": "老本願", "reviewer": ""}, AUTHORS, None, None) is None
-
-
-def test_reviewer_change_resets_the_review_date():
-    """Re-reviewing a line moves its review date forward, clearing an earlier staleness."""
-    r = repo()
-    lang, prov = r / "en_us.json", r / "prov.json"
-    commit(r, lang, {"a": "One"}, "add", "2026-01-01T00:00:00Z")
-    commit(r, prov, {"a": {"author": AI, "reviewer": ""}}, "machine", "2026-01-02T00:00:00Z")
-    commit(r, lang, {"a": "Two"}, "reword", "2026-02-01T00:00:00Z")
-    commit(r, prov, {"a": {"author": "老本願", "reviewer": "老本願"}}, "reviewed after",
-           "2026-03-01T00:00:00Z")
-    en = brp.value_change_times(lang, r)
-    reviewed = brp.review_stamp_times(prov, r)
-    assert reviewed["a"] > en["a"]
-    assert brp.classify({"author": "老本願", "reviewer": "老本願"}, AUTHORS,
-                        en["a"], reviewed["a"]) is None
+    commit(r, prov, {"a": {"author": AI, "reviewer": "", "source_hash": HELLO}}, "machine",
+           "2026-01-02T00:00:00Z")
+    commit(r, prov, {"a": reviewed(HELLO)}, "reviewed", "2026-03-01T00:00:00Z")
+    assert brp.stamp(brp.review_stamp_times(prov, r)["a"]) == "2026-03-01"
 
 
 def _main() -> int:

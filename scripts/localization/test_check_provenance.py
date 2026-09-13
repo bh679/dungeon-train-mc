@@ -23,9 +23,9 @@ import provenance_io  # noqa: E402
 
 LANG = {"a.key": "Alpha", "b.key": "Beta", "c.key": "Gamma"}
 PROV = {
-    "a.key": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-    "b.key": {"author": "老本願", "reviewer": "老本願"},
-    "c.key": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+    "a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
+    "b.key": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},
+    "c.key": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
 }
 AUTHORS = {"Opus 4.8 (Claude)": "ai", "老本願": "human", "X": "human", "H": "human"}
 
@@ -120,7 +120,7 @@ def test_missing_key_fails():
 
 
 def test_orphaned_key_fails():
-    prov = dict(PROV, **{"gone.key": {"author": "X", "reviewer": ""}})
+    prov = dict(PROV, **{"gone.key": {"author": "X", "reviewer": "", "source_hash": ""}})
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
     proc = run(dirs)
     assert proc.returncode == 1
@@ -138,7 +138,7 @@ def test_order_mismatch_fails_naming_divergence():
 
 
 def test_empty_author_fails():
-    prov = dict(PROV, **{"a.key": {"author": "  ", "reviewer": ""}})
+    prov = dict(PROV, **{"a.key": {"author": "  ", "reviewer": "", "source_hash": ""}})
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
     proc = run(dirs)
     assert proc.returncode == 1
@@ -170,7 +170,7 @@ def test_non_object_entry_fails():
 
 
 def test_non_string_reviewer_fails():
-    prov = dict(PROV, **{"a.key": {"author": "X", "reviewer": None}})
+    prov = dict(PROV, **{"a.key": {"author": "X", "reviewer": None, "source_hash": ""}})
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
     proc = run(dirs)
     assert proc.returncode == 1
@@ -201,7 +201,7 @@ def test_flag_true_with_partial_coverage_warns_but_passes():
 
 
 def test_flag_true_with_full_coverage_is_silent():
-    prov = {k: {"author": "H", "reviewer": "H"} for k in LANG}
+    prov = {k: {"author": "H", "reviewer": "H", "source_hash": ""} for k in LANG}
     credits = {"xx_yy": {"locale": "xx_yy", "name": "Human", "human_reviewed": True,
                          "total_keys": 3, "ai_authored": 0, "ai_unreviewed": 0}}
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov}, credits)
@@ -211,7 +211,7 @@ def test_flag_true_with_full_coverage_is_silent():
 
 
 def test_flag_false_with_full_coverage_suggests_flipping():
-    prov = {k: {"author": "H", "reviewer": "H"} for k in LANG}
+    prov = {k: {"author": "H", "reviewer": "H", "source_hash": ""} for k in LANG}
     credits = {"xx_yy": {"locale": "xx_yy", "name": "AI", "human_reviewed": False,
                          "total_keys": 3, "ai_authored": 0, "ai_unreviewed": 0}}
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov}, credits)
@@ -300,7 +300,7 @@ def test_report_counts():
 
 def test_ai_reviewed_line_leaves_the_unreviewed_bucket():
     """An AI-authored line WITH a human reviewer must not count as AI-unreviewed."""
-    prov = dict(PROV, **{"a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "老本願"}})
+    prov = dict(PROV, **{"a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "老本願", "source_hash": ""}})
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
     proc = run(dirs, "--report")
     assert proc.returncode == 0, proc.stderr
@@ -310,7 +310,7 @@ def test_ai_reviewed_line_leaves_the_unreviewed_bucket():
 
 
 def test_unregistered_author_fails():
-    prov = dict(PROV, **{"a.key": {"author": "Opus 4.9 (Claude)", "reviewer": ""}})
+    prov = dict(PROV, **{"a.key": {"author": "Opus 4.9 (Claude)", "reviewer": "", "source_hash": ""}})
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
     proc = run(dirs)
     assert proc.returncode == 1
@@ -318,7 +318,7 @@ def test_unregistered_author_fails():
 
 
 def test_unregistered_reviewer_fails():
-    prov = dict(PROV, **{"a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "Nobody"}})
+    prov = dict(PROV, **{"a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "Nobody", "source_hash": ""}})
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
     proc = run(dirs)
     assert proc.returncode == 1
@@ -328,7 +328,7 @@ def test_unregistered_reviewer_fails():
 def test_ai_reviewer_fails():
     """An AI cannot human-review — reviewer registered as ai is an error."""
     prov = dict(PROV, **{"a.key": {"author": "Opus 4.8 (Claude)",
-                                   "reviewer": "Opus 4.8 (Claude)"}})
+                                   "reviewer": "Opus 4.8 (Claude)", "source_hash": ""}})
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov})
     proc = run(dirs)
     assert proc.returncode == 1

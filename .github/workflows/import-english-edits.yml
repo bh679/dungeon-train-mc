@@ -74,6 +74,13 @@ jobs:
             --deferred-out "$RUNNER_TEMP/deferred-values.json" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 
+      # An English edit moves every locale's translation of that line into the shipped manifest's
+      # source_changed list (the in-game "English changed since this was translated" badge). The
+      # sidecars keep their recorded source_hash — that IS the signal — but the manifests are
+      # generated from sidecar-vs-current-English and check-provenance.py fails until rebuilt.
+      - name: Refresh the provenance manifests for the edited English
+        run: python3 scripts/localization/stamp-provenance.py --sync
+
       - name: Anything to ship?
         id: changed
         run: |

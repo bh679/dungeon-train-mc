@@ -38,8 +38,13 @@ from pathlib import Path
 import provenance_io
 
 
-def sync_locale(books: list[str], prov: dict, author: str | None) -> tuple[dict, int, int]:
-    """A sidecar aligned to ``books`` (book-path order): (synced, added, removed)."""
+def sync_locale(books: list[str], prov: dict, author: str | None,
+                english_dir: Path | None = None) -> tuple[dict, int, int]:
+    """A sidecar aligned to ``books`` (book-path order): (synced, added, removed).
+
+    New entries record the digest of the English book (under ``english_dir``, the
+    ``data/dungeontrain`` tree) they were translated from; existing entries keep theirs.
+    """
     missing = [b for b in books if b not in prov]
     if missing and not author:
         raise ValueError(
@@ -47,7 +52,8 @@ def sync_locale(books: list[str], prov: dict, author: str | None) -> tuple[dict,
             f"pass --author '<who translated them>'"
         )
     synced = {
-        book: dict(prov[book]) if book in prov else {"author": author, "reviewer": ""}
+        book: dict(prov[book]) if book in prov else {
+            "author": author, "reviewer": "", "source_hash": book_hash(english_dir, book)}
         for book in books  # book order; orphans drop out by construction
     }
     return synced, len(missing), len(set(prov) - set(books))
@@ -72,9 +78,15 @@ def select_books(prov: dict, files: list[str] | None, prefix: str | None,
     return list(files)
 
 
+def book_hash(english_dir: Path | None, book: str) -> str:
+    """The digest to stamp for ``book``, or ``""`` when no English dir is known."""
+    return provenance_io.english_book_hash(english_dir, book) if english_dir is not None else ""
+
+
 def stamp_books(prov: dict, targets: list[str], author: str | None,
-                reviewer: str | None) -> dict:
-    """A new sidecar with author/reviewer restamped on ``targets``."""
+                reviewer: str | None, english_dir: Path | None = None) -> dict:
+    """A new sidecar with author/reviewer restamped on ``targets``. Either stamp attests
+    the English of this moment, so both refresh ``source_hash``."""
     stamped = {book: dict(entry) for book, entry in prov.items()}
     for book in targets:
         if author is not None:
@@ -83,6 +95,8 @@ def stamp_books(prov: dict, targets: list[str], author: str | None,
             stamped[book]["reviewer"] = reviewer if reviewer is not None else ""
         elif reviewer is not None:
             stamped[book]["reviewer"] = reviewer
+        if author is not None or reviewer is not None:
+            stamped[book]["source_hash"] = book_hash(english_dir, book)
     return stamped
 
 
@@ -95,12 +109,12 @@ def process_locale(locale: str, narrative_dir: Path, prov_dir: Path,
 
     added = removed = 0
     if args.sync:
-        prov, added, removed = sync_locale(books, prov, args.author)
+        prov, added, removed = sync_locale(books, prov, args.author, args.english_dir)
 
     stamped = 0
     if args.selecting:
         targets = select_books(prov, args.files, args.prefix, args.all)
-        prov = stamp_books(prov, targets, args.author, args.reviewer)
+        prov = stamp_books(prov, targets, args.author, args.reviewer, args.english_dir)
         stamped = len(targets)
 
     parts = []
@@ -120,6 +134,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--narrative-dir", type=Path,
                         default=provenance_io.DEFAULT_NARRATIVE_DIR)
     parser.add_argument("--provenance-dir", type=Path, default=default_prov_dir)
+    parser.add_argument("--english-dir", type=Path, default=None,
+                        help="the data/dungeontrain tree holding the English books "
+                             "(default: the parent of --narrative-dir)")
     parser.add_argument("--authors-file", type=Path, default=provenance_io.DEFAULT_AUTHORS_FILE)
     parser.add_argument("--manifest-dir", type=Path, default=None,
                         help="where to write the shipped localization_provenance manifests "
@@ -156,6 +173,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.narrative_dir.is_dir():
         print(f"ERROR: narrative dir not found at {args.narrative_dir}", file=sys.stderr)
         return 2
+    if args.english_dir is None:
+        args.english_dir = args.narrative_dir.parent
     if not args.authors_file.is_file():
         print(f"ERROR: author registry not found at {args.authors_file}", file=sys.stderr)
         return 2
@@ -206,7 +225,8 @@ def main(argv: list[str] | None = None) -> int:
         changed = provenance_io.refresh_manifests(
             authors,
             narrative_prov_dir=args.provenance_dir,
-            manifest_dir=args.manifest_dir or provenance_io.DEFAULT_MANIFEST_DIR)
+            manifest_dir=args.manifest_dir or provenance_io.DEFAULT_MANIFEST_DIR,
+            english_dir=args.english_dir)
         if changed:
             print(f"OK: refreshed {len(changed)} localization_provenance manifest(s).")
     return 0

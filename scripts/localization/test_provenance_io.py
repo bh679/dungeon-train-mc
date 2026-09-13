@@ -33,11 +33,11 @@ LANG = {"a.key": "Alpha", "b.key": "Beta", "c.key": "Gamma"}
 # a: machine, never reviewed -> the only AI-unreviewed line.
 # b: machine but a human reviewed it. c: translated by a human outright.
 PROV_MIXED = {
-    "a.key": {"author": AI, "reviewer": ""},
-    "b.key": {"author": AI, "reviewer": HUMAN},
-    "c.key": {"author": HUMAN, "reviewer": HUMAN},
+    "a.key": {"author": AI, "reviewer": "", "source_hash": ""},
+    "b.key": {"author": AI, "reviewer": HUMAN, "source_hash": ""},
+    "c.key": {"author": HUMAN, "reviewer": HUMAN, "source_hash": ""},
 }
-PROV_ALL_AI = {key: {"author": AI, "reviewer": ""} for key in LANG}
+PROV_ALL_AI = {key: {"author": AI, "reviewer": "", "source_hash": ""} for key in LANG}
 
 
 def write_json(path, data):
@@ -129,13 +129,13 @@ def test_ai_unreviewed_keys_excludes_reviewed_and_human_authored():
 
 
 def test_ai_unreviewed_keys_keeps_lang_file_order():
-    prov = {k: {"author": AI, "reviewer": ""} for k in ("c.key", "a.key", "b.key")}
+    prov = {k: {"author": AI, "reviewer": "", "source_hash": ""} for k in ("c.key", "a.key", "b.key")}
     assert pio.ai_unreviewed_keys(prov, AUTHORS) == ["c.key", "a.key", "b.key"]
 
 
 def test_ai_unreviewed_keys_ignores_unregistered_author():
     # An unregistered name is check-provenance.py's error to report, not a silent "ai".
-    prov = {"a.key": {"author": "Nobody", "reviewer": ""}}
+    prov = {"a.key": {"author": "Nobody", "reviewer": "", "source_hash": ""}}
     assert pio.ai_unreviewed_keys(prov, AUTHORS) == []
 
 
@@ -169,13 +169,87 @@ def test_build_manifest_omits_books_when_no_narrative_sidecar():
 
 
 def test_build_manifest_reads_books_from_the_narrative_sidecar():
-    books = {"random_books/deathnote": {"author": AI, "reviewer": ""},
-             "stories/one": {"author": HUMAN, "reviewer": HUMAN}}
+    books = {"random_books/deathnote": {"author": AI, "reviewer": "", "source_hash": ""},
+             "stories/one": {"author": HUMAN, "reviewer": HUMAN, "source_hash": ""}}
     assert build(workspace(books=books))["books"] == ["random_books/deathnote"]
 
 
 def test_build_manifest_carries_the_do_not_hand_edit_note():
     assert build(workspace())["_note"] == pio.MANIFEST_NOTE
+
+
+# ------------------------------------------------------------------ source_hash
+
+def test_source_hash_is_16_lowercase_hex_and_stable():
+    digest = pio.source_hash("Hello")
+    assert pio.SOURCE_HASH_RE.match(digest) and digest == pio.source_hash("Hello")
+    assert digest != pio.source_hash("Hello there")
+
+
+def test_book_source_hash_ignores_structural_keys_and_formatting():
+    book = {"id": "x", "title": "T", "variants": ["one", "two"], "_translator_note": "n"}
+    same_text = {"title": "T", "id": "renamed", "variants": ["one", "two"]}
+    assert pio.book_source_hash(book) == pio.book_source_hash(same_text)
+    assert pio.book_source_hash(book) != pio.book_source_hash({**book, "title": "T2"})
+
+
+def test_validate_entries_accepts_empty_or_hex_source_hash_only():
+    good = {"a": {"author": AI, "reviewer": "", "source_hash": ""},
+            "b": {"author": AI, "reviewer": "", "source_hash": pio.source_hash("x")}}
+    assert pio.validate_entries(good) == []
+    bad = {"a": {"author": AI, "reviewer": "", "source_hash": "Hello"}}
+    assert any("source_hash" in e for e in pio.validate_entries(bad))
+    legacy = {"a": {"author": AI, "reviewer": ""}}
+    assert any("missing field(s) source_hash" in e for e in pio.validate_entries(legacy))
+
+
+def test_source_changed_keys_flags_only_a_recorded_mismatch():
+    prov = {"a": {"author": HUMAN, "reviewer": HUMAN, "source_hash": pio.source_hash("old")},
+            "b": {"author": HUMAN, "reviewer": HUMAN, "source_hash": pio.source_hash("Beta")},
+            "c": {"author": HUMAN, "reviewer": HUMAN, "source_hash": ""},
+            "d": {"author": HUMAN, "reviewer": HUMAN, "source_hash": pio.source_hash("gone")}}
+    current = {"a": pio.source_hash("new"), "b": pio.source_hash("Beta"), "c": pio.source_hash("x")}
+    # "" is unknown, not changed; a key with no current English cannot be compared.
+    assert pio.source_changed_keys(prov, current) == ["a"]
+
+
+def test_build_manifest_lists_lines_whose_english_moved_on():
+    prov = {"a.key": {"author": HUMAN, "reviewer": HUMAN, "source_hash": pio.source_hash("Alpha")},
+            "b.key": {"author": HUMAN, "reviewer": HUMAN, "source_hash": pio.source_hash("Old Beta")},
+            "c.key": {"author": AI, "reviewer": "", "source_hash": ""}}
+    manifest = build(workspace(prov=prov))
+    assert manifest["source_changed"]["dungeontrain"] == ["b.key"]
+    assert manifest["lang"]["dungeontrain"] == ["c.key"]
+
+
+def test_build_manifest_source_changed_collapses_to_star_when_all_moved():
+    prov = {k: {"author": HUMAN, "reviewer": HUMAN, "source_hash": pio.source_hash("stale")}
+            for k in LANG}
+    assert build(workspace(prov=prov))["source_changed"]["dungeontrain"] == pio.MANIFEST_ALL
+
+
+def test_build_manifest_sibling_with_no_english_never_flags_source_changed():
+    prov = {k: {"author": HUMAN, "reviewer": HUMAN, "source_hash": ""} for k in LANG}
+    manifest = build(workspace(sibling_prov=prov), with_sibling=True)
+    assert manifest["source_changed"]["playermob"] == []
+
+
+def test_build_manifest_books_source_changed_reads_the_english_book():
+    paths = workspace(books={"random_books/deathnote": {
+        "author": HUMAN, "reviewer": HUMAN, "source_hash": pio.source_hash("stale")}})
+    english_dir = os.path.join(paths["root"], "english")
+    write_json(os.path.join(english_dir, "narratives", "random_books", "deathnote.json"),
+               {"id": "deathnote", "title": "T"})
+    manifest = pio.build_manifest("xx_yy", AUTHORS, namespaces_for(paths),
+                                  pio.Path(paths["narrative"]), pio.Path(english_dir))
+    assert manifest["books_source_changed"] == pio.MANIFEST_ALL
+    # A missing English book is "unknown", not "changed".
+    paths2 = workspace(books={"random_books/deathnote": {
+        "author": HUMAN, "reviewer": HUMAN, "source_hash": pio.source_hash("stale")}})
+    manifest2 = pio.build_manifest("xx_yy", AUTHORS, namespaces_for(paths2),
+                                   pio.Path(paths2["narrative"]),
+                                   pio.Path(os.path.join(paths2["root"], "nowhere")))
+    assert manifest2["books_source_changed"] == []
 
 
 # ------------------------------------------------------------------ refresh_manifests
@@ -297,6 +371,21 @@ def test_check_cli_fails_on_a_drifted_manifest():
     result = check_cli(paths)
     assert result.returncode == 1, result.stdout
     assert "out of date" in result.stderr
+
+
+def test_check_cli_fails_after_an_english_edit_until_resynced():
+    """Editing en_us moves a line into source_changed; the shipped manifest must follow."""
+    paths = workspace(prov={k: {"author": HUMAN, "reviewer": HUMAN,
+                                "source_hash": pio.source_hash(v)} for k, v in LANG.items()})
+    stamp_cli(paths)
+    assert check_cli(paths).returncode == 0
+    assert read_manifest(paths)["source_changed"]["(explicit)"] == []
+    write_json(os.path.join(paths["lang"], "en_us.json"), dict(LANG, **{"b.key": "Beta 2"}))
+    result = check_cli(paths)
+    assert result.returncode == 1 and "out of date" in result.stderr
+    stamp_cli(paths)
+    assert check_cli(paths).returncode == 0
+    assert read_manifest(paths)["source_changed"]["(explicit)"] == ["b.key"]
 
 
 def test_check_cli_fails_on_a_missing_manifest():

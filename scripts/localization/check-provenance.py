@@ -281,15 +281,18 @@ def cross_check_credits(locale: str, prov: dict, credits_dir: Path) -> list[str]
     return []
 
 
-def print_report(targets: list[str], prov_dir: Path, authors: dict[str, str]) -> None:
+def print_report(targets: list[str], prov_dir: Path, authors: dict[str, str],
+                 english: dict[str, str] | None = None) -> None:
     """The at-a-glance per-locale table (validated data only).
 
     The headline column is %ai-unrev — how much of the locale is AI-generated text
-    no human has reviewed.
+    no human has reviewed. ``stale`` is how many lines the English has been edited under
+    since they were last stamped (always 0 for a namespace whose English is not here).
     """
+    current = {k: provenance_io.source_hash(v) for k, v in (english or {}).items()}
     print(f"{'locale':<8} {'keys':>5} {'ai':>5} {'ai-unrev':>8} {'%ai-unrev':>9} "
-          f"{'reviewed':>8}  authors")
-    tot = {"keys": 0, "ai": 0, "unrev": 0, "reviewed": 0}
+          f"{'reviewed':>8} {'stale':>5}  authors")
+    tot = {"keys": 0, "ai": 0, "unrev": 0, "reviewed": 0, "stale": 0}
     for locale in targets:
         prov = provenance_io.load_provenance(prov_dir / f"{locale}.json")
         buckets: dict[str, int] = {}
@@ -297,16 +300,18 @@ def print_report(targets: list[str], prov_dir: Path, authors: dict[str, str]) ->
             buckets[entry["author"]] = buckets.get(entry["author"], 0) + 1
         _, ai, unrev = provenance_io.ai_counts(prov, authors)
         reviewed = sum(1 for e in prov.values() if e["reviewer"])
+        stale = len(provenance_io.source_changed_keys(prov, current))
         tot = {"keys": tot["keys"] + len(prov), "ai": tot["ai"] + ai,
-               "unrev": tot["unrev"] + unrev, "reviewed": tot["reviewed"] + reviewed}
+               "unrev": tot["unrev"] + unrev, "reviewed": tot["reviewed"] + reviewed,
+               "stale": tot["stale"] + stale}
         pct = 100.0 * unrev / len(prov) if prov else 0.0
         names = ", ".join(f"{name}={n}"
                           for name, n in sorted(buckets.items(), key=lambda kv: -kv[1]))
         print(f"{locale:<8} {len(prov):>5} {ai:>5} {unrev:>8} {pct:>9.1f} "
-              f"{reviewed:>8}  {names}")
+              f"{reviewed:>8} {stale:>5}  {names}")
     pct = 100.0 * tot["unrev"] / tot["keys"] if tot["keys"] else 0.0
     print(f"{'TOTAL':<8} {tot['keys']:>5} {tot['ai']:>5} {tot['unrev']:>8} {pct:>9.1f} "
-          f"{tot['reviewed']:>8}")
+          f"{tot['reviewed']:>8} {tot['stale']:>5}")
 
 
 def check_namespace(ns: provenance_io.Namespace, args: argparse.Namespace,
@@ -465,7 +470,7 @@ def main(argv: list[str] | None = None) -> int:
         if multi:
             print(f"# {ns.name}")
         if args.report:
-            print_report(checkable, ns.prov_dir, authors)
+            print_report(checkable, ns.prov_dir, authors, provenance_io.english_lang(ns))
         else:
             for locale in checkable:
                 prov = provenance_io.load_provenance(ns.prov_dir / f"{locale}.json")
