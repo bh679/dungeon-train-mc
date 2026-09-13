@@ -17,6 +17,9 @@ import java.util.List;
 final class EditorStagesPane {
 
     static final int ROW_H = EditorDetailPane.ROW_H;
+    /** The column before a row's name: the stage's most-used block, drawn small enough to sit in a row. */
+    static final int ICON_W = ROW_H;
+    static final float ICON_SCALE = (ROW_H - 2) / 16f;
     /** Under the shown stage's row, so it reads as chosen even when the pointer is elsewhere. */
     static final int SELECTED_FILL = 0x50FFCC33;
 
@@ -58,8 +61,8 @@ final class EditorStagesPane {
         }
         InventoryEditorLayout.Rect h = headerRect(layout);
         CommandMenuEntry header = header();
-        int headerSub = h.contains(mouseX, mouseY) ? MenuRowPainter.hitCell(header, mouseX, h.x(), h.right()) : -1;
-        MenuRowPainter.drawRow(g, font, header, h.x(), h.y(), h.right(), ROW_H - 1, 0, headerSub >= 0, headerSub, null);
+        int headerSub = h.contains(mouseX, mouseY) ? MenuRowPainter.hitCell(header, mouseX, h.x() + ICON_W, h.right()) : -1;
+        MenuRowPainter.drawRow(g, font, header, h.x() + ICON_W, h.y(), h.right(), ROW_H - 1, 0, headerSub >= 0, headerSub, null);
         InventoryEditorLayout.Rect r = listRect(layout);
         List<EditorStagesPage.Row> rows = rows(index);
         EditorRosterPacket.StageEntry shown = EditorScreenState.effectiveStage(index);
@@ -72,15 +75,26 @@ final class EditorStagesPane {
             EditorStagesPage.Row row = rows.get(idx);
             int top = r.y() + k * ROW_H;
             boolean hov = idx == hoveredRow;
-            int hoveredSub = hov ? MenuRowPainter.hitCell(row.entry(), mouseX, r.x(), r.right()) : -1;
+            int hoveredSub = hov ? MenuRowPainter.hitCell(row.entry(), mouseX, r.x() + ICON_W, r.right()) : -1;
             boolean chosen = shownId.equalsIgnoreCase(row.stageId());
             // The shown stage reads as chosen, not merely outlined: a tint under the row and the
             // browser's selection border around it.
             if (chosen) g.fill(r.x(), top, r.right(), top + ROW_H - 1, SELECTED_FILL);
-            MenuRowPainter.drawRow(g, font, row.entry(), r.x(), top, r.right(), ROW_H - 1, idx, hov, hoveredSub, null);
+            MenuRowPainter.drawRow(g, font, row.entry(), r.x() + ICON_W, top, r.right(), ROW_H - 1, idx, hov, hoveredSub, null);
+            drawTopBlock(g, index.stage(row.stageId()), r.x() + 1, top + 1);
             if (chosen) g.renderOutline(r.x(), top, r.w(), ROW_H - 1, TemplateTilePainter.BORDER_SELECTED);
         }
         drawScrollbar(g, r, rows.size(), visible);
+    }
+
+    /** The stage's most-used block as a small item icon — its usage list is ordered, so that is entry 0. */
+    private static void drawTopBlock(GuiGraphics g, EditorRosterPacket.StageEntry stage, int x, int y) {
+        if (stage == null || stage.blocks().isEmpty()) return;
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(ICON_SCALE, ICON_SCALE, 1f);
+        g.renderItem(games.brennan.dungeontrain.client.menu.MenuBlockIcons.iconStackFor(stage.blocks().get(0).blockId()), 0, 0);
+        g.pose().popPose();
     }
 
     /** No roster yet is "loading"; a roster with no stages is not. */
@@ -96,7 +110,7 @@ final class EditorStagesPane {
         InventoryEditorLayout.Rect h = headerRect(layout);
         if (h.contains(mouseX, mouseY)) {
             CommandMenuEntry header = header();
-            int sub = MenuRowPainter.hitCell(header, (int) mouseX, h.x(), h.right());
+            int sub = MenuRowPainter.hitCell(header, (int) mouseX, h.x() + ICON_W, h.right());
             if (sub < 0) return false;
             CommandMenuEntry cell = MenuRowPainter.cellsOf(header)[sub];
             if (cell instanceof CommandMenuEntry.ClientAction action) action.action().run();
