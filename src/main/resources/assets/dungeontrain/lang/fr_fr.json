@@ -2323,6 +2323,7 @@
   "chat.dungeontrain.custom_content.already_kept": "Le contenu de train personnalisé est déjà activé dans ce monde.",
   "chat.dungeontrain.custom_content.already_disabled": "Le contenu de train personnalisé est déjà désactivé dans ce monde.",
   "chat.dungeontrain.lucky_loot.bonus": "Quelle chance ! %s objet(s) en plus sont apparus dans ce coffre.",
+  "chat.dungeontrain.lucky_loot.vase_bonus": "Quelle chance ! Un objet en plus est tombé de ce vase.",
   "gui.dungeontrain.custom_content.title": "Contenu de train personnalisé",
   "gui.dungeontrain.custom_content.card.custom.name": "Train personnalisé",
   "gui.dungeontrain.custom_content.card.custom.tag": "Jeu Libre",

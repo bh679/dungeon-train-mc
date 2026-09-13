@@ -2288,6 +2288,7 @@
   "chat.dungeontrain.custom_content.already_kept": "このワールドではカスタムの列車コンテンツはすでに有効です。",
   "chat.dungeontrain.custom_content.already_disabled": "このワールドではカスタムの列車コンテンツはすでに無効です。",
   "chat.dungeontrain.lucky_loot.bonus": "ラッキー！このチェストに追加のアイテムが%s個現れた。",
+  "chat.dungeontrain.lucky_loot.vase_bonus": "ラッキー！この壺から追加のアイテムが1個出てきた。",
   "gui.dungeontrain.custom_content.title": "カスタムの列車コンテンツ",
   "gui.dungeontrain.custom_content.card.custom.name": "カスタム列車",
   "gui.dungeontrain.custom_content.card.custom.tag": "フリープレイ",
