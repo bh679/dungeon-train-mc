@@ -143,7 +143,6 @@ final class EditorStageDetailPane {
     private int blockCols = 1;
     private Pages pages = new Pages(List.of(new Section(SectionKind.OVERVIEW, 1, 1)));
     private int page;
-    private String pagedStageId = "";
     private Hit hovered = Hit.NONE;
 
     /** The overview: its icons and their geometry, the carriage shown at which roll, and the sheet. */
@@ -167,10 +166,10 @@ final class EditorStageDetailPane {
         return new InventoryEditorLayout.Rect(top.x(), top.y(), top.w(), Math.max(0, t.y() - 2 - top.y()));
     }
 
-    /** The page's rectangle: the body less the info line above and the pager slot below. */
+    /** The page's rectangle: the body less the pager slot below. */
     static InventoryEditorLayout.Rect gridRectOf(InventoryEditorLayout layout) {
         InventoryEditorLayout.Rect b = bodyOf(layout);
-        return new InventoryEditorLayout.Rect(b.x(), b.y() + ROW_H, b.w(), Math.max(0, b.h() - 2 * ROW_H));
+        return new InventoryEditorLayout.Rect(b.x(), b.y(), b.w(), Math.max(0, b.h() - ROW_H));
     }
 
     InventoryEditorLayout.Rect body() {
@@ -200,13 +199,8 @@ final class EditorStageDetailPane {
         this.layout = layout;
         this.stage = stage;
         this.templates = EditorStageTemplates.rows(stage, index);
-        String id = stage == null ? "" : stage.id();
-        if (!id.equalsIgnoreCase(pagedStageId)) {
-            // The carriage and its roll are the author's choice and outlive the stage they were
-            // picked on, so two stages can be compared on the same model; only the page returns.
-            pagedStageId = id;
-            page = 0;
-        }
+        // The page, the carriage and its roll are all the author's choice and outlive the stage
+        // they were picked on, so two stages can be compared on the same page and model.
         if (carriageIdx < 0) seed = RESEED.nextLong();
 
         InventoryEditorLayout.Rect r = gridRect();
@@ -329,18 +323,9 @@ final class EditorStageDetailPane {
         if (stage == null) return;
         switch (pages.kindOf(page)) {
             case OVERVIEW -> drawOverview(g, font, theme, yaw);
-            case PALETTE, STONE -> {
-                drawInfo(g, font);
-                drawPalette(g, font, paletteRowsShown());
-            }
-            case BLOCKS -> {
-                drawInfo(g, font);
-                drawGrid(g, font);
-            }
-            case TEMPLATES -> {
-                drawInfo(g, font);
-                drawRows(g, font);
-            }
+            case PALETTE, STONE -> drawPalette(g, font, paletteRowsShown());
+            case BLOCKS -> drawGrid(g, font);
+            case TEMPLATES -> drawRows(g, font);
         }
         if (pages.hasPager()) {
             EditorPager.draw(g, font, pagerRect(), page, pages.pageCount(), switch (hovered.kind()) {
@@ -411,26 +396,6 @@ final class EditorStageDetailPane {
     private static void tint(GuiGraphics g, int argb) {
         g.setColor(((argb >> 16) & 0xFF) / 255f, ((argb >> 8) & 0xFF) / 255f,
             (argb & 0xFF) / 255f, ((argb >>> 24) & 0xFF) / 255f);
-    }
-
-    /**
-     * The gate summary, then what the page is: the palette pages say so; the blocks page adds how
-     * many parts link and how many blocks the cap left out; the templates page how many link.
-     */
-    private void drawInfo(GuiGraphics g, Font font) {
-        InventoryEditorLayout.Rect b = body();
-        int ty = b.y() + (ROW_H - font.lineHeight) / 2;
-        String info = EditorStagesPage.gateSummary(stage) + " · ";
-        switch (pages.kindOf(page)) {
-            case PALETTE, STONE -> info += EditorScreenLang.text(EditorScreenLang.STAGES_PALETTE_TITLE);
-            case BLOCKS -> {
-                info += EditorScreenLang.text(EditorScreenLang.STAGES_PARTS, stage.partCount());
-                int hidden = stage.totalUnique() - stage.blocks().size();
-                if (hidden > 0) info += " · " + EditorScreenLang.text(EditorScreenLang.STAGES_MORE, hidden);
-            }
-            default -> info += EditorScreenLang.text(EditorScreenLang.STAGES_TEMPLATES, templates.size());
-        }
-        g.drawString(font, info, b.x() + 2, ty, EditorDetailPane.DIM_TEXT, false);
     }
 
     /** The palette page's rows: headings as text, cells as the placeholder icons resolved for this stage. */
