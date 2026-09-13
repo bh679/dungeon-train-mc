@@ -138,6 +138,24 @@ public final class ModCreativeTabs {
             .build()
     );
 
+    /**
+     * The stage placeholder blocks, in slot order — see
+     * {@link games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks}.
+     */
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> STAGE_BLOCKS = TABS.register(
+        "stage_blocks",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("gui.dungeontrain.creative_tab.stage_blocks"))
+            .icon(() -> new ItemStack(
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.items().get(0).get()))
+            .displayItems((parameters, output) -> {
+                for (var item : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.items()) {
+                    output.accept(item.get());
+                }
+            })
+            .build()
+    );
+
     private ModCreativeTabs() {}
 
     public static void register(IEventBus modBus) {

@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.StageResolver;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
@@ -161,6 +162,8 @@ public final class CarriagePlacer {
         // over a carriage interior whose light engine has not caught up, and it runs at ordinary
         // coordinates near the origin where the mixin's shipyard test cannot see it. Without this a
         // saved wheat template came back empty the next time its author opened it in the editor.
+        // No StagePlacementScope here on purpose: editor plots are captured back into templates on
+        // save, so stage placeholders must stay placeholders in every editor stamp.
         return CarriageStampGuard.call(() -> placeAtPreviewGuarded(level, origin, variant, dims));
     }
 
@@ -265,9 +268,22 @@ public final class CarriagePlacer {
         // cascades over it, which is what was popping saved crops out of farm carriages. See
         // CarriageStampGuard. Nesting-safe: TrainAssembler holds the same guard across the wider
         // place/assemble/contents sequence.
-        return CarriageStampGuard.call(() -> placeAtGuarded(
+        // The stage this carriage lands in is what its stage placeholder blocks resolve to — held
+        // in scope for the whole stamp (shell, parts, portal corridor, sidecars, contents).
+        String stageId = stageIdFor(level, carriageIndex, dims, groupAnchorWorldX);
+        return CarriageStampGuard.call(() -> StagePlacementScope.with(stageId, () -> placeAtGuarded(
             level, origin, variant, dims, config, carriageIndex,
-            applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX));
+            applyContents, flatbedAtBack, flatbedAtFront, groupAnchorWorldX)));
+    }
+
+    /**
+     * The stage carriage {@code carriageIndex} resolves to — {@link StageResolver} over the same
+     * gate context the parts pick uses — or {@code null} when no stage claims that level/phase
+     * (placeholders then resolve through the default palette).
+     */
+    static String stageIdFor(ServerLevel level, int carriageIndex, CarriageDims dims, int groupAnchorWorldX) {
+        return StageResolver.stageIdFor(
+            partGateContext(level, carriageIndex, dims, groupAnchorWorldX));
     }
 
     private static Set<BlockPos> placeAtGuarded(
@@ -437,8 +453,10 @@ public final class CarriagePlacer {
         // match with its twin that the crossing depends on, and loot in the cart between the two
         // corridors would sit in a room with no way into it.
         if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return null;
-        return applyContents(level, origin, variant, dims, config, carriageIndex,
-            /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX);
+        // Contents stamp after Sable assembly, outside placeAt's scope — re-enter it for the same stage.
+        String stageId = stageIdFor(level, carriageIndex, dims, groupAnchorWorldX);
+        return StagePlacementScope.with(stageId, () -> applyContents(level, origin, variant, dims, config,
+            carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX));
     }
 
     /**
@@ -788,7 +806,7 @@ public final class CarriagePlacer {
                 SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
             } else {
                 BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                    picked.state(), picked.rotation(), picked.half(),
+                    StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(),
                     e.localPos(), seed, carriageIndex,
                     sidecar.lockIdAt(e.localPos()));
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
@@ -1591,6 +1609,8 @@ public final class CarriagePlacer {
      */
     static void stampTemplateSectionLocal(ServerLevel level, BlockPos stampPos,
                                           StructureTemplate template, StructurePlaceSettings settings) {
+        // Stage placeholders first — the block must be its real self before anything reads it.
+        settings.addProcessor(new StagePlaceholderProcessor());
         // Before the capture processor, which returns null for every cell and so ends the chain.
         settings.addProcessor(new BakedItemStatsProcessor(level));
         settings.addProcessor(new SectionLocalStampProcessor(level));
@@ -1616,6 +1636,7 @@ public final class CarriagePlacer {
                                    StructureTemplate template, StructurePlaceSettings settings) {
         // The portal room's own path. Vanilla loads each block entity from the processed tag here, so
         // this is where a template that was saved holding impossible gear gets it rolled again.
+        settings.addProcessor(new StagePlaceholderProcessor());
         settings.addProcessor(new BakedItemStatsProcessor(level));
         template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_ALL);
     }
