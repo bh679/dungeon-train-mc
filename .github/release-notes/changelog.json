@@ -16173,6 +16173,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-nav-tab",
+      "version": "0.867.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Nav tab in the editor menu",
+      "summary": "The editor's X menu has a new Nav tab: the same four picture tiles you choose from on the title screen, now inside the editor. Pick one to read what that area is for, then press the red Go here to switch to it \u2014 the editor asks first, because switching drops unsaved changes. The title-screen tiles now explain themselves on hover too, and the fourth area is called Dimensional Carriages (Dimensions inside the editor) rather than Train Dimensions / Portals.",
+      "highlights": [
+        "Nav tab in the editor X menu: the four areas as tiles, with a description and a Go here button for each",
+        "Hover a tile on the Train Editor / Train Builder picker to read what that area is for",
+        "Renamed: Train Dimensions \u2192 Dimensional Carriages; the in-editor Portals label \u2192 Dimensions"
+      ],
+      "pr": 1395,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
