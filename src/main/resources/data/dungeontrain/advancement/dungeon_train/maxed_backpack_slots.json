@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:dungeon_train/upgraded_backpack",
   "display": {
-    "icon": { "id": "ediblebackpacks:upgraded_backpack" },
+    "icon": { "id": "ediblebackpacks:golden_edible_backpack" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.maxed_backpack_slots.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.maxed_backpack_slots.description" },
     "frame": "challenge",
