@@ -1781,6 +1781,12 @@ public final class PortalCarriageEvents {
         // other missed.
         List<Entity> occupants = PortalCorridorEntities.inCorridors(level, frames);
 
+        // Both corridors, not only the structure: a mob standing in the carriage copy while its
+        // player is in the twin is 140 blocks from the nearest player, and vanilla's distance rule
+        // discards it the same tick. The structure pass above cannot see the carriage — it is on
+        // the train — so the horde a player just walked away from went with them, in one tick.
+        protectCorridorOccupants(occupants, level.getGameTime());
+
         // Everything that is not a player crosses the midpoint on the same rule players do. Without
         // this a corridor is only half a portal: a villager followed in would stay behind on the
         // train, and a thrown ender pearl would land in the copy its thrower had just left.
@@ -2467,6 +2473,20 @@ public final class PortalCarriageEvents {
      * reads as "nobody is near this mob" — so without this a villager led into the portal world is
      * quietly discarded while its player is away on the train.</p>
      */
+    /**
+     * Keep everything standing in either corridor from being reaped — the carriage side included.
+     *
+     * <p>{@link #protectStructureOccupants} covers the twin and the room, which is where a mob is
+     * far from a player <i>on the train</i>. This covers the other case: the player is in the twin
+     * and the mob is on the train, in the copy they left, 140 blocks straight up. Same registry,
+     * same grace, so the two are one rule seen from both ends.</p>
+     */
+    private static void protectCorridorOccupants(List<Entity> occupants, long gameTime) {
+        for (Entity entity : occupants) {
+            PortalOccupants.protect(entity, gameTime);
+        }
+    }
+
     private static void protectStructureOccupants(ServerLevel level, CarriageDims dims,
                                                   PortalStructure structure) {
         long gameTime = level.getGameTime();
