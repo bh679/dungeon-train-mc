@@ -165,6 +165,10 @@
     "weight": 1,
     "mode": "endless_repetition/dynamic/off/on/off/end"
   },
+  "jumps": {
+    "weight": 1,
+    "mode": "bedrockless"
+  },
   "kfc": 1,
   "labrynth": {
     "weight": 2,
