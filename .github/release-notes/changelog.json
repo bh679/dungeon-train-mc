@@ -16239,6 +16239,107 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-unsaved-tracking-accuracy",
+      "version": "0.871.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "The editor's Save icon now means it",
+      "summary": "The Train Editor's unsaved-changes tracking was wrong in both directions: walking into a plot (or a mob turning its head in one) lit the Save icon, while adding block variants with the Z menu didn't. Now only real edits count \u2014 blocks, decoration, and the variant pools \u2014 and the editor world no longer lets grass and nylium decay under your builds between visits.",
+      "highlights": [
+        "Standing in a plot, watching variant cells cycle, or a mob looking around no longer marks a template as unsaved",
+        "Adding, removing or reconfiguring block variants flags the template until you save it, and the changes list names the cells",
+        "Random ticks are off in the editor world, so grass and nylium stop turning to dirt and netherrack under placed blocks",
+        "New /dt editor unsaved command lists every unsaved template with its first differing blocks"
+      ],
+      "pr": 1397,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-jumps-weight",
+      "version": "0.871.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "New dimensional carriage: Jumps",
+      "summary": "The Jumps room joins the dimensional carriage rotation (bedrockless variant).",
+      "highlights": [],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "credits-funders-community-cards",
+      "version": "0.872.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Credits page thanks the funders and the Discord community",
+      "summary": "The Credits page gains two cards. Funders lists everyone who has funded Dungeon Train's development, biggest contribution first, with the amount beside each name. Community lists the Value Adders of the Dungeon Train Discord, ranked by their level there. Both come from the relay, so they stay current between updates.",
+      "highlights": [
+        "Funders card: every donor by all-time contribution, top five shown with See more.",
+        "Community card: Discord Value Adders by level, top five shown with See more.",
+        "Link your Discord from the Community card: run /dtlink <code> in the Dungeon Train Discord and your line gets the same Edit button as the other cards.",
+        "Funders can hide the amount beside their name from the Edit button, as well as rename or go anonymous."
+      ],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-safe-parkour-retune",
+      "version": "0.872.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "New dimensional carriage: Safe, and parkour rooms rebalanced",
+      "summary": "A new Safe room joins the dimensional carriage rotation from level 4. Parkour carriages now start appearing from level 2, with the harder Skymaze and Geometric Walk courses pushed a little deeper into the run.",
+      "highlights": [],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "two-week-translation-catchup",
+      "version": "0.873.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "translations",
+        "ui"
+      ],
+      "title": "Translation catch-up for the last two weeks of changes",
+      "summary": "Every line that changed in the last two weeks now reads in your language, not in English. The Train Builder's fourth area is called Dimensional Carriages in all twenty languages; the step-off-the-train confirmation, the Train Builder's plain-language pass, the Death Note wording and the golden edible backpack advancement are retranslated from the new English; and the chat welcome when you first enter the editor now arrives in your own language. Five lines that a human translator had already reviewed were left for them rather than overwritten.",
+      "highlights": [
+        "Dimensional Carriages named in all twenty languages, not just Romanian and Russian",
+        "Retranslated 31 recently reworded lines \u2014 abandon confirmation, Train Builder messages, Death Note, golden edible backpack",
+        "The editor's welcome chat is now localised"
+      ],
+      "pr": 1400,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

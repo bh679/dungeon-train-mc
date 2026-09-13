@@ -3258,6 +3258,42 @@
       ]
     }
   },
+  "gui.dungeontrain.credits.funders.person_line": {
+    "1": {
+      "label": "the funder's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "how many Australian dollars they have contributed in total, whole number (the A$ sign is in the text)",
+      "examples": [
+        "120"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.funders.person_line_hidden": {
+    "1": {
+      "label": "the funder's name (they chose not to show the amount)",
+      "examples": [
+        "Mika"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.community.person_line": {
+    "1": {
+      "label": "the community member's Discord display name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "their level on the Discord (a whole number, higher is more active)",
+      "examples": [
+        "23"
+      ]
+    }
+  },
   "gui.dungeontrain.credits.writers.person_line": {
     "1": {
       "label": "the writer's name",
@@ -5047,6 +5083,14 @@
       "examples": [
         "3",
         "10"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_welcome.line3": {
+    "1": {
+      "label": "the clickable @brennanhatton mention tag",
+      "examples": [
+        "@brennanhatton"
       ]
     }
   }

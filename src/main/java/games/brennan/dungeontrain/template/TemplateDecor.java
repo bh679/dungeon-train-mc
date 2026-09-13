@@ -16,6 +16,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
@@ -536,6 +537,10 @@ public final class TemplateDecor {
 
     /** {@link #carried} under an explicit {@link Rule}. */
     public static boolean carried(Entity entity, Rule rule) {
+        // A player is a LivingEntity but never decor: the author standing in a plot is not part of
+        // the template (StructureTemplate never captures players either), and counting them made
+        // every plot read as edited the moment someone walked in.
+        if (entity instanceof Player) return false;
         // The live form of the three questions {@link #carries} asks of a tag.
         return entity instanceof LivingEntity || isWallDecor(entity) || isVehicle(entity, rule);
     }

@@ -640,6 +640,7 @@ public final class EditorCommand {
                 .then(trainSizeNode("height")))
             .then(Commands.literal("exit").executes(ctx -> runExit(ctx.getSource())))
             .then(Commands.literal("list").executes(ctx -> runList(ctx.getSource())))
+            .then(Commands.literal("unsaved").executes(ctx -> runUnsaved(ctx.getSource())))
             .then(Commands.literal("blocks").executes(ctx -> runBlocks(ctx.getSource())))
             .then(Commands.literal("reset")
                 .then(Commands.argument("variant", StringArgumentType.word())
@@ -3870,6 +3871,48 @@ public final class EditorCommand {
         ), true);
         return 1;
     }
+
+    /**
+     * The dirty scan as text: every plot the unsaved-changes screen would list, each with its
+     * first few differing blocks. The screen is client-only, so this is how a headless test — or
+     * an author who wants to know <i>why</i> the Save icon is pulsing — reads the same answer.
+     */
+    private static int runUnsaved(CommandSourceStack source) {
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        List<games.brennan.dungeontrain.editor.EditorDirtyCheck.DirtyEntry> rows =
+            games.brennan.dungeontrain.editor.EditorDirtyCheck.findDirty(overworld, dims);
+        if (rows.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("No unsaved editor changes."), false);
+            return 1;
+        }
+        StringBuilder sb = new StringBuilder("Unsaved editor changes:");
+        for (games.brennan.dungeontrain.editor.EditorDirtyCheck.DirtyEntry row : rows) {
+            sb.append("\n  ").append(row.categoryId()).append(" / ").append(row.modelId())
+                .append(row.isUnsaved() ? " [unsaved]" : "")
+                .append(row.isUnpromoted() ? " [unpromoted]" : "");
+            if (!row.isUnsaved()) continue;
+            List<games.brennan.dungeontrain.editor.EditorDirtyCheck.DiffEntry> diffs =
+                games.brennan.dungeontrain.editor.EditorDirtyCheck.findChanges(
+                    overworld, dims, row.categoryId(), row.modelId());
+            int shown = 0;
+            for (games.brennan.dungeontrain.editor.EditorDirtyCheck.DiffEntry d : diffs) {
+                if (shown++ == UNSAVED_DIFFS_SHOWN) {
+                    sb.append("\n      … ").append(diffs.size() - UNSAVED_DIFFS_SHOWN).append(" more");
+                    break;
+                }
+                sb.append("\n      ").append(d.localPos().toShortString()).append(": ")
+                    .append(d.expectedDescription()).append(" -> ").append(d.liveDescription());
+            }
+        }
+        String text = sb.toString();
+        LOGGER.info("[DungeonTrain] {}", text);
+        source.sendSuccess(() -> Component.literal(text), false);
+        return 1;
+    }
+
+    /** Diff rows printed per plot by {@code /dt editor unsaved} before it elides the rest. */
+    private static final int UNSAVED_DIFFS_SHOWN = 8;
 
     private static int runList(CommandSourceStack source) {
         CarriageWeights weights = CarriageWeights.current();
