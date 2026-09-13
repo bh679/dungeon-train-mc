@@ -75,7 +75,7 @@ public final class EditorQuietRuleEvents {
         // Day/Night plot runs, which is saved in level.dat when the author quits standing in one.
         EditorClock.restMidday(server.overworld());
         LOGGER.info("[DungeonTrain] Train Editor world — {} quiet game rules applied "
-                + "(natural mob spawning off, clock stopped at midday).",
+                + "(natural mob spawning off, clock stopped at midday, random ticks off).",
             EditorQuietRules.RULE_COUNT);
     }
 }
