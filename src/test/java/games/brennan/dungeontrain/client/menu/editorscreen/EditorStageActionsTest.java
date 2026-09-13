@@ -29,15 +29,16 @@ final class EditorStageActionsTest {
     }
 
     @Test
-    @DisplayName("Refresh · Apply · Rename · Duplicate · Delete · Prev · Next, each sending its stage command")
+    @DisplayName("Refresh · Apply · Rename · Duplicate · Delete · Prev · Next · Re-bake, each sending its stage command")
     void icons() {
         List<Integer> steps = new ArrayList<>();
         List<String> refreshed = new ArrayList<>();
         List<EditorScreenActions.Icon> icons = EditorStageActions.icons(desert(),
             VariantKey.of(PlotCategory.CARRIAGES, "standard", "standard"), true, () -> refreshed.add("x"), steps::add);
-        assertEquals(7, icons.size());
-        assertEquals(List.of("refresh", "apply", "rename", "duplicate", "delete", "prev", "next"),
+        assertEquals(8, icons.size());
+        assertEquals(List.of("refresh", "apply", "rename", "duplicate", "delete", "prev", "next", "rebake"),
             icons.stream().map(EditorScreenActions.Icon::id).toList());
+        assertEquals("dungeontrain editor stage bake desert", ((CommandMenuEntry.Stay) icons.get(7).entry()).command());
         ((CommandMenuEntry.ClientAction) icons.get(0).entry()).action().run();
         assertEquals(1, refreshed.size());
         assertEquals("dungeontrain editor stage apply carriage standard desert",

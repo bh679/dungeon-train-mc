@@ -25,11 +25,12 @@ public final class EditorStageActions {
     static final String DELETE = "delete";
     static final String PREV = "prev";
     static final String NEXT = "next";
+    static final String REBAKE = "rebake";
 
     private EditorStageActions() {}
 
     /**
-     * Refresh · Apply · Rename | Duplicate · Delete | Previous · Next.
+     * Refresh · Apply · Rename | Duplicate · Delete | Previous · Next | Re-bake.
      *
      * @param stage    the shown stage
      * @param applyTo  the template the Apply button links to the stage, or null for none selected
@@ -40,7 +41,7 @@ public final class EditorStageActions {
     public static List<EditorScreenActions.Icon> icons(EditorRosterPacket.StageEntry stage, VariantKey applyTo,
                                                        boolean canPage, Runnable refresh,
                                                        java.util.function.IntConsumer step) {
-        List<EditorScreenActions.Icon> out = new ArrayList<>(7);
+        List<EditorScreenActions.Icon> out = new ArrayList<>(8);
         String id = stage.id();
         out.add(new EditorScreenActions.Icon(REFRESH, EditorScreenLang.STAGES_ICON_REFRESH,
             new CommandMenuEntry.ClientAction(EditorScreenLang.text(EditorScreenLang.STAGES_ICON_REFRESH), refresh, false),
@@ -67,6 +68,9 @@ public final class EditorStageActions {
         out.add(new EditorScreenActions.Icon(NEXT, EditorScreenLang.STAGES_ICON_NEXT,
             canPage ? new CommandMenuEntry.ClientAction(NEXT, () -> step.accept(+1), false) : null,
             EditorScreenLang.STAGES_ONE_CARRIAGE));
+        // Re-derive the placeholder palette from the linked parts; overrides and locks are kept.
+        out.add(new EditorScreenActions.Icon(REBAKE, EditorScreenLang.STAGES_ICON_REBAKE,
+            new CommandMenuEntry.Stay(REBAKE, "dungeontrain editor stage bake " + id), null));
         return out;
     }
 

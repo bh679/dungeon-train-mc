@@ -68,6 +68,17 @@ public final class EditorScreenLang {
     public static final String STAGES_PARTS_LABEL = PREFIX + "stages.parts_label";
     public static final String STAGES_TEMPLATES_LABEL = PREFIX + "stages.templates_label";
     public static final String STAGES_ONE_CARRIAGE = PREFIX + "stages.one_carriage";
+    /** The Palette and Stone pages: their headings, a cell's tooltip lines, and the Re-bake button. */
+    public static final String STAGES_PALETTE_SOLID = PREFIX + "stages.palette.solid";
+    public static final String STAGES_PALETTE_SHAPES = PREFIX + "stages.palette.shapes";
+    public static final String STAGES_PALETTE_WOOD = PREFIX + "stages.palette.wood";
+    public static final String STAGES_PALETTE_STONE = PREFIX + "stages.palette.stone";
+    public static final String STAGES_PALETTE_TITLE = PREFIX + "stages.palette.title";
+    public static final String STAGES_PALETTE_OVERRIDE = PREFIX + "stages.palette.override";
+    public static final String STAGES_PALETTE_DERIVED = PREFIX + "stages.palette.derived";
+    public static final String STAGES_PALETTE_CELL_TIP = PREFIX + "stages.palette.cell_tip";
+    public static final String STAGES_PALETTE_FAMILY_TIP = PREFIX + "stages.palette.family_tip";
+    public static final String STAGES_ICON_REBAKE = PREFIX + "stages.icon.rebake";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */

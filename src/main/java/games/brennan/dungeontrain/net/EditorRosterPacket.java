@@ -46,10 +46,17 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
      *                    (the key the part commands take), in the index's stable order
      */
     public record StageEntry(EditorTypeMenusPacket.Variant stage, List<StageBlocksSyncPacket.BlockCount> blocks,
-                             int totalUnique, List<String> parts) {
+                             int totalUnique, List<String> parts, Palette palette) {
         public StageEntry {
             blocks = blocks == null ? List.of() : List.copyOf(blocks);
             parts = parts == null ? List.of() : List.copyOf(parts);
+            palette = palette == null ? Palette.NONE : palette;
+        }
+
+        /** The pre-palette shape. */
+        public StageEntry(EditorTypeMenusPacket.Variant stage, List<StageBlocksSyncPacket.BlockCount> blocks,
+                          int totalUnique, List<String> parts) {
+            this(stage, blocks, totalUnique, parts, Palette.NONE);
         }
 
         public int partCount() {
@@ -124,6 +131,30 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         }
     }
 
+    /**
+     * A stage's placeholder palette as the Stage Palette panel reads it: every placeholder's
+     * effective block, the two family ids and whether the author locked them. {@link #NONE} for a
+     * roster built with no world to bake from.
+     */
+    public record Palette(List<StagePaletteSyncPacket.Entry> entries, String wood, String stone,
+                          boolean woodLocked, boolean stoneLocked) {
+        public static final Palette NONE = new Palette(List.of(), "", "", false, false);
+
+        public Palette {
+            entries = entries == null ? List.of() : List.copyOf(entries);
+            wood = wood == null ? "" : wood;
+            stone = stone == null ? "" : stone;
+        }
+
+        /** The entry for a placeholder name, or null. */
+        public StagePaletteSyncPacket.Entry entry(String name) {
+            for (StagePaletteSyncPacket.Entry e : entries) {
+                if (e.name().equals(name)) return e;
+            }
+            return null;
+        }
+    }
+
     public static final Type<EditorRosterPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_roster"));
 
@@ -180,6 +211,17 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             buf.writeVarInt(s.totalUnique());
             buf.writeVarInt(s.parts().size());
             for (String part : s.parts()) buf.writeUtf(part, 128);
+            Palette pal = s.palette();
+            buf.writeVarInt(pal.entries().size());
+            for (StagePaletteSyncPacket.Entry e : pal.entries()) {
+                buf.writeUtf(e.name(), 64);
+                buf.writeUtf(e.blockId(), 256);
+                buf.writeBoolean(e.overridden());
+            }
+            buf.writeUtf(pal.wood(), 32);
+            buf.writeUtf(pal.stone(), 32);
+            buf.writeBoolean(pal.woodLocked());
+            buf.writeBoolean(pal.stoneLocked());
         }
     }
 
@@ -215,7 +257,13 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             int np = buf.readVarInt();
             List<String> parts = new ArrayList<>(np);
             for (int j = 0; j < np; j++) parts.add(buf.readUtf(128));
-            stages.add(new StageEntry(stage, blocks, totalUnique, parts));
+            int ne = buf.readVarInt();
+            List<StagePaletteSyncPacket.Entry> entries = new ArrayList<>(ne);
+            for (int j = 0; j < ne; j++) {
+                entries.add(new StagePaletteSyncPacket.Entry(buf.readUtf(64), buf.readUtf(256), buf.readBoolean()));
+            }
+            Palette palette = new Palette(entries, buf.readUtf(32), buf.readUtf(32), buf.readBoolean(), buf.readBoolean());
+            stages.add(new StageEntry(stage, blocks, totalUnique, parts, palette));
         }
         return new EditorRosterPacket(groups, stamped, trainSize, stages);
     }

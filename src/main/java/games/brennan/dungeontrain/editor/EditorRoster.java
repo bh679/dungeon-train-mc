@@ -88,9 +88,26 @@ public final class EditorRoster {
             for (StageBlockIndex.PartBlocks part : blocks.parts()) {
                 parts.add(part.part().kind().id() + ":" + part.part().name());
             }
-            out.add(new EditorRosterPacket.StageEntry(row, counts, blocks.aggregated().size(), parts));
+            out.add(new EditorRosterPacket.StageEntry(row, counts, blocks.aggregated().size(), parts, paletteOf(stage.id())));
         }
         return out;
+    }
+
+    /**
+     * The stage's placeholder palette as the Stage Palette panel would list it: every placeholder's
+     * effective block, plus the families and their locks — what the screen's Palette pages show.
+     */
+    static EditorRosterPacket.Palette paletteOf(String stageId) {
+        games.brennan.dungeontrain.template.StagePalette pal =
+            games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.paletteFor(stageId);
+        List<games.brennan.dungeontrain.net.StagePaletteSyncPacket.Entry> entries = new ArrayList<>();
+        for (games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.Placeholder p
+                : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.placeholders()) {
+            entries.add(new games.brennan.dungeontrain.net.StagePaletteSyncPacket.Entry(p.name(),
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.effectiveTarget(p, pal),
+                pal.override(p.name()) != null));
+        }
+        return new EditorRosterPacket.Palette(entries, pal.wood(), pal.stone(), pal.woodLocked(), pal.stoneLocked());
     }
 
     /** The world's carriage footprint, which a portal room's box is measured against; null when unknown. */

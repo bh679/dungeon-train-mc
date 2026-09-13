@@ -749,6 +749,17 @@ public final class EditorGuiScreen extends Screen {
                     if (onSheetCell(placed)) click();
                     return true;
                 }
+                case CELL, FAMILY -> {
+                    // The palette's gestures are the world-space panel's: the server reads the held
+                    // block (or the empty hand) and answers on the action bar; the roster refresh
+                    // that follows redraws the cell.
+                    games.brennan.dungeontrain.net.StagePaletteEditPacket edit = stageDetail.editFor(stageHit);
+                    if (edit == null) return false;
+                    click();
+                    DungeonTrainNet.sendToServer(edit);
+                    afterCommand();
+                    return true;
+                }
                 case ROW -> {
                     // A linked template's row is a shortcut to its tile: select it and let the
                     // browser open on it, as revealing any selection does.

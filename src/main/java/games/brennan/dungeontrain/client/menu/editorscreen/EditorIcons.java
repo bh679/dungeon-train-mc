@@ -25,6 +25,7 @@ public final class EditorIcons {
     public static final ResourceLocation DUPLICATE = mod("icon/duplicate");
     public static final ResourceLocation PREV = mod("icon/prev");
     public static final ResourceLocation NEXT = mod("icon/next");
+    public static final ResourceLocation BAKE = mod("icon/bake");
     public static final ResourceLocation SEARCH = ResourceLocation.withDefaultNamespace("icon/search");
 
     private EditorIcons() {}
@@ -55,6 +56,7 @@ public final class EditorIcons {
             case EditorStageActions.DELETE -> TRASH;
             case EditorStageActions.PREV -> PREV;
             case EditorStageActions.NEXT -> NEXT;
+            case EditorStageActions.REBAKE -> BAKE;
             default -> SAVE;
         };
     }
