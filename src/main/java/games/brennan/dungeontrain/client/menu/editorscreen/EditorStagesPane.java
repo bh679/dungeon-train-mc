@@ -29,10 +29,10 @@ final class EditorStagesPane {
     static final int TILE_GAP = 3;
     /** The tiles' fixed three-quarter turn — the overview's model is the one that spins. */
     static final float TILE_YAW = 35f;
-    /** Every tile's roll is the same, so a stage's tile is baked once and kept. */
-    static final long TILE_SEED = 0L;
-
     private int scroll;
+    /** The carriage and roll the overview shows: every tile follows them, so the tiles compare stages, not rolls. */
+    private String tileCarriage = "";
+    private long tileSeed;
     /** The tile view's scroll, in pixels. */
     private int tileScroll;
     private TemplateTileGridLayout grid;
@@ -68,12 +68,10 @@ final class EditorStagesPane {
         return new InventoryEditorLayout.Rect(h.x(), h.y(), ICON_W, h.h());
     }
 
-    /** The carriage every tile is stamped on: the roster's default when it has one, else its first. */
-    static String tileCarriage(EditorRosterIndex index) {
-        List<String> carriages = EditorStageDetailPane.carriagesOf(index);
-        if (carriages.isEmpty()) return "";
-        return carriages.contains(EditorStageDetailPane.DEFAULT_CARRIAGE)
-            ? EditorStageDetailPane.DEFAULT_CARRIAGE : carriages.get(0);
+    /** What the overview is showing, so the tiles show the same carriage at the same roll. */
+    void followModel(String carriage, long seed) {
+        this.tileCarriage = carriage == null ? "" : carriage;
+        this.tileSeed = seed;
     }
 
     void render(GuiGraphics g, Font font, EditorScreenTheme theme, InventoryEditorLayout layout,
@@ -134,7 +132,7 @@ final class EditorStagesPane {
                              int mouseX, int mouseY) {
         grid = TemplateTileGridLayout.of(r.x(), r.y(), r.w(), r.h(), layout.tile(), TILE_GAP);
         tileScroll = grid.clampScroll(tileScroll, rows.size());
-        String carriage = tileCarriage(index);
+        String carriage = tileCarriage;
         int hoveredTile = tileAt(mouseX, mouseY, rows.size());
         g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
         for (int i = 0; i < rows.size(); i++) {
@@ -143,7 +141,7 @@ final class EditorStagesPane {
             if (y + grid.tile() < r.y() || y > r.bottom()) continue;
             EditorStagesPage.Row row = rows.get(i);
             EditorRosterPacket.StageEntry stage = index.stage(row.stageId());
-            drawTile(g, font, stage, carriage, x, y, grid.tile(),
+            drawTile(g, font, stage, carriage, tileSeed, x, y, grid.tile(),
                 shownId.equalsIgnoreCase(row.stageId()), i == hoveredTile);
         }
         g.disableScissor();
@@ -158,11 +156,11 @@ final class EditorStagesPane {
 
     /** One stage's tile: its stamped carriage (asked for on first sight), its name, and the tile marks. */
     private static void drawTile(GuiGraphics g, Font font, EditorRosterPacket.StageEntry stage, String carriage,
-                                 int x, int y, int size, boolean selected, boolean hovered) {
+                                 long seed, int x, int y, int size, boolean selected, boolean hovered) {
         g.fill(x, y, x + size, y + size, TemplateTilePainter.MODEL_BACKDROP);
         boolean drawn = false;
         if (stage != null && !carriage.isEmpty()) {
-            StagePreviews.Key key = new StagePreviews.Key(stage.id(), carriage, TILE_SEED);
+            StagePreviews.Key key = new StagePreviews.Key(stage.id(), carriage, seed);
             StagePreviews.request(key);
             drawn = StagePreviews.draw(g, key, x + 1, y + 1, size - 2, size - 2, TILE_YAW, TemplateTilePainter.FILL);
         }

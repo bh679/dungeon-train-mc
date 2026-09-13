@@ -257,6 +257,15 @@ final class EditorStageDetailPane {
         return modelKey;
     }
 
+    /** The carriage the overview shows ("" before the roster), and its roll — what the list's tiles follow. */
+    String carriageShown() {
+        return carriages.isEmpty() ? "" : carriages.get(carriageIdx);
+    }
+
+    long seedShown() {
+        return seed;
+    }
+
     /** Previous / Next: the model steps through the roster's carriages, wrapping. */
     private void stepCarriage(int dir) {
         if (carriages.isEmpty()) return;

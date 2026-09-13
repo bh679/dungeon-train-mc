@@ -28,8 +28,8 @@ public final class EditorScreenState {
     private static String selectedStageId;
     /** The Stages list's order — by name until a title is clicked. */
     private static EditorStagesPage.Sort stageSort = EditorStagesPage.Sort.DEFAULT;
-    /** The Stages list as tiles of each stage's stamped carriage rather than rows. Rows to start with. */
-    private static boolean stageGridView;
+    /** The Stages list as tiles of each stage's stamped carriage rather than rows. Tiles to start with. */
+    private static boolean stageGridView = true;
     /** The Layout tab's opened sections, by {@code EditorLayoutPage.sectionId}. Folded is the default; replaced, never mutated. */
     private static Set<String> expandedSections = Set.of();
     /** The Layout tab's opened groups — parents whose members are shown — by the parent's key string. Folded is the default. */

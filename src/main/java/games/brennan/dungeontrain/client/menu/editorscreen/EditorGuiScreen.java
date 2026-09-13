@@ -295,6 +295,8 @@ public final class EditorGuiScreen extends Screen {
         } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
             layoutPane.render(g, this.font, theme, layout, index, ctx.selection(), ctx.standing(), mx, my);
         } else if (onStages()) {
+            // The tiles follow the overview's carriage and roll, laid out a frame ago — close enough.
+            stagesPane.followModel(stageDetail.carriageShown(), stageDetail.seedShown());
             stagesPane.render(g, this.font, theme, layout, index, mx, my);
         }
 
