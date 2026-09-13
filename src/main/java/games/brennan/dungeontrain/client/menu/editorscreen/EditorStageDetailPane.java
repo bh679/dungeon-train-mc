@@ -39,16 +39,24 @@ final class EditorStageDetailPane {
     private Hit hovered = Hit.NONE;
 
     /** The column below the header down to the Test row: info line + grid + pager slot. */
-    InventoryEditorLayout.Rect body() {
+    static InventoryEditorLayout.Rect bodyOf(InventoryEditorLayout layout) {
         InventoryEditorLayout.Rect top = layout.icons();
         InventoryEditorLayout.Rect t = layout.test();
         return new InventoryEditorLayout.Rect(top.x(), top.y(), top.w(), Math.max(0, t.y() - 2 - top.y()));
     }
 
     /** The icons' rectangle: the body less the info line above and the pager slot below. */
-    InventoryEditorLayout.Rect gridRect() {
-        InventoryEditorLayout.Rect b = body();
+    static InventoryEditorLayout.Rect gridRectOf(InventoryEditorLayout layout) {
+        InventoryEditorLayout.Rect b = bodyOf(layout);
         return new InventoryEditorLayout.Rect(b.x(), b.y() + ROW_H, b.w(), Math.max(0, b.h() - 2 * ROW_H));
+    }
+
+    InventoryEditorLayout.Rect body() {
+        return bodyOf(layout);
+    }
+
+    InventoryEditorLayout.Rect gridRect() {
+        return gridRectOf(layout);
     }
 
     private InventoryEditorLayout.Rect pagerRect() {

@@ -44,6 +44,19 @@ final class IconGridPagesTest {
     }
 
     @Test
+    @DisplayName("the stage grid has room for icons at the floor size, and more at a normal one")
+    void gridHasRoomAtFloorSize() {
+        InventoryEditorLayout small = InventoryEditorLayout.of(427, 240, false);
+        IconGridPages atFloor = EditorStageDetailPane.pagesFor(EditorStageDetailPane.gridRectOf(small), 96);
+        assertTrue(EditorStageDetailPane.gridRectOf(small).h() >= EditorStageDetailPane.CELL,
+            "grid rect at 427x240: " + EditorStageDetailPane.gridRectOf(small));
+        assertTrue(atFloor.perPage() >= 6, "per page at floor: " + atFloor);
+        InventoryEditorLayout normal = InventoryEditorLayout.of(640, 360, false);
+        IconGridPages atNormal = EditorStageDetailPane.pagesFor(EditorStageDetailPane.gridRectOf(normal), 96);
+        assertTrue(atNormal.perPage() > atFloor.perPage());
+    }
+
+    @Test
     @DisplayName("a degenerate rect still yields one cell so the page never divides by zero")
     void degenerateRect() {
         IconGridPages p = new IconGridPages(3, 0, 0);
