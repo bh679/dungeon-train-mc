@@ -1017,6 +1017,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "คลิกขณะถือบล็อกเพื่อกำหนดเอง มือเปล่าเพื่อล้าง",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "คลิกขณะถือบล็อกเพื่อตั้งค่ากลุ่ม มือเปล่าเพื่อปลดล็อก",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "สร้างพาเลตใหม่จากชิ้นส่วนที่เชื่อม (คงค่าที่กำหนดเอง)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "แสดงแบบไทล์",
+  "gui.dungeontrain.editor_screen.stages.view.list": "แสดงแบบรายการ",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "คลิกเพื่อย่อหรือขยาย",
   "gui.dungeontrain.editor_screen.layout.move": "ย้าย…",

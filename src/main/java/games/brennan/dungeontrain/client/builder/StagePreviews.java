@@ -34,7 +34,8 @@ import java.util.Set;
 public final class StagePreviews {
 
     /** How many baked stage models stay around; each is one carriage's worth of quads. */
-    private static final int CAPACITY = 12;
+    /** Room for the Stages list's tile view (one model per stage) plus a few rolls of the overview's. */
+    private static final int CAPACITY = 48;
     private static final int BAKES_PER_FRAME = 1;
 
     /** One ask: which stage on which carriage at which roll. */

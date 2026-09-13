@@ -1073,6 +1073,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Kliknij z blokiem w ręce, aby nadpisać; pusta ręka czyści",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Kliknij z blokiem w ręce, aby ustawić rodzinę; pusta ręka odblokowuje",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Wypiecz paletę ponownie z powiązanych części (nadpisania zachowane)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Pokaż jako kafelki",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Pokaż jako listę",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Kliknij, aby zwinąć lub rozwinąć",
   "gui.dungeontrain.editor_screen.layout.move": "Przenieś…",

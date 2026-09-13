@@ -1045,6 +1045,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Mit Block in der Hand klicken zum Überschreiben; leere Hand löscht",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Mit Block in der Hand klicken, um die Familie zu setzen; leere Hand entsperrt",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Palette aus den verknüpften Teilen neu backen (Überschreibungen bleiben)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Als Kacheln anzeigen",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Als Liste anzeigen",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Klicken zum Ein- oder Ausklappen",
   "gui.dungeontrain.editor_screen.layout.move": "Verschieben…",

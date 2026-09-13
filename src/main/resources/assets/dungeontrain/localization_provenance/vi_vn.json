@@ -991,6 +991,8 @@
       "gui.dungeontrain.editor_screen.stages.palette.cell_tip",
       "gui.dungeontrain.editor_screen.stages.palette.family_tip",
       "gui.dungeontrain.editor_screen.stages.icon.rebake",
+      "gui.dungeontrain.editor_screen.stages.view.grid",
+      "gui.dungeontrain.editor_screen.stages.view.list",
       "gui.dungeontrain.editor_screen.layout.section",
       "gui.dungeontrain.editor_screen.layout.section_tip",
       "gui.dungeontrain.editor_screen.layout.move",

@@ -28,6 +28,8 @@ public final class EditorScreenState {
     private static String selectedStageId;
     /** The Stages list's order — by name until a title is clicked. */
     private static EditorStagesPage.Sort stageSort = EditorStagesPage.Sort.DEFAULT;
+    /** The Stages list as tiles of each stage's stamped carriage rather than rows. Rows to start with. */
+    private static boolean stageGridView;
     /** The Layout tab's opened sections, by {@code EditorLayoutPage.sectionId}. Folded is the default; replaced, never mutated. */
     private static Set<String> expandedSections = Set.of();
     /** The Layout tab's opened groups — parents whose members are shown — by the parent's key string. Folded is the default. */
@@ -61,6 +63,8 @@ public final class EditorScreenState {
     public static EditorScreenPage page() { return page; }
     public static String selectedStageId() { return selectedStageId; }
     public static EditorStagesPage.Sort stageSort() { return stageSort; }
+    public static boolean stageGridView() { return stageGridView; }
+    public static void toggleStageGridView() { stageGridView = !stageGridView; }
 
     /** A title click on the Stages list: sort by it, or flip it when it already sorts. */
     public static void sortStages(EditorStagesPage.Column column) {

@@ -1017,6 +1017,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "手持方塊點擊以覆蓋；空手點擊則清除",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "手持方塊點擊以設定家族；空手點擊則解鎖",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "根據關聯部件重新產生調色盤（保留覆蓋）",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "以圖塊顯示",
+  "gui.dungeontrain.editor_screen.stages.view.list": "以清單顯示",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "點擊摺疊或展開",
   "gui.dungeontrain.editor_screen.layout.move": "移動…",

@@ -578,6 +578,8 @@ public final class EditorGuiScreen extends Screen {
             tip = browser.tooltipAt(browser.hovered());
         } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
             tip = layoutPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
+        } else if (onStages()) {
+            tip = stagesPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
         }
         if (tip != null) {
             g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);

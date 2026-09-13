@@ -1017,6 +1017,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Klik dengan blok di tangan untuk mengganti; tangan kosong memadam",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Klik dengan blok di tangan untuk menetapkan keluarga; tangan kosong membuka kunci",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Bakar semula palet daripada bahagian yang dipautkan (penggantian dikekalkan)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Papar sebagai jubin",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Papar sebagai senarai",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Klik untuk lipat atau buka",
   "gui.dungeontrain.editor_screen.layout.move": "Alih…",

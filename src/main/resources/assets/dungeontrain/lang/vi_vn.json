@@ -1017,6 +1017,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Nhấp khi cầm khối để ghi đè; tay không để xóa",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Nhấp khi cầm khối để đặt họ; tay không để mở khóa",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Tạo lại bảng màu từ các bộ phận liên kết (giữ ghi đè)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Hiển thị dạng ô",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Hiển thị dạng danh sách",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Nhấp để thu gọn hoặc mở rộng",
   "gui.dungeontrain.editor_screen.layout.move": "Di chuyển…",

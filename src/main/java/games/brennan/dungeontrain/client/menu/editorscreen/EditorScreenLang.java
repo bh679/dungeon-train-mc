@@ -79,6 +79,9 @@ public final class EditorScreenLang {
     public static final String STAGES_PALETTE_CELL_TIP = PREFIX + "stages.palette.cell_tip";
     public static final String STAGES_PALETTE_FAMILY_TIP = PREFIX + "stages.palette.family_tip";
     public static final String STAGES_ICON_REBAKE = PREFIX + "stages.icon.rebake";
+    /** The list's view toggle: what pressing it switches to. */
+    public static final String STAGES_VIEW_GRID = PREFIX + "stages.view.grid";
+    public static final String STAGES_VIEW_LIST = PREFIX + "stages.view.list";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */

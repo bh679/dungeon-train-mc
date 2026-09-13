@@ -1045,6 +1045,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Clicca con un blocco in mano per sostituire; mano vuota cancella",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Clicca con un blocco in mano per impostare la famiglia; mano vuota sblocca",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Ricuoci la tavolozza dalle parti collegate (sostituzioni mantenute)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Mostra come riquadri",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Mostra come elenco",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Clicca per comprimere o espandere",
   "gui.dungeontrain.editor_screen.layout.move": "Sposta…",

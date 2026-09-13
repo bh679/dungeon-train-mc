@@ -1045,6 +1045,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Clique com um bloco na mão para substituir; mão vazia limpa",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Clique com um bloco na mão para definir a família; mão vazia desbloqueia",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Reassar a paleta a partir das partes vinculadas (substituições mantidas)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Mostrar como blocos",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Mostrar como lista",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Clique para recolher ou expandir",
   "gui.dungeontrain.editor_screen.layout.move": "Mover…",

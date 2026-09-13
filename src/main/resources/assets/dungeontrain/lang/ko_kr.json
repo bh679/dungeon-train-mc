@@ -1017,6 +1017,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "블록을 들고 클릭하면 재정의, 빈손이면 해제",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "블록을 들고 클릭하면 계열 설정, 빈손이면 잠금 해제",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "연결된 파츠에서 팔레트 재생성(재정의 유지)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "타일로 보기",
+  "gui.dungeontrain.editor_screen.stages.view.list": "목록으로 보기",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "클릭하여 접기 또는 펼치기",
   "gui.dungeontrain.editor_screen.layout.move": "이동…",

@@ -1017,6 +1017,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Klik dengan blok di tangan untuk menimpa; tangan kosong menghapus",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Klik dengan blok di tangan untuk mengatur keluarga; tangan kosong membuka kunci",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Panggang ulang palet dari bagian yang tertaut (penimpaan dipertahankan)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Tampilkan sebagai ubin",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Tampilkan sebagai daftar",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Klik untuk melipat atau membuka",
   "gui.dungeontrain.editor_screen.layout.move": "Pindahkan…",

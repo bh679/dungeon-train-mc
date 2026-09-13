@@ -1045,6 +1045,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Clic con un bloque en la mano para anular; mano vacía lo borra",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Clic con un bloque en la mano para fijar la familia; mano vacía la desbloquea",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Rehornear la paleta desde las partes vinculadas (se conservan las anulaciones)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Mostrar como mosaicos",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Mostrar como lista",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Clic para plegar o desplegar",
   "gui.dungeontrain.editor_screen.layout.move": "Mover…",

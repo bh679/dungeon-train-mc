@@ -1045,6 +1045,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Klik met een blok in de hand om te overschrijven; lege hand wist",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Klik met een blok in de hand om de familie in te stellen; lege hand ontgrendelt",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Palet opnieuw bakken uit de gekoppelde onderdelen (overschrijvingen blijven)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Tonen als tegels",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Tonen als lijst",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Klik om in- of uit te klappen",
   "gui.dungeontrain.editor_screen.layout.move": "Verplaatsen…",

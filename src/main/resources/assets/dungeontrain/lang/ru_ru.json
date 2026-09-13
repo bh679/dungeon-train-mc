@@ -1078,6 +1078,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Клик с блоком в руке — переопределить; пустая рука — сбросить",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Клик с блоком в руке — задать семейство; пустая рука — разблокировать",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Пересобрать палитру из привязанных частей (переопределения сохраняются)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Показать плитками",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Показать списком",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Нажмите, чтобы свернуть или развернуть",
   "gui.dungeontrain.editor_screen.layout.move": "Переместить…",

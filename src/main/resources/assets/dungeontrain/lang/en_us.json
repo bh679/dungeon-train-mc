@@ -1437,6 +1437,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Click with a block in hand to override; empty hand clears",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Click with a block in hand to set the family; empty hand unlocks",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Re-bake the palette from the linked parts (overrides kept)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Show as tiles",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Show as a list",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Click to collapse or expand",
   "gui.dungeontrain.editor_screen.layout.move": "Move…",

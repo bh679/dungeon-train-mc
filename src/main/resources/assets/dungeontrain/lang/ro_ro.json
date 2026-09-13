@@ -1467,6 +1467,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Clic cu un bloc în mână pentru a suprascrie; mâna goală șterge",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Clic cu un bloc în mână pentru a seta familia; mâna goală deblochează",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Recoace paleta din părțile legate (suprascrierile rămân)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Afișează ca dale",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Afișează ca listă",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Clic pentru a restrânge sau extinde",
   "gui.dungeontrain.editor_screen.layout.move": "Mută…",

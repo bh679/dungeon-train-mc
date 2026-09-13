@@ -1045,6 +1045,8 @@
   "gui.dungeontrain.editor_screen.stages.palette.cell_tip": "Cliquer avec un bloc en main pour remplacer ; main vide efface",
   "gui.dungeontrain.editor_screen.stages.palette.family_tip": "Cliquer avec un bloc en main pour fixer la famille ; main vide déverrouille",
   "gui.dungeontrain.editor_screen.stages.icon.rebake": "Recuire la palette à partir des pièces liées (remplacements conservés)",
+  "gui.dungeontrain.editor_screen.stages.view.grid": "Afficher en vignettes",
+  "gui.dungeontrain.editor_screen.stages.view.list": "Afficher en liste",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Cliquer pour replier ou déplier",
   "gui.dungeontrain.editor_screen.layout.move": "Déplacer…",
