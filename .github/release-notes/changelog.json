@@ -16592,6 +16592,27 @@
       "released": true,
       "released_in": "v0.861.0",
       "released_at": "2026-09-12T14:59:23Z"
+    },
+    {
+      "id": "trapdoor-fence-jitter-fix",
+      "version": "0.862.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "train"
+      ],
+      "title": "No more jitter on trapdoors over fences while riding",
+      "summary": "Walking on a closed trapdoor laid over a fence or wall on a moving carriage used to bounce you up and down and fight your movement. The fence post now stops at the trapdoor instead of poking into your feet, so you walk across smoothly \u2014 the same as on solid ground. Mobs crossing the same strip benefit too.",
+      "highlights": [
+        "Smooth walking on trapdoors, carpets and slabs placed over fences and walls on the train",
+        "Fences and walls with nothing on top are unchanged"
+      ],
+      "pr": 1386,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
