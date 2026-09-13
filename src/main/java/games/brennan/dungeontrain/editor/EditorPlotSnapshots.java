@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.template.TemplateDecor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -101,6 +102,11 @@ public final class EditorPlotSnapshots {
      * <p>Order-independent (the entity query's order is not stable) and position-rounded to a third
      * of a block — finer than any deliberate reposition, coarser than float drift. Facing is folded
      * in because turning a picture to the opposite wall moves it barely at all.</p>
+     *
+     * <p>A mob contributes its type only. It turns to look at the author and wanders where its AI
+     * takes it, so its position and facing change on their own; folding them in had every plot
+     * with a mob in it pulsing "unsaved" for as long as the mob was awake. Placing or removing one
+     * still changes the sum, which is the edit the fingerprint exists to catch.</p>
      */
     private static long decorFingerprint(ServerLevel level, BlockPos origin,
                                          int length, int height, int width) {
@@ -110,6 +116,10 @@ public final class EditorPlotSnapshots {
         long sum = 0L;
         for (Entity e : level.getEntities((Entity) null, box, TemplateDecor::carried)) {
             long h = e.getType().hashCode();
+            if (e instanceof LivingEntity) {
+                sum += h;
+                continue;
+            }
             h = h * 31 + Math.round((e.getX() - origin.getX()) * 3.0);
             h = h * 31 + Math.round((e.getY() - origin.getY()) * 3.0);
             h = h * 31 + Math.round((e.getZ() - origin.getZ()) * 3.0);
