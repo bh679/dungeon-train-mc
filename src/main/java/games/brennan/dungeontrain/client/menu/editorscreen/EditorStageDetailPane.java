@@ -159,9 +159,13 @@ final class EditorStageDetailPane {
     /** The carriage the overview opens on, when the roster has it. */
     static final String DEFAULT_CARRIAGE = "standard";
 
-    /** The column below the header down to the Test row: info line + page + pager slot. */
+    /**
+     * The whole column from the header's top down to the Test row: page + pager slot. The pages
+     * after the overview draw no header — the list beside them already names the stage — so they
+     * take its row too.
+     */
     static InventoryEditorLayout.Rect bodyOf(InventoryEditorLayout layout) {
-        InventoryEditorLayout.Rect top = layout.icons();
+        InventoryEditorLayout.Rect top = layout.header();
         InventoryEditorLayout.Rect t = layout.test();
         return new InventoryEditorLayout.Rect(top.x(), top.y(), top.w(), Math.max(0, t.y() - 2 - top.y()));
     }
@@ -319,10 +323,15 @@ final class EditorStageDetailPane {
 
     void render(GuiGraphics g, Font font, EditorScreenTheme theme, float yaw, int mouseX, int mouseY) {
         hovered = hitTest(mouseX, mouseY);
-        drawHeader(g, font, theme);
-        if (stage == null) return;
+        if (stage == null) {
+            drawHeader(g, font, theme);
+            return;
+        }
         switch (pages.kindOf(page)) {
-            case OVERVIEW -> drawOverview(g, font, theme, yaw);
+            case OVERVIEW -> {
+                drawHeader(g, font, theme);
+                drawOverview(g, font, theme, yaw);
+            }
             case PALETTE, STONE -> drawPalette(g, font, paletteRowsShown());
             case BLOCKS -> drawGrid(g, font);
             case TEMPLATES -> drawRows(g, font);
