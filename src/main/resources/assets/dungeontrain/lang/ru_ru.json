@@ -1858,7 +1858,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Пока нечего отправлять, сначала исправьте перевод.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Чтобы отправить, включите интернет-соединение в настройках Dungeon Train.",
   "gui.dungeontrain.translate.filter.todo": "Ещё не сделано",
-  "gui.dungeontrain.translate.filter.source_changed": "Недавно изменённые",
+  "gui.dungeontrain.translate.filter.source_changed": "Устаревшие",
   "gui.dungeontrain.translate.sent.title": "Что вы отправили",
   "gui.dungeontrain.translate.sent.narration": "Отправок: %s",
   "gui.dungeontrain.translate.sent.loading": "Проверка…",

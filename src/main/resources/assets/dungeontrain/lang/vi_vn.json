@@ -1783,7 +1783,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Chưa có gì để gửi — hãy sửa một bản dịch trước.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Bật kết nối internet trong Tùy chọn Dungeon Train để gửi.",
   "gui.dungeontrain.translate.filter.todo": "Chưa làm",
-  "gui.dungeontrain.translate.filter.source_changed": "Mới cập nhật",
+  "gui.dungeontrain.translate.filter.source_changed": "Đã lỗi thời",
   "gui.dungeontrain.translate.sent.title": "Những gì bạn đã gửi",
   "gui.dungeontrain.translate.sent.narration": "%s lượt gửi",
   "gui.dungeontrain.translate.sent.loading": "Đang kiểm tra…",

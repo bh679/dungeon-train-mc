@@ -1818,7 +1818,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Noch nichts zu senden — korrigiere zuerst eine Übersetzung.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Schalte die Internetverbindung in den Dungeon-Train-Optionen ein, um zu senden.",
   "gui.dungeontrain.translate.filter.todo": "Noch zu tun",
-  "gui.dungeontrain.translate.filter.source_changed": "Kürzlich geändert",
+  "gui.dungeontrain.translate.filter.source_changed": "Veraltet",
   "gui.dungeontrain.translate.sent.title": "Von dir eingesendet",
   "gui.dungeontrain.translate.sent.narration": "%s Einsendung(en)",
   "gui.dungeontrain.translate.sent.loading": "Wird geprüft…",

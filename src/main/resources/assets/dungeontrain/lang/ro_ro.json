@@ -2283,7 +2283,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Nimic de trimis încă — repară mai întâi o traducere.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Pornește conexiunea la internet în Opțiunile Dungeon Train ca să trimiți.",
   "gui.dungeontrain.translate.filter.todo": "Rămase de făcut",
-  "gui.dungeontrain.translate.filter.source_changed": "Actualizate recent",
+  "gui.dungeontrain.translate.filter.source_changed": "Învechite",
   "gui.dungeontrain.translate.sent.title": "Ce ai trimis",
   "gui.dungeontrain.translate.sent.narration": "%s trimitere/trimiteri",
   "gui.dungeontrain.translate.sent.loading": "Se verifică…",

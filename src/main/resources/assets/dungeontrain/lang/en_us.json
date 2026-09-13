@@ -2246,7 +2246,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Nothing to send yet — fix a translation first.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Turn the internet connection on in Dungeon Train Options to send.",
   "gui.dungeontrain.translate.filter.todo": "Still to do",
-  "gui.dungeontrain.translate.filter.source_changed": "Recently updated",
+  "gui.dungeontrain.translate.filter.source_changed": "Outdated",
   "gui.dungeontrain.translate.sent.title": "What you've sent in",
   "gui.dungeontrain.translate.sent.narration": "%s submission(s)",
   "gui.dungeontrain.translate.sent.loading": "Checking…",

@@ -1783,7 +1783,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Wala pang maipapadala — ayusin muna ang isang salin.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Buksan ang internet connection sa Dungeon Train Options para makapagpadala.",
   "gui.dungeontrain.translate.filter.todo": "Gagawin pa",
-  "gui.dungeontrain.translate.filter.source_changed": "Kamakailang na-update",
+  "gui.dungeontrain.translate.filter.source_changed": "Luma na",
   "gui.dungeontrain.translate.sent.title": "Naipadala mo na",
   "gui.dungeontrain.translate.sent.narration": "%s pagpapadala",
   "gui.dungeontrain.translate.sent.loading": "Tinitingnan…",
