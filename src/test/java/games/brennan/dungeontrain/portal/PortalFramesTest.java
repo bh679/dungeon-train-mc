@@ -720,4 +720,19 @@ final class PortalFramesTest {
             f.crossingIntensityAt(CAR_X - 1.5, CAR_Y + FEET_Y, CAR_Z + WALK_Z), 1e-9,
             "the ENTRY end of an EXIT corridor is the ROOM end — no approach there");
     }
+
+    @Test
+    @DisplayName("mirrorFrom maps a point outside the corridor by the same offset, where mirror would refuse")
+    void mirrorFromReachesBeyondTheCorridor() {
+        PortalFrames frames = frames(CAR_X);
+        // Five blocks past the twin's far door: not in any corridor.
+        double wx = TWIN_X + LAYOUT.length() + 5, wy = TWIN_Y + FEET_Y, wz = TWIN_Z + WALK_Z;
+        assertNull(frames.mirror(wx, wy, wz));
+
+        PortalFrames.Move m = frames.mirrorFrom(PortalFrames.FRAME_TWIN, wx, wy, wz);
+        assertEquals(PortalFrames.FRAME_CARRIAGE, m.toFrame());
+        assertEquals(CAR_X + LAYOUT.length() + 5, m.x(), 1e-9);
+        assertEquals(CAR_Y + FEET_Y, m.y(), 1e-9);
+        assertEquals(CAR_Z + WALK_Z, m.z(), 1e-9);
+    }
 }

@@ -353,7 +353,7 @@ public final class PortalPuppets {
      * not on the grid — where rounding would introduce a constant offset rather than remove a
      * jitter — shows itself in the log as a residual near a half block.</p>
      */
-    static PortalFrames poseAligned(PortalFrames frames, ManagedShip ship, int carriageIndex) {
+    public static PortalFrames poseAligned(PortalFrames frames, ManagedShip ship, int carriageIndex) {
         PortalFrames.Origin o = frames.originOf(PortalFrames.FRAME_CARRIAGE);
         Vector3d plot = ship.worldToShip(new Vector3d(o.x(), o.y(), o.z()));
         double rx = Math.rint(plot.x), ry = Math.rint(plot.y), rz = Math.rint(plot.z);
@@ -446,8 +446,14 @@ public final class PortalPuppets {
      * by anything type-specific here, so this needs no list of what is supported.</p>
      */
     private static boolean eligible(Entity entity) {
-        if (!entity.isAlive() || entity.isPassenger() || entity.isSpectator()) return false;
+        if (entity.isPassenger() || entity.isSpectator()) return false;
         if (entity.isInvisible()) return false;
+        // A mob keeps its puppet through its death: vanilla holds the entity for twenty ticks after
+        // its health hits zero to play the fall-over, and a puppet that vanished the moment isAlive
+        // went false blinked out mid-swing while the real one was still on its way down.
+        if (!entity.isAlive()) {
+            return entity instanceof LivingEntity living && living.isDeadOrDying() && !entity.isRemoved();
+        }
         return true;
     }
 
@@ -512,7 +518,12 @@ public final class PortalPuppets {
             living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.HEAD).copy(),
             living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.CHEST).copy(),
             living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.LEGS).copy(),
-            living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.FEET).copy());
+            living == null ? ItemStack.EMPTY : living.getItemBySlot(EquipmentSlot.FEET).copy(),
+            // The hit flash and the fall-over. Neither is synched data — vanilla sends them as
+            // entity events — so they ride here as two bytes, and the puppet flinches and dies
+            // in step with the mob it stands for.
+            living == null ? 0 : (byte) Math.min(living.hurtTime, Byte.MAX_VALUE),
+            living == null ? 0 : (byte) Math.min(living.deathTime, Byte.MAX_VALUE));
     }
 
     /** True if this player is close enough to either corridor to be shown its puppets. */

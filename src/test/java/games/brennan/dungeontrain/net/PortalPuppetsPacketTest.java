@@ -53,11 +53,12 @@ final class PortalPuppetsPacketTest {
         Entry full = Entry.full(10, PortalPuppetsPacket.KIND_MOB, ZOMBIE, null, "", CARRIAGE,
             2.5, 1.0, -7.25, 90f, 100f, -5f, data,
             new ItemStack(Items.IRON_SWORD), ItemStack.EMPTY, new ItemStack(Items.IRON_CHESTPLATE),
-            ItemStack.EMPTY, ItemStack.EMPTY);
+            ItemStack.EMPTY, ItemStack.EMPTY, (byte) 7, (byte) 12);
         Entry player = Entry.full(11, PortalPuppetsPacket.KIND_PLAYER,
             ResourceLocation.withDefaultNamespace("player"), STEVE, "Steve", null,
             100.0, 64.0, 200.0, 0f, 10f, 20f, List.of(),
-            ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY);
+            ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY,
+            (byte) 0, (byte) 0);
         Entry pose = Entry.pose(12, null, 1.0, 2.0, 3.0, 45f, 50f, 5f);
         Entry posePlot = Entry.pose(13, CARRIAGE, 1.0, 2.0, 3.0, 45f, 50f, 5f);
         Entry held = Entry.held(14);
@@ -80,6 +81,8 @@ final class PortalPuppetsPacketTest {
         assertTrue(ItemStack.matches(new ItemStack(Items.IRON_SWORD), f.mainHand()));
         assertTrue(ItemStack.matches(new ItemStack(Items.IRON_CHESTPLATE), f.chest()));
         assertTrue(f.head().isEmpty());
+        assertEquals(7, f.hurtTime());
+        assertEquals(12, f.deathTime());
 
         Entry p = decoded.entries().get(1);
         assertTrue(p.isPlayer());

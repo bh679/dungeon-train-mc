@@ -204,12 +204,6 @@ public final class PortalPuppetsClient {
                 living.walkAnimation.update(Math.min(moved * 4.0F, 1.0F), 0.4F);
             }
 
-            // Nothing ticks a puppet, so the hurt flash has to be wound down here or a puppet hit
-            // once through the portal would glow red for as long as it existed.
-            if (model instanceof LivingEntity hurt && hurt.hurtTime > 0) {
-                hurt.hurtTime--;
-            }
-
             model.tickCount++;
         }
 
@@ -221,6 +215,11 @@ public final class PortalPuppetsClient {
                 living.setItemSlot(EquipmentSlot.CHEST, entry.chest());
                 living.setItemSlot(EquipmentSlot.LEGS, entry.legs());
                 living.setItemSlot(EquipmentSlot.FEET, entry.feet());
+
+                // The server owns both countdowns and sends every step of them, so nothing here
+                // decrements: the renderer reads them for the red overlay and the fall-over.
+                living.hurtTime = entry.hurtTime();
+                living.deathTime = entry.deathTime();
             }
             applyData();
         }

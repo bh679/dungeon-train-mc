@@ -93,6 +93,8 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
      * @param chest     chestplate slot
      * @param legs      leggings slot
      * @param feet      boots slot
+     * @param hurtTime  the source's hit-flash countdown, so a puppet flinches when its source is hit
+     * @param deathTime the source's death countdown, so a puppet falls over as its source does
      */
     public record Entry(
         byte shape,
@@ -113,7 +115,9 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
         ItemStack head,
         ItemStack chest,
         ItemStack legs,
-        ItemStack feet
+        ItemStack feet,
+        byte hurtTime,
+        byte deathTime
     ) {
 
         /** Everything: appearance and pose. */
@@ -132,9 +136,9 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
                                  float yaw, float headYaw, float pitch,
                                  List<SynchedEntityData.DataValue<?>> data,
                                  ItemStack mainHand, ItemStack head, ItemStack chest,
-                                 ItemStack legs, ItemStack feet) {
+                                 ItemStack legs, ItemStack feet, byte hurtTime, byte deathTime) {
             return new Entry(SHAPE_FULL, key, kind, typeId, sourceId, name, subLevel, x, y, z,
-                yaw, headYaw, pitch, data, mainHand, head, chest, legs, feet);
+                yaw, headYaw, pitch, data, mainHand, head, chest, legs, feet, hurtTime, deathTime);
         }
 
         /** A pose-only entry for a key the viewer already has the description of. */
@@ -142,21 +146,23 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
                                  float yaw, float headYaw, float pitch) {
             return new Entry(SHAPE_POSE, key, KIND_MOB, NO_TYPE, null, "", subLevel, x, y, z,
                 yaw, headYaw, pitch, List.of(),
-                ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY);
+                ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY,
+                (byte) 0, (byte) 0);
         }
 
         /** A held entry: the key alone. */
         public static Entry held(int key) {
             return new Entry(SHAPE_HELD, key, KIND_MOB, NO_TYPE, null, "", null, 0, 0, 0,
                 0, 0, 0, List.of(),
-                ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY);
+                ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY,
+                (byte) 0, (byte) 0);
         }
 
         /** This entry's appearance with {@code pose}'s position and rotation. Keeps this shape. */
         public Entry withPose(Entry pose) {
             return new Entry(shape, key, kind, typeId, sourceId, name, pose.subLevel(),
                 pose.x(), pose.y(), pose.z(), pose.yaw(), pose.headYaw(), pose.pitch(),
-                data, mainHand, head, chest, legs, feet);
+                data, mainHand, head, chest, legs, feet, hurtTime, deathTime);
         }
 
         /** Whether this entry describes its puppet, as opposed to only placing it. */
@@ -266,6 +272,9 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
         ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, e.chest());
         ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, e.legs());
         ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, e.feet());
+
+        buf.writeByte(e.hurtTime());
+        buf.writeByte(e.deathTime());
     }
 
     public static PortalPuppetsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -317,13 +326,16 @@ public record PortalPuppetsPacket(List<Entry> entries) implements CustomPacketPa
             data.add(SynchedEntityData.DataValue.read(buf, buf.readByte()));
         }
 
+        ItemStack mainHand = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack head = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack chest = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack legs = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack feet = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        byte hurtTime = buf.readByte();
+        byte deathTime = buf.readByte();
+
         return Entry.full(key, kind, typeId, sourceId, name, subLevel, x, y, z,
-            yaw, headYaw, pitch, data,
-            ItemStack.OPTIONAL_STREAM_CODEC.decode(buf),
-            ItemStack.OPTIONAL_STREAM_CODEC.decode(buf),
-            ItemStack.OPTIONAL_STREAM_CODEC.decode(buf),
-            ItemStack.OPTIONAL_STREAM_CODEC.decode(buf),
-            ItemStack.OPTIONAL_STREAM_CODEC.decode(buf));
+            yaw, headYaw, pitch, data, mainHand, head, chest, legs, feet, hurtTime, deathTime);
     }
 
     @Override

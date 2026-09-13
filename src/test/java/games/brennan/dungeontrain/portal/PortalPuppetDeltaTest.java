@@ -45,7 +45,15 @@ class PortalPuppetDeltaTest {
                              List<SynchedEntityData.DataValue<?>> data) {
         return Entry.full(key, PortalPuppetsPacket.KIND_MOB, ZOMBIE, null, "", subLevel,
             x, 64.0, 8.0, 90f, 95f, 0f, data,
-            mainHand, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY);
+            mainHand, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY,
+            (byte) 0, (byte) 0);
+    }
+
+    private static Entry hurt(int key, int hurtTime, int deathTime) {
+        return Entry.full(key, PortalPuppetsPacket.KIND_MOB, ZOMBIE, null, "", null,
+            3.0, 64.0, 8.0, 90f, 95f, 0f, List.of(),
+            ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY,
+            (byte) hurtTime, (byte) deathTime);
     }
 
     private static Entry mob(int key, double x) {
@@ -108,6 +116,19 @@ class PortalPuppetDeltaTest {
 
         assertEquals(Entry.SHAPE_HELD, PortalPuppetDelta.classify(new Sent(a, 100), b, 101).shape());
         assertEquals(Entry.SHAPE_FULL, PortalPuppetDelta.classify(new Sent(a, 100), c, 101).shape());
+    }
+
+    @Test
+    @DisplayName("A hit, and every tick of the flash after it, is sent whole; so is dying")
+    void hurtAndDeathAreFull() {
+        Sent sent = new Sent(hurt(1, 0, 0), 100);
+        assertEquals(Entry.SHAPE_FULL, PortalPuppetDelta.classify(sent, hurt(1, 10, 0), 101).shape());
+        assertEquals(Entry.SHAPE_FULL,
+            PortalPuppetDelta.classify(new Sent(hurt(1, 10, 0), 101), hurt(1, 9, 0), 102).shape());
+        assertEquals(Entry.SHAPE_FULL,
+            PortalPuppetDelta.classify(new Sent(hurt(1, 0, 0), 101), hurt(1, 0, 1), 102).shape());
+        assertEquals(Entry.SHAPE_HELD,
+            PortalPuppetDelta.classify(new Sent(hurt(1, 4, 0), 101), hurt(1, 4, 0), 102).shape());
     }
 
     @Test

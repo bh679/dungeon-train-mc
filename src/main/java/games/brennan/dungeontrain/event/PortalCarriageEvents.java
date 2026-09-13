@@ -29,6 +29,7 @@ import games.brennan.dungeontrain.portal.PortalOccupants;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalWalkThrough;
 import games.brennan.dungeontrain.portal.PortalPairResidency;
+import games.brennan.dungeontrain.portal.PortalOrbPull;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
@@ -1795,6 +1796,12 @@ public final class PortalCarriageEvents {
         // still see each other. Last, so everything is described from where it ended up this tick
         // rather than where it was about to leave.
         PortalPuppets.gather(level, players, frames, ship, carriageIndex, occupants, puppets);
+
+        // An orb dropped in the copy the player is not in drifts towards their mirrored position,
+        // over the midpoint, and into the transit above on the next tick — after which it is a
+        // vanilla orb next to a real player.
+        PortalOrbPull.run(level, players, PortalPuppets.poseAligned(frames, ship, carriageIndex),
+            occupants);
 
         // The endless modes may have scattered further copies of this carriage's corridor through the
         // room (PortalRoomExits). Each is the same pairing at a different origin, so the same swap

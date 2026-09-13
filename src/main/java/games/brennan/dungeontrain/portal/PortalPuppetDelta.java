@@ -83,7 +83,11 @@ final class PortalPuppetDelta {
             && ItemStack.matches(a.head(), b.head())
             && ItemStack.matches(a.chest(), b.chest())
             && ItemStack.matches(a.legs(), b.legs())
-            && ItemStack.matches(a.feet(), b.feet());
+            && ItemStack.matches(a.feet(), b.feet())
+            // A hit or a death counts down over ten or twenty ticks; each step is a change and
+            // goes out whole. Rare, and the description is what carries the flash.
+            && a.hurtTime() == b.hurtTime()
+            && a.deathTime() == b.deathTime();
     }
 
     static boolean samePose(Entry a, Entry b) {
