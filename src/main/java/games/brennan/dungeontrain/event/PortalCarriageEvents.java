@@ -29,6 +29,7 @@ import games.brennan.dungeontrain.portal.PortalOccupants;
 import games.brennan.dungeontrain.portal.PortalPairIndex;
 import games.brennan.dungeontrain.portal.PortalWalkThrough;
 import games.brennan.dungeontrain.portal.PortalPairResidency;
+import games.brennan.dungeontrain.portal.PortalOrbPull;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
@@ -1780,6 +1781,12 @@ public final class PortalCarriageEvents {
         // other missed.
         List<Entity> occupants = PortalCorridorEntities.inCorridors(level, frames);
 
+        // Both corridors, not only the structure: a mob standing in the carriage copy while its
+        // player is in the twin is 140 blocks from the nearest player, and vanilla's distance rule
+        // discards it the same tick. The structure pass above cannot see the carriage — it is on
+        // the train — so the horde a player just walked away from went with them, in one tick.
+        protectCorridorOccupants(occupants, level.getGameTime());
+
         // Everything that is not a player crosses the midpoint on the same rule players do. Without
         // this a corridor is only half a portal: a villager followed in would stay behind on the
         // train, and a thrown ender pearl would land in the copy its thrower had just left.
@@ -1795,6 +1802,12 @@ public final class PortalCarriageEvents {
         // still see each other. Last, so everything is described from where it ended up this tick
         // rather than where it was about to leave.
         PortalPuppets.gather(level, players, frames, ship, carriageIndex, occupants, puppets);
+
+        // An orb dropped in the copy the player is not in drifts towards their mirrored position,
+        // over the midpoint, and into the transit above on the next tick — after which it is a
+        // vanilla orb next to a real player.
+        PortalOrbPull.run(level, players, PortalPuppets.poseAligned(frames, ship, carriageIndex),
+            occupants);
 
         // The endless modes may have scattered further copies of this carriage's corridor through the
         // room (PortalRoomExits). Each is the same pairing at a different origin, so the same swap
@@ -2460,6 +2473,20 @@ public final class PortalCarriageEvents {
      * reads as "nobody is near this mob" — so without this a villager led into the portal world is
      * quietly discarded while its player is away on the train.</p>
      */
+    /**
+     * Keep everything standing in either corridor from being reaped — the carriage side included.
+     *
+     * <p>{@link #protectStructureOccupants} covers the twin and the room, which is where a mob is
+     * far from a player <i>on the train</i>. This covers the other case: the player is in the twin
+     * and the mob is on the train, in the copy they left, 140 blocks straight up. Same registry,
+     * same grace, so the two are one rule seen from both ends.</p>
+     */
+    private static void protectCorridorOccupants(List<Entity> occupants, long gameTime) {
+        for (Entity entity : occupants) {
+            PortalOccupants.protect(entity, gameTime);
+        }
+    }
+
     private static void protectStructureOccupants(ServerLevel level, CarriageDims dims,
                                                   PortalStructure structure) {
         long gameTime = level.getGameTime();

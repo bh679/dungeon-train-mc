@@ -35,7 +35,7 @@ public final class PortalOccupants {
      * long absences — anything that walked in through the portal is also marked persistent, which
      * outlasts any window.</p>
      */
-    private static final long GRACE_TICKS = 400;
+    static final long GRACE_TICKS = 400;
 
     /** Entity id → game time after which the sighting no longer counts. */
     private static final Map<Integer, Long> PROTECTED = new HashMap<>();
@@ -47,7 +47,12 @@ public final class PortalOccupants {
 
     /** Note that this entity is in a portal room right now. */
     public static void protect(Entity entity, long gameTime) {
-        PROTECTED.put(entity.getId(), gameTime + GRACE_TICKS);
+        protect(entity.getId(), gameTime);
+    }
+
+    /** As {@link #protect(Entity, long)}, by id — the form the tests use. */
+    static void protect(int entityId, long gameTime) {
+        PROTECTED.put(entityId, gameTime + GRACE_TICKS);
         if (PROTECTED.size() > PRUNE_THRESHOLD) prune(gameTime);
     }
 

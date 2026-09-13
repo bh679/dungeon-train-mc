@@ -302,9 +302,23 @@ public record PortalFrames(PortalCarriageLayout layout, Origin carriage, Origin 
     public Move mirror(double wx, double wy, double wz) {
         int frame = frameAt(wx, wy, wz);
         if (frame == FRAME_NONE) return null;
+        return mirrorFrom(frame, wx, wy, wz);
+    }
 
-        Origin from = originOf(frame);
-        int toFrame = frame == FRAME_CARRIAGE ? FRAME_TWIN : FRAME_CARRIAGE;
+    /**
+     * The point in the <b>other</b> corridor that has the same offset from its origin as
+     * {@code (wx, wy, wz)} has from {@code fromFrame}'s — whether or not the point is inside the
+     * corridor.
+     *
+     * <p>{@link #mirror} for a position that is only <i>near</i> a frame. An experience orb in one
+     * corridor should drift towards a player who has walked out of the other corridor's far door
+     * into the room; the mirrored point lies beyond this corridor's far door, and the orb crosses the
+     * midpoint on its way there, which is all it needs to do. {@link #mirror} would return null for
+     * such a player, and the orb would sit where it fell.</p>
+     */
+    public Move mirrorFrom(int fromFrame, double wx, double wy, double wz) {
+        Origin from = originOf(fromFrame);
+        int toFrame = fromFrame == FRAME_CARRIAGE ? FRAME_TWIN : FRAME_CARRIAGE;
         Origin to = originOf(toFrame);
 
         return new Move(toFrame,
