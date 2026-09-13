@@ -16592,6 +16592,64 @@
       "released": true,
       "released_in": "v0.861.0",
       "released_at": "2026-09-12T14:59:23Z"
+    },
+    {
+      "id": "trapdoor-fence-jitter-fix",
+      "version": "0.862.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "train"
+      ],
+      "title": "No more jitter on trapdoors over fences while riding",
+      "summary": "Walking on a closed trapdoor laid over a fence or wall on a moving carriage used to bounce you up and down and fight your movement. The fence post now stops at the trapdoor instead of poking into your feet, so you walk across smoothly \u2014 the same as on solid ground. Mobs crossing the same strip benefit too.",
+      "highlights": [
+        "Smooth walking on trapdoors, carpets and slabs placed over fences and walls on the train",
+        "Fences and walls with nothing on top are unchanged"
+      ],
+      "pr": 1386,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-parkour-weights",
+      "version": "0.862.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "world",
+        "balance"
+      ],
+      "title": "Parkour dimensional carriage tuning",
+      "summary": "The parkour dimensional carriage now appears a little less often, and when it does, its Sky Maze and Jumps layouts are each twice as likely to be picked.",
+      "highlights": [],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "keep-trim-unbundled",
+      "version": "0.863.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Keep Trim is now its own download",
+      "summary": "Keep Trim, the mod that keeps your armor trim when you repair two trimmed pieces in a crafting grid, used to be packed inside Dungeon Train's jar. It now installs as a separate required mod, the same way Adventure Item Names and the other companion mods do, so your launcher fetches and updates it on its own and the Keep Trim page gets the credit. Nothing changes in play. If you install Dungeon Train by hand rather than through the CurseForge app or a modpack, add Keep Trim 0.2.0 or newer to your mods folder.",
+      "highlights": [
+        "Keep Trim moves from inside the Dungeon Train jar to a separate required mod",
+        "CurseForge app and both modpacks install it for you; manual installs need Keep Trim 0.2.0+"
+      ],
+      "pr": 1388,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
