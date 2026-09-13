@@ -3,7 +3,7 @@
 
 Deliberately flat, obviously-not-vanilla tiles so a placeholder that ever reaches a live train is
 visible at a glance: a grey family for the solid / stairs / slab / button / plate slots with the
-slot number stamped on, and a brown family for the wood set (planks, log side + end, door halves,
+slot number stamped on (and a kind letter for the stone set), and a brown family for the wood set (planks, log side + end, door halves,
 trapdoor). Re-run after changing the palette or the catalogue in StagePlaceholderBlocks:
 
     python3 scripts/assets/gen-stage-placeholder-textures.py
@@ -44,6 +44,11 @@ DIGITS = {
     "P": ["###", "#.#", "###", "#..", "#.."],
     "D": ["##.", "#.#", "#.#", "#.#", "##."],
     "T": ["###", ".#.", ".#.", ".#.", ".#."],
+    "C": ["###", "#..", "#..", "#..", "###"],
+    "B": ["##.", "#.#", "##.", "#.#", "##."],
+    "K": ["#.#", "#.#", "##.", "#.#", "#.#"],
+    "M": ["#.#", "###", "#.#", "#.#", "#.#"],
+    "F": ["###", "#..", "##.", "#..", "#.."],
 }
 
 GREY = (128, 132, 140)
@@ -137,6 +142,12 @@ def main() -> None:
     write(brown("D"), BLOCK_DIR / "stage_door_top.png")
     write(brown("D"), BLOCK_DIR / "stage_door_bottom.png")
     write(brown("T"), BLOCK_DIR / "stage_trapdoor.png")
+
+    # Stone set: one tile per kind, shared by its stairs / slab / wall.
+    for kind, letter in (("cobbled", "C"), ("stone", "S"), ("bricks", "B"), ("polished", "P"),
+                         ("cracked", "K"), ("mossy", "M"), ("feature", "F")):
+        name = "stage_stone" if kind == "stone" else f"stage_stone_{kind}"
+        write(grey(letter), BLOCK_DIR / f"{name}.png")
 
     # Flat item icon for the door (vanilla doors use item/generated with their own sprite).
     write(brown("D"), ITEM_DIR / "stage_door.png")

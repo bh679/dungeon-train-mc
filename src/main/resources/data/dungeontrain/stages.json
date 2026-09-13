@@ -27,7 +27,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "acacia"
+      "wood": "acacia",
+      "stone": "stone"
     }
   },
   "bamboo": {
@@ -56,7 +57,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "bamboo"
+      "wood": "bamboo",
+      "stone": "stone"
     }
   },
   "bamboo_mosaic": {
@@ -85,7 +87,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "bamboo_mosaic"
+      "wood": "bamboo_mosaic",
+      "stone": "stone"
     }
   },
   "birch": {
@@ -116,7 +119,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "birch"
+      "wood": "birch",
+      "stone": "stone"
     }
   },
   "cherry": {
@@ -147,7 +151,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "cherry"
+      "wood": "cherry",
+      "stone": "stone"
     }
   },
   "copper": {
@@ -183,7 +188,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "oak"
+      "wood": "oak",
+      "stone": "tuff"
     }
   },
   "crimson": {
@@ -214,7 +220,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "crimson"
+      "wood": "crimson",
+      "stone": "stone"
     }
   },
   "darkwood": {
@@ -245,7 +252,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "dark_oak"
+      "wood": "dark_oak",
+      "stone": "stone"
     }
   },
   "deepdark": {
@@ -281,7 +289,8 @@
       ],
       "button": "minecraft:polished_blackstone_button",
       "pressurePlate": "minecraft:polished_blackstone_pressure_plate",
-      "wood": "dark_oak"
+      "wood": "dark_oak",
+      "stone": "deepslate"
     }
   },
   "desert": {
@@ -317,7 +326,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "birch"
+      "wood": "birch",
+      "stone": "sandstone"
     }
   },
   "jungle": {
@@ -348,7 +358,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "jungle"
+      "wood": "jungle",
+      "stone": "stone"
     }
   },
   "mangrove": {
@@ -379,7 +390,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "mangrove"
+      "wood": "mangrove",
+      "stone": "stone"
     }
   },
   "mud": {
@@ -408,7 +420,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "oak"
+      "wood": "oak",
+      "stone": "mud"
     }
   },
   "nether": {
@@ -440,7 +453,8 @@
       ],
       "button": "minecraft:polished_blackstone_button",
       "pressurePlate": "minecraft:polished_blackstone_pressure_plate",
-      "wood": "warped"
+      "wood": "warped",
+      "stone": "blackstone"
     }
   },
   "obsidian": {
@@ -475,7 +489,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "birch"
+      "wood": "birch",
+      "stone": "quartz"
     }
   },
   "quartz": {
@@ -509,7 +524,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "birch"
+      "wood": "birch",
+      "stone": "quartz"
     }
   },
   "spruce": {
@@ -539,7 +555,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "spruce"
+      "wood": "spruce",
+      "stone": "stone"
     }
   },
   "stone": {
@@ -573,7 +590,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "oak"
+      "wood": "oak",
+      "stone": "stone"
     }
   },
   "warped": {
@@ -604,7 +622,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "warped"
+      "wood": "warped",
+      "stone": "stone"
     }
   },
   "wood_oak": {
@@ -635,7 +654,8 @@
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
-      "wood": "oak"
+      "wood": "oak",
+      "stone": "stone"
     }
   }
 }

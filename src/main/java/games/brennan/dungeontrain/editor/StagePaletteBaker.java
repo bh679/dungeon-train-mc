@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.block.stage.BlockFamilySpelling;
+import games.brennan.dungeontrain.block.stage.StageStoneFamily;
 import games.brennan.dungeontrain.block.stage.StageWoodFamily;
 import games.brennan.dungeontrain.block.stage.StageWoodFamily.WoodKind;
 import games.brennan.dungeontrain.template.Stage;
@@ -38,12 +40,12 @@ import java.util.function.Predicate;
  *       reader loops shorter lists; {@code stone} when the stage has none.</li>
  *   <li><b>stairs / slabs</b>: the family variant of each solid slot ({@code X → X_stairs}, with the
  *       {@code _bricks → _brick_stairs}, {@code _tiles → _tile_stairs}, {@code _block → _stairs},
- *       {@code _planks → _stairs} spellings and a few aliases such as {@code deepslate →
- *       cobbled_deepslate}); a solid with no variant walks down the solid list for the next that has
+ *       {@code _planks → _stairs} spellings and aliases of {@link BlockFamilySpelling}); a solid with no variant walks down the solid list for the next that has
  *       one, then the most-used real stairs/slab in the tally, then stone.</li>
  *   <li><b>button / pressure plate</b>: the most-used one already in the tally; else the first
  *       solid's family (wood → that wood's, blackstone → polished blackstone's, else stone).</li>
  *   <li><b>wood</b>: the first tally block owned by any {@link StageWoodFamily}; else spruce.</li>
+ *   <li><b>stone</b>: the first tally block owned by any {@link StageStoneFamily}; else stone.</li>
  * </ul>
  */
 public final class StagePaletteBaker {
@@ -51,21 +53,6 @@ public final class StagePaletteBaker {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final String NS = "minecraft:";
-
-    /** Bases whose stairs/slab family carries a different stem. */
-    private static final Map<String, String> FAMILY_ALIAS = Map.ofEntries(
-        Map.entry(NS + "deepslate", NS + "cobbled_deepslate"),
-        Map.entry(NS + "end_stone", NS + "end_stone_bricks"),
-        Map.entry(NS + "mud", NS + "mud_bricks"),
-        Map.entry(NS + "packed_mud", NS + "mud_bricks"),
-        Map.entry(NS + "copper_block", NS + "cut_copper"),
-        Map.entry(NS + "exposed_copper", NS + "exposed_cut_copper"),
-        Map.entry(NS + "weathered_copper", NS + "weathered_cut_copper"),
-        Map.entry(NS + "oxidized_copper", NS + "oxidized_cut_copper"),
-        Map.entry(NS + "waxed_copper_block", NS + "waxed_cut_copper"),
-        Map.entry(NS + "waxed_exposed_copper", NS + "waxed_exposed_cut_copper"),
-        Map.entry(NS + "waxed_weathered_copper", NS + "waxed_weathered_cut_copper"),
-        Map.entry(NS + "waxed_oxidized_copper", NS + "waxed_oxidized_cut_copper"));
 
     private StagePaletteBaker() {}
 
@@ -150,7 +137,13 @@ public final class StagePaletteBaker {
             if (f.isPresent()) { wood = f.get().id(); break; }
         }
 
-        return new StagePalette(solidSlots, stairs, slabs, button, plate, wood);
+        String stone = StageStoneFamily.FALLBACK.id();
+        for (String id : tally) {
+            Optional<StageStoneFamily> f = StageStoneFamily.owning(id, exists);
+            if (f.isPresent()) { stone = f.get().id(); break; }
+        }
+
+        return new StagePalette(solidSlots, stairs, slabs, button, plate, wood, stone);
     }
 
     /**
@@ -164,7 +157,7 @@ public final class StagePaletteBaker {
         for (int i = 0; i < slots; i++) {
             String found = null;
             for (int j = i; j < solids.size(); j++) {
-                found = variantOf(solids.get(j), suffix, exists);
+                found = BlockFamilySpelling.variantOf(solids.get(j), suffix, exists);
                 if (found != null) break;
             }
             if (found == null) found = firstEnding(tally, suffix).orElse(null);
@@ -172,24 +165,6 @@ public final class StagePaletteBaker {
             out.add(found);
         }
         return out;
-    }
-
-    /** {@code base}'s {@code suffix} family block, or null when no spelling exists. */
-    static String variantOf(String base, String suffix, Predicate<String> exists) {
-        if (base == null) return null;
-        String stem = FAMILY_ALIAS.getOrDefault(base, base);
-        List<String> candidates = new ArrayList<>();
-        candidates.add(stem + suffix);
-        if (stem.endsWith("bricks") || stem.endsWith("tiles")) {
-            candidates.add(stem.substring(0, stem.length() - 1) + suffix);
-        }
-        if (stem.endsWith("_block") || stem.endsWith("_planks")) {
-            candidates.add(stem.substring(0, stem.lastIndexOf('_')) + suffix);
-        }
-        for (String c : candidates) {
-            if (exists.test(c)) return c;
-        }
-        return null;
     }
 
     /** Button / plate for a stage whose tally has none: from the first solid's family. */

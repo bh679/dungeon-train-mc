@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.block.stage;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.block.stage.StageStoneFamily.Shape;
+import games.brennan.dungeontrain.block.stage.StageStoneFamily.StoneKind;
 import games.brennan.dungeontrain.block.stage.StageWoodFamily.WoodKind;
 import games.brennan.dungeontrain.editor.StageBlockReplacer;
 import games.brennan.dungeontrain.editor.StageStore;
@@ -21,6 +23,7 @@ import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
+import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockSetType;
@@ -44,10 +47,12 @@ import java.util.function.Supplier;
  * template that are swapped for a real block of whichever {@link Stage} the carriage lands in at
  * generation time, so one build serves every stage.
  *
- * <p>Twenty-nine blocks: ten solid slots ({@code stage_block_1..10}, the stage's most-used full
+ * <p>Fifty-seven blocks: ten solid slots ({@code stage_block_1..10}, the stage's most-used full
  * cubes, looping when a stage has fewer), two stairs and two slab slots derived from the first two
- * solids, a button and a pressure plate, and the thirteen-block wood set ({@code stage_log} …
- * {@code stage_trapdoor}) resolved through the stage's {@link StageWoodFamily}. Each placeholder
+ * solids, a button and a pressure plate, the thirteen-block wood set ({@code stage_log} …
+ * {@code stage_trapdoor}) resolved through the stage's {@link StageWoodFamily}, and the
+ * twenty-eight-block stone set ({@code stage_stone_<kind>[_stairs|_slab|_wall]} for the seven
+ * {@link StoneKind}s) resolved through its {@link StageStoneFamily}. Each placeholder
  * extends the matching vanilla base class so builders orient it normally and the block-state
  * properties carry over on swap via {@link StageBlockReplacer#transfer}.</p>
  *
@@ -212,7 +217,23 @@ public final class StagePlaceholderBlocks {
         out.add(wood("stage_wood_pressure_plate", WoodKind.PRESSURE_PLATE));
         out.add(wood("stage_door", WoodKind.DOOR));
         out.add(wood("stage_trapdoor", WoodKind.TRAPDOOR));
+        for (StoneKind kind : StoneKind.values()) {
+            String base = stoneName(kind);
+            out.add(new Placeholder(base, pal -> pal.stoneFamily().block(kind)));
+            out.add(new Placeholder(base + "_stairs", pal -> stoneShape(pal, kind, Shape.STAIRS)));
+            out.add(new Placeholder(base + "_slab", pal -> stoneShape(pal, kind, Shape.SLAB)));
+            out.add(new Placeholder(base + "_wall", pal -> stoneShape(pal, kind, Shape.WALL)));
+        }
         return List.copyOf(out);
+    }
+
+    /** {@code stage_stone_<kind>}; the plain kind is {@code stage_stone} itself. */
+    private static String stoneName(StoneKind kind) {
+        return kind == StoneKind.STONE ? "stage_stone" : "stage_stone_" + kind.id();
+    }
+
+    private static String stoneShape(StagePalette pal, StoneKind kind, Shape shape) {
+        return pal.stoneFamily().shape(kind, shape, id -> lookup(id) != null);
     }
 
     private static Placeholder wood(String name, WoodKind kind) {
@@ -227,6 +248,12 @@ public final class StagePlaceholderBlocks {
         if (name.startsWith("stage_block_")) {
             return () -> new Block(stone());
         }
+        if (name.startsWith("stage_stone")) {
+            if (name.endsWith("_stairs")) return () -> new StairBlock(Blocks.STONE.defaultBlockState(), stone());
+            if (name.endsWith("_slab")) return () -> new SlabBlock(stone());
+            if (name.endsWith("_wall")) return () -> new WallBlock(copyOf(Blocks.COBBLESTONE_WALL));
+            return () -> new Block(stone());
+        }
         if (name.startsWith("stage_stairs_")) {
             return () -> new StairBlock(Blocks.STONE.defaultBlockState(), stone());
         }
@@ -234,22 +261,22 @@ public final class StagePlaceholderBlocks {
             return () -> new SlabBlock(stone());
         }
         return switch (name) {
-            case "stage_button" -> () -> new ButtonBlock(BlockSetType.STONE, 20, woodOf(Blocks.STONE_BUTTON));
+            case "stage_button" -> () -> new ButtonBlock(BlockSetType.STONE, 20, copyOf(Blocks.STONE_BUTTON));
             case "stage_pressure_plate" ->
-                () -> new PressurePlateBlock(BlockSetType.STONE, woodOf(Blocks.STONE_PRESSURE_PLATE));
+                () -> new PressurePlateBlock(BlockSetType.STONE, copyOf(Blocks.STONE_PRESSURE_PLATE));
             case "stage_log", "stage_stripped_log", "stage_wood", "stage_stripped_wood" ->
-                () -> new RotatedPillarBlock(woodOf(Blocks.OAK_LOG));
-            case "stage_planks" -> () -> new Block(woodOf(Blocks.OAK_PLANKS));
+                () -> new RotatedPillarBlock(copyOf(Blocks.OAK_LOG));
+            case "stage_planks" -> () -> new Block(copyOf(Blocks.OAK_PLANKS));
             case "stage_wood_stairs" ->
-                () -> new StairBlock(Blocks.OAK_PLANKS.defaultBlockState(), woodOf(Blocks.OAK_STAIRS));
-            case "stage_wood_slab" -> () -> new SlabBlock(woodOf(Blocks.OAK_SLAB));
-            case "stage_fence" -> () -> new FenceBlock(woodOf(Blocks.OAK_FENCE));
-            case "stage_fence_gate" -> () -> new FenceGateBlock(WoodType.OAK, woodOf(Blocks.OAK_FENCE_GATE));
-            case "stage_wood_button" -> () -> new ButtonBlock(BlockSetType.OAK, 30, woodOf(Blocks.OAK_BUTTON));
+                () -> new StairBlock(Blocks.OAK_PLANKS.defaultBlockState(), copyOf(Blocks.OAK_STAIRS));
+            case "stage_wood_slab" -> () -> new SlabBlock(copyOf(Blocks.OAK_SLAB));
+            case "stage_fence" -> () -> new FenceBlock(copyOf(Blocks.OAK_FENCE));
+            case "stage_fence_gate" -> () -> new FenceGateBlock(WoodType.OAK, copyOf(Blocks.OAK_FENCE_GATE));
+            case "stage_wood_button" -> () -> new ButtonBlock(BlockSetType.OAK, 30, copyOf(Blocks.OAK_BUTTON));
             case "stage_wood_pressure_plate" ->
-                () -> new PressurePlateBlock(BlockSetType.OAK, woodOf(Blocks.OAK_PRESSURE_PLATE));
-            case "stage_door" -> () -> new DoorBlock(BlockSetType.OAK, woodOf(Blocks.OAK_DOOR));
-            case "stage_trapdoor" -> () -> new TrapDoorBlock(BlockSetType.OAK, woodOf(Blocks.OAK_TRAPDOOR));
+                () -> new PressurePlateBlock(BlockSetType.OAK, copyOf(Blocks.OAK_PRESSURE_PLATE));
+            case "stage_door" -> () -> new DoorBlock(BlockSetType.OAK, copyOf(Blocks.OAK_DOOR));
+            case "stage_trapdoor" -> () -> new TrapDoorBlock(BlockSetType.OAK, copyOf(Blocks.OAK_TRAPDOOR));
             default -> throw new IllegalStateException("No factory for stage placeholder " + name);
         };
     }
@@ -259,7 +286,7 @@ public final class StagePlaceholderBlocks {
     }
 
     /** Full copy of a vanilla base's properties, minus its loot table (placeholders never drop). */
-    private static BlockBehaviour.Properties woodOf(Block base) {
+    private static BlockBehaviour.Properties copyOf(Block base) {
         return BlockBehaviour.Properties.ofFullCopy(base).noLootTable();
     }
 }

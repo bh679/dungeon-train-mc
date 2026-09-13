@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.template;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import games.brennan.dungeontrain.block.stage.StageStoneFamily;
 import games.brennan.dungeontrain.block.stage.StageWoodFamily;
 
 import java.util.ArrayList;
@@ -25,9 +26,10 @@ import java.util.List;
  * @param button        block id for {@code stage_button}.
  * @param pressurePlate block id for {@code stage_pressure_plate}.
  * @param wood          {@link StageWoodFamily#id()} for the wood set.
+ * @param stone         {@link StageStoneFamily#id()} for the stone set.
  */
 public record StagePalette(List<String> solid, List<String> stairs, List<String> slabs,
-                           String button, String pressurePlate, String wood) {
+                           String button, String pressurePlate, String wood, String stone) {
 
     public static final int SOLID_SLOTS = 10;
     public static final int STAIRS_SLOTS = 2;
@@ -39,6 +41,7 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
     public static final String K_BUTTON = "button";
     public static final String K_PRESSURE_PLATE = "pressurePlate";
     public static final String K_WOOD = "wood";
+    public static final String K_STONE = "stone";
 
     private static final String DEFAULT_SOLID = "minecraft:stone";
     private static final String DEFAULT_STAIRS = "minecraft:stone_stairs";
@@ -49,7 +52,7 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
     /** What a placeholder becomes when no stage (or a stage without a palette) is in scope. */
     public static final StagePalette DEFAULT = new StagePalette(
         List.of(DEFAULT_SOLID), List.of(DEFAULT_STAIRS), List.of(DEFAULT_SLAB),
-        DEFAULT_BUTTON, DEFAULT_PLATE, StageWoodFamily.FALLBACK.id());
+        DEFAULT_BUTTON, DEFAULT_PLATE, StageWoodFamily.FALLBACK.id(), StageStoneFamily.FALLBACK.id());
 
     public StagePalette {
         solid = nonEmpty(solid, DEFAULT_SOLID);
@@ -58,6 +61,13 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
         button = blankOr(button, DEFAULT_BUTTON);
         pressurePlate = blankOr(pressurePlate, DEFAULT_PLATE);
         wood = StageWoodFamily.byId(wood).orElse(StageWoodFamily.FALLBACK).id();
+        stone = StageStoneFamily.byId(stone).orElse(StageStoneFamily.FALLBACK).id();
+    }
+
+    /** Pre-stone-set shape (six fields) — {@code stone} defaults to the plain stone family. */
+    public StagePalette(List<String> solid, List<String> stairs, List<String> slabs,
+                        String button, String pressurePlate, String wood) {
+        this(solid, stairs, slabs, button, pressurePlate, wood, null);
     }
 
     /** Solid slot {@code index} (0-based); lists shorter than the slot count loop. */
@@ -80,6 +90,11 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
         return StageWoodFamily.byId(wood).orElse(StageWoodFamily.FALLBACK);
     }
 
+    /** The stone family, never null (the constructor already fell back). */
+    public StageStoneFamily stoneFamily() {
+        return StageStoneFamily.byId(stone).orElse(StageStoneFamily.FALLBACK);
+    }
+
     public JsonObject toJson() {
         JsonObject o = new JsonObject();
         o.add(K_SOLID, toArray(solid));
@@ -88,6 +103,7 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
         o.addProperty(K_BUTTON, button);
         o.addProperty(K_PRESSURE_PLATE, pressurePlate);
         o.addProperty(K_WOOD, wood);
+        o.addProperty(K_STONE, stone);
         return o;
     }
 
@@ -101,7 +117,8 @@ public record StagePalette(List<String> solid, List<String> stairs, List<String>
         JsonObject o = el.getAsJsonObject();
         return new StagePalette(
             strings(o.get(K_SOLID)), strings(o.get(K_STAIRS)), strings(o.get(K_SLABS)),
-            string(o.get(K_BUTTON)), string(o.get(K_PRESSURE_PLATE)), string(o.get(K_WOOD)));
+            string(o.get(K_BUTTON)), string(o.get(K_PRESSURE_PLATE)), string(o.get(K_WOOD)),
+            string(o.get(K_STONE)));
     }
 
     private static String looped(List<String> list, int index) {

@@ -53,6 +53,16 @@ final class StagePaletteBakerTest {
         assertEquals("minecraft:stone_button", p.button());
         assertEquals("minecraft:stone_pressure_plate", p.pressurePlate());
         assertEquals("spruce", p.wood());
+        assertEquals("stone", p.stone());
+    }
+
+    @Test
+    @DisplayName("stone family is the first tally block owned by a family; plain stone otherwise")
+    void stoneFamily() {
+        assertEquals("deepslate", derive("minecraft:glass", "minecraft:deepslate_tiles", "minecraft:stone").stone());
+        assertEquals("blackstone", derive("minecraft:polished_blackstone", "minecraft:stone_bricks").stone());
+        assertEquals("stone", derive("minecraft:oak_planks", "minecraft:glass").stone());
+        assertEquals("stone", derive().stone());
     }
 
     @Test
