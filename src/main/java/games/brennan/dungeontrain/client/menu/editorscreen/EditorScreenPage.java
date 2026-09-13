@@ -5,13 +5,14 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
  *
  * <p>Templates browses the roster — its category strip narrows it, see
  * {@link EditorCategoryFilter}. Layout is the spawn table: every type's variants with their weights,
- * stages and grouping in one list. Nav is the title-screen picker brought indoors: the four areas
- * of the editor as tiles, each with its description and a way to go there. Settings is the old
- * menu's Settings rows.</p>
+ * stages and grouping in one list. Stages lists every Stage with the blocks its linked parts use.
+ * Nav is the title-screen picker brought indoors: the four areas of the editor as tiles, each with
+ * its description and a way to go there. Settings is the old menu's Settings rows.</p>
  */
 public enum EditorScreenPage {
     TEMPLATES(EditorScreenLang.TAB_TEMPLATES),
     LAYOUT(EditorScreenLang.TAB_LAYOUT),
+    STAGES(EditorScreenLang.TAB_STAGES),
     NAV(EditorScreenLang.TAB_NAV),
     SETTINGS(EditorScreenLang.TAB_SETTINGS);
 

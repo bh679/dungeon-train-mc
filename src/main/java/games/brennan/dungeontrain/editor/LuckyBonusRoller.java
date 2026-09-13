@@ -50,6 +50,8 @@ public final class LuckyBonusRoller {
     public static final int MAX_LUCKY_BONUS = LUCK_II_MAX_BONUS;
     /** Luck attribute value at which the Luck II range applies. */
     private static final float LUCK_II_THRESHOLD = 2.0f;
+    /** A vase bakes (and a lucky breaker can claim) exactly this many bonus stacks. */
+    public static final int VASE_BONUS = 1;
 
     /**
      * Slot key base for the bonus rolls. Real container slots top out at 54, so bonus
@@ -59,25 +61,31 @@ public final class LuckyBonusRoller {
 
     private LuckyBonusRoller() {}
 
-    /** Only chests and barrels carry a bonus — the same set the achievement counter calls "loot". */
+    /** Only chests and barrels carry an open-time bonus — the same set the achievement counter calls "loot". */
     public static boolean isBonusContainer(BlockState state) {
         return state.getBlock() instanceof ChestBlock || state.getBlock() instanceof BarrelBlock;
     }
 
+    /** Vases (decorated pots) carry a single break-time bonus instead — see {@link #vaseBonusFor}. */
+    public static boolean isVase(BlockState state) {
+        return ContainerContentsRoller.isDecoratedPot(state);
+    }
+
     /**
-     * Roll the {@link #MAX_LUCKY_BONUS} candidate stacks for one chest from {@code pool},
-     * using the same seed frame as the base roll. Book placeholders are excluded so no
-     * pending community-book placeholder is baked into a bonus that may never be handed out.
+     * Roll {@code candidates} candidate stacks for one container from {@code pool}, using the same
+     * seed frame as the base roll — {@link #MAX_LUCKY_BONUS} for chests, {@link #VASE_BONUS}
+     * for vases. Book placeholders are excluded so no pending community-book placeholder is
+     * baked into a bonus that may never be handed out.
      *
      * @return the saved stacks, possibly empty if the pool held nothing eligible
      */
     static ListTag preRoll(ContainerContentsPool pool, BlockPos localPos, long worldSeed,
-                           int carriageIndex, int diffIndex, HolderLookup.Provider registries) {
+                           int carriageIndex, int diffIndex, int candidates, HolderLookup.Provider registries) {
         ContainerContentsPool eligible = withoutBookPlaceholders(pool);
         ListTag out = new ListTag();
         int totalWeight = eligible.totalWeight();
         if (eligible.isEmpty() || totalWeight <= 0) return out;
-        for (int i = 0; i < MAX_LUCKY_BONUS; i++) {
+        for (int i = 0; i < candidates; i++) {
             int slotKey = BONUS_SLOT_BASE + i;
             ContainerContentsEntry picked =
                 ContainerContentsRoller.pickEntry(eligible, totalWeight, localPos, worldSeed, carriageIndex, slotKey);
@@ -139,6 +147,16 @@ public final class LuckyBonusRoller {
         int min = luck >= LUCK_II_THRESHOLD ? LUCK_II_MIN_BONUS : LUCK_I_MIN_BONUS;
         int max = luck >= LUCK_II_THRESHOLD ? LUCK_II_MAX_BONUS : LUCK_I_MAX_BONUS;
         return min + random.nextInt(max - min + 1);
+    }
+
+    /**
+     * How many of a vase's candidates a lucky breaker claims: with any Luck at all, the single
+     * baked stack half the time; zero otherwise (Bad Luck never removes items). A coin flip
+     * rather than a tiered range because a vase only ever holds one item to begin with.
+     */
+    public static int vaseBonusFor(float luck, RandomSource random) {
+        if (luck <= 0f) return 0;
+        return random.nextBoolean() ? VASE_BONUS : 0;
     }
 
     private static ContainerContentsPool withoutBookPlaceholders(ContainerContentsPool pool) {

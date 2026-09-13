@@ -50,12 +50,13 @@ final class TemplateDataSheetTest {
     }
 
     /** The cells of the unlabelled line that follows the Stage line. */
-    private static List<TemplateDataSheet.Cell> gateCells(List<TemplateDataSheet.Line> lines) {
-        String label = EditorScreenLang.text(EditorScreenLang.SHEET_STAGE);
-        for (int i = 0; i < lines.size() - 1; i++) {
-            if (lines.get(i).label().equals(label)) return lines.get(i + 1).cells();
+    /** The Bands line: every band a letter, under the Stage line when the gate is Custom. */
+    private static List<TemplateDataSheet.Cell> bandCells(List<TemplateDataSheet.Line> lines) {
+        String label = EditorScreenLang.text(EditorScreenLang.STAGES_BANDS);
+        for (TemplateDataSheet.Line l : lines) {
+            if (l.label().equals(label)) return l.cells();
         }
-        throw new AssertionError("no gate line after the Stage line");
+        throw new AssertionError("no Bands line");
     }
 
     private static String typePrefix(TemplateDataSheet.Cell cell) {
@@ -99,21 +100,23 @@ final class TemplateDataSheetTest {
         assertInstanceOf(TemplateDataSheet.Action.Open.class, cells.get(0).action());
         assertNotNull(cells.get(0).tooltip());
 
-        List<TemplateDataSheet.Cell> gate = gateCells(carriageSheet(15, List.of()));
-        assertEquals("10", gate.get(1).text());
-        assertEquals("dungeontrain editor minlevel pen", stepPrefix(gate.get(1)));
-        assertTrue(gate.get(1).tooltip().contains(EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP)));
-        assertEquals("60", gate.get(3).text());
-        assertEquals("dungeontrain editor maxlevel pen", stepPrefix(gate.get(3)));
+        // The bounds sit beside Custom: Custom · Lv · min · — · max.
+        assertEquals("10", cells.get(2).text());
+        assertEquals("dungeontrain editor minlevel pen", stepPrefix(cells.get(2)));
+        assertTrue(cells.get(2).tooltip().contains(EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP)));
+        assertEquals("60", cells.get(4).text());
+        assertEquals("dungeontrain editor maxlevel pen", stepPrefix(cells.get(4)));
 
-        // Phase mask 1 is Overworld only: it turns off, and every other dimension turns on.
-        cells = gate;
-        TemplateDataSheet.Cell overworld = cells.get(5);
+        // Phase mask 1 is Overworld only: it turns off, and every other dimension turns on — each
+        // band its own button on the Bands line.
+        List<TemplateDataSheet.Cell> bands = bandCells(carriageSheet(15, List.of()));
+        assertEquals(games.brennan.dungeontrain.worldgen.TrainPhase.values().length, bands.size());
+        TemplateDataSheet.Cell overworld = bands.get(0);
         assertEquals("O", overworld.text());
         assertTrue(overworld.on());
         assertEquals("dungeontrain editor phase pen overworld off", runCommand(overworld));
         assertEquals("Overworld", overworld.tooltip());
-        TemplateDataSheet.Cell nether = cells.get(6);
+        TemplateDataSheet.Cell nether = bands.get(1);
         assertFalse(nether.on());
         assertEquals("dungeontrain editor phase pen nether on", runCommand(nether));
     }
@@ -133,8 +136,8 @@ final class TemplateDataSheetTest {
     }
 
     @Test
-    @DisplayName("a Custom stage keeps its name on the Stage line and its gate on the next one")
-    void customStageWrapsToASecondLine() {
+    @DisplayName("a Custom stage keeps its bounds on the Stage line and its bands on a Bands line under it; a linked one has no Bands line")
+    void customStageGetsABandsLine() {
         List<TemplateDataSheet.Line> lines = carriageSheet(15, List.of());
         int stageAt = -1;
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_STAGE);
@@ -142,10 +145,15 @@ final class TemplateDataSheetTest {
             if (lines.get(i).label().equals(label)) stageAt = i;
         }
         assertTrue(stageAt >= 0);
-        assertEquals(1, lines.get(stageAt).cells().size(), "the Stage line carries only the stage");
-        TemplateDataSheet.Line gate = lines.get(stageAt + 1);
-        assertEquals("", gate.label(), "the gate continues on an unlabelled line");
-        assertEquals("Lv", gate.cells().get(0).text());
+        assertEquals(5, lines.get(stageAt).cells().size(), "Custom · Lv · min · — · max");
+        TemplateDataSheet.Line bands = lines.get(stageAt + 1);
+        assertEquals(EditorScreenLang.text(EditorScreenLang.STAGES_BANDS), bands.label());
+        assertEquals("O", bands.cells().get(0).text());
+        assertFalse(carriageSheet(15, List.of("desert")).stream()
+            .anyMatch(l -> l.label().equals(EditorScreenLang.text(EditorScreenLang.STAGES_BANDS))),
+            "a linked Stage owns its bands; they stay read-only on the Stage line");
+        assertFalse(lines.stream().anyMatch(l -> l.label().equals(EditorScreenLang.text(EditorScreenLang.SHEET_PATH))),
+            "the Path line gave its row to Bands");
     }
 
     @Test
@@ -197,16 +205,15 @@ final class TemplateDataSheetTest {
         for (TemplateDataSheet.Placed p : placed) {
             assertTrue(p.rect().x() >= r.x() && p.rect().right() <= r.right() + 2, "cell escaped: " + p);
         }
-        // A labelled line clears the label column; a continuation line starts at the left edge.
+        // Every band's button lands inside the sheet, on the Bands line's own row.
         List<TemplateDataSheet.Line> withGate = carriageSheet(15, List.of());
         List<TemplateDataSheet.Placed> gatePlaced = TemplateDataSheet.place(withGate, r, new FixedFont());
-        int labelled = gatePlaced.stream().filter(p -> p.rect().y() == gatePlaced.get(0).rect().y())
-            .findFirst().orElseThrow().rect().x();
-        int continuation = gatePlaced.stream()
-            .filter(p -> "Lv".equals(p.cell().text())).findFirst().orElseThrow().rect().x();
-        assertTrue(continuation < labelled,
-            "the unlabelled line must not be indented under the label column");
-        assertEquals(r.x() + 2, continuation);
+        List<TemplateDataSheet.Placed> letters = gatePlaced.stream()
+            .filter(p -> p.cell().action() instanceof TemplateDataSheet.Action.Run
+                && p.cell().text().length() == 1 && Character.isUpperCase(p.cell().text().charAt(0))).toList();
+        assertEquals(games.brennan.dungeontrain.worldgen.TrainPhase.values().length, letters.size(),
+            "every band's letter must be placed, none cut by the width");
+        assertEquals(1, letters.stream().map(p -> p.rect().y()).distinct().count(), "all on one row");
 
         TemplateDataSheet.Placed clickable = placed.stream().filter(p -> p.cell().action() != null)
             .findFirst().orElseThrow();

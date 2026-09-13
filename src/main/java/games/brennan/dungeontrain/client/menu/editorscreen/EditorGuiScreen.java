@@ -74,8 +74,10 @@ public final class EditorGuiScreen extends Screen {
     private final EditorDetailPane detail = new EditorDetailPane();
     private final EditorCreatorPane creatorPane = new EditorCreatorPane();
     private final EditorSettingsPane settingsPane = new EditorSettingsPane();
-    private final EditorNavPane navPane = new EditorNavPane();
     private final EditorLayoutPane layoutPane = new EditorLayoutPane(this::selectOrEnter);
+    private final EditorStagesPane stagesPane = new EditorStagesPane();
+    private final EditorNavPane navPane = new EditorNavPane();
+    private final EditorStageDetailPane stageDetail = new EditorStageDetailPane();
     private final OrbitState orbit = new OrbitState();
     private final InlineEdit inlineEdit = new InlineEdit();
     private final EditorModalHost modal = new EditorModalHost(this::onClose, this::afterCommand);
@@ -162,15 +164,26 @@ public final class EditorGuiScreen extends Screen {
         super.removed();
         BuilderTilePreviews.clear();
         RelayBuildPreviews.clear();
+        games.brennan.dungeontrain.client.builder.StagePreviews.clear();
         search.close();
         EditorCreatorBuilds.detach();
         BuilderProfileState.listenForDownloads(null);
     }
 
-    /** The two tabs that browse the roster and so carry the filter bar; Nav and Settings do not. */
+    /** The two tabs that browse the roster and so carry the filter bar; Stages, Nav and Settings do not. */
     private static boolean hasFilterBar() {
         EditorScreenPage page = EditorScreenState.page();
-        return page != EditorScreenPage.SETTINGS && page != EditorScreenPage.NAV;
+        return page != EditorScreenPage.SETTINGS && page != EditorScreenPage.STAGES && page != EditorScreenPage.NAV;
+    }
+
+    /** Whether the Nav tab owns the screen — both columns, no template or stage detail. */
+    private static boolean onNav() {
+        return EditorScreenState.page() == EditorScreenPage.NAV;
+    }
+
+    /** Whether the right pane is the stage detail rather than the template detail. */
+    private static boolean onStages() {
+        return EditorScreenState.page() == EditorScreenPage.STAGES;
     }
 
     /**
@@ -245,6 +258,7 @@ public final class EditorGuiScreen extends Screen {
         float seconds = frameSeconds();
         BuilderTilePreviews.beginFrame(BAKES_PER_FRAME);
         RelayBuildPreviews.beginFrame();
+        games.brennan.dungeontrain.client.builder.StagePreviews.beginFrame();
 
         EditorScreenActions.Ctx ctx = context(index);
         if (previewKey == null ? ctx.selection() != null : !previewKey.equals(ctx.selection())) {
@@ -288,9 +302,13 @@ public final class EditorGuiScreen extends Screen {
             settingsPane.render(g, this.font, theme, layout, mx, my);
         } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
             layoutPane.render(g, this.font, theme, layout, index, ctx.selection(), ctx.standing(), mx, my);
+        } else if (onStages()) {
+            // The tiles follow the overview's carriage and roll, laid out a frame ago — close enough.
+            stagesPane.followModel(stageDetail.carriageShown(), stageDetail.seedShown());
+            stagesPane.render(g, this.font, theme, layout, index, mx, my);
         }
 
-        if (EditorScreenState.page() == EditorScreenPage.NAV) {
+        if (onNav()) {
             // Nav owns the right column too: the picked area's picture and words stand where a
             // template's model and sheet would, and none of the template controls apply to an area.
             navPane.render(g, this.font, theme, layout, index, mx, my);
@@ -303,6 +321,9 @@ public final class EditorGuiScreen extends Screen {
             creatorPane.render(g, this.font, layout, theme, picked, orbit.yaw(),
                 creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null,
                 previewSeq, mx, my);
+        } else if (onStages()) {
+            stageDetail.layout(layout, EditorScreenState.effectiveStage(index), index, ctx.selection());
+            stageDetail.render(g, this.font, theme, orbit.yaw(), mx, my);
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
             TemplateArt art = TemplateArt.of(ctx.selection());
@@ -571,13 +592,21 @@ public final class EditorGuiScreen extends Screen {
             tip = browser.tooltipAt(browser.hovered());
         } else if (EditorScreenState.page() == EditorScreenPage.LAYOUT) {
             tip = layoutPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
+        } else if (onStages()) {
+            tip = stagesPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
+        }
+        if (tip == null && onNav()) {
+            List<String> nav = navPane.tooltipAt(mouseX, mouseY, EditorRosterClient.index());
+            if (!nav.isEmpty()) tip = nav.get(0);
         }
         if (tip != null) {
             g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
             return;
         }
-        List<String> lines = EditorScreenState.page() == EditorScreenPage.NAV
-            ? navPane.tooltipAt(mouseX, mouseY, EditorRosterClient.index())
+        // The template pane's hover is only refreshed while it renders, so on the Stages tab its
+        // last frame must not answer for the stage pane that replaced it.
+        List<String> lines = onNav() ? List.<String>of()
+            : onStages() ? stageDetail.tooltipAt(stageDetail.hovered())
             : detail.tooltipAt(detail.hovered());
         if (!lines.isEmpty()) {
             g.renderComponentTooltip(this.font,
@@ -671,7 +700,13 @@ public final class EditorGuiScreen extends Screen {
                 setFocused(null);
                 return true;
             }
-        } else if (EditorScreenState.page() == EditorScreenPage.NAV) {
+        } else if (onStages()) {
+            if (stagesPane.mouseClicked(layout, EditorRosterClient.index(), mouseX, mouseY)) {
+                click();
+                setFocused(null);
+                return true;
+            }
+        } else if (onNav()) {
             EditorNavPane.Hit hit = navPane.hitTest(mouseX, mouseY);
             if (hit.kind() != EditorNavPane.Kind.NONE) {
                 click();
@@ -718,6 +753,55 @@ public final class EditorGuiScreen extends Screen {
                     return true;
                 }
                 case NONE -> { }
+            }
+            setFocused(null);
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
+        if (onStages()) {
+            EditorStageDetailPane.Hit stageHit = stageDetail.hitTest(mouseX, mouseY);
+            switch (stageHit.kind()) {
+                case PAGE_PREV -> { if (stageDetail.scrollBy(-1)) click(); return true; }
+                case PAGE_NEXT -> { if (stageDetail.scrollBy(+1)) click(); return true; }
+                case ICON -> {
+                    EditorScreenActions.Icon icon = stageDetail.icons().get(stageHit.index());
+                    if (!icon.enabled()) return false;
+                    click();
+                    dispatch(icon.entry());
+                    return true;
+                }
+                case PREVIEW -> {
+                    orbit.beginDrag();
+                    return true;
+                }
+                case SHEET -> {
+                    TemplateDataSheet.Placed placed = stageDetail.sheetCell(stageHit.index());
+                    if (placed == null) return false;
+                    if (onSheetCell(placed)) click();
+                    return true;
+                }
+                case CELL, FAMILY -> {
+                    // The palette's gestures are the world-space panel's: the server reads the held
+                    // block (or the empty hand) and answers on the action bar; the roster refresh
+                    // that follows redraws the cell.
+                    games.brennan.dungeontrain.net.StagePaletteEditPacket edit = stageDetail.editFor(stageHit);
+                    if (edit == null) return false;
+                    click();
+                    DungeonTrainNet.sendToServer(edit);
+                    afterCommand();
+                    return true;
+                }
+                case ROW -> {
+                    // A linked template's row is a shortcut to its tile: select it and let the
+                    // browser open on it, as revealing any selection does.
+                    VariantKey key = stageDetail.rowKey(stageHit);
+                    if (key == null) return true;
+                    click();
+                    EditorScreenState.select(key);
+                    EditorScreenState.revealSelection(EditorRosterClient.index());
+                    browser.resetScroll();
+                    return true;
+                }
+                default -> { }
             }
             setFocused(null);
             return super.mouseClicked(mouseX, mouseY, button);
@@ -1074,8 +1158,12 @@ public final class EditorGuiScreen extends Screen {
             inlineEdit.cancel();
             return layoutPane.scrollBy(dir);
         }
-        if (EditorScreenState.page() != EditorScreenPage.NAV
-                && detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) return true;
+        if (onStages()) {
+            if (stagesPane.over(layout, mouseX, mouseY)) return stagesPane.scrollBy(dir);
+            if (stageDetail.over(mouseX, mouseY) && stageDetail.scrollBy(dir)) return true;
+        } else if (!onNav() && detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) {
+            return true;
+        }
         if (HotbarPassthrough.scroll(this.minecraft, scrollY)) return true;
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
