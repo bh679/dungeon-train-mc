@@ -432,11 +432,13 @@ public final class PortalPuppets {
         PortalFrames.Move dest = frames.mirror(source.getX(), source.getY(), source.getZ());
         if (dest == null) return null;
 
-        // A grounded entity goes to the destination's floor surface rather than its carried-across
-        // local Y. The two frames' block grids differ by the ship's fractional pose, so the verbatim
-        // offset stands a puppet a fraction inside the floor or a fraction above it — the same
-        // mismatch that used to drop swapping players through a twin.
-        double y = source.onGround() ? frames.floorSurfaceY(dest.toFrame()) : dest.y();
+        // The local Y carries across verbatim. This used to snap a grounded entity to the corridor's
+        // floor surface, because the box-derived carriage origin put the two block grids a fraction
+        // apart and a verbatim offset stood a puppet a little inside or above the floor. That hid
+        // the lag at the cost of flattening the room: anything standing on a stair, a trapdoor or a
+        // slab was drawn a block low, inside what it stood on. The frame is pose-aligned now (see
+        // poseAligned), so the grids coincide exactly and the source's own height is the right one.
+        double y = dest.y();
 
         double x = dest.x();
         double z = dest.z();
