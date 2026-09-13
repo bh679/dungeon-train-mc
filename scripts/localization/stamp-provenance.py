@@ -5,7 +5,8 @@ The two recipes (composable in one run — sync happens first, then stamps):
 
   New translation wave (after adding lang keys):
       python3 scripts/localization/stamp-provenance.py --sync --author 'Opus 4.8 (Claude)'
-    Adds every lang key missing from provenance as {author: NAME, reviewer: ""},
+    Adds every lang key missing from provenance as {author: NAME, reviewer: "",
+    source_hash: <digest of its current English>},
     deletes orphaned entries, and rewrites each sidecar in its lang file's key order.
     Existing entries are preserved untouched.
 
@@ -14,7 +15,13 @@ The two recipes (composable in one run — sync happens first, then stamps):
           --author 阿世xAsh --reviewer 阿世xAsh --prefix gui.dungeontrain.support.
     Restamps author and/or reviewer on the selected existing keys. Selection is one
     of --keys / --prefix / --all. Restamping --author WITHOUT --reviewer resets
-    reviewer to "" — a re-translated line invalidates its previous review.
+    reviewer to "" — a re-translated line invalidates its previous review. Any stamp
+    also refreshes source_hash to the current English: the line now attests it.
+
+Re-run --sync after editing en_us.json. Existing entries keep their source_hash (that
+is how "English changed since this was reviewed" is detected), but the shipped manifest's
+source_changed lists are rebuilt from the current English and check-provenance.py fails
+until they are.
 
 Names passed to --author / --reviewer must exist in ``localization/authors.json``
 (reviewers must be registered as human) — register a new model or translator there
@@ -46,8 +53,15 @@ from pathlib import Path
 import provenance_io
 
 
-def sync_locale(lang: dict[str, str], prov: dict, author: str | None) -> tuple[dict, int, int]:
-    """A new sidecar aligned to the lang file: (synced, added_count, removed_count)."""
+def sync_locale(lang: dict[str, str], prov: dict, author: str | None,
+                english: dict[str, str] | None = None) -> tuple[dict, int, int]:
+    """A new sidecar aligned to the lang file: (synced, added_count, removed_count).
+
+    New entries record the digest of ``english`` (key -> current English text) they were
+    translated from; existing entries keep theirs — that is the whole point of the field,
+    so an English edit shows up as "changed since" rather than being silently absorbed.
+    """
+    english = english or {}
     missing = [k for k in lang if k not in prov]
     if missing and not author:
         raise ValueError(
@@ -55,7 +69,8 @@ def sync_locale(lang: dict[str, str], prov: dict, author: str | None) -> tuple[d
             f"pass --author '<who translated them>'"
         )
     synced = {
-        key: dict(prov[key]) if key in prov else {"author": author, "reviewer": ""}
+        key: dict(prov[key]) if key in prov else {
+            "author": author, "reviewer": "", "source_hash": source_hash_for(english, key)}
         for key in lang  # lang-file order; orphans drop out by construction
     }
     return synced, len(missing), len(set(prov) - set(lang))
@@ -80,9 +95,20 @@ def select_keys(prov: dict, keys: list[str] | None, prefix: str | None,
     return list(keys)
 
 
+def source_hash_for(english: dict[str, str], key: str) -> str:
+    """The digest to stamp for ``key``: of its current English, or ``""`` when this
+    namespace's English is not in the repo (the siblings)."""
+    return provenance_io.source_hash(english[key]) if key in english else ""
+
+
 def stamp_locale(prov: dict, targets: list[str], author: str | None,
-                 reviewer: str | None) -> dict:
-    """A new sidecar with author/reviewer restamped on ``targets``."""
+                 reviewer: str | None, english: dict[str, str] | None = None) -> dict:
+    """A new sidecar with author/reviewer restamped on ``targets``.
+
+    Either stamp attests the English of this moment — a translator worked from it, a
+    reviewer read it — so both refresh ``source_hash`` from ``english``.
+    """
+    english = english or {}
     stamped = {key: dict(entry) for key, entry in prov.items()}
     for key in targets:
         if author is not None:
@@ -91,6 +117,8 @@ def stamp_locale(prov: dict, targets: list[str], author: str | None,
             stamped[key]["reviewer"] = reviewer if reviewer is not None else ""
         elif reviewer is not None:
             stamped[key]["reviewer"] = reviewer
+        if author is not None or reviewer is not None:
+            stamped[key]["source_hash"] = source_hash_for(english, key)
     return stamped
 
 
@@ -135,7 +163,7 @@ def refresh_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str]
 
 
 def process_locale(locale: str, lang_dir: Path, prov_dir: Path,
-                   args: argparse.Namespace) -> tuple[dict, str]:
+                   args: argparse.Namespace, english: dict[str, str] | None = None) -> tuple[dict, str]:
     """Compute one locale's updated sidecar; returns (new sidecar, summary line).
 
     Pure — the caller writes only after every locale computes cleanly, so a bad
@@ -147,12 +175,12 @@ def process_locale(locale: str, lang_dir: Path, prov_dir: Path,
 
     added = removed = 0
     if args.sync:
-        prov, added, removed = sync_locale(lang, prov, args.author)
+        prov, added, removed = sync_locale(lang, prov, args.author, english)
 
     stamped = 0
     if args.selecting:
         targets = select_keys(prov, args.keys, args.prefix, args.all)
-        prov = stamp_locale(prov, targets, args.author, args.reviewer)
+        prov = stamp_locale(prov, targets, args.author, args.reviewer, english)
         stamped = len(targets)
 
     parts = []
@@ -189,10 +217,11 @@ def run_namespace(ns: provenance_io.Namespace, args: argparse.Namespace,
     else:
         targets = all_locales
 
+    english = provenance_io.english_lang(ns)
     results: list[tuple[str, dict, str]] = []
     for locale in targets:
         try:
-            prov, summary = process_locale(locale, ns.lang_dir, ns.prov_dir, args)
+            prov, summary = process_locale(locale, ns.lang_dir, ns.prov_dir, args, english)
             results.append((locale, prov, summary))
         except ValueError as exc:
             label = locale if args.single_namespace else f"{ns.name}/{locale}"

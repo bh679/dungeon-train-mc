@@ -25,12 +25,12 @@ AUTHORS = {
     "Other Person": "human",
 }
 PROV = {
-    "a.key": {"author": "Old Name", "reviewer": ""},
-    "b.key": {"author": "Opus 5 (Claude)", "reviewer": "Old Name"},
-    "c.key": {"author": "Other Person", "reviewer": "Old Name"},
+    "a.key": {"author": "Old Name", "reviewer": "", "source_hash": ""},
+    "b.key": {"author": "Opus 5 (Claude)", "reviewer": "Old Name", "source_hash": ""},
+    "c.key": {"author": "Other Person", "reviewer": "Old Name", "source_hash": ""},
 }
-SIBLING_PROV = {"x.key": {"author": "Old Name", "reviewer": ""}}
-BOOKS_PROV = {"random_books/deathnote": {"author": "Opus 5 (Claude)", "reviewer": "Old Name"}}
+SIBLING_PROV = {"x.key": {"author": "Old Name", "reviewer": "", "source_hash": ""}}
+BOOKS_PROV = {"random_books/deathnote": {"author": "Opus 5 (Claude)", "reviewer": "Old Name", "source_hash": ""}}
 
 
 def write_json(path, data):
@@ -139,13 +139,13 @@ class ApplyRenames(unittest.TestCase):
         self.assertEqual(list(authors), ["Opus 5 (Claude)", "老本願", "New Name", "Other Person"],
                          "renamed in place, order kept")
         prov = read_json(os.path.join(ws, "prov", "xx_yy.json"))
-        self.assertEqual(prov["a.key"], {"author": "New Name", "reviewer": ""})
-        self.assertEqual(prov["b.key"], {"author": "Opus 5 (Claude)", "reviewer": "New Name"})
-        self.assertEqual(prov["c.key"], {"author": "Other Person", "reviewer": "New Name"})
+        self.assertEqual(prov["a.key"], {"author": "New Name", "reviewer": "", "source_hash": ""})
+        self.assertEqual(prov["b.key"], {"author": "Opus 5 (Claude)", "reviewer": "New Name", "source_hash": ""})
+        self.assertEqual(prov["c.key"], {"author": "Other Person", "reviewer": "New Name", "source_hash": ""})
         self.assertEqual(read_json(os.path.join(ws, "prov", "adventureitemnames", "xx_yy.json")),
-                         {"x.key": {"author": "New Name", "reviewer": ""}})
+                         {"x.key": {"author": "New Name", "reviewer": "", "source_hash": ""}})
         self.assertEqual(read_json(os.path.join(ws, "narrative-prov", "xx_yy.json")),
-                         {"random_books/deathnote": {"author": "Opus 5 (Claude)", "reviewer": "New Name"}})
+                         {"random_books/deathnote": {"author": "Opus 5 (Claude)", "reviewer": "New Name", "source_hash": ""}})
         self.assertEqual(report["applied"], [{"from": "Old Name", "to": "New Name", "entries": 5}])
         self.assertEqual(report["skipped"], [])
 

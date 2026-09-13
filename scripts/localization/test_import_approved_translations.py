@@ -18,14 +18,16 @@ import threading
 import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import provenance_io as pio  # noqa: E402
 SCRIPT = os.path.join(HERE, "import-approved-translations.py")
 
 EN = {"a.key": "Alpha", "b.key": "Beta", "c.key": "Gamma"}
 XX = {"a.key": "AI Alpha", "b.key": "AI Beta", "c.key": "AI Gamma"}
 PROV = {
-    "a.key": {"author": "Opus 5 (Claude)", "reviewer": ""},
-    "b.key": {"author": "Opus 5 (Claude)", "reviewer": ""},
-    "c.key": {"author": "Opus 5 (Claude)", "reviewer": ""},
+    "a.key": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
+    "b.key": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
+    "c.key": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
 }
 AUTHORS = {"Opus 5 (Claude)": "ai", "老本願": "human"}
 
@@ -80,7 +82,7 @@ def workspace(lang=XX, prov=PROV, authors=AUTHORS, book=BOOK, book_en=BOOK_EN):
         write_json(os.path.join(nar_en_dir, "deathnote.json"), book_en)
     write_provenance(os.path.join(prov_dir, "xx_yy.json"), prov)
     write_provenance(os.path.join(nar_prov_dir, "xx_yy.json"),
-                     {"random_books/deathnote": {"author": "Opus 5 (Claude)", "reviewer": ""}})
+                     {"random_books/deathnote": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""}})
     return ws
 
 
@@ -137,7 +139,7 @@ def test_revised_line_credits_the_translator_as_author_and_reviewer():
     proc = run(ws, [unit()])
     assert proc.returncode == 0, proc.stderr
     assert lang_of(ws)["a.key"] == "人工 Alpha"
-    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "老本願"}
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
     # untouched keys keep their machine attribution
     assert prov_of(ws)["b.key"]["author"] == "Opus 5 (Claude)"
 
@@ -146,7 +148,7 @@ def test_matching_line_is_reviewed_not_reauthored():
     ws = workspace()
     proc = run(ws, [unit(value="AI Alpha")])
     assert proc.returncode == 0, proc.stderr
-    assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願"}
+    assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
 
 
 # ---- two people, one line -----------------------------------------------------
@@ -172,7 +174,7 @@ def test_the_newest_of_two_approvals_ships_and_both_are_credited():
     assert proc.returncode == 0, proc.stderr
     # Newest wins because that is the one the relay already serves every player in this locale.
     assert lang_of(ws)["a.key"] == "新しい Alpha"
-    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "SandRuin"}
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "SandRuin", "source_hash": pio.source_hash("Alpha")}
     # build_contributors counts a key for its author OR its reviewer, so neither name is lost.
     names = {c["name"] for c in read_json(contributors)["contributors"]}
     assert names == {"老本願", "SandRuin"}, names
@@ -192,7 +194,7 @@ def test_a_relay_pick_outranks_the_newest_approval():
                     unit(id=4, ts=100, translator="SandRuin", value="選ばれた Alpha", picked=True)])
     assert proc.returncode == 0, proc.stderr
     assert lang_of(ws)["a.key"] == "選ばれた Alpha"
-    assert prov_of(ws)["a.key"] == {"author": "SandRuin", "reviewer": "老本願"}
+    assert prov_of(ws)["a.key"] == {"author": "SandRuin", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
 
 
 def test_a_contender_for_a_line_that_already_matches_is_named_not_credited():
@@ -202,7 +204,7 @@ def test_a_contender_for_a_line_that_already_matches_is_named_not_credited():
     proc = run(ws, [unit(id=9, ts=200, translator="老本願", value="AI Alpha"),
                     unit(id=4, ts=100, translator="ecodead", value="別の Alpha")])
     assert proc.returncode == 0, proc.stderr
-    assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願"}
+    assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
     assert "WARNING" in proc.stdout and "ecodead" in proc.stdout, proc.stdout
 
 
@@ -212,7 +214,7 @@ def test_a_third_translator_of_one_line_is_named_and_not_registered():
                     unit(id=8, ts=200, translator="SandRuin", value="二 Alpha"),
                     unit(id=7, ts=100, translator="ecodead", value="三 Alpha")], "--register-new")
     assert proc.returncode == 0, proc.stderr
-    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "SandRuin"}
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "SandRuin", "source_hash": pio.source_hash("Alpha")}
     assert "WARNING" in proc.stdout and "ecodead" in proc.stdout, proc.stdout
     # Registering a name nothing credits is what put ecodead in authors.json with no line behind
     # them and no entry in the shipped credits.
@@ -339,8 +341,8 @@ def test_key_english_has_but_the_locale_lacks_is_deferred_not_fatal():
     to. Nothing can be written for them, but nothing about them is wrong either.
     """
     ws = workspace(lang={"a.key": "AI Alpha", "b.key": "AI Beta"},   # c.key missing, EN has it
-                   prov={"a.key": {"author": "Opus 5 (Claude)", "reviewer": ""},
-                         "b.key": {"author": "Opus 5 (Claude)", "reviewer": ""}})
+                   prov={"a.key": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
+                         "b.key": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""}})
     proc = run(ws, [unit(unitId="c.key", source="Gamma", value="人工 Gamma")])
     assert proc.returncode == 0, proc.stderr
     assert "locale drift" in proc.stdout
@@ -355,8 +357,8 @@ def test_plural_form_the_locale_cannot_use_is_deferred_and_named_as_such():
     """
     en = dict(EN, **{"n.one": "one thing", "n.other": "many things"})
     xx = dict(XX, **{"n.one": "AI one", "n.other": "AI many"})
-    prov = dict(PROV, **{"n.one": {"author": "Opus 5 (Claude)", "reviewer": ""},
-                         "n.other": {"author": "Opus 5 (Claude)", "reviewer": ""}})
+    prov = dict(PROV, **{"n.one": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
+                         "n.other": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""}})
     ws = workspace(lang=xx, prov=prov)
     write_json(os.path.join(ws, "lang", "en_us.json"), en)
     proc = run(ws, [unit(unitId="n.few", source="", value="人工")])
@@ -368,8 +370,8 @@ def test_plural_form_the_locale_cannot_use_is_deferred_and_named_as_such():
 def test_deferred_units_do_not_hold_up_the_ones_that_can_land():
     """The whole point: 979 good translations must not be lost to units that have nowhere to go."""
     ws = workspace(lang={"a.key": "AI Alpha", "b.key": "AI Beta"},
-                   prov={"a.key": {"author": "Opus 5 (Claude)", "reviewer": ""},
-                         "b.key": {"author": "Opus 5 (Claude)", "reviewer": ""}})
+                   prov={"a.key": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""},
+                         "b.key": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""}})
     out = os.path.join(ws, "deferred.json")
     proc = run(ws, [unit(unitId="c.key", source="Gamma", value="人工 Gamma"),
                     unit(id=2, unitId="a.key", source="Alpha", value="人工 Alpha")],
@@ -396,7 +398,7 @@ def test_a_translation_that_drops_an_argument_is_deferred_not_written():
     submission held 1,105 good ones hostage, which is the exact failure deferral exists to prevent.
     """
     ws = workspace(lang={"a.key": "AI Alpha", "b.key": "AI Beta", "c.key": "AI %s and %s"},
-                   prov=dict(PROV, **{"c.key": {"author": "Opus 5 (Claude)", "reviewer": ""}}))
+                   prov=dict(PROV, **{"c.key": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""}}))
     write_json(os.path.join(ws, "lang", "en_us.json"), dict(EN, **{"c.key": "%s and %s"}))
     out = os.path.join(ws, "deferred.json")
     proc = run(ws, [unit(unitId="c.key", source="", value="только %s"),
@@ -433,7 +435,7 @@ def test_a_literal_percent_the_english_lacks_is_still_imported():
 def test_reordered_positional_arguments_are_imported():
     """Grammar may move arguments; the multiset is what has to match."""
     ws = workspace(lang={"a.key": "AI Alpha", "b.key": "AI Beta", "c.key": "AI %1$s %2$s"},
-                   prov=dict(PROV, **{"c.key": {"author": "Opus 5 (Claude)", "reviewer": ""}}))
+                   prov=dict(PROV, **{"c.key": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": ""}}))
     write_json(os.path.join(ws, "lang", "en_us.json"), dict(EN, **{"c.key": "%1$s before %2$s"}))
     proc = run(ws, [unit(unitId="c.key", source="", value="%2$s vor %1$s")])
     assert proc.returncode == 0, proc.stderr
@@ -480,7 +482,8 @@ def test_book_field_is_replaced_and_reviewed_not_reauthored():
     assert book["variants"] == ["人工 one", "AI two"]
     assert book["id"] == "deathnote", "structural key must be untouched"
     assert book_prov_of(ws)["random_books/deathnote"] == {
-        "author": "Opus 5 (Claude)", "reviewer": "老本願"}
+        "author": "Opus 5 (Claude)", "reviewer": "老本願",
+        "source_hash": pio.book_source_hash(BOOK_EN)}
 
 
 def test_book_with_every_field_replaced_takes_the_translator_as_author():
@@ -492,7 +495,7 @@ def test_book_with_every_field_replaced_takes_the_translator_as_author():
     proc = run(ws, rows)
     assert proc.returncode == 0, proc.stderr
     assert book_prov_of(ws)["random_books/deathnote"] == {
-        "author": "老本願", "reviewer": "老本願"}
+        "author": "老本願", "reviewer": "老本願", "source_hash": pio.book_source_hash(BOOK_EN)}
 
 
 def test_book_structural_field_is_refused():
