@@ -13,6 +13,7 @@ public final class EditorScreenLang {
     public static final String TAB_TEMPLATES = PREFIX + "tab.templates";
     public static final String TAB_LAYOUT = PREFIX + "tab.layout";
     public static final String TAB_STAGES = PREFIX + "tab.stages";
+    public static final String TAB_NAV = PREFIX + "tab.nav";
     public static final String TAB_SETTINGS = PREFIX + "tab.settings";
     public static final String TAB_EXIT = PREFIX + "tab.exit";
 
@@ -22,6 +23,15 @@ public final class EditorScreenLang {
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
     public static final String TAB_DIMENSIONS = PREFIX + "tab.dimensions";
+
+    /**
+     * The Nav tab: the red button under the picked area, its greyed form when already there, the
+     * button's tooltip, and the confirm that stands between it and a plot-wiping category switch.
+     */
+    public static final String NAV_GO_HERE = PREFIX + "nav.go_here";
+    public static final String NAV_HERE = PREFIX + "nav.here";
+    public static final String NAV_GO_HERE_TIP = PREFIX + "nav.go_here_tip";
+    public static final String NAV_CONFIRM = PREFIX + "nav.confirm";
 
     /** The filter bar's toggle and its tooltips, and what clicking an active chip does. */
     public static final String FILTERS = PREFIX + "filters";

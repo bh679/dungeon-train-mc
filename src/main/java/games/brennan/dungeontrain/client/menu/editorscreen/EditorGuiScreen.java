@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.builder.BuilderProfilePrefabConflictScreen;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.builder.BuilderNewOptions;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
@@ -12,6 +13,7 @@ import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
 import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
+import games.brennan.dungeontrain.client.menu.ConfirmScreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuKeyBindings;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.menu.CreatorParentPickerScreen;
@@ -74,6 +76,7 @@ public final class EditorGuiScreen extends Screen {
     private final EditorSettingsPane settingsPane = new EditorSettingsPane();
     private final EditorLayoutPane layoutPane = new EditorLayoutPane(this::selectOrEnter);
     private final EditorStagesPane stagesPane = new EditorStagesPane();
+    private final EditorNavPane navPane = new EditorNavPane();
     private final EditorStageDetailPane stageDetail = new EditorStageDetailPane();
     private final OrbitState orbit = new OrbitState();
     private final InlineEdit inlineEdit = new InlineEdit();
@@ -167,10 +170,15 @@ public final class EditorGuiScreen extends Screen {
         BuilderProfileState.listenForDownloads(null);
     }
 
-    /** The two tabs that browse the roster and so carry the filter bar; Stages and Settings do not. */
+    /** The two tabs that browse the roster and so carry the filter bar; Stages, Nav and Settings do not. */
     private static boolean hasFilterBar() {
-        return EditorScreenState.page() != EditorScreenPage.SETTINGS
-            && EditorScreenState.page() != EditorScreenPage.STAGES;
+        EditorScreenPage page = EditorScreenState.page();
+        return page != EditorScreenPage.SETTINGS && page != EditorScreenPage.STAGES && page != EditorScreenPage.NAV;
+    }
+
+    /** Whether the Nav tab owns the screen — both columns, no template or stage detail. */
+    private static boolean onNav() {
+        return EditorScreenState.page() == EditorScreenPage.NAV;
     }
 
     /** Whether the right pane is the stage detail rather than the template detail. */
@@ -300,7 +308,11 @@ public final class EditorGuiScreen extends Screen {
             stagesPane.render(g, this.font, theme, layout, index, mx, my);
         }
 
-        if (EditorCreatorBuilds.active()) {
+        if (onNav()) {
+            // Nav owns the right column too: the picked area's picture and words stand where a
+            // template's model and sheet would, and none of the template controls apply to an area.
+            navPane.render(g, this.font, theme, layout, index, mx, my);
+        } else if (EditorCreatorBuilds.active()) {
             // A relay row is not a template: none of the detail pane's controls apply to one, so
             // the pane that has no controls stands in for it rather than eight disabled buttons.
             BuilderProfilePacket.Entry picked = selectedCreatorBuild();
@@ -583,13 +595,18 @@ public final class EditorGuiScreen extends Screen {
         } else if (onStages()) {
             tip = stagesPane.tooltipAt(layout, EditorRosterClient.index(), mouseX, mouseY);
         }
+        if (tip == null && onNav()) {
+            List<String> nav = navPane.tooltipAt(mouseX, mouseY, EditorRosterClient.index());
+            if (!nav.isEmpty()) tip = nav.get(0);
+        }
         if (tip != null) {
             g.renderTooltip(this.font, Component.literal(tip), mouseX, mouseY);
             return;
         }
         // The template pane's hover is only refreshed while it renders, so on the Stages tab its
         // last frame must not answer for the stage pane that replaced it.
-        List<String> lines = onStages() ? stageDetail.tooltipAt(stageDetail.hovered())
+        List<String> lines = onNav() ? List.<String>of()
+            : onStages() ? stageDetail.tooltipAt(stageDetail.hovered())
             : detail.tooltipAt(detail.hovered());
         if (!lines.isEmpty()) {
             g.renderComponentTooltip(this.font,
@@ -689,6 +706,15 @@ public final class EditorGuiScreen extends Screen {
                 setFocused(null);
                 return true;
             }
+        } else if (onNav()) {
+            EditorNavPane.Hit hit = navPane.hitTest(mouseX, mouseY);
+            if (hit.kind() != EditorNavPane.Kind.NONE) {
+                click();
+                onNavHit(hit);
+                return true;
+            }
+            setFocused(null);
+            return super.mouseClicked(mouseX, mouseY, button);
         }
         if (EditorCreatorBuilds.active()) {
             switch (creatorPane.hitTest(mouseX, mouseY)) {
@@ -791,6 +817,29 @@ public final class EditorGuiScreen extends Screen {
         }
         setFocused(null);
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    /**
+     * A Nav click: a tile picks that area; Go here asks first, then switches the editor to it.
+     *
+     * <p>The switch is the same {@code /dungeontrain editor <id>} Enter issues — in this world, no
+     * relaunch — and it clears and re-stamps every plot, unsaved edits included. Hence the confirm,
+     * and hence the plain one: {@code UnsavedCheckScreen}'s scan listed every plot rather than the
+     * edited ones, which is why Enter stopped using it. Yes runs the command and closes the screen;
+     * Cancel pops back to Nav with the tile still picked.</p>
+     */
+    private void onNavHit(EditorNavPane.Hit hit) {
+        switch (hit.kind()) {
+            case TILE -> EditorScreenState.setNavMode(hit.mode());
+            case GO_HERE -> {
+                BuilderMode mode = EditorNavPane.selected(EditorRosterClient.index());
+                if (!EditorNavPane.canGo(mode, EditorRosterClient.index())) return;
+                String name = Component.translatable(mode.labelKey()).getString();
+                modal.open(new ConfirmScreen(EditorScreenLang.text(EditorScreenLang.NAV_CONFIRM, name),
+                    EditorNavPane.switchCommand(mode)));
+            }
+            case NONE -> { }
+        }
     }
 
     private void onTab(EditorTabBar.Tab tab) {
@@ -1112,7 +1161,7 @@ public final class EditorGuiScreen extends Screen {
         if (onStages()) {
             if (stagesPane.over(layout, mouseX, mouseY)) return stagesPane.scrollBy(dir);
             if (stageDetail.over(mouseX, mouseY) && stageDetail.scrollBy(dir)) return true;
-        } else if (detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) {
+        } else if (!onNav() && detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) {
             return true;
         }
         if (HotbarPassthrough.scroll(this.minecraft, scrollY)) return true;

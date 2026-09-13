@@ -483,7 +483,7 @@ public final class VariantOverlayRenderer {
             // Parts have no weight pool — pass the part name as modelName for
             // consistency, but the menu won't render a weight row for parts.
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-                "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
+                PlotCategory.PARTS.id(), partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
                 0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
                 partMenuEnabled, partMirror[0], partMirror[1], partMirror[2], partMirror[3],
                 Collections.emptySet(), ""));
@@ -562,7 +562,7 @@ public final class VariantOverlayRenderer {
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-            l.category().displayName(), headerName, l.model().id(), modelName,
+            l.category().id(), headerName, l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
             roomLength, roomWidth, roomHeight, roomMode, flipMask));

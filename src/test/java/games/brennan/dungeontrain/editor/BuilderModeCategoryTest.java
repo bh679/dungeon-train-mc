@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,6 +38,15 @@ final class BuilderModeCategoryTest {
             assertTrue(seen.add(category), "two modes map to " + category.id());
         }
         assertEquals(BuilderMode.values().length, seen.size());
+    }
+
+    @Test
+    @DisplayName("modeOf inverts of: every tile round-trips, and the un-picked category has no tile")
+    void modeOfInvertsOf() {
+        for (BuilderMode mode : BuilderMode.values()) {
+            assertEquals(Optional.of(mode), BuilderModeCategory.modeOf(BuilderModeCategory.of(mode)));
+        }
+        assertEquals(Optional.empty(), BuilderModeCategory.modeOf(EditorCategory.ARCHITECTURE));
     }
 
     @Test
