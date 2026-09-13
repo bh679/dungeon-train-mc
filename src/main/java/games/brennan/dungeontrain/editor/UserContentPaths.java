@@ -56,7 +56,7 @@ public final class UserContentPaths {
      * root because modpack launchers replace {@code config/} on a pack
      * update, which is how a player lost an entire build library in one
      * click — see {@link games.brennan.dungeontrain.data.PlayerDataPaths}.
-     * {@link games.brennan.dungeontrain.data.PlayerDataMigration} moves
+     * Dungeon Backup's migration ({@code DungeonTrainBackup} registration) moves
      * existing installs across at server start.</p>
      */
     public static Path root() {
