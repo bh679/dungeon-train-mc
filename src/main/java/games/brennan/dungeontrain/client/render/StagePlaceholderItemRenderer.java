@@ -4,8 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
-import games.brennan.dungeontrain.client.menu.stagepalette.StagePaletteMenu;
-import games.brennan.dungeontrain.net.StagePaletteSyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
@@ -32,8 +30,10 @@ import java.util.List;
  * Item renderer for the stage placeholder blocks: in GUI contexts (inventory, creative tab,
  * hotbar) the icon is the block the placeholder <b>resolves to for the currently selected stage</b>
  * with the placeholder's own lettered tile ghosted over it at {@link #OVERLAY_ALPHA}. The selected
- * stage is the open Stage Palette panel ({@link StagePaletteMenu#entry}) — no panel, no stage, so
- * the icon is the plain tile, as it is in every non-GUI context (hand, item frame, ground).
+ * stage is the editor's effective stage, synced per player by
+ * {@link games.brennan.dungeontrain.net.StageIconPalettePacket} into
+ * {@link games.brennan.dungeontrain.client.menu.ClientStagePalette} — outside the editor there is
+ * none, so the icon is the plain tile, as it is in every non-GUI context (hand, item frame, ground).
  *
  * <p>The item models are {@code builtin/entity} so this runs; the placeholder's own look comes from
  * its <em>block</em> model (default state — the straight stair, the bottom slab, the closed
@@ -101,10 +101,9 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
 
     /** The block {@code placeholderName} resolves to for the selected stage, or null when none is selected. */
     private static Block resolvedFor(String placeholderName) {
-        if (!StagePaletteMenu.isActive()) return null;
-        StagePaletteSyncPacket.Entry e = StagePaletteMenu.entry(placeholderName);
-        if (e == null) return null;
-        ResourceLocation rl = ResourceLocation.tryParse(e.blockId());
+        String id = games.brennan.dungeontrain.client.menu.ClientStagePalette.resolved(placeholderName);
+        if (id == null) return null;
+        ResourceLocation rl = ResourceLocation.tryParse(id);
         if (rl == null || !BuiltInRegistries.BLOCK.containsKey(rl)) return null;
         Block b = BuiltInRegistries.BLOCK.get(rl);
         return StagePlaceholderBlocks.isPlaceholder(b) ? null : b;

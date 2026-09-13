@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "68";
+    public static final String PROTOCOL_VERSION = "69";
 
     private DungeonTrainNet() {}
 
@@ -294,6 +294,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(StageBlocksSyncPacket.TYPE, StageBlocksSyncPacket.STREAM_CODEC, StageBlocksSyncPacket::handle);
         registrar.playToServer(StagePanelEditPacket.TYPE, StagePanelEditPacket.STREAM_CODEC, StagePanelEditPacket::handle);
         registrar.playToClient(StagePaletteSyncPacket.TYPE, StagePaletteSyncPacket.STREAM_CODEC, StagePaletteSyncPacket::handle);
+        registrar.playToClient(StageIconPalettePacket.TYPE, StageIconPalettePacket.STREAM_CODEC, StageIconPalettePacket::handle);
         registrar.playToServer(StagePaletteEditPacket.TYPE, StagePaletteEditPacket.STREAM_CODEC, StagePaletteEditPacket::handle);
 
         // Per-part editor-grid visibility (hidden set) — S2C mirror for the part-list ☑/☐ glyphs.
