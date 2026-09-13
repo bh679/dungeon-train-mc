@@ -116,6 +116,14 @@ public final class TunnelEditor {
     }
 
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop) {
+        enter(player, variant, onTop, true);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the plots before teleporting. The category entry
+     *              passes {@code false}: it has stamped, or queued, every plot itself.
+     */
+    public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -135,7 +143,7 @@ public final class TunnelEditor {
             }
         }
 
-        stampPlot(overworld, variant);
+        if (stamp) stampPlot(overworld, variant);
 
         double tx = origin.getX() + TunnelPlacer.LENGTH / 2.0;
         double ty = onTop
@@ -157,6 +165,8 @@ public final class TunnelEditor {
 
     /** Erase + restamp every registered variant for {@code variant}. Idempotent. */
     public static void stampPlot(ServerLevel overworld, TunnelVariant variant) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
             stampPlot(overworld, variant, name);
         }

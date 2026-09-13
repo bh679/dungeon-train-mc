@@ -28,6 +28,15 @@ class OfficialLinksTest {
         assertEquals(OfficialLinks.FALLBACK_PAYMENT, OfficialLinks.payment());
         assertEquals(OfficialLinks.FALLBACK_AFFILIATE, OfficialLinks.affiliate());
         assertEquals(OfficialLinks.FALLBACK_BILIBILI, OfficialLinks.bilibili());
+        assertEquals(OfficialLinks.FALLBACK_YOUTUBE, OfficialLinks.youtube());
+        assertEquals(OfficialLinks.FALLBACK_INSTAGRAM, OfficialLinks.instagram());
+    }
+
+    @Test
+    void channelLinksOverlayFromTheRelay() {
+        OfficialLinks.accept(Map.of("youtube", "https://www.youtube.com/@moved", "instagram", "https://instagram.com/moved"));
+        assertEquals("https://www.youtube.com/@moved", OfficialLinks.youtube());
+        assertEquals("https://instagram.com/moved", OfficialLinks.instagram());
     }
 
     @Test

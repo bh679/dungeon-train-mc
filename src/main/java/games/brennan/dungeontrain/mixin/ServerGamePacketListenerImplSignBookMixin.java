@@ -7,10 +7,12 @@ import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.editor.EditorPlotScope;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
+import games.brennan.dungeontrain.narrative.BookSafeText;
 import games.brennan.dungeontrain.narrative.BookSuspensionMessage;
 import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.narrative.DeathNoteTitleLocalization;
+import games.brennan.dungeontrain.narrative.EditorBookAuthorPending;
 import games.brennan.dungeontrain.narrative.EditorAuthoredBookTag;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.narrative.LetterLecternEvents;
@@ -27,6 +29,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.FilteredText;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.WrittenBookContent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
@@ -68,7 +71,11 @@ import java.util.List;
  * injector stamps {@link EditorAuthoredBookTag} instead of {@link PlayerWrittenBookTag}. An author
  * hand-writing a lore book to stock a carriage's loot chest is producing content, not contributing a
  * community book or arming a live mechanic — so the letter / Death Note / community branches are all
- * skipped, and the book stays inert until a player takes it out of a chest on the live train.</p>
+ * skipped, and the book stays inert until a player takes it out of a chest on the live train. That
+ * branch is also the only one that honours a <b>custom author name</b>: the sign screen sends one
+ * ahead of vanilla's edit packet ({@link EditorBookAuthorPending}), the HEAD injector consumes it
+ * on EVERY sign so it can never leak onto a live-train book, and the RETURN injector re-credits the
+ * signed prop book to it.</p>
  *
  * <p>That second, vanilla-signing branch is also where {@link PlayerWrittenBookTag} gets stamped —
  * unconditionally, regardless of carriage — so a book you write and keep (rather than contribute) still
@@ -97,6 +104,13 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
      */
     private boolean dungeontrain$signedInEditorPlot;
 
+    /**
+     * Custom author name taken from {@link EditorBookAuthorPending} at HEAD — raw client input,
+     * sanitized at the point of use. Consumed on every sign regardless of branch; applied only on the
+     * editor-plot branch. Same single-connection reasoning as the fields above.
+     */
+    private String dungeontrain$pendingEditorAuthor;
+
     @Inject(method = "signBook", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$interceptSignBook(FilteredText title, List<FilteredText> pages, int slot,
                                                 CallbackInfo ci) {
@@ -105,6 +119,11 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
                 ? TrainCarriageAppender.lastCarriageIndex(earlyPlayer.getUUID())
                 : null;
         this.dungeontrain$signedInEditorPlot = false;
+        // Always consumed, even when the branch below never uses it: a name typed for a prop book
+        // must not survive to credit a later community book, letter or Note.
+        this.dungeontrain$pendingEditorAuthor = earlyPlayer != null
+                ? EditorBookAuthorPending.take(earlyPlayer.getUUID())
+                : null;
         try {
             ServerPlayer serverPlayer = this.player;
             if (serverPlayer == null) return;
@@ -223,6 +242,30 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         }
     }
 
+    /**
+     * Re-credit a freshly signed prop book to the author's chosen name. Vanilla has just written
+     * {@code WRITTEN_BOOK_CONTENT} with the player's real name; when a sanitized, non-blank custom
+     * name that differs from it is pending, the component is replaced with a copy carrying that
+     * name (title, generation, pages and resolved flag untouched). Returns the name the book ends up
+     * credited to. Fail-open: any fault leaves vanilla's credit in place.
+     */
+    private static String dungeontrain$applyCustomAuthor(ItemStack signed, String pendingAuthor, String realName) {
+        if (pendingAuthor == null) return realName;
+        try {
+            String custom = BookSafeText.sanitizeAndClampName(pendingAuthor, EditorBookAuthorPending.MAX_AUTHOR_LENGTH);
+            if (custom.isBlank() || custom.equals(realName)) return realName;
+            WrittenBookContent current = signed.get(DataComponents.WRITTEN_BOOK_CONTENT);
+            if (current == null) return realName;
+            signed.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
+                    current.title(), custom, current.generation(), current.pages(), current.resolved()));
+            return custom;
+        } catch (Throwable t) {
+            DUNGEONTRAIN$LOGGER.warn("[DungeonTrain] EditorAuthoredBook: custom author not applied, keeping {}: {}",
+                    realName, t.toString());
+            return realName;
+        }
+    }
+
     /** Each note kind has its own feature flag, so either mechanic can be turned off independently. */
     private static boolean dungeontrain$isNoteKindEnabled(NoteKind kind) {
         return kind == NoteKind.LOVE
@@ -252,6 +295,8 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         this.dungeontrain$pendingSignCarriage = null;
         boolean inEditorPlot = this.dungeontrain$signedInEditorPlot;
         this.dungeontrain$signedInEditorPlot = false;
+        String pendingAuthor = this.dungeontrain$pendingEditorAuthor;
+        this.dungeontrain$pendingEditorAuthor = null;
 
         ServerPlayer serverPlayer = this.player;
         if (serverPlayer == null) return;
@@ -261,8 +306,9 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
 
         if (inEditorPlot) {
             EditorAuthoredBookTag.stamp(signed);
-            DUNGEONTRAIN$LOGGER.info("[DungeonTrain] EditorAuthoredBook: {} signed a book in an editor plot — inert until found in the live train",
-                    serverPlayer.getName().getString());
+            String credited = dungeontrain$applyCustomAuthor(signed, pendingAuthor, serverPlayer.getName().getString());
+            DUNGEONTRAIN$LOGGER.info("[DungeonTrain] EditorAuthoredBook: {} signed a book in an editor plot as \"{}\" — inert until found in the live train",
+                    serverPlayer.getName().getString(), credited);
             return;
         }
 

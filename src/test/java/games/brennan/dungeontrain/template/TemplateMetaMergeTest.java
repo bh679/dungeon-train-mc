@@ -8,6 +8,7 @@ import java.util.EnumSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * {@link TemplateMeta#mergeWeight} / {@link TemplateMeta#mergeGate} are the merge decision the three
@@ -146,5 +147,34 @@ final class TemplateMetaMergeTest {
         // unlinked entry) and is what the stores used to call with a Stage-linked prev in hand.
         // If a setter ever goes back to rebuilding from parts, the bug returns silently.
         assertNull(new TemplateMeta(4, NETHER_GATE).stageId());
+    }
+
+    @Test
+    @DisplayName("mergeBuilder keeps every spawn rule and the label; the other merges keep the builder")
+    void mergeBuilder_keepsEverythingAndIsKept() {
+        BuilderCredit mika = new BuilderCredit("380df991f603344ca090369bad2a924a", "Mika");
+        TemplateMeta prev = new TemplateMeta(4, NETHER_GATE, "nether", "bedrock_lock", null, "Tome");
+        TemplateMeta credited = TemplateMeta.mergeBuilder(prev, mika, 1);
+        assertEquals(4, credited.weight());
+        assertEquals(NETHER_GATE, credited.gate());
+        assertEquals("nether", credited.stageId());
+        assertEquals("bedrock_lock", credited.mode());
+        assertEquals("Tome", credited.name());
+        assertEquals(mika, credited.builder());
+
+        assertEquals(mika, TemplateMeta.mergeWeight(credited, 9).builder());
+        assertEquals(mika, TemplateMeta.mergeGate(credited, TemplateGate.DEFAULT, 1).builder());
+        assertEquals(mika, TemplateMeta.mergeName(credited, "Other", 1).builder());
+        assertEquals(mika, credited.withStage(null).withMode(null).withFlip(null).builder());
+
+        // Clearing: null, and a credit naming nobody, both mean "no builder".
+        assertNull(TemplateMeta.mergeBuilder(credited, null, 1).builder());
+        assertNull(credited.withBuilder(new BuilderCredit("", " ")).builder());
+        // A missing entry gets a default-weight, unlinked one carrying only the credit.
+        TemplateMeta fresh = TemplateMeta.mergeBuilder(null, mika, 7);
+        assertEquals(7, fresh.weight());
+        assertTrue(fresh.gate().isDefault());
+        assertNull(fresh.name());
+        assertEquals(mika, fresh.builder());
     }
 }

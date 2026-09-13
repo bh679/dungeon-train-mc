@@ -175,4 +175,25 @@ public sealed interface CommandMenuEntry {
                 double boundary1, double boundary2, double boundary3) implements CommandMenuEntry {
         @Override public String label() { return e1.label(); }
     }
+
+    /**
+     * Any number of cells side by side. {@code boundaries} are the row-relative dividers between
+     * them (0..1, ascending), one fewer than there are cells.
+     *
+     * <p>Screen-space only: {@link MenuRowPainter} and {@link MenuEntryDispatcher} take it apart,
+     * the world-space renderer and raycast do not and would draw it as one cell. The editor
+     * screen's Layout tab is what needs more than four columns in a row.</p>
+     */
+    record Cells(java.util.List<CommandMenuEntry> cells, java.util.List<Double> boundaries) implements CommandMenuEntry {
+        public Cells {
+            cells = java.util.List.copyOf(cells);
+            boundaries = java.util.List.copyOf(boundaries);
+            if (cells.isEmpty()) throw new IllegalArgumentException("a Cells row needs at least one cell");
+            if (boundaries.size() != cells.size() - 1) {
+                throw new IllegalArgumentException("Cells: " + cells.size() + " cells need "
+                    + (cells.size() - 1) + " boundaries, got " + boundaries.size());
+            }
+        }
+        @Override public String label() { return cells.get(0).label(); }
+    }
 }

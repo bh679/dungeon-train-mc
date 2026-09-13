@@ -62,6 +62,14 @@ public final class TemplateWeightCodec {
      * never lowercased or validated against a name pattern, only trimmed.
      */
     public static final String K_NAME = "name";
+    /**
+     * Optional original-builder credit — see {@link TemplateMeta#builder()}. An object
+     * {@code {"uuid": "…", "name": "…"}}; either field may be absent. Never emitted for a null
+     * credit, so a store that never credits anybody round-trips byte-identically.
+     */
+    public static final String K_BUILDER = "builder";
+    public static final String K_BUILDER_UUID = "uuid";
+    public static final String K_BUILDER_NAME = "name";
 
     public static final String MAX_ALL = "all";
 
@@ -83,7 +91,7 @@ public final class TemplateWeightCodec {
             Integer w = finiteRound(we);
             if (w == null) return null;
             return new TemplateMeta(clampWeight.applyAsInt(w), parseGate(o), parseStage(o), parseMode(o),
-                parseFlip(o), parseName(o));
+                parseFlip(o), parseName(o), parseBuilder(o));
         }
         return null;
     }
@@ -95,6 +103,31 @@ public final class TemplateWeightCodec {
             return TemplateMeta.normaliseName(el.getAsString());
         }
         return null;
+    }
+
+    /**
+     * The optional builder credit on an entry object; {@code null} when absent, not an object, or
+     * naming nobody. A malformed field (a string, a number) is treated as absent rather than failing
+     * the entry — the weight and gate beside it are still worth loading.
+     */
+    public static BuilderCredit parseBuilder(JsonObject o) {
+        JsonElement el = o.get(K_BUILDER);
+        if (el == null || !el.isJsonObject()) return null;
+        JsonObject b = el.getAsJsonObject();
+        return BuilderCredit.ofOrNull(stringOrNull(b.get(K_BUILDER_UUID)), stringOrNull(b.get(K_BUILDER_NAME)));
+    }
+
+    /** Emit the builder credit into {@code o}; nothing for {@code null}. Inverse of {@link #parseBuilder}. */
+    public static void writeBuilder(JsonObject o, BuilderCredit builder) {
+        if (builder == null || !builder.known()) return;
+        JsonObject b = new JsonObject();
+        if (builder.hasUuid()) b.addProperty(K_BUILDER_UUID, builder.uuid());
+        if (!builder.name().isEmpty()) b.addProperty(K_BUILDER_NAME, builder.name());
+        o.add(K_BUILDER, b);
+    }
+
+    private static String stringOrNull(JsonElement el) {
+        return el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() ? el.getAsString() : null;
     }
 
     /** The optional per-kind mode tag on an entry object; {@code null} when absent or blank. */
@@ -254,10 +287,10 @@ public final class TemplateWeightCodec {
         for (Map.Entry<String, TemplateMeta> e : new TreeMap<>(byId).entrySet()) {
             TemplateMeta meta = e.getValue();
             // Bare-int only when every axis is at its no-op default: default inline gate, no Stage
-            // link, no mode tag, no flip block AND no display label. An entry carrying any of those
-            // takes the object form.
+            // link, no mode tag, no flip block, no display label AND no builder credit. An entry
+            // carrying any of those takes the object form.
             if (meta.gate().isDefault() && meta.stageId() == null && meta.mode() == null
-                    && meta.flip() == null && meta.name() == null) {
+                    && meta.flip() == null && meta.name() == null && meta.builder() == null) {
                 out.addProperty(e.getKey(), meta.weight());
             } else {
                 out.add(e.getKey(), entryObject(meta));
@@ -274,6 +307,7 @@ public final class TemplateWeightCodec {
         if (meta.mode() != null) o.addProperty(K_MODE, meta.mode());
         writeFlip(o, meta.flip());
         if (meta.name() != null) o.addProperty(K_NAME, meta.name());
+        writeBuilder(o, meta.builder());
         return o;
     }
 

@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -363,7 +364,7 @@ public final class CarriagePartEditor {
         // CarriageContentsEditor.duplicate. Without this, the geometry copies
         // but each cell loses its randomized-state list.
         if (sourceName != null) {
-            copyVariantSidecar(kind, sourceName, name, dims);
+            copyVariantSidecar(kind, sourceName, name);
         }
 
         CarriageEditor.rememberReturn(player);
@@ -394,37 +395,18 @@ public final class CarriagePartEditor {
     }
 
     /**
-     * Copy the variant-blocks sidecar from {@code sourceName} onto
-     * {@code targetName} so a "new part from current/standard" duplicate
-     * keeps the per-cell "pick from these alternatives" authoring data.
-     * No-op when the source sidecar is empty. Package-private for tests.
+     * Carry every sidecar of {@code (kind, sourceName)} onto {@code targetName} so a "new part from
+     * current/standard" duplicate keeps the per-cell "pick from these alternatives" authoring data
+     * (entries, lock-ids and mirror flags — the file goes across verbatim) and its container links.
+     * No-op when the source has nothing on disk. Package-private for tests.
      *
-     * <p>Mirrors the same logic baked inline into
-     * {@link CarriageEditor#duplicate} and
-     * {@link CarriageContentsEditor#duplicate}. The {@link CarriageVariantBlocks.Entry}
-     * record only exposes {@code (localPos, states)}, so lock-id groupings —
-     * cells sharing a non-zero lock-id render the same random index together —
-     * are copied separately via {@link CarriagePartVariantBlocks#allLockIds()}
-     * after the states pass, so the duplicate keeps its variant grouping too.
+     * <p>One path with {@link CarriageEditor#duplicate} and {@link CarriageContentsEditor#duplicate}:
+     * {@link TemplateCopy} walks {@link TemplateSidecars#filesFor}, so a sidecar added there is
+     * carried here without a change.</p>
      */
-    static void copyVariantSidecar(CarriagePartKind kind, String sourceName, String targetName, CarriageDims dims) throws IOException {
-        Vec3i partSize = kind.dims(dims);
-        CarriagePartVariantBlocks sourceSidecar =
-            CarriagePartVariantBlocks.loadFor(kind, sourceName, partSize);
-        if (sourceSidecar.isEmpty()) return;
-        CarriagePartVariantBlocks copy = CarriagePartVariantBlocks.empty();
-        for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-            copy.put(e.localPos(), e.states());
-        }
-        // Carry over the lock-id grouping (states pass above only copies the
-        // candidate lists; lockIds live in a parallel map). setLockId requires
-        // the cell to exist — guaranteed since every entry was just put().
-        for (java.util.Map.Entry<BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
-            copy.setLockId(lk.getKey(), lk.getValue());
-        }
-        copy.save(kind, targetName);
-        LOGGER.info("[DungeonTrain] Part editor copyVariantSidecar: {} entries copied from {}:{} to {}:{}",
-            sourceSidecar.size(), kind.id(), sourceName, kind.id(), targetName);
+    static void copyVariantSidecar(CarriagePartKind kind, String sourceName, String targetName) throws IOException {
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.PART,
+            kind.id(), sourceName, targetName);
     }
 
     /**
@@ -609,12 +591,30 @@ public final class CarriagePartEditor {
      * <b>compacted to the front of the row with the hidden parts' frames removed entirely</b>.</p>
      */
     public static void stampAllPlots(ServerLevel level, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
+        for (EditorStampQueue.Job job : stampAllPlotJobs(level, dims)) {
+            job.work().run();
+        }
+    }
+
+    /**
+     * {@link #stampAllPlots} as one job per row clear and one per part, in the order it runs them,
+     * for the category entry to spread across ticks. A kind's row clear precedes its stamps, which
+     * the queue's in-order execution preserves.
+     */
+    public static List<EditorStampQueue.Job> stampAllPlotJobs(ServerLevel level, CarriageDims dims) {
+        List<EditorStampQueue.Job> jobs = new ArrayList<>();
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            clearRowExtent(level, kind, CarriagePartRegistry.registeredNames(kind).size(), dims);
+            int slots = CarriagePartRegistry.registeredNames(kind).size();
+            jobs.add(new EditorStampQueue.Job("clear parts row " + kind,
+                () -> clearRowExtent(level, kind, slots, dims)));
             for (String name : layoutNames(kind)) {
-                stampPlot(level, kind, name, dims);
+                jobs.add(new EditorStampQueue.Job("stamp part " + kind + "/" + name,
+                    () -> stampPlot(level, kind, name, dims)));
             }
         }
+        return jobs;
     }
 
     /** Erase footprint + cage for the first {@code slots} slots on {@code kind}'s row (the widest it can be). */

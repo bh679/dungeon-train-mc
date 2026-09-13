@@ -317,4 +317,51 @@ final class TemplateWeightCodecTest {
         TemplateWeightCodec.writeStages(o, List.of("desert", "nether", "end"));
         assertEquals(List.of("desert", "nether", "end"), TemplateWeightCodec.parseStages(o));
     }
+
+    @Test
+    @DisplayName("builder credit round-trips as {uuid,name}; a dashed uuid is normalised on the way in")
+    void builderRoundTrip() {
+        TemplateMeta m = TemplateWeightCodec.parseEntry(JsonParser.parseString(
+            "{\"weight\":5,\"builder\":{\"uuid\":\"380DF991-F603-344C-A090-369BAD2A924A\",\"name\":\" Mika \"}}"),
+            CLAMP);
+        assertEquals(new BuilderCredit("380df991f603344ca090369bad2a924a", "Mika"), m.builder());
+        assertTrue(m.gate().isDefault());
+
+        JsonObject out = TemplateWeightCodec.toJson(Map.of("pen", m));
+        JsonObject entry = out.get("pen").getAsJsonObject();
+        assertEquals(5, entry.get("weight").getAsInt());
+        JsonObject b = entry.get("builder").getAsJsonObject();
+        assertEquals("380df991f603344ca090369bad2a924a", b.get("uuid").getAsString());
+        assertEquals("Mika", b.get("name").getAsString());
+        assertEquals(m, TemplateWeightCodec.parseEntry(out.get("pen"), CLAMP));
+    }
+
+    @Test
+    @DisplayName("a builder naming nobody, or a malformed builder field, reads as no credit and stays bare-int")
+    void builderAbsentOrMalformed() {
+        TemplateMeta empty = TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"builder\":{\"uuid\":\"\",\"name\":\"  \"}}"), CLAMP);
+        assertNull(empty.builder());
+        TemplateMeta bad = TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"builder\":\"Mika\"}"), CLAMP);
+        assertNull(bad.builder());
+        assertEquals(5, bad.weight());
+        // Neither carries anything non-default, so both go back out as a bare int.
+        JsonObject out = TemplateWeightCodec.toJson(Map.of("a", empty, "b", bad));
+        assertTrue(out.get("a").isJsonPrimitive());
+        assertTrue(out.get("b").isJsonPrimitive());
+    }
+
+    @Test
+    @DisplayName("a name-only builder credit is kept: thanked on the page, just not counted")
+    void builderNameOnly() {
+        TemplateMeta m = TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"builder\":{\"name\":\"Old Friend\"}}"), CLAMP);
+        assertEquals("Old Friend", m.builder().name());
+        assertFalse(m.builder().hasUuid());
+        JsonObject b = TemplateWeightCodec.toJson(Map.of("x", m)).get("x").getAsJsonObject()
+            .get("builder").getAsJsonObject();
+        assertFalse(b.has("uuid"));
+        assertEquals("Old Friend", b.get("name").getAsString());
+    }
 }

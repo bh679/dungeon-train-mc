@@ -519,6 +519,9 @@ public final class BoardingProgressEvents {
             // almost all of them. Rides this scan rather than adding one: the occupancy question it
             // needs — which player is in which room body — has just been answered above.
             games.brennan.dungeontrain.narrative.PortalLibraryGreeter.tick(player, pairKey);
+            // Who built it? Silent for every room whose template credits nobody. Rides the same
+            // answer for the same reason.
+            games.brennan.dungeontrain.narrative.PortalBuilderGreeter.tick(player, pairKey);
 
             double moved = movedByPair.computeIfAbsent(pairKey,
                 key -> pairCarriageMovement(carriages, key));

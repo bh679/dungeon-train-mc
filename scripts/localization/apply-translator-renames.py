@@ -13,6 +13,12 @@ Run BEFORE ``import-approved-translations.py`` in the import workflow: the relay
 already carry the new name, and importing them against a registry that still holds the old one
 would register the new name as a second, unknown translator.
 
+After the renames it applies the relay's credit **opt-outs** (``GET /<ADMIN_CAP>/credits/optouts
+?section=translations`` — a translator who pressed Remove on the Credits page): every registered
+name that uuid was credited under gets ``"credit": false`` in ``authors.json``, which
+``build_contributors`` honours by leaving them out of the shipped credits. The sidecars are not
+touched — the work is still theirs, it just goes unnamed — and a restore drops the flag again.
+
 Two things it will not do, and names in its report instead:
 
 * **Rename a name the repo never credited.** Nothing to apply — the translator's work has not
@@ -24,7 +30,7 @@ Two things it will not do, and names in its report instead:
 Usage::
 
   python3 scripts/localization/apply-translator-renames.py [--dry-run] [--report-out FILE]
-  python3 scripts/localization/apply-translator-renames.py --from-file renames.json
+  python3 scripts/localization/apply-translator-renames.py --from-file renames.json [--optouts-file optouts.json]
 """
 from __future__ import annotations
 
@@ -71,6 +77,39 @@ def fetch(base: str, cap: str) -> list[dict]:
             return renames_of(json.loads(resp.read().decode("utf-8")))
     except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
         sys.exit(f"error: could not read the rename log — {redact(exc, base)}")
+
+
+def optouts_of(payload) -> list[dict]:
+    """The opt-out rows out of either the endpoint's envelope or a bare list of rows."""
+    if isinstance(payload, dict):
+        payload = payload.get("optouts", [])
+    if not isinstance(payload, list):
+        raise ValueError("expected a JSON array of opt-outs, or an object with an 'optouts' array")
+    return [row for row in payload if isinstance(row, dict)]
+
+
+def fetch_optouts(base: str, cap: str) -> list[dict]:
+    params = {"cap": cap, "section": "translations"}
+    url = f"{base.rstrip('/')}/credits/optouts?{urllib.parse.urlencode(params)}"
+    try:
+        with urllib.request.urlopen(url, timeout=REQUEST_TIMEOUT) as resp:
+            return optouts_of(json.loads(resp.read().decode("utf-8")))
+    except urllib.error.HTTPError as exc:
+        if exc.code in (404, 405):
+            return []  # a relay that predates the endpoint has no opt-outs to apply
+        sys.exit(f"error: could not read the opt-out log — {redact(exc, base)}")
+    except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
+        sys.exit(f"error: could not read the opt-out log — {redact(exc, base)}")
+
+
+def load_optouts(args) -> list[dict]:
+    if args.optouts_file:
+        with open(args.optouts_file, encoding="utf-8") as f:
+            return optouts_of(json.load(f))
+    if args.from_file:
+        return []  # a saved rename payload carries no opt-outs; pass --optouts-file for those
+    base = args.relay_base or os.environ.get(BASE_ENV, "")
+    return fetch_optouts(base, args.cap) if base else []
 
 
 def load_renames(args) -> list[dict]:
@@ -163,6 +202,45 @@ def apply(renames: list[dict], authors_file: Path, prov_dir: Path,
     return applied, skipped
 
 
+def hidden_names(optouts: list[dict]) -> set[str]:
+    """Every credited name the relay's opt-out rows carry, trimmed, blanks dropped."""
+    names: set[str] = set()
+    for row in optouts:
+        for name in row.get("names") or []:
+            if isinstance(name, str) and name.strip():
+                names.add(name.strip())
+    return names
+
+
+def set_credit(value, credit: bool):
+    """A registry entry with ``credit`` set (False) or dropped (True), keeping its other fields."""
+    entry = dict(value) if isinstance(value, dict) else {"kind": value}
+    if credit:
+        entry.pop("credit", None)
+        return entry["kind"] if entry.keys() == {"kind"} else entry
+    entry["credit"] = False
+    return entry
+
+
+def apply_optouts(optouts: list[dict], authors_file: Path, dry_run: bool) -> tuple[list[str], list[str]]:
+    """Mark the relay's opted-out names ``credit: false`` and unmark the rest. Returns (hidden, restored)."""
+    with open(authors_file, encoding="utf-8") as f:
+        raw = json.load(f)
+    kinds = pio.load_authors(authors_file)
+    wanted = hidden_names(optouts)
+    current = pio.load_author_optouts(authors_file)
+    hidden = sorted(n for n in wanted if n in raw and kinds.get(n) == "human" and n not in current)
+    restored = sorted(n for n in current if n not in wanted)
+    if not hidden and not restored:
+        return [], []
+    out = {name: (set_credit(value, False) if name in hidden
+                  else set_credit(value, True) if name in restored else value)
+           for name, value in raw.items()}
+    if not dry_run:
+        write_authors(authors_file, out)
+    return hidden, restored
+
+
 def regenerate(args) -> None:
     """Rebuild the shipped credit files from the renamed sidecars — stamp-provenance.py owns that."""
     cmd = [sys.executable, str(STAMP), "--authors-file", str(args.authors_file), "--sync"]
@@ -176,6 +254,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--from-file", type=Path,
                         help="read the renames from a saved JSON payload instead of the relay")
+    parser.add_argument("--optouts-file", type=Path,
+                        help="read the credit opt-outs from a saved JSON payload instead of the relay")
     parser.add_argument("--relay-base", help=f"admin base URL (default: ${BASE_ENV})")
     parser.add_argument("--cap", default="live", help="relay cap label (default: live)")
     parser.add_argument("--authors-file", type=Path, default=pio.DEFAULT_AUTHORS_FILE)
@@ -192,27 +272,37 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     rows = [r for r in load_renames(args) if valid(r)]
+    applied: list[dict] = []
+    skipped: list[dict] = []
     if not rows:
         print("no renames to apply")
-        if args.report_out and not args.dry_run:
-            args.report_out.write_text('{"applied": [], "skipped": []}\n', encoding="utf-8")
-        return 0
+    else:
+        applied, skipped = apply(rows, args.authors_file, args.provenance_dir,
+                                 args.narrative_provenance_dir, args.dry_run)
+        verb = "would rename" if args.dry_run else "renamed"
+        for a in applied:
+            print(f"  {verb} {a['from']!r} -> {a['to']!r} ({a['entries']} provenance entr"
+                  f"{'y' if a['entries'] == 1 else 'ies'})")
+        for s in skipped:
+            print(f"  skipped {s['from']!r} -> {s['to']!r}: {s['reason']}")
+        print(f"{len(rows)} rename(s): {len(applied)} applied, {len(skipped)} skipped")
 
-    applied, skipped = apply(rows, args.authors_file, args.provenance_dir,
-                             args.narrative_provenance_dir, args.dry_run)
-    verb = "would rename" if args.dry_run else "renamed"
-    for a in applied:
-        print(f"  {verb} {a['from']!r} -> {a['to']!r} ({a['entries']} provenance entr"
-              f"{'y' if a['entries'] == 1 else 'ies'})")
-    for s in skipped:
-        print(f"  skipped {s['from']!r} -> {s['to']!r}: {s['reason']}")
-    print(f"{len(rows)} rename(s): {len(applied)} applied, {len(skipped)} skipped")
+    # Opt-outs AFTER the renames: the relay names an opted-out translator by their current name.
+    hidden, restored = apply_optouts(load_optouts(args), args.authors_file, args.dry_run)
+    verb = "would hide" if args.dry_run else "hid"
+    for n in hidden:
+        print(f"  {verb} {n!r} from the shipped credits (asked to be anonymous)")
+    for n in restored:
+        print(f"  {'would restore' if args.dry_run else 'restored'} {n!r} to the shipped credits")
+    if hidden or restored:
+        print(f"{len(hidden)} name(s) hidden, {len(restored)} restored")
 
     if args.report_out and not args.dry_run:
         args.report_out.write_text(
-            json.dumps({"applied": applied, "skipped": skipped}, ensure_ascii=False, indent=2)
+            json.dumps({"applied": applied, "skipped": skipped, "hidden": hidden, "restored": restored},
+                       ensure_ascii=False, indent=2)
             + "\n", encoding="utf-8")
-    if applied and not args.dry_run and not args.skip_stamp:
+    if (applied or hidden or restored) and not args.dry_run and not args.skip_stamp:
         regenerate(args)
     return 0
 

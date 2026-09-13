@@ -10,8 +10,11 @@ Network fetchers are stubbed — these tests never touch CurseForge.
 
 Run: python3 scripts/modpack/test_wait_for_approval.py   (or via pytest)
 """
+import contextlib
 import importlib.util
+import io
 import os
+import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location(
@@ -135,6 +138,65 @@ def test_main_exits_zero_only_when_approved():
         assert waiter.main(["--file-id", str(FILE_ID), "--timeout-minutes", "0"]) == 0
     with _Stub(_api_file(fileStatus=3), key="test-key"):
         assert waiter.main(["--file-id", str(FILE_ID), "--timeout-minutes", "0"]) == 1
+
+
+# --- --on-timeout defer: a slow approval is a delay, not a lost release ---
+
+@contextlib.contextmanager
+def _github_output():
+    """Point $GITHUB_OUTPUT at a scratch file and hand back its path."""
+    had = os.environ.get("GITHUB_OUTPUT")
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as fh:
+        path = fh.name
+    os.environ["GITHUB_OUTPUT"] = path
+    try:
+        yield path
+    finally:
+        os.environ.pop("GITHUB_OUTPUT", None)
+        if had is not None:
+            os.environ["GITHUB_OUTPUT"] = had
+        os.unlink(path)
+
+
+def _run_main(*extra):
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        code = waiter.main(["--file-id", str(FILE_ID), "--timeout-minutes", "0", *extra])
+    return code, out.getvalue()
+
+
+def test_defer_on_timeout_exits_zero_but_still_reports_not_approved():
+    # The whole point: an unapproved file must not fail the run (the catch-up handles it),
+    # but it must ALSO never be reported as approved.
+    with _Stub(_api_file(fileStatus=3), key="test-key"), _github_output() as path:
+        code, log = _run_main("--on-timeout", "defer")
+        assert code == 0, code
+        assert "approved=false" in open(path).read()
+        assert "::warning::" in log and "::error::" not in log, log
+        assert "catch-up" in log, log
+
+
+def test_fail_on_timeout_is_still_the_default_and_still_an_error():
+    # reupload-curseforge.yml and hand dispatches rely on the loud path being unchanged.
+    with _Stub(_api_file(fileStatus=3), key="test-key"), _github_output() as path:
+        code, log = _run_main()
+        assert code == 1, code
+        assert "approved=false" in open(path).read()
+        assert "::error::" in log, log
+
+
+def test_approval_writes_approved_true_regardless_of_mode():
+    for mode in ("fail", "defer"):
+        with _Stub(_api_file(fileStatus=4), key="test-key"), _github_output() as path:
+            code, _ = _run_main("--on-timeout", mode)
+            assert code == 0, (mode, code)
+            assert "approved=true" in open(path).read(), mode
+
+
+def test_no_github_output_env_is_not_an_error():
+    os.environ.pop("GITHUB_OUTPUT", None)
+    with _Stub(_api_file(fileStatus=3), key="test-key"):
+        assert _run_main("--on-timeout", "defer")[0] == 0
 
 
 if __name__ == "__main__":

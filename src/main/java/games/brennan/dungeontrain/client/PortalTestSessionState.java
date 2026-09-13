@@ -16,6 +16,7 @@ public final class PortalTestSessionState {
 
     private static boolean active = false;
     private static String roomName = "";
+    private static boolean reseed = false;
 
     private PortalTestSessionState() {}
 
@@ -23,6 +24,7 @@ public final class PortalTestSessionState {
         boolean was = active;
         active = packet.active();
         roomName = packet.roomName();
+        reseed = packet.reseed();
         // A test puts Skybox Blocks back however the author's switch is set, and that changes what
         // they cull as well as what they draw. The meshes standing when it starts or ends were
         // built against the other answer, so they are rebuilt — but only when the switch is off,
@@ -38,4 +40,7 @@ public final class PortalTestSessionState {
 
     /** The room it was stamped from, for the row's label. Empty when nothing is active. */
     public static String roomName() { return roomName; }
+
+    /** The world's reseed-on-test switch, for the editor's toggle beside Test the Carriage. */
+    public static boolean reseed() { return reseed; }
 }

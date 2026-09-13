@@ -205,6 +205,12 @@ public final class BuilderProfileScreen extends Screen {
      */
     private BuilderRelayInstall.Resolution lastResolution = BuilderRelayInstall.Resolution.AS_IS;
     private String lastChosenName = "";
+    /**
+     * The download press most recently sent, kept so the loot-prefab question can replay it with
+     * the answer attached and nothing else changed — the name, the edits answer and the owner all
+     * exactly as the press that raised the question sent them.
+     */
+    private BuilderProfileDownloadPacket lastDownload;
 
     private final BuilderTileSpin spin = new BuilderTileSpin();
     private long lastFrameNanos;
@@ -472,7 +478,7 @@ public final class BuilderProfileScreen extends Screen {
         if (entry == null) return;
         this.lastResolution = BuilderRelayInstall.Resolution.AS_IS;
         this.lastChosenName = "";
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid,
+        sendDownload(new BuilderProfileDownloadPacket(entry.relayId(), viewedUuid,
                 creditedName(entry), BuilderProfileState.live()));
         this.downloadButton.active = false;
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
@@ -534,6 +540,13 @@ public final class BuilderProfileScreen extends Screen {
                         lastResolution, lastChosenName,
                         (resolution, name) -> resolveDownload(entry.relayId(), resolution, name, true)));
             }
+            return;
+        }
+        // The build brought loot prefabs this install already has, with different contents. Asked
+        // before anything was written; answering replays the press with the choices attached.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.PREFAB_CONFLICT) {
+            this.minecraft.setScreen(new BuilderProfilePrefabConflictScreen(this, packet.id(),
+                    packet.conflicts(), this::answerPrefabs));
             return;
         }
         if (packet.outcome() != BuilderRelayDownload.Outcome.INSTALLED) return;
@@ -628,8 +641,26 @@ public final class BuilderProfileScreen extends Screen {
                                  boolean overwriteUnsaved) {
         this.lastResolution = resolution;
         this.lastChosenName = name == null ? "" : name;
-        DungeonTrainNet.sendToServer(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid,
+        sendDownload(new BuilderProfileDownloadPacket(relayId, resolution, name, viewedUuid,
                 creditedName(selectedBuild()), BuilderProfileState.live(), overwriteUnsaved));
+        this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
+        if (this.downloadButton != null) this.downloadButton.active = false;
+    }
+
+    private void sendDownload(BuilderProfileDownloadPacket packet) {
+        this.lastDownload = packet;
+        DungeonTrainNet.sendToServer(packet);
+    }
+
+    /**
+     * The loot-prefab question: replay the last press with the player's choices attached. Kept
+     * out of {@link #resolveDownload} because that rebuilds the packet from screen state, and the
+     * whole point here is to send back exactly what was sent — including an unsaved-edits answer
+     * given a press ago.
+     */
+    private void answerPrefabs(java.util.Set<String> useTheirs, java.util.Map<String, String> renames) {
+        if (lastDownload == null) return;
+        sendDownload(lastDownload.answeringPrefabs(useTheirs, renames));
         this.downloadNote = Component.translatable("gui.dungeontrain.builder.profile.downloading");
         if (this.downloadButton != null) this.downloadButton.active = false;
     }
@@ -677,6 +708,7 @@ public final class BuilderProfileScreen extends Screen {
             case ALREADY_HERE -> "gui.dungeontrain.builder.profile.download_already_here";
             case NAME_TAKEN -> "gui.dungeontrain.builder.profile.download_name_taken";
             case UNSAVED_EDITS -> "gui.dungeontrain.builder.profile.download_unsaved";
+            case PREFAB_CONFLICT -> "gui.dungeontrain.builder.profile.download_prefab_conflict";
             case NOT_YOURS -> "gui.dungeontrain.builder.profile.download_not_yours";
             case GONE -> "gui.dungeontrain.builder.profile.gone_short";
             case UNAVAILABLE -> "gui.dungeontrain.builder.profile.unavailable";

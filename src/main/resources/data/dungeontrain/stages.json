@@ -1,4 +1,160 @@
 {
+  "acacia": {
+    "name": "acacia",
+    "minLevel": 176,
+    "maxLevel": 205,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:acacia_planks",
+        "minecraft:acacia_wood",
+        "minecraft:stripped_acacia_wood",
+        "minecraft:acacia_log",
+        "minecraft:stripped_acacia_log"
+      ],
+      "stairs": [
+        "minecraft:acacia_stairs",
+        "minecraft:acacia_stairs"
+      ],
+      "slabs": [
+        "minecraft:acacia_slab",
+        "minecraft:acacia_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "acacia",
+      "stone": "stone"
+    }
+  },
+  "bamboo": {
+    "name": "bamboo",
+    "minLevel": 356,
+    "maxLevel": 375,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:bamboo_planks",
+        "minecraft:bamboo_block",
+        "minecraft:stripped_bamboo_block"
+      ],
+      "stairs": [
+        "minecraft:bamboo_stairs",
+        "minecraft:bamboo_stairs"
+      ],
+      "slabs": [
+        "minecraft:bamboo_slab",
+        "minecraft:bamboo_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "bamboo",
+      "stone": "stone"
+    }
+  },
+  "bamboo_mosaic": {
+    "name": "bamboo_mosaic",
+    "minLevel": 416,
+    "maxLevel": 435,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:bamboo_mosaic",
+        "minecraft:stripped_bamboo_block",
+        "minecraft:bamboo_block"
+      ],
+      "stairs": [
+        "minecraft:bamboo_mosaic_stairs",
+        "minecraft:bamboo_stairs"
+      ],
+      "slabs": [
+        "minecraft:bamboo_mosaic_slab",
+        "minecraft:bamboo_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "bamboo_mosaic",
+      "stone": "stone"
+    }
+  },
+  "birch": {
+    "name": "birch",
+    "minLevel": 161,
+    "maxLevel": 175,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:birch_planks",
+        "minecraft:birch_wood",
+        "minecraft:stripped_birch_wood",
+        "minecraft:birch_log",
+        "minecraft:stripped_birch_log"
+      ],
+      "stairs": [
+        "minecraft:birch_stairs",
+        "minecraft:birch_stairs"
+      ],
+      "slabs": [
+        "minecraft:birch_slab",
+        "minecraft:birch_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "birch",
+      "stone": "stone"
+    }
+  },
+  "cherry": {
+    "name": "cherry",
+    "minLevel": 266,
+    "maxLevel": 285,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:cherry_planks",
+        "minecraft:cherry_wood",
+        "minecraft:stripped_cherry_wood",
+        "minecraft:cherry_log",
+        "minecraft:stripped_cherry_log"
+      ],
+      "stairs": [
+        "minecraft:cherry_stairs",
+        "minecraft:cherry_stairs"
+      ],
+      "slabs": [
+        "minecraft:cherry_slab",
+        "minecraft:cherry_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "cherry",
+      "stone": "stone"
+    }
+  },
   "copper": {
     "name": "copper",
     "minLevel": 36,
@@ -8,7 +164,97 @@
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS"
-    ]
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:tuff_bricks",
+        "minecraft:polished_tuff",
+        "minecraft:oak_planks",
+        "minecraft:cut_copper",
+        "minecraft:copper_block",
+        "minecraft:chiseled_copper",
+        "minecraft:stripped_dark_oak_wood",
+        "minecraft:chiseled_tuff_bricks",
+        "minecraft:spruce_planks",
+        "minecraft:stripped_spruce_log"
+      ],
+      "stairs": [
+        "minecraft:tuff_brick_stairs",
+        "minecraft:polished_tuff_stairs"
+      ],
+      "slabs": [
+        "minecraft:tuff_brick_slab",
+        "minecraft:polished_tuff_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "oak",
+      "stone": "tuff"
+    }
+  },
+  "crimson": {
+    "name": "crimson",
+    "minLevel": 286,
+    "maxLevel": 320,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:crimson_planks",
+        "minecraft:crimson_hyphae",
+        "minecraft:stripped_crimson_hyphae",
+        "minecraft:crimson_stem",
+        "minecraft:stripped_crimson_stem"
+      ],
+      "stairs": [
+        "minecraft:crimson_stairs",
+        "minecraft:crimson_stairs"
+      ],
+      "slabs": [
+        "minecraft:crimson_slab",
+        "minecraft:crimson_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "crimson",
+      "stone": "stone"
+    }
+  },
+  "darkwood": {
+    "name": "darkwood",
+    "minLevel": 376,
+    "maxLevel": 415,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:dark_oak_planks",
+        "minecraft:dark_oak_wood",
+        "minecraft:stripped_dark_oak_wood",
+        "minecraft:dark_oak_log",
+        "minecraft:stripped_dark_oak_log"
+      ],
+      "stairs": [
+        "minecraft:dark_oak_stairs",
+        "minecraft:dark_oak_stairs"
+      ],
+      "slabs": [
+        "minecraft:dark_oak_slab",
+        "minecraft:dark_oak_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "dark_oak",
+      "stone": "stone"
+    }
   },
   "deepdark": {
     "name": "deepdark",
@@ -19,7 +265,33 @@
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS"
-    ]
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:deepslate_bricks",
+        "minecraft:polished_deepslate",
+        "minecraft:gray_wool",
+        "minecraft:reinforced_deepslate",
+        "minecraft:dark_oak_planks",
+        "minecraft:cracked_deepslate_bricks",
+        "minecraft:deepslate_tiles",
+        "minecraft:spruce_planks",
+        "minecraft:dark_oak_log",
+        "minecraft:stone"
+      ],
+      "stairs": [
+        "minecraft:deepslate_brick_stairs",
+        "minecraft:polished_deepslate_stairs"
+      ],
+      "slabs": [
+        "minecraft:deepslate_brick_slab",
+        "minecraft:polished_deepslate_slab"
+      ],
+      "button": "minecraft:polished_blackstone_button",
+      "pressurePlate": "minecraft:polished_blackstone_pressure_plate",
+      "wood": "dark_oak",
+      "stone": "deepslate"
+    }
   },
   "desert": {
     "name": "desert",
@@ -30,7 +302,97 @@
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS"
-    ]
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:sandstone",
+        "minecraft:smooth_sandstone",
+        "minecraft:cut_sandstone",
+        "minecraft:black_concrete",
+        "minecraft:chiseled_sandstone",
+        "minecraft:obsidian",
+        "minecraft:crying_obsidian",
+        "minecraft:cut_red_sandstone",
+        "minecraft:orange_terracotta",
+        "minecraft:red_sandstone"
+      ],
+      "stairs": [
+        "minecraft:sandstone_stairs",
+        "minecraft:smooth_sandstone_stairs"
+      ],
+      "slabs": [
+        "minecraft:sandstone_slab",
+        "minecraft:smooth_sandstone_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "birch",
+      "stone": "sandstone"
+    }
+  },
+  "jungle": {
+    "name": "jungle",
+    "minLevel": 206,
+    "maxLevel": 225,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:jungle_planks",
+        "minecraft:jungle_wood",
+        "minecraft:stripped_jungle_wood",
+        "minecraft:jungle_log",
+        "minecraft:stripped_jungle_log"
+      ],
+      "stairs": [
+        "minecraft:jungle_stairs",
+        "minecraft:jungle_stairs"
+      ],
+      "slabs": [
+        "minecraft:jungle_slab",
+        "minecraft:jungle_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "jungle",
+      "stone": "stone"
+    }
+  },
+  "mangrove": {
+    "name": "mangrove",
+    "minLevel": 226,
+    "maxLevel": 265,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:mangrove_planks",
+        "minecraft:mangrove_wood",
+        "minecraft:stripped_mangrove_wood",
+        "minecraft:mangrove_log",
+        "minecraft:stripped_mangrove_log"
+      ],
+      "stairs": [
+        "minecraft:mangrove_stairs",
+        "minecraft:mangrove_stairs"
+      ],
+      "slabs": [
+        "minecraft:mangrove_slab",
+        "minecraft:mangrove_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "mangrove",
+      "stone": "stone"
+    }
   },
   "mud": {
     "name": "mud",
@@ -41,14 +403,59 @@
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS"
-    ]
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:mud_bricks",
+        "minecraft:packed_mud",
+        "minecraft:muddy_mangrove_roots"
+      ],
+      "stairs": [
+        "minecraft:mud_brick_stairs",
+        "minecraft:mud_brick_stairs"
+      ],
+      "slabs": [
+        "minecraft:mud_brick_slab",
+        "minecraft:mud_brick_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "oak",
+      "stone": "mud"
+    }
   },
   "nether": {
     "name": "nether",
     "phases": [
       "NETHER",
       "END"
-    ]
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:polished_blackstone_bricks",
+        "minecraft:polished_blackstone",
+        "minecraft:netherrack",
+        "minecraft:nether_bricks",
+        "minecraft:stone_bricks",
+        "minecraft:cracked_polished_blackstone_bricks",
+        "minecraft:chiseled_polished_blackstone",
+        "minecraft:polished_basalt",
+        "minecraft:blackstone",
+        "minecraft:chiseled_nether_bricks"
+      ],
+      "stairs": [
+        "minecraft:polished_blackstone_brick_stairs",
+        "minecraft:polished_blackstone_stairs"
+      ],
+      "slabs": [
+        "minecraft:polished_blackstone_brick_slab",
+        "minecraft:polished_blackstone_slab"
+      ],
+      "button": "minecraft:polished_blackstone_button",
+      "pressurePlate": "minecraft:polished_blackstone_pressure_plate",
+      "wood": "warped",
+      "stone": "blackstone"
+    }
   },
   "obsidian": {
     "name": "obsidian",
@@ -59,7 +466,32 @@
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS"
-    ]
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:black_concrete",
+        "minecraft:obsidian",
+        "minecraft:smooth_quartz",
+        "minecraft:quartz_block",
+        "minecraft:quartz_pillar",
+        "minecraft:sculk",
+        "minecraft:quartz_bricks",
+        "minecraft:crying_obsidian",
+        "minecraft:chiseled_quartz_block"
+      ],
+      "stairs": [
+        "minecraft:smooth_quartz_stairs",
+        "minecraft:smooth_quartz_stairs"
+      ],
+      "slabs": [
+        "minecraft:smooth_quartz_slab",
+        "minecraft:smooth_quartz_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "birch",
+      "stone": "quartz"
+    }
   },
   "quartz": {
     "name": "quartz",
@@ -70,7 +502,62 @@
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS"
-    ]
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:smooth_quartz",
+        "minecraft:quartz_block",
+        "minecraft:quartz_pillar",
+        "minecraft:quartz_bricks",
+        "minecraft:black_concrete",
+        "minecraft:obsidian",
+        "minecraft:chiseled_quartz_block",
+        "minecraft:crying_obsidian"
+      ],
+      "stairs": [
+        "minecraft:smooth_quartz_stairs",
+        "minecraft:quartz_stairs"
+      ],
+      "slabs": [
+        "minecraft:smooth_quartz_slab",
+        "minecraft:quartz_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "birch",
+      "stone": "quartz"
+    }
+  },
+  "spruce": {
+    "name": "spruce",
+    "minLevel": 436,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:spruce_planks",
+        "minecraft:spruce_wood",
+        "minecraft:stripped_spruce_wood",
+        "minecraft:spruce_log",
+        "minecraft:stripped_spruce_log"
+      ],
+      "stairs": [
+        "minecraft:spruce_stairs",
+        "minecraft:spruce_stairs"
+      ],
+      "slabs": [
+        "minecraft:spruce_slab",
+        "minecraft:spruce_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "spruce",
+      "stone": "stone"
+    }
   },
   "stone": {
     "name": "stone",
@@ -80,16 +567,95 @@
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS"
-    ]
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:stone_bricks",
+        "minecraft:oak_planks",
+        "minecraft:cracked_stone_bricks",
+        "minecraft:spruce_planks",
+        "minecraft:spruce_log",
+        "minecraft:stripped_spruce_log",
+        "minecraft:mossy_stone_bricks",
+        "minecraft:stone",
+        "minecraft:tuff_bricks"
+      ],
+      "stairs": [
+        "minecraft:stone_brick_stairs",
+        "minecraft:oak_stairs"
+      ],
+      "slabs": [
+        "minecraft:stone_brick_slab",
+        "minecraft:oak_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "oak",
+      "stone": "stone"
+    }
   },
-  "wood_oak": {
-    "name": "wood_oak",
-    "minLevel": 131,
+  "warped": {
+    "name": "warped",
+    "minLevel": 321,
+    "maxLevel": 355,
     "phases": [
       "OVERWORLD",
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS"
-    ]
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:warped_planks",
+        "minecraft:warped_hyphae",
+        "minecraft:stripped_warped_hyphae",
+        "minecraft:warped_stem",
+        "minecraft:stripped_warped_stem"
+      ],
+      "stairs": [
+        "minecraft:warped_stairs",
+        "minecraft:warped_stairs"
+      ],
+      "slabs": [
+        "minecraft:warped_slab",
+        "minecraft:warped_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "warped",
+      "stone": "stone"
+    }
+  },
+  "wood_oak": {
+    "name": "wood_oak",
+    "minLevel": 131,
+    "maxLevel": 160,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:oak_planks",
+        "minecraft:oak_wood",
+        "minecraft:stripped_oak_wood",
+        "minecraft:oak_log",
+        "minecraft:stripped_oak_log"
+      ],
+      "stairs": [
+        "minecraft:oak_stairs",
+        "minecraft:oak_stairs"
+      ],
+      "slabs": [
+        "minecraft:oak_slab",
+        "minecraft:oak_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "oak",
+      "stone": "stone"
+    }
   }
 }

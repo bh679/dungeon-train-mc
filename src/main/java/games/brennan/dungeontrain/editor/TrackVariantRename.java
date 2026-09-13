@@ -229,9 +229,12 @@ public final class TrackVariantRename {
         move(TrackVariantStore.sourceFileFor(kind, from), TrackVariantStore.sourceFileFor(kind, to));
     }
 
-    /** {@code src/main/resources/data/dungeontrain/<subdir>}, or null when there is no source tree. */
+    /**
+     * {@code src/main/resources/data/dungeontrain/<subdir>}, or null when there is no source tree.
+     * Shared with {@link TemplateCopy}, which lays a copy's sidecar twins down the same way.
+     */
     @Nullable
-    private static Path sourceDir(String subdir) {
+    static Path sourceDir(String subdir) {
         Path gameDir = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get();
         Path projectRoot = gameDir == null ? null : gameDir.getParent();
         if (projectRoot == null) return null;

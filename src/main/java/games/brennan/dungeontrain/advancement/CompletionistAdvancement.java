@@ -89,6 +89,9 @@ public final class CompletionistAdvancement {
         if (granted) {
             LOGGER.info("[DungeonTrain] Granted completionist advancement (Everything Burrito) to {}",
                 player.getName().getString());
+            // The earn event above has already banked it (clean run). If it did, the player is now
+            // eligible for /advancement revoke @s everything — send them the command.
+            StartAgainAdvancement.refreshCommandTree(player);
         }
     }
 }

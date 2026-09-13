@@ -15,15 +15,21 @@ import java.util.Locale;
  *
  * <p>The on-disk shape reuses {@link TemplateWeightCodec} so a Stage's gate JSON is byte-identical
  * to an inline template gate (and {@link TemplateGate#ALL} round-trips as {@code "all"}):</p>
- * <pre>{ "name": "deep_nether", "minLevel": 20, "maxLevel": "all", "phases": ["NETHER"] }</pre>
+ * <pre>{ "name": "deep_nether", "minLevel": 20, "maxLevel": "all", "phases": ["NETHER"],
+ *   "palette": { "solid": [...], "stairs": [...], "slabs": [...], "button": "...",
+ *                "pressurePlate": "...", "wood": "spruce" } }</pre>
+ * The optional {@code palette} is the baked {@link StagePalette} (absent until baked).
  *
  * @param id   lowercased {@code ^[a-z0-9_]{1,32}$} token — the store key and the wire identifier.
  * @param name display label (v1: derived from {@code id}; a future free-text name can diverge).
  * @param gate the preset gate.
+ * @param palette the baked stage-placeholder palette ({@code "palette"} object), or {@code null}
+ *                when this stage has not been baked yet — see {@code editor.StagePaletteBaker}.
  */
-public record Stage(String id, String name, TemplateGate gate) {
+public record Stage(String id, String name, TemplateGate gate, StagePalette palette) {
 
     public static final String K_NAME = "name";
+    public static final String K_PALETTE = "palette";
 
     public Stage {
         id = id == null ? "" : id.trim().toLowerCase(Locale.ROOT);
@@ -31,14 +37,24 @@ public record Stage(String id, String name, TemplateGate gate) {
         if (gate == null) gate = TemplateGate.DEFAULT;
     }
 
-    /** Copy with a new gate, keeping id + name. */
-    public Stage withGate(TemplateGate newGate) {
-        return new Stage(id, name, newGate);
+    /** Unbaked stage — the pre-palette shape every existing caller and test uses. */
+    public Stage(String id, String name, TemplateGate gate) {
+        this(id, name, gate, null);
     }
 
-    /** Copy with a new display name, keeping id + gate. */
+    /** Copy with a new gate, keeping id + name + palette. */
+    public Stage withGate(TemplateGate newGate) {
+        return new Stage(id, name, newGate, palette);
+    }
+
+    /** Copy with a new display name, keeping id + gate + palette. */
     public Stage withName(String newName) {
-        return new Stage(id, newName, gate);
+        return new Stage(id, newName, gate, palette);
+    }
+
+    /** Copy with a new baked palette, keeping id + name + gate. */
+    public Stage withPalette(StagePalette newPalette) {
+        return new Stage(id, name, gate, newPalette);
     }
 
     /** Serialise this Stage's value (everything except the id, which is the map key). */
@@ -46,6 +62,7 @@ public record Stage(String id, String name, TemplateGate gate) {
         JsonObject o = new JsonObject();
         o.addProperty(K_NAME, name);
         TemplateWeightCodec.writeGateFields(o, gate);
+        if (palette != null) o.add(K_PALETTE, palette.toJson());
         return o;
     }
 
@@ -67,6 +84,7 @@ public record Stage(String id, String name, TemplateGate gate) {
             && !ne.getAsString().isBlank()) {
             name = ne.getAsString();
         }
-        return new Stage(key, name, TemplateWeightCodec.parseGate(o));
+        return new Stage(key, name, TemplateWeightCodec.parseGate(o),
+            StagePalette.fromJson(o.get(K_PALETTE)));
     }
 }

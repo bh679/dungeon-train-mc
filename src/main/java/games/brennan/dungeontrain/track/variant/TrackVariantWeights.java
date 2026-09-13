@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.BuilderCredit;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.TemplateMeta;
 import games.brennan.dungeontrain.template.TemplateWeightCodec;
@@ -102,6 +103,33 @@ public final class TrackVariantWeights {
         if (name == null) return "";
         TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
         return m == null || m.name() == null ? name : m.name();
+    }
+
+    /** Who originally built {@code (kind, name)}, or {@code null} when nobody is credited. */
+    public static synchronized BuilderCredit builderFor(TrackKind kind, String name) {
+        if (name == null) return null;
+        TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
+        return m == null ? null : m.builder();
+    }
+
+    /**
+     * Credit {@code builder} as the original builder of {@code (kind, name)} ({@code null} clears
+     * it), preserving weight, inline gate, Stage link, mode and label. Persists. Returns the stored
+     * credit, or {@code null} when cleared. See {@link games.brennan.dungeontrain.train.CarriageWeights#setBuilder}.
+     */
+    public static synchronized BuilderCredit setBuilder(TrackKind kind, String name, BuilderCredit builder)
+            throws IOException {
+        String key = name.toLowerCase(Locale.ROOT);
+        BuilderCredit stored = builder == null || !builder.known() ? null : builder;
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        TemplateMeta prev = next.get(key);
+        next.put(key, TemplateMeta.mergeBuilder(prev, stored, DEFAULT));
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Set track builder {}:{}={} (persisted to {}).",
+            kind.id(), key, stored == null ? "<none>" : stored.display(), configPath(kind));
+        return stored;
     }
 
     /**
@@ -262,6 +290,34 @@ public final class TrackVariantWeights {
         writeConfig(kind, next);
         trySaveToSource(kind, next);
         LOGGER.info("[DungeonTrain] Moved track weight entry {}:{} -> {}:{} (persisted to {}).",
+            kind.id(), src, kind.id(), dst, configPath(kind));
+        return true;
+    }
+
+    /**
+     * Give {@code (kind, to)} a copy of {@code (kind, from)}'s entry — weight, inline gate, Stage
+     * link, mode, flip and builder credit — leaving {@code from} exactly as it was.
+     *
+     * <p>The one field that does <b>not</b> travel is the display label: two rooms answering to the
+     * same label would be indistinguishable in every menu, so the copy is labelled by its own id
+     * until its author names it. The mode tag travels whole, which for a portal room is its sky,
+     * walls, copies and door settings — a copy without it is a bare box.</p>
+     *
+     * <p>A source with no entry has nothing to copy — the defaults follow the new name anyway — and
+     * answers false without touching the file.</p>
+     */
+    public static synchronized boolean copy(TrackKind kind, String from, String to) throws IOException {
+        String src = from.toLowerCase(Locale.ROOT);
+        String dst = to.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> cur = CURRENT.get(kind);
+        TemplateMeta meta = cur.get(src);
+        if (meta == null) return false;
+        Map<String, TemplateMeta> next = new HashMap<>(cur);
+        next.put(dst, meta.asCopy());
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Copied track weight entry {}:{} -> {}:{} (persisted to {}).",
             kind.id(), src, kind.id(), dst, configPath(kind));
         return true;
     }

@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirements;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
@@ -45,6 +46,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.EnderChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.CommandEvent;
@@ -121,6 +123,10 @@ public final class AchievementEvents {
      */
     private static final int CHEST_CLICK_DEBOUNCE_TICKS = 10;
 
+    // The milestone thresholds below are the jar's historical values, kept as FALLBACKS: the
+    // number in force is the advancement JSON's `threshold` (relay override applied), read through
+    // AdvancementRequirements so a rebalance needs no build. The ids are the advancements that
+    // carry them.
     /** Carriages travelled since the last chest/barrel open for "Not My Chest". */
     private static final int NO_CONTAINER_CARTS_TIER_1 = 100;
     /** Carriages travelled since the last chest/barrel open for "Still Not My Chest". */
@@ -131,6 +137,16 @@ public final class AchievementEvents {
     private static final int NO_BREAK_CARTS_TIER_2 = 1000;
     /** Carriages that must be exceeded in one life for "Contained Loop". */
     private static final int CONTAINED_LOOP_CARTS = 1000;
+
+    private static final ResourceLocation NO_CONTAINER_100_ID = dtAdvancement("no_container_100");
+    private static final ResourceLocation NO_CONTAINER_1000_ID = dtAdvancement("no_container_1000");
+    private static final ResourceLocation NO_BREAK_100_ID = dtAdvancement("no_break_100");
+    private static final ResourceLocation NO_BREAK_1000_ID = dtAdvancement("no_break_1000");
+    private static final ResourceLocation CONTAINED_LOOP_ID = dtAdvancement("contained_loop");
+
+    private static ResourceLocation dtAdvancement(String name) {
+        return ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/" + name);
+    }
 
     /** Per-player last-right-clicked chest pos + tick, for debouncing only. */
     private static final Map<UUID, BlockPos> LAST_CHEST_POS = new HashMap<>();
@@ -308,10 +324,10 @@ public final class AchievementEvents {
         // both terms, so it cancels in the subtraction.
         int sinceContainer = effectiveTravelled
             - player.getData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get());
-        if (sinceContainer >= NO_CONTAINER_CARTS_TIER_1) {
+        if (sinceContainer >= AdvancementRequirements.intValue(NO_CONTAINER_100_ID, NO_CONTAINER_CARTS_TIER_1)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_container_100_carts");
         }
-        if (sinceContainer >= NO_CONTAINER_CARTS_TIER_2) {
+        if (sinceContainer >= AdvancementRequirements.intValue(NO_CONTAINER_1000_ID, NO_CONTAINER_CARTS_TIER_2)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_container_1000_carts");
         }
         // "Look, Don't Touch" / "Museum Rules" — carriages travelled since the last
@@ -320,10 +336,10 @@ public final class AchievementEvents {
         // decorated pots included.
         int sinceBreak = effectiveTravelled
             - player.getData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get());
-        if (sinceBreak >= NO_BREAK_CARTS_TIER_1) {
+        if (sinceBreak >= AdvancementRequirements.intValue(NO_BREAK_100_ID, NO_BREAK_CARTS_TIER_1)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_break_100_carts");
         }
-        if (sinceBreak >= NO_BREAK_CARTS_TIER_2) {
+        if (sinceBreak >= AdvancementRequirements.intValue(NO_BREAK_1000_ID, NO_BREAK_CARTS_TIER_2)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "no_break_1000_carts");
         }
     }
@@ -352,7 +368,7 @@ public final class AchievementEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.getData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get())) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        if (effectiveTravelled(run) <= CONTAINED_LOOP_CARTS) return;
+        if (effectiveTravelled(run) <= AdvancementRequirements.intValue(CONTAINED_LOOP_ID, CONTAINED_LOOP_CARTS)) return;
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "contained_loop");
     }
 
@@ -947,6 +963,12 @@ public final class AchievementEvents {
         // (post-replay) progress and grants normally (replaying is false here).
         replaySidecarAdvancements(player);
         CompletionistAdvancement.checkAndGrant(player);
+        // Vanilla sent this player's command tree before any of the above ran. If they hold the
+        // banked capstone — replayed just now, or granted just now — /advancement revoke @s
+        // everything is theirs to run, so send the tree again with it in.
+        if (StartAgainAdvancement.holdsBankedCapstone(player)) {
+            StartAgainAdvancement.refreshCommandTree(player);
+        }
     }
 
     /**
@@ -1134,6 +1156,31 @@ public final class AchievementEvents {
      * {@link games.brennan.dungeontrain.cheat.CommandAllowlist}), so in practice the
      * revoke reaches execution untainted.</p>
      */
+    /**
+     * The fence around {@link games.brennan.dungeontrain.advancement.SelfRevokeCommandAccess}: a
+     * player <em>without</em> permission 2 may run {@code /advancement …} in exactly one form,
+     * {@code /advancement revoke @s everything}. The requirement rewrite already hides
+     * {@code grant} and the narrowing {@code revoke} forms from them, but {@code <targets>} is a
+     * free argument, so {@code revoke SomeoneElse everything} would still parse. Cancel anything
+     * that isn't the exact form.
+     *
+     * <p>{@link EventPriority#HIGHEST} on purpose: a cancelled event is not delivered to
+     * {@link CheatDetectionEvents#onCommand}, so a non-op poking at other forms gets "unknown
+     * command" and no Free Play prompt — the command never existed for them, and it still
+     * doesn't. Operators are untouched (vanilla path, cheat detector, the lot).</p>
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onNonOpAdvancementCommand(CommandEvent event) {
+        var source = event.getParseResults().getContext().getSource();
+        ServerPlayer player = source.getPlayer();
+        if (player == null || source.hasPermission(2)) return;
+        var nodes = event.getParseResults().getContext().getNodes();
+        if (nodes.isEmpty() || !"advancement".equals(nodes.get(0).getNode().getName())) return;
+        if (StartAgainAdvancement.isSelfRevokeEverything(event.getParseResults().getReader().getString())) return;
+        event.setCanceled(true);
+        source.sendFailure(Component.translatable("command.unknown.command"));
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onCommand(CommandEvent event) {
         ServerPlayer player = event.getParseResults().getContext().getSource().getPlayer();

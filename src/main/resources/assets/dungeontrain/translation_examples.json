@@ -1376,6 +1376,78 @@
       ]
     }
   },
+  "chat.dungeontrain.portal_builder.1": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.2": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.3": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.4": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.5": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.6": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.7": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal_builder.8": {
+    "1": {
+      "label": "the player who built the dimensional carriage",
+      "examples": [
+        "Steve",
+        "Alex"
+      ]
+    }
+  },
   "chat.dungeontrain.presence.last_seen": {
     "1": {
       "label": "how long ago, as a whole clause",
@@ -2866,6 +2938,90 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.prefab_conflict.hint": {
+    "1": {
+      "label": "the build being loaded",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.block": {
+    "1": {
+      "label": "the container block the prefab was saved on",
+      "examples": [
+        "Chest",
+        "Barrel"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.fill": {
+    "1": {
+      "label": "the fewest slots filled",
+      "examples": [
+        "0",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the most slots filled",
+      "examples": [
+        "5",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.fill_all": {
+    "1": {
+      "label": "the fewest slots filled",
+      "examples": [
+        "0",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.entry": {
+    "1": {
+      "label": "how many of the item",
+      "examples": [
+        "3",
+        "16"
+      ]
+    },
+    "2": {
+      "label": "the item",
+      "examples": [
+        "Gold Ingot",
+        "Diamond"
+      ]
+    },
+    "3": {
+      "label": "the entry's weight",
+      "examples": [
+        "10",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.renamed_to": {
+    "1": {
+      "label": "the new name their version will be saved under",
+      "examples": [
+        "test2_2",
+        "gold_relay"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.prefab_conflict.rename_prompt": {
+    "1": {
+      "label": "the prefab being renamed",
+      "examples": [
+        "Test2",
+        "Gold"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.upload_failed": {
     "1": {
       "label": "the build that saved locally but could not be uploaded",
@@ -3059,6 +3215,70 @@
       "label": "the languages they worked on",
       "examples": [
         "Polish, Czech"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.builders.person_line": {
+    "1": {
+      "label": "the builder's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "how many templates they built (two or more)",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.builders.person_line_one": {
+    "1": {
+      "label": "the builder's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "the number one",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.page": {
+    "1": {
+      "label": "the page shown",
+      "examples": [
+        "2"
+      ]
+    },
+    "2": {
+      "label": "how many pages there are",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.writers.person_line": {
+    "1": {
+      "label": "the writer's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "how many books they wrote (more than twenty)",
+      "examples": [
+        "42"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.writers.how": {
+    "1": {
+      "label": "how many praised books it takes",
+      "examples": [
+        "20"
       ]
     }
   },
@@ -3296,6 +3516,22 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.layout.section": {
+    "1": {
+      "label": "the template type this section lists (Carriages, Floor, Walls…)",
+      "examples": [
+        "Carriages",
+        "Floor"
+      ]
+    },
+    "2": {
+      "label": "how many templates the section holds",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sheet.entities": {
     "1": {
       "label": "how many entities (mobs, item frames…) the template contains",
@@ -3329,6 +3565,14 @@
       "examples": [
         "armor5",
         "windowed"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.creator.parent_new": {
+    "1": {
+      "label": "the display name of the variant parent that will be created when the build is loaded",
+      "examples": [
+        "User builds"
       ]
     }
   },
@@ -4071,6 +4315,230 @@
       ]
     }
   },
+  "gui.dungeontrain.version.compare.installed": {
+    "1": {
+      "label": "a version number",
+      "examples": [
+        "0.849.0",
+        "0.828.0"
+      ]
+    },
+    "2": {
+      "label": "how the installed build stands, e.g. \"25 versions behind\" or \"up to date\"",
+      "examples": [
+        "25 versions behind",
+        "up to date"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.one": {
+    "1": {
+      "label": "the number of versions",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.other": {
+    "1": {
+      "label": "the number of versions",
+      "examples": [
+        "4",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.behind": {
+    "1": {
+      "label": "how many versions, already worded as \"N versions\"",
+      "examples": [
+        "54 versions",
+        "1 version"
+      ]
+    },
+    "2": {
+      "label": "how many releases, already worded as \"N releases\"",
+      "examples": [
+        "25 releases"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.releases.one": {
+    "1": {
+      "label": "the number of releases",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.releases.other": {
+    "1": {
+      "label": "the number of releases",
+      "examples": [
+        "25"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.count.releases.capped": {
+    "1": {
+      "label": "the listing cap, the count is at least this",
+      "examples": [
+        "200"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.latest": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "a version number",
+      "examples": [
+        "0.849.0",
+        "0.828.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.latest.unknown": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.lag": {
+    "1": {
+      "label": "the launcher that is behind",
+      "examples": [
+        "CurseForge"
+      ]
+    },
+    "2": {
+      "label": "how many versions, already worded as \"N versions\"",
+      "examples": [
+        "4 versions",
+        "1 version"
+      ]
+    },
+    "3": {
+      "label": "the launcher that is ahead",
+      "examples": [
+        "Modrinth"
+      ]
+    },
+    "4": {
+      "label": "how many releases, already worded as \"N releases\"",
+      "examples": [
+        "8 releases"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.platform.newer": {
+    "1": {
+      "label": "the launcher that does not have it yet",
+      "examples": [
+        "CurseForge"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.uptodate": {
+    "1": {
+      "label": "how many companion mods are installed",
+      "examples": [
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.updates.one": {
+    "1": {
+      "label": "how many companion mods have an update",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.updates.other": {
+    "1": {
+      "label": "how many companion mods have an update",
+      "examples": [
+        "2"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.mod.uptodate": {
+    "1": {
+      "label": "a companion mod's name",
+      "examples": [
+        "Trade Everything",
+        "Adventure Item Names"
+      ]
+    },
+    "2": {
+      "label": "a version number",
+      "examples": [
+        "0.9.0",
+        "0.13.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.mod.update": {
+    "1": {
+      "label": "a companion mod's name",
+      "examples": [
+        "Trade Everything",
+        "Adventure Item Names"
+      ]
+    },
+    "2": {
+      "label": "the installed version",
+      "examples": [
+        "0.9.0"
+      ]
+    },
+    "3": {
+      "label": "the newest version",
+      "examples": [
+        "0.13.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.siblings.mod.unknown": {
+    "1": {
+      "label": "a companion mod's name",
+      "examples": [
+        "Trade Everything",
+        "Adventure Item Names"
+      ]
+    },
+    "2": {
+      "label": "a version number",
+      "examples": [
+        "0.9.0",
+        "0.13.0"
+      ]
+    },
+    "3": {
+      "label": "a status line, e.g. Checking…",
+      "examples": [
+        "Checking…"
+      ]
+    }
+  },
+  "gui.dungeontrain.version.compare.get": {
+    "1": {
+      "label": "a launcher name (Modrinth or CurseForge)",
+      "examples": [
+        "Modrinth",
+        "CurseForge"
+      ]
+    }
+  },
   "gui.dungeontrain.video_tools.reset.done_profile": {
     "1": {
       "label": "how many profile items were cleared",
@@ -4119,6 +4587,64 @@
       ]
     }
   },
+  "gui.dungeontrain.videos.filter.platform.shown": {
+    "1": {
+      "label": "the platform this toggle controls",
+      "examples": [
+        "YouTube",
+        "Twitch"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.filter.platform.hidden": {
+    "1": {
+      "label": "the platform this toggle controls",
+      "examples": [
+        "YouTube",
+        "Twitch"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.count": {
+    "1": {
+      "label": "how many videos match the current filters",
+      "examples": [
+        "12"
+      ]
+    },
+    "2": {
+      "label": "how many videos there are in total",
+      "examples": [
+        "87"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.list.narration": {
+    "1": {
+      "label": "how many videos are listed",
+      "examples": [
+        "87"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.sort": {
+    "1": {
+      "label": "which order the video list is in",
+      "examples": [
+        "Views",
+        "Recent"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.views": {
+    "1": {
+      "label": "a compact view count",
+      "examples": [
+        "130",
+        "1.2K"
+      ]
+    }
+  },
   "gui.dungeontrain.number_input.range": {
     "1": {
       "label": "the lowest value this field accepts",
@@ -4132,6 +4658,472 @@
       "examples": [
         "100",
         "1000"
+      ]
+    }
+  },
+  "gui.dungeontrain.crash_recovery.world": {
+    "1": {
+      "label": "the crashed world's name",
+      "examples": [
+        "Dungeon Train 1757400000000",
+        "World 1757400000000"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.streamer.sub": {
+    "1": {
+      "label": "how many days the streamer has streamed the game",
+      "examples": [
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the date of their most recent stream, YYYY-MM-DD",
+      "examples": [
+        "2026-08-30"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.streamer.sub.undated": {
+    "1": {
+      "label": "how many days the streamer has streamed the game",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": {
+    "1": {
+      "label": "distinct chests to open, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.taking_notes.description": {
+    "1": {
+      "label": "random books to open, from the requirement",
+      "examples": [
+        "10",
+        "5"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.burned_unread.description": {
+    "1": {
+      "label": "books to burn, from the requirement",
+      "examples": [
+        "10",
+        "5"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.the_same_but_different.description": {
+    "1": {
+      "label": "starting books to open, from the requirement",
+      "examples": [
+        "10",
+        "5"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.carts_100.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.the_far_start.description": {
+    "1": {
+      "label": "carriages to carry the book past, from the requirement",
+      "examples": [
+        "150",
+        "200"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.pacifist_100.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.pacifist_250.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "250",
+        "300"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.pacifist_1000.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.biomes_10.description": {
+    "1": {
+      "label": "distinct biomes to ride through, from the requirement",
+      "examples": [
+        "10",
+        "8"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.biomes_17.description": {
+    "1": {
+      "label": "distinct biomes to ride through, from the requirement",
+      "examples": [
+        "17",
+        "15"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.biomes_25.description": {
+    "1": {
+      "label": "distinct biomes to ride through, from the requirement",
+      "examples": [
+        "25",
+        "20"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.carts_1000.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.encountered_1000_players.description": {
+    "1": {
+      "label": "players to encounter, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.carts_10000.description": {
+    "1": {
+      "label": "carriages to traverse, from the requirement",
+      "examples": [
+        "10,000",
+        "5,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.the_long_way_back.description": {
+    "1": {
+      "label": "carriages each way, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.roof_runner.description": {
+    "1": {
+      "label": "carriage groups to run along, from the requirement",
+      "examples": [
+        "3",
+        "5"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.enjoying_the_ride.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.hours.some",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.plural",
+          "args": [
+            "5"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.single",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.settling_in.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.hours.plural",
+          "args": [
+            "10"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.some",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.i_live_here_now.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.days.single",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.days.some",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.plural",
+          "args": [
+            "12"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.help_i_cant_get_off.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.days.some",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.days.single",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.one_for_the_road.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.hours.single",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.some",
+          "args": [
+            "2"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.marathon_passenger.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.hours.some",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.single",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.going_the_distance.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "10,000",
+        "5,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.cross_country.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "100,000",
+        "50,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.the_long_run.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "250,000",
+        "100,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.seasoned_traveller.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "100,000",
+        "50,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.million_metre_club.description": {
+    "1": {
+      "label": "metres to ride, from the requirement",
+      "examples": [
+        "1,000,000",
+        "500,000"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.no_container_100.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.no_container_1000.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.no_break_100.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.no_break_1000.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.contained_loop.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "dungeontrain.requirement.hours.single": {
+    "1": {
+      "label": "the number of hours",
+      "examples": [
+        "1",
+        "2",
+        "10"
+      ]
+    }
+  },
+  "dungeontrain.requirement.hours.some": {
+    "1": {
+      "label": "the number of hours",
+      "examples": [
+        "1",
+        "2",
+        "10"
+      ]
+    }
+  },
+  "dungeontrain.requirement.hours.plural": {
+    "1": {
+      "label": "the number of hours",
+      "examples": [
+        "1",
+        "2",
+        "10"
+      ]
+    }
+  },
+  "dungeontrain.requirement.days.single": {
+    "1": {
+      "label": "the number of days",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "dungeontrain.requirement.days.some": {
+    "1": {
+      "label": "the number of days",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "dungeontrain.requirement.days.plural": {
+    "1": {
+      "label": "the number of days",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.lucky_loot.bonus": {
+    "1": {
+      "label": "how many extra items the Luck effect added (3 to 10)",
+      "examples": [
+        "3",
+        "10"
       ]
     }
   }

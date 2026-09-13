@@ -66,8 +66,15 @@ public final class TranslationCoverageClient {
     /** Locale to everyone credited for an approved translation of it, and how much they did. */
     private static final Map<String, List<Credit>> CREDITS = new HashMap<>();
 
-    /** One person's credited work in one language, as the relay reports it. */
-    public record Credit(String name, int units) {}
+    /**
+     * One person's credited work in one language, as the relay reports it. {@code anonymous} is a
+     * translator who took their name off the credits ({@code CreditEditClient}): counted, unnamed.
+     */
+    public record Credit(String name, int units, boolean anonymous) {
+        public Credit(String name, int units) {
+            this(name, units, false);
+        }
+    }
 
     private TranslationCoverageClient() {}
 
@@ -227,8 +234,10 @@ public final class TranslationCoverageClient {
                         ? obj.get("name").getAsString().trim() : "";
                     int units = obj.has("units") && obj.get("units").isJsonPrimitive()
                         ? obj.get("units").getAsInt() : 0;
-                    if (!name.isEmpty() && units > 0) {
-                        credits.add(new Credit(name, units));
+                    boolean anonymous = obj.has("anonymous") && obj.get("anonymous").isJsonPrimitive()
+                        && obj.get("anonymous").getAsBoolean();
+                    if ((anonymous || !name.isEmpty()) && units > 0) {
+                        credits.add(new Credit(anonymous ? "" : name, units, anonymous));
                     }
                 }
                 if (!credits.isEmpty()) {

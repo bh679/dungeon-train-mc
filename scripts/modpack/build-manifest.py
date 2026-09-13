@@ -3,15 +3,15 @@
 
 A CurseForge modpack manifest lists the Minecraft version, the modloader, and an
 explicit set of CurseForge mod files (by ``projectID`` + ``fileID``). Dungeon Train
-jarJars only DiscordPresence + joml-primitives *inside* its own jar; the sibling mods
-AIN/AIS/PlayerMob/EnderChestPersistence are un-bundled required downloads (so their own
+jarJars only DiscordPresence + EdibleBackpacks + joml-primitives *inside* its own jar; the sibling mods
+AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything/KeepTrim are un-bundled required downloads (so their own
 project pages get credited), which means the pack must list them explicitly:
 
   * Dungeon Train — project from ``modpack.config.json``, file ID passed in per release
     (the freshly uploaded CurseForge file, surfaced by mc-publish in ``release.yml``).
   * Sable — an un-bundled runtime dep, *pinned* in ``modpack.config.json`` to the
     exact version DT is built against (PolyForm Shield forbids bundling it).
-  * Each ``optional_mods`` entry — including the five siblings, which carry
+  * Each ``optional_mods`` entry — including the six siblings, which carry
     ``required: true`` so the pack ships them switched ON (a CurseForge ``required:false``
     entry ships a mod *disabled*, which for a hard dependency would break the pack).
 

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "dungeontrain:block/stage_stone_cobbled",
+    "side": "dungeontrain:block/stage_stone_cobbled",
+    "top": "dungeontrain:block/stage_stone_cobbled"
+  }
+}

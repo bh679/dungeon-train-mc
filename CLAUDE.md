@@ -90,7 +90,9 @@ After implementation is complete:
 Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 1. Push branch, open PR with conventional commit title
 2. **Log + confirm the changelog entry** — append it on the feature branch with
-   `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
+   `scripts/release-notes/append-entry.py` (curated player-facing notes, plus `--tag` for each
+   topical tag — editor/multiplayer/community/translations/compatibility/train/world/mobs/
+   loot/books/advancements/ui/balance; the type-derived tag is automatic) so it lands in the PR
    diff, and present those notes to the user to confirm before merging — see
    `.github/release-notes/README.md`
 3. Verify CI green
@@ -253,7 +255,11 @@ Separate from the mod, there are **two modpacks** published from one config
   `project_id`/`file_id`. First publish is a **draft** → enters Modrinth's modpack review queue.
 
 After a successful mod upload `release.yml` dispatches **`release-modpack.yml`** (CurseForge —
-polls until CurseForge approves the new DT file, and fails without uploading if it never does) and **`release-modpack-modrinth.yml`**
+polls until CurseForge approves the new DT file; if that takes longer than the timeout the run
+**defers** — green, nothing uploaded — and `modpack-reconcile.yml`'s 6-hourly catch-up
+(`scripts/modpack/catch-up.py`) publishes the newest release once its file is listed as
+approved. Approval routinely takes >1h, so this is the normal path. Catch-up is **newest
+release only** — no backfill of older gaps.) and **`release-modpack-modrinth.yml`**
 (Modrinth — no wait), each gated on that platform's mod upload having produced a file/version id.
 **Modrinth fires for every release including the ~22 cascade ticks; CurseForge fires only for
 real, operator-dispatched releases** (`inputs.auto == false`) — CurseForge's pack validation
@@ -261,7 +267,7 @@ returns sporadic 500s and silently rejects files, so the cascade is kept out of 
 version lists therefore differ by design. Both bundle that release's
 DT file + Sable + the pinned sibling and companion mods. Core entries are
 **Dungeon Train + Sable** (DT jarJars only DiscordPresence + EdibleBackpacks + joml-primitives);
-the sibling mods **AIN/AIS/PMOB/ECP/TE are un-bundled required downloads**, declared `<slug>(required)` so the
+the sibling mods **AIN/AIS/PMOB/ECP/TE/KT are un-bundled required downloads**, declared `<slug>(required)` so the
 CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit.
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
 `dependency_type: required` + a `gradle_property` floor) and the companions, each with a
@@ -278,7 +284,7 @@ loads (Advancement Plaques needs Iceberg).
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
-- **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE each have TWO versions in `gradle.properties`.
+- **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE/KT each have TWO versions in `gradle.properties`.
   `<mod>_version` is what DT compiles/dev-runs against and the auto-release cascade bumps it every
   tick; `<mod>_min_version` is the floor end users must clear, rendered into `neoforge.mods.toml`
   as `[x,)`. They are separate on purpose — if mods.toml tracked `<mod>_version`, every cascade

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.ToIntFunction;
 
 /**
@@ -41,7 +42,8 @@ public final class TranslationCreditsMerge {
         return merge(TranslationContributorsRegistry.all(),
             TranslationCoverageClient.allCredits(),
             TranslationCreditsMerge::totalKeysFor,
-            TranslatorRenames.snapshot());
+            TranslatorRenames.snapshot(),
+            Set.of());
     }
 
     /**
@@ -69,13 +71,29 @@ public final class TranslationCreditsMerge {
                                                      Map<String, List<TranslationCoverageClient.Credit>> relay,
                                                      ToIntFunction<String> totalForLocale,
                                                      Map<String, String> aliases) {
+        return merge(baked, relay, totalForLocale, aliases, Set.of());
+    }
+
+    /**
+     * As {@link #merge(List, Map, ToIntFunction, Map)}, with {@code hidden} names — the ones this
+     * player has taken off the credits — folded into the one {@link TranslationContributor#ANONYMOUS}
+     * line, where the relay's own anonymous credits already land. The count stays; the name goes.
+     * The link goes with it: an anonymous line has nobody to link to.
+     */
+    public static List<TranslationContributor> merge(List<TranslationContributor> baked,
+                                                     Map<String, List<TranslationCoverageClient.Credit>> relay,
+                                                     ToIntFunction<String> totalForLocale,
+                                                     Map<String, String> aliases,
+                                                     Set<String> hidden) {
         // Keyed by name so the two sources fold into one person. Whatever order the map ends up
         // holding them in does not survive ranked() below.
         Map<String, TranslationContributor> byName = new LinkedHashMap<>();
         for (TranslationContributor person : baked) {
-            String name = TranslatorRenames.resolve(aliases, person.name());
+            String resolved = TranslatorRenames.resolve(aliases, person.name());
+            String name = hidden.contains(resolved) || hidden.contains(person.name())
+                ? TranslationContributor.ANONYMOUS : resolved;
             TranslationContributor renamed = name.equals(person.name()) ? person
-                : new TranslationContributor(name, person.url(), person.languages());
+                : new TranslationContributor(name, name.isEmpty() ? Optional.empty() : person.url(), person.languages());
             byName.merge(name, renamed, TranslationCreditsMerge::foldLanguages);
         }
         if (relay == null) {
@@ -89,11 +107,17 @@ public final class TranslationCreditsMerge {
             }
             int total = Math.max(0, totalForLocale.applyAsInt(locale));
             for (TranslationCoverageClient.Credit credit : entry.getValue()) {
-                if (credit == null || credit.name() == null || credit.name().isBlank()) {
+                if (credit == null || credit.units() <= 0) {
                     continue;
                 }
-                byName.compute(TranslatorRenames.resolve(aliases, credit.name()),
-                    (name, existing) -> withShare(name, existing, locale, credit.units(), total));
+                if (!credit.anonymous() && (credit.name() == null || credit.name().isBlank())) {
+                    continue;
+                }
+                String resolved = credit.anonymous() ? TranslationContributor.ANONYMOUS
+                    : TranslatorRenames.resolve(aliases, credit.name());
+                String name = hidden.contains(resolved) || hidden.contains(credit.name())
+                    ? TranslationContributor.ANONYMOUS : resolved;
+                byName.compute(name, (n, existing) -> withShare(n, existing, locale, credit.units(), total));
             }
         }
         return ranked(byName.values());

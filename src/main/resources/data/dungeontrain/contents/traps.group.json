@@ -5,7 +5,8 @@
     {
       "id": "mild_1",
       "weight": 1,
-      "minLevel": 2
+      "minLevel": 2,
+      "maxLevel": 21
     },
     {
       "id": "dangerous_1",
@@ -24,7 +25,49 @@
     },
     {
       "id": "mild_2",
-      "weight": 1
+      "weight": 1,
+      "maxLevel": 25
+    },
+    {
+      "id": "trap_easy",
+      "weight": 1,
+      "maxLevel": 12
+    },
+    {
+      "id": "trapeasy2",
+      "weight": 1,
+      "maxLevel": 31,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "CHUNCKS"
+      ]
+    },
+    {
+      "id": "trapmid",
+      "weight": 1,
+      "minLevel": 3
+    },
+    {
+      "id": "trapmid2",
+      "weight": 1,
+      "minLevel": 8
+    },
+    {
+      "id": "tntpressplate",
+      "weight": 1,
+      "minLevel": 9
+    },
+    {
+      "id": "tnteasy",
+      "weight": 1,
+      "minLevel": 4
+    },
+    {
+      "id": "wallminer",
+      "weight": 1,
+      "minLevel": 17
     }
   ]
 }

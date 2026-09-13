@@ -46,14 +46,20 @@ public final class EditorPlotSky {
      *
      * <p>Call once per tick per player already known to be up at the build area — the caller's
      * {@code EDITOR_Y_MIN} gate is what keeps this off the normal-play path entirely.</p>
+     *
+     * @return the sky the player now stands under, or {@link PortalRoomSky#NONE} when nothing was
+     *         lit — not in a portal-room plot, sky Off, or portal-room daylight off server-wide.
+     *         Returned rather than re-located so {@link EditorClock} can learn who is standing under
+     *         a Day/Night sky without a second {@code plotContaining} per player per tick
      */
-    public static void update(ServerPlayer player, CarriageDims dims) {
+    public static PortalRoomSky update(ServerPlayer player, CarriageDims dims) {
         PortalRoomSkyPacket region = regionFor(player, dims);
         if (region == null) {
             clear(player);
-            return;
+            return PortalRoomSky.NONE;
         }
         PlayerSkyRegions.send(player, region);
+        return region.skyKind();
     }
 
     /**

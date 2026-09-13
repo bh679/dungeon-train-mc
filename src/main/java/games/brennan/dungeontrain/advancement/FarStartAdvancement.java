@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.advancement;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirements;
 import games.brennan.dungeontrain.narrative.StartingBookTag;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
@@ -51,6 +52,14 @@ public final class FarStartAdvancement {
      */
     public static final int CARRIAGE_THRESHOLD = 150;
 
+    /**
+     * The threshold in force: the datapack's {@code code_granted} threshold (relay override
+     * applied) when loaded, else {@link #CARRIAGE_THRESHOLD}.
+     */
+    public static int carriageThreshold() {
+        return AdvancementRequirements.intValue(ID, CARRIAGE_THRESHOLD);
+    }
+
     private FarStartAdvancement() {}
 
     /**
@@ -60,7 +69,12 @@ public final class FarStartAdvancement {
      * starting book.
      */
     static boolean shouldGrant(int travelledCarriagesAbs, boolean holdsStartingBook) {
-        return travelledCarriagesAbs >= CARRIAGE_THRESHOLD && holdsStartingBook;
+        return shouldGrant(travelledCarriagesAbs, holdsStartingBook, CARRIAGE_THRESHOLD);
+    }
+
+    /** {@link #shouldGrant(int, boolean)} against an explicit threshold. */
+    static boolean shouldGrant(int travelledCarriagesAbs, boolean holdsStartingBook, int threshold) {
+        return travelledCarriagesAbs >= threshold && holdsStartingBook;
     }
 
     /**
@@ -73,7 +87,7 @@ public final class FarStartAdvancement {
      *                              — the same value {@code carts_100} keys off.
      */
     public static void checkAndGrant(ServerPlayer player, int travelledCarriagesAbs) {
-        if (travelledCarriagesAbs < CARRIAGE_THRESHOLD) return;
+        if (travelledCarriagesAbs < carriageThreshold()) return;
         if (!holdsStartingBook(player)) return;
         grant(player);
     }

@@ -17,9 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * What a builder's uploads look like through the editor screen's tabs.
+ * What a builder's uploads look like through the editor screen's category cells.
  *
- * <p>The mapping is the load-bearing part: a tab that admits the wrong relay kind shows a portal
+ * <p>The mapping is the load-bearing part: a cell that admits the wrong relay kind shows a portal
  * room under Carriages, and one that admits too little hides work the reviewer came to see.</p>
  */
 final class EditorCreatorBuildsTest {
@@ -30,26 +30,27 @@ final class EditorCreatorBuildsTest {
     }
 
     @Test
-    @DisplayName("the tabs group relay kinds the way they group local templates")
+    @DisplayName("the cells group relay kinds the way they group local templates")
     void tabsGroupKinds() {
-        assertTrue(EditorCreatorBuilds.admits(EditorScreenPage.CARRIAGES, BuilderRelayKinds.CARRIAGE));
-        assertTrue(EditorCreatorBuilds.admits(EditorScreenPage.CARRIAGES, BuilderRelayKinds.CARRIAGE_GROUP));
-        // Parts browse under Carriages for local templates too — see EditorScreenPage.forCategory.
-        assertTrue(EditorCreatorBuilds.admits(EditorScreenPage.CARRIAGES, BuilderRelayKinds.PART));
-        assertFalse(EditorCreatorBuilds.admits(EditorScreenPage.CARRIAGES, BuilderRelayKinds.CONTENTS));
+        assertTrue(EditorCreatorBuilds.admits(EditorCategoryFilter.CARRIAGES, BuilderRelayKinds.CARRIAGE));
+        assertTrue(EditorCreatorBuilds.admits(EditorCategoryFilter.CARRIAGES, BuilderRelayKinds.CARRIAGE_GROUP));
+        // Parts browse under Carriages for local templates too — see EditorCategoryFilter.forCategory.
+        assertTrue(EditorCreatorBuilds.admits(EditorCategoryFilter.CARRIAGES, BuilderRelayKinds.PART));
+        assertFalse(EditorCreatorBuilds.admits(EditorCategoryFilter.CARRIAGES, BuilderRelayKinds.CONTENTS));
 
-        assertTrue(EditorCreatorBuilds.admits(EditorScreenPage.CONTENTS, BuilderRelayKinds.CONTENTS));
-        assertTrue(EditorCreatorBuilds.admits(EditorScreenPage.TRACKS, BuilderRelayKinds.TRACK));
-        assertTrue(EditorCreatorBuilds.admits(EditorScreenPage.DIMENSIONS, BuilderRelayKinds.PORTAL_ROOM));
-        assertFalse(EditorCreatorBuilds.admits(EditorScreenPage.DIMENSIONS, BuilderRelayKinds.TRACK));
+        assertTrue(EditorCreatorBuilds.admits(EditorCategoryFilter.CONTENTS, BuilderRelayKinds.CONTENTS));
+        assertTrue(EditorCreatorBuilds.admits(EditorCategoryFilter.TRACKS, BuilderRelayKinds.TRACK));
+        assertTrue(EditorCreatorBuilds.admits(EditorCategoryFilter.DIMENSIONS, BuilderRelayKinds.PORTAL_ROOM));
+        assertFalse(EditorCreatorBuilds.admits(EditorCategoryFilter.DIMENSIONS, BuilderRelayKinds.TRACK));
     }
 
     @Test
-    @DisplayName("All shows every kind")
+    @DisplayName("All — and no cell at all — shows every kind")
     void allShowsEverything() {
         for (String kind : new String[] {BuilderRelayKinds.CARRIAGE, BuilderRelayKinds.CONTENTS,
                 BuilderRelayKinds.PART, BuilderRelayKinds.TRACK, BuilderRelayKinds.PORTAL_ROOM}) {
-            assertTrue(EditorCreatorBuilds.admits(EditorScreenPage.ALL, kind), kind);
+            assertTrue(EditorCreatorBuilds.admits(EditorCategoryFilter.ALL, kind), kind);
+            assertTrue(EditorCreatorBuilds.admits(null, kind), kind);
         }
     }
 

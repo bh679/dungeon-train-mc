@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.ui.CardCanvas;
+import games.brennan.dungeontrain.client.videos.VideosScreen;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -179,9 +180,28 @@ public final class VideoToolsScreen extends Screen {
         int rowY = this.height - 28;
         canvas.finishLayout(y, TOP + this.font.lineHeight + TITLE_GAP + TAB_H + TABS_GAP, rowY - 8);
 
+        // Videos | Done. The Videos page (every community video, and where a creator's own ends up)
+        // is this page's natural neighbour: it links here as Creator Tools, and this links back —
+        // opened fresh rather than via `parent`, since this page is reachable from the title screen
+        // too, where "back" would be the wrong place to land.
+        int pairW = 2 * 100 + 4;
+        int px = (this.width - pairW) / 2;
+        Button videosButton = addRenderableWidget(new DarkTintedButton(px, rowY, 100, 20,
+                Component.translatable("gui.dungeontrain.videos.button"), b -> openVideos()));
+        videosButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                Component.translatable("gui.dungeontrain.video_tools.videos.tooltip")));
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds((this.width - 100) / 2, rowY, 100, 20)
+                .bounds(px + 100 + 4, rowY, 100, 20)
                 .build());
+    }
+
+    /**
+     * To the Videos page. When this page was opened FROM it, go back to that instance so its filters
+     * survive; otherwise open a fresh one over the title screen this page came from.
+     */
+    private void openVideos() {
+        UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_VIDEOS);
+        Minecraft.getInstance().setScreen(parent instanceof VideosScreen ? parent : new VideosScreen(parent));
     }
 
     /** Red, because it deletes every Dungeon Train world and profile on this install. */

@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.client.localization.LocalizationCreditLabel;
 import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry;
 import games.brennan.dungeontrain.client.version.LauncherDetector;
 import games.brennan.dungeontrain.client.version.VersionCheckState;
+import games.brennan.dungeontrain.client.version.compare.VersionCompareState;
 import games.brennan.dungeontrain.client.version.VersionStatusButton;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import net.minecraft.client.Minecraft;
@@ -99,6 +100,9 @@ public final class TitleScreenLayoutHandler {
         // LauncherDetector touch warms its cache so the detected source is
         // logged early for diagnostics, not lazily on first click.
         VersionCheckState.ensureChecked();
+        // And the per-launcher modpack listings behind the Versions page that label opens, so
+        // the page is usually populated by the time anyone clicks.
+        VersionCompareState.ensureFetched();
         // Same session-memoized title-screen trigger for the official-links overlay: one
         // anonymous relay GET so Discord/Patreon/payment/affiliate links stay current on
         // shipped jars, baked fallbacks when offline.

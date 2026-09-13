@@ -81,6 +81,9 @@ public final class MenuEntryDispatcher {
                 default -> quad.e1();
             };
             dispatch(target, 0, host, shiftDown);
+        } else if (entry instanceof CommandMenuEntry.Cells cells) {
+            int i = Math.max(0, Math.min(subIdx, cells.cells().size() - 1));
+            dispatch(cells.cells().get(i), 0, host, shiftDown);
         }
         // Loading — no-op.
     }

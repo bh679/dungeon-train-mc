@@ -51,6 +51,7 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
       "id": "toolsmith-shop-carriage",
       "version": "0.291.0",
       "type": "feat",
+      "tags": ["feature", "train", "loot", "balance"],
       "title": "Toolsmith shop carriage + armorer loot rebalance",
       "summary": "A toolsmith shop carriage now rides the train, trading tools…",
       "highlights": ["New toolsmith shop carriage", "Rebalanced armorer chest loot"],
@@ -69,6 +70,7 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 | `id` | yes | Unique slug `^[a-z0-9][a-z0-9_-]*$`. Duplicate ids are refused. |
 | `version` | yes | `X.Y.Z` the merge ships as (computed = same rule as `version-bump.yml`). Descriptive only. |
 | `type` | yes | One of `feat, fix, content, perf, refactor, chore, docs, ci, test`. |
+| `tags` | yes | Player-facing classification the in-game Versions page filters by (see [Tags](#tags)). The type-derived tag is always present; may be `[]` only for chore/ci/refactor/docs/test. |
 | `title` | yes | Short headline. |
 | `summary` | yes | Player-facing prose. |
 | `highlights` | no | Bullet points. |
@@ -79,11 +81,52 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 
 Validated by `schema/changelog.schema.json` (JSON Schema 2020-12).
 
+## Tags
+
+The in-game Versions page fetches this ledger (raw from `main`) and lets players filter the
+notes they've missed by tag. Every entry carries the tag its `type` implies plus any topical tags
+that apply — an editor bug fix is `["fix", "editor"]`. Ids are stored in the canonical order below.
+
+| id | Label in game | When |
+|---|---|---|
+| `feature` | New Feature | automatic for `type: feat` |
+| `content` | New Content | automatic for `type: content` — carriages, rooms, books, mobs, narrative |
+| `fix` | Bug Fix | automatic for `type: fix` |
+| `performance` | Performance | automatic for `type: perf`; also lag/stutter/memory fixes |
+| `editor` | Editor | builder, templates, stages, X menu |
+| `multiplayer` | Multiplayer | behaviour specific to servers / other players |
+| `community` | Community | relay-backed: shared carriages & books, leaderboards, credits, videos, chat, Discord |
+| `translations` | Translations | locale additions, i18n fixes |
+| `compatibility` | Compatibility | shaders, Distant Horizons, modpack, companion mods, Sable |
+| `train` | Train | carriages, flatbeds, tracks, dimensional carriages |
+| `world` | World | worldgen, biomes, Nether/End bands, terrain |
+| `mobs` | Mobs | echoes, villagers, hostiles, spawning |
+| `loot` | Loot | chests, potions, gear, trades |
+| `books` | Books | playerbooks, letters, lecterns, narrative |
+| `advancements` | Advancements | |
+| `ui` | Menus & UI | menu pages, HUD, death screen, screens |
+| `balance` | Balance | difficulty, loot/spawn weights, rebalances |
+
+The list lives in three places that must agree: `changelog_io.VALID_TAGS`, the schema enum, and
+the client's `ChangelogTag` enum (`client/version/compare/ChangelogTag.java`, with a lang key per
+tag). The 792 entries that predate tags were classified once by
+`scripts/release-notes/backfill-tags.py` (type-derived tag + keyword rules); the script is a no-op
+on entries that already have `tags`, so it is safe to re-run; `--retag <tag>` recomputes one tag
+across every entry after its rule is tuned.
+
+**Keyword rules match the title only for tags whose vocabulary doubles as narration.** The first
+pass tagged 50 entries `multiplayer` of which ~5 were about multiplayer — summaries say "the books
+other players wrote", "most noticeable on multiplayer servers", "server owners can set this in the
+config" all the time. The title says what a change is *about*; the body says what it *mentions*.
+`TITLE_ONLY` in the script lists such tags. When appending an entry by hand, tag what the change is
+about, not what its prose touches.
+
 ## Scripts
 
 | Script | When | What |
 |---|---|---|
-| `append-entry.py` | Gate 3 (agent) | Append one curated entry. Computes `version` from `gradle.properties` + `date`. |
+| `append-entry.py` | Gate 3 (agent) | Append one curated entry. Computes `version` from `gradle.properties` + `date`; `--tag` (repeatable) adds topical tags on top of the type-derived one. |
+| `backfill-tags.py` | One-off / after tuning a rule | Give `tags` to any entry lacking them (type-derived + keyword rules). `--dry-run` reports, `--show TAG` lists. |
 | `render-unreleased.py` | Release (agent) | Print Markdown of all `released:false` entries, grouped by version (newest first). Empty output when nothing is unreleased. |
 | `mark-released.py` | Release (CI) | Flip every `released:false` entry to released; stamp the tag + timestamp. |
 
@@ -95,6 +138,7 @@ python3 scripts/release-notes/append-entry.py \
   --summary "A toolsmith shop carriage now rides the train…" \
   --highlight "New toolsmith shop carriage" \
   --highlight "Rebalanced armorer chest loot" \
+  --tag train --tag loot --tag balance \
   --pr 360
 
 # Release — preview the notes the user will confirm:

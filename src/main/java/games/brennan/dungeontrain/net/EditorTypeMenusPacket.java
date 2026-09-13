@@ -178,6 +178,10 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
      * what its commands <b>send</b>. They differ only when the author has labelled the template
      * (see {@code TemplateMeta#name()}), so every builder that does not know about labels still
      * produces a row that reads as its id — the constructors default it to {@code name}.</p>
+     *
+     * <p>{@code builderUuid} / {@code builderName} say who originally built the template (see
+     * {@code TemplateMeta#builder()}); both {@code ""} when nobody is credited. Drawn on the data
+     * sheet; never sent back in a command — the pick screen sends what the player chose.</p>
      */
     public record Variant(
         String name,
@@ -192,7 +196,9 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         boolean isImported,
         List<Variant> subVariants,
         List<String> stageIds,
-        String displayName
+        String displayName,
+        String builderUuid,
+        String builderName
     ) {
         /**
          * {@code phaseMask == NO_GATE} marks a row with no per-template spawn gate (sub-variants /
@@ -204,6 +210,16 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         public Variant {
             stageIds = stageIds == null ? List.of() : List.copyOf(stageIds);
             if (displayName == null || displayName.isBlank()) displayName = name;
+            builderUuid = builderUuid == null ? "" : builderUuid;
+            builderName = builderName == null ? "" : builderName;
+        }
+
+        /** The 13-field shape the label-aware builders used — no builder credit. */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported,
+                       List<Variant> subVariants, List<String> stageIds, String displayName) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, displayName, "", "");
         }
 
         /** The 12-field shape every existing builder used — label defaults to the name. */
@@ -211,13 +227,29 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
                        String category, String modelId, String modelName, boolean isUser, boolean isImported,
                        List<Variant> subVariants, List<String> stageIds) {
             this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, name);
+                isUser, isImported, subVariants, stageIds, name, "", "");
         }
 
         /** Copy with the drawn label replaced; {@code null} / blank falls back to the name. */
         public Variant withDisplayName(String label) {
             return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, subVariants, stageIds, label);
+                isUser, isImported, subVariants, stageIds, label, builderUuid, builderName);
+        }
+
+        /** Copy with the builder credit replaced; {@code null} for either half means "none". */
+        public Variant withBuilder(String uuid, String builderName) {
+            return new Variant(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, stageIds, displayName, uuid, builderName);
+        }
+
+        /** True when somebody is credited as this template's original builder. */
+        public boolean hasBuilder() {
+            return !builderUuid.isEmpty() || !builderName.isEmpty();
+        }
+
+        /** What the sheet prints for the builder: the cached name, else the uuid, else {@code ""}. */
+        public String builderDisplay() {
+            return builderName.isEmpty() ? builderUuid : builderName;
         }
 
         /** True when this row is drawn under a label other than its id. */
@@ -371,6 +403,8 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
             buf.writeUtf(s == null ? "" : s, 64);
         }
         buf.writeUtf(v.displayName(), 128);
+        buf.writeUtf(v.builderUuid(), 64);
+        buf.writeUtf(v.builderName(), 64);
     }
 
     static Variant decodeVariant(FriendlyByteBuf buf) {
@@ -395,8 +429,11 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
             stageIds.add(buf.readUtf(64));
         }
         String displayName = buf.readUtf(128);
+        String builderUuid = buf.readUtf(64);
+        String builderName = buf.readUtf(64);
         return new Variant(name, weight, minLevel, maxLevel, phaseMask,
-            category, modelId, modelName, isUser, isImported, subs, stageIds, displayName);
+            category, modelId, modelName, isUser, isImported, subs, stageIds, displayName,
+            builderUuid, builderName);
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {

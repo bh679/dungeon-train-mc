@@ -33,10 +33,21 @@ import java.util.List;
 public final class PortalRoomBooksScreen implements MenuScreen {
 
     private final String modeTag;
+    private final String prefix;
 
     /** @param modeTag the room's whole settings tag, as the panel already carries it */
     public PortalRoomBooksScreen(String modeTag) {
+        this(modeTag, EditorMenuPortalRows.STOOD_IN_PREFIX);
+    }
+
+    /**
+     * @param prefix the {@code /dt editor portals…} root the steppers send to — the bare root for
+     *               the room the author is standing in, {@code portals room <name>} for one they
+     *               are only looking at. See {@link EditorMenuPortalRows#prefixFor}.
+     */
+    public PortalRoomBooksScreen(String modeTag, String prefix) {
         this.modeTag = modeTag;
+        this.prefix = prefix;
     }
 
     @Override public String title() {
@@ -67,12 +78,12 @@ public final class PortalRoomBooksScreen implements MenuScreen {
     }
 
     /** One {@code [-] Label: N [+]} row, the same geometry every other portal stepper uses. */
-    private static CommandMenuEntry stepper(String label, String token, int value, String hint) {
-        String prefix = "dungeontrain editor portals " + token;
+    private CommandMenuEntry stepper(String label, String token, int value, String hint) {
+        String command = prefix + " " + token;
         return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Stay("-", prefix + " dec"),
-            new CommandMenuEntry.TypeArg(label + ": " + value, hint, prefix),
-            new CommandMenuEntry.Stay("+", prefix + " inc"),
+            new CommandMenuEntry.Stay("-", command + " dec"),
+            new CommandMenuEntry.TypeArg(label + ": " + value, hint, command),
+            new CommandMenuEntry.Stay("+", command + " inc"),
             0.10, 0.90);
     }
 }

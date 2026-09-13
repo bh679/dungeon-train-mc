@@ -23,11 +23,16 @@ Sources (see cf_api.py):
   * No key — api.cfwidget.com, a caching public mirror. The file appearing there proves
     approval; it not appearing proves nothing, because the mirror lags.
 
-Exit codes: 0 approved, 1 not approved within the timeout.
+Exit codes: 0 approved, 1 not approved within the timeout (``--on-timeout fail``, the
+default). With ``--on-timeout defer`` a timeout still means "do NOT publish" — it exits 0
+and writes ``approved=false`` to $GITHUB_OUTPUT so the workflow can skip the upload and end
+green, because the 6-hourly catch-up in modpack-reconcile.yml will publish this release once
+the file is approved (scripts/modpack/catch-up.py). A red run on every slow approval taught
+everyone to ignore the workflow, which is how the pack fell 41 releases behind.
 
-We FAIL CLOSED on both paths, including the inconclusive mirror one. The asymmetry is
-deliberate: a false failure costs one cheap re-dispatch, while a false pass costs another
-silently missing pack version — the exact bug this guards.
+Either way, we never publish against an unapproved file, including on the inconclusive
+mirror path. The asymmetry is deliberate: a deferred publish costs a few hours, while a
+false pass costs a silently missing pack version — the exact bug this guards.
 
 Local check against real data (no upload, no key needed):
   python3 scripts/modpack/wait-for-approval.py --file-id 8707838 --timeout-minutes 0
@@ -55,6 +60,9 @@ APPROVED = "approved"
 PENDING = "pending"
 UNKNOWN = "unknown"
 
+ON_TIMEOUT_FAIL = "fail"
+ON_TIMEOUT_DEFER = "defer"
+
 
 def status_via_api(project_id, file_id):
     """Authoritative status of one file. Returns (state, human-readable detail)."""
@@ -81,7 +89,8 @@ def status_via_mirror(project_id, file_id):
     return UNKNOWN, "not in the mirror's file list"
 
 
-def wait_for_approval(project_id, file_id, timeout_minutes, poll_seconds):
+def wait_for_approval(project_id, file_id, timeout_minutes, poll_seconds,
+                      on_timeout=ON_TIMEOUT_FAIL):
     """Poll until `file_id` is approved. Returns True when approved, False on timeout."""
     authoritative = cf_api.is_authoritative()
     check = status_via_api if authoritative else status_via_mirror
@@ -105,23 +114,42 @@ def wait_for_approval(project_id, file_id, timeout_minutes, poll_seconds):
                   f"(after {attempt} check(s))")
             return True
         if time.monotonic() >= deadline:
-            _report_timeout(project_id, file_id, timeout_minutes, detail, authoritative)
+            _report_timeout(project_id, file_id, timeout_minutes, detail, authoritative,
+                            on_timeout)
             return False
         print(f"  file {file_id} not approved yet ({detail}); re-checking in {poll_seconds}s…")
         time.sleep(poll_seconds)
 
 
-def _report_timeout(project_id, file_id, timeout_minutes, detail, authoritative):
-    print(f"::error::CurseForge file {file_id} (project {project_id}) is still not approved "
+def _report_timeout(project_id, file_id, timeout_minutes, detail, authoritative,
+                    on_timeout=ON_TIMEOUT_FAIL):
+    # A deferred timeout is expected and recoverable, so it is a warning; a failing one is
+    # the end of the line for this run, so it is an error.
+    level = "warning" if on_timeout == ON_TIMEOUT_DEFER else "error"
+    print(f"::{level}::CurseForge file {file_id} (project {project_id}) is still not approved "
           f"after {timeout_minutes} minutes — last reading: {detail}.")
-    print("::error::Publishing the modpack now would reference an unapproved file and the pack "
-          "would be REJECTED (\"References file with invalid status\"). Stopping instead.")
-    print("::error::Check the file's status in the CurseForge author dashboard: "
-          f"https://legacy.curseforge.com/project/{project_id}/files — once it is approved, "
-          "re-dispatch release-modpack.yml for this tag.")
+    print(f"::{level}::Publishing the modpack now would reference an unapproved file and the "
+          "pack would be REJECTED (\"References file with invalid status\"). Not publishing.")
+    if on_timeout == ON_TIMEOUT_DEFER:
+        print(f"::{level}::Deferred: modpack-reconcile.yml runs every 6 hours and will publish "
+              "this release's pack version once the file is approved (scripts/modpack/"
+              "catch-up.py). Nothing to do by hand.")
+    else:
+        print(f"::{level}::Check the file's status in the CurseForge author dashboard: "
+              f"https://legacy.curseforge.com/project/{project_id}/files — once it is "
+              "approved, re-dispatch release-modpack.yml for this tag.")
     if not authoritative:
-        print("::error::This reading came from the cached cfwidget mirror. Set the "
+        print(f"::{level}::This reading came from the cached cfwidget mirror. Set the "
               "CURSEFORGE_API_KEY secret to make the check authoritative and rule out cache lag.")
+
+
+def write_github_output(approved):
+    """Tell the workflow the verdict so later steps can gate on it. No-op outside Actions."""
+    path = os.environ.get("GITHUB_OUTPUT")
+    if not path:
+        return
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write(f"approved={'true' if approved else 'false'}\n")
 
 
 def main(argv=None):
@@ -135,11 +163,19 @@ def main(argv=None):
                     help="How long to wait for approval before failing (default: 60).")
     ap.add_argument("--poll-seconds", type=int, default=60,
                     help="Delay between polls (default: 60).")
+    ap.add_argument("--on-timeout", choices=[ON_TIMEOUT_FAIL, ON_TIMEOUT_DEFER],
+                    default=ON_TIMEOUT_FAIL,
+                    help="What a timeout means: 'fail' exits 1 (default); 'defer' exits 0 "
+                         "and writes approved=false to $GITHUB_OUTPUT, leaving the publish "
+                         "to the scheduled catch-up.")
     args = ap.parse_args(argv)
 
     approved = wait_for_approval(args.project_id, args.file_id,
-                                 args.timeout_minutes, args.poll_seconds)
-    return 0 if approved else 1
+                                 args.timeout_minutes, args.poll_seconds, args.on_timeout)
+    write_github_output(approved)
+    if approved or args.on_timeout == ON_TIMEOUT_DEFER:
+        return 0
+    return 1
 
 
 if __name__ == "__main__":

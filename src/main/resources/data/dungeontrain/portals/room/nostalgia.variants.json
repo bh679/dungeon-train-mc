@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "14,1,26": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:skeleton"}],
+    "20,1,20": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:skeleton"}],
+    "28,5,30": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:skeleton"}],
+    "35,1,10": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:skeleton"}],
+    "18,2,8": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:skeleton"}],
+    "8,8,36": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:creeper"}],
+    "6,8,36": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:creeper"}]
+  }
+}

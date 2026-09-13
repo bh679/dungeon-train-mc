@@ -11,6 +11,7 @@
     "LightningBoltVisualOnlyMixin",
     "FlowingFluidExternalWaterMixin",
     "AdvancementVisibilityEvaluatorMixin",
+    "ServerAdvancementManagerRequirementsMixin",
     "BedBlockMixin",
     "EnderChestBlockLabelMixin",
     "ServerPlayerBedSpawnMixin",
@@ -48,6 +49,7 @@
     "RapierPipelineRotationLockMixin",
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",
+    "SubLevelEntityCollisionShapeClipMixin",
     "SableBlockChangeGuardMixin",
     "MergedMassTrackerPivotFreezeMixin",
     "SubLevelHoldingChunkFileMixin",
@@ -59,13 +61,15 @@
     "StructureBandBiomeFilterMixin",
     "JigsawStructureAccessor",
     "RuinedPortalStructureAccessor",
-    "CommandsSelfRevokeMixin"
+    "EntityArgumentSelfSelectorMixin",
+    "EntitySelectorSelfPermissionMixin"
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",
     "client.DebugScreenOverlayDepthMixin",
     "client.BookViewScreenAccessor",
     "client.BookEditScreenAccessor",
+    "client.BookEditScreenAuthorMixin",
     "client.BookEditScreenSignMixin",
     "client.BookEditScreenSuspensionMixin",
     "CreateWorldScreenAccessor",

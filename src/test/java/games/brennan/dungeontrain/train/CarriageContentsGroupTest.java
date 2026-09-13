@@ -277,4 +277,26 @@ final class CarriageContentsGroupTest {
         CarriageContentsGroup g = CarriageContentsGroup.fromJson(root);
         assertEquals(List.of("nether"), g.members().get(0).stageIds());
     }
+
+    @Test
+    @DisplayName("withWeight keeps the member's gate (levels + phases) and Stage links — only the weight moves")
+    void withWeight_preservesGateAndStages() {
+        TemplateGate gate = TemplateGate.ofLevels(3, 12)
+            .withPhase(games.brennan.dungeontrain.worldgen.TrainPhase.NETHER, false);
+        CarriageContentsGroup.Member m = new CarriageContentsGroup.Member(
+            "trapeasy2", 1, gate, List.of("early"));
+
+        CarriageContentsGroup.Member bumped = m.withWeight(2);
+
+        assertEquals(2, bumped.weight());
+        assertEquals(gate, bumped.gate());
+        assertEquals(List.of("early"), bumped.stageIds());
+
+        // withMember replaces in place, so the group round-trip keeps the same fields too.
+        CarriageContentsGroup g = new CarriageContentsGroup(List.of(m)).withMember(bumped);
+        CarriageContentsGroup.Member stored = g.member("trapeasy2").orElseThrow();
+        assertEquals(2, stored.weight());
+        assertEquals(gate, stored.gate());
+        assertEquals(List.of("early"), stored.stageIds());
+    }
 }

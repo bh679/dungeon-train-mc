@@ -16,7 +16,7 @@
     "entry": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "version", "type", "title", "summary", "date", "released"],
+      "required": ["id", "version", "type", "tags", "title", "summary", "date", "released"],
       "properties": {
         "id": {
           "type": "string",
@@ -31,6 +31,19 @@
         "type": {
           "type": "string",
           "enum": ["feat", "fix", "content", "perf", "refactor", "chore", "docs", "ci", "test"]
+        },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "feature", "content", "fix", "performance", "editor", "multiplayer", "community",
+              "translations", "compatibility", "train", "world", "mobs", "loot", "books", "advancements",
+              "ui", "balance"
+            ]
+          },
+          "description": "Player-facing classification the Versions page filters by. The type-derived tag (feat→feature, fix→fix, content→content, perf→performance) is always present; topical tags are added on top. May be empty only for non-player-facing types (chore/ci/refactor/docs/test)."
         },
         "title": {"type": "string", "minLength": 1},
         "summary": {"type": "string", "minLength": 1},

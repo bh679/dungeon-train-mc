@@ -208,6 +208,26 @@ def load_author_urls(path: Path) -> dict[str, str]:
     return urls
 
 
+def load_author_optouts(path: Path) -> set[str]:
+    """Credited names that asked NOT to be named — object-form entries with ``"credit": false``.
+
+    Set by ``apply-translator-renames.py`` from the relay's opt-out log (a translator pressed
+    Remove on the in-game Credits page). The registry keeps the entry — the sidecars still name
+    them, and ``check-provenance.py`` still needs the name registered — but
+    ``build_contributors`` leaves them out of the shipped credits, so the jar stops naming them
+    at the next release. A restore drops the flag.
+    """
+    hidden: set[str] = set()
+    for name, value in _load_authors_raw(path).items():
+        if isinstance(value, dict) and "credit" in value:
+            credit = value["credit"]
+            if not isinstance(credit, bool):
+                raise ValueError(f"{path}: {name!r} credit must be true or false, got {type(credit).__name__}")
+            if credit is False:
+                hidden.add(name)
+    return hidden
+
+
 def load_provenance(path: Path) -> dict:
     """Parse a provenance sidecar. Parse only — validate with validate_entries()."""
     with open(path, encoding="utf-8") as f:
@@ -322,17 +342,17 @@ def write_credit(path: Path, credit: dict) -> None:
 
 
 def build_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str],
-                       urls: dict[str, str]) -> dict:
+                       urls: dict[str, str], hidden: set[str] | frozenset[str] = frozenset()) -> dict:
     """The canonical translator-credits object, derived purely from the sidecars + registry.
 
-    For every human in ``authors`` and every non-en_us locale, counts the keys that
+    For every human in ``authors`` not in ``hidden`` (see load_author_optouts) and every non-en_us locale, counts the keys that
     human authored or reviewed (contributed_keys); a human is listed once with a
     ``languages`` array of ``{locale, contributed, total}`` for each locale they touched.
     Contributors are ordered by their single strongest share (desc, then name); a
     contributor's languages by share (desc, then locale) — so the output is fully
     deterministic and the shipped file compares equal to a fresh build.
     """
-    humans = {name for name, kind in authors.items() if kind == "human"}
+    humans = {name for name, kind in authors.items() if kind == "human" and name not in hidden}
     per_person: dict[str, list[dict]] = {}
     for locale in locales(lang_dir):
         prov_path = prov_dir / f"{locale}.json"

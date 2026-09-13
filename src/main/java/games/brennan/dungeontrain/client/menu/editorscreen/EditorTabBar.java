@@ -6,14 +6,16 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.ToIntFunction;
 
 /**
- * The strip above the panel: {@code Current} far left, the browse pages, {@code My Builds},
- * then {@code Settings} and the Exit icon locked to the right.
+ * The strip above the panel: {@code Templates} and {@code Layout} from the left, then
+ * {@code Settings} and the Exit icon locked to the right.
  *
  * <p>Layout is a pure function of the label widths so it can be tested; painting is the
- * extruded bevel the mod's other tab buttons use.</p>
+ * extruded bevel the mod's other tab buttons use. Labels come from a function of the page rather
+ * than a positional list, so the strip and the enum cannot fall out of step.</p>
  */
 public final class EditorTabBar {
 
@@ -36,26 +38,25 @@ public final class EditorTabBar {
     private EditorTabBar() {}
 
     /**
-     * Lay the tabs out across {@code strip}. {@code widthOf} measures a label, so the layout is
-     * testable with a fake font.
+     * Lay the tabs out across {@code strip}. {@code widthOf} measures a label and {@code labelOf}
+     * names a page, so the layout is testable with a fake font and no language loaded.
      */
     public static List<Tab> layout(InventoryEditorLayout.Rect strip, ToIntFunction<String> widthOf,
-                                   List<String> labels) {
-        // labels: one per browse page (ALL..DIMENSIONS), then settings
+                                   Function<EditorScreenPage, String> labelOf) {
         List<Tab> out = new ArrayList<>();
         int x = strip.x();
-        int i = 0;
         for (EditorScreenPage page : EditorScreenPage.values()) {
             if (page == EditorScreenPage.SETTINGS) continue;
-            Tab t = tab(Kind.PAGE, page, labels.get(i++), x, widthOf);
+            Tab t = tab(Kind.PAGE, page, labelOf.apply(page), x, widthOf);
             out.add(t);
             x = t.x() + t.w() + GAP;
         }
         // Right-locked: Exit at the very end, Settings just before it.
         int exitX = strip.right() - EXIT_W;
-        int settingsW = widthOf.applyAsInt(labels.get(i)) + PAD_X * 2;
+        String settingsLabel = labelOf.apply(EditorScreenPage.SETTINGS);
+        int settingsW = widthOf.applyAsInt(settingsLabel) + PAD_X * 2;
         int settingsX = Math.max(x, exitX - GAP - settingsW);
-        out.add(new Tab(Kind.PAGE, EditorScreenPage.SETTINGS, labels.get(i), settingsX, settingsW));
+        out.add(new Tab(Kind.PAGE, EditorScreenPage.SETTINGS, settingsLabel, settingsX, settingsW));
         out.add(new Tab(Kind.EXIT, null, "", Math.max(settingsX + settingsW + GAP, exitX), EXIT_W));
         return out;
     }

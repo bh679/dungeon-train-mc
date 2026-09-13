@@ -135,6 +135,25 @@ public final class BuilderRelayInstall {
      * @param sidecars the document the relay handed back; blank leaves this install's own sidecars
      *                 for that template untouched
      */
+    /**
+     * The refusal {@link #install} would answer with before writing anything, or null when it would
+     * go ahead. The same checks in the same order, with no side effects — so a question that has to
+     * come after the name is settled (the loot-prefab one) can be held back until this says yes,
+     * rather than being asked, answered, and then asked again on the collision replay.
+     */
+    public static Outcome refusal(BuilderPhotoPaths.Kind kind, String id, String subKind,
+                                  Resolution resolution, String newName, boolean mine) {
+        if (kind == null || id == null || id.isEmpty()) return Outcome.UNSUPPORTED;
+        Resolution how = resolution == null ? Resolution.AS_IS : resolution;
+        String chosen = newName == null ? "" : newName.trim();
+        if (how == Resolution.LOAD_AS_NEW || how == Resolution.RENAME_EXISTING) {
+            if (chosen.isEmpty()) return Outcome.UNSUPPORTED;
+            return taken(kind, chosen, subKind, mine) ? Outcome.NAME_TAKEN : null;
+        }
+        if (how == Resolution.AS_IS && taken(kind, id, subKind, mine)) return Outcome.ALREADY_HERE;
+        return null;
+    }
+
     public static Outcome install(BuilderPhotoPaths.Kind kind, String id, String subKind,
                                   String stageId, StructureTemplate template,
                                   Resolution resolution, String newName, String sidecars,

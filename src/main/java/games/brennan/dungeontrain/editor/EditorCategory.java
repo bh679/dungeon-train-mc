@@ -240,8 +240,39 @@ public enum EditorCategory {
      * forced to load. On a world where nothing was ever stamped that whole sweep is wasted, so it is
      * skipped until {@link DungeonTrainWorldData#editorPlotsStamped()} says a plot may hold blocks
      * — which this method itself records, since every stamp is preceded by a call here.</p>
+     *
+     * <p>Runs every erase now. A category entry uses {@link #clearAllPlotJobs} instead and lets
+     * {@link EditorStampQueue} spread the erases across ticks.</p>
      */
     public static void clearAllPlots(ServerLevel overworld, CarriageDims dims) {
+        for (EditorStampQueue.Job job : clearAllPlotJobs(overworld, dims)) {
+            job.work().run();
+        }
+    }
+
+    /**
+     * The state half of {@link #clearAllPlots} now — labels, strays, undo history, the queue, the
+     * stamped flag — and the block half as jobs, one per plot, for the caller to run or queue.
+     *
+     * <p>The state resets cannot wait: the labels are read on the next tick and must already know
+     * the old category is gone, and any fill still in flight would otherwise stamp into plots this
+     * clear is about to erase. Empty on a fresh world (see {@link #clearAllPlots}).</p>
+     */
+    public static List<EditorStampQueue.Job> clearAllPlotJobs(ServerLevel overworld, CarriageDims dims) {
+        return clearAllPlotJobs(overworld, dims, null);
+    }
+
+    /**
+     * {@link #clearAllPlotJobs(ServerLevel, CarriageDims)} minus the erases of {@code keep}'s own
+     * plots. For a category entry: every stamp in a category erases its own footprint before it
+     * places, so erasing those plots separately would only double the work — and, queued behind the
+     * first plot the entry stamps synchronously, would wipe that plot out from under the player.
+     */
+    public static List<EditorStampQueue.Job> clearAllPlotJobs(ServerLevel overworld, CarriageDims dims,
+                                                             EditorCategory keep) {
+        // A fill still running would stamp into plots this clear tears down — and would then be
+        // torn down itself by the erases below, in whichever order the two happened to interleave.
+        EditorStampQueue.cancel();
         // Tearing down every plot also invalidates the floating plot labels —
         // VariantOverlayRenderer reads this state on the next tick and pushes
         // an empty snapshot so the labels disappear in lockstep with the
@@ -261,27 +292,46 @@ public enum EditorCategory {
             // Fresh world: no plot has ever held a block, so there is nothing to erase. Whatever
             // the caller stamps next is the first thing in the sky — mark it so the next clear runs.
             data.markEditorPlotsStamped();
-            return;
+            return List.of();
         }
-        for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
-            CarriageEditor.clearPlot(overworld, v, dims);
+        List<EditorStampQueue.Job> jobs = new ArrayList<>();
+        if (keep != CARRIAGES) {
+            for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
+                jobs.add(new EditorStampQueue.Job("erase carriage " + v.id(),
+                    () -> CarriageEditor.clearPlot(overworld, v, dims)));
+            }
+            // Parts live adjacent to carriages (Z=80+ rows) but span no other
+            // category, so we clear them alongside everything else when switching. One job: the
+            // parts clear erases whole rows, which does not split cleanly per plot.
+            jobs.add(new EditorStampQueue.Job("erase carriage parts",
+                () -> CarriagePartEditor.clearAllPlots(overworld, dims)));
         }
-        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
-            CarriageContentsEditor.clearPlot(overworld, c, dims);
+        if (keep != CONTENTS) {
+            for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+                jobs.add(new EditorStampQueue.Job("erase contents " + c.id(),
+                    () -> CarriageContentsEditor.clearPlot(overworld, c, dims)));
+            }
         }
-        TrackEditor.clearPlot(overworld, dims);
-        for (PillarSection s : PillarSection.values()) {
-            PillarEditor.clearPlot(overworld, s, dims);
+        if (keep != TRACKS) {
+            jobs.add(new EditorStampQueue.Job("erase track plots", () -> TrackEditor.clearPlot(overworld, dims)));
+            for (PillarSection s : PillarSection.values()) {
+                jobs.add(new EditorStampQueue.Job("erase pillar " + s,
+                    () -> PillarEditor.clearPlot(overworld, s, dims)));
+            }
+            for (PillarAdjunct a : PillarAdjunct.values()) {
+                jobs.add(new EditorStampQueue.Job("erase adjunct " + a,
+                    () -> PillarEditor.clearPlotAdjunct(overworld, a, dims)));
+            }
+            for (TunnelVariant t : TunnelVariant.values()) {
+                jobs.add(new EditorStampQueue.Job("erase tunnel " + t,
+                    () -> TunnelEditor.clearPlot(overworld, t)));
+            }
         }
-        for (PillarAdjunct a : PillarAdjunct.values()) {
-            PillarEditor.clearPlotAdjunct(overworld, a, dims);
+        if (keep != PORTALS) {
+            // One job: the room clear also sweeps the column for what earlier layouts left.
+            jobs.add(new EditorStampQueue.Job("erase portal rooms",
+                () -> PortalRoomEditor.clearAllPlots(overworld, dims)));
         }
-        for (TunnelVariant t : TunnelVariant.values()) {
-            TunnelEditor.clearPlot(overworld, t);
-        }
-        PortalRoomEditor.clearAllPlots(overworld, dims);
-        // Parts live adjacent to carriages (Z=80+ rows) but span no other
-        // category, so we clear them alongside everything else when switching.
-        CarriagePartEditor.clearAllPlots(overworld, dims);
+        return jobs;
     }
 }

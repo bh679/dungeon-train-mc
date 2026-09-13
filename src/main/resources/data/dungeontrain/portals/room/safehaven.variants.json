@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "1,1,3": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "2,1,1": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "2,1,2": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "1,2,1": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "1,2,2": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "2,1,3": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "2,2,2": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "3,1,1": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "3,1,2": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "2,2,1": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "1,3,1": ["minecraft:gold_ore", "minecraft:iron_ore"],
+    "7,2,2": [{"entity": "minecraft:salmon"}, {"entity": "minecraft:cod"}],
+    "7,2,3": [{"entity": "minecraft:cod"}, {"entity": "minecraft:salmon"}],
+    "8,2,3": [{"entity": "minecraft:cod"}, {"entity": "minecraft:salmon"}]
+  }
+}

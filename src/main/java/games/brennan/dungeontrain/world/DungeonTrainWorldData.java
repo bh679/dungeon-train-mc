@@ -76,6 +76,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_PORTAL_RATE_TUNED = "portalRateTuned";
     private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
+    private static final String TAG_PORTAL_TEST_RESEED = "portalTestReseed";
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
@@ -255,6 +256,12 @@ public final class DungeonTrainWorldData extends SavedData {
      * dismissed it" — so the panel keeps showing in old worlds, which is the pre-existing behaviour.</p>
      */
     private final java.util.Set<java.util.UUID> helpPanelDismissed = new java.util.LinkedHashSet<>();
+
+    /**
+     * Whether {@code /dungeontrain portal test} rolls fresh room contents each time. World-wide, off
+     * by default: a test then stamps the same roll every time, which is what it always did.
+     */
+    private boolean portalTestReseed = false;
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -518,6 +525,9 @@ public final class DungeonTrainWorldData extends SavedData {
         // Absent until somebody closes the editor Welcome panel, which is most worlds. Unparseable
         // entries are skipped rather than failing the whole load — a malformed uuid only costs that
         // one player their dismissal.
+        if (tag.contains(TAG_PORTAL_TEST_RESEED)) {
+            data.portalTestReseed = tag.getBoolean(TAG_PORTAL_TEST_RESEED);
+        }
         if (tag.contains(TAG_HELP_PANEL_DISMISSED)) {
             net.minecraft.nbt.ListTag dismissed =
                     tag.getList(TAG_HELP_PANEL_DISMISSED, net.minecraft.nbt.Tag.TAG_STRING);
@@ -611,12 +621,25 @@ public final class DungeonTrainWorldData extends SavedData {
             }
             tag.put(TAG_HELP_PANEL_DISMISSED, dismissed);
         }
+        if (portalTestReseed) tag.putBoolean(TAG_PORTAL_TEST_RESEED, true);
         return tag;
     }
 
     /** True when {@code playerId} has closed the editor's world-space Welcome panel in this world. */
     public boolean isHelpPanelDismissed(java.util.UUID playerId) {
         return helpPanelDismissed.contains(playerId);
+    }
+
+    /** True when each {@code portal test} should roll fresh room contents. */
+    public boolean isPortalTestReseed() {
+        return portalTestReseed;
+    }
+
+    /** Set whether {@code portal test} reseeds its room each time. */
+    public void setPortalTestReseed(boolean reseed) {
+        if (portalTestReseed == reseed) return;
+        portalTestReseed = reseed;
+        setDirty();
     }
 
     /** Record (or clear) {@code playerId}'s dismissal of the editor Welcome panel. */

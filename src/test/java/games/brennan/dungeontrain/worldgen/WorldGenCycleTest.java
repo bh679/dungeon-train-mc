@@ -387,6 +387,14 @@ final class WorldGenCycleTest {
         org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksApproachOrBand(4189));  // core end
         org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksApproachOrBand(4190)); // the overworld that follows — this is where it fires
 
+        // The overworld that follows is the SECOND cycle repeat — the advancement keys off this index
+        // (positional, so a returning player's cross-world sidecar can't fire it from spawn), never off
+        // an earned reached_void. Before the anchor and across the whole first pass it stays < 1.
+        assertEquals(-1L, c.cycleIndex(999));   // spawn overworld, before the anchor
+        assertEquals(0L, c.cycleIndex(1000));   // first pass: leading gap
+        assertEquals(0L, c.cycleIndex(4189));   // first pass: chuncks core end
+        assertEquals(1L, c.cycleIndex(4190));   // second pass: the overworld after all the bands
+
         // Repeats with the period, and never covers the earlier phases.
         org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksApproachOrBand(3690 + 3190));
         org.junit.jupiter.api.Assertions.assertFalse(c.isInChuncksApproachOrBand(1530));  // nether core

@@ -72,7 +72,7 @@ jobs:
       - name: Dependency version pins (Sable chain + sibling floors)
         # Two checks. (1) Sable: fails if sable_mod_version (DT's exact mods.toml lock) or
         # the modpack's sable.version drift from gradle.properties sable_version.
-        # (2) Siblings: fails if a modpack-pinned AIN/AIS/PMOB/ECP/TE build is OLDER than the
+        # (2) Siblings: fails if a modpack-pinned AIN/AIS/PMOB/ECP/TE/KT build is OLDER than the
         # <mod>_min_version floor DT declares — i.e. the pack would ship a sibling the mod
         # refuses to load against. No network.
         run: python3 scripts/modpack/check-pins.py
@@ -87,6 +87,7 @@ jobs:
           python3 scripts/modpack/test_upload_retry.py
           python3 scripts/modpack/test_reconcile.py
           python3 scripts/modpack/test_wait_for_approval.py
+          python3 scripts/modpack/test_catch_up.py
 
   # Stdlib-only Python guard for the translation provenance sidecars (who translated / who
   # human-reviewed each string). Two flavours, both under localization/ and both repo-side
@@ -154,6 +155,7 @@ jobs:
           python3 scripts/localization/test_provenance_io.py
           python3 scripts/localization/test_import_approved_translations.py
           python3 scripts/localization/test_import_english_edits.py
+          python3 scripts/advancements/test_import_requirement_edits.py
           python3 scripts/localization/test_lang_format.py
           python3 scripts/localization/test_book_format.py
           python3 scripts/localization/test_check_book_placeholders.py

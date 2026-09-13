@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.builder;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
+import games.brennan.dungeontrain.editor.TemplateLootPrefabs;
 import games.brennan.dungeontrain.editor.TemplateSidecars;
 import games.brennan.dungeontrain.builder.relay.BuilderProfileCap;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
@@ -197,7 +198,8 @@ public final class BuilderReconcileRunner {
                             BuilderRelayKinds.idOf(build.kind()), build.subKind(), build.id(), "profile",
                             // As the server-side reconcile does: a row restored without its sidecars
                             // is a build stripped of everything but its blocks.
-                            TemplateSidecars.collect(build.kind(), build.subKind(), build.id()))
+                            TemplateSidecars.collect(build.kind(), build.subKind(), build.id()),
+                            TemplateLootPrefabs.collect(build.kind(), build.subKind(), build.id()))
                     .join().isPresent();
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Build reconcile: uploading '{}' failed: {}", build.id(), t.toString());

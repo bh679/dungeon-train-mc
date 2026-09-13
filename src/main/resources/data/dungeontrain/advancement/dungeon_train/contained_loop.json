@@ -12,7 +12,7 @@
   "criteria": {
     "action": {
       "trigger": "dungeontrain:gameplay_action",
-      "conditions": { "actionId": "contained_loop" }
+      "conditions": { "actionId": "contained_loop", "threshold": 1000 }
     }
   },
   "requirements": [["action"]]

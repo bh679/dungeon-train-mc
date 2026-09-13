@@ -117,6 +117,13 @@ public record EditorStatusPacket(String category, String model, String modelId, 
     /** Sentinel for "flip options are not applicable to this model". */
     public static final int NO_FLIP = 0;
 
+    /**
+     * Set on a roster row that carries flip axes at all, so a contents template with every axis off
+     * reads as "known, all off" rather than as {@link #NO_FLIP}. The status packet never needs it —
+     * its category says whether the mask applies — but a roster row is looked at without one.
+     */
+    public static final int FLIP_KNOWN = 16;
+
     /** Pack a {@link games.brennan.dungeontrain.template.FlipOptions} into {@link #flipMask}. */
     public static int flipMaskOf(games.brennan.dungeontrain.template.FlipOptions flip) {
         if (flip == null) return NO_FLIP;
@@ -257,5 +264,11 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             packet.partMenuEnabled, packet.mirrorX, packet.mirrorY, packet.mirrorZ, packet.mirrorVariants,
             packet.excludedContents, packet.stageId,
             packet.roomLength, packet.roomWidth, packet.roomHeight, packet.roomMode, packet.flipMask));
+        // Standing in a plot is the other cue that the editor screen is about to be wanted.
+        ctx.enqueueWork(() -> {
+            if (EditorStatusHudOverlay.isActive()) {
+                games.brennan.dungeontrain.client.menu.editorscreen.EditorRosterClient.prefetch();
+            }
+        });
     }
 }

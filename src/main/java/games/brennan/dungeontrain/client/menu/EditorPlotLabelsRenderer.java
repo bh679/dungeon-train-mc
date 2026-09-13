@@ -107,6 +107,8 @@ public final class EditorPlotLabelsRenderer {
         DOOR_WALL_CYCLE,
         /** The sky row — whether the room is lit as though it stood outdoors, and under which sky. */
         ROOM_SKY_CYCLE,
+        /** The fog row — Auto (the walls mode's answer), On or Off. */
+        ROOM_FOG_CYCLE,
         /** The author-lock row — whether the room stocks its shelves from one person. */
         ROOM_BOOKS_CYCLE,
         /** The Edit half of that row — the weights and the band, which only a stocking room has. */
@@ -133,7 +135,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public enum RowKind {
         NAME, WEIGHT, LENGTH, WIDTH, HEIGHT, MODE, LOCK, COPIES, COPIES_FLOOR, COPIES_ROOF, DOOR_WALL,
-        DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
+        DOOR_OFFSET, ROOM_CONTENTS, ROOM_BOOKS, ROOM_SKY, ROOM_FOG, EXITS, EXIT_EVERY, EXIT_MOVE, ENTER,
         ACTION, CONTENTS
     }
 
@@ -167,6 +169,7 @@ public final class EditorPlotLabelsRenderer {
         if (hasRoomContentsRow(entry)) buf[n++] = RowKind.ROOM_CONTENTS;
         if (hasRoomBooksRow(entry)) buf[n++] = RowKind.ROOM_BOOKS;
         if (hasRoomSkyRow(entry)) buf[n++] = RowKind.ROOM_SKY;
+        if (hasRoomFogRow(entry)) buf[n++] = RowKind.ROOM_FOG;
         if (hasExitsRow(entry)) buf[n++] = RowKind.EXITS;
         if (hasExitEveryRow(entry)) buf[n++] = RowKind.EXIT_EVERY;
         if (hasExitMoveRow(entry)) buf[n++] = RowKind.EXIT_MOVE;
@@ -399,6 +402,27 @@ public final class EditorPlotLabelsRenderer {
     public static String roomSkyLabel(String modeTag) {
         return "Sky: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
             .sky().displayName();
+    }
+
+    /** Whether the Fog row shows: every portal room, on the same reasoning as Sky. */
+    public static boolean hasRoomFogRow(EditorPlotLabelsPacket.Entry entry) {
+        return hasModeRow(entry);
+    }
+
+    /**
+     * What the Fog row reads, e.g. {@code "Fog: Auto (On)"} or {@code "Fog: Off"}.
+     *
+     * <p>Auto shows what it resolves to under the current walls, so an author sees the effect of
+     * the mode they picked without stepping the button to find out.</p>
+     */
+    public static String roomFogLabel(String modeTag) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
+        String label = "Fog: " + settings.fog().displayName();
+        if (settings.fog() == games.brennan.dungeontrain.portal.PortalRoomFog.AUTO) {
+            label += settings.fogs() ? " (On)" : " (Off)";
+        }
+        return label;
     }
 
     /**
@@ -883,6 +907,7 @@ public final class EditorPlotLabelsRenderer {
             case ROOM_CONTENTS -> CellKind.ROOM_CONTENTS_CYCLE;
             case ROOM_BOOKS -> roomBooksRowCell(entry, hitX, halfW);
             case ROOM_SKY -> CellKind.ROOM_SKY_CYCLE;
+            case ROOM_FOG -> CellKind.ROOM_FOG_CYCLE;
             case EXITS -> CellKind.EXITS_CYCLE;
             case EXIT_EVERY -> stepperCell(hitX, halfW,
                 CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
@@ -1152,6 +1177,12 @@ public final class EditorPlotLabelsRenderer {
                     int bg = hovered == CellKind.ROOM_SKY_CYCLE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, roomSkyLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
+                }
+                // Fog — Auto (what the walls say), On or Off. Same one-cell cycle as Sky above it.
+                case ROOM_FOG -> {
+                    int bg = hovered == CellKind.ROOM_FOG_CYCLE ? HOVER_COLOR : BUTTON_BG;
+                    drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
+                    drawCenteredText(ps, buffer, font, roomFogLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
                 // Exits — how many extra ways back to the train this room scatters through its
                 // copies. Only an endless room has anywhere to put one.

@@ -200,6 +200,15 @@ public final class CarriageEditor {
     }
 
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop) {
+        enter(player, variant, onTop, true);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the plot before teleporting. The category entry
+     *              passes {@code false}: it has just stamped this plot itself, and a second stamp
+     *              would double the one synchronous cost it kept.
+     */
+    public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -211,7 +220,7 @@ public final class CarriageEditor {
         }
 
         rememberReturn(player);
-        stampPlot(overworld, variant, dims);
+        if (stamp) stampPlot(overworld, variant, dims);
 
         CarriageDims box = plotDims(variant, dims);
         double tx = origin.getX() + box.length() / 2.0;
@@ -272,6 +281,8 @@ public final class CarriageEditor {
      * category being stamped; see {@code EditorCommand.restampCarriagePlotsForStage}.
      */
     public static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
             stampPlot(overworld, variant, dims);
         }
@@ -470,21 +481,11 @@ public final class CarriageEditor {
         }
         CarriageTemplateStore.save(target, template);
 
-        // Copy the source's variant sidecar into the new variant so the
-        // duplicate shares the "pick from these blocks" authoring.
-        CarriageVariantBlocks sourceSidecar = CarriageVariantBlocks.loadFor(source, plotDims(source, dims));
-        if (!sourceSidecar.isEmpty()) {
-            CarriageVariantBlocks copy = CarriageVariantBlocks.empty();
-            for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-                copy.put(e.localPos(), e.states());
-            }
-            // Carry over the lock-id grouping so duplicated cells that share a
-            // random pick stay grouped (states pass only copies candidate lists).
-            for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
-                copy.setLockId(lk.getKey(), lk.getValue());
-            }
-            copy.save(target);
-        }
+        // Everything beside the .nbt goes with it — the variant sidecar ("pick from these blocks"
+        // authoring, lock-ids, mirror flags), the part assignments, the contents allow-list, the
+        // container links and the weights entry — so the duplicate is the source, not just its shape.
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CARRIAGE, null,
+            source.id(), target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 

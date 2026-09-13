@@ -13,26 +13,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class EditorTabBarTest {
 
-    private static final List<String> LABELS = List.of("All", "Carriages", "Contents", "Tracks",
-        "Dimensions", "Settings");
-
     private static List<EditorTabBar.Tab> tabs(int width) {
-        return EditorTabBar.layout(new Rect(6, 4, width - 12, 16), s -> s.length() * 6, LABELS);
+        return EditorTabBar.layout(new Rect(6, 4, width - 12, 16), s -> s.length() * 6, EditorScreenPage::name);
     }
 
     @Test
-    @DisplayName("All is first, the pages follow in order, Settings and Exit are locked to the right")
+    @DisplayName("Templates then Layout from the left; Settings and Exit are locked to the right")
     void order() {
         List<EditorTabBar.Tab> t = tabs(640);
-        assertEquals(EditorScreenPage.ALL, t.get(0).page());
-        assertEquals(EditorScreenPage.CARRIAGES, t.get(1).page());
-        assertEquals(EditorScreenPage.DIMENSIONS, t.get(4).page());
-        assertEquals(EditorScreenPage.SETTINGS, t.get(5).page());
-        assertEquals(EditorTabBar.Kind.EXIT, t.get(6).kind());
-        EditorTabBar.Tab exit = t.get(6);
+        assertEquals(4, t.size());
+        assertEquals(EditorScreenPage.TEMPLATES, t.get(0).page());
+        assertEquals(EditorScreenPage.LAYOUT, t.get(1).page());
+        assertEquals(EditorScreenPage.SETTINGS, t.get(2).page());
+        assertEquals(EditorTabBar.Kind.EXIT, t.get(3).kind());
+        EditorTabBar.Tab exit = t.get(3);
         assertEquals(6 + 640 - 12, exit.x() + exit.w());
-        assertTrue(t.get(5).x() + t.get(5).w() <= exit.x());
-        assertTrue(t.get(4).x() + t.get(4).w() <= t.get(5).x());
+        assertTrue(t.get(2).x() + t.get(2).w() <= exit.x());
+        assertTrue(t.get(1).x() + t.get(1).w() <= t.get(2).x());
+        assertEquals("SETTINGS", t.get(2).label());
     }
 
     @Test
@@ -52,8 +50,8 @@ final class EditorTabBarTest {
     void hit() {
         Rect strip = new Rect(6, 4, 640 - 12, 16);
         List<EditorTabBar.Tab> t = tabs(640);
-        assertSame(t.get(2), EditorTabBar.hit(t, strip, t.get(2).x() + 1, 10));
-        assertNull(EditorTabBar.hit(t, strip, t.get(2).x() + 1, 40));
+        assertSame(t.get(1), EditorTabBar.hit(t, strip, t.get(1).x() + 1, 10));
+        assertNull(EditorTabBar.hit(t, strip, t.get(1).x() + 1, 40));
         assertNull(EditorTabBar.hit(t, strip, t.get(1).x() - 1, 10));
     }
 }

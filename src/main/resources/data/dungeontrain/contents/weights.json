@@ -15,19 +15,36 @@
   "enemies": 7,
   "fire": 4,
   "maze": 4,
-  "mild_1": 1,
+  "mild_1": {
+    "weight": 1,
+    "name": "trap_chest"
+  },
   "mild_2": {
     "weight": 1,
     "name": "wishingwell"
   },
-  "mild_3": 1,
-  "mild_4": 1,
+  "mild_3": {
+    "weight": 1,
+    "name": "trapwall"
+  },
+  "mild_4": {
+    "weight": 1,
+    "name": "creepertrap"
+  },
   "narrative": 3,
   "portal": 0,
   "portal_short": 0,
   "sand": 0,
   "shop": 8,
   "statue": 1,
+  "trapmid": {
+    "weight": 1,
+    "name": "zombiechoicetrap"
+  },
+  "trapmid2": {
+    "weight": 1,
+    "name": "tntdoortrap"
+  },
   "traps": {
     "weight": 1,
     "phases": [

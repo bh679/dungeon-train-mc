@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.advancement;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirements;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -18,9 +19,12 @@ import org.slf4j.Logger;
  * fresh life.
  *
  * <p>Each tier's JSON ({@code data/dungeontrain/advancement/dungeon_train/pacifist_*.json})
- * carries a single {@code minecraft:impossible} criterion, so none of them fire
+ * carries a single {@code dungeontrain:code_granted} criterion — a typed
+ * {@code impossible} holding the tier's threshold — so none of them fire
  * on their own — {@link #checkAndGrant} awards them directly, exactly like
- * {@link FarStartAdvancement}. The condition (a counter threshold AND "zero of
+ * {@link FarStartAdvancement}. The threshold is read back from that JSON via
+ * {@link AdvancementRequirements} (with the historical value as the fallback),
+ * so a relay override or a datapack edit rebalances the tier without a build. The condition (a counter threshold AND "zero of
  * a second per-run counter") isn't expressible as one standard trigger, so the
  * direct-award pattern is the natural fit.</p>
  */
@@ -35,7 +39,12 @@ public final class PacifistAdvancement {
     public static final ResourceLocation ID_1000 =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/pacifist_1000");
 
-    private record Tier(ResourceLocation id, int threshold) {}
+    /** A tier's id and the threshold the jar historically shipped — the fallback when the datapack has none. */
+    private record Tier(ResourceLocation id, int defaultThreshold) {
+        int threshold() {
+            return AdvancementRequirements.intValue(id, defaultThreshold);
+        }
+    }
 
     private static final Tier[] TIERS = {
         new Tier(ID_100, 100),

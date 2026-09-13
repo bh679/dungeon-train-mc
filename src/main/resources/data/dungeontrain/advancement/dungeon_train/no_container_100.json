@@ -12,7 +12,7 @@
   "criteria": {
     "action": {
       "trigger": "dungeontrain:gameplay_action",
-      "conditions": { "actionId": "no_container_100_carts" }
+      "conditions": { "actionId": "no_container_100_carts", "threshold": 100 }
     }
   },
   "requirements": [["action"]]

@@ -146,6 +146,14 @@ public final class PillarEditor {
     }
 
     public static void enter(ServerPlayer player, PillarSection section, boolean onTop) {
+        enter(player, section, onTop, true);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the plots before teleporting. The category entry
+     *              passes {@code false}: it has stamped, or queued, every plot itself.
+     */
+    public static void enter(ServerPlayer player, PillarSection section, boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -153,7 +161,7 @@ public final class PillarEditor {
         BlockPos origin = plotOrigin(section, TrackKind.DEFAULT_NAME, dims);
 
         CarriageEditor.rememberReturn(player);
-        stampAllSectionPlots(overworld, section, dims);
+        if (stamp) stampAllSectionPlots(overworld, section, dims);
 
         double tx = origin.getX() + 0.5;
         double ty = onTop
@@ -286,6 +294,8 @@ public final class PillarEditor {
     }
 
     private static void stampAllSectionPlots(ServerLevel overworld, PillarSection section, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         List<String> names = TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section));
         for (String name : names) {
             stampPlot(overworld, section, name, dims);
@@ -338,6 +348,14 @@ public final class PillarEditor {
     }
 
     public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
+        enter(player, adjunct, onTop, true);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the plots before teleporting. The category entry
+     *              passes {@code false}: it has stamped, or queued, every plot itself.
+     */
+    public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -345,7 +363,7 @@ public final class PillarEditor {
         BlockPos origin = plotOriginAdjunct(adjunct, TrackKind.DEFAULT_NAME, dims);
 
         CarriageEditor.rememberReturn(player);
-        stampAllAdjunctPlots(overworld, adjunct, dims);
+        if (stamp) stampAllAdjunctPlots(overworld, adjunct, dims);
 
         double tx = origin.getX() + adjunct.xSize() / 2.0;
         double ty = onTop
@@ -473,6 +491,8 @@ public final class PillarEditor {
     }
 
     private static void stampAllAdjunctPlots(ServerLevel overworld, PillarAdjunct adjunct, CarriageDims dims) {
+        // A category fill still in flight must land before a whole-kind restamp walks the same plots.
+        EditorStampQueue.flush();
         List<String> names = TrackVariantRegistry.namesFor(PillarTemplateStore.adjunctKind(adjunct));
         for (String name : names) {
             stampPlotAdjunct(overworld, adjunct, name, dims);

@@ -10,6 +10,11 @@
 #   CURSEFORGE_VERSION   mc-publish step output; non-empty if CurseForge upload succeeded.
 #   GH_TOKEN             gh CLI auth (already set by GitHub Actions for `${{ github.token }}`).
 #
+# Optional:
+#   RELEASE_NOTES        Notes text to embed instead of fetching the GitHub release body —
+#                        for previewing an announcement (e.g. into the dev channel via the
+#                        relay's dev cap) before a tag exists. Truncated to the same 500 chars.
+#
 # Idempotence: Discord webhooks always create a new message. Re-firing
 # workflow_dispatch against the same tag will produce a duplicate
 # announcement. Acceptable for now.
@@ -36,7 +41,11 @@ else
 fi
 
 # First ~500 chars of the GitHub release notes, used as the embed body.
-NOTES=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json body --jq '.body[:500]' 2>/dev/null || echo "")
+if [ -n "${RELEASE_NOTES:-}" ]; then
+  NOTES=$(printf '%s' "$RELEASE_NOTES" | head -c 500)
+else
+  NOTES=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json body --jq '.body[:500]' 2>/dev/null || echo "")
+fi
 
 LOGO_URL="https://raw.githubusercontent.com/$REPO/main/src/main/resources/logo.png"
 # Embed title links to this tag's release page — a permanent link to the exact build

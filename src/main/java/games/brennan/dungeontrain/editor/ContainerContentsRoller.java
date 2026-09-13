@@ -395,6 +395,12 @@ public final class ContainerContentsRoller {
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
         // Drop any pre-existing Items list — the rolled pool is authoritative.
         out.put("Items", items);
+        // Chests and barrels also bake their Luck-potion bonus candidates now, from the
+        // same pool, so the open-time hook never has to recover the pool from a position.
+        if (LuckyBonusRoller.isBonusContainer(state)) {
+            ListTag bonus = LuckyBonusRoller.preRoll(pool, localPos, worldSeed, carriageIndex, diffIndex, registries);
+            out = LuckyBonusRoller.withBonus(out, bonus);
+        }
         return out;
     }
 
@@ -1576,8 +1582,9 @@ public final class ContainerContentsRoller {
         return be == null ? null : be.getType();
     }
 
+    /** Package-private so {@link LuckyBonusRoller} can draw its bonus candidates with the same mixer. */
     @Nullable
-    private static ContainerContentsEntry pickEntry(ContainerContentsPool pool, int totalWeight,
+    static ContainerContentsEntry pickEntry(ContainerContentsPool pool, int totalWeight,
                                                     BlockPos localPos, long worldSeed, int carriageIndex,
                                                     int slot) {
         long mixed = worldSeed

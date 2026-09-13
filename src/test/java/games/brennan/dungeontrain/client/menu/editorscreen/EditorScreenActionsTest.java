@@ -4,12 +4,14 @@ import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.ConfirmScreen;
 import games.brennan.dungeontrain.client.menu.GroupParentPickerScreen;
+import games.brennan.dungeontrain.client.menu.ParentRemoveConfirmScreen;
 import games.brennan.dungeontrain.client.menu.PortalTestSaveCheckScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -278,6 +280,48 @@ final class EditorScreenActionsTest {
     }
 
     @Test
+    @DisplayName("a room the author is only looking at gets its rows from the roster, sent to the named root")
+    void roomRowsFromRosterWhenNotStanding() {
+        VariantKey room = VariantKey.of(PlotCategory.PORTALS, "portal_room", "labrynth");
+        EditorTypeMenusPacket.Variant v = gated("PORTALS", "portal_room", "labrynth", 3, List.of());
+        EditorScreenActions.Ctx looking = new EditorScreenActions.Ctx(room, v, 1, null, PlotCategory.PORTALS, false,
+            new EditorRosterIndex.Extras("endless_repetition/dynamic", 11, 13, 7, EditorStatusPacket.NO_FLIP));
+        List<CommandMenuEntry> rows = EditorScreenActions.roomRows(looking);
+        List<String> labels = rows.stream().map(CommandMenuEntry::label).toList();
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Fog: Auto (On)")), labels.toString());
+        assertTrue(labels.stream().anyMatch(l -> l.startsWith("Copies")), labels.toString());
+        CommandMenuEntry.Stay fog = rows.stream().filter(r -> r.label().startsWith("Fog"))
+            .map(r -> (CommandMenuEntry.Stay) r).findFirst().orElseThrow();
+        assertEquals("dungeontrain editor portals room labrynth fog next", fog.command());
+        // The settings list keeps them (minus the size steppers the sheet carries) — no standing gate.
+        List<CommandMenuEntry> settings = EditorScreenActions.settingRows(looking,
+            () -> rows, () -> EditorScreenActions.roomModeOf(looking, () -> ""));
+        assertTrue(settings.stream().anyMatch(r -> r.label().startsWith("Fog")));
+        assertTrue(settings.stream().noneMatch(r -> r.label().startsWith("Length")));
+        assertEquals("endless_repetition/dynamic", EditorScreenActions.roomModeOf(looking, () -> "stood"));
+
+        // No extras (a roster from before, or a sub-variant) — nothing to build from, so no rows.
+        assertTrue(EditorScreenActions.roomRows(ctx(room, v, null, PlotCategory.PORTALS)).isEmpty());
+    }
+
+    @Test
+    @DisplayName("a contents template the author is only looking at shows its Flip quad from the roster")
+    void flipRowsFromRoster() {
+        VariantKey k = VariantKey.of(PlotCategory.CONTENTS, "fire", "fire");
+        EditorTypeMenusPacket.Variant v = gated("CONTENTS", "fire", "fire", 2, List.of());
+        EditorScreenActions.Ctx looking = new EditorScreenActions.Ctx(k, v, 1, null, PlotCategory.CONTENTS, false,
+            new EditorRosterIndex.Extras(EditorStatusPacket.NO_MODE, -1, -1, -1,
+                EditorStatusPacket.FLIP_KNOWN | EditorStatusPacket.FLIP_Z));
+        List<CommandMenuEntry> rows = ROWS.apply(looking);
+        assertEquals("Flip", rows.get(0).label(), rows.toString());
+        CommandMenuEntry.Quad quad = assertInstanceOf(CommandMenuEntry.Quad.class, rows.get(1));
+        assertFalse(((CommandMenuEntry.Toggle) quad.e1()).state());
+        assertTrue(((CommandMenuEntry.Toggle) quad.e3()).state());
+        // Without the known bit there is nothing to show — same as the old roster.
+        assertTrue(ROWS.apply(ctx(k, v, null, PlotCategory.CONTENTS)).isEmpty());
+    }
+
+    @Test
     @DisplayName("a stage-linked template drops the Stage row, because the Spawns line already is one")
     void stageLinkedRows() {
         VariantKey k = VariantKey.of(PlotCategory.CONTENTS, "fire", "fire");
@@ -308,15 +352,17 @@ final class EditorScreenActionsTest {
     }
 
     @Test
-    @DisplayName("room geometry rows appear only while standing in the selected dimension room")
+    @DisplayName("the room rows the pane is handed land under the icons, standing in the room or not")
     void roomRowsOnlyWhenStanding() {
         VariantKey room = VariantKey.of(PlotCategory.PORTALS, "portal_room", "house");
         EditorTypeMenusPacket.Variant v = gated("PORTALS", "portal_room", "house", 1, List.of());
         List<CommandMenuEntry> inside = ROWS.apply(ctx(room, v, room, PlotCategory.PORTALS));
         assertTrue(inside.stream().anyMatch(e -> "ROOM".equals(e.label())),
             "the room's non-size rows still belong under the icons");
+        // Whether there ARE rows for a room the author is only looking at is roomRows' question
+        // (see roomRowsFromRosterWhenNotStanding); settingRows keeps whatever it is handed.
         List<CommandMenuEntry> away = ROWS.apply(ctx(room, v, null, PlotCategory.PORTALS));
-        assertFalse(away.stream().anyMatch(e -> "ROOM".equals(e.label())));
+        assertTrue(away.stream().anyMatch(e -> "ROOM".equals(e.label())));
         // A part has no weight pool and no gate: nothing to show.
         VariantKey part = VariantKey.of(PlotCategory.PARTS, "floor", "oak");
         EditorTypeMenusPacket.Variant pv = new EditorTypeMenusPacket.Variant("oak", EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", "floor", "oak", false, false);
@@ -339,5 +385,72 @@ final class EditorScreenActionsTest {
         assertNull(EditorScreenActions.newEntry(PlotCategory.ARCHITECTURE, "", "", null));
         assertNotNull(EditorScreenActions.newSubVariantEntry(VariantKey.of(PlotCategory.CONTENTS, "armor", "armor"), null));
         assertNull(EditorScreenActions.newSubVariantEntry(VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen"), null));
+    }
+
+    @Test
+    @DisplayName("remove on a contents parent: the three-way confirmation, one reset mode per row")
+    void removeOnContentsParentOffersThreeWays() {
+        EditorTypeMenusPacket.Variant copper = gated("CONTENTS", "copper", "copper", 2, List.of());
+        EditorTypeMenusPacket.Variant stone = gated("CONTENTS", "stone", "stone", 1, List.of());
+        EditorTypeMenusPacket.Variant maze = new EditorTypeMenusPacket.Variant("maze", 5, 10, 60, 1, "CONTENTS",
+            "maze", "maze", false, false, List.of(copper, stone), List.of());
+        VariantKey sel = VariantKey.of(PlotCategory.CONTENTS, "maze", "maze");
+
+        CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(sel, maze, null, null)));
+        ParentRemoveConfirmScreen screen = assertInstanceOf(ParentRemoveConfirmScreen.class, remove.target());
+
+        assertEquals("Remove 'maze'? It has 2 sub-variants", screen.title());
+        List<CommandMenuEntry> rows = screen.entries();
+        assertEquals(4, rows.size());
+        assertEquals("dungeontrain editor contents reset maze all",
+            assertInstanceOf(CommandMenuEntry.Run.class, rows.get(0)).command());
+        assertEquals("dungeontrain editor contents reset maze unparent",
+            assertInstanceOf(CommandMenuEntry.Run.class, rows.get(1)).command());
+        CommandMenuEntry.Run promote = assertInstanceOf(CommandMenuEntry.Run.class, rows.get(2));
+        assertEquals("dungeontrain editor contents reset maze promote", promote.command());
+        assertTrue(promote.label().contains("'copper'"), "promote row names the first sub-variant");
+        assertInstanceOf(CommandMenuEntry.Back.class, rows.get(3));
+    }
+
+    @Test
+    @DisplayName("remove on a portal-room parent: same screen over the kind-addressed reset")
+    void removeOnPortalRoomParent() {
+        EditorTypeMenusPacket.Variant hall = gated("PORTALS", "portal_room", "hall", 1, List.of());
+        EditorTypeMenusPacket.Variant house = new EditorTypeMenusPacket.Variant("house", 3, 10, 60, 1, "PORTALS",
+            "portal_room", "house", false, false, List.of(hall), List.of());
+        VariantKey sel = VariantKey.of(PlotCategory.PORTALS, "portal_room", "house");
+
+        CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(sel, house, null, null)));
+        ParentRemoveConfirmScreen screen = assertInstanceOf(ParentRemoveConfirmScreen.class, remove.target());
+        assertEquals("Remove 'house'? It has 1 sub-variant", screen.title());
+        assertEquals("dungeontrain editor portals reset portal_room house promote",
+            assertInstanceOf(CommandMenuEntry.Run.class, screen.entries().get(2)).command());
+    }
+
+    @Test
+    @DisplayName("remove on a portal-room leaf: plain confirm, addressed by room name not by where the player stands")
+    void removeOnPortalRoomLeafIsAddressed() {
+        EditorTypeMenusPacket.Variant hall = gated("PORTALS", "portal_room", "hall", 1, List.of());
+        CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(VariantKey.of(PlotCategory.PORTALS, "portal_room", "hall"), hall, null, null)));
+        ConfirmScreen screen = assertInstanceOf(ConfirmScreen.class, remove.target());
+        assertEquals("dungeontrain editor portals reset portal_room hall",
+            assertInstanceOf(CommandMenuEntry.Run.class, screen.entries().get(0)).command());
+    }
+
+    @Test
+    @DisplayName("remove on a leaf or a sub-variant keeps the plain Yes/No")
+    void removeOnLeafStaysPlain() {
+        EditorTypeMenusPacket.Variant leaf = gated("CONTENTS", "armor5", "armor5", 6, List.of());
+        CommandMenuEntry.DrillIn remove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(VariantKey.of(PlotCategory.CONTENTS, "armor5", "armor5"), leaf, null, null)));
+        assertInstanceOf(ConfirmScreen.class, remove.target());
+
+        EditorTypeMenusPacket.Variant sub = gated("CONTENTS", "copper", "copper", 2, List.of());
+        CommandMenuEntry.DrillIn subRemove = assertInstanceOf(CommandMenuEntry.DrillIn.class,
+            EditorScreenActions.removeEntry(ctx(new VariantKey(PlotCategory.CONTENTS, "copper", "copper", "maze"), sub, null, null)));
+        assertInstanceOf(ConfirmScreen.class, subRemove.target());
     }
 }

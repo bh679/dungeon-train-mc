@@ -77,6 +77,10 @@ public final class PortalRoomMobs {
      * <ul>
      *   <li>it spawns as {@code MobSpawnType.SPAWN_EGG}, which {@link PortalRoomSpawnGuard} does not
      *       cancel — the guard's rule is "nothing arrives here on its own", and this did not;</li>
+     *   <li>it goes through the gentle-onboarding hostile gate like a carriage mob — except for a
+     *       Test-the-Carriage stamp ({@link PortalTestSession#isTestStamp}), which spawns as
+     *       authored, and it returns {@code false} for a hostile that gate withheld, so a stamp
+     *       never logs or counts a mob it did not place;</li>
      *   <li>the mob carries {@code contentsTagFor(pairKey)}, so everything that already asks "is this
      *       one of ours" answers yes — the train's runway sweep spares it, difficulty scales it
      *       against that point on the track, and {@code clearIntruders} leaves it standing.</li>
@@ -98,7 +102,11 @@ public final class PortalRoomMobs {
             return false;
         }
 
-        if (!CarriageContentsPlacer.spawnVariantMob(level, worldPos, picked, pairKey, seed)) {
+        // A test carriage spawns as authored: the author is checking their build, and the
+        // gentle-onboarding ramp — which reads their zero carriages travelled as the opening stretch
+        // of a run — would otherwise withhold every hostile in it and leave the cells empty.
+        boolean asAuthored = PortalTestSession.isTestStamp(pairKey);
+        if (!CarriageContentsPlacer.spawnVariantMob(level, worldPos, picked, pairKey, seed, asAuthored)) {
             return false;
         }
 

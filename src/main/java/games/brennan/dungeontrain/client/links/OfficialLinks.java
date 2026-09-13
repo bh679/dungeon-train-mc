@@ -38,6 +38,11 @@ public final class OfficialLinks {
      */
     static final String FALLBACK_BILIBILI =
             "https://space.bilibili.com/3707029436762273";
+    /** Brennan's own channels — the icon row at the bottom of the Videos page. Baked like Bilibili. */
+    static final String FALLBACK_YOUTUBE =
+            "https://www.youtube.com/brennanhatton93";
+    static final String FALLBACK_INSTAGRAM =
+            "https://instagram.com/brennanhatton";
     /**
      * The China-facing payment link (a Stripe link; WeChat Pay today) has NO baked fallback on
      * purpose — it is relay-only. Patreon and Revolut are both walled in mainland China, so this is
@@ -71,6 +76,10 @@ public final class OfficialLinks {
     public static String affiliate() { return resolve("affiliate", FALLBACK_AFFILIATE); }
     /** The Bilibili channel — shown above Discord on Chinese-language clients, and only there. */
     public static String bilibili()  { return resolve("bilibili", FALLBACK_BILIBILI); }
+    /** Brennan's YouTube channel — the Videos page's channel row. */
+    public static String youtube()   { return resolve("youtube", FALLBACK_YOUTUBE); }
+    /** Brennan's Instagram — the Videos page's channel row. */
+    public static String instagram() { return resolve("instagram", FALLBACK_INSTAGRAM); }
 
     /** The China payment link, or {@code null} when the relay has not served a valid one. */
     public static String paymentCn() { return resolve("payment_cn", null); }

@@ -64,6 +64,10 @@ public final class DebugCommand {
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("debug")
             .then(Commands.literal("scan").executes(ctx -> runScan(ctx.getSource())))
+            // /dungeontrain debug stage-placeholders — walks every live carriage's footprint and
+            // counts stage placeholder blocks that survived generation (expected: none) plus the
+            // top real blocks, so a build's placeholders can be proven resolved without a client.
+            .then(Commands.literal("stage-placeholders").executes(ctx -> runStagePlaceholderScan(ctx.getSource())))
             // /dungeontrain debug physicsfreeze <on|off|status> — toggles the #646 physics-freeze
             // of untracked carriages. `off` restores every frozen body next tick. Drives the Gate 2
             // matched-toggle A/B (freeze off vs on, same seed/path — chunk-gen noise cancels).
@@ -503,6 +507,56 @@ public final class DebugCommand {
         source.sendSuccess(() -> Component.literal(line)
             .withStyle(c[0] == 0 ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
+    }
+
+    private static int runStagePlaceholderScan(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        int leaked = 0;
+        int carriages = 0;
+        java.util.Map<String, Integer> tally = new java.util.HashMap<>();
+        for (java.util.List<games.brennan.dungeontrain.train.Trains.Carriage> train
+                : games.brennan.dungeontrain.train.Trains.byTrainId(level).values()) {
+            for (games.brennan.dungeontrain.train.Trains.Carriage c : train) {
+                CarriageDims dims = c.provider().dims();
+                BlockPos o = c.provider().getShipyardOrigin();
+                int here = 0;
+                for (int x = 0; x < dims.length(); x++) {
+                    for (int y = 0; y < dims.height(); y++) {
+                        for (int z = 0; z < dims.width(); z++) {
+                            BlockState s = level.getBlockState(o.offset(x, y, z));
+                            if (s.isAir()) continue;
+                            String id = net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                                .getKey(s.getBlock()).toString();
+                            tally.merge(id, 1, Integer::sum);
+                            if (games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.isPlaceholder(s)) here++;
+                        }
+                    }
+                }
+                if (here > 0) {
+                    final int fHere = here;
+                    final int pIdx = c.provider().getPIdx();
+                    source.sendSuccess(() -> Component.literal("pIdx " + pIdx + ": " + fHere
+                        + " placeholder block(s) LEAKED").withStyle(ChatFormatting.RED), false);
+                }
+                leaked += here;
+                carriages++;
+            }
+        }
+        java.util.List<java.util.Map.Entry<String, Integer>> top = new java.util.ArrayList<>(tally.entrySet());
+        top.sort((a, b) -> b.getValue() - a.getValue());
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(8, top.size()); i++) {
+            sb.append(top.get(i).getKey()).append('=').append(top.get(i).getValue()).append(' ');
+        }
+        final int fLeaked = leaked;
+        final int fCarriages = carriages;
+        final String fTop = sb.toString().trim();
+        source.sendSuccess(() -> Component.literal("Stage placeholders: " + fLeaked + " leaked across "
+            + fCarriages + " carriage(s). Top blocks: " + fTop)
+            .withStyle(fLeaked == 0 ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        LOGGER.info("[DungeonTrain] Stage placeholder scan: {} leaked across {} carriage(s); top {}",
+            leaked, carriages, fTop);
+        return leaked == 0 ? 1 : 0;
     }
 
     private static int runScan(CommandSourceStack source) {

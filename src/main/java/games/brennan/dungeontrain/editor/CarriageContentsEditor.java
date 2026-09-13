@@ -323,6 +323,15 @@ public final class CarriageContentsEditor {
     }
 
     public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant, boolean onTop) {
+        enter(player, contents, shellVariant, onTop, true);
+    }
+
+    /**
+     * @param stamp whether to erase + restamp the shell and contents before teleporting. The
+     *              category entry passes {@code false}: it has just stamped this plot itself.
+     */
+    public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant,
+                             boolean onTop, boolean stamp) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -339,19 +348,21 @@ public final class CarriageContentsEditor {
 
         CarriageEditor.rememberReturn(player);
 
-        CarriagePlacer.eraseAt(overworld, origin, box);
-        // Also discard any entities left from a previous edit session
-        // (armor stands / item frames / paintings don't get cleared by the
-        // block-only erase above). Must run before the shell + contents stamp
-        // so the freshly stamped NBT entities don't get caught up in this.
-        CarriageContentsPlacer.eraseAt(overworld, origin, box);
-        // Stamp the shell first — this fills floor/walls/ceiling as context.
-        // Uses the 4-arg placeAt so variant-block sidecar entries don't get
-        // applied here (the author is editing contents, not the shell).
-        CarriagePlacer.placeAt(overworld, origin, shell, dims);
-        // Stamp the current contents template on top of the air interior.
-        CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, box);
+        if (stamp) {
+            CarriagePlacer.eraseAt(overworld, origin, box);
+            // Also discard any entities left from a previous edit session
+            // (armor stands / item frames / paintings don't get cleared by the
+            // block-only erase above). Must run before the shell + contents stamp
+            // so the freshly stamped NBT entities don't get caught up in this.
+            CarriageContentsPlacer.eraseAt(overworld, origin, box);
+            // Stamp the shell first — this fills floor/walls/ceiling as context.
+            // Uses the 4-arg placeAt so variant-block sidecar entries don't get
+            // applied here (the author is editing contents, not the shell).
+            CarriagePlacer.placeAt(overworld, origin, shell, dims);
+            // Stamp the current contents template on top of the air interior.
+            CarriageContentsPlacer.placeAt(overworld, origin, contents, dims);
+            setOutline(overworld, origin, OUTLINE_BLOCK, box);
+        }
 
         double tx = origin.getX() + box.length() / 2.0;
         double ty = onTop
@@ -527,22 +538,11 @@ public final class CarriageContentsEditor {
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, targetOrigin, sourceBox);
         CarriageContentsStore.save(target, template);
 
-        // Copy the source's variants sidecar onto the duplicate so authors get
-        // the random-pick set "for free" — same pattern as CarriageEditor.
-        net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(source, dims);
-        CarriageContentsVariantBlocks sourceSidecar = CarriageContentsVariantBlocks.loadFor(source, interiorSize);
-        if (!sourceSidecar.isEmpty()) {
-            CarriageContentsVariantBlocks copy = CarriageContentsVariantBlocks.empty();
-            for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
-                copy.put(e.localPos(), e.states());
-            }
-            // Carry over the lock-id grouping so duplicated cells that share a
-            // random pick stay grouped (states pass only copies candidate lists).
-            for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> lk : sourceSidecar.allLockIds().entrySet()) {
-                copy.setLockId(lk.getKey(), lk.getValue());
-            }
-            copy.save(target);
-        }
+        // Everything beside the .nbt goes with it — the variants sidecar (random-pick sets,
+        // lock-ids, mirror flags), the container links and the weights entry — same path as
+        // CarriageEditor.duplicate.
+        TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CONTENTS, null,
+            source.id(), target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 

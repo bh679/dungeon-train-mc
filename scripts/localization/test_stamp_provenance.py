@@ -312,6 +312,18 @@ def test_contributors_pick_up_author_url():
     assert read_contributors(lang_dir)["contributors"][0]["url"] == "https://example.com/lao"
 
 
+def test_contributors_leave_out_a_name_that_asked_not_to_be_credited():
+    # "credit": false is what apply-translator-renames.py writes for a relay opt-out: the sidecar
+    # still names them (the work is theirs), the shipped credits do not.
+    authors = dict(AUTHORS)
+    authors["老本願"] = {"kind": "human", "url": "https://example.com/lao", "credit": False}
+    lang_dir, prov_dir = workspace(authors=authors)
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    assert read_contributors(lang_dir)["contributors"] == []
+    assert read(prov_dir)["b.key"]["author"] == "老本願"
+
+
 def test_contributors_regenerate_idempotent():
     lang_dir, prov_dir = workspace()
     assert run(lang_dir, prov_dir, "--sync", "--author", "unused").returncode == 0

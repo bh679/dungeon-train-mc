@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.client.builder.BuilderWorldCheck;
+import games.brennan.dungeontrain.client.crash.CrashRunTracker;
 import games.brennan.dungeontrain.client.menu.AbandonConfirmScreen;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.shaders.ShaderMenuScreen;
@@ -78,6 +79,8 @@ public final class PauseMenuLayoutHandler {
     private static final Component QUIT_LABEL = Component.translatable("menu.quit");
     /** The same key the Train Builder's own pause menu uses — one name for one screen. */
     private static final Component MY_BUILDS_LABEL = Component.translatable("gui.dungeontrain.builder.profile");
+    /** Salvage sessions only — see {@link #addFreshRunRow}. */
+    private static final Component FRESH_RUN_LABEL = Component.translatable("gui.dungeontrain.crash_recovery.fresh_run");
 
     private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
     private static final Component SHADERS_LABEL = Component.translatable("gui.dungeontrain.shaders.button");
@@ -143,6 +146,12 @@ public final class PauseMenuLayoutHandler {
             slotY += slotH + GAP;
         }
 
+        // Start a Fresh Run, for a salvage session — see addFreshRunRow. Same treatment: it takes
+        // the slot and pushes the exits down a row.
+        if (addFreshRunRow(event, slotX, slotY, slotW, slotH)) {
+            slotY += slotH + GAP;
+        }
+
         // Red "Abandon This Run" — full slot, shown when Shift is NOT held.
         PauseMenuActionButton abandon = new PauseMenuActionButton(
                 slotX, slotY, slotW, slotH, ABANDON_LABEL,
@@ -187,6 +196,31 @@ public final class PauseMenuLayoutHandler {
         Screen screen = event.getScreen();
         event.addListener(new DarkTintedButton(x, y, width, height, MY_BUILDS_LABEL,
                 b -> Minecraft.getInstance().setScreen(new BuilderProfileScreen(screen))));
+        return true;
+    }
+
+    /**
+     * Add the <b>Start a Fresh Run</b> row, or don't — only during a salvage session, i.e. a world
+     * the player reopened through the crash-recovery offer to empty into the Ender Chest.
+     *
+     * <p>It goes straight to {@link DeathScreenLayoutHandler#launchWorld} rather than through the
+     * red Abandon button: that one ends the run by killing the player server-side and narrating the
+     * death, and on a save that was written mid-crash the kill-then-death-screen path is the
+     * fragile one. There is no run result here worth recording anyway — the run ended when the
+     * game did. The crash record is forgotten first so nothing is offered next launch.
+     *
+     * @return true when the row was added and the slot below it is now spoken for
+     */
+    private static boolean addFreshRunRow(ScreenEvent.Init.Post event, int x, int y, int width, int height) {
+        if (!CrashRunTracker.isSalvageSession()) {
+            return false;
+        }
+        Screen screen = event.getScreen();
+        event.addListener(new DarkTintedButton(x, y, width, height, FRESH_RUN_LABEL, b -> {
+            LOGGER.info("PauseMenuLayout: salvage session over; starting a fresh run.");
+            CrashRunTracker.runEnded();
+            DeathScreenLayoutHandler.launchWorld(screen, false);
+        }));
         return true;
     }
 
