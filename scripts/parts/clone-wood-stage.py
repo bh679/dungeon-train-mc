@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Clone the `wood_oak` part set into a stage per wood type.
+"""RETIRED — the per-wood clones this made were folded into one shared, placeholder-built set
+(`scripts/parts/share-wood-stage.py`, v0.865.0). A new wood is now a stage with a `wood` family in
+its palette; no part cloning is needed. Kept for the record of how the clones were derived.
+
+Clone the `wood_oak` part set into a stage per wood type.
 
 The `wood_oak` stage is seven parts — a floor, three walls, two roofs and a door — built from oak
 blocks. Every other wood is the same seven parts with the oak ids swapped, which the Train Editor
@@ -224,6 +228,8 @@ def sync_legacy_manifests(check: bool) -> int:
 
 
 def main() -> None:
+    sys.exit("clone-wood-stage.py is retired — the wood stages share one placeholder-built part set "
+             "(see scripts/parts/share-wood-stage.py).")
     args = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     args.add_argument("--check", action="store_true", help="report what would change; write nothing")
     check = args.parse_args().check

@@ -25,7 +25,7 @@ import java.util.List;
  * the player deleted them on purpose; that tier is a separate, off-by-default toggle rather than part
  * of the main button.</p>
  *
- * <p>Same flat card as {@link DataRecoveryScreen}, and beside it in the title screen's queue, so a
+ * <p>Same flat card as Dungeon Backup's {@code DataRecoveryScreen}, and beside it in the title screen's queue, so a
  * one-time question looks like a one-time question wherever it appears. Client-only.</p>
  */
 public final class BuilderReconcileScreen extends Screen {

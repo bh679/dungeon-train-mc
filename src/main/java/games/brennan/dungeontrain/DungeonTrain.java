@@ -243,6 +243,12 @@ public class DungeonTrain {
         // server operator's explicit ON/OFF still wins.
         games.brennan.ediblebackpacks.EdibleBackpacksApi.setHostDefaultResetOnDeath(true);
 
+        // Bundled Dungeon Backup: describe DT's player data ONCE (root, extra trees, legacy
+        // config/ locations, probes, hooks). The library migrates it out of config/, takes the
+        // restore points, mirrors them outside the instance and offers the recovery card. Must
+        // exist before the first ServerStartingEvent, which is why it is here and not in setup.
+        games.brennan.dungeontrain.data.DungeonTrainBackup.register();
+
         // First DeferredRegister in the project — wires the variant
         // clipboard item produced by the block-variant menu's Copy button.
         ModItems.register(modBus);

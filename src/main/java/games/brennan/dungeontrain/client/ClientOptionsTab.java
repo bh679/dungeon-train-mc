@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The three tabs {@link DungeonTrainClientOptionsScreen} files its rows under, and which one the
+ * The four tabs {@link DungeonTrainClientOptionsScreen} files its rows under, and which one the
  * player is currently looking at.
  *
  * <p>Same split-by-subject shape as the editor menu's {@link games.brennan.dungeontrain.client.menu.EditorMenuTab},
@@ -13,7 +13,9 @@ import java.util.List;
  *
  * <ul>
  *   <li>{@link #GENERAL} — the client and the player: content rating, chat lines, the hotkey,
- *       backups, the backpack button, translation.</li>
+ *       the backpack button, translation.</li>
+ *   <li>{@link #BACKUPS} — the restore points Dungeon Backup keeps of the player's builds and
+ *       progress: where, how many, clear them, and whether to confirm build re-uploads.</li>
  *   <li>{@link #TRAIN} — the ride itself: engine volume, whether custom train content loads, and
  *       the ride-photo settings.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
@@ -30,6 +32,7 @@ import java.util.List;
 public enum ClientOptionsTab {
 
     GENERAL("general"),
+    BACKUPS("backups"),
     TRAIN("train"),
     EDITOR("editor");
 
@@ -73,20 +76,20 @@ public enum ClientOptionsTab {
         CINEMATIC_HOTKEY,
         /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
         BACKPACK_BUTTON,
-        /** Non-interactive caption introducing the backup rows below it. */
-        BACKUPS_HEADING,
+        /** Opens the AI Policy page. Unconditional — every client can reach it. */
+        AI_POLICY,
+        /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
+        TRANSLATE,
+
+        // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */
         BACKUPS,
-        /** How many archives to keep per Dungeon Train version. */
+        /** How many archives to keep per mod version. */
         BACKUPS_PER_VERSION,
         /** Deletes every archive, in the instance and outside it. Shows the size on disk. */
         CLEAR_BACKUPS,
         /** Whether to be asked before builds the build server has lost are sent back up. */
         CONFIRM_BUILD_RESTORE,
-        /** Opens the AI Policy page. Unconditional — every client can reach it. */
-        AI_POLICY,
-        /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
-        TRANSLATE,
 
         // --- Train ---
         TRAIN_VOLUME,
@@ -126,13 +129,13 @@ public enum ClientOptionsTab {
      * LEADER is named — the rest of the group pairs among themselves as usual.</p>
      */
     private static final java.util.Set<Row> GROUP_LEADERS =
-            java.util.EnumSet.of(Row.BACKUPS_HEADING, Row.AI_POLICY);
+            java.util.EnumSet.of(Row.AI_POLICY);
 
     /**
      * Rows that are captions rather than settings: no widget to operate, and always a line to
      * themselves.
      */
-    private static final java.util.Set<Row> HEADINGS = java.util.EnumSet.of(Row.BACKUPS_HEADING);
+    private static final java.util.Set<Row> HEADINGS = java.util.EnumSet.noneOf(Row.class);
 
     /** Whether {@code row} is a caption rather than a setting. */
     public static boolean isHeading(Row row) {
@@ -163,10 +166,10 @@ public enum ClientOptionsTab {
                 if (hasTranslateTarget) {
                     rows.add(Row.TRANSLATE);
                 }
-                // The backup block goes last, behind its own heading — it is the only group here
-                // with enough rows to need one, and the heading is what separates it from the
-                // ungrouped settings above.
-                rows.add(Row.BACKUPS_HEADING);
+            }
+            case BACKUPS -> {
+                // Its own tab: the block outgrew a heading on General once it had four rows and
+                // a sibling mod (Dungeon Backup) owning three of them.
                 rows.add(Row.BACKUPS);
                 // Adjacent so the width packer pairs the two short backup rows on one line.
                 rows.add(Row.BACKUPS_PER_VERSION);

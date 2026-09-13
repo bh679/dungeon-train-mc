@@ -121,13 +121,13 @@
       "stage": "mud"
     },
     {
-      "name": "mudwindows_wood_oak",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "wood_oak"
     },
     {
-      "name": "mudopen_wood_oak",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "wood_oak"
@@ -168,133 +168,133 @@
       "stage": "deepdark"
     },
     {
-      "name": "mudwindows_wood_oak_darkwood",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "darkwood"
     },
     {
-      "name": "mudopen_wood_oak_darkwood",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "darkwood"
     },
     {
-      "name": "mudwindows_wood_oak_darkw_spruce",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "spruce"
     },
     {
-      "name": "mudopen_wood_oak_darkwood_spruce",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "spruce"
     },
     {
-      "name": "mudwindows_wood_oak_darkw_acacia",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "acacia"
     },
     {
-      "name": "mudopen_wood_oak_darkwood_acacia",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "acacia"
     },
     {
-      "name": "mudwindows_wood_birch",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "birch"
     },
     {
-      "name": "mudopen_wood_birch",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "birch"
     },
     {
-      "name": "mudwindows_wood_jungle",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "jungle"
     },
     {
-      "name": "mudopen_wood_jungle",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "jungle"
     },
     {
-      "name": "mudwindows_wood_mangrove",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "mangrove"
     },
     {
-      "name": "mudopen_wood_mangrove",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "mangrove"
     },
     {
-      "name": "mudwindows_wood_cherry",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "cherry"
     },
     {
-      "name": "mudopen_wood_cherry",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "cherry"
     },
     {
-      "name": "mudwindows_wood_bamboo",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "bamboo"
     },
     {
-      "name": "mudopen_wood_bamboo",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "bamboo"
     },
     {
-      "name": "mudwindows_wood_bamboo_mosaic",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "bamboo_mosaic"
     },
     {
-      "name": "mudopen_wood_bamboo_mosaic",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "bamboo_mosaic"
     },
     {
-      "name": "mudwindows_wood_crimson",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "crimson"
     },
     {
-      "name": "mudopen_wood_crimson",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "crimson"
     },
     {
-      "name": "mudwindows_wood_warped",
+      "name": "mudwindows_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "warped"
     },
     {
-      "name": "mudopen_wood_warped",
+      "name": "mudopen_wood",
       "weight": 1,
       "sideMode": "either",
       "stage": "warped"
@@ -378,12 +378,12 @@
       "stage": "mud"
     },
     {
-      "name": "mud_wood_oak",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "wood_oak"
     },
     {
-      "name": "mudopen_wood_oak",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "wood_oak"
     },
@@ -418,112 +418,112 @@
       "stage": "deepdark"
     },
     {
-      "name": "mud_wood_oak_darkwood",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "darkwood"
     },
     {
-      "name": "mudopen_wood_oak_darkwood",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "darkwood"
     },
     {
-      "name": "mud_wood_oak_darkwood_spruce",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "spruce"
     },
     {
-      "name": "mudopen_wood_oak_darkwood_spruce",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "spruce"
     },
     {
-      "name": "mud_wood_oak_darkwood_spr_acacia",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "acacia"
     },
     {
-      "name": "mudopen_wood_oak_darkwood_acacia",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "acacia"
     },
     {
-      "name": "mud_wood_birch",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "birch"
     },
     {
-      "name": "mudopen_wood_birch",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "birch"
     },
     {
-      "name": "mud_wood_jungle",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "jungle"
     },
     {
-      "name": "mudopen_wood_jungle",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "jungle"
     },
     {
-      "name": "mud_wood_mangrove",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "mangrove"
     },
     {
-      "name": "mudopen_wood_mangrove",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "mangrove"
     },
     {
-      "name": "mud_wood_cherry",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "cherry"
     },
     {
-      "name": "mudopen_wood_cherry",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "cherry"
     },
     {
-      "name": "mud_wood_bamboo",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "bamboo"
     },
     {
-      "name": "mudopen_wood_bamboo",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "bamboo"
     },
     {
-      "name": "mud_wood_bamboo_mosaic",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "bamboo_mosaic"
     },
     {
-      "name": "mudopen_wood_bamboo_mosaic",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "bamboo_mosaic"
     },
     {
-      "name": "mud_wood_crimson",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "crimson"
     },
     {
-      "name": "mudopen_wood_crimson",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "crimson"
     },
     {
-      "name": "mud_wood_warped",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "warped"
     },
     {
-      "name": "mudopen_wood_warped",
+      "name": "mudopen_wood",
       "weight": 1,
       "stage": "warped"
     }
@@ -560,7 +560,7 @@
       "stage": "mud"
     },
     {
-      "name": "mud_wood_oak",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
@@ -573,77 +573,77 @@
       "stage": "obsidian"
     },
     {
-      "name": "mud_wood_oak_darkwood",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "darkwood"
     },
     {
-      "name": "mud_wood_oak_darkwood_spruce",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "spruce"
     },
     {
-      "name": "mud_wood_oak_darkwood_spr_acacia",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "acacia"
     },
     {
-      "name": "mud_wood_birch",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "birch"
     },
     {
-      "name": "mud_wood_jungle",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "jungle"
     },
     {
-      "name": "mud_wood_mangrove",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "mangrove"
     },
     {
-      "name": "mud_wood_cherry",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "cherry"
     },
     {
-      "name": "mud_wood_bamboo",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "bamboo"
     },
     {
-      "name": "mud_wood_bamboo_mosaic",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "bamboo_mosaic"
     },
     {
-      "name": "mud_wood_crimson",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",
       "stage": "crimson"
     },
     {
-      "name": "mud_wood_warped",
+      "name": "mud_wood",
       "weight": 1,
       "sideMode": "either",
       "endMode": "end",

@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
+import games.brennan.dungeonbackup.api.Located;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
@@ -189,7 +190,7 @@ public final class ChatOutbox {
         }
         loaded = true;
         try {
-            this.file = new PlayerDataPaths.Located(
+            this.file = new Located(
                 PlayerDataPaths.dir(PlayerDataPaths.OUTBOX).resolve(NEW_FILE_NAME),
                 PlayerDataPaths.configRoot().resolve(FILE_NAME)).read();
         } catch (Exception e) {

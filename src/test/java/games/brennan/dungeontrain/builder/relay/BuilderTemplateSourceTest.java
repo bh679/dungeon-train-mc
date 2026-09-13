@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.builder.relay;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.BuilderTemplateIdentity;
-import games.brennan.dungeontrain.data.PlayerDataBackup;
+import games.brennan.dungeonbackup.api.Source;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Turning a file on disk into the archive entry it was backed up as.
  *
- * <p>The name has to match what {@code PlayerDataBackup.create} wrote, character for character, or a
+ * <p>The name has to match what {@code BackupArchiver.create} wrote, character for character, or a
  * build that IS in a backup is reported as unrecoverable — a silent failure, since the answer looks
  * exactly like "no copy anywhere".</p>
  */
@@ -27,10 +27,10 @@ final class BuilderTemplateSourceTest {
     @TempDir
     Path tmp;
 
-    private List<PlayerDataBackup.Source> sources() {
+    private List<Source> sources() {
         return List.of(
-            new PlayerDataBackup.Source("dungeontrain", tmp.resolve("dungeontrain"), Set.of("backups")),
-            new PlayerDataBackup.Source("dtpacks", tmp.resolve("dtpacks")));
+            new Source("dungeontrain", tmp.resolve("dungeontrain"), Set.of("backups")),
+            new Source("dtpacks", tmp.resolve("dtpacks")));
     }
 
     @Test
