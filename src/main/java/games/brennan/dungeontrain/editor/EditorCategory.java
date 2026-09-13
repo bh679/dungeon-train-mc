@@ -48,7 +48,7 @@ public enum EditorCategory {
     CARRIAGES("Carriages"),
     CONTENTS("Contents"),
     TRACKS("Tracks"),
-    PORTALS("Portals"),
+    PORTALS("Dimensions"),
     ARCHITECTURE("Architecture");
 
     private final String displayName;
@@ -57,6 +57,10 @@ public enum EditorCategory {
         this.displayName = displayName;
     }
 
+    /**
+     * The player-facing name. Not an id: {@link #id()} is what commands and the status HUD carry,
+     * and the two need not match — the portals category reads <b>Dimensions</b> on screen.
+     */
     public String displayName() {
         return displayName;
     }
