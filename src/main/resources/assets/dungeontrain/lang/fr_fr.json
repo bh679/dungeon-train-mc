@@ -1017,6 +1017,8 @@
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s utilisations",
   "gui.dungeontrain.editor_screen.stages.templates": "%s modèles liés",
   "gui.dungeontrain.editor_screen.stages.no_templates": "Rien n'est lié à cette étape",
+  "gui.dungeontrain.editor_screen.stages.col.name": "Nom",
+  "gui.dungeontrain.editor_screen.stages.col.level": "Niveau",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Cliquer pour replier ou déplier",
   "gui.dungeontrain.editor_screen.layout.move": "Déplacer…",

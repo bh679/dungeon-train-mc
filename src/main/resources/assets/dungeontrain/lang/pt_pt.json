@@ -1017,6 +1017,8 @@
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s utilizações",
   "gui.dungeontrain.editor_screen.stages.templates": "%s modelos ligados",
   "gui.dungeontrain.editor_screen.stages.no_templates": "Nada está ligado a este estágio",
+  "gui.dungeontrain.editor_screen.stages.col.name": "Nome",
+  "gui.dungeontrain.editor_screen.stages.col.level": "Nível",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Clique para recolher ou expandir",
   "gui.dungeontrain.editor_screen.layout.move": "Mover…",

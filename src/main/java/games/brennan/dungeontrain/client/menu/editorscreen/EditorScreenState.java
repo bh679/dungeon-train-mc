@@ -26,6 +26,8 @@ public final class EditorScreenState {
     private static VariantKey selection;
     /** The Stages tab's selected stage id, or null before any click — the pane then shows the first stage. */
     private static String selectedStageId;
+    /** The Stages list's order — by name until a title is clicked. */
+    private static EditorStagesPage.Sort stageSort = EditorStagesPage.Sort.DEFAULT;
     /** The Layout tab's opened sections, by {@code EditorLayoutPage.sectionId}. Folded is the default; replaced, never mutated. */
     private static Set<String> expandedSections = Set.of();
     /** The Layout tab's opened groups — parents whose members are shown — by the parent's key string. Folded is the default. */
@@ -58,6 +60,12 @@ public final class EditorScreenState {
 
     public static EditorScreenPage page() { return page; }
     public static String selectedStageId() { return selectedStageId; }
+    public static EditorStagesPage.Sort stageSort() { return stageSort; }
+
+    /** A title click on the Stages list: sort by it, or flip it when it already sorts. */
+    public static void sortStages(EditorStagesPage.Column column) {
+        stageSort = stageSort.toggled(column);
+    }
 
     public static void selectStage(String stageId) {
         selectedStageId = stageId == null || stageId.isEmpty() ? null : stageId;

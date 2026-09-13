@@ -1436,6 +1436,8 @@
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s uses",
   "gui.dungeontrain.editor_screen.stages.templates": "%s linked templates",
   "gui.dungeontrain.editor_screen.stages.no_templates": "Nothing is linked to this stage",
+  "gui.dungeontrain.editor_screen.stages.col.name": "Name",
+  "gui.dungeontrain.editor_screen.stages.col.level": "Level",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Click to collapse or expand",
   "gui.dungeontrain.editor_screen.layout.move": "Move…",

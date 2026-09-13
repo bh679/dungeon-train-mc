@@ -1045,6 +1045,8 @@
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s użyć",
   "gui.dungeontrain.editor_screen.stages.templates": "%s powiązanych szablonów",
   "gui.dungeontrain.editor_screen.stages.no_templates": "Nic nie jest powiązane z tym etapem",
+  "gui.dungeontrain.editor_screen.stages.col.name": "Nazwa",
+  "gui.dungeontrain.editor_screen.stages.col.level": "Poziom",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Kliknij, aby zwinąć lub rozwinąć",
   "gui.dungeontrain.editor_screen.layout.move": "Przenieś…",

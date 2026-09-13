@@ -989,6 +989,8 @@
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s penggunaan",
   "gui.dungeontrain.editor_screen.stages.templates": "%s templat dipautkan",
   "gui.dungeontrain.editor_screen.stages.no_templates": "Tiada apa yang dipautkan ke peringkat ini",
+  "gui.dungeontrain.editor_screen.stages.col.name": "Nama",
+  "gui.dungeontrain.editor_screen.stages.col.level": "Tahap",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Klik untuk lipat atau buka",
   "gui.dungeontrain.editor_screen.layout.move": "Alih…",

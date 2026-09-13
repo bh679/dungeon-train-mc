@@ -1017,6 +1017,8 @@
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s usos",
   "gui.dungeontrain.editor_screen.stages.templates": "%s plantillas vinculadas",
   "gui.dungeontrain.editor_screen.stages.no_templates": "Nada está vinculado a esta etapa",
+  "gui.dungeontrain.editor_screen.stages.col.name": "Nombre",
+  "gui.dungeontrain.editor_screen.stages.col.level": "Nivel",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Clic para plegar o desplegar",
   "gui.dungeontrain.editor_screen.layout.move": "Mover…",

@@ -989,6 +989,8 @@
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s 次使用",
   "gui.dungeontrain.editor_screen.stages.templates": "%s 个关联模板",
   "gui.dungeontrain.editor_screen.stages.no_templates": "没有内容关联到此阶段",
+  "gui.dungeontrain.editor_screen.stages.col.name": "名称",
+  "gui.dungeontrain.editor_screen.stages.col.level": "等级",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "点击折叠或展开",
   "gui.dungeontrain.editor_screen.layout.move": "移动…",

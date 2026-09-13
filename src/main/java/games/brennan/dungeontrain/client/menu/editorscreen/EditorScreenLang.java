@@ -47,6 +47,9 @@ public final class EditorScreenLang {
     public static final String STAGES_BLOCK_TIP = PREFIX + "stages.block_tip";
     public static final String STAGES_TEMPLATES = PREFIX + "stages.templates";
     public static final String STAGES_NO_TEMPLATES = PREFIX + "stages.no_templates";
+    /** The Stages list's two titles, each a sort key. */
+    public static final String STAGES_COL_NAME = PREFIX + "stages.col.name";
+    public static final String STAGES_COL_LEVEL = PREFIX + "stages.col.level";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */

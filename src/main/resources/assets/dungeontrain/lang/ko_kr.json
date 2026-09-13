@@ -989,6 +989,8 @@
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s회 사용",
   "gui.dungeontrain.editor_screen.stages.templates": "연결된 템플릿 %s개",
   "gui.dungeontrain.editor_screen.stages.no_templates": "이 스테이지에 연결된 것이 없습니다",
+  "gui.dungeontrain.editor_screen.stages.col.name": "이름",
+  "gui.dungeontrain.editor_screen.stages.col.level": "레벨",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "클릭하여 접기 또는 펼치기",
   "gui.dungeontrain.editor_screen.layout.move": "이동…",
