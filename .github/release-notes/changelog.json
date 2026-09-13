@@ -16613,6 +16613,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-parkour-weights",
+      "version": "0.862.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "world",
+        "balance"
+      ],
+      "title": "Parkour dimensional carriage tuning",
+      "summary": "The parkour dimensional carriage now appears a little less often, and when it does, its Sky Maze and Jumps layouts are each twice as likely to be picked.",
+      "highlights": [],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
