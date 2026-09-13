@@ -16630,6 +16630,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "keep-trim-unbundled",
+      "version": "0.863.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Keep Trim is now its own download",
+      "summary": "Keep Trim, the mod that keeps your armor trim when you repair two trimmed pieces in a crafting grid, used to be packed inside Dungeon Train's jar. It now installs as a separate required mod, the same way Adventure Item Names and the other companion mods do, so your launcher fetches and updates it on its own and the Keep Trim page gets the credit. Nothing changes in play. If you install Dungeon Train by hand rather than through the CurseForge app or a modpack, add Keep Trim 0.2.0 or newer to your mods folder.",
+      "highlights": [
+        "Keep Trim moves from inside the Dungeon Train jar to a separate required mod",
+        "CurseForge app and both modpacks install it for you; manual installs need Keep Trim 0.2.0+"
+      ],
+      "pr": 1388,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

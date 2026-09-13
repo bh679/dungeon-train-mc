@@ -72,6 +72,18 @@
       "modrinth_version": "QapKVWQ3"
     },
     {
+      "name": "Keep Trim",
+      "slug": "keep-trim",
+      "project_id": 1691315,
+      "file_id": 8858619,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.2.0",
+      "gradle_property": "keeptrim_min_version",
+      "modrinth_project": "keep-trim",
+      "modrinth_pending_url": "https://github.com/bh679/keeptrim-mc/releases/download/v0.2.0/keeptrim-neoforge-0.2.0.jar"
+    },
+    {
       "name": "AppleSkin",
       "slug": "appleskin",
       "project_id": 248787,
