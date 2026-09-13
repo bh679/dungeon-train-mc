@@ -16,7 +16,7 @@
   ],
   "roof": [
     {
-      "name": "mud_wood_oak",
+      "name": "mud_wood",
       "weight": 1,
       "stage": "copper"
     }
