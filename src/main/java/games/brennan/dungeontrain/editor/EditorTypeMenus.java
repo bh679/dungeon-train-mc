@@ -551,7 +551,7 @@ public final class EditorTypeMenus {
      */
     private static final int STAGE_PANEL_X_OFFSET = 6;
     /** Stage Palette panel sits one more panel width to the {@code +X} of the Stage Blocks panel. */
-    private static final int STAGE_PALETTE_X_OFFSET = 6;
+    private static final int STAGE_PALETTE_X_OFFSET = 7;
 
     /**
      * Anchor for the Stage Blocks panel (the "stage V menu") — the sibling billboard beside the

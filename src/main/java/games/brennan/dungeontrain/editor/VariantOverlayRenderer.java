@@ -1045,7 +1045,8 @@ public final class VariantOverlayRenderer {
         for (games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.Placeholder p
                 : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.placeholders()) {
             entries.add(new games.brennan.dungeontrain.net.StageIconPalettePacket.Entry(p.name(),
-                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.effectiveTarget(p, pal)));
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.effectiveTarget(p, pal),
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.isRepeat(p, pal)));
         }
         DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.StageIconPalettePacket(stageId, entries));
     }

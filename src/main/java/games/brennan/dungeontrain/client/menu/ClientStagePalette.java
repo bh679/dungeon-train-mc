@@ -19,14 +19,27 @@ public final class ClientStagePalette {
 
     private static volatile String stageId = "";
     private static volatile Map<String, String> byName = Map.of();
+    private static volatile java.util.Set<String> repeats = java.util.Set.of();
 
     private ClientStagePalette() {}
 
     public static void apply(StageIconPalettePacket packet) {
         Map<String, String> next = new HashMap<>();
-        for (StageIconPalettePacket.Entry e : packet.entries()) next.put(e.name(), e.blockId());
+        java.util.Set<String> nextRepeats = new java.util.HashSet<>();
+        for (StageIconPalettePacket.Entry e : packet.entries()) {
+            next.put(e.name(), e.blockId());
+            if (e.repeat()) nextRepeats.add(e.name());
+        }
+        boolean changed = !next.equals(byName);
         byName = Map.copyOf(next);
+        repeats = java.util.Set.copyOf(nextRepeats);
         stageId = packet.stageId() == null ? "" : packet.stageId();
+        // Placed placeholders blend with their target (StagePlaceholderBakedModel) — the meshes
+        // already built for the old target have to be rebuilt. Rare: stage select / override / bake.
+        if (changed) {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc.levelRenderer != null && mc.level != null) mc.levelRenderer.allChanged();
+        }
     }
 
     /** The effective stage id, or {@code ""} when none (outside the editor). */
@@ -39,9 +52,15 @@ public final class ClientStagePalette {
         return byName.get(name);
     }
 
+    /** True when placeholder {@code name} only repeats an earlier slot for the effective stage. */
+    public static boolean isRepeat(String name) {
+        return repeats.contains(name);
+    }
+
     public static void clear() {
         stageId = "";
         byName = Map.of();
+        repeats = java.util.Set.of();
     }
 
     @SubscribeEvent

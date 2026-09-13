@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -66,8 +67,17 @@ public final class StagePlaceholderBlocks {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** One placeholder: registry name + how it maps a palette to a target block id. */
-    public record Placeholder(String name, Function<StagePalette, String> target) {}
+    /**
+     * One placeholder: registry name, how it maps a palette to a target block id, and whether the
+     * slot only <em>repeats</em> an earlier one under that palette (a looped read past the end of
+     * the solid / stairs / slab list — the inventory dims those).
+     */
+    public record Placeholder(String name, Function<StagePalette, String> target,
+                              Predicate<StagePalette> repeat) {
+        public Placeholder(String name, Function<StagePalette, String> target) {
+            this(name, target, pal -> false);
+        }
+    }
 
     private static final List<Placeholder> PLACEHOLDERS = buildPlaceholders();
 
@@ -114,6 +124,11 @@ public final class StagePlaceholderBlocks {
         StagePalette pal = palette == null ? StagePalette.DEFAULT : palette;
         String ov = pal.override(p.name());
         return ov != null ? ov : p.target().apply(pal);
+    }
+
+    /** True when {@code p} only repeats an earlier slot under {@code palette} (looped list read). */
+    public static boolean isRepeat(Placeholder p, StagePalette palette) {
+        return p.repeat().test(palette == null ? StagePalette.DEFAULT : palette);
     }
 
     /** All placeholder registry names (without namespace), slot order. */
@@ -207,15 +222,15 @@ public final class StagePlaceholderBlocks {
         List<Placeholder> out = new ArrayList<>();
         for (int i = 0; i < StagePalette.SOLID_SLOTS; i++) {
             final int slot = i;
-            out.add(new Placeholder("stage_block_" + (i + 1), pal -> pal.solid(slot)));
+            out.add(new Placeholder("stage_block_" + (i + 1), pal -> pal.solid(slot), pal -> slot >= pal.solid().size()));
         }
         for (int i = 0; i < StagePalette.STAIRS_SLOTS; i++) {
             final int slot = i;
-            out.add(new Placeholder("stage_stairs_" + (i + 1), pal -> pal.stairs(slot)));
+            out.add(new Placeholder("stage_stairs_" + (i + 1), pal -> pal.stairs(slot), pal -> slot >= pal.stairs().size()));
         }
         for (int i = 0; i < StagePalette.SLAB_SLOTS; i++) {
             final int slot = i;
-            out.add(new Placeholder("stage_slab_" + (i + 1), pal -> pal.slab(slot)));
+            out.add(new Placeholder("stage_slab_" + (i + 1), pal -> pal.slab(slot), pal -> slot >= pal.slabs().size()));
         }
         out.add(new Placeholder("stage_button", StagePalette::button));
         out.add(new Placeholder("stage_pressure_plate", StagePalette::pressurePlate));

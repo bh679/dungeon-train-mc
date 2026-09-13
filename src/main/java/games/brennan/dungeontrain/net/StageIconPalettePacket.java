@@ -19,7 +19,8 @@ import java.util.List;
  */
 public record StageIconPalettePacket(String stageId, List<Entry> entries) implements CustomPacketPayload {
 
-    public record Entry(String name, String blockId) {}
+    /** @param repeat the slot only repeats an earlier one (looped list read) — drawn dimmed. */
+    public record Entry(String name, String blockId, boolean repeat) {}
 
     public static final Type<StageIconPalettePacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "stage_icon_palette"));
@@ -37,6 +38,7 @@ public record StageIconPalettePacket(String stageId, List<Entry> entries) implem
         for (Entry e : entries) {
             buf.writeUtf(e.name());
             buf.writeUtf(e.blockId());
+            buf.writeBoolean(e.repeat());
         }
     }
 
@@ -44,7 +46,7 @@ public record StageIconPalettePacket(String stageId, List<Entry> entries) implem
         String stageId = buf.readUtf(64);
         int n = buf.readVarInt();
         List<Entry> entries = new ArrayList<>(n);
-        for (int i = 0; i < n; i++) entries.add(new Entry(buf.readUtf(64), buf.readUtf(256)));
+        for (int i = 0; i < n; i++) entries.add(new Entry(buf.readUtf(64), buf.readUtf(256), buf.readBoolean()));
         return new StageIconPalettePacket(stageId, List.copyOf(entries));
     }
 

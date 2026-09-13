@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.net.StagePaletteSyncPacket;
 import net.minecraft.core.BlockPos;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -29,7 +30,7 @@ public final class StagePaletteMenu {
         REBAKE,
         /** Toolbar: closes the panel (deselects the stage). */
         CLOSE,
-        /** A placeholder cell — {@code index} = layout row, {@code secondary} = cell in that row. */
+        /** A placeholder cell — {@code index} = layout row, {@code secondary} = {@link Column} ordinal. */
         CELL,
         /** The "Wood: <family>" header — click with a held wood block to set the family. */
         WOOD_HEADER,
@@ -41,20 +42,38 @@ public final class StagePaletteMenu {
         public static final Hit NONE = new Hit(CellKind.NONE, -1, -1);
     }
 
-    /** One layout row. {@code cells} are placeholder names; {@code label} is the left/centre text. */
-    public record Row(RowKind kind, String label, List<String> cells) {
-        static Row header() { return new Row(RowKind.HEADER, "", List.of()); }
-        static Row toolbar() { return new Row(RowKind.TOOLBAR, "", List.of()); }
-        static Row sub(String label) { return new Row(RowKind.SUBHEADER, label, List.of()); }
-        static Row wood() { return new Row(RowKind.WOOD_HEADER, "Wood", List.of()); }
-        static Row stone() { return new Row(RowKind.STONE_HEADER, "Stone", List.of()); }
-        static Row cells(String label, String... names) { return new Row(RowKind.CELLS, label, List.of(names)); }
-        static Row status() { return new Row(RowKind.STATUS, "", List.of()); }
+    /** Table columns — the block <em>types</em>; every cell row maps a subset of these to a placeholder. */
+    public enum Column {
+        BLOCK("Block"), STAIRS("Stairs"), SLAB("Slab"), WALL("Wall"), BUTTON("Button"), PLATE("Plate"),
+        FENCE("Fence"), GATE("Gate"), DOOR("Door"), TRAPDOOR("Trapdoor"), LOG("Log"),
+        STRIPPED_LOG("Str. log"), WOOD("Wood"), STRIPPED_WOOD("Str. wood");
+
+        private final String label;
+
+        Column(String label) {
+            this.label = label;
+        }
+
+        public String label() {
+            return label;
+        }
     }
 
-    public enum RowKind { HEADER, TOOLBAR, SUBHEADER, WOOD_HEADER, STONE_HEADER, CELLS, STATUS }
+    public enum RowKind { HEADER, TOOLBAR, COLUMNS, CELLS, STATUS }
 
-    /** The panel's rows, top to bottom. Cell rows carry placeholder registry names. */
+    /**
+     * One table row. {@code cells} maps a column to a placeholder name; {@code labelAction} is the
+     * hit kind of the row-label column ({@link CellKind#NONE} for plain labels, WOOD_HEADER /
+     * STONE_HEADER for the family rows).
+     */
+    public record Row(RowKind kind, String label, Map<Column, String> cells, CellKind labelAction) {
+        static Row plain(RowKind kind) { return new Row(kind, "", Map.of(), CellKind.NONE); }
+        static Row cells(String label, Map<Column, String> cells) { return new Row(RowKind.CELLS, label, cells, CellKind.NONE); }
+        static Row family(String label, CellKind action, Map<Column, String> cells) { return new Row(RowKind.CELLS, label, cells, action); }
+        public String cell(Column c) { return cells.get(c); }
+    }
+
+    /** The panel's rows, top to bottom. */
     public static final List<Row> LAYOUT = buildLayout();
 
     private static boolean active = false;
@@ -71,24 +90,48 @@ public final class StagePaletteMenu {
 
     private static List<Row> buildLayout() {
         List<Row> rows = new ArrayList<>();
-        rows.add(Row.header());
-        rows.add(Row.toolbar());
-        rows.add(Row.sub("Solid (most used)"));
-        rows.add(Row.cells("", "stage_block_1", "stage_block_2", "stage_block_3", "stage_block_4", "stage_block_5"));
-        rows.add(Row.cells("", "stage_block_6", "stage_block_7", "stage_block_8", "stage_block_9", "stage_block_10"));
-        rows.add(Row.sub("Fittings"));
-        rows.add(Row.cells("", "stage_stairs_1", "stage_stairs_2", "stage_slab_1", "stage_slab_2",
-            "stage_button", "stage_pressure_plate"));
-        rows.add(Row.wood());
-        rows.add(Row.cells("", "stage_log", "stage_stripped_log", "stage_wood", "stage_stripped_wood"));
-        rows.add(Row.cells("", "stage_planks", "stage_wood_stairs", "stage_wood_slab", "stage_fence", "stage_fence_gate"));
-        rows.add(Row.cells("", "stage_wood_button", "stage_wood_pressure_plate", "stage_door", "stage_trapdoor"));
-        rows.add(Row.stone());
+        rows.add(Row.plain(RowKind.HEADER));
+        rows.add(Row.plain(RowKind.TOOLBAR));
+        rows.add(Row.plain(RowKind.COLUMNS));
+        for (int i = 1; i <= 10; i++) {
+            Map<Column, String> cells = new EnumMap<>(Column.class);
+            cells.put(Column.BLOCK, "stage_block_" + i);
+            if (i <= 2) {
+                cells.put(Column.STAIRS, "stage_stairs_" + i);
+                cells.put(Column.SLAB, "stage_slab_" + i);
+            }
+            if (i == 1) {
+                cells.put(Column.BUTTON, "stage_button");
+                cells.put(Column.PLATE, "stage_pressure_plate");
+            }
+            rows.add(Row.cells("Solid " + i, cells));
+        }
+        Map<Column, String> wood = new EnumMap<>(Column.class);
+        wood.put(Column.BLOCK, "stage_planks");
+        wood.put(Column.STAIRS, "stage_wood_stairs");
+        wood.put(Column.SLAB, "stage_wood_slab");
+        wood.put(Column.BUTTON, "stage_wood_button");
+        wood.put(Column.PLATE, "stage_wood_pressure_plate");
+        wood.put(Column.FENCE, "stage_fence");
+        wood.put(Column.GATE, "stage_fence_gate");
+        wood.put(Column.DOOR, "stage_door");
+        wood.put(Column.TRAPDOOR, "stage_trapdoor");
+        wood.put(Column.LOG, "stage_log");
+        wood.put(Column.STRIPPED_LOG, "stage_stripped_log");
+        wood.put(Column.WOOD, "stage_wood");
+        wood.put(Column.STRIPPED_WOOD, "stage_stripped_wood");
+        rows.add(Row.family("Wood", CellKind.WOOD_HEADER, wood));
+        rows.add(Row.family("Stone", CellKind.STONE_HEADER, Map.of()));
         for (StoneKind kind : StoneKind.values()) {
             String base = kind == StoneKind.STONE ? "stage_stone" : "stage_stone_" + kind.id();
-            rows.add(Row.cells(kind.id(), base, base + "_stairs", base + "_slab", base + "_wall"));
+            Map<Column, String> cells = new EnumMap<>(Column.class);
+            cells.put(Column.BLOCK, base);
+            cells.put(Column.STAIRS, base + "_stairs");
+            cells.put(Column.SLAB, base + "_slab");
+            cells.put(Column.WALL, base + "_wall");
+            rows.add(Row.cells("  " + kind.id(), cells));
         }
-        rows.add(Row.status());
+        rows.add(Row.plain(RowKind.STATUS));
         return List.copyOf(rows);
     }
 
@@ -138,11 +181,12 @@ public final class StagePaletteMenu {
     public static Hit hovered() { return hovered; }
     public static void setHovered(Hit hit) { hovered = hit == null ? Hit.NONE : hit; }
 
-    /** The placeholder name a {@link CellKind#CELL} hit points at, or null. */
+    /** The placeholder name a {@link CellKind#CELL} hit points at ({@code secondary} = column ordinal), or null. */
     public static String cellName(Hit hit) {
         if (hit == null || hit.kind() != CellKind.CELL) return null;
         if (hit.index() < 0 || hit.index() >= LAYOUT.size()) return null;
-        List<String> cells = LAYOUT.get(hit.index()).cells();
-        return hit.secondary() >= 0 && hit.secondary() < cells.size() ? cells.get(hit.secondary()) : null;
+        Column[] cols = Column.values();
+        if (hit.secondary() < 0 || hit.secondary() >= cols.length) return null;
+        return LAYOUT.get(hit.index()).cell(cols[hit.secondary()]);
     }
 }

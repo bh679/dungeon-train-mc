@@ -44,6 +44,8 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
 
     /** Opacity of the placeholder tile drawn over the resolved block. */
     public static final float OVERLAY_ALPHA = 0.30f;
+    /** Whole-icon opacity for a slot that only repeats an earlier one (looped list read). */
+    public static final float REPEAT_ALPHA = 0.50f;
 
     /** The door's flat item sprite, registered via {@code ModelEvent.RegisterAdditional}. */
     public static final ModelResourceLocation DOOR_SPRITE = ModelResourceLocation.standalone(
@@ -70,6 +72,9 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
         pose.translate(0.5f, 0.5f, 0.5f);
 
         boolean drewBase = false;
+        boolean repeat = context == ItemDisplayContext.GUI
+            && games.brennan.dungeontrain.client.menu.ClientStagePalette.isRepeat(name);
+        float whole = repeat ? REPEAT_ALPHA : 1.0f;
         if (context == ItemDisplayContext.GUI) {
             Block resolved = resolvedFor(name);
             if (resolved != null && resolved != placeholder) {
@@ -78,8 +83,13 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
                 pose.pushPose();
                 base = base.applyTransform(context, pose, false);
                 pose.translate(-0.5f, -0.5f, -0.5f);
-                itemRenderer.renderModelLists(base, resolvedStack, light, overlay, pose,
-                    buffers.getBuffer(ItemBlockRenderTypes.getRenderType(resolvedStack, true)));
+                if (repeat) {
+                    // Dimmed as a whole: the base goes through the translucent sheet at REPEAT_ALPHA.
+                    renderQuads(base, pose, buffers.getBuffer(Sheets.translucentItemSheet()), light, overlay, whole);
+                } else {
+                    itemRenderer.renderModelLists(base, resolvedStack, light, overlay, pose,
+                        buffers.getBuffer(ItemBlockRenderTypes.getRenderType(resolvedStack, true)));
+                }
                 pose.popPose();
                 drewBase = true;
             }
@@ -91,8 +101,8 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
         pose.pushPose();
         tile = tile.applyTransform(context, pose, false);
         pose.translate(-0.5f, -0.5f, -0.5f);
-        float alpha = drewBase ? OVERLAY_ALPHA : 1.0f;
-        VertexConsumer vc = buffers.getBuffer(drewBase ? Sheets.translucentItemSheet() : Sheets.cutoutBlockSheet());
+        float alpha = (drewBase ? OVERLAY_ALPHA : 1.0f) * whole;
+        VertexConsumer vc = buffers.getBuffer(alpha < 1.0f ? Sheets.translucentItemSheet() : Sheets.cutoutBlockSheet());
         renderQuads(tile, pose, vc, light, overlay, alpha);
         pose.popPose();
 

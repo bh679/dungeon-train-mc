@@ -10,9 +10,9 @@ import games.brennan.dungeontrain.client.menu.MenuBlockIcons;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer;
 import games.brennan.dungeontrain.client.menu.stagepalette.StagePaletteMenu.CellKind;
+import games.brennan.dungeontrain.client.menu.stagepalette.StagePaletteMenu.Column;
 import games.brennan.dungeontrain.client.menu.stagepalette.StagePaletteMenu.Hit;
 import games.brennan.dungeontrain.client.menu.stagepalette.StagePaletteMenu.Row;
-import games.brennan.dungeontrain.client.menu.stagepalette.StagePaletteMenu.RowKind;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.StagePaletteSyncPacket;
 import net.minecraft.client.Minecraft;
@@ -37,8 +37,9 @@ import java.util.List;
  * World-space renderer for the Stage Palette panel — the sibling billboard of
  * {@link games.brennan.dungeontrain.client.menu.stagepanel.StagePanelMenuRenderer}, anchored one
  * panel further along {@code +X}. Fixed layout from {@link StagePaletteMenu#LAYOUT}: header →
- * {@code [Re-bake] [X]} → sections of placeholder cells (placeholder icon {@code →} resolved
- * icon; gold underline = user override) → a status row naming the hovered cell's assignment.
+ * {@code [Re-bake] [X]} → a column-header row (block types) → one row per family (Solid 1–10,
+ * Wood, Stone + its seven kinds) of placeholder item icons (which render as target + ghosted tile;
+ * gold underline = user override) → a status row naming the hovered cell's assignment.
  * {@link #hitFor} mirrors the layout for {@link StagePaletteMenuRaycast}.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -63,10 +64,10 @@ public final class StagePaletteMenuRenderer {
     static final double TEXT_SCALE = 0.025;
     static final double ROW_H = 0.30;
     static final double PAD_X = 0.10;
-    static final double HALF_W = 2.6;
+    static final double HALF_W = 3.2;
     static final double ICON_SIZE = 0.22;
-    /** Fraction of a cells row given to the row label (stone kinds); 0 for unlabelled rows. */
-    static final double LABEL_FRACTION = 0.18;
+    /** Fraction of the width given to the row-label column; the columns split the rest. */
+    static final double LABEL_FRACTION = 0.16;
     /** Toolbar split: Re-bake | X. */
     static final double TOOLBAR_REBAKE_FRACTION = 0.75;
 
@@ -132,13 +133,17 @@ public final class StagePaletteMenuRenderer {
         return rowCount() * ROW_H / 2.0;
     }
 
-    /** Left edge of the cell area of a cells row (after the optional label column). */
-    private static double cellsLeft(Row row) {
-        return row.label().isEmpty() ? -HALF_W : -HALF_W + HALF_W * 2.0 * LABEL_FRACTION;
+    /** Left edge of the column grid (after the row-label column). */
+    private static double gridLeft() {
+        return -HALF_W + HALF_W * 2.0 * LABEL_FRACTION;
     }
 
-    private static double cellWidth(Row row) {
-        return (HALF_W - cellsLeft(row)) / Math.max(1, row.cells().size());
+    private static double columnWidth() {
+        return (HALF_W - gridLeft()) / Column.values().length;
+    }
+
+    private static double columnCenter(Column c) {
+        return gridLeft() + (c.ordinal() + 0.5) * columnWidth();
     }
 
     // ---------- drawing ----------
@@ -174,16 +179,10 @@ public final class StagePaletteMenuRenderer {
                     drawCenteredText(ps, buffer, font, "Re-bake (keeps overrides)", (-halfW + split) / 2.0, rowCY, REBAKE_COLOR);
                     drawCenteredText(ps, buffer, font, "X", (split + halfW) / 2.0, rowCY, CLOSE_COLOR);
                 }
-                case SUBHEADER -> drawCenteredText(ps, buffer, font, row.label(), 0, rowCY, HEADER_COLOR);
-                case WOOD_HEADER, STONE_HEADER -> {
-                    boolean wood = row.kind() == RowKind.WOOD_HEADER;
-                    boolean locked = wood ? StagePaletteMenu.woodLocked() : StagePaletteMenu.stoneLocked();
-                    CellKind mine = wood ? CellKind.WOOD_HEADER : CellKind.STONE_HEADER;
-                    if (locked) drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005, halfW - 0.005, rowTop - 0.005, LOCKED_BG);
-                    if (hovered.kind() == mine) drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005, halfW - 0.005, rowTop - 0.005, HOVER_COLOR);
-                    String family = wood ? StagePaletteMenu.wood() : StagePaletteMenu.stone();
-                    drawCenteredText(ps, buffer, font, row.label() + ": " + family
-                        + (locked ? " (locked)" : "") + "  — click with a held block to set", 0, rowCY, HEADER_COLOR);
+                case COLUMNS -> {
+                    for (Column c : Column.values()) {
+                        drawCenteredText(ps, buffer, font, c.label(), columnCenter(c), rowCY, DIM_COLOR);
+                    }
                 }
                 case CELLS -> drawCellsRow(ps, buffer, font, row, r, rowTop, rowBottom, rowCY, hovered);
                 case STATUS -> drawCenteredText(ps, buffer, font, statusText(hovered), 0, rowCY,
@@ -194,35 +193,44 @@ public final class StagePaletteMenuRenderer {
 
     private static void drawCellsRow(PoseStack ps, MultiBufferSource buffer, Font font, Row row, int r,
                                      double rowTop, double rowBottom, double rowCY, Hit hovered) {
-        if (!row.label().isEmpty()) {
-            drawLeftText(ps, buffer, font, row.label(), -HALF_W + PAD_X, rowCY, DIM_COLOR);
+        double labelRight = gridLeft();
+        boolean familyRow = row.labelAction() != CellKind.NONE;
+        String label = row.label();
+        if (familyRow) {
+            boolean wood = row.labelAction() == CellKind.WOOD_HEADER;
+            boolean locked = wood ? StagePaletteMenu.woodLocked() : StagePaletteMenu.stoneLocked();
+            String family = wood ? StagePaletteMenu.wood() : StagePaletteMenu.stone();
+            label = row.label() + ": " + family + (locked ? " *" : "");
+            if (locked) drawQuad(ps, buffer, -HALF_W + 0.005, rowBottom + 0.005, labelRight - 0.005, rowTop - 0.005, LOCKED_BG);
+            if (hovered.kind() == row.labelAction()) {
+                drawQuad(ps, buffer, -HALF_W + 0.005, rowBottom + 0.005, labelRight - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
         }
-        double left = cellsLeft(row);
-        double cw = cellWidth(row);
-        for (int c = 0; c < row.cells().size(); c++) {
-            String name = row.cells().get(c);
-            double x0 = left + c * cw;
+        drawLeftText(ps, buffer, font, label, -HALF_W + PAD_X / 2.0, rowCY, familyRow ? HEADER_COLOR : DIM_COLOR);
+
+        double cw = columnWidth();
+        for (Column c : Column.values()) {
+            String name = row.cell(c);
+            if (name == null) continue;
+            double x0 = gridLeft() + c.ordinal() * cw;
             double cx = x0 + cw / 2.0;
-            if (hovered.kind() == CellKind.CELL && hovered.index() == r && hovered.secondary() == c) {
+            if (hovered.kind() == CellKind.CELL && hovered.index() == r && hovered.secondary() == c.ordinal()) {
                 drawQuad(ps, buffer, x0 + 0.005, rowBottom + 0.005, x0 + cw - 0.005, rowTop - 0.005, HOVER_COLOR);
             }
+            // The placeholder item icon already renders as target + ghosted tile (dimmed for repeats).
+            MenuBlockIcons.drawBlockIcon(ps, buffer, DungeonTrain.MOD_ID + ":" + name, cx, rowCY, ICON_SIZE);
             StagePaletteSyncPacket.Entry e = StagePaletteMenu.entry(name);
-            // placeholder icon → resolved icon, centred as a group.
-            double group = ICON_SIZE * 2 + 0.16;
-            double gx = cx - group / 2.0;
-            MenuBlockIcons.drawBlockIcon(ps, buffer, DungeonTrain.MOD_ID + ":" + name, gx + ICON_SIZE / 2.0, rowCY, ICON_SIZE);
-            drawCenteredText(ps, buffer, font, "→", gx + ICON_SIZE + 0.08, rowCY, ARROW_COLOR);
-            if (e != null) {
-                MenuBlockIcons.drawBlockIcon(ps, buffer, e.blockId(), gx + ICON_SIZE + 0.16 + ICON_SIZE / 2.0, rowCY, ICON_SIZE);
-                if (e.overridden()) {
-                    drawQuad(ps, buffer, x0 + 0.03, rowBottom + 0.02, x0 + cw - 0.03, rowBottom + 0.04, OVERRIDE_COLOR);
-                }
+            if (e != null && e.overridden()) {
+                drawQuad(ps, buffer, x0 + 0.03, rowBottom + 0.02, x0 + cw - 0.03, rowBottom + 0.04, OVERRIDE_COLOR);
             }
         }
     }
 
     private static String statusText(Hit hovered) {
         String name = StagePaletteMenu.cellName(hovered);
+        if (hovered.kind() == CellKind.WOOD_HEADER || hovered.kind() == CellKind.STONE_HEADER) {
+            return "Click with a held block to set the family (empty hand unlocks)";
+        }
         if (name == null) return "Hover a cell · click with a held block to override · empty hand clears";
         StagePaletteSyncPacket.Entry e = StagePaletteMenu.entry(name);
         String label = Component.translatable("block." + DungeonTrain.MOD_ID + "." + name).getString();
@@ -243,13 +251,14 @@ public final class StagePaletteMenuRenderer {
         return switch (row.kind()) {
             case TOOLBAR -> hitX < -halfW + halfW * 2.0 * TOOLBAR_REBAKE_FRACTION
                 ? new Hit(CellKind.REBAKE, -1, -1) : new Hit(CellKind.CLOSE, -1, -1);
-            case WOOD_HEADER -> new Hit(CellKind.WOOD_HEADER, -1, -1);
-            case STONE_HEADER -> new Hit(CellKind.STONE_HEADER, -1, -1);
             case CELLS -> {
-                double left = cellsLeft(row);
-                if (hitX < left) yield Hit.NONE;
-                int c = (int) ((hitX - left) / cellWidth(row));
-                yield c >= 0 && c < row.cells().size() ? new Hit(CellKind.CELL, r, c) : Hit.NONE;
+                if (hitX < gridLeft()) {
+                    yield row.labelAction() == CellKind.NONE ? Hit.NONE : new Hit(row.labelAction(), -1, -1);
+                }
+                int c = (int) ((hitX - gridLeft()) / columnWidth());
+                Column[] cols = Column.values();
+                if (c < 0 || c >= cols.length || row.cell(cols[c]) == null) yield Hit.NONE;
+                yield new Hit(CellKind.CELL, r, c);
             }
             default -> Hit.NONE;
         };
