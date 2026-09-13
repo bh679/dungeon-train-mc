@@ -223,7 +223,7 @@
     "mode": "endless_open/single:minecraft:stone"
   },
   "parkour": {
-    "weight": 3,
+    "weight": 2,
     "minLevel": 4,
     "mode": "bedrockless"
   },
