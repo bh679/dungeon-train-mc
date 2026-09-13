@@ -42,7 +42,7 @@ public final class EnterCategoryMenuScreen implements MenuScreen {
             entryFor("Tracks", "tracks", current),
             entryFor("Carriages", "carriages", current),
             entryFor("Contents", "contents", current),
-            entryFor("Portals", "portals", current),
+            entryFor("Dimensions", "portals", current),
             new CommandMenuEntry.Back("< Back")
         );
     }

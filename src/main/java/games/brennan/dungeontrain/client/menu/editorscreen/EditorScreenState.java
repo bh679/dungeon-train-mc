@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileFilters;
 import games.brennan.dungeontrain.editor.PlotCategory;
@@ -30,6 +31,12 @@ public final class EditorScreenState {
     private static Set<String> expandedGroups = Set.of();
     /** Whether the filter bar shows every filter, or only the ones in force on its one row. */
     private static boolean filtersExpanded;
+    /**
+     * The Nav tab's picked tile, or null for "wherever the player is". Null rather than a default
+     * tile so a fresh screen opens on the area being stood in, whichever that turns out to be
+     * once the roster arrives.
+     */
+    private static BuilderMode navMode;
 
     /**
      * The two narrowings creator mode adds: where a build stands with a reviewer, and whether it is
@@ -55,6 +62,7 @@ public final class EditorScreenState {
     private EditorScreenState() {}
 
     public static EditorScreenPage page() { return page; }
+    public static BuilderMode navMode() { return navMode; }
     public static EditorCategoryFilter category() { return category; }
     public static String typeName() { return typeName; }
     public static EditorRosterIndex.Filters filters() { return filters; }
@@ -76,6 +84,10 @@ public final class EditorScreenState {
 
     public static void setCreatorStarred(boolean next) {
         creatorStarred = next;
+    }
+
+    public static void setNavMode(BuilderMode next) {
+        navMode = next;
     }
 
     /** Change tab. The type strip is left alone: it belongs to the category, not the page. */
