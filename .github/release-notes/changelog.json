@@ -16302,6 +16302,23 @@
       "released_at": null
     },
     {
+      "id": "portal-room-safe-parkour-retune",
+      "version": "0.872.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "New dimensional carriage: Safe, and parkour rooms rebalanced",
+      "summary": "A new Safe room joins the dimensional carriage rotation from level 4. Parkour carriages now start appearing from level 2, with the harder Skymaze and Geometric Walk courses pushed a little deeper into the run.",
+      "highlights": [],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "two-week-translation-catchup",
       "version": "0.873.0",
       "type": "fix",
