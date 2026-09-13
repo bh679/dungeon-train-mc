@@ -7,19 +7,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The stage preview's page split: block grid pages first, template rows after. */
+/** The stage preview's page split: the overview first, block grid pages next, template rows after. */
 final class EditorStageDetailPagesTest {
 
     @Test
-    @DisplayName("blocks on one page and no templates still makes two pages: the grid, then an empty template page")
+    @DisplayName("the overview, blocks on one page and no templates makes three pages: overview, grid, an empty template page")
     void minimal() {
         EditorStageDetailPane.Pages p = new EditorStageDetailPane.Pages(new IconGridPages(5, 4, 3), 0, 6);
-        assertEquals(2, p.pageCount());
+        assertEquals(3, p.pageCount());
         assertTrue(p.hasPager());
-        assertTrue(p.isBlockPage(0));
-        assertFalse(p.isBlockPage(1));
-        assertEquals(0, p.firstRow(1));
-        assertEquals(0, p.endRow(1));
+        assertTrue(p.isOverview(0));
+        assertFalse(p.isBlockPage(0));
+        assertTrue(p.isBlockPage(1));
+        assertEquals(0, p.blockPage(1));
+        assertFalse(p.isBlockPage(2));
+        assertEquals(0, p.firstRow(2));
+        assertEquals(0, p.endRow(2));
     }
 
     @Test
@@ -28,13 +31,15 @@ final class EditorStageDetailPagesTest {
         EditorStageDetailPane.Pages p = new EditorStageDetailPane.Pages(new IconGridPages(30, 4, 3), 14, 6);
         assertEquals(3, p.blockPages());
         assertEquals(3, p.templatePages());
-        assertEquals(6, p.pageCount());
-        assertTrue(p.isBlockPage(2));
-        assertFalse(p.isBlockPage(3));
-        assertEquals(0, p.firstRow(3));
-        assertEquals(6, p.endRow(3));
-        assertEquals(12, p.firstRow(5));
-        assertEquals(14, p.endRow(5));
-        assertEquals(5, p.clamp(99));
+        assertEquals(7, p.pageCount());
+        assertTrue(p.isBlockPage(3));
+        assertEquals(2, p.blockPage(3));
+        assertFalse(p.isBlockPage(4));
+        assertEquals(0, p.firstRow(4));
+        assertEquals(6, p.endRow(4));
+        assertEquals(12, p.firstRow(6));
+        assertEquals(14, p.endRow(6));
+        assertEquals(6, p.clamp(99));
+        assertFalse(p.isOverview(1));
     }
 }

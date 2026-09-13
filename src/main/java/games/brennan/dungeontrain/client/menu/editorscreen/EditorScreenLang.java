@@ -50,6 +50,20 @@ public final class EditorScreenLang {
     /** The Stages list's two titles, each a sort key. */
     public static final String STAGES_COL_NAME = PREFIX + "stages.col.name";
     public static final String STAGES_COL_LEVEL = PREFIX + "stages.col.level";
+    /** The stage overview page: its icon row, the Apply button's off reason, and the gate rows. */
+    public static final String STAGES_ICON_REFRESH = PREFIX + "stages.icon.refresh";
+    public static final String STAGES_ICON_APPLY = PREFIX + "stages.icon.apply";
+    public static final String STAGES_ICON_RENAME = PREFIX + "stages.icon.rename";
+    public static final String STAGES_ICON_DUPLICATE = PREFIX + "stages.icon.duplicate";
+    public static final String STAGES_ICON_DELETE = PREFIX + "stages.icon.delete";
+    public static final String STAGES_ICON_PREV = PREFIX + "stages.icon.prev";
+    public static final String STAGES_ICON_NEXT = PREFIX + "stages.icon.next";
+    public static final String STAGES_APPLY_NONE = PREFIX + "stages.apply_none";
+    public static final String STAGES_ONE_TEMPLATE = PREFIX + "stages.one_template";
+    public static final String STAGES_DELETE_CONFIRM = PREFIX + "stages.delete_confirm";
+    public static final String STAGES_MIN_LEVEL = PREFIX + "stages.min_level";
+    public static final String STAGES_MAX_LEVEL = PREFIX + "stages.max_level";
+    public static final String STAGES_BANDS = PREFIX + "stages.bands";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */

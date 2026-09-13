@@ -306,8 +306,8 @@ public final class EditorGuiScreen extends Screen {
                 creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null,
                 previewSeq, mx, my);
         } else if (onStages()) {
-            stageDetail.layout(layout, EditorScreenState.effectiveStage(index), index);
-            stageDetail.render(g, this.font, theme, mx, my);
+            stageDetail.layout(layout, EditorScreenState.effectiveStage(index), index, ctx.selection());
+            stageDetail.render(g, this.font, theme, orbit.yaw(), mx, my);
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
             TemplateArt art = TemplateArt.of(ctx.selection());
@@ -730,6 +730,22 @@ public final class EditorGuiScreen extends Screen {
             switch (stageHit.kind()) {
                 case PAGE_PREV -> { if (stageDetail.scrollBy(-1)) click(); return true; }
                 case PAGE_NEXT -> { if (stageDetail.scrollBy(+1)) click(); return true; }
+                case ICON -> {
+                    EditorScreenActions.Icon icon = stageDetail.icons().get(stageHit.index());
+                    if (!icon.enabled()) return false;
+                    click();
+                    dispatch(icon.entry());
+                    return true;
+                }
+                case PREVIEW -> {
+                    orbit.beginDrag();
+                    return true;
+                }
+                case SETTING -> {
+                    click();
+                    dispatchAt(stageDetail.settings().get(stageHit.index()), stageHit.sub());
+                    return true;
+                }
                 case ROW -> {
                     // A linked template's row is a shortcut to its tile: select it and let the
                     // browser open on it, as revealing any selection does.

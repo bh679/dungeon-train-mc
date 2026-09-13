@@ -1,4 +1,31 @@
 {
+  "gui.dungeontrain.editor_screen.stages.delete_confirm": {
+    "1": {
+      "label": "the display name of the stage about to be deleted",
+      "examples": [
+        "desert",
+        "Nether Depths"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.min_level": {
+    "1": {
+      "label": "the stage's lowest difficulty level",
+      "examples": [
+        "0",
+        "176"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.max_level": {
+    "1": {
+      "label": "the stage's highest difficulty level, or ∞ when unbounded",
+      "examples": [
+        "205",
+        "∞"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.stages.templates": {
     "1": {
       "label": "how many templates and carriage parts link to the stage",
