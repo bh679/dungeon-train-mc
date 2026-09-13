@@ -16173,6 +16173,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-x-menu-stages-tab",
+      "version": "0.867.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Stages tab in the editor X menu",
+      "summary": "The editor's X menu has a new Stages tab. Every stage is listed as a tile of your chosen carriage stamped with that stage's parts (or as a sortable list), and the preview pages through an overview \u2014 with Refresh, Apply, Rename, Duplicate, Delete, carriage Prev/Next and Re-bake buttons, a spinning model of the stamped carriage, and the stage's Built by, level band and dimension bands \u2014 then the stage's placeholder palette, its stone palette, the blocks its parts use, and everything linked to it.",
+      "highlights": [
+        "Stages tab between Layout and Settings; tile view by default, list view with sortable Name and Level titles behind the toggle",
+        "Overview: the stage's icon row, a 3D model of any carriage stamped with the stage (Refresh re-rolls the block variants), and the gate edited like a template's \u2014 level bounds step and type, every band a button",
+        "Palette and Stone pages: every stage placeholder block with what it resolves to for that stage; click with a block in hand to override, empty hand clears, headings set the wood/stone family",
+        "Stages can be credited to a builder; template sheets gained a Bands row (Path row retired)",
+        "Five contents templates credited to Firefly_on_ytb"
+      ],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

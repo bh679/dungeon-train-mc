@@ -26,9 +26,51 @@ import java.util.List;
  *                          the editor as a whole rather than about any one template, and because
  *                          the client is otherwise told it only while a world is being created —
  *                          which is no use to an author editing one that already exists
+ * @param stages            every Stage with the blocks its linked parts use, for the screen's
+ *                          Stages tab. Rides here rather than on the world-space type-menu snapshot
+ *                          because that snapshot exists only at plot height, and the screen opens
+ *                          anywhere in the editor world
  */
-public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, TrainSize trainSize)
+public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, TrainSize trainSize,
+                                 List<StageEntry> stages)
     implements CustomPacketPayload {
+
+    /**
+     * One Stage: its gate as the same {@link EditorTypeMenusPacket.Variant} the world-space Stages
+     * panel lists it as ({@code modelId} = stage id, {@code name} = display name), plus the blocks
+     * its linked carriage parts use — usage-ordered and capped at
+     * {@link StageBlocksSyncPacket#BLOCKS_CAP}, the same definition as the Stage Blocks panel.
+     *
+     * @param totalUnique the real distinct-block count, so a capped list can still say "+K"
+     * @param parts       the carriage parts that link to the stage, as {@code <kind id>:<name>}
+     *                    (the key the part commands take), in the index's stable order
+     */
+    public record StageEntry(EditorTypeMenusPacket.Variant stage, List<StageBlocksSyncPacket.BlockCount> blocks,
+                             int totalUnique, List<String> parts, Palette palette) {
+        public StageEntry {
+            blocks = blocks == null ? List.of() : List.copyOf(blocks);
+            parts = parts == null ? List.of() : List.copyOf(parts);
+            palette = palette == null ? Palette.NONE : palette;
+        }
+
+        /** The pre-palette shape. */
+        public StageEntry(EditorTypeMenusPacket.Variant stage, List<StageBlocksSyncPacket.BlockCount> blocks,
+                          int totalUnique, List<String> parts) {
+            this(stage, blocks, totalUnique, parts, Palette.NONE);
+        }
+
+        public int partCount() {
+            return parts.size();
+        }
+
+        public String id() {
+            return stage.modelId();
+        }
+
+        public String name() {
+            return stage.name();
+        }
+    }
 
     /** How long, wide and tall every carriage in this world is. */
     public record TrainSize(int length, int width, int height) {
@@ -89,6 +131,30 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         }
     }
 
+    /**
+     * A stage's placeholder palette as the Stage Palette panel reads it: every placeholder's
+     * effective block, the two family ids and whether the author locked them. {@link #NONE} for a
+     * roster built with no world to bake from.
+     */
+    public record Palette(List<StagePaletteSyncPacket.Entry> entries, String wood, String stone,
+                          boolean woodLocked, boolean stoneLocked) {
+        public static final Palette NONE = new Palette(List.of(), "", "", false, false);
+
+        public Palette {
+            entries = entries == null ? List.of() : List.copyOf(entries);
+            wood = wood == null ? "" : wood;
+            stone = stone == null ? "" : stone;
+        }
+
+        /** The entry for a placeholder name, or null. */
+        public StagePaletteSyncPacket.Entry entry(String name) {
+            for (StagePaletteSyncPacket.Entry e : entries) {
+                if (e.name().equals(name)) return e;
+            }
+            return null;
+        }
+    }
+
     public static final Type<EditorRosterPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_roster"));
 
@@ -99,6 +165,12 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         groups = groups == null ? List.of() : List.copyOf(groups);
         if (stampedCategoryId == null) stampedCategoryId = "";
         if (trainSize == null) trainSize = TrainSize.UNKNOWN;
+        stages = stages == null ? List.of() : List.copyOf(stages);
+    }
+
+    /** The shape from before the Stages tab: a roster with no stage list. */
+    public EditorRosterPacket(List<Group> groups, String stampedCategoryId, TrainSize trainSize) {
+        this(groups, stampedCategoryId, trainSize, List.of());
     }
 
     /** Convenience for call sites with no world to read a footprint from. */
@@ -128,6 +200,29 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 buf.writeVarInt(e.flipMask());
             }
         }
+        buf.writeVarInt(stages.size());
+        for (StageEntry s : stages) {
+            EditorTypeMenusPacket.encodeVariant(buf, s.stage());
+            buf.writeVarInt(s.blocks().size());
+            for (StageBlocksSyncPacket.BlockCount b : s.blocks()) {
+                buf.writeUtf(b.blockId(), 256);
+                buf.writeVarInt(b.count());
+            }
+            buf.writeVarInt(s.totalUnique());
+            buf.writeVarInt(s.parts().size());
+            for (String part : s.parts()) buf.writeUtf(part, 128);
+            Palette pal = s.palette();
+            buf.writeVarInt(pal.entries().size());
+            for (StagePaletteSyncPacket.Entry e : pal.entries()) {
+                buf.writeUtf(e.name(), 64);
+                buf.writeUtf(e.blockId(), 256);
+                buf.writeBoolean(e.overridden());
+            }
+            buf.writeUtf(pal.wood(), 32);
+            buf.writeUtf(pal.stone(), 32);
+            buf.writeBoolean(pal.woodLocked());
+            buf.writeBoolean(pal.stoneLocked());
+        }
     }
 
     public static EditorRosterPacket decode(FriendlyByteBuf buf) {
@@ -149,7 +244,28 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             }
             groups.add(new Group(categoryId, typeName, modelId, entries));
         }
-        return new EditorRosterPacket(groups, stamped, trainSize);
+        int ns = buf.readVarInt();
+        List<StageEntry> stages = new ArrayList<>(ns);
+        for (int i = 0; i < ns; i++) {
+            EditorTypeMenusPacket.Variant stage = EditorTypeMenusPacket.decodeVariant(buf);
+            int nb = buf.readVarInt();
+            List<StageBlocksSyncPacket.BlockCount> blocks = new ArrayList<>(nb);
+            for (int j = 0; j < nb; j++) {
+                blocks.add(new StageBlocksSyncPacket.BlockCount(buf.readUtf(256), buf.readVarInt()));
+            }
+            int totalUnique = buf.readVarInt();
+            int np = buf.readVarInt();
+            List<String> parts = new ArrayList<>(np);
+            for (int j = 0; j < np; j++) parts.add(buf.readUtf(128));
+            int ne = buf.readVarInt();
+            List<StagePaletteSyncPacket.Entry> entries = new ArrayList<>(ne);
+            for (int j = 0; j < ne; j++) {
+                entries.add(new StagePaletteSyncPacket.Entry(buf.readUtf(64), buf.readUtf(256), buf.readBoolean()));
+            }
+            Palette palette = new Palette(entries, buf.readUtf(32), buf.readUtf(32), buf.readBoolean(), buf.readBoolean());
+            stages.add(new StageEntry(stage, blocks, totalUnique, parts, palette));
+        }
+        return new EditorRosterPacket(groups, stamped, trainSize, stages);
     }
 
     @Override

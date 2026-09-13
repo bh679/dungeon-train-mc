@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "70";
+    public static final String PROTOCOL_VERSION = "72";
 
     private DungeonTrainNet() {}
 
@@ -242,6 +242,10 @@ public final class DungeonTrainNet {
         // above is a write. See RelayBuildPreviewRequestPacket.
         registrar.playToServer(RelayBuildPreviewRequestPacket.TYPE, RelayBuildPreviewRequestPacket.STREAM_CODEC, RelayBuildPreviewRequestPacket::handle);
         registrar.playToClient(RelayBuildPreviewPacket.TYPE, RelayBuildPreviewPacket.STREAM_CODEC, RelayBuildPreviewPacket::handle);
+        // The Stages tab's model: a carriage stamped with a stage's parts and rolled variants,
+        // composed on the server and drawn on the client. See StagePreviewRequestPacket.
+        registrar.playToServer(StagePreviewRequestPacket.TYPE, StagePreviewRequestPacket.STREAM_CODEC, StagePreviewRequestPacket::handle);
+        registrar.playToClient(StagePreviewPacket.TYPE, StagePreviewPacket.STREAM_CODEC, StagePreviewPacket::handle);
         // Builds the relay has lost, asked for from in-world (/dtrebuild). The title-screen card
         // does the same work client-side, where there is no server to ask.
         registrar.playToServer(BuilderReconcileStartPacket.TYPE, BuilderReconcileStartPacket.STREAM_CODEC, BuilderReconcileStartPacket::handle);
