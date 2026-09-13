@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.train;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import net.minecraft.world.level.block.state.BlockState;
+import org.slf4j.Logger;
 
 import java.util.function.Supplier;
 
@@ -25,10 +27,19 @@ import java.util.function.Supplier;
  */
 public final class StagePlacementScope {
 
-    /** Sentinel for "scope entered, no stage" — a ThreadLocal cannot distinguish null from unset. */
-    private static final String NO_STAGE = "";
+    private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final ThreadLocal<String> CURRENT = new ThreadLocal<>();
+    /** One entered scope: the stage (null ⇒ default palette) + how many cells it has swapped. */
+    private static final class Scope {
+        final String stageId;
+        int swapped;
+
+        Scope(String stageId) {
+            this.stageId = stageId;
+        }
+    }
+
+    private static final ThreadLocal<Scope> CURRENT = new ThreadLocal<>();
 
     private StagePlacementScope() {}
 
@@ -39,24 +50,36 @@ public final class StagePlacementScope {
 
     /** The stage id in scope on this thread, or {@code null} (unscoped or no stage). */
     public static String current() {
-        String s = CURRENT.get();
-        return (s == null || s.equals(NO_STAGE)) ? null : s;
+        Scope s = CURRENT.get();
+        return s == null ? null : s.stageId;
     }
 
     /** {@code state} swapped for the in-scope stage's real block, per the class rules. */
     public static BlockState resolve(BlockState state) {
-        if (!active() || !StagePlaceholderBlocks.isPlaceholder(state)) return state;
-        return StagePlaceholderBlocks.resolve(state, current());
+        Scope s = CURRENT.get();
+        if (s == null || !StagePlaceholderBlocks.isPlaceholder(state)) return state;
+        BlockState out = StagePlaceholderBlocks.resolve(state, s.stageId);
+        if (out != state) s.swapped++;
+        return out;
     }
 
-    /** Run {@code body} with {@code stageId} (nullable ⇒ default palette) in scope. */
+    /**
+     * Run {@code body} with {@code stageId} (nullable ⇒ default palette) in scope. A nested scope
+     * keeps its own count; the outer one resumes after. One INFO line per scope that swapped
+     * anything — the evidence a build's placeholders resolved, and for which stage.
+     */
     public static <T> T with(String stageId, Supplier<T> body) {
-        String prev = CURRENT.get();
-        CURRENT.set(stageId == null ? NO_STAGE : stageId);
+        Scope prev = CURRENT.get();
+        Scope scope = new Scope(stageId);
+        CURRENT.set(scope);
         try {
             return body.get();
         } finally {
             if (prev == null) CURRENT.remove(); else CURRENT.set(prev);
+            if (scope.swapped > 0) {
+                LOGGER.info("[DungeonTrain] Stage placeholders: resolved {} cell(s) for stage '{}'.",
+                    scope.swapped, stageId == null ? "<default>" : stageId);
+            }
         }
     }
 
