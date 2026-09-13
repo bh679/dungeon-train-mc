@@ -2283,6 +2283,7 @@
   "chat.dungeontrain.custom_content.already_kept": "El contenido de tren personalizado ya está activado en este mundo.",
   "chat.dungeontrain.custom_content.already_disabled": "El contenido de tren personalizado ya está desactivado en este mundo.",
   "chat.dungeontrain.lucky_loot.bonus": "¡Qué suerte! Aparecieron %s objeto(s) extra en este cofre.",
+  "chat.dungeontrain.lucky_loot.vase_bonus": "¡Qué suerte! Cayó un objeto extra de este jarrón.",
   "gui.dungeontrain.custom_content.title": "Contenido de tren personalizado",
   "gui.dungeontrain.custom_content.card.custom.name": "Tren personalizado",
   "gui.dungeontrain.custom_content.card.custom.tag": "Juego Libre",

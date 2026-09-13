@@ -2248,6 +2248,7 @@
   "chat.dungeontrain.custom_content.already_kept": "Nội dung đoàn tàu tùy chỉnh vốn đã bật ở thế giới này.",
   "chat.dungeontrain.custom_content.already_disabled": "Nội dung đoàn tàu tùy chỉnh vốn đã tắt ở thế giới này.",
   "chat.dungeontrain.lucky_loot.bonus": "May mắn! Có thêm %s vật phẩm xuất hiện trong rương này.",
+  "chat.dungeontrain.lucky_loot.vase_bonus": "May mắn! Có thêm một vật phẩm rơi ra từ chiếc bình này.",
   "gui.dungeontrain.custom_content.title": "Nội dung đoàn tàu tùy chỉnh",
   "gui.dungeontrain.custom_content.card.custom.name": "Đoàn tàu tùy chỉnh",
   "gui.dungeontrain.custom_content.card.custom.tag": "Chơi Tự Do",
