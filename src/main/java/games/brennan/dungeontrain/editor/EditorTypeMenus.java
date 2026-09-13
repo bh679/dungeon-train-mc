@@ -595,10 +595,11 @@ public final class EditorTypeMenus {
         TemplateGate g = s.gate();
         // weight = NO_WEIGHT keeps the row weightless; the gated ctor still carries the gate so
         // the row reads as (name + level/dimension) and the client edit screen can show values.
-        return new EditorTypeMenusPacket.Variant(
+        EditorTypeMenusPacket.Variant row = new EditorTypeMenusPacket.Variant(
             s.name(), EditorPlotLabelsPacket.NO_WEIGHT,
             g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
             STAGES_CATEGORY, s.id(), s.id(), true, false);
+        return s.builder() == null ? row : row.withBuilder(s.builder().uuid(), s.builder().name());
     }
 
     /**

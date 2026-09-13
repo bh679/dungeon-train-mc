@@ -89,21 +89,23 @@ public final class EditorStageActions {
      * — [max] · O N V E U C}, bounds that step and letters that toggle — then what links to it.
      */
     public static List<TemplateDataSheet.Line> sheetLines(EditorRosterPacket.StageEntry stage,
-                                                          int templateCount) {
-        List<TemplateDataSheet.Line> out = new ArrayList<>(4);
+                                                          int templateCount, boolean devMode) {
+        List<TemplateDataSheet.Line> out = new ArrayList<>(6);
         String id = stage.id();
         int min = stage.stage().minLevel();
         int max = stage.stage().maxLevel();
+        out.add(TemplateDataSheet.builderLine(stage.stage(),
+            devMode ? "dungeontrain editor stage builder " + id : null));
         out.add(new TemplateDataSheet.Line(EditorScreenLang.text(EditorScreenLang.SHEET_SPAWNS),
-            TemplateDataSheet.gateCells(
+            TemplateDataSheet.levelCells(
                 min, TemplateDataSheet.Stepper.of(levelRow(id, "minlevel",
                     EditorScreenLang.text(EditorScreenLang.STAGES_MIN_LEVEL, min), "0-1000")),
                 max, TemplateDataSheet.Stepper.of(levelRow(id, "maxlevel",
                     EditorScreenLang.text(EditorScreenLang.STAGES_MAX_LEVEL,
                         max < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(max)),
-                    "-1..1000")),
-                stage.stage().phaseMask(),
-                (p, on) -> EditorPlotTeleport.stagePhaseCommandFor(id, p.token(), on ? "off" : "on"))));
+                    "-1..1000")))));
+        out.add(TemplateDataSheet.bandsLine(stage.stage().phaseMask(),
+            (p, on) -> EditorPlotTeleport.stagePhaseCommandFor(id, p.token(), on ? "off" : "on")));
         out.add(TemplateDataSheet.Line.of(EditorScreenLang.text(EditorScreenLang.STAGES_PARTS_LABEL),
             Integer.toString(stage.partCount())));
         out.add(TemplateDataSheet.Line.of(EditorScreenLang.text(EditorScreenLang.STAGES_TEMPLATES_LABEL),

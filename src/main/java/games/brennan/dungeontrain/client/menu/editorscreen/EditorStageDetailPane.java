@@ -111,7 +111,7 @@ final class EditorStageDetailPane {
     private int[] iconX = new int[0];
     private int iconCell = EditorDetailPane.ICON_CELL;
     private List<String> carriages = List.of();
-    private int carriageIdx;
+    private int carriageIdx = -1;
     private long seed;
     private StagePreviews.Key modelKey;
     private List<TemplateDataSheet.Line> sheetLines = List.of();
@@ -162,11 +162,12 @@ final class EditorStageDetailPane {
         this.templates = EditorStageTemplates.rows(stage, index);
         String id = stage == null ? "" : stage.id();
         if (!id.equalsIgnoreCase(pagedStageId)) {
+            // The carriage and its roll are the author's choice and outlive the stage they were
+            // picked on, so two stages can be compared on the same model; only the page returns.
             pagedStageId = id;
             page = 0;
-            carriageIdx = -1;
-            seed = RESEED.nextLong();
         }
+        if (carriageIdx < 0) seed = RESEED.nextLong();
         InventoryEditorLayout.Rect r = gridRect();
         pages = new Pages(pagesFor(r, stage == null ? 0 : stage.blocks().size()), templates.size(), r.h() / ROW_H);
         page = pages.clamp(page);
@@ -181,7 +182,8 @@ final class EditorStageDetailPane {
             sheetLines = List.of();
         } else {
             icons = EditorStageActions.icons(stage, applyTo, carriages.size() > 1, this::reseed, this::stepCarriage);
-            sheetLines = EditorStageActions.sheetLines(stage, templates.size());
+            sheetLines = EditorStageActions.sheetLines(stage, templates.size(),
+                games.brennan.dungeontrain.client.EditorStatusHudOverlay.isDevModeOn());
         }
         EditorDetailPane.IconRow row = EditorDetailPane.layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
         iconX = row.x();

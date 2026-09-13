@@ -67,29 +67,34 @@ final class EditorStageActionsTest {
     }
 
     @Test
-    @DisplayName("the sheet's Spawns line is the template sheet's gate: bounds that step and type, letters that toggle")
+    @DisplayName("the sheet: Built by (a picker in dev mode), Spawns bounds that step and type, a Bands row with every letter a button, then counts")
     void sheetLines() {
-        List<TemplateDataSheet.Line> lines = EditorStageActions.sheetLines(desert(), 4);
-        assertEquals(4, lines.size());
-        List<TemplateDataSheet.Cell> gate = lines.get(0).cells();
-        // Lv · min · — · max · · · six letters
-        assertEquals(5 + TrainPhase.values().length, gate.size());
-        TemplateDataSheet.Action.Step min = assertInstanceOf(TemplateDataSheet.Action.Step.class, gate.get(1).action());
-        assertEquals("10", gate.get(1).text());
+        List<TemplateDataSheet.Line> lines = EditorStageActions.sheetLines(desert(), 4, true);
+        assertEquals(6, lines.size());
+        TemplateDataSheet.Action.PickBuilder pick = assertInstanceOf(TemplateDataSheet.Action.PickBuilder.class,
+            lines.get(0).cells().get(0).action());
+        assertEquals("dungeontrain editor stage builder desert", pick.prefix());
+        assertNull(EditorStageActions.sheetLines(desert(), 4, false).get(0).cells().get(0).action(), "read-only off dev");
+        List<TemplateDataSheet.Cell> levels = lines.get(1).cells();
+        assertEquals(4, levels.size(), "Lv · min · — · max");
+        TemplateDataSheet.Action.Step min = assertInstanceOf(TemplateDataSheet.Action.Step.class, levels.get(1).action());
+        assertEquals("10", levels.get(1).text());
         assertEquals("dungeontrain editor stage minlevel desert", min.prefix());
         assertEquals("dungeontrain editor stage minlevel desert dec", min.dec());
         assertEquals("dungeontrain editor stage minlevel desert inc", min.inc());
-        TemplateDataSheet.Action.Step max = assertInstanceOf(TemplateDataSheet.Action.Step.class, gate.get(3).action());
+        TemplateDataSheet.Action.Step max = assertInstanceOf(TemplateDataSheet.Action.Step.class, levels.get(3).action());
         assertEquals("dungeontrain editor stage maxlevel desert inc", max.inc());
-        TemplateDataSheet.Cell overworld = gate.get(5);
+        List<TemplateDataSheet.Cell> bands = lines.get(2).cells();
+        assertEquals(TrainPhase.values().length, bands.size(), "one button per band");
+        TemplateDataSheet.Cell overworld = bands.get(0);
         assertTrue(overworld.on());
         assertEquals("dungeontrain editor stage phase desert overworld off",
             assertInstanceOf(TemplateDataSheet.Action.Run.class, overworld.action()).command());
-        TemplateDataSheet.Cell nether = gate.get(6);
+        TemplateDataSheet.Cell nether = bands.get(1);
         assertFalse(nether.on());
         assertEquals("dungeontrain editor stage phase desert nether on",
             assertInstanceOf(TemplateDataSheet.Action.Run.class, nether.action()).command());
-        assertEquals("1", lines.get(1).cells().get(0).text(), "one linked part");
-        assertEquals("4", lines.get(2).cells().get(0).text(), "templates as counted by the caller");
+        assertEquals("1", lines.get(3).cells().get(0).text(), "one linked part");
+        assertEquals("4", lines.get(4).cells().get(0).text(), "templates as counted by the caller");
     }
 }

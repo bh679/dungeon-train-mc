@@ -241,6 +241,18 @@ public final class StageStore {
         return next;
     }
 
+    /** Credit (or, with null, un-credit) Stage {@code id} and persist; null when it does not exist. */
+    public static synchronized Stage setBuilder(String id, games.brennan.dungeontrain.template.BuilderCredit builder)
+            throws IOException {
+        String key = normalise(id);
+        if (key == null) return null;
+        Stage prev = current.get(key);
+        if (prev == null) return null;
+        Stage next = prev.withBuilder(builder);
+        putAndWrite(next);
+        return next;
+    }
+
     /** Remove Stage {@code id} and persist. Returns true if it existed. Links to it then dangle. */
     public static synchronized boolean delete(String id) throws IOException {
         String key = normalise(id);

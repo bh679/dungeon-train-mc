@@ -20,8 +20,10 @@ import java.util.Locale;
  * @param id   lowercased {@code ^[a-z0-9_]{1,32}$} token — the store key and the wire identifier.
  * @param name display label (v1: derived from {@code id}; a future free-text name can diverge).
  * @param gate the preset gate.
+ * @param builder who authored the stage, as a template's credit reads ({@code "builder": {uuid,
+ *                name}} on disk, the same codec); null when nobody is credited.
  */
-public record Stage(String id, String name, TemplateGate gate) {
+public record Stage(String id, String name, TemplateGate gate, BuilderCredit builder) {
 
     public static final String K_NAME = "name";
 
@@ -31,14 +33,24 @@ public record Stage(String id, String name, TemplateGate gate) {
         if (gate == null) gate = TemplateGate.DEFAULT;
     }
 
-    /** Copy with a new gate, keeping id + name. */
-    public Stage withGate(TemplateGate newGate) {
-        return new Stage(id, name, newGate);
+    /** A stage nobody is credited for. */
+    public Stage(String id, String name, TemplateGate gate) {
+        this(id, name, gate, null);
     }
 
-    /** Copy with a new display name, keeping id + gate. */
+    /** Copy with a new gate, keeping the rest. */
+    public Stage withGate(TemplateGate newGate) {
+        return new Stage(id, name, newGate, builder);
+    }
+
+    /** Copy with a new display name, keeping the rest. */
     public Stage withName(String newName) {
-        return new Stage(id, newName, gate);
+        return new Stage(id, newName, gate, builder);
+    }
+
+    /** Copy with a new credit (null clears it), keeping the rest. */
+    public Stage withBuilder(BuilderCredit newBuilder) {
+        return new Stage(id, name, gate, newBuilder);
     }
 
     /** Serialise this Stage's value (everything except the id, which is the map key). */
@@ -46,6 +58,7 @@ public record Stage(String id, String name, TemplateGate gate) {
         JsonObject o = new JsonObject();
         o.addProperty(K_NAME, name);
         TemplateWeightCodec.writeGateFields(o, gate);
+        TemplateWeightCodec.writeBuilder(o, builder);
         return o;
     }
 
@@ -67,6 +80,6 @@ public record Stage(String id, String name, TemplateGate gate) {
             && !ne.getAsString().isBlank()) {
             name = ne.getAsString();
         }
-        return new Stage(key, name, TemplateWeightCodec.parseGate(o));
+        return new Stage(key, name, TemplateWeightCodec.parseGate(o), TemplateWeightCodec.parseBuilder(o));
     }
 }
