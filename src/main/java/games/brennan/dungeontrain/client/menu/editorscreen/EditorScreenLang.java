@@ -12,6 +12,7 @@ public final class EditorScreenLang {
 
     public static final String TAB_TEMPLATES = PREFIX + "tab.templates";
     public static final String TAB_LAYOUT = PREFIX + "tab.layout";
+    public static final String TAB_STAGES = PREFIX + "tab.stages";
     public static final String TAB_SETTINGS = PREFIX + "tab.settings";
     public static final String TAB_EXIT = PREFIX + "tab.exit";
 
@@ -36,6 +37,14 @@ public final class EditorScreenLang {
     public static final String LAYOUT_NO_MATCHES = PREFIX + "layout.no_matches";
     /** The weight cell's tooltip: the same three clicks the world-space menus take. */
     public static final String LAYOUT_WEIGHT_TIP = PREFIX + "layout.weight_tip";
+
+    /** The Stages tab: a row's block-count cell, the detail's parts line, its pager, and its empty states. */
+    public static final String STAGES_BLOCKS = PREFIX + "stages.blocks";
+    public static final String STAGES_PARTS = PREFIX + "stages.parts";
+    public static final String STAGES_MORE = PREFIX + "stages.more";
+    public static final String STAGES_NONE = PREFIX + "stages.none";
+    public static final String STAGES_NO_BLOCKS = PREFIX + "stages.no_blocks";
+    public static final String STAGES_BLOCK_TIP = PREFIX + "stages.block_tip";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */

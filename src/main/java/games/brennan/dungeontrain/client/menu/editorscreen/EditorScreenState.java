@@ -24,6 +24,8 @@ public final class EditorScreenState {
     private static EditorRosterIndex.Filters filters = EditorRosterIndex.Filters.DEFAULT;
     private static String text = "";
     private static VariantKey selection;
+    /** The Stages tab's selected stage id, or null before any click — the pane then shows the first stage. */
+    private static String selectedStageId;
     /** The Layout tab's opened sections, by {@code EditorLayoutPage.sectionId}. Folded is the default; replaced, never mutated. */
     private static Set<String> expandedSections = Set.of();
     /** The Layout tab's opened groups — parents whose members are shown — by the parent's key string. Folded is the default. */
@@ -55,6 +57,21 @@ public final class EditorScreenState {
     private EditorScreenState() {}
 
     public static EditorScreenPage page() { return page; }
+    public static String selectedStageId() { return selectedStageId; }
+
+    public static void selectStage(String stageId) {
+        selectedStageId = stageId == null || stageId.isEmpty() ? null : stageId;
+    }
+
+    /**
+     * The stage the Stages tab shows: the selected one while the roster still lists it, else the
+     * first stage, else null when there are none.
+     */
+    public static games.brennan.dungeontrain.net.EditorRosterPacket.StageEntry effectiveStage(EditorRosterIndex index) {
+        games.brennan.dungeontrain.net.EditorRosterPacket.StageEntry picked = index.stage(selectedStageId);
+        if (picked != null) return picked;
+        return index.stages().isEmpty() ? null : index.stages().get(0);
+    }
     public static EditorCategoryFilter category() { return category; }
     public static String typeName() { return typeName; }
     public static EditorRosterIndex.Filters filters() { return filters; }
@@ -191,5 +208,6 @@ public final class EditorScreenState {
             VariantKey here = standingIn();
             selection = here != null && index.find(here) != null ? index.find(here).key() : null;
         }
+        if (selectedStageId != null && index.stage(selectedStageId) == null) selectedStageId = null;
     }
 }

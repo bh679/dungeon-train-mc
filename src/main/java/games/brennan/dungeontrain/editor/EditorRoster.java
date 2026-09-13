@@ -62,6 +62,33 @@ public final class EditorRoster {
         }
     }
 
+    /**
+     * Every Stage with the blocks its linked carriage parts use, for the screen's Stages tab — the
+     * same per-stage index the world-space Stage Blocks panel shows, capped the same way. The index
+     * memoises per stage until a store write invalidates it, so this is a map walk in the steady
+     * state. Null {@code overworld} (no world to read part templates from) lists the stages with no
+     * blocks.
+     */
+    public static List<EditorRosterPacket.StageEntry> stages(net.minecraft.server.level.ServerLevel overworld) {
+        List<EditorRosterPacket.StageEntry> out = new ArrayList<>();
+        for (games.brennan.dungeontrain.template.Stage stage : StageStore.allStages()) {
+            EditorTypeMenusPacket.Variant row = EditorTypeMenus.stageRow(stage);
+            if (overworld == null) {
+                out.add(new EditorRosterPacket.StageEntry(row, List.of(), 0, 0));
+                continue;
+            }
+            StageBlockIndex.StageBlocks blocks = StageBlockIndex.blocksForStage(overworld, stage.id());
+            List<games.brennan.dungeontrain.net.StageBlocksSyncPacket.BlockCount> counts = new ArrayList<>();
+            int cap = games.brennan.dungeontrain.net.StageBlocksSyncPacket.BLOCKS_CAP;
+            for (StageBlockIndex.BlockUse use : blocks.aggregated()) {
+                if (counts.size() >= cap) break;
+                counts.add(new games.brennan.dungeontrain.net.StageBlocksSyncPacket.BlockCount(use.blockId(), use.count()));
+            }
+            out.add(new EditorRosterPacket.StageEntry(row, counts, blocks.aggregated().size(), blocks.parts().size()));
+        }
+        return out;
+    }
+
     /** The world's carriage footprint, which a portal room's box is measured against; null when unknown. */
     private static final ThreadLocal<games.brennan.dungeontrain.train.CarriageDims> ROOM_DIMS =
         new ThreadLocal<>();

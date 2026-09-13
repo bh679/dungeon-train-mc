@@ -39,9 +39,6 @@ public final class EditorDetailPane {
     /** What a click landed on. */
     public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT }
 
-    /** How wide each arrow cell of the pager is, as a share of the row. */
-    static final double PAGER_ARROW_SHARE = 0.18;
-
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
     private int relayId;
@@ -387,28 +384,11 @@ public final class EditorDetailPane {
 
     /** {@code <  n / N  >} in the body's last slot, on every page. */
     private void drawPager(GuiGraphics g, Font font) {
-        InventoryEditorLayout.Rect r = pagerRect();
-        int top = r.y();
-        int bottom = r.bottom() - 1;
-        int arrowW = (int) Math.round(r.w() * PAGER_ARROW_SHARE);
-        boolean first = page == 0;
-        boolean last = page >= pages.pageCount() - 1;
-        drawPagerCell(g, font, r.x(), top, r.x() + arrowW, bottom, "<", !first,
-            hovered.kind() == HitKind.PAGE_PREV);
-        drawPagerCell(g, font, r.right() - arrowW, top, r.right(), bottom, ">", !last,
-            hovered.kind() == HitKind.PAGE_NEXT);
-        String label = (page + 1) + " / " + pages.pageCount();
-        g.drawString(font, label, (r.x() + r.right() - font.width(label)) / 2,
-            top + (ROW_H - 1 - font.lineHeight) / 2 + 1, DIM_TEXT, false);
-    }
-
-    private static void drawPagerCell(GuiGraphics g, Font font, int x1, int y1, int x2, int y2,
-                                      String glyph, boolean enabled, boolean hov) {
-        int fill = !enabled ? DISABLED : hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE;
-        g.fill(x1, y1, x2, y2, fill);
-        int color = !enabled ? 0x80FFFFFF : hov ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF;
-        g.drawString(font, glyph, (x1 + x2 - font.width(glyph)) / 2,
-            y1 + (y2 - y1 - font.lineHeight) / 2 + 1, color, false);
+        EditorPager.draw(g, font, pagerRect(), page, pages.pageCount(), switch (hovered.kind()) {
+            case PAGE_PREV -> EditorPager.Hit.PREV;
+            case PAGE_NEXT -> EditorPager.Hit.NEXT;
+            default -> EditorPager.Hit.NONE;
+        });
     }
 
     private void drawTest(GuiGraphics g, Font font) {
@@ -462,13 +442,11 @@ public final class EditorDetailPane {
         }
         if (goHereRect != null && goHereRect.contains(mx, my)) return new Hit(HitKind.GO_HERE, 0, 0);
         if (pages.hasPager() && pagerRect().contains(mx, my)) {
-            InventoryEditorLayout.Rect pr = pagerRect();
-            int arrowW = (int) Math.round(pr.w() * PAGER_ARROW_SHARE);
-            if (mx < pr.x() + arrowW) return page > 0 ? new Hit(HitKind.PAGE_PREV, 0, 0) : Hit.NONE;
-            if (mx >= pr.right() - arrowW) {
-                return page < pages.pageCount() - 1 ? new Hit(HitKind.PAGE_NEXT, 0, 0) : Hit.NONE;
-            }
-            return Hit.NONE;
+            return switch (EditorPager.hit(pagerRect(), page, pages.pageCount(), mx, my)) {
+                case PREV -> new Hit(HitKind.PAGE_PREV, 0, 0);
+                case NEXT -> new Hit(HitKind.PAGE_NEXT, 0, 0);
+                case NONE -> Hit.NONE;
+            };
         }
         if (onModelPage() && layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
         int sheetCell = onModelPage() ? TemplateDataSheet.hit(sheetCells, mx, my) : -1;
