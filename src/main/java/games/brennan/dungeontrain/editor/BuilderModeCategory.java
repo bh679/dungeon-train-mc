@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.builder.BuilderMode;
 
+import java.util.Optional;
+
 /**
  * Which editor category each tile on the Train Builder picker stands for.
  *
@@ -26,5 +28,16 @@ public final class BuilderModeCategory {
             case TRACKS_TUNNELS -> EditorCategory.TRACKS;
             case TRAIN_DIMENSIONS -> EditorCategory.PORTALS;
         };
+    }
+
+    /**
+     * The tile that stands for this category, or empty for a category the picker does not show
+     * (architecture is stamped alongside the others, never chosen).
+     */
+    public static Optional<BuilderMode> modeOf(EditorCategory category) {
+        for (BuilderMode mode : BuilderMode.values()) {
+            if (of(mode) == category) return Optional.of(mode);
+        }
+        return Optional.empty();
     }
 }

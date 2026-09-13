@@ -74,6 +74,23 @@ public interface BlockVariantPlot {
     /** Persist to disk. */
     void save() throws IOException;
 
+    /**
+     * The {@link EditorPlotSnapshots} key the dirty scan reads this plot under, or null for a plot
+     * the scan has no row for (a part). What {@link #noteEdit} marks, so a variant-pool change
+     * shows up as unsaved until the template is saved — the sidecar is written on every edit, but
+     * the author still expects a Save to follow it.
+     */
+    @Nullable String dirtySnapshotKey();
+
+    /**
+     * Record a variant-pool edit on {@code plot} against its dirty-scan row. Every implementation's
+     * {@link #put} / {@link #remove} calls this with the cell and {@link #save} with none, so lock
+     * ids, mirror flags and copy settings — edits with no cell of their own — count too.
+     */
+    static void noteEdit(BlockVariantPlot plot, @Nullable BlockPos localPos) {
+        EditorPlotSnapshots.markSidecarEdit(plot.dirtySnapshotKey(), localPos);
+    }
+
     /** Editor mirror X (length) axis for this plot's sidecar. */
     boolean mirrorX();
 
@@ -428,12 +445,14 @@ public interface BlockVariantPlot {
         }
 
         @Override public String key() { return carriageKey(variant.id()); }
+        @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("carriages", variant.id()); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
-        @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
         @Override public void save() throws IOException {
+            noteEdit(this, null);
             sidecar.save(variant);
             // Dev-mode write-through: shift-right-click edits should ship in
             // the next build, not stay trapped in run/config. Mirrors PR #75
@@ -485,12 +504,14 @@ public interface BlockVariantPlot {
         }
 
         @Override public String key() { return contentsKey(contents.id()); }
+        @Override public String dirtySnapshotKey() { return EditorPlotSnapshots.key("contents", contents.id()); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
-        @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
         @Override public void save() throws IOException {
+            noteEdit(this, null);
             sidecar.save(contents);
             if (EditorDevMode.isEnabled()) {
                 try {
@@ -540,12 +561,15 @@ public interface BlockVariantPlot {
         }
 
         @Override public String key() { return partKey(kind, name); }
+        /** Parts are stamped inside carriage plots and have no scan row of their own. */
+        @Override public @Nullable String dirtySnapshotKey() { return null; }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
-        @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
         @Override public void save() throws IOException {
+            noteEdit(this, null);
             sidecar.save(kind, name);
             if (EditorDevMode.isEnabled()) {
                 try {
@@ -601,12 +625,14 @@ public interface BlockVariantPlot {
         }
 
         @Override public String key() { return trackKey(kind, name); }
+        @Override public String dirtySnapshotKey() { return EditorDirtyCheck.snapshotKeyFor(kind, name); }
         @Override public BlockPos origin() { return origin; }
         @Override public Vec3i footprint() { return footprint; }
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
-        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
-        @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
         @Override public void save() throws IOException {
+            noteEdit(this, null);
             sidecar.save(kind, name);
             if (EditorDevMode.isEnabled()) {
                 try {

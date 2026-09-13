@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
@@ -217,7 +218,10 @@ public final class EditorStatusHudOverlay {
         return !category.isEmpty() || !model.isEmpty();
     }
 
-    /** Current editor category name (e.g. "carriages"), or empty string when not in an editor plot. */
+    /**
+     * Current editor category id (e.g. {@code "carriages"}, {@code "portals"}), or empty string when
+     * not in an editor plot. An id, never the on-screen label — see {@link #categoryLabel}.
+     */
     public static String category() {
         return category;
     }
@@ -400,10 +404,22 @@ public final class EditorStatusHudOverlay {
             boolean d = devmode;
             int w = weight;
             if (c.isEmpty() && m.isEmpty()) return;
-            drawBar(graphics, mc.font, c, m, d, w, graphics.guiWidth());
+            drawBar(graphics, mc.font, categoryLabel(c), m, d, w, graphics.guiWidth());
         };
         event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"), overlay);
         LOGGER.info("Editor status HUD overlay registered");
+    }
+
+    /**
+     * The bar's word for a category id — <b>Dimensions</b> for {@code portals}.
+     *
+     * <p>The packet carries the id because every reader but this one treats it as one: the
+     * menus, the save status and the "am I already there" checks all compare it to command tokens.
+     * The label is looked up only at the point of drawing, so renaming a category on screen can
+     * never change what those comparisons see.</p>
+     */
+    static String categoryLabel(String categoryId) {
+        return PlotCategory.fromId(categoryId).map(PlotCategory::displayName).orElse(categoryId);
     }
 
     private static void drawBar(GuiGraphics graphics, Font font, String categoryText, String modelText,

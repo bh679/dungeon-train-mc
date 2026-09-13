@@ -167,6 +167,25 @@ public final class CarriagePlacer {
         return CarriageStampGuard.call(() -> placeAtPreviewGuarded(level, origin, variant, dims));
     }
 
+    /**
+     * The editor screen's stage preview: the same "keep shell, swap parts" composition the plot
+     * preview makes for the focused Stage, but for an explicit {@code stageId} and rolled from an
+     * explicit {@code seed} — so the Stages tab can show any stage without selecting it, and
+     * re-roll the part and shell block variants on demand. Stamped silently (no relight): the
+     * scratch footprint is captured and erased within the tick, so no light ever needs to be right.
+     */
+    public static Set<BlockPos> placeStagePreview(ServerLevel level, BlockPos origin, CarriageVariant variant,
+                                                  CarriageDims dims, long seed, String stageId) {
+        return CarriageStampGuard.call(() -> {
+            String base = stampBase(level, origin, variant, dims, seed, 0, false, false,
+                GateContext.WORLDX_FROM_PIDX, /*relight*/ false);
+            String overlay = stampPartsOverlay(level, origin, variant, dims, seed, 0, false, false,
+                GateContext.WORLDX_FROM_PIDX, stageId, /*relight*/ false);
+            applyVariantBlocks(level, origin, variant, dims, seed, 0);
+            return finishPlace(level, origin, variant, dims, base, overlay);
+        });
+    }
+
     private static Set<BlockPos> placeAtPreviewGuarded(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
         // Editor preview: no group context, so end-mode tags fall back to BOTH-behaviour and the
         // dimension gate uses the pIdx-formula fallback (no real placed world-X here).

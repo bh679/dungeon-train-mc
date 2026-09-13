@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.template.TemplateDecor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -13,7 +14,9 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Server-side singleton that records the block geometry of each editor
@@ -53,6 +56,18 @@ public final class EditorPlotSnapshots {
      */
     private static final Map<String, Long> DECOR = new HashMap<>();
 
+    /**
+     * {@code "carriages:standard"} → the local positions whose variant pool changed since the
+     * baseline was taken. An empty set is still "edited" — a lock id, mirror flag or copy setting
+     * has no cell of its own.
+     *
+     * <p>Variant cells are the one thing the block compare cannot see: {@link EditorDirtyCheck}
+     * skips them because the preview ticker rewrites them every second, and the sidecar itself is
+     * written to disk on every Z-menu edit. So an author could add a whole variant pool, walk out,
+     * and be told there was nothing to save — the same gap decoration used to have.</p>
+     */
+    private static final Map<String, Set<BlockPos>> SIDECAR_EDITS = new HashMap<>();
+
     private EditorPlotSnapshots() {}
 
     /**
@@ -76,6 +91,28 @@ public final class EditorPlotSnapshots {
         }
         SNAPSHOTS.put(key, snap);
         DECOR.put(key, decorFingerprint(level, origin, length, height, width));
+        SIDECAR_EDITS.remove(key);
+    }
+
+    /**
+     * Record that {@code key}'s variant sidecar changed at {@code localPos} — or somewhere with no
+     * cell, when null. Cleared by the next {@link #capture}, which every stamp and every save runs.
+     */
+    public static synchronized void markSidecarEdit(@Nullable String key, @Nullable BlockPos localPos) {
+        if (key == null) return;
+        Set<BlockPos> cells = SIDECAR_EDITS.computeIfAbsent(key, k -> new LinkedHashSet<>());
+        if (localPos != null) cells.add(localPos.immutable());
+    }
+
+    /** Whether {@code key}'s variant sidecar changed since its baseline was taken. */
+    public static synchronized boolean sidecarEdited(String key) {
+        return SIDECAR_EDITS.containsKey(key);
+    }
+
+    /** The cells {@link #markSidecarEdit} recorded for {@code key}; empty when none or unknown. */
+    public static synchronized Set<BlockPos> sidecarEdits(String key) {
+        Set<BlockPos> cells = SIDECAR_EDITS.get(key);
+        return cells == null ? Set.of() : new LinkedHashSet<>(cells);
     }
 
     /**
@@ -101,6 +138,11 @@ public final class EditorPlotSnapshots {
      * <p>Order-independent (the entity query's order is not stable) and position-rounded to a third
      * of a block — finer than any deliberate reposition, coarser than float drift. Facing is folded
      * in because turning a picture to the opposite wall moves it barely at all.</p>
+     *
+     * <p>A mob contributes its type only. It turns to look at the author and wanders where its AI
+     * takes it, so its position and facing change on their own; folding them in had every plot
+     * with a mob in it pulsing "unsaved" for as long as the mob was awake. Placing or removing one
+     * still changes the sum, which is the edit the fingerprint exists to catch.</p>
      */
     private static long decorFingerprint(ServerLevel level, BlockPos origin,
                                          int length, int height, int width) {
@@ -110,6 +152,10 @@ public final class EditorPlotSnapshots {
         long sum = 0L;
         for (Entity e : level.getEntities((Entity) null, box, TemplateDecor::carried)) {
             long h = e.getType().hashCode();
+            if (e instanceof LivingEntity) {
+                sum += h;
+                continue;
+            }
             h = h * 31 + Math.round((e.getX() - origin.getX()) * 3.0);
             h = h * 31 + Math.round((e.getY() - origin.getY()) * 3.0);
             h = h * 31 + Math.round((e.getZ() - origin.getZ()) * 3.0);
@@ -146,12 +192,14 @@ public final class EditorPlotSnapshots {
     public static synchronized void clear(String key) {
         SNAPSHOTS.remove(key);
         DECOR.remove(key);
+        SIDECAR_EDITS.remove(key);
     }
 
     /** Wipe all snapshots. */
     public static synchronized void clearAll() {
         SNAPSHOTS.clear();
         DECOR.clear();
+        SIDECAR_EDITS.clear();
     }
 
     /**

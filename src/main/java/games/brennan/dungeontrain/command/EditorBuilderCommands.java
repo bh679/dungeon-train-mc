@@ -64,6 +64,19 @@ final class EditorBuilderCommands {
         }
     }
 
+    /** {@code /dt editor stage builder <id> <uuid|none> [name…]} */
+    static int runStageBuilder(CommandSourceStack source, String rawId, String rawUuid, String rawName) {
+        BuilderCredit credit = parse(rawUuid, rawName);
+        try {
+            games.brennan.dungeontrain.template.Stage stored =
+                games.brennan.dungeontrain.editor.StageStore.setBuilder(rawId, credit);
+            if (stored == null) return unknown(source, "stage", rawId);
+            return success(source, "stage", "stage", stored.id(), stored.builder());
+        } catch (IOException e) {
+            return failure(source, "stage", rawId, e);
+        }
+    }
+
     /** {@code /dt editor contents builder <id> <uuid|none> [name…]} */
     static int runContentsBuilder(CommandSourceStack source, String rawId, String rawUuid, String rawName) {
         String id = rawId.toLowerCase(Locale.ROOT);

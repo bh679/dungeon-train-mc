@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.neoforged.api.distmarker.Dist;
@@ -50,7 +51,7 @@ public final class BuilderTileArt {
     }
 
     /** Whether this mode's PNG is present in the loaded resource packs. */
-    static boolean isAvailable(BuilderMode mode) {
+    public static boolean isAvailable(BuilderMode mode) {
         return Minecraft.getInstance().getResourceManager().getResource(textureFor(mode)).isPresent();
     }
 
@@ -58,8 +59,8 @@ public final class BuilderTileArt {
      * Fill {@code (x, y, w, h)} with the mode's art, or the slate fallback when {@code available}
      * is false. Callers pass their own probe result so the lookup isn't repeated every frame.
      */
-    static void render(GuiGraphics g, BuilderMode mode, boolean available,
-                       int x, int y, int w, int h, float alpha) {
+    public static void render(GuiGraphics g, BuilderMode mode, boolean available,
+                              int x, int y, int w, int h, float alpha) {
         if (!available) {
             g.fill(x, y, x + w, y + h, FALLBACK_BG);
             return;
@@ -70,6 +71,41 @@ public final class BuilderTileArt {
             return;
         }
         renderCover(g, textureFor(mode), size.width(), size.height(), x, y, w, h, alpha);
+    }
+
+    /** The tile's border while under the cursor or chosen; black otherwise. */
+    public static final int BORDER_LIT = 0xFFFFFFFF;
+    public static final int BORDER_IDLE = 0xFF000000;
+    static final int LABEL_STRIP_BG = 0xC0101010;
+    static final int LABEL_COLOUR = 0xFFFFFF;
+    static final int IDLE_DIM = 0x40000000;
+    public static final int LABEL_STRIP_H = 16;
+
+    /**
+     * The whole tile as the picker paints it: the art, a dim over it until it is {@code lit}, the
+     * border, and — when {@code captioned} — the mode's name on a dark strip along the bottom.
+     *
+     * <p>One painter for the picker's widget and the editor's Nav tab, which draws its tiles
+     * immediate-mode like the rest of that screen and has no widget to hand the job to. The two
+     * show the identical four things; drawn by the same code they cannot drift apart.</p>
+     */
+    public static void renderTile(GuiGraphics g, BuilderMode mode, boolean available,
+                                  int x, int y, int w, int h, boolean captioned, boolean lit, float alpha) {
+        render(g, mode, available, x, y, w, h, alpha);
+        // Dim the whole tile slightly until it's hovered — or chosen — so the live option pops
+        // out of the row.
+        if (!lit) {
+            g.fill(x, y, x + w, y + h, IDLE_DIM);
+        }
+        g.renderOutline(x, y, w, h, lit ? BORDER_LIT : BORDER_IDLE);
+        if (!captioned) {
+            return;
+        }
+        int stripTop = y + h - LABEL_STRIP_H;
+        g.fill(x + 1, stripTop, x + w - 1, y + h - 1, LABEL_STRIP_BG);
+        Minecraft mc = Minecraft.getInstance();
+        g.drawCenteredString(mc.font, Component.translatable(mode.labelKey()), x + w / 2,
+                stripTop + (LABEL_STRIP_H - mc.font.lineHeight) / 2, LABEL_COLOUR);
     }
 
     /**

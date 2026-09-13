@@ -115,7 +115,9 @@ public final class StagePanelController {
             return;
         }
         String stageId = packet.stageId() == null ? "" : packet.stageId().toLowerCase(Locale.ROOT);
-        if (!stageId.equals(OPEN.get(player.getUUID()))) {
+        // The editor screen's Palette page edits any stage it shows; the world-space panel only the
+        // one it has open, since its rows are that snapshot.
+        if (!packet.fromScreen() && !stageId.equals(OPEN.get(player.getUUID()))) {
             actionBar(player, "Open the stage's panel first", ChatFormatting.YELLOW);
             return;
         }

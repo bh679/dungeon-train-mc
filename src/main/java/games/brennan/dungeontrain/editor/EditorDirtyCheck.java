@@ -23,6 +23,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,6 +55,11 @@ import java.util.Set;
  * are skipped because the {@link VariantEditorPreviewTicker} cycles
  * them every 1–3 seconds; comparing the live state at those positions
  * to the snapshot's frozen frame would false-positive on every cycle.
+ *
+ * <p>A plot whose variant sidecar changed since that snapshot is unsaved too
+ * ({@link EditorPlotSnapshots#sidecarEdited}) — the pool is written to disk on
+ * every edit, but the author still expects a Save to follow it, and the
+ * block compare skips exactly those cells.
  *
  * <p>"Unpromoted" means the config-dir copy of the NBT differs from
  * the bundled source-tree copy — only meaningful in DevMode and only
@@ -107,10 +114,10 @@ public final class EditorDirtyCheck {
             // x=8 in the longer portal corridor and report it clean.
             CarriageDims box = CarriageEditor.plotDims(v, dims);
             Set<BlockPos> skip = variantCellPositions(CarriageVariantBlocks.loadFor(v, box).entries());
-            boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(key, level, origin,
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin,
                     box.length(), box.height(), box.width(),
-                    snapshot, skip);
+                    snapshot, skip));
 
             boolean unpromoted = devmode
                 && (v instanceof CarriageVariant.Builtin builtin)
@@ -139,10 +146,10 @@ public final class EditorDirtyCheck {
 
             Set<BlockPos> skip = variantCellPositions(
                 CarriageContentsVariantBlocks.loadFor(c, interior).entries());
-            boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(key, level, interiorOrigin,
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, interiorOrigin,
                     interior.getX(), interior.getY(), interior.getZ(),
-                    snapshot, skip);
+                    snapshot, skip));
 
             // Contents has no separate bundled tier — the editor's save command
             // write-throughs handle source promotion in one step.
@@ -162,8 +169,8 @@ public final class EditorDirtyCheck {
             Vec3i fp = new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.TILE, name, fp).entries());
-            boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
             boolean unpromoted = devmode
                 && games.brennan.dungeontrain.track.variant.TrackVariantStore.sourceTreeAvailable()
@@ -190,8 +197,8 @@ public final class EditorDirtyCheck {
                 Vec3i fp = new Vec3i(1, section.height(), dims.width());
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
-                boolean unsaved = snapshot != null
-                    && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                    || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
                 boolean unpromoted = devmode
                     && games.brennan.dungeontrain.track.variant.TrackVariantStore.sourceTreeAvailable()
@@ -222,8 +229,8 @@ public final class EditorDirtyCheck {
                 Vec3i fp = new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
-                boolean unsaved = snapshot != null
-                    && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                    || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
                 boolean unpromoted = devmode
                     && games.brennan.dungeontrain.track.variant.TrackVariantStore.sourceTreeAvailable()
@@ -254,8 +261,8 @@ public final class EditorDirtyCheck {
                 Vec3i fp = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
-                boolean unsaved = snapshot != null
-                    && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+                boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                    || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
                 if (unsaved) {
                     String tunnelLabel = variant.name().toLowerCase(java.util.Locale.ROOT);
@@ -285,8 +292,8 @@ public final class EditorDirtyCheck {
             Vec3i fp = PortalRoomEditor.plotSize(name, dims);
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, name, fp).entries());
-            boolean unsaved = snapshot != null
-                && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip);
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
 
             // A resize is an unsaved change the block compare cannot see: it re-stamps the plot and
             // re-takes the snapshot, so the live blocks match their baseline exactly while the plot
@@ -342,6 +349,23 @@ public final class EditorDirtyCheck {
      */
     public static List<DiffEntry> findChanges(ServerLevel overworld, CarriageDims dims,
                                               String categoryId, String modelId) {
+        List<DiffEntry> out = new ArrayList<>(findBlockChanges(overworld, dims, categoryId, modelId));
+        String key = snapshotKeyFor(categoryId, modelId);
+        if (key != null && EditorPlotSnapshots.sidecarEdited(key)) {
+            Set<BlockPos> cells = EditorPlotSnapshots.sidecarEdits(key);
+            if (cells.isEmpty()) {
+                out.add(new DiffEntry(BlockPos.ZERO, "variant settings", "edited"));
+            }
+            for (BlockPos cell : cells) {
+                out.add(new DiffEntry(cell, "variants", "edited"));
+            }
+        }
+        return out;
+    }
+
+    /** The block half of {@link #findChanges}. */
+    private static List<DiffEntry> findBlockChanges(ServerLevel overworld, CarriageDims dims,
+                                                    String categoryId, String modelId) {
         List<DiffEntry> out = new ArrayList<>();
         if ("carriages".equals(categoryId)) {
             CarriageVariant variant = CarriageVariantRegistry.find(modelId).orElse(null);
@@ -528,6 +552,61 @@ public final class EditorDirtyCheck {
             case TRACK -> trackDirtyKeyFor(TrackKind.fromId(subKind), id);
             case PART, CARRIAGE_GROUP -> null;
         };
+    }
+
+    /**
+     * The {@link EditorPlotSnapshots} key a track-side plot's baseline is stored under — the
+     * inverse of the scan passes' {@code key = …} lines, so a sidecar edit on a
+     * {@code BlockVariantPlot.TrackPlot} lands on the row the scan will read.
+     */
+    @Nullable
+    public static String snapshotKeyFor(@Nullable TrackKind kind, String name) {
+        if (kind == null || name == null) return null;
+        return switch (kind) {
+            case TILE -> TrackEditor.snapshotKey(name);
+            case PILLAR_TOP -> PillarEditor.sectionSnapshotKey(PillarSection.TOP, name);
+            case PILLAR_MIDDLE -> PillarEditor.sectionSnapshotKey(PillarSection.MIDDLE, name);
+            case PILLAR_BOTTOM -> PillarEditor.sectionSnapshotKey(PillarSection.BOTTOM, name);
+            case ADJUNCT_STAIRS -> PillarEditor.adjunctSnapshotKey(PillarAdjunct.STAIRS, name);
+            case ADJUNCT_STAIRS_ENTRANCE -> PillarEditor.adjunctSnapshotKey(PillarAdjunct.STAIRS_ENTRANCE, name);
+            case TUNNEL_SECTION -> TunnelEditor.tunnelSnapshotKey(TunnelVariant.SECTION, name);
+            case TUNNEL_PORTAL -> TunnelEditor.tunnelSnapshotKey(TunnelVariant.PORTAL, name);
+            case PORTAL_ROOM -> PortalRoomEditor.snapshotKey(name);
+        };
+    }
+
+    /**
+     * As {@link #snapshotKeyFor(TrackKind, String)}, from a scan row's
+     * ({@link DirtyEntry#categoryId()}, {@link DirtyEntry#modelId()}) — what the changes-list
+     * drilldown has in hand. Null for a row shape the scan never emits.
+     */
+    @Nullable
+    static String snapshotKeyFor(String categoryId, String modelId) {
+        if (categoryId == null || modelId == null) return null;
+        switch (categoryId) {
+            case "carriages", "contents" -> {
+                return EditorPlotSnapshots.key(categoryId, modelId);
+            }
+            case "portals" -> {
+                int sep = modelId.indexOf('.');
+                return sep < 0 ? null : PortalRoomEditor.snapshotKey(modelId.substring(sep + 1));
+            }
+            case "tracks" -> {
+                int sep = modelId.indexOf('.');
+                if (sep < 0) return null;
+                String prefix = modelId.substring(0, sep);
+                String name = modelId.substring(sep + 1);
+                for (TrackKind kind : TrackKind.values()) {
+                    if (kind == TrackKind.PORTAL_ROOM) continue;
+                    String key = trackDirtyKeyFor(kind, name);
+                    if (key != null && key.equals(prefix + "." + name)) return snapshotKeyFor(kind, name);
+                }
+                return null;
+            }
+            default -> {
+                return null;
+            }
+        }
     }
 
     /** The {@link #dirtyKeyFor} arm for the track-side kinds, one key shape per editor. */

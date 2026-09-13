@@ -587,18 +587,27 @@ public final class EditorTypeMenus {
         if (anchor == null) return null;
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>();
         for (games.brennan.dungeontrain.template.Stage s : StageStore.allStages()) {
-            TemplateGate g = s.gate();
-            // weight = NO_WEIGHT keeps the row weightless; the gated ctor still carries the gate so
-            // the row reads as (name + level/dimension) and the client edit screen can show values.
-            rows.add(new EditorTypeMenusPacket.Variant(
-                s.name(), EditorPlotLabelsPacket.NO_WEIGHT,
-                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
-                STAGES_CATEGORY, s.id(), s.id(), true, false));
+            rows.add(stageRow(s));
         }
         // The companion-menu renderer adds its own "+ New" footer row (routed to the StageNameScreen
         // by the input handler), so no synthetic create row is needed here.
         return new EditorTypeMenusPacket.Menu(
             anchor, "Stages", rows, false, "", List.of(), List.of(), false, true);
+    }
+
+    /**
+     * One Stage as a gated row: {@code modelId} = stage id, {@code name} = display name. Shared by
+     * the world-space Stages panel and the editor screen's roster so both read a stage identically.
+     */
+    public static EditorTypeMenusPacket.Variant stageRow(games.brennan.dungeontrain.template.Stage s) {
+        TemplateGate g = s.gate();
+        // weight = NO_WEIGHT keeps the row weightless; the gated ctor still carries the gate so
+        // the row reads as (name + level/dimension) and the client edit screen can show values.
+        EditorTypeMenusPacket.Variant row = new EditorTypeMenusPacket.Variant(
+            s.name(), EditorPlotLabelsPacket.NO_WEIGHT,
+            g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+            STAGES_CATEGORY, s.id(), s.id(), true, false);
+        return s.builder() == null ? row : row.withBuilder(s.builder().uuid(), s.builder().name());
     }
 
     /**
