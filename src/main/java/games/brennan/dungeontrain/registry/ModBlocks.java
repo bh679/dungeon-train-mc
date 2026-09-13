@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.registry;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.SkyboxBlock;
 import games.brennan.dungeontrain.block.SkyboxSky;
+import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -132,6 +133,15 @@ public final class ModBlocks {
         SkyboxSky.NIGHT.blockName(), () -> new BlockItem(SKYBOX_NIGHT.get(), new Item.Properties()));
     public static final DeferredItem<BlockItem> SKYBOX_SUNRISE_ITEM = BLOCK_ITEMS.register(
         SkyboxSky.SUNRISE.blockName(), () -> new BlockItem(SKYBOX_SUNRISE.get(), new Item.Properties()));
+
+    /**
+     * The stage placeholder blocks ({@code stage_block_1..10}, stairs/slab slots, button, plate and
+     * the wood set) — registered in bulk by {@link StagePlaceholderBlocks}, which owns the catalogue.
+     * Static-init ordering: this runs after the fields above, so the deferred registers exist.
+     */
+    static {
+        StagePlaceholderBlocks.register(BLOCKS, BLOCK_ITEMS);
+    }
 
     private ModBlocks() {}
 

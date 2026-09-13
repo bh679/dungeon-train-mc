@@ -152,7 +152,13 @@ public final class PortalRoomTiler {
         // genuinely walking still slides it, and a player shifting between two tiles moves nothing.
         Tile next = tiling.nextToAdd(standingIn, radius, budget,
             candidate -> canStamp(level, dims, structure, candidate, neighbours));
-        if (next != null) return stampTile(level, dims, structure, next, pairKey);
+        if (next != null) {
+            // Same stage as the base room (pairKey = entry carriage index) for the stage placeholders.
+            String stageId = games.brennan.dungeontrain.template.StageResolver.stageIdFor(
+                games.brennan.dungeontrain.template.GateContext.forCarriage(level, pairKey, dims.length()));
+            return games.brennan.dungeontrain.train.StagePlacementScope.with(stageId,
+                () -> stampTile(level, dims, structure, next, pairKey));
+        }
 
         // Spared as well as the tile somebody is standing in: the room a bound extra corridor opens
         // into. That corridor is held past the window (PortalExitCopies) so a player can walk back in

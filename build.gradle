@@ -405,12 +405,16 @@ dependencies {
     implementation "bh679:ediblebackpacks:${ediblebackpacks_version}"
     jarJar(group: 'bh679', name: 'ediblebackpacks', version: ediblebackpacks_version)
 
-    // Keep Trim — crafting-grid repair keeps the left-most item's armor trim. TEMPORARILY
-    // jarJar-bundled (like DiscordPresence/EdibleBackpacks) until its Modrinth/CurseForge
-    // listings are approved; then flip to the external-required-dep contract + modpack entry.
-    // DT does not compile against it — the mod is a single vanilla mixin, no API.
+    // Keep Trim — crafting-grid repair keeps the left-most item's armor trim. Same
+    // external-required-dep contract as AIN/AIS/PMOB/ECP/TE above; fetched via the shared
+    // bh679 Ivy repo (flat asset keeptrim-neoforge-<v>.jar). Un-bundled from jarJar once the
+    // CurseForge listing (1691315) went live so the launcher auto-installs it and Keep Trim's
+    // own page gets the download credit. (Modrinth listing still in review at the time —
+    // the Modrinth modpack references the GitHub release asset until then, see
+    // modpack.config.json `modrinth_pending_url`.)
+    // DT does not compile against it — the mod is a single vanilla mixin, no API; it is on
+    // the dev runtime classpath only so runClient/runServer satisfy mods.toml.
     implementation "bh679:keeptrim:${keeptrim_version}"
-    jarJar(group: 'bh679', name: 'keeptrim', version: keeptrim_version)
 
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
@@ -679,6 +683,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
         keeptrim_version                 : keeptrim_version,
+        keeptrim_min_version             : keeptrim_min_version,
         // The DH build the modpack pins — VersionInfo reads it so DT can silence DH's own
         // update prompt for players who are on exactly that build (see DistantHorizonsUpdatePromptSuppression).
         distant_horizons_version         : distant_horizons_version,
