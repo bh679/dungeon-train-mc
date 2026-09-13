@@ -16261,6 +16261,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-room-jumps-weight",
+      "version": "0.871.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "New dimensional carriage: Jumps",
+      "summary": "The Jumps room joins the dimensional carriage rotation (bedrockless variant).",
+      "highlights": [],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
