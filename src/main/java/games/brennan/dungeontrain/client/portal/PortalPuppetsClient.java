@@ -61,7 +61,25 @@ public final class PortalPuppetsClient {
     private PortalPuppetsClient() {}
 
     /**
-     * One puppet: the model to draw, and the two states to interpolate between.
+     * Ticks a server pose is reached over, once it arrives. Vanilla's own number: every entity a
+     * client tracks is moved with {@code lerpTo(..., 3)}, so this is what makes a puppet cross the
+     * room at the same pace, with the same lag, as the entity it stands for.
+     */
+    private static final int LERP_STEPS = 3;
+
+    /**
+     * One puppet: the model to draw, and the states to interpolate between.
+     *
+     * <p><b>A packet sets a target; a tick moves.</b> The server's pose is not applied when it
+     * arrives — that happens at some arbitrary point inside a client tick, and interpolation
+     * measures from the tick's start. Shifting the endpoints mid-tick made the puppet leap forward
+     * by the fraction of the tick already elapsed and then, when the tick rolled over and the
+     * fraction reset, leap back to its previous position before covering the same ground again:
+     * a stutter on every moving puppet, and none on a still one. So a packet only records where
+     * the puppet should be, and {@link #tick} — once per client tick, when the fraction resets —
+     * moves the previous and current positions the way a vanilla entity's own tick does, spread
+     * over {@link #LERP_STEPS} ticks the way vanilla spreads every tracked entity's moves. The
+     * clone then lands on each tick's position at the same instant the original does.</p>
      *
      * <p>Positions are held in whatever space the server sent — world for a puppet standing in a
      * twin, shipyard-local for one riding a carriage — and resolved at draw time. Interpolating
@@ -74,18 +92,20 @@ public final class PortalPuppetsClient {
         private final Entity model;
         private PortalPuppetsPacket.Entry entry;
 
-        private double prevX, prevY, prevZ;
-        private float prevYaw, prevHeadYaw, prevPitch;
+        private double prevX, prevY, prevZ, curX, curY, curZ;
+        private float prevYaw, prevHeadYaw, prevPitch, curYaw, curHeadYaw, curPitch;
+        /** Ticks left to reach {@link #entry}'s pose; zero when standing on it. */
+        private int lerpSteps;
 
         private Puppet(Entity model, PortalPuppetsPacket.Entry entry) {
             this.model = model;
             this.entry = entry;
-            this.prevX = entry.x();
-            this.prevY = entry.y();
-            this.prevZ = entry.z();
-            this.prevYaw = entry.yaw();
-            this.prevHeadYaw = entry.headYaw();
-            this.prevPitch = entry.pitch();
+            this.prevX = this.curX = entry.x();
+            this.prevY = this.curY = entry.y();
+            this.prevZ = this.curZ = entry.z();
+            this.prevYaw = this.curYaw = entry.yaw();
+            this.prevHeadYaw = this.curHeadYaw = entry.headYaw();
+            this.prevPitch = this.curPitch = entry.pitch();
         }
 
         public Entity model() {
@@ -97,72 +117,90 @@ public final class PortalPuppetsClient {
         }
 
         public double lerpX(float partialTick) {
-            return Mth.lerp(partialTick, prevX, entry.x());
+            return Mth.lerp(partialTick, prevX, curX);
         }
 
         public double lerpY(float partialTick) {
-            return Mth.lerp(partialTick, prevY, entry.y());
+            return Mth.lerp(partialTick, prevY, curY);
         }
 
         public double lerpZ(float partialTick) {
-            return Mth.lerp(partialTick, prevZ, entry.z());
+            return Mth.lerp(partialTick, prevZ, curZ);
         }
 
         public float lerpYaw(float partialTick) {
-            return Mth.rotLerp(partialTick, prevYaw, entry.yaw());
+            return Mth.rotLerp(partialTick, prevYaw, curYaw);
         }
 
         /**
-         * Advance to a new server state, keeping the old one as the interpolation baseline.
+         * Take a new server state as the target to move towards.
          *
          * <p>{@code next} may be any shape. The entry held here is always a full one — a pose entry
          * is folded onto it, a held entry leaves it as it was — so the renderer and the model always
          * have the complete picture whatever the wire carried this tick. Only a full entry re-dresses
          * the model: the five equipment slots and the synched-data copy are the costly part of a
-         * snapshot, and a pose or held entry is the server saying they have not changed.</p>
+         * snapshot, and a pose or held entry is the server saying they have not changed. Nothing
+         * here moves the puppet; see {@link #tick}.</p>
          */
         private void update(PortalPuppetsPacket.Entry next) {
-            this.prevX = entry.x();
-            this.prevY = entry.y();
-            this.prevZ = entry.z();
-            this.prevYaw = entry.yaw();
-            this.prevHeadYaw = entry.headYaw();
-            this.prevPitch = entry.pitch();
-
             if (next.isFull()) {
                 this.entry = next;
+                applyAppearance();
             } else if (next.hasPose()) {
                 this.entry = entry.withPose(next);
             }
-
-            applyPose();
-            if (next.isFull()) applyAppearance();
+            if (next.hasPose()) this.lerpSteps = LERP_STEPS;
         }
 
         /**
-         * Push the server's state onto the model.
+         * One client tick: the previous state becomes the current one, and the current one moves a
+         * step towards the target — {@code LivingEntity.tick}'s own arithmetic.
+         */
+        private void tick() {
+            this.prevX = curX;
+            this.prevY = curY;
+            this.prevZ = curZ;
+            this.prevYaw = curYaw;
+            this.prevHeadYaw = curHeadYaw;
+            this.prevPitch = curPitch;
+
+            if (lerpSteps > 0) {
+                double t = 1.0 / lerpSteps;
+                this.curX = Mth.lerp(t, curX, entry.x());
+                this.curY = Mth.lerp(t, curY, entry.y());
+                this.curZ = Mth.lerp(t, curZ, entry.z());
+                this.curYaw = Mth.rotLerp((float) t, curYaw, entry.yaw());
+                this.curHeadYaw = Mth.rotLerp((float) t, curHeadYaw, entry.headYaw());
+                this.curPitch = Mth.lerp((float) t, curPitch, entry.pitch());
+                this.lerpSteps--;
+            }
+
+            applyPose();
+        }
+
+        /**
+         * Push the current state onto the model.
          *
          * <p>Both the current and previous rotation fields are set, because the entity renderer
          * interpolates between them itself — leaving the previous ones behind would make a puppet's
-         * head snap round on the frame after a snapshot and drift back over the next.</p>
+         * head snap round on the frame after a tick and drift back over the next.</p>
          */
         private void applyPose() {
-            model.setYRot(entry.yaw());
+            model.setYRot(curYaw);
             model.yRotO = prevYaw;
-            model.setXRot(entry.pitch());
+            model.setXRot(curPitch);
             model.xRotO = prevPitch;
 
             if (model instanceof LivingEntity living) {
-                living.yBodyRot = entry.yaw();
+                living.yBodyRot = curYaw;
                 living.yBodyRotO = prevYaw;
-                living.yHeadRot = entry.headYaw();
+                living.yHeadRot = curHeadYaw;
                 living.yHeadRotO = prevHeadYaw;
 
-                // Limb swing, driven from how far the source actually moved. Nothing ticks this
+                // Limb swing, driven from how far the puppet moved this tick. Nothing ticks this
                 // entity, so the animation state that a normal entity accumulates in its own tick
                 // has to be advanced here or the puppet slides about with its legs together.
-                float moved = (float) Math.sqrt(
-                    sqr(entry.x() - prevX) + sqr(entry.z() - prevZ));
+                float moved = (float) Math.sqrt(sqr(curX - prevX) + sqr(curZ - prevZ));
                 living.walkAnimation.update(Math.min(moved * 4.0F, 1.0F), 0.4F);
             }
 
@@ -311,16 +349,19 @@ public final class PortalPuppetsClient {
     }
 
     /**
-     * Count ticks since the last snapshot, and clear if the server has gone quiet.
+     * Move every puppet one tick towards its target, and clear if the server has gone quiet.
      *
-     * <p>Cheap when idle: with nothing being shown, the counter is not even advanced.</p>
+     * <p>This is where a puppet actually moves — see {@link Puppet}. Cheap when idle: with nothing
+     * being shown, the counter is not even advanced.</p>
      */
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         if (PUPPETS.isEmpty()) return;
         if (++ticksSinceSnapshot > STALE_TICKS) {
             discardAll("no snapshot for " + STALE_TICKS + " ticks");
+            return;
         }
+        for (Puppet puppet : PUPPETS.values()) puppet.tick();
     }
 
     /** Drop everything on disconnect, so ids cannot leak into the next session. */
