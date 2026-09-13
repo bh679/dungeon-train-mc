@@ -6,7 +6,6 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -83,13 +82,9 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
                 pose.pushPose();
                 base = base.applyTransform(context, pose, false);
                 pose.translate(-0.5f, -0.5f, -0.5f);
-                if (repeat) {
-                    // Dimmed as a whole: the base goes through the translucent sheet at REPEAT_ALPHA.
-                    renderQuads(base, pose, buffers.getBuffer(Sheets.translucentItemSheet()), light, overlay, whole);
-                } else {
-                    itemRenderer.renderModelLists(base, resolvedStack, light, overlay, pose,
-                        buffers.getBuffer(ItemBlockRenderTypes.getRenderType(resolvedStack, true)));
-                }
+                // Both layers go through the same (non-fixed) translucent sheet so they flush in
+                // draw order — a fixed cutout buffer would flush AFTER the ghost and cover it.
+                renderQuads(base, pose, buffers.getBuffer(Sheets.translucentItemSheet()), light, overlay, whole);
                 pose.popPose();
                 drewBase = true;
             }
@@ -102,7 +97,7 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
         tile = tile.applyTransform(context, pose, false);
         pose.translate(-0.5f, -0.5f, -0.5f);
         float alpha = (drewBase ? OVERLAY_ALPHA : 1.0f) * whole;
-        VertexConsumer vc = buffers.getBuffer(alpha < 1.0f ? Sheets.translucentItemSheet() : Sheets.cutoutBlockSheet());
+        VertexConsumer vc = buffers.getBuffer(Sheets.translucentItemSheet());
         renderQuads(tile, pose, vc, light, overlay, alpha);
         pose.popPose();
 
