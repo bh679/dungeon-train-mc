@@ -15,6 +15,8 @@ import java.util.List;
 final class EditorStagesPane {
 
     static final int ROW_H = EditorDetailPane.ROW_H;
+    /** Under the shown stage's row, so it reads as chosen even when the pointer is elsewhere. */
+    static final int SELECTED_FILL = 0x50FFCC33;
 
     private int scroll;
 
@@ -48,10 +50,12 @@ final class EditorStagesPane {
             int top = r.y() + k * ROW_H;
             boolean hov = idx == hoveredRow;
             int hoveredSub = hov ? MenuRowPainter.hitCell(row.entry(), mouseX, r.x(), r.right()) : -1;
+            boolean chosen = shownId.equalsIgnoreCase(row.stageId());
+            // The shown stage reads as chosen, not merely outlined: a tint under the row and the
+            // browser's selection border around it.
+            if (chosen) g.fill(r.x(), top, r.right(), top + ROW_H - 1, SELECTED_FILL);
             MenuRowPainter.drawRow(g, font, row.entry(), r.x(), top, r.right(), ROW_H - 1, idx, hov, hoveredSub, null);
-            if (shownId.equalsIgnoreCase(row.stageId())) {
-                g.renderOutline(r.x(), top, r.w(), ROW_H - 1, TemplateTilePainter.BORDER_SELECTED);
-            }
+            if (chosen) g.renderOutline(r.x(), top, r.w(), ROW_H - 1, TemplateTilePainter.BORDER_SELECTED);
         }
         drawScrollbar(g, r, rows.size(), visible);
     }

@@ -987,6 +987,8 @@
   "gui.dungeontrain.editor_screen.stages.none": "ステージはまだありません",
   "gui.dungeontrain.editor_screen.stages.no_blocks": "このステージに紐づくパーツはありません",
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s 回使用",
+  "gui.dungeontrain.editor_screen.stages.templates": "リンク済みテンプレート %s 件",
+  "gui.dungeontrain.editor_screen.stages.no_templates": "このステージに紐づくものはありません",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "クリックで折りたたみ・展開",
   "gui.dungeontrain.editor_screen.layout.move": "移動…",

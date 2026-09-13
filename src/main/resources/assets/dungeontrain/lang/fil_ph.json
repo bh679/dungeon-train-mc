@@ -987,6 +987,8 @@
   "gui.dungeontrain.editor_screen.stages.none": "Wala pang stage",
   "gui.dungeontrain.editor_screen.stages.no_blocks": "Walang bahaging naka-link sa stage na ito",
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s gamit",
+  "gui.dungeontrain.editor_screen.stages.templates": "%s naka-link na template",
+  "gui.dungeontrain.editor_screen.stages.no_templates": "Walang naka-link sa stage na ito",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "I-click para itupi o buksan",
   "gui.dungeontrain.editor_screen.layout.move": "Ilipat…",

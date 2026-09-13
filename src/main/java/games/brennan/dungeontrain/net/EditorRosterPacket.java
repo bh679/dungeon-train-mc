@@ -42,12 +42,18 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
      * {@link StageBlocksSyncPacket#BLOCKS_CAP}, the same definition as the Stage Blocks panel.
      *
      * @param totalUnique the real distinct-block count, so a capped list can still say "+K"
-     * @param partCount   how many parts link to the stage
+     * @param parts       the carriage parts that link to the stage, as {@code <kind id>:<name>}
+     *                    (the key the part commands take), in the index's stable order
      */
     public record StageEntry(EditorTypeMenusPacket.Variant stage, List<StageBlocksSyncPacket.BlockCount> blocks,
-                             int totalUnique, int partCount) {
+                             int totalUnique, List<String> parts) {
         public StageEntry {
             blocks = blocks == null ? List.of() : List.copyOf(blocks);
+            parts = parts == null ? List.of() : List.copyOf(parts);
+        }
+
+        public int partCount() {
+            return parts.size();
         }
 
         public String id() {
@@ -172,7 +178,8 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 buf.writeVarInt(b.count());
             }
             buf.writeVarInt(s.totalUnique());
-            buf.writeVarInt(s.partCount());
+            buf.writeVarInt(s.parts().size());
+            for (String part : s.parts()) buf.writeUtf(part, 128);
         }
     }
 
@@ -204,7 +211,11 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             for (int j = 0; j < nb; j++) {
                 blocks.add(new StageBlocksSyncPacket.BlockCount(buf.readUtf(256), buf.readVarInt()));
             }
-            stages.add(new StageEntry(stage, blocks, buf.readVarInt(), buf.readVarInt()));
+            int totalUnique = buf.readVarInt();
+            int np = buf.readVarInt();
+            List<String> parts = new ArrayList<>(np);
+            for (int j = 0; j < np; j++) parts.add(buf.readUtf(128));
+            stages.add(new StageEntry(stage, blocks, totalUnique, parts));
         }
         return new EditorRosterPacket(groups, stamped, trainSize, stages);
     }

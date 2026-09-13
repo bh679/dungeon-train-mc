@@ -987,6 +987,8 @@
   "gui.dungeontrain.editor_screen.stages.none": "尚無階段",
   "gui.dungeontrain.editor_screen.stages.no_blocks": "沒有部件關聯到此階段",
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s 次使用",
+  "gui.dungeontrain.editor_screen.stages.templates": "%s 個關聯模板",
+  "gui.dungeontrain.editor_screen.stages.no_templates": "沒有內容關聯到此階段",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "點擊摺疊或展開",
   "gui.dungeontrain.editor_screen.layout.move": "移動…",

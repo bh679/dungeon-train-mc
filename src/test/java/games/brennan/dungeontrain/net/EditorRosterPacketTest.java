@@ -67,8 +67,9 @@ final class EditorRosterPacketTest {
             List.of(
                 new EditorRosterPacket.StageEntry(desert, List.of(
                     new StageBlocksSyncPacket.BlockCount("minecraft:sandstone", 120),
-                    new StageBlocksSyncPacket.BlockCount("minecraft:cut_sandstone", 7)), 5, 3),
-                new EditorRosterPacket.StageEntry(bare, List.of(), 0, 0)));
+                    new StageBlocksSyncPacket.BlockCount("minecraft:cut_sandstone", 7)), 5,
+                    List.of("floor:sand_1", "walls:sand_1", "roof:sand_2")),
+                new EditorRosterPacket.StageEntry(bare, List.of(), 0, List.of())));
         EditorRosterPacket decoded = roundTrip(packet);
         assertEquals(2, decoded.stages().size());
         EditorRosterPacket.StageEntry d = decoded.stages().get(0);
@@ -82,6 +83,7 @@ final class EditorRosterPacketTest {
         assertEquals(120, d.blocks().get(0).count());
         assertEquals(5, d.totalUnique());
         assertEquals(3, d.partCount());
+        assertEquals(List.of("floor:sand_1", "walls:sand_1", "roof:sand_2"), d.parts());
         EditorRosterPacket.StageEntry b = decoded.stages().get(1);
         assertTrue(b.blocks().isEmpty());
         assertEquals(0, b.partCount());

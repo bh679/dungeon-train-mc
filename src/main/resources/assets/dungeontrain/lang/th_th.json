@@ -987,6 +987,8 @@
   "gui.dungeontrain.editor_screen.stages.none": "ยังไม่มีสเตจ",
   "gui.dungeontrain.editor_screen.stages.no_blocks": "ไม่มีชิ้นส่วนที่เชื่อมกับสเตจนี้",
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s ครั้ง",
+  "gui.dungeontrain.editor_screen.stages.templates": "เทมเพลตที่เชื่อม %s รายการ",
+  "gui.dungeontrain.editor_screen.stages.no_templates": "ไม่มีสิ่งใดเชื่อมกับสเตจนี้",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "คลิกเพื่อย่อหรือขยาย",
   "gui.dungeontrain.editor_screen.layout.move": "ย้าย…",

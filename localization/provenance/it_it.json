@@ -1015,6 +1015,8 @@
   "gui.dungeontrain.editor_screen.stages.none": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.stages.no_blocks": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.stages.block_tip": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.editor_screen.stages.templates": {"author": "Opus 5 (Claude)", "reviewer": ""},
+  "gui.dungeontrain.editor_screen.stages.no_templates": {"author": "Opus 5 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.layout.section": {"author": "Fable 5.1 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.layout.section_tip": {"author": "Fable 5.1 (Claude)", "reviewer": ""},
   "gui.dungeontrain.editor_screen.layout.move": {"author": "Fable 5.1 (Claude)", "reviewer": ""},

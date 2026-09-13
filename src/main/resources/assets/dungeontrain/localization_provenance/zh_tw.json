@@ -977,6 +977,8 @@
       "gui.dungeontrain.editor_screen.stages.none",
       "gui.dungeontrain.editor_screen.stages.no_blocks",
       "gui.dungeontrain.editor_screen.stages.block_tip",
+      "gui.dungeontrain.editor_screen.stages.templates",
+      "gui.dungeontrain.editor_screen.stages.no_templates",
       "gui.dungeontrain.editor_screen.layout.section",
       "gui.dungeontrain.editor_screen.layout.section_tip",
       "gui.dungeontrain.editor_screen.layout.move",

@@ -1,4 +1,13 @@
 {
+  "gui.dungeontrain.editor_screen.stages.templates": {
+    "1": {
+      "label": "how many templates and carriage parts link to the stage",
+      "examples": [
+        "6",
+        "0"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.stages.blocks": {
     "1": {
       "label": "how many distinct blocks the stage's linked parts use",

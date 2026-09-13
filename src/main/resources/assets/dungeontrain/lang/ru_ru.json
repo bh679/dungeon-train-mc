@@ -1048,6 +1048,8 @@
   "gui.dungeontrain.editor_screen.stages.none": "Этапов пока нет",
   "gui.dungeontrain.editor_screen.stages.no_blocks": "К этому этапу не привязано ни одной части",
   "gui.dungeontrain.editor_screen.stages.block_tip": "×%s использований",
+  "gui.dungeontrain.editor_screen.stages.templates": "Привязанных шаблонов: %s",
+  "gui.dungeontrain.editor_screen.stages.no_templates": "К этому этапу ничего не привязано",
   "gui.dungeontrain.editor_screen.layout.section": "%s (%s)",
   "gui.dungeontrain.editor_screen.layout.section_tip": "Нажмите, чтобы свернуть или развернуть",
   "gui.dungeontrain.editor_screen.layout.move": "Переместить…",
