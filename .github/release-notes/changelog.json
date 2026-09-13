@@ -16317,6 +16317,31 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-puppets-whole-room",
+      "version": "0.873.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world",
+        "mobs"
+      ],
+      "title": "Dimensional carriages: every mob is drawn, moves smoothly, and nothing vanishes while you're through the door",
+      "summary": "Clearing a horde in a dimensional carriage used to make zombies go invisible while they were still hitting you, and the frame rate crumbled after a few minutes. The stand-ins that show you what's in the other half of the room are now cheap enough to draw the whole room (96, up from 16), keep the ones nearest you, and move as smoothly as the real thing \u2014 including the flinch when you hit one and the fall when it dies. Experience orbs dropped on the far side drift through to you. Mobs you leave on the train no longer disappear the moment you step through into the room, and two noisy log lines that filled player logs are gone.",
+      "highlights": [
+        "All mobs in a dimensional carriage are drawn \u2014 the cap is 96, up from 16",
+        "Puppets walk, flinch and die in step with the real mob; no more stutter or shimmer on a moving train",
+        "XP orbs dropped in the other half of the room drift to you and are collected",
+        "Mobs on the train no longer despawn while you're in the room beyond the portal",
+        "Two log floods removed (puppet cap line, whole-train roster) \u2014 smaller logs, less server time"
+      ],
+      "pr": 1402,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
