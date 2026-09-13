@@ -36,7 +36,7 @@ public final class StagePreviews {
     /** How many baked stage models stay around; each is one carriage's worth of quads. */
     /** Room for the Stages list's tile view (one model per stage) plus a few rolls of the overview's. */
     private static final int CAPACITY = 48;
-    private static final int BAKES_PER_FRAME = 1;
+    private static final int BAKES_PER_FRAME = 2;
 
     /** One ask: which stage on which carriage at which roll. */
     public record Key(String stageId, String carriageId, long seed) {}
@@ -74,13 +74,15 @@ public final class StagePreviews {
     /** An answer arrived: queue it for the next frame's bake, or remember that it has no picture. */
     public static void accept(StagePreviewPacket packet) {
         Key key = new Key(packet.stageId(), packet.carriageId(), packet.seed());
-        IN_FLIGHT.remove(key);
         CompoundTag tag = packet.found() ? BuilderRelayPreview.decode(packet.template()) : null;
         if (tag == null || tag.isEmpty()) {
+            IN_FLIGHT.remove(key);
             CACHE.put(key, new Entry(null, TemplateSummary.NONE));
             evictDown();
             return;
         }
+        // Still "in flight" until baked: with one bake a frame and a screenful of tiles waiting,
+        // releasing the key here had every waiting tile asking the server again every frame.
         PENDING.add(new Pending(key, tag));
     }
 
@@ -123,6 +125,7 @@ public final class StagePreviews {
             }
         }
         CACHE.put(pending.key(), entry);
+        IN_FLIGHT.remove(pending.key());
         evictDown();
     }
 

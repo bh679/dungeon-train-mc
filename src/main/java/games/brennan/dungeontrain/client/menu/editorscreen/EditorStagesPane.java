@@ -33,6 +33,10 @@ final class EditorStagesPane {
     /** The carriage and roll the overview shows: every tile follows them, so the tiles compare stages, not rolls. */
     private String tileCarriage = "";
     private long tileSeed;
+    /** Per stage, the last model its tile managed to draw — shown faded while the next one is baking. */
+    private final java.util.Map<String, StagePreviews.Key> lastDrawn = new java.util.HashMap<>();
+    /** Over a tile still showing its previous model. */
+    static final int LOADING_FADE = 0x80000000;
     /** The tile view's scroll, in pixels. */
     private int tileScroll;
     private TemplateTileGridLayout grid;
@@ -142,7 +146,7 @@ final class EditorStagesPane {
             EditorStagesPage.Row row = rows.get(i);
             EditorRosterPacket.StageEntry stage = index.stage(row.stageId());
             drawTile(g, font, stage, carriage, tileSeed, x, y, grid.tile(),
-                shownId.equalsIgnoreCase(row.stageId()), i == hoveredTile);
+                shownId.equalsIgnoreCase(row.stageId()), i == hoveredTile, lastDrawn);
         }
         g.disableScissor();
         int content = grid.contentHeight(rows.size());
@@ -156,13 +160,25 @@ final class EditorStagesPane {
 
     /** One stage's tile: its stamped carriage (asked for on first sight), its name, and the tile marks. */
     private static void drawTile(GuiGraphics g, Font font, EditorRosterPacket.StageEntry stage, String carriage,
-                                 long seed, int x, int y, int size, boolean selected, boolean hovered) {
+                                 long seed, int x, int y, int size, boolean selected, boolean hovered,
+                                 java.util.Map<String, StagePreviews.Key> lastDrawn) {
         g.fill(x, y, x + size, y + size, TemplateTilePainter.MODEL_BACKDROP);
         boolean drawn = false;
         if (stage != null && !carriage.isEmpty()) {
             StagePreviews.Key key = new StagePreviews.Key(stage.id(), carriage, seed);
             StagePreviews.request(key);
             drawn = StagePreviews.draw(g, key, x + 1, y + 1, size - 2, size - 2, TILE_YAW, TemplateTilePainter.FILL);
+            if (drawn) {
+                lastDrawn.put(stage.id(), key);
+            } else {
+                // The model it showed last, faded, until the new one is baked: the tile keeps its
+                // place in the eye instead of blinking to a slate.
+                StagePreviews.Key last = lastDrawn.get(stage.id());
+                if (last != null && StagePreviews.draw(g, last, x + 1, y + 1, size - 2, size - 2, TILE_YAW, TemplateTilePainter.FILL)) {
+                    g.fill(x + 1, y + 1, x + size - 1, y + size - 1, LOADING_FADE);
+                    drawn = true;
+                }
+            }
         }
         String name = stage == null ? "" : stage.name();
         if (!drawn) {

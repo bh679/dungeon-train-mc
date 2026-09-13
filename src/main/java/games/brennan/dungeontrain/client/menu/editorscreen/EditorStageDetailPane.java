@@ -153,6 +153,8 @@ final class EditorStageDetailPane {
     private int carriageIdx = -1;
     private long seed;
     private StagePreviews.Key modelKey;
+    /** The last model the box managed to draw — shown faded while the next roll or carriage bakes. */
+    private StagePreviews.Key lastDrawnModel;
     private List<TemplateDataSheet.Line> sheetLines = List.of();
     private List<TemplateDataSheet.Placed> sheetCells = List.of();
     private static final Random RESEED = new Random();
@@ -378,6 +380,13 @@ final class EditorStageDetailPane {
         if (modelKey != null) {
             StagePreviews.request(modelKey);
             drawn = StagePreviews.draw(g, modelKey, r.x(), r.y(), r.w(), r.h(), yaw, PreviewPane.FILL);
+            if (drawn) {
+                lastDrawnModel = modelKey;
+            } else if (lastDrawnModel != null
+                && StagePreviews.draw(g, lastDrawnModel, r.x(), r.y(), r.w(), r.h(), yaw, PreviewPane.FILL)) {
+                g.fill(r.x(), r.y(), r.right(), r.bottom(), EditorStagesPane.LOADING_FADE);
+                drawn = true;
+            }
         }
         if (!drawn) {
             String pending = EditorScreenLang.text(modelKey == null
