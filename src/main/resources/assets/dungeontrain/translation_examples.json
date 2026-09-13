@@ -3432,6 +3432,24 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.nav.go_here_tip": {
+    "1": {
+      "label": "the name of the editor area the tile stands for",
+      "examples": [
+        "Train Outside",
+        "Dimensional Carriages"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.nav.confirm": {
+    "1": {
+      "label": "the name of the editor area the tile stands for",
+      "examples": [
+        "Train Outside",
+        "Dimensional Carriages"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.standing_in": {
     "1": {
       "label": "the name of the editor plot the player is currently standing in",
