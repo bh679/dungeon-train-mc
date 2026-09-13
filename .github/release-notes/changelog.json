@@ -16184,10 +16184,9 @@
         "balance"
       ],
       "title": "Luck potions can shake an extra item out of vases",
-      "summary": "Drink a Luck potion and every vase you smash on the train \u2014 by hand or with an arrow \u2014 has a 50% chance to drop one extra item on top of whatever it held. The extra item comes from the same loot pool as the vase, so it fits the carriage you're in, and it can turn up even from a vase that would otherwise have been empty. Any strength of Luck works; Bad Luck never takes anything away. Also fixes the chest bonus message, which was showing its raw text key instead of \"Lucky! \u2026 extra item(s) turned up in this chest.\"",
+      "summary": "Drink a Luck potion and every vase you smash on the train has a 50% chance to drop one extra item on top of whatever it held. The extra item comes from the same loot pool as the vase, so it fits the carriage you're in, and it can turn up even from a vase that would otherwise have been empty. Any strength of Luck works; Bad Luck never takes anything away. Also fixes the chest bonus message, which was showing its raw text key instead of \"Lucky! \u2026 extra item(s) turned up in this chest.\"",
       "highlights": [
         "Smashing a vase with Luck has a 50% chance to drop one extra item from that vase's loot pool",
-        "Works whether you mine the vase or shatter it with an arrow",
         "Chest Luck bonus message now reads properly instead of showing a raw key"
       ],
       "pr": 1393,
