@@ -63,20 +63,21 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("Tab order is General, Train, Editor")
+    @DisplayName("Tab order is General, Backups, Train, Editor")
     void tabOrder() {
-        assertEquals(List.of(ClientOptionsTab.GENERAL, ClientOptionsTab.TRAIN, ClientOptionsTab.EDITOR),
+        assertEquals(List.of(ClientOptionsTab.GENERAL, ClientOptionsTab.BACKUPS,
+                        ClientOptionsTab.TRAIN, ClientOptionsTab.EDITOR),
                 List.of(ClientOptionsTab.values()));
     }
 
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: twenty-one rows, none of the conditional rows present")
+    @DisplayName("Plain client: twenty rows, none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(21, rows.size());
+        assertEquals(20, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -95,24 +96,22 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.CINEMATIC_HOTKEY,
                         ClientOptionsTab.Row.BACKPACK_BUTTON,
-                        ClientOptionsTab.Row.AI_POLICY,
-                        ClientOptionsTab.Row.BACKUPS_HEADING,
-                        ClientOptionsTab.Row.BACKUPS,
-                        ClientOptionsTab.Row.BACKUPS_PER_VERSION,
-                        ClientOptionsTab.Row.CLEAR_BACKUPS,
-                        ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE),
+                        ClientOptionsTab.Row.AI_POLICY),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
     }
 
     @Test
-    @DisplayName("Help Translate sits above the backup block, not after it")
-    void translateSitsAboveTheBackupBlock() {
-        List<ClientOptionsTab.Row> general =
-                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, true, true);
-
-        assertTrue(general.indexOf(ClientOptionsTab.Row.TRANSLATE)
-                < general.indexOf(ClientOptionsTab.Row.BACKUPS_HEADING));
+    @DisplayName("The backup rows live on their own tab, not on General")
+    void backupRowsLiveOnTheirOwnTab() {
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                List<ClientOptionsTab.Row> general =
+                        ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, chinese, translate, true);
+                assertFalse(general.contains(ClientOptionsTab.Row.BACKUPS));
+                assertFalse(general.contains(ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE));
+            }
+        }
     }
 
     @Test
@@ -121,10 +120,8 @@ final class ClientOptionsTabTest {
         List<ClientOptionsTab.Row> general =
                 ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, true, true);
 
-        // It used to close the tab; the backup block now does, so Translate is the last of the
-        // ungrouped rows rather than the last row outright.
-        assertEquals(ClientOptionsTab.Row.TRANSLATE,
-                general.get(general.indexOf(ClientOptionsTab.Row.BACKUPS_HEADING) - 1));
+        // Translate closes the tab again now that the backup block has its own tab.
+        assertEquals(ClientOptionsTab.Row.TRANSLATE, general.get(general.size() - 1));
         assertFalse(general.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
     }
 
@@ -151,24 +148,21 @@ final class ClientOptionsTabTest {
     void allConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true, true);
 
-        assertEquals(24, rows.size());
+        assertEquals(23, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
 
     @Test
-    @DisplayName("The backup rows lead a group so they are not split across a pair boundary")
+    @DisplayName("The backup rows pair among themselves — none is a group leader")
     void backupRowsStartTheirOwnGroup() {
-        // Rows pack two-across in list order. Without a group leader, BACKUPS pairs with whatever
-        // row precedes it and the three backup rows stop reading as one block.
-        assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS_HEADING));
-        assertTrue(ClientOptionsTab.isHeading(ClientOptionsTab.Row.BACKUPS_HEADING));
-        // The rest of the group pairs among themselves, so they must NOT be leaders.
+        // Rows pack two-across in list order. On their own tab the block needs no leader and no
+        // heading; a leader here would break the two short rows off their shared line.
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS));
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.BACKUPS_PER_VERSION));
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.CLEAR_BACKUPS));
         assertFalse(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE));
-        // AI Policy leads the page-opening pair above the backup block. It, not Translate, is
+        // AI Policy leads the page-opening pair at the foot of General. It, not Translate, is
         // the leader: Translate is conditional, so leading with it would break the pair apart on
         // every client where it is absent.
         assertTrue(ClientOptionsTab.startsGroup(ClientOptionsTab.Row.AI_POLICY));
@@ -176,18 +170,20 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("The backup rows stay adjacent, in order")
+    @DisplayName("The Backups tab holds the four backup rows, in order, whatever the flags")
     void backupRowsAreAdjacent() {
-        List<ClientOptionsTab.Row> general =
-                ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true);
-        int first = general.indexOf(ClientOptionsTab.Row.BACKUPS_HEADING);
-
-        assertEquals(ClientOptionsTab.Row.BACKUPS, general.get(first + 1));
-        assertEquals(ClientOptionsTab.Row.BACKUPS_PER_VERSION, general.get(first + 2));
-        assertEquals(ClientOptionsTab.Row.CLEAR_BACKUPS, general.get(first + 3));
-        // Restores read builds out of these same archives, so the question about them belongs here.
-        assertEquals(ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE, general.get(first + 4));
-        assertEquals(general.size() - 1, first + 4, "the backup block ends the tab");
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                List<ClientOptionsTab.Row> backups =
+                        ClientOptionsTab.rowsFor(ClientOptionsTab.BACKUPS, chinese, translate, true);
+                // Restores read builds out of these same archives, so the confirm question belongs here.
+                assertEquals(List.of(ClientOptionsTab.Row.BACKUPS,
+                                ClientOptionsTab.Row.BACKUPS_PER_VERSION,
+                                ClientOptionsTab.Row.CLEAR_BACKUPS,
+                                ClientOptionsTab.Row.CONFIRM_BUILD_RESTORE),
+                        backups);
+            }
+        }
     }
 
     // ---- Fixed tabs are unaffected by the conditional flags ----

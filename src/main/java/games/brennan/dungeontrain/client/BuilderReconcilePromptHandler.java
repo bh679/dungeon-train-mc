@@ -30,7 +30,7 @@ import java.nio.file.Path;
  * "Confirm build restores" in Options > Dungeon Train turns on, for anyone who would rather decide,
  * and it is also the only way to keep the backup-only tier out of a restore.</p>
  *
- * <p>Structure is {@link DataRecoveryPromptHandler}'s, and for the same reasons: arm on
+ * <p>Structure is Dungeon Backup's {@code DataRecoveryPromptHandler}'s, and for the same reasons: arm on
  * {@code ScreenEvent.Init.Post} for the title screen, open after a short tick delay, and bail if the
  * player has navigated away, so it never steals a click from someone already heading into a world.
  * That navigate-away guard is what keeps the title-screen prompts out of each other's way.</p>

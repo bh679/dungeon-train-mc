@@ -97,6 +97,17 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Dungeon Backup is jarJar'd INSIDE this jar too (the player-data protection system
+# extracted from DT), so the shipped version is always exactly dungeonbackup_version.
+# AFTER so DT's registration (data.DungeonTrainBackup, in the mod constructor) exists
+# before the library's first server-start event.
+[[dependencies.${mod_id}]]
+    modId="dungeonbackup"
+    type="required"
+    versionRange="[${dungeonbackup_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"

@@ -26,7 +26,7 @@ import java.util.Optional;
  * launcher replacing {@code config/} on a pack update can't take it (see {@link PlayerDataPaths}).</p>
  *
  * <p>Deliberately thin and Minecraft-free: every operation takes the data root explicitly so it is
- * drivable from JUnit with {@code @TempDir}, the same shape as {@link PlayerDataRecovery}. And every
+ * drivable from JUnit with {@code @TempDir}, the same shape as Dungeon Backup's {@code DataRecovery}. And every
  * operation is best-effort: an I/O or parse failure is logged and treated as "no state". This file
  * must never be the thing that stops the game reaching the menu, and a corrupt one must read as
  * "nothing to recover" rather than throw.</p>

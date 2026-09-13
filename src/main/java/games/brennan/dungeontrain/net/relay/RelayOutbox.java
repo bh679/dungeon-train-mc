@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeonbackup.api.Located;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import org.slf4j.Logger;
 
@@ -559,7 +560,7 @@ public final class RelayOutbox {
 
     private static Path defaultFile() {
         try {
-            return new PlayerDataPaths.Located(
+            return new Located(
                 PlayerDataPaths.dir(PlayerDataPaths.OUTBOX).resolve(NEW_FILE_NAME),
                 PlayerDataPaths.configRoot().resolve(FILE_NAME)).read();
         } catch (Throwable t) {
