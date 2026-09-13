@@ -1,3 +1,3 @@
 {
-  "parent": "dungeontrain:block/stage_planks"
+  "parent": "minecraft:builtin/entity"
 }

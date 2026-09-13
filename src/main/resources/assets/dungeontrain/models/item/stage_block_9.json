@@ -1,3 +1,3 @@
 {
-  "parent": "dungeontrain:block/stage_block_9"
+  "parent": "minecraft:builtin/entity"
 }

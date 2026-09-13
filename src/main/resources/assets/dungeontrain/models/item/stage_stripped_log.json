@@ -1,3 +1,3 @@
 {
-  "parent": "dungeontrain:block/stage_stripped_log"
+  "parent": "minecraft:builtin/entity"
 }

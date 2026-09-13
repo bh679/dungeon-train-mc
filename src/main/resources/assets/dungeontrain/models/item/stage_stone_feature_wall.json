@@ -1,3 +1,3 @@
 {
-  "parent": "dungeontrain:block/stage_stone_feature_wall_inventory"
+  "parent": "minecraft:builtin/entity"
 }
