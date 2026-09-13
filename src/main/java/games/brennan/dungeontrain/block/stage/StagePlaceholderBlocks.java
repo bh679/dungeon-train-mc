@@ -101,6 +101,21 @@ public final class StagePlaceholderBlocks {
         return Collections.unmodifiableList(BLOCKS);
     }
 
+    /** The catalogue in slot order — the Stage Palette panel's row feed. */
+    public static List<Placeholder> placeholders() {
+        return PLACEHOLDERS;
+    }
+
+    /**
+     * What placeholder {@code p} becomes under {@code palette}: the user override when one is set,
+     * else the derived slot value.
+     */
+    public static String effectiveTarget(Placeholder p, StagePalette palette) {
+        StagePalette pal = palette == null ? StagePalette.DEFAULT : palette;
+        String ov = pal.override(p.name());
+        return ov != null ? ov : p.target().apply(pal);
+    }
+
     /** All placeholder registry names (without namespace), slot order. */
     public static List<String> names() {
         List<String> out = new ArrayList<>(PLACEHOLDERS.size());
@@ -142,7 +157,7 @@ public final class StagePlaceholderBlocks {
     }
 
     private static BlockState resolve(BlockState state, Placeholder p, StagePalette palette) {
-        String id = p.target().apply(palette);
+        String id = effectiveTarget(p, palette);
         Block target = lookup(id);
         if (target == null) {
             // Hand-edited palette pointing at an unknown block — degrade to the built-in default

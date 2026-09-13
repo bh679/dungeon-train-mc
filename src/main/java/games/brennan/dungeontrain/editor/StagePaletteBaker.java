@@ -32,7 +32,9 @@ import java.util.function.Predicate;
  * <p>Runs when a stage is saved (the editor's stage commands + {@link StageDuplicator}), on demand
  * ({@code /dteditor stage bake}), and once at server start for every stage that has no palette yet
  * ({@link #bakeMissing}). The result is written to {@code stages.json} and is hand-editable — the
- * derivation below is a sensible first answer, not a contract.</p>
+ * derivation below is a sensible first answer, not a contract. User state on the previous palette
+ * ({@code overrides}, locked {@code wood}/{@code stone}) is carried onto every re-bake
+ * ({@link StagePalette#carryUserStateOnto}).</p>
  *
  * <p>Derivation (pure — see {@link #derive}):</p>
  * <ul>
@@ -62,7 +64,7 @@ public final class StagePaletteBaker {
     public static Optional<StagePalette> bake(ServerLevel level, String stageId) {
         Optional<Stage> stage = StageStore.get(stageId);
         if (stage.isEmpty()) return Optional.empty();
-        StagePalette palette = deriveFor(level, stage.get().id());
+        StagePalette palette = rebake(level, stage.get());
         persist(Map.of(stage.get().id(), palette));
         return Optional.of(palette);
     }
@@ -83,7 +85,7 @@ public final class StagePaletteBaker {
     private static int bakeWhere(ServerLevel level, Predicate<Stage> which) {
         Map<String, StagePalette> baked = new LinkedHashMap<>();
         for (Stage stage : StageStore.allStages()) {
-            if (which.test(stage)) baked.put(stage.id(), deriveFor(level, stage.id()));
+            if (which.test(stage)) baked.put(stage.id(), rebake(level, stage));
         }
         if (baked.isEmpty()) return 0;
         persist(baked);
@@ -100,6 +102,12 @@ public final class StagePaletteBaker {
     }
 
     // ---------------------------------------------------------------- derivation
+
+    /** A fresh derivation for {@code stage}, carrying its user overrides + locked families through. */
+    private static StagePalette rebake(ServerLevel level, Stage stage) {
+        StagePalette derived = deriveFor(level, stage.id());
+        return stage.palette() == null ? derived : stage.palette().carryUserStateOnto(derived);
+    }
 
     /** Palette for {@code stageId} from the live block index. */
     public static StagePalette deriveFor(ServerLevel level, String stageId) {

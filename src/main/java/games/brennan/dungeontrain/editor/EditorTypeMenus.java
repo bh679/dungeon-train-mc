@@ -550,12 +550,20 @@ public final class EditorTypeMenus {
      * double-dispatch-guarded regardless.
      */
     private static final int STAGE_PANEL_X_OFFSET = 6;
+    /** Stage Palette panel sits one more panel width to the {@code +X} of the Stage Blocks panel. */
+    private static final int STAGE_PALETTE_X_OFFSET = 6;
 
     /**
      * Anchor for the Stage Blocks panel (the "stage V menu") — the sibling billboard beside the
      * Stages panel: same Z, offset {@code +X}. Same fallthrough as {@link #stagesMenuAnchor}:
      * {@code null} when no carriage variants are registered.
      */
+    /** Stage Palette panel: the Stage Blocks panel shifted a further {@code +X}. */
+    public static BlockPos stagePaletteAnchor(CarriageDims dims) {
+        BlockPos stagePanel = stagePanelAnchor(dims);
+        return stagePanel == null ? null : stagePanel.offset(STAGE_PALETTE_X_OFFSET, 0, 0);
+    }
+
     public static BlockPos stagePanelAnchor(CarriageDims dims) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) return null;

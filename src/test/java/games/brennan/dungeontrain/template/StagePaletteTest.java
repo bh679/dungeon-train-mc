@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -59,5 +60,34 @@ final class StagePaletteTest {
         assertEquals(p, back.withName("x").palette());
         assertEquals(p, back.withGate(TemplateGate.DEFAULT).palette());
         assertTrue(new Stage("x", "x", null).palette() == null);
+    }
+
+    @Test
+    @DisplayName("overrides and family locks round-trip through JSON and survive a re-bake")
+    void overridesAndLocks() {
+        StagePalette base = new StagePalette(List.of("minecraft:stone"), null, null, null, null, "oak", "stone");
+        StagePalette edited = base.withOverride("stage_block_1", "minecraft:mossy_cobblestone")
+            .withWood(StageWoodFamily.BIRCH);
+        assertEquals("minecraft:mossy_cobblestone", edited.override("stage_block_1"));
+        assertTrue(edited.woodLocked());
+        assertEquals("birch", edited.wood());
+
+        StagePalette back = StagePalette.fromJson(JsonParser.parseString(edited.toJson().toString()));
+        assertEquals(edited, back);
+        assertTrue(!back.toJson().has(StagePalette.K_STONE_LOCKED));
+
+        // A fresh derivation says oak + no overrides; the user state wins.
+        StagePalette derived = new StagePalette(List.of("minecraft:tuff"), null, null, null, null, "oak", "tuff");
+        StagePalette rebaked = edited.carryUserStateOnto(derived);
+        assertEquals(List.of("minecraft:tuff"), rebaked.solid());
+        assertEquals("birch", rebaked.wood());
+        assertEquals("tuff", rebaked.stone());
+        assertEquals(Map.of("stage_block_1", "minecraft:mossy_cobblestone"), rebaked.overrides());
+
+        // Clearing: empty block id drops the override; null family unlocks but keeps the value.
+        StagePalette cleared = rebaked.withOverride("stage_block_1", null).withWood(null);
+        assertTrue(cleared.overrides().isEmpty());
+        assertTrue(!cleared.woodLocked());
+        assertEquals("birch", cleared.wood());
     }
 }

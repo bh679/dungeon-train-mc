@@ -112,6 +112,35 @@ def bark(label: str) -> Image.Image:
     return img
 
 
+def door(top: bool) -> Image.Image:
+    """One half of a panelled door: frame, an inset raised panel, a window on the top half and a
+    handle on the bottom half — so the two tiles read as a single tall door."""
+    img = Image.new("RGBA", (SIZE, SIZE), BROWN + (255,))
+    d = ImageDraw.Draw(img)
+    # Frame: left/right stiles always; top rail on the upper tile, bottom rail on the lower.
+    d.rectangle([0, 0, 1, SIZE - 1], fill=BROWN_DARK + (255,))
+    d.rectangle([SIZE - 2, 0, SIZE - 1, SIZE - 1], fill=BROWN_DARK + (255,))
+    if top:
+        d.rectangle([0, 0, SIZE - 1, 1], fill=BROWN_DARK + (255,))
+    else:
+        d.rectangle([0, SIZE - 2, SIZE - 1, SIZE - 1], fill=BROWN_DARK + (255,))
+    # Raised panel: light top/left edge, dark bottom/right edge.
+    y0, y1 = (4, SIZE - 2) if top else (1, SIZE - 5)
+    d.rectangle([4, y0, SIZE - 5, y1], fill=BROWN_LIGHT + (255,))
+    d.line([(4, y0), (SIZE - 5, y0)], fill=BROWN_LIGHT + (255,))
+    d.line([(4, y1), (SIZE - 5, y1)], fill=BARK + (255,))
+    d.line([(SIZE - 5, y0), (SIZE - 5, y1)], fill=BARK + (255,))
+    d.rectangle([5, y0 + 1, SIZE - 6, y1 - 1], fill=BROWN + (255,))
+    if top:
+        # Small window.
+        d.rectangle([6, 6, 9, 9], fill=(150, 190, 210, 255))
+        d.rectangle([6, 6, 9, 9], outline=BARK_DARK + (255,))
+    else:
+        # Handle on the right.
+        d.rectangle([11, 3, 12, 5], fill=(210, 190, 90, 255))
+    return img
+
+
 def log_top() -> Image.Image:
     img = base_tile(BROWN_LIGHT, BROWN, BROWN_LIGHT)
     d = ImageDraw.Draw(img)
@@ -139,8 +168,8 @@ def main() -> None:
     write(bark("L"), BLOCK_DIR / "stage_log.png")
     write(brown("SL"), BLOCK_DIR / "stage_stripped_log.png")
     write(log_top(), BLOCK_DIR / "stage_log_top.png")
-    write(brown("D"), BLOCK_DIR / "stage_door_top.png")
-    write(brown("D"), BLOCK_DIR / "stage_door_bottom.png")
+    write(door(True), BLOCK_DIR / "stage_door_top.png")
+    write(door(False), BLOCK_DIR / "stage_door_bottom.png")
     write(brown("T"), BLOCK_DIR / "stage_trapdoor.png")
 
     # Stone set: one tile per kind, shared by its stairs / slab / wall.
@@ -150,7 +179,11 @@ def main() -> None:
         write(grey(letter), BLOCK_DIR / f"{name}.png")
 
     # Flat item icon for the door (vanilla doors use item/generated with their own sprite).
-    write(brown("D"), ITEM_DIR / "stage_door.png")
+    # Item icon: the whole door squeezed into one tile (top half over bottom half).
+    icon = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    icon.paste(door(True).resize((10, 8)), (3, 0))
+    icon.paste(door(False).resize((10, 8)), (3, 8))
+    write(icon, ITEM_DIR / "stage_door.png")
 
 
 if __name__ == "__main__":

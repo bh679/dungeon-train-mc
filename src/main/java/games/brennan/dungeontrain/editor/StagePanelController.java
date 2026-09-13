@@ -4,6 +4,11 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.StageBlocksSyncPacket;
+import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
+import games.brennan.dungeontrain.block.stage.StageStoneFamily;
+import games.brennan.dungeontrain.block.stage.StageWoodFamily;
+import games.brennan.dungeontrain.net.StagePaletteEditPacket;
+import games.brennan.dungeontrain.net.StagePaletteSyncPacket;
 import games.brennan.dungeontrain.net.StagePanelEditPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -98,6 +103,117 @@ public final class StagePanelController {
     private static void close(ServerPlayer player) {
         OPEN.remove(player.getUUID());
         DungeonTrainNet.sendTo(player, StageBlocksSyncPacket.closed());
+        DungeonTrainNet.sendTo(player, StagePaletteSyncPacket.closed());
+    }
+
+    // ---------------------------------------------------------------- Stage Palette panel
+
+    /** Apply a {@link StagePaletteEditPacket} op, with OP validation. Runs on the server thread. */
+    public static void applyPaletteEdit(ServerPlayer player, StagePaletteEditPacket packet) {
+        if (!player.hasPermissions(2)) {
+            actionBar(player, "Stage palette requires OP", ChatFormatting.RED);
+            return;
+        }
+        String stageId = packet.stageId() == null ? "" : packet.stageId().toLowerCase(Locale.ROOT);
+        if (!stageId.equals(OPEN.get(player.getUUID()))) {
+            actionBar(player, "Open the stage's panel first", ChatFormatting.YELLOW);
+            return;
+        }
+        Optional<games.brennan.dungeontrain.template.Stage> stage = StageStore.get(stageId);
+        if (stage.isEmpty()) {
+            actionBar(player, "No such stage: " + stageId, ChatFormatting.YELLOW);
+            return;
+        }
+        ServerLevel overworld = player.getServer().overworld();
+        games.brennan.dungeontrain.template.StagePalette current = stage.get().palette() != null
+            ? stage.get().palette()
+            : StagePaletteBaker.deriveFor(overworld, stageId);
+        String heldId = heldBlockId(player);
+        games.brennan.dungeontrain.template.StagePalette next;
+        switch (packet.op()) {
+            case SET_OVERRIDE -> {
+                if (!StagePlaceholderBlocks.names().contains(packet.name())) {
+                    actionBar(player, "Unknown placeholder: " + packet.name(), ChatFormatting.RED);
+                    return;
+                }
+                if (heldId == null) {
+                    // Empty hand ⇒ clear — the same gesture as a CLEAR_OVERRIDE op.
+                    next = current.withOverride(packet.name(), null);
+                    actionBar(player, packet.name() + " → back to the baked value", ChatFormatting.YELLOW);
+                } else if (heldId.startsWith(DungeonTrain.MOD_ID + ":stage_")) {
+                    actionBar(player, "A placeholder can't resolve to another placeholder", ChatFormatting.RED);
+                    return;
+                } else {
+                    next = current.withOverride(packet.name(), heldId);
+                    actionBar(player, packet.name() + " → " + heldId, ChatFormatting.GREEN);
+                }
+            }
+            case CLEAR_OVERRIDE -> {
+                next = current.withOverride(packet.name(), null);
+                actionBar(player, packet.name() + " → back to the baked value", ChatFormatting.YELLOW);
+            }
+            case SET_WOOD -> {
+                if (heldId == null) {
+                    next = current.withWood(null);
+                    actionBar(player, "Wood family unlocked — re-bake to re-detect", ChatFormatting.YELLOW);
+                } else {
+                    Optional<StageWoodFamily> f = StageWoodFamily.owning(heldId);
+                    if (f.isEmpty()) {
+                        actionBar(player, heldId + " is not part of any wood family", ChatFormatting.RED);
+                        return;
+                    }
+                    next = current.withWood(f.get());
+                    actionBar(player, "Wood family → " + f.get().id(), ChatFormatting.GREEN);
+                }
+            }
+            case SET_STONE -> {
+                if (heldId == null) {
+                    next = current.withStone(null);
+                    actionBar(player, "Stone family unlocked — re-bake to re-detect", ChatFormatting.YELLOW);
+                } else {
+                    Optional<StageStoneFamily> f = StageStoneFamily.owning(heldId, id -> blockById(id).isPresent());
+                    if (f.isEmpty()) {
+                        actionBar(player, heldId + " is not part of any stone family", ChatFormatting.RED);
+                        return;
+                    }
+                    next = current.withStone(f.get());
+                    actionBar(player, "Stone family → " + f.get().id(), ChatFormatting.GREEN);
+                }
+            }
+            case REBAKE -> {
+                StagePaletteBaker.bake(overworld, stageId);
+                actionBar(player, "Stage palette re-baked (overrides kept)", ChatFormatting.GREEN);
+                resyncAllOpen(player.getServer());
+                return;
+            }
+            default -> { return; }
+        }
+        try {
+            StageStore.savePalettes(Map.of(stageId, next));
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Stage palette edit failed for '{}': {}", stageId, e.toString());
+            actionBar(player, "Save failed: " + e.getMessage(), ChatFormatting.RED);
+        }
+        resyncAllOpen(player.getServer());
+    }
+
+    /** Registry id of the block the player holds, or null for an empty / non-block hand. */
+    private static String heldBlockId(ServerPlayer player) {
+        net.minecraft.world.item.ItemStack held = player.getMainHandItem();
+        if (held.isEmpty() || !(held.getItem() instanceof net.minecraft.world.item.BlockItem blockItem)) return null;
+        return BuiltInRegistries.BLOCK.getKey(blockItem.getBlock()).toString();
+    }
+
+    /** Compose + send the palette snapshot for {@code stageId} — every placeholder's effective target. */
+    private static void sendPaletteSync(ServerPlayer player, String stageId, BlockPos anchor) {
+        games.brennan.dungeontrain.template.StagePalette pal = StagePlaceholderBlocks.paletteFor(stageId);
+        List<StagePaletteSyncPacket.Entry> entries = new ArrayList<>();
+        for (StagePlaceholderBlocks.Placeholder p : StagePlaceholderBlocks.placeholders()) {
+            entries.add(new StagePaletteSyncPacket.Entry(p.name(),
+                StagePlaceholderBlocks.effectiveTarget(p, pal), pal.override(p.name()) != null));
+        }
+        DungeonTrainNet.sendTo(player, new StagePaletteSyncPacket(true, stageId, anchor, entries,
+            pal.wood(), pal.stone(), pal.woodLocked(), pal.stoneLocked()));
     }
 
     /**
@@ -246,6 +362,8 @@ public final class StagePanelController {
 
         DungeonTrainNet.sendTo(player, new StageBlocksSyncPacket(true, stageId, stageName, anchor,
             cappedBlocks, aggregated.size(), parts, EditorPartsStageFilter.isActive()));
+        BlockPos paletteAnchor = EditorTypeMenus.stagePaletteAnchor(dims);
+        if (paletteAnchor != null) sendPaletteSync(player, stageId, paletteAnchor);
     }
 
     /** Re-send the snapshot to every player with an open panel (shared data changed). */
