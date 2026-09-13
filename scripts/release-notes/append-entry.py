@@ -18,11 +18,11 @@ Usage:
     --pr 360
 
 Tags: the type-derived tag (feat→feature, fix→fix, content→content,
-perf→performance) is added automatically. Topical tags are the agent's call,
+perf→performance, chore/ci/refactor/docs/test→internal) is added automatically. Topical tags are the agent's call,
 made from the diff and intent it holds at Gate 3 — there is no keyword fallback.
 A tag decision is mandatory: pass --tag for each topical tag that applies
 (editor, multiplayer, community, translations, compatibility, train, world, mobs,
-loot, books, advancements, ui, balance), or --no-topical-tags to state that only
+loot, books, advancements, ui, balance, internal), or --no-topical-tags to state that only
 the type-derived tag applies. `--tag-guide` prints the question to answer for
 each tag. The Versions page filters release notes by these.
 

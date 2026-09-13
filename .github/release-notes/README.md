@@ -70,7 +70,7 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 | `id` | yes | Unique slug `^[a-z0-9][a-z0-9_-]*$`. Duplicate ids are refused. |
 | `version` | yes | `X.Y.Z` the merge ships as (computed = same rule as `version-bump.yml`). Descriptive only. |
 | `type` | yes | One of `feat, fix, content, perf, refactor, chore, docs, ci, test`. |
-| `tags` | yes | Player-facing classification the in-game Versions page filters by, chosen by the agent from context (see [Tags](#tags)). The type-derived tag is always present; may be `[]` only for chore/ci/refactor/docs/test. |
+| `tags` | yes | Player-facing classification the in-game Versions page filters by, chosen by the agent from context (see [Tags](#tags)). The type-derived tag is always present (chore/ci/refactor/docs/test derive `internal`), so it is never empty. |
 | `title` | yes | Short headline. |
 | `summary` | yes | Player-facing prose. |
 | `highlights` | no | Bullet points. |
@@ -106,6 +106,7 @@ that apply — an editor bug fix is `["fix", "editor"]`. Ids are stored in the c
 | `advancements` | Advancements | |
 | `ui` | Menus & UI | menu pages, HUD, death screen, screens |
 | `balance` | Balance | difficulty, loot/spawn weights, rebalances |
+| `internal` | Behind the Scenes | automatic for `type: chore/ci/refactor/docs/test` — tooling, pipeline, telemetry, sibling-mod plumbing; also addable to a feat/fix that is mostly under the hood |
 
 The list lives in three places that must agree: `changelog_io.VALID_TAGS`, the schema enum, and
 the client's `ChangelogTag` enum (`client/version/compare/ChangelogTag.java`, with a lang key per
@@ -141,6 +142,7 @@ per tag (`append-entry.py --tag-guide` prints them; source: `changelog_io.TAG_GU
 | `advancements` | advancements / achievements — new ones, criteria, hints, the screen? |
 | `ui` | a menu, screen, HUD element, popup, tooltip, or keybind the player interacts with? |
 | `balance` | difficulty, weights, rates, or numbers that make the game harder or easier? |
+| `internal` | how the mod is built, released, or maintained — tooling, pipeline, telemetry, sibling-mod plumbing — with little or nothing to see in-game? (automatic for `chore/ci/refactor/docs/test`) |
 
 Two to four tags is typical. A perf fix to worldgen is `performance` + `world`; a new echo mob is
 `content` + `mobs`; a Versions-page filter is `feature` + `ui`. Skip a tag when the change merely

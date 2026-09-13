@@ -205,9 +205,11 @@ def test_append_unknown_tag_rejected() -> None:
     assert not os.path.exists(changelog_path(ws))
 
 
-def test_normalise_tags_chore_may_be_empty() -> None:
-    assert changelog_io.normalise_tags("chore", []) == []
-    assert changelog_io.normalise_tags("chore", ["ui"]) == ["ui"]
+def test_normalise_tags_chore_derives_internal() -> None:
+    assert changelog_io.normalise_tags("chore", []) == ["internal"]
+    assert changelog_io.normalise_tags("chore", ["ui"]) == ["ui", "internal"]
+    assert changelog_io.normalise_tags("ci", ["internal"]) == ["internal"]
+    assert changelog_io.normalise_tags("feat", ["internal"]) == ["feature", "internal"]
     assert changelog_io.normalise_tags("perf", None) == ["performance"]
     try:
         changelog_io.normalise_tags("feat", ["feature", "bogus"])
@@ -249,9 +251,8 @@ def test_append_tag_guide_prints_every_topical_tag() -> None:
     r = run(APPEND, ws, "--tag-guide")
     assert r.returncode == 0, r.stderr
     for tag in changelog_io.VALID_TAGS:
-        if tag in changelog_io.TYPE_TAGS.values() and tag != "performance":
-            continue
         assert tag in r.stdout, f"{tag} missing from guide"
+    # Every tag the agent can choose has a question; the three pure type-derived ones do not.
     assert set(changelog_io.TAG_GUIDE) == set(changelog_io.VALID_TAGS) - {"feature", "content", "fix"}
 
 
@@ -286,7 +287,7 @@ def test_set_tags_applies_mapping_and_rederives_type_tag() -> None:
     by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
     assert by_id["a"]["tags"] == ["fix", "multiplayer"], "topical tags replaced, type tag kept"
     assert by_id["b"]["tags"] == ["feature", "editor"], "unmapped entry untouched"
-    assert by_id["c"]["tags"] == ["ui"]
+    assert by_id["c"]["tags"] == ["ui", "internal"]
     assert "2 changed" in r.stdout, r.stdout
     assert "- a: ['fix', 'ui', 'train'] -> ['fix', 'multiplayer']" in r.stdout, r.stdout
 
@@ -559,7 +560,7 @@ def main() -> int:
         test_append_type_derived_tag_always_present,
         test_append_topical_tags_merged_and_ordered,
         test_append_unknown_tag_rejected,
-        test_normalise_tags_chore_may_be_empty,
+        test_normalise_tags_chore_derives_internal,
         test_append_refuses_without_tag_decision,
         test_append_no_topical_tags_is_explicit_opt_out,
         test_append_tag_guide_prints_every_topical_tag,

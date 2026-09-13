@@ -27,7 +27,8 @@
       "version": "0.294.0",
       "type": "ci",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Auto-publish CurseForge modpack after each release",
       "summary": "Dungeon Train now ships as a CurseForge modpack that updates automatically about 15 minutes after every mod release, bundling the matching mod build plus the tested Sable dependency.",
@@ -1000,7 +1001,8 @@
       "version": "0.317.0",
       "type": "refactor",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Ender Chest Persistence extracted to standalone mod",
       "summary": "The Ender Chest cross-world and per-game-mode persistence is now shipped as the standalone Ender Chest Persistence mod (bundled in DT's jar, so no separate install is needed). The player-facing behaviour is identical \u2014 Ender Chest contents are preserved across world resets and isolated by game mode.",
@@ -1185,7 +1187,8 @@
       "version": "0.319.0",
       "type": "chore",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Wire Ender Chest Persistence as embedded dependency in release metadata",
       "summary": "CurseForge and Modrinth now show the ender-chest-persistence mod as embedded inside Dungeon Train, matching the existing AIN/AIS/PMOB declarations.",
@@ -1283,8 +1286,9 @@
     {
       "id": "remove-biome-family-toast",
       "version": "0.321.0",
-      "type": "refactor",
+      "type": "fix",
       "tags": [
+        "fix",
         "advancements",
         "ui"
       ],
@@ -1544,7 +1548,8 @@
       "type": "chore",
       "tags": [
         "performance",
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Sable physics updated to 2.0.2",
       "summary": "Updated the Sable physics dependency from 1.2.1 to 2.0.2. Server tick-time is equal-or-better \u2014 worst-case lag spikes are roughly halved \u2014 and the long-standing save-and-quit hang (Sable #679) no longer occurs. Verified API-compatible, so no gameplay changes. Full compatibility & benchmark notes: [Compatibility wiki](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#sable-202mc1211).",
@@ -1795,7 +1800,8 @@
       "version": "0.330.0",
       "type": "chore",
       "tags": [
-        "community"
+        "community",
+        "internal"
       ],
       "title": "Dev/test builds send Discord to a dev channel, not the live feed",
       "summary": "Development and test builds of the mod now route their Discord activity (joins, deaths, chat, advancements) to a separate dev channel instead of the live community feed, so testing no longer adds noise for players. Released builds are unchanged \u2014 they post to the community feed exactly as before.",
@@ -3656,7 +3662,8 @@
       "version": "0.377.0",
       "type": "chore",
       "tags": [
-        "community"
+        "community",
+        "internal"
       ],
       "title": "Feedback survey responses collected in a dedicated channel",
       "summary": "Feedback-survey answers now also post to a dedicated Discord survey-results channel (in addition to each player's thread), with a link back to the original, so the team can review feedback in one place.",
@@ -3954,7 +3961,8 @@
       "version": "0.387.0",
       "type": "chore",
       "tags": [
-        "community"
+        "community",
+        "internal"
       ],
       "title": "Echo appearances counted in the community data",
       "summary": "When a fallen player's echo returns in another world, the mod now reports it to the community data dashboard so we can see how often each death is remembered. No change to how echoes look or behave in-game.",
@@ -4438,8 +4446,9 @@
     {
       "id": "editor-contents-subvariant-nesting",
       "version": "0.408.0",
-      "type": "refactor",
+      "type": "feat",
       "tags": [
+        "feature",
         "editor"
       ],
       "title": "Contents editor nests sub-variants under their group",
@@ -4901,7 +4910,8 @@
       "version": "0.426.0",
       "type": "chore",
       "tags": [
-        "community"
+        "community",
+        "internal"
       ],
       "title": "Death-screen detail now feeds the community data dashboard",
       "summary": "The mod now reports your full end-of-run recap \u2014 the story pages, your stats, and everything you were carrying \u2014 to the community data dashboard when you die, so it can be browsed there. No change to the death screen itself or anything else in-game.",
@@ -5340,7 +5350,8 @@
       "version": "0.441.0",
       "type": "chore",
       "tags": [
-        "community"
+        "community",
+        "internal"
       ],
       "title": "Record player language in session telemetry",
       "summary": "Internal/admin-only: the per-join world-info telemetry now records the player's Minecraft client language, so the private data explorer can show and sort game sessions by locale. No in-game or player-facing change.",
@@ -5378,7 +5389,9 @@
       "id": "exclude-narrative-source-from-jar",
       "version": "0.443.0",
       "type": "chore",
-      "tags": [],
+      "tags": [
+        "internal"
+      ],
       "title": "Trim unused authoring files from the mod jar",
       "summary": "Internal packaging cleanup: the mod jar no longer bundles unused story-draft text files and authoring notes that were never used in-game. No gameplay or content changes \u2014 just a slightly smaller download.",
       "highlights": [],
@@ -5416,7 +5429,8 @@
       "version": "0.444.0",
       "type": "chore",
       "tags": [
-        "translations"
+        "translations",
+        "internal"
       ],
       "title": "Remaining menu text is now translatable",
       "summary": "The last hard-coded strings in Dungeon Train's config, world-options, cinematic-skip, and dev-message screens now use translation keys, so the whole mod UI can be localized through a resource/language pack. No change to the English text.",
@@ -5686,7 +5700,8 @@
       "version": "0.454.2",
       "type": "chore",
       "tags": [
-        "translations"
+        "translations",
+        "internal"
       ],
       "title": "Reincarnated-echo nameplate is now translatable",
       "summary": "The 'Echo of <player>' name floating above a reincarnated author-echo now shows in your client language instead of always English \u2014 part of the Chinese localization wave.",
@@ -5742,7 +5757,9 @@
       "id": "relay-outbox-http1-pin",
       "version": "0.455.0",
       "type": "chore",
-      "tags": [],
+      "tags": [
+        "internal"
+      ],
       "title": "Pin relay outbox HTTP client to HTTP/1.1",
       "summary": "Internal/dev change with no player-facing effect: the relay telemetry outbox now pins HTTP/1.1, matching the other relay reporters, so outbox submits reach a bare-Node localhost relay during local testing. Production is unaffected (it already terminates HTTP/1.1 at the reverse proxy).",
       "highlights": [],
@@ -6412,7 +6429,8 @@
       "version": "0.478.0",
       "type": "chore",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Adventure Item Names, Adventure Item Stats, Interactive Player Mobs and Ender Chest Persistence are now separate downloads",
       "summary": "These four mods used to be bundled invisibly inside Dungeon Train. They are now normal required dependencies you install alongside it, so each one gets credit on its own mod page. If you use the CurseForge or Modrinth app, or the Dungeon Train modpack, they are fetched automatically and nothing changes for you. If you install the jar by hand, you will be prompted for the four missing mods on first launch and will need to download them too. Discord Presence is still bundled.",
@@ -6635,7 +6653,8 @@
       "version": "0.485.0",
       "type": "chore",
       "tags": [
-        "community"
+        "community",
+        "internal"
       ],
       "title": "Truer distance stats behind the scenes",
       "summary": "Death and run reports now record how far down the line you actually reached \u2014 measured from where you spawned \u2014 plus which world band you died in. This sharpens the private stats dashboard only; there is no in-game change.",
@@ -6969,7 +6988,8 @@
       "version": "0.498.0",
       "type": "chore",
       "tags": [
-        "translations"
+        "translations",
+        "internal"
       ],
       "title": "Per-line translation credits, behind the scenes",
       "summary": "Every translated line in all 19 languages now records who produced it \u2014 which AI model, or which community translator \u2014 and who has human-reviewed it. This is repo-side bookkeeping (nothing changes in-game): it makes unreviewed machine translation easy to find for review passes, and properly credits \u8001\u672c\u9858's Chinese translation work and \u963f\u4e16xAsh's Support-page revisions line by line.",
@@ -7135,7 +7155,8 @@
       "version": "0.505.0",
       "type": "chore",
       "tags": [
-        "community"
+        "community",
+        "internal"
       ],
       "title": "Archive tagged death-screen photos to the operator dashboard",
       "summary": "Behind the scenes: the ride photos already shown on the death screen are now saved to the developers' data dashboard, each tagged with its moment (scenic/combat/gear/lore/social), biome, world band, difficulty, and cart. Operator tooling only \u2014 no in-game change.",
@@ -7433,8 +7454,9 @@
     {
       "id": "zh-cn-translator-revision-pass",
       "version": "0.518.0",
-      "type": "chore",
+      "type": "content",
       "tags": [
+        "content",
         "translations"
       ],
       "title": "Simplified Chinese revision pass",
@@ -7650,7 +7672,8 @@
       "version": "0.524.0",
       "type": "chore",
       "tags": [
-        "community"
+        "community",
+        "internal"
       ],
       "title": "Play-mode telemetry for the data explorer",
       "summary": "The world-info report the game already sends on join now notes whether that session was multiplayer, so the private data dashboard can show how the player base splits between single-player, multiplayer, and both. No change to how the game plays.",
@@ -8238,8 +8261,9 @@
     {
       "id": "death-screen-modrec-after-donate",
       "version": "0.552.0",
-      "type": "refactor",
+      "type": "feat",
       "tags": [
+        "feature",
         "ui"
       ],
       "title": "Mod recommendations now come after the support page",
@@ -9312,7 +9336,8 @@
       "version": "0.578.0",
       "type": "chore",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Effortless Building now bundled in the modpack (off by default)",
       "summary": "The Dungeon Train modpack now ships Effortless Building alongside the rest of the pack, switched off. Flip it on in the launcher's mod list if you want its building tools \u2014 multi-block placement, mirrors and arrays \u2014 while you build out your train.",
@@ -9370,7 +9395,8 @@
       "type": "chore",
       "tags": [
         "community",
-        "loot"
+        "loot",
+        "internal"
       ],
       "title": "New supporter names and the Archivist",
       "summary": "Twelve more Discord supporters join the item name pool, along with the Archivist Society and Archivist and Detective titles.",
@@ -9603,7 +9629,8 @@
       "type": "chore",
       "tags": [
         "community",
-        "loot"
+        "loot",
+        "internal"
       ],
       "title": "Three more supporter names",
       "summary": "Three more Discord supporters join the item name pool: mel, banguela, and morpheus the 3 feeted cat.",
@@ -9658,7 +9685,8 @@
       "version": "0.595.0",
       "type": "chore",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Tectonic removed from the modpack",
       "summary": "The modpack no longer bundles Tectonic or Lithostitched. Dungeon Train still works with Tectonic if you install it yourself; if you had it switched on, it goes away on your next pack update.",
@@ -9779,7 +9807,8 @@
       "version": "0.600.0",
       "type": "chore",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Nemo's Inventory Sorting available in the modpack",
       "summary": "The Dungeon Train modpack now offers Nemo's Inventory Sorting as an optional add-on. Turn it on in the launcher's optional-mods list to get one-click sort buttons on your inventory and any chest \u2014 handy when a loot run leaves your carriage storage a mess. It's off by default, so nothing changes unless you opt in.",
@@ -9817,8 +9846,9 @@
     {
       "id": "edible-backpack-rarity",
       "version": "0.602.0",
-      "type": "chore",
+      "type": "content",
       "tags": [
+        "content",
         "loot",
         "balance"
       ],
@@ -10180,7 +10210,8 @@
       "version": "0.618.0",
       "type": "ci",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "CurseForge modpack keeps up with releases again",
       "summary": "The CurseForge modpack had quietly stopped updating \u2014 it sat on v0.592.0 while the mod shipped v0.613.0, because CurseForge was accepting our uploads and then rejecting them behind the scenes with no error anywhere we could see. Uploads now retry when the platform hiccups, and every upload is checked afterwards to confirm it actually went live, so the pack can't silently fall behind again.",
@@ -10261,7 +10292,8 @@
       "version": "0.622.0",
       "type": "chore",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Sable updated to 2.0.5",
       "summary": "Dungeon Train now runs on Sable 2.0.5, which fixes several upstream crashes \u2014 most notably a panic when you close the CurseForge or Modrinth launcher before entering a world. Sable is a required download, so update it too.",
@@ -10333,8 +10365,9 @@
     {
       "id": "restore-backpack-loot-weights",
       "version": "0.624.0",
-      "type": "chore",
+      "type": "content",
       "tags": [
+        "content",
         "loot",
         "balance"
       ],
@@ -10686,7 +10719,8 @@
       "version": "0.640.0",
       "type": "ci",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "Modpack releases stop silently going missing from CurseForge",
       "summary": "The CurseForge modpack is published from a manifest that points at that release's Dungeon Train file. If CurseForge has not approved that file yet, it rejects the whole pack \u2014 quietly, after the upload looked fine. The release pipeline now waits for the file to actually be approved before building the pack, and stops with a clear reason if it never is, instead of shipping nothing and reporting success.",
@@ -11237,8 +11271,9 @@
     {
       "id": "playermob-094-fire",
       "version": "0.660.0",
-      "type": "chore",
+      "type": "feat",
       "tags": [
+        "feature",
         "mobs"
       ],
       "title": "PlayerMobs put flint and steel to work",
@@ -12341,7 +12376,8 @@
       "version": "0.706.0",
       "type": "chore",
       "tags": [
-        "editor"
+        "editor",
+        "internal"
       ],
       "title": "Editor: category switching skips the save prompt",
       "summary": "The \"Save before switch?\" list flagged templates nobody had edited, so it is bypassed for now. Save with /dt save before switching \u2014 the switch re-stamps every plot.",
@@ -12401,7 +12437,8 @@
       "type": "ci",
       "tags": [
         "community",
-        "translations"
+        "translations",
+        "internal"
       ],
       "title": "Approved player translations flow back into the game automatically",
       "summary": "Translations players submit in-game and that get approved are served by the relay straight away, but until now they never made it into the mod itself \u2014 so they vanished on an offline launch and their authors went uncredited in the jar. A weekly job now pulls approved work back into the build for review.",
@@ -12419,7 +12456,9 @@
       "id": "internal-diagnostics",
       "version": "0.710.0",
       "type": "chore",
-      "tags": [],
+      "tags": [
+        "internal"
+      ],
       "title": "Internal improvements",
       "summary": "Behind-the-scenes maintenance work. Nothing to see or do differently in game.",
       "highlights": [],
@@ -12901,7 +12940,8 @@
       "type": "ci",
       "tags": [
         "community",
-        "translations"
+        "translations",
+        "internal"
       ],
       "title": "New translators are credited without a manual step",
       "summary": "When someone translates part of the game for the first time, the weekly job that pulls approved player translations back into the mod used to stop dead until a maintainer added that person to the credits registry by hand. It now adds them itself, as part of the same change a human reviews and approves \u2014 so a new translator's work no longer waits on a round trip nobody is scheduled to make.",
@@ -13154,7 +13194,9 @@
       "id": "builder-load-other-player-builds",
       "version": "0.745.0",
       "type": "chore",
-      "tags": [],
+      "tags": [
+        "internal"
+      ],
       "title": "Internal tooling",
       "summary": "Development tooling changes.",
       "highlights": [],
@@ -13309,7 +13351,8 @@
       "type": "chore",
       "tags": [
         "compatibility",
-        "advancements"
+        "advancements",
+        "internal"
       ],
       "title": "In-game editors count as cheat mods",
       "summary": "Installing CAD Editor, DINE or AnkiNBT now puts the run into Free Play, alongside the other in-game editors. They rewrite an item's components, a mob or block entity's NBT, or a villager's trades from a GUI, so they do the work of a command without one.",
@@ -13325,7 +13368,9 @@
       "id": "relay-admin-url-machine-wide",
       "version": "0.753.0",
       "type": "chore",
-      "tags": [],
+      "tags": [
+        "internal"
+      ],
       "title": "Internal tooling",
       "summary": "Development tooling changes.",
       "highlights": [],
@@ -13340,7 +13385,8 @@
       "type": "chore",
       "tags": [
         "compatibility",
-        "advancements"
+        "advancements",
+        "internal"
       ],
       "title": "More editors count as cheat mods",
       "summary": "Installing Visual Mobs Edit or In-game NBTEdit Reborn now puts the run into Free Play. One rewrites mob health, damage, immunities and spawn rules from a menu \u2014 the difficulty curve a run is measured against \u2014 and the other rewrites the NBT of whatever you are holding or looking at.",
@@ -13580,7 +13626,8 @@
       "type": "chore",
       "tags": [
         "compatibility",
-        "loot"
+        "loot",
+        "internal"
       ],
       "title": "Trade Everything updated to 0.10.0",
       "summary": "Dungeon Train now builds against Trade Everything 0.10.0, which adds a payout-currency setting to the Trade Anything slot: when a villager pays you in a premium currency, the trade is worth a fraction of face value, shipped with diamonds at half. No vanilla villager pays out in diamonds, so the trades you make today are unchanged \u2014 and the required Trade Everything version stays 0.8.0, so nothing forces you to update.",
@@ -13804,7 +13851,8 @@
       "version": "0.773.0",
       "type": "refactor",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "VR support for trains moved to a separate mod",
       "summary": "If you play in VR with Vivecraft, the fixes that make VR work on a moving train now live in a separate mod, Vivecraft Sable Compat, which you install alongside Dungeon Train. Installing it also fixes VR teleport, which previously threw you into the void when you tried to teleport while on a train. Nothing changes if you don't play in VR.",
@@ -14606,7 +14654,8 @@
       "version": "0.802.0",
       "type": "chore",
       "tags": [
-        "editor"
+        "editor",
+        "internal"
       ],
       "title": "Editor and review tooling",
       "summary": "Behind-the-scenes work on the build editor and the tools for reviewing what players upload.",
@@ -15287,7 +15336,8 @@
       "version": "0.830.0",
       "type": "ci",
       "tags": [
-        "compatibility"
+        "compatibility",
+        "internal"
       ],
       "title": "The CurseForge modpack catches up on its own",
       "summary": "The CurseForge modpack is built around that release's Dungeon Train file, and CurseForge rejects a pack that points at a file it has not approved yet. The pipeline already waited for approval \u2014 but when approval took longer than it was willing to wait, which turned out to be most of the time, that release was simply never added to the pack, and nothing ever tried again. The CurseForge pack had quietly fallen forty releases behind the Modrinth one. A scheduled check now looks every few hours for the newest release whose file CurseForge has since approved, and publishes the pack for it. A slow approval is a delay of a few hours now, not a missing version.",
@@ -16067,7 +16117,8 @@
       "type": "fix",
       "tags": [
         "fix",
-        "ui"
+        "ui",
+        "internal"
       ],
       "title": "Release-note tags now reflect what each change is about",
       "summary": "Every past release note on the Versions page has been re-tagged by hand. The first pass matched words in the text, so a fix that merely mentioned a chest was filed under Loot and anything that 'rides the train' under Train \u2014 most notes carried four or five tags and the filters were noisy. Each note now carries only the tags for what it actually changed, so filtering by Editor, Mobs or Community shows you those changes and nothing else.",

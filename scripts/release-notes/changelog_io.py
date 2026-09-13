@@ -81,15 +81,22 @@ VALID_TAGS = (
     "advancements",
     "ui",
     "balance",
+    "internal",
 )
 
 # The tag an entry always carries by virtue of its conventional-commit type.
-# Non-player-facing types (chore/ci/refactor/docs/test) derive nothing.
+# Non-player-facing types (chore/ci/refactor/docs/test) derive "internal" —
+# Behind the Scenes — so no entry is ever untagged.
 TYPE_TAGS = {
     "feat": "feature",
     "fix": "fix",
     "content": "content",
     "perf": "performance",
+    "chore": "internal",
+    "ci": "internal",
+    "refactor": "internal",
+    "docs": "internal",
+    "test": "internal",
 }
 
 
@@ -114,6 +121,7 @@ TAG_GUIDE: dict[str, str] = {
     "advancements": "Is it about advancements / achievements — new ones, criteria, hints, the advancements screen?",
     "ui": "Is it about a menu, screen, HUD element, popup, tooltip, or keybind the player interacts with?",
     "balance": "Does it change difficulty, weights, rates, or numbers that make the game harder or easier?",
+    "internal": "Is it about how the mod is built, released, or maintained — tooling, pipeline, telemetry, sibling-mod plumbing — with little or nothing to see in-game? Automatic for chore/ci/refactor/docs/test.",
 }
 
 
@@ -318,6 +326,7 @@ TAG_LABELS = {
     "advancements": "Advancements",
     "ui": "Menus & UI",
     "balance": "Balance",
+    "internal": "Behind the Scenes",
 }
 
 
