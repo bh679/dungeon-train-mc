@@ -39,6 +39,9 @@ public final class DungeonTrainBackup {
     /** Translation key for what DT's data is, in the recovery card's sentences. */
     public static final String DATA_DESCRIPTION_KEY = "gui.dungeontrain.backup.data_description";
 
+    /** JVM flag that un-suppresses the recovery card on a dev build. */
+    public static final String PROMPT_PROPERTY = "dungeontrain.backups.prompt";
+
     /** The archive label DT's data root is written under. Existing archives depend on it. */
     public static final String ROOT_LABEL = PlayerDataPaths.ROOT_DIR;
 
@@ -78,7 +81,9 @@ public final class DungeonTrainBackup {
             // a backup can carry dtpacks/<name>.zip, which only becomes a package once extracted.
             .onRestored(() -> TemplateStores.reloadAll(true))
             // Dev builds keep tripping the card: a working copy routinely has an empty data root.
-            .promptSuppressed(DungeonTrain::isDevBuild)
+            // -Ddungeontrain.backups.prompt=true (./gradlew runClient -PbackupPrompt) lets a dev
+            // build show it anyway — the only way to see the card outside a release build.
+            .promptSuppressed(() -> DungeonTrain.isDevBuild() && !Boolean.getBoolean(PROMPT_PROPERTY))
             .dataDescriptionKey(DATA_DESCRIPTION_KEY)
             .commandAliases("dtbackup", "dtrestore")
             // Operators who set these before the extraction keep working.

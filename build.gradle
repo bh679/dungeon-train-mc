@@ -150,6 +150,11 @@ neoForge {
             // is then created flat (dungeontrain:dungeon_train_flat) with a PINNED seed, and the quiet
             // game rules are applied on server start. See perf/PerfTestMode. Property rather than env
             // var for the same daemon-environment reason as relayBaseUrl above.
+            // Recovery-card seam: ./gradlew runClient -PbackupPrompt shows Dungeon Backup's
+            // "Missing … Data" card on a dev build (DungeonTrainBackup suppresses it otherwise).
+            if (project.hasProperty('backupPrompt')) {
+                systemProperty 'dungeontrain.backups.prompt', 'true'
+            }
             if (project.hasProperty('perfTest')) {
                 systemProperty 'dungeontrain.perfTest', 'true'
             }
