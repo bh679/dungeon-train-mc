@@ -16673,6 +16673,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dungeon-backup-sibling-extraction",
+      "version": "0.865.0",
+      "type": "refactor",
+      "tags": [
+        "compatibility",
+        "ui"
+      ],
+      "title": "Backups and recovery move to the Dungeon Backup sibling mod",
+      "summary": "The system that keeps your builds and progress safe \u2014 the move out of the config folder, the rolling restore points inside and outside the instance, the \"Missing Data\" card at the title screen and /dtbackup + /dtrestore \u2014 now lives in its own mod, Dungeon Backup, bundled inside Dungeon Train. Everything works as before, and your Ender Chest stash (Ender Chest Persistence) is now backed up too.",
+      "highlights": [
+        "Backup settings have their own Options \u2192 Dungeon Train \u2192 Backups tab; they now live in config/dungeonbackup-client.toml, so the mode and per-version count reset to the defaults (On / 5) once \u2014 the safest setting.",
+        "Existing backup archives are found and restored exactly as before; the recovery card lists them under the new title \"Missing Dungeon Train Data\".",
+        "Your Ender Chest Persistence stash is now included in every restore point \u2014 it lives in the config folder, which is what pack updates replace.",
+        "The -Ddungeontrain.backups launch flag still works; -Ddungeonbackup.backups is the new name."
+      ],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

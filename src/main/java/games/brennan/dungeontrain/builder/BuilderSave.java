@@ -112,12 +112,12 @@ public final class BuilderSave {
      * just been written exists nowhere else, and before backups were taken here a carriage authored
      * mid-session sat in no archive until the next world load. The request returns immediately and
      * is debounced, so saving repeatedly while iterating costs nothing extra — see
-     * {@link games.brennan.dungeontrain.data.PlayerDataBackupHook}.</p>
+     * {@link games.brennan.dungeontrain.data.DungeonTrainBackup#requestBackup}.</p>
      */
     public static Result save(ServerLevel level) {
         Result result = saveInternal(level);
         if (result.saved()) {
-            games.brennan.dungeontrain.data.PlayerDataBackupHook.onTemplateSaved();
+            games.brennan.dungeontrain.data.DungeonTrainBackup.requestBackup("template-save");
         }
         return result;
     }

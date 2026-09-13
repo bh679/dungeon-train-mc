@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import games.brennan.dungeonbackup.api.Located;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
@@ -89,7 +90,7 @@ public final class GlobalNarrativeProgress {
         return located().read();
     }
 
-    static PlayerDataPaths.Located located() {
+    static Located located() {
         return PlayerDataPaths.locate(PlayerDataPaths.NARRATIVE, LEGACY_DIR_NAME, FILE_NAME);
     }
 

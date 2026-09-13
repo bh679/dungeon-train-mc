@@ -2,7 +2,8 @@ package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderTemplateSource;
-import games.brennan.dungeontrain.data.PlayerDataBackup;
+import games.brennan.dungeonbackup.core.BackupArchiver;
+import games.brennan.dungeontrain.data.DungeonTrainBackup;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import games.brennan.dungeontrain.editor.UserContentPaths;
 
@@ -112,7 +113,7 @@ public final class BuilderReconcileScan {
         List<Build> out = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
         for (Path archive : archives()) {
-            for (String entry : PlayerDataBackup.listEntries(archive)) {
+            for (String entry : BackupArchiver.listEntries(archive)) {
                 Build build = buildOf(entry);
                 if (build == null) continue;
                 if (onDiskKeys.contains(build.key()) || !seen.add(build.key())) continue;
@@ -157,10 +158,7 @@ public final class BuilderReconcileScan {
 
     /** Every backup archive, newest first, in-instance before the out-of-instance mirror. */
     private static List<Path> archives() {
-        List<Path> all = new ArrayList<>(PlayerDataBackup.listArchives(PlayerDataPaths.backupsRoot()));
-        PlayerDataPaths.externalBackupsRoot()
-                .ifPresent(root -> all.addAll(PlayerDataBackup.listArchives(root)));
-        return all;
+        return DungeonTrainBackup.archives();
     }
 
     /** The identity keys of a list of builds — what {@link #backupBuilds} is filtered against. */

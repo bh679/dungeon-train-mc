@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.config;
 
 import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
-import games.brennan.dungeontrain.data.BackupMode;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -314,22 +313,6 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.EnumValue<PoliticalFilter> POLITICAL_FILTER;
 
     /**
-     * Where restore points are written. See {@link games.brennan.dungeontrain.data.BackupMode}.
-     *
-     * <p>A CLIENT setting on purpose: backups are this machine's local files, so the choice belongs
-     * to whoever is sitting at it. On a dedicated server the client spec is never loaded and every
-     * read falls back to the default — which is deliberate, because a server must not stop backing
-     * up just because a client-side toggle is absent.</p>
-     */
-    public static final ModConfigSpec.EnumValue<BackupMode> BACKUP_MODE;
-
-    /**
-     * How many backup archives to keep per mod version. See
-     * {@link games.brennan.dungeontrain.data.PlayerDataBackup#prune}.
-     */
-    public static final ModConfigSpec.IntValue BACKUPS_PER_VERSION;
-
-    /**
      * Whether to ask before re-uploading builds the build server has lost.
      *
      * <p>Off by default, so the restore just happens. What it puts back is the player's own build,
@@ -398,8 +381,6 @@ public final class ClientDisplayConfig {
         DEATH_FORM_ANSWERED_IDS = pair.getLeft().deathFormAnsweredIds;
         DEATH_FORM_MUTED_IDS = pair.getLeft().deathFormMutedIds;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
-        BACKUP_MODE = pair.getLeft().backupMode;
-        BACKUPS_PER_VERSION = pair.getLeft().backupsPerVersion;
         CONFIRM_BUILD_RESTORE = pair.getLeft().confirmBuildRestore;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
@@ -709,24 +690,10 @@ public final class ClientDisplayConfig {
                 .defineEnum("politicalFilter", PoliticalFilter.UNSET);
         b.pop();
 
+        // The backup mode and per-version count moved to Dungeon Backup's own
+        // config/dungeonbackup-client.toml (Options > Dungeon Train > Backups). Stale
+        // backupMode/backupsPerVersion keys in an existing TOML are harmless leftovers.
         b.push("backups");
-        ModConfigSpec.EnumValue<BackupMode> backupMode = b
-                .comment("Where Dungeon Train keeps restore points of your builds, advancements and stats.",
-                         "EXTERNAL writes them outside this Minecraft instance as well as inside it, so they",
-                         "survive the instance being deleted, reset or reinstalled — not just a modpack update.",
-                         "INSTANCE keeps them inside the instance only: LIKELY safe from a pack update (which",
-                         "replaces the config folder) but not guaranteed — a pack can ship files into the data",
-                         "root too — and certainly lost with the instance itself. OFF disables backups entirely.",
-                         "Set from the Backups row in Options > Dungeon Train.")
-                .defineEnum("backupMode", BackupMode.DEFAULT);
-        ModConfigSpec.IntValue backupsPerVersion = b
-                .comment("How many backup archives to keep for each Dungeon Train version.",
-                         "Older archives of the same version are removed once there are more than this.",
-                         "Lowering it takes effect the next time a backup is written, which will remove",
-                         "archives already on disk. A total size ceiling also applies as a backstop.",
-                         "Set from the Backups per version row in Options > Dungeon Train.")
-                .defineInRange("backupsPerVersion",
-                    games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION, 1, 20);
         ModConfigSpec.BooleanValue confirmBuildRestore = b
                 .comment("Whether to ask first when the build server turns out to have lost builds you",
                          "uploaded. Off means they are simply sent back up from your local copy, privately,",
@@ -785,8 +752,6 @@ public final class ClientDisplayConfig {
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme,
-                backupMode,
-                backupsPerVersion,
                 confirmBuildRestore);
     }
 
@@ -954,39 +919,7 @@ public final class ClientDisplayConfig {
         POLITICAL_FILTER.save();
     }
 
-    // ----- Backups (see games.brennan.dungeontrain.data.PlayerDataBackupHook) -----
-
-    /**
-     * Where restore points are written.
-     *
-     * <p>The pre-load answer is the DEFAULT rather than OFF, and that is load-bearing: this is read
-     * on the server thread, including on dedicated servers where the client spec never loads, and
-     * resolving an unreadable setting to "no backups" would silently disable the safety net for
-     * exactly the installs least able to notice.</p>
-     */
-    public static BackupMode getBackupMode() {
-        return isLoaded() ? BACKUP_MODE.get() : BackupMode.DEFAULT;
-    }
-
-    /**
-     * Archives kept per mod version.
-     *
-     * <p>Falls back to the default (not to zero, and not to "unlimited") wherever the client spec
-     * is absent — a dedicated server reading this must get a sane retention, not one that either
-     * deletes everything or never prunes.</p>
-     */
-    public static int getBackupsPerVersion() {
-        return isLoaded()
-            ? BACKUPS_PER_VERSION.get()
-            : games.brennan.dungeontrain.data.PlayerDataBackup.DEFAULT_PER_VERSION;
-    }
-
-    public static void setBackupsPerVersion(int value) {
-        if (!isLoaded()) return;
-        if (BACKUPS_PER_VERSION.get() == value) return; // skip a needless TOML write
-        BACKUPS_PER_VERSION.set(value);
-        BACKUPS_PER_VERSION.save();
-    }
+    // ----- Build restores (backup mode + retention live in Dungeon Backup: BackupSettings) -----
 
     /**
      * Whether the build-restore card is shown rather than the restore just running.
@@ -1003,13 +936,6 @@ public final class ClientDisplayConfig {
         if (CONFIRM_BUILD_RESTORE.get() == value) return; // skip a needless TOML write
         CONFIRM_BUILD_RESTORE.set(value);
         CONFIRM_BUILD_RESTORE.save();
-    }
-
-    public static void setBackupMode(BackupMode value) {
-        if (!isLoaded() || value == null) return;
-        if (BACKUP_MODE.get() == value) return; // skip a needless TOML write
-        BACKUP_MODE.set(value);
-        BACKUP_MODE.save();
     }
 
     // ----- Developer-message consent state (see DevMessageConsentClient) -----
@@ -1840,8 +1766,6 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
             ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme,
-            ModConfigSpec.EnumValue<BackupMode> backupMode,
-            ModConfigSpec.IntValue backupsPerVersion,
             ModConfigSpec.BooleanValue confirmBuildRestore
     ) {}
 }
