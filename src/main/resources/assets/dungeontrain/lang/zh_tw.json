@@ -1783,6 +1783,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "還沒有可送出的內容 — 請先修改一條翻譯。",
   "gui.dungeontrain.translate.submit.blocked.consent": "請在地牢列車選項中開啟網路連線後再送出。",
   "gui.dungeontrain.translate.filter.todo": "尚未處理",
+  "gui.dungeontrain.translate.filter.source_changed": "英文近期有改動",
   "gui.dungeontrain.translate.sent.title": "你送出過的",
   "gui.dungeontrain.translate.sent.narration": "%s 次送出",
   "gui.dungeontrain.translate.sent.loading": "正在查詢…",

@@ -1783,6 +1783,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "ยังไม่มีอะไรให้ส่ง — แก้คำแปลสักรายการก่อน",
   "gui.dungeontrain.translate.submit.blocked.consent": "เปิดการเชื่อมต่ออินเทอร์เน็ตในตัวเลือก Dungeon Train เพื่อส่ง",
   "gui.dungeontrain.translate.filter.todo": "ยังไม่ได้ทำ",
+  "gui.dungeontrain.translate.filter.source_changed": "อัปเดตล่าสุด",
   "gui.dungeontrain.translate.sent.title": "สิ่งที่คุณส่งไป",
   "gui.dungeontrain.translate.sent.narration": "การส่ง %s ครั้ง",
   "gui.dungeontrain.translate.sent.loading": "กำลังตรวจสอบ…",

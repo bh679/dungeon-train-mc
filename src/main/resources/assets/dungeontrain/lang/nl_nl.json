@@ -1818,6 +1818,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Nog niets om te versturen — verbeter eerst een vertaling.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Zet de internetverbinding aan in de Dungeon Train-opties om te versturen.",
   "gui.dungeontrain.translate.filter.todo": "Nog te doen",
+  "gui.dungeontrain.translate.filter.source_changed": "Onlangs bijgewerkt",
   "gui.dungeontrain.translate.sent.title": "Wat je hebt ingestuurd",
   "gui.dungeontrain.translate.sent.narration": "%s inzending(en)",
   "gui.dungeontrain.translate.sent.loading": "Controleren…",

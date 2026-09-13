@@ -1092,6 +1092,7 @@
       "gui.dungeontrain.translate.submit.credit",
       "gui.dungeontrain.translate.submit.blocked.consent",
       "gui.dungeontrain.translate.filter.todo",
+      "gui.dungeontrain.translate.filter.source_changed",
       "gui.dungeontrain.translate.sent.title",
       "gui.dungeontrain.translate.sent.narration",
       "gui.dungeontrain.translate.sent.loading",

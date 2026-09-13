@@ -1853,6 +1853,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "Nie ma jeszcze czego wysłać — najpierw popraw jakieś tłumaczenie.",
   "gui.dungeontrain.translate.submit.blocked.consent": "Włącz połączenie z internetem w opcjach Dungeon Train, aby wysłać.",
   "gui.dungeontrain.translate.filter.todo": "Do zrobienia",
+  "gui.dungeontrain.translate.filter.source_changed": "Niedawno zmienione",
   "gui.dungeontrain.translate.sent.title": "Co wysłano",
   "gui.dungeontrain.translate.sent.narration": "Wysyłki: %s",
   "gui.dungeontrain.translate.sent.loading": "Sprawdzanie…",

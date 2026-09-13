@@ -1783,6 +1783,7 @@
   "gui.dungeontrain.translate.submit.blocked.no_edits": "まだ送るものがありません — 先に翻訳を修正してください。",
   "gui.dungeontrain.translate.submit.blocked.consent": "送信するには Dungeon Train オプションでインターネット接続を有効にしてください。",
   "gui.dungeontrain.translate.filter.todo": "未対応",
+  "gui.dungeontrain.translate.filter.source_changed": "最近更新された英語",
   "gui.dungeontrain.translate.sent.title": "送信したもの",
   "gui.dungeontrain.translate.sent.narration": "%s 件の送信",
   "gui.dungeontrain.translate.sent.loading": "確認中…",
