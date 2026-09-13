@@ -16017,6 +16017,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "changelog-tags-chosen-by-hand",
+      "version": "0.863.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Release-note tags now reflect what each change is about",
+      "summary": "Every past release note on the Versions page has been re-tagged by hand. The first pass matched words in the text, so a fix that merely mentioned a chest was filed under Loot and anything that 'rides the train' under Train \u2014 most notes carried four or five tags and the filters were noisy. Each note now carries only the tags for what it actually changed, so filtering by Editor, Mobs or Community shows you those changes and nothing else.",
+      "highlights": [
+        "All 797 release notes re-tagged \u2014 a typical note went from 4\u20135 tags to 1\u20133",
+        "Tag filters on the Versions page now return only changes about that topic",
+        "Going forward, tags are chosen when the note is written, not by a word filter"
+      ],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
