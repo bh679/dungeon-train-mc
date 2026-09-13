@@ -16694,6 +16694,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "wood-stages-shared-parts",
+      "version": "0.866.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "train"
+      ],
+      "title": "Wood stages share one placeholder-built part set",
+      "summary": "The twelve wood stages used to each carry their own copy of the same seven carriage parts, differing only in which wood they were built from. They now share a single set built from stage placeholder blocks, which resolve to each stage's own wood when a carriage spawns \u2014 birch, crimson, bamboo mosaic and the rest look exactly as before, but there is one part to edit instead of twelve.",
+      "highlights": [
+        "84 per-wood part clones replaced by 7 shared parts; every stage keeps the same picks and weights",
+        "Wood family locked per stage so re-bakes keep it"
+      ],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
