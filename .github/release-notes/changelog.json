@@ -16173,6 +16173,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "credits-funders-community-cards",
+      "version": "0.867.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Credits page thanks the funders and the Discord community",
+      "summary": "The Credits page gains two cards. Funders lists everyone who has funded Dungeon Train's development, biggest contribution first, with the amount beside each name. Community lists the Value Adders of the Dungeon Train Discord, ranked by their level there. Both come from the relay, so they stay current between updates.",
+      "highlights": [
+        "Funders card: every donor by all-time contribution, top five shown with See more.",
+        "Community card: Discord Value Adders by level, top five shown with See more.",
+        "Link your Discord from the Community card: run /dtlink <code> in the Dungeon Train Discord and your line gets the same Edit button as the other cards.",
+        "Funders can hide the amount beside their name from the Edit button, as well as rename or go anonymous."
+      ],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
