@@ -16239,6 +16239,45 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-unsaved-tracking-accuracy",
+      "version": "0.871.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "The editor's Save icon now means it",
+      "summary": "The Train Editor's unsaved-changes tracking was wrong in both directions: walking into a plot (or a mob turning its head in one) lit the Save icon, while adding block variants with the Z menu didn't. Now only real edits count \u2014 blocks, decoration, and the variant pools \u2014 and the editor world no longer lets grass and nylium decay under your builds between visits.",
+      "highlights": [
+        "Standing in a plot, watching variant cells cycle, or a mob looking around no longer marks a template as unsaved",
+        "Adding, removing or reconfiguring block variants flags the template until you save it, and the changes list names the cells",
+        "Random ticks are off in the editor world, so grass and nylium stop turning to dirt and netherrack under placed blocks",
+        "New /dt editor unsaved command lists every unsaved template with its first differing blocks"
+      ],
+      "pr": 1397,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-room-jumps-weight",
+      "version": "0.871.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "New dimensional carriage: Jumps",
+      "summary": "The Jumps room joins the dimensional carriage rotation (bedrockless variant).",
+      "highlights": [],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

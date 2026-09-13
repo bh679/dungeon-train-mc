@@ -5,13 +5,18 @@ import net.minecraft.world.level.GameRules;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The game rules a Train Editor world is meant to sit under: nothing wanders into a plot, and the
- * clock does not move.
+ * The game rules a Train Editor world is meant to sit under: nothing wanders into a plot, the
+ * clock does not move, and nothing decays.
  *
  * <p>An editor plot is authored content, and since a template now carries the mobs standing in it
  * ({@link games.brennan.dungeontrain.template.TemplateDecor}), anything that walks in gets saved as
  * part of somebody's build. Switching natural spawning off is what makes "a mob in a plot is a mob
  * the author placed" true, which is the assumption the capture rests on.</p>
+ *
+ * <p>Random ticks are off for the same reason. Grass an author built over turns to dirt and nylium
+ * under a block reverts to netherrack on the next random tick that reaches it — quiet mutations
+ * of a plot nobody edited, which the dirty scan then reported as unsaved work and a save would
+ * have baked into the template.</p>
  *
  * <p>The clock is held at midday so every plot is authored under the same full light — the same
  * decision the Train Builder makes, though by a different mechanism: the builder pins the sun in
@@ -35,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 public final class EditorQuietRules {
 
     /** How many rules {@link #apply} switches off — for log lines. */
-    public static final int RULE_COUNT = 2;
+    public static final int RULE_COUNT = 3;
 
     /** The day time the editor rests at: noon. */
     public static final long MIDDAY_TICKS = 6000L;
@@ -43,7 +48,7 @@ public final class EditorQuietRules {
     private EditorQuietRules() {}
 
     /**
-     * Switch off natural mob spawning and the daylight cycle.
+     * Switch off natural mob spawning, the daylight cycle and random ticks.
      *
      * <p>Idempotent — setting a rule to the value it already holds is a no-op — so this is safe to
      * run on every server start rather than only on the first.</p>
@@ -55,5 +60,6 @@ public final class EditorQuietRules {
     public static void apply(GameRules rules, @Nullable MinecraftServer server) {
         rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, server);
         rules.getRule(GameRules.RULE_DAYLIGHT).set(false, server);
+        rules.getRule(GameRules.RULE_RANDOMTICKING).set(0, server);
     }
 }
