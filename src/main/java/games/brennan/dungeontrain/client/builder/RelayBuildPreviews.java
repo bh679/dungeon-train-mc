@@ -137,10 +137,10 @@ public final class RelayBuildPreviews {
         // released so neither the ask nor its answer stays "in flight" forever.
         IN_FLIGHT.remove(new Key(relayId, -1));
         Key key = new Key(relayId, seq);
-        IN_FLIGHT.remove(key);
         if (seqs != null && seqs.length > 0) VERSIONS.put(relayId, seqs.clone());
         else if (seq != 0 && !VERSIONS.containsKey(relayId)) VERSIONS.put(relayId, new int[0]);
         if (template == null || template.isEmpty()) {
+            IN_FLIGHT.remove(key);
             if (retryable) {
                 RETRY_AFTER.put(key, System.currentTimeMillis() + RETRY_MILLIS);
             } else {
@@ -150,6 +150,7 @@ public final class RelayBuildPreviews {
             return;
         }
         RETRY_AFTER.remove(key);
+        // Still in flight until baked, or every waiting tile re-asks each frame until its turn.
         PENDING.add(new Pending(key, template));
     }
 
@@ -203,6 +204,7 @@ public final class RelayBuildPreviews {
             }
         }
         CACHE.put(pending.key(), entry);
+        IN_FLIGHT.remove(pending.key());
         evictDown();
     }
 

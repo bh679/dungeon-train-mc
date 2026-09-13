@@ -53,4 +53,11 @@ final class BuilderModeTest {
         assertTrue(Arrays.stream(BuilderMode.values())
                 .allMatch(m -> m.labelKey().startsWith("gui.dungeontrain.builder.")));
     }
+
+    @Test
+    void descriptionKeyHangsOffTheLabelKey() {
+        for (BuilderMode mode : BuilderMode.values()) {
+            assertEquals(mode.labelKey() + ".description", mode.descriptionKey());
+        }
+    }
 }

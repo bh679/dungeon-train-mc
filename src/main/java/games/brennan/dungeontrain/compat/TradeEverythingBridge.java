@@ -42,7 +42,7 @@ public final class TradeEverythingBridge {
     private static final int EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 80;
 
     /** +9 slots, a 3×3 of edible backpacks — 45 emeralds, i.e. 9 × the plain one. */
-    private static final int UPGRADED_BACKPACK_VALUE_SIXTEENTHS = 720;
+    private static final int GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 720;
 
     /**
      * The ominous banner is not its own item: vanilla stamps this translation
@@ -84,8 +84,8 @@ public final class TradeEverythingBridge {
             ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "edible_backpack"),
             EDIBLE_BACKPACK_VALUE_SIXTEENTHS);
         TradeEverythingApi.setItemOverride(
-            ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "upgraded_backpack"),
-            UPGRADED_BACKPACK_VALUE_SIXTEENTHS);
+            ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "golden_edible_backpack"),
+            GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS);
     }
 
     /** See {@link #OMINOUS_BANNER_NAME_KEY} for why the check is component-based. */

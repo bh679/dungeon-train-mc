@@ -118,12 +118,33 @@ public final class EditorRosterIndex {
     private final List<EditorRosterPacket.Group> groups;
     private final String stampedCategoryId;
     private final EditorRosterPacket.TrainSize trainSize;
+    private final List<EditorRosterPacket.StageEntry> stages;
 
     public EditorRosterIndex(List<EditorRosterPacket.Group> groups, String stampedCategoryId,
                              EditorRosterPacket.TrainSize trainSize) {
+        this(groups, stampedCategoryId, trainSize, List.of());
+    }
+
+    public EditorRosterIndex(List<EditorRosterPacket.Group> groups, String stampedCategoryId,
+                             EditorRosterPacket.TrainSize trainSize, List<EditorRosterPacket.StageEntry> stages) {
         this.groups = List.copyOf(groups);
         this.stampedCategoryId = stampedCategoryId == null ? "" : stampedCategoryId;
         this.trainSize = trainSize == null ? EditorRosterPacket.TrainSize.UNKNOWN : trainSize;
+        this.stages = stages == null ? List.of() : List.copyOf(stages);
+    }
+
+    /** Every Stage, id-sorted, with the blocks its linked parts use — the Stages tab's list. */
+    public List<EditorRosterPacket.StageEntry> stages() {
+        return stages;
+    }
+
+    /** The stage with this id, or null when the roster has none. */
+    public EditorRosterPacket.StageEntry stage(String id) {
+        if (id == null) return null;
+        for (EditorRosterPacket.StageEntry s : stages) {
+            if (s.id().equalsIgnoreCase(id)) return s;
+        }
+        return null;
     }
 
     /** The world's carriage footprint, shared by every carriage, part and track. */

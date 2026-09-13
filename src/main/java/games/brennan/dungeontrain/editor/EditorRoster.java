@@ -62,6 +62,54 @@ public final class EditorRoster {
         }
     }
 
+    /**
+     * Every Stage with the blocks its linked carriage parts use, for the screen's Stages tab — the
+     * same per-stage index the world-space Stage Blocks panel shows, capped the same way. The index
+     * memoises per stage until a store write invalidates it, so this is a map walk in the steady
+     * state. Null {@code overworld} (no world to read part templates from) lists the stages with no
+     * blocks.
+     */
+    public static List<EditorRosterPacket.StageEntry> stages(net.minecraft.server.level.ServerLevel overworld) {
+        List<EditorRosterPacket.StageEntry> out = new ArrayList<>();
+        for (games.brennan.dungeontrain.template.Stage stage : StageStore.allStages()) {
+            EditorTypeMenusPacket.Variant row = EditorTypeMenus.stageRow(stage);
+            if (overworld == null) {
+                out.add(new EditorRosterPacket.StageEntry(row, List.of(), 0, List.of()));
+                continue;
+            }
+            StageBlockIndex.StageBlocks blocks = StageBlockIndex.blocksForStage(overworld, stage.id());
+            List<games.brennan.dungeontrain.net.StageBlocksSyncPacket.BlockCount> counts = new ArrayList<>();
+            int cap = games.brennan.dungeontrain.net.StageBlocksSyncPacket.BLOCKS_CAP;
+            for (StageBlockIndex.BlockUse use : blocks.aggregated()) {
+                if (counts.size() >= cap) break;
+                counts.add(new games.brennan.dungeontrain.net.StageBlocksSyncPacket.BlockCount(use.blockId(), use.count()));
+            }
+            List<String> parts = new ArrayList<>(blocks.parts().size());
+            for (StageBlockIndex.PartBlocks part : blocks.parts()) {
+                parts.add(part.part().kind().id() + ":" + part.part().name());
+            }
+            out.add(new EditorRosterPacket.StageEntry(row, counts, blocks.aggregated().size(), parts, paletteOf(stage.id())));
+        }
+        return out;
+    }
+
+    /**
+     * The stage's placeholder palette as the Stage Palette panel would list it: every placeholder's
+     * effective block, plus the families and their locks — what the screen's Palette pages show.
+     */
+    static EditorRosterPacket.Palette paletteOf(String stageId) {
+        games.brennan.dungeontrain.template.StagePalette pal =
+            games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.paletteFor(stageId);
+        List<games.brennan.dungeontrain.net.StagePaletteSyncPacket.Entry> entries = new ArrayList<>();
+        for (games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.Placeholder p
+                : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.placeholders()) {
+            entries.add(new games.brennan.dungeontrain.net.StagePaletteSyncPacket.Entry(p.name(),
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.effectiveTarget(p, pal),
+                pal.override(p.name()) != null));
+        }
+        return new EditorRosterPacket.Palette(entries, pal.wood(), pal.stone(), pal.woodLocked(), pal.stoneLocked());
+    }
+
     /** The world's carriage footprint, which a portal room's box is measured against; null when unknown. */
     private static final ThreadLocal<games.brennan.dungeontrain.train.CarriageDims> ROOM_DIMS =
         new ThreadLocal<>();

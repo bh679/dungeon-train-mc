@@ -119,7 +119,7 @@ public final class TemplateDataSheet {
         EditorTypeMenusPacket.Variant v = tile.variant();
         String pending = EditorScreenLang.text(EditorScreenLang.SHEET_PENDING);
 
-        out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_PATH), pathLabel));
+        // The path used to open the sheet; the bands line under a Custom stage needed its row more.
         // A labelled build is drawn under its label everywhere else on this screen; the id is what
         // every command and file is named by, so the sheet keeps it one line away.
         if (v.isLabelled()) {
@@ -143,10 +143,14 @@ public final class TemplateDataSheet {
      * {@code builder} verb (parts, tracks) show the value and nothing else.</p>
      */
     static Line builderLine(EditorTypeMenusPacket.Variant v, VariantKey key, boolean devMode) {
+        return builderLine(v, devMode ? builderCommandPrefix(key) : null);
+    }
+
+    /** Built by: the credit, and — with a {@code builder} command prefix — the picker that sets it. */
+    static Line builderLine(EditorTypeMenusPacket.Variant v, String prefix) {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER);
         String shown = v.hasBuilder() ? v.builderDisplay()
             : EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER_NONE);
-        String prefix = devMode ? builderCommandPrefix(key) : null;
         if (prefix == null) return Line.of(label, shown);
         return new Line(label, List.of(new Cell(shown, new Action.PickBuilder(prefix), v.hasBuilder())
             .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_BUILDER_TOOLTIP))));
@@ -284,31 +288,28 @@ public final class TemplateDataSheet {
                 linked ? v.primaryStageId() : "")), true)
             .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP));
 
-        List<Cell> cells = new ArrayList<>(11);
-        cells.add(Cell.plain("Lv"));
-        addLevelCell(cells, key, "minlevel", Integer.toString(v.minLevel()), linked,
-            EditorScreenLang.SHEET_MIN_LEVEL);
-        cells.add(Cell.plain("—"));
-        addLevelCell(cells, key, "maxlevel", v.maxLevel() < 0
-                ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()),
-            linked, EditorScreenLang.SHEET_MAX_LEVEL);
-        cells.add(Cell.plain("·"));
-        for (TrainPhase p : TrainPhase.values()) {
-            boolean on = (v.phaseMask() & p.bit()) != 0;
-            String letter = String.valueOf(Character.toUpperCase(p.name().charAt(0)));
-            String phaseName = phaseName(p);
-            String command = linked ? null : EditorPlotTeleport.phaseCommandFor(key.category(),
-                key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
-            Cell cell = command == null
-                ? new Cell(letter, null, on)
-                : new Cell(letter, new Action.Run(command), on);
-            cells.add(cell.withTooltip(phaseName));
+        List<Cell> levels = levelCells(
+            v.minLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "minlevel", Integer.toString(v.minLevel()))),
+            v.maxLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "maxlevel",
+                v.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()))));
+        PhaseCommand phases = linked ? null : (p, on) -> EditorPlotTeleport.phaseCommandFor(key.category(),
+            key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
+        if (linked) {
+            // A linked Stage owns the gate: its bounds and letters are read-only and fit beside the name.
+            List<Cell> cells = prepend(stage, levels);
+            cells.add(Cell.plain("·"));
+            cells.addAll(bandCells(v.phaseMask(), null));
+            return List.of(new Line(label, cells));
         }
-        // Custom means the bounds and letters are all live, which is too much to sit beside the
-        // stage name — so they take a line of their own. A linked Stage's are read-only and fit.
-        return linked
-            ? List.of(new Line(label, prepend(stage, cells)))
-            : List.of(new Line(label, List.of(stage)), new Line("", cells));
+        // Custom means every bound and letter is live, which is too much for one line — so the
+        // bounds take the stage's line and the bands a row of their own, every letter a button.
+        List<Cell> first = prepend(stage, levels);
+        return List.of(new Line(label, first), bandsLine(v.phaseMask(), phases));
+    }
+
+    /** {@code Bands  O N V E U C}: every band its own letter button (or plain when read-only). */
+    static Line bandsLine(int phaseMask, PhaseCommand phaseCommand) {
+        return new Line(EditorScreenLang.text(EditorScreenLang.STAGES_BANDS), bandCells(phaseMask, phaseCommand));
     }
 
     /** {@code first} followed by {@code rest} — one line's worth of cells. */
@@ -325,9 +326,44 @@ public final class TemplateDataSheet {
         return Character.toUpperCase(n.charAt(0)) + n.substring(1);
     }
 
-    private static void addLevelCell(List<Cell> cells, VariantKey key, String sub, String shown,
-                                     boolean linked, String tooltipKey) {
-        Stepper stepper = linked ? null : Stepper.of(EditorScreenActions.levelRow(key, sub, shown));
+    /** The command a phase letter sends: {@code on} is the letter's state before the click. */
+    @FunctionalInterface
+    interface PhaseCommand {
+        String of(TrainPhase phase, boolean on);
+    }
+
+    /**
+     * {@code Lv [min] — [max]}: a gate's bounds, shared by a template's Stage line and a Stage's own
+     * sheet so the two read and click the same. A null stepper makes that bound read-only (a
+     * template whose gate a Stage owns).
+     */
+    static List<Cell> levelCells(int minLevel, Stepper minStepper, int maxLevel, Stepper maxStepper) {
+        List<Cell> cells = new ArrayList<>(4);
+        cells.add(Cell.plain("Lv"));
+        addLevelCell(cells, Integer.toString(minLevel), minStepper, EditorScreenLang.SHEET_MIN_LEVEL);
+        cells.add(Cell.plain("—"));
+        addLevelCell(cells, maxLevel < 0
+                ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(maxLevel),
+            maxStepper, EditorScreenLang.SHEET_MAX_LEVEL);
+        return cells;
+    }
+
+    /** {@code O N V E U C}: one letter per band, lit when set; a null command makes them plain. */
+    static List<Cell> bandCells(int phaseMask, PhaseCommand phaseCommand) {
+        List<Cell> cells = new ArrayList<>(TrainPhase.values().length);
+        for (TrainPhase p : TrainPhase.values()) {
+            boolean on = (phaseMask & p.bit()) != 0;
+            String letter = String.valueOf(Character.toUpperCase(p.name().charAt(0)));
+            String command = phaseCommand == null ? null : phaseCommand.of(p, on);
+            Cell cell = command == null
+                ? new Cell(letter, null, on)
+                : new Cell(letter, new Action.Run(command), on);
+            cells.add(cell.withTooltip(phaseName(p)));
+        }
+        return cells;
+    }
+
+    private static void addLevelCell(List<Cell> cells, String shown, Stepper stepper, String tooltipKey) {
         String tooltip = EditorScreenLang.text(tooltipKey);
         if (stepper == null) {
             cells.add(new Cell(shown, null, true).withTooltip(tooltip));

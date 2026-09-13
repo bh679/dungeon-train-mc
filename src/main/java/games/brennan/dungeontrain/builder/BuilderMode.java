@@ -65,6 +65,17 @@ public enum BuilderMode {
     }
 
     /**
+     * Translation key for the sentence or two that says what this mode is for.
+     *
+     * <p>Shown as the tile's tooltip on the title-screen picker and as the body of the editor's
+     * Nav tab — the same words in both places, so the picker teaches the vocabulary the editor
+     * then uses.</p>
+     */
+    public String descriptionKey() {
+        return labelKey() + ".description";
+    }
+
+    /**
      * Texture path (namespace-relative) for this tile's image.
      *
      * <p>The PNGs are not shipped yet — {@link BuilderTileButton} falls back to a tinted panel

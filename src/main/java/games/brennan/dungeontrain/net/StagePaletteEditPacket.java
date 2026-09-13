@@ -18,7 +18,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *
  * <p>The server validates OP≥2 and that the player's stage panel is open on {@code stageId}.</p>
  */
-public record StagePaletteEditPacket(Op op, String stageId, String name) implements CustomPacketPayload {
+public record StagePaletteEditPacket(Op op, String stageId, String name, boolean fromScreen)
+        implements CustomPacketPayload {
+
+    /** The world-space panel's shape: the stage's panel must be open for the player. */
+    public StagePaletteEditPacket(Op op, String stageId, String name) {
+        this(op, stageId, name, false);
+    }
 
     // NOTE: ordinals are the wire format (encode writes op.ordinal()) — only ever APPEND.
     public enum Op { SET_OVERRIDE, CLEAR_OVERRIDE, SET_WOOD, SET_STONE, REBAKE }
@@ -33,11 +39,12 @@ public record StagePaletteEditPacket(Op op, String stageId, String name) impleme
         buf.writeByte(op.ordinal());
         buf.writeUtf(stageId == null ? "" : stageId);
         buf.writeUtf(name == null ? "" : name);
+        buf.writeBoolean(fromScreen);
     }
 
     public static StagePaletteEditPacket decode(FriendlyByteBuf buf) {
         Op op = Op.values()[buf.readByte()];
-        return new StagePaletteEditPacket(op, buf.readUtf(64), buf.readUtf(64));
+        return new StagePaletteEditPacket(op, buf.readUtf(64), buf.readUtf(64), buf.readBoolean());
     }
 
     @Override

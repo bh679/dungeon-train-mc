@@ -1671,6 +1671,15 @@ public final class EditorCommand {
             .then(Commands.literal("delete")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
                     .executes(c -> runStageDelete(c.getSource(), StringArgumentType.getString(c, "id")))))
+            .then(Commands.literal("builder")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
+                    .then(Commands.argument("uuid", StringArgumentType.word())
+                        .executes(c -> EditorBuilderCommands.runStageBuilder(c.getSource(),
+                            StringArgumentType.getString(c, "id"), StringArgumentType.getString(c, "uuid"), ""))
+                        .then(Commands.argument("name", StringArgumentType.greedyString())
+                            .executes(c -> EditorBuilderCommands.runStageBuilder(c.getSource(),
+                                StringArgumentType.getString(c, "id"), StringArgumentType.getString(c, "uuid"),
+                                StringArgumentType.getString(c, "name")))))))
             .then(Commands.literal("rename")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
                     .then(Commands.argument("name", StringArgumentType.greedyString())

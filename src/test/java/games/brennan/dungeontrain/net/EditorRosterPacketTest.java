@@ -57,6 +57,67 @@ final class EditorRosterPacketTest {
     }
 
     @Test
+    @DisplayName("every stage's gate, block counts, cap remainder and part count survive the round trip")
+    void stagesRoundTrip() {
+        EditorTypeMenusPacket.Variant desert = new EditorTypeMenusPacket.Variant(
+            "Desert", EditorPlotLabelsPacket.NO_WEIGHT, 10, 40, 5, "stages", "desert", "desert", true, false);
+        EditorTypeMenusPacket.Variant bare = new EditorTypeMenusPacket.Variant(
+            "bare", EditorPlotLabelsPacket.NO_WEIGHT, 0, -1, 63, "stages", "bare", "bare", true, false);
+        EditorRosterPacket packet = new EditorRosterPacket(List.of(), "", EditorRosterPacket.TrainSize.UNKNOWN,
+            List.of(
+                new EditorRosterPacket.StageEntry(desert, List.of(
+                    new StageBlocksSyncPacket.BlockCount("minecraft:sandstone", 120),
+                    new StageBlocksSyncPacket.BlockCount("minecraft:cut_sandstone", 7)), 5,
+                    List.of("floor:sand_1", "walls:sand_1", "roof:sand_2")),
+                new EditorRosterPacket.StageEntry(bare, List.of(), 0, List.of())));
+        EditorRosterPacket decoded = roundTrip(packet);
+        assertEquals(2, decoded.stages().size());
+        EditorRosterPacket.StageEntry d = decoded.stages().get(0);
+        assertEquals("desert", d.id());
+        assertEquals("Desert", d.name());
+        assertEquals(10, d.stage().minLevel());
+        assertEquals(40, d.stage().maxLevel());
+        assertEquals(5, d.stage().phaseMask());
+        assertEquals(2, d.blocks().size());
+        assertEquals("minecraft:sandstone", d.blocks().get(0).blockId());
+        assertEquals(120, d.blocks().get(0).count());
+        assertEquals(5, d.totalUnique());
+        assertEquals(3, d.partCount());
+        assertEquals(List.of("floor:sand_1", "walls:sand_1", "roof:sand_2"), d.parts());
+        EditorRosterPacket.StageEntry b = decoded.stages().get(1);
+        assertTrue(b.blocks().isEmpty());
+        assertEquals(EditorRosterPacket.Palette.NONE, b.palette());
+        assertEquals(0, b.partCount());
+    }
+
+    @Test
+    @DisplayName("a stage's placeholder palette — entries, families, locks — survives the round trip")
+    void paletteRoundTrip() {
+        EditorTypeMenusPacket.Variant desert = new EditorTypeMenusPacket.Variant(
+            "Desert", EditorPlotLabelsPacket.NO_WEIGHT, 10, 40, 5, "stages", "desert", "desert", true, false);
+        EditorRosterPacket.Palette pal = new EditorRosterPacket.Palette(List.of(
+            new StagePaletteSyncPacket.Entry("stage_block_1", "minecraft:sandstone", false),
+            new StagePaletteSyncPacket.Entry("stage_door", "minecraft:acacia_door", true)),
+            "acacia", "sandstone", true, false);
+        EditorRosterPacket packet = new EditorRosterPacket(List.of(), "", EditorRosterPacket.TrainSize.UNKNOWN,
+            List.of(new EditorRosterPacket.StageEntry(desert, List.of(), 0, List.of(), pal)));
+        EditorRosterPacket.Palette back = roundTrip(packet).stages().get(0).palette();
+        assertEquals(2, back.entries().size());
+        assertEquals("minecraft:acacia_door", back.entry("stage_door").blockId());
+        assertTrue(back.entry("stage_door").overridden());
+        assertEquals("acacia", back.wood());
+        assertEquals("sandstone", back.stone());
+        assertTrue(back.woodLocked());
+        assertEquals(null, back.entry("nope"));
+    }
+
+    @Test
+    @DisplayName("the stage-less shape still decodes to an empty stage list")
+    void noStagesRoundTrip() {
+        assertTrue(roundTrip(sample()).stages().isEmpty());
+    }
+
+    @Test
     @DisplayName("a room's tag and box and a contents template's flip axes ride with their entries")
     void roomAndFlipExtrasRoundTrip() {
         EditorTypeMenusPacket.Variant room = new EditorTypeMenusPacket.Variant(

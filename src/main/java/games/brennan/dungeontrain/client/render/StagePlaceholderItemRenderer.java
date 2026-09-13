@@ -71,7 +71,9 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
         pose.translate(0.5f, 0.5f, 0.5f);
 
         boolean drewBase = false;
-        boolean repeat = context == ItemDisplayContext.GUI
+        // A screen naming the answer draws the cell whole: the repeat dimming reads the selected
+        // stage's palette, which is not the one being shown.
+        boolean repeat = context == ItemDisplayContext.GUI && FORCED.get() == null
             && games.brennan.dungeontrain.client.menu.ClientStagePalette.isRepeat(name);
         float whole = repeat ? REPEAT_ALPHA : 1.0f;
         if (context == ItemDisplayContext.GUI) {
@@ -104,9 +106,28 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
         pose.popPose();
     }
 
+    /**
+     * A resolution the caller names, for a screen drawing a stage that is not the selected one:
+     * while set, every placeholder icon resolves to it instead of the selected stage's answer.
+     */
+    private static final ThreadLocal<String> FORCED = new ThreadLocal<>();
+
+    /** Draw within {@code body} with every placeholder resolving to {@code blockId} (null = as now). */
+    public static void withResolved(String blockId, Runnable body) {
+        String before = FORCED.get();
+        FORCED.set(blockId);
+        try {
+            body.run();
+        } finally {
+            FORCED.set(before);
+        }
+    }
+
     /** The block {@code placeholderName} resolves to for the selected stage, or null when none is selected. */
     private static Block resolvedFor(String placeholderName) {
-        String id = games.brennan.dungeontrain.client.menu.ClientStagePalette.resolved(placeholderName);
+        String forced = FORCED.get();
+        String id = forced != null ? forced
+            : games.brennan.dungeontrain.client.menu.ClientStagePalette.resolved(placeholderName);
         if (id == null) return null;
         ResourceLocation rl = ResourceLocation.tryParse(id);
         if (rl == null || !BuiltInRegistries.BLOCK.containsKey(rl)) return null;
