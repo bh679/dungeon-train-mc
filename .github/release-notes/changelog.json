@@ -16319,8 +16319,31 @@
       "released_at": null
     },
     {
-      "id": "portal-puppets-whole-room",
+      "id": "two-week-translation-catchup",
       "version": "0.873.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "translations",
+        "ui"
+      ],
+      "title": "Translation catch-up for the last two weeks of changes",
+      "summary": "Every line that changed in the last two weeks now reads in your language, not in English. The Train Builder's fourth area is called Dimensional Carriages in all twenty languages; the step-off-the-train confirmation, the Train Builder's plain-language pass, the Death Note wording and the golden edible backpack advancement are retranslated from the new English; and the chat welcome when you first enter the editor now arrives in your own language. Five lines that a human translator had already reviewed were left for them rather than overwritten.",
+      "highlights": [
+        "Dimensional Carriages named in all twenty languages, not just Romanian and Russian",
+        "Retranslated 31 recently reworded lines \u2014 abandon confirmation, Train Builder messages, Death Note, golden edible backpack",
+        "The editor's welcome chat is now localised"
+      ],
+      "pr": 1400,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-puppets-whole-room",
+      "version": "0.874.0",
       "type": "fix",
       "tags": [
         "fix",

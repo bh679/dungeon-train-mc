@@ -121,21 +121,21 @@ public final class EditorWelcome {
 
     /**
      * The welcome, one {@link Line} per entry — each carrying the delay before it shows and a supplier
-     * evaluated at send time. The first waits {@link #WELCOME_DELAY_TICKS}; body lines
+     * evaluated at send time. Every line is a {@code chat.dungeontrain.editor_welcome.*} lang key, so it
+     * renders in the receiving client's language; only the {@code @brennanhatton} mention stays literal
+     * (it is the ASCII token the Discord relay matches on). The first waits {@link #WELCOME_DELAY_TICKS}; body lines
      * {@link #LINE_GAP_TICKS}; the trailing presence line {@link #PRESENCE_DELAY_TICKS} (a longer beat).
      * The presence supplier is {@link #buildPresenceLine omitted} (returns {@code null}) when
      * Brennan's Discord presence is unknown.
      */
     private static List<Line> welcomeLines() {
         return List.of(
-            new Line(WELCOME_DELAY_TICKS, p -> Component.literal("Welcome to the Dungeon Train Editor!")
+            new Line(WELCOME_DELAY_TICKS, p -> Component.translatable("chat.dungeontrain.editor_welcome.title")
                 .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)),
-            new Line(LINE_GAP_TICKS, p -> Component.literal("Everything on the train is editable here —")),
-            new Line(LINE_GAP_TICKS, p -> Component.literal("carriages, parts, tracks, rooms and loot tables.")),
-            new Line(LINE_GAP_TICKS, p -> Component.literal("If you have any questions - message Brennan in here with ")
-                .append(mentionTag())),
-            new Line(LINE_GAP_TICKS, p -> Component.literal(
-                "He will be very enthusiastic that you're using the editor and do what he can to support you!")),
+            new Line(LINE_GAP_TICKS, p -> Component.translatable("chat.dungeontrain.editor_welcome.line1")),
+            new Line(LINE_GAP_TICKS, p -> Component.translatable("chat.dungeontrain.editor_welcome.line2")),
+            new Line(LINE_GAP_TICKS, p -> Component.translatable("chat.dungeontrain.editor_welcome.line3", mentionTag())),
+            new Line(LINE_GAP_TICKS, p -> Component.translatable("chat.dungeontrain.editor_welcome.line4")),
             new Line(PRESENCE_DELAY_TICKS, EditorWelcome::buildPresenceLine));
     }
 
@@ -152,7 +152,7 @@ public final class EditorWelcome {
                 .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "@brennanhatton "))
                 .withHoverEvent(new HoverEvent(
                     HoverEvent.Action.SHOW_TEXT,
-                    Component.literal("Click to message Brennan — your message reaches him on Discord"))));
+                    Component.translatable("chat.dungeontrain.editor_welcome.mention_hover"))));
     }
 
     /**

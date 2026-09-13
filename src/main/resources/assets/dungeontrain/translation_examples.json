@@ -5085,5 +5085,13 @@
         "10"
       ]
     }
+  },
+  "chat.dungeontrain.editor_welcome.line3": {
+    "1": {
+      "label": "the clickable @brennanhatton mention tag",
+      "examples": [
+        "@brennanhatton"
+      ]
+    }
   }
 }
