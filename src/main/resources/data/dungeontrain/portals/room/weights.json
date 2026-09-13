@@ -228,7 +228,7 @@
   },
   "parkour": {
     "weight": 2,
-    "minLevel": 4,
+    "minLevel": 2,
     "mode": "bedrockless"
   },
   "paths": {
@@ -275,6 +275,11 @@
   "romanpillars": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
+  },
+  "safe": {
+    "weight": 2,
+    "minLevel": 4,
+    "mode": "bedrockless/exact/off/off/off/none/sealed/0/8"
   },
   "safehaven": 1,
   "sanemaze": {
