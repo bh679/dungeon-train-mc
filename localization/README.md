@@ -1,9 +1,10 @@
 # Translation Provenance
 
-Every translated string committed in this repo carries a `{author, reviewer}` record — who
-produced the current translation and who human-reviewed it — so anyone can see at a glance
-which text is machine-translated and which a human has checked. Three bodies of content are
-tracked, all repo-side only (see below):
+Every translated string committed in this repo carries a `{author, reviewer, source_hash}`
+record — who produced the current translation, who human-reviewed it, and a digest of the
+English it was produced from — so anyone can see at a glance which text is machine-translated,
+which a human has checked, and which the English has moved on from since. Three bodies of
+content are tracked, all repo-side only (see below):
 
 | Content | Source | Sidecars | Tooling |
 |---|---|---|---|
@@ -46,14 +47,21 @@ file** (so provenance diffs align line-for-line with lang-file diffs), raw UTF-8
 
 ```json
 {
-  "echo.dungeontrain.mob_name": {"author": "老本願", "reviewer": "老本願"},
-  "gui.dungeontrain.book_vote.ask_prefix": {"author": "Opus 4.8 (Claude)", "reviewer": ""}
+  "echo.dungeontrain.mob_name": {"author": "老本願", "reviewer": "老本願", "source_hash": "9c0b2e7f1d4a6b38"},
+  "gui.dungeontrain.book_vote.ask_prefix": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "3a1f0c9e5b7d2a41"}
 }
 ```
 
 - `author` — who produced the **current** value of the line. A model name for machine
   translation, a person's name for human translation. Never empty.
 - `reviewer` — who human-reviewed the current value. `""` = not human-reviewed.
+- `source_hash` — the first 16 hex chars of SHA-256 of the **English** value this line was
+  last stamped against (`provenance_io.source_hash`). `""` = unknown: the English is not in
+  this repo (the sibling namespaces). Every stamp — `--author`, `--reviewer`, or a new key
+  under `--sync` — records the current English, because a translator worked from it or a
+  reviewer read it. `--sync` **leaves existing hashes alone**: when `en_us` is edited, the
+  mismatch between the recorded hash and the current English is exactly the signal that the
+  translation may no longer say what the English says (see the manifests below).
 - Changing a line's translation **resets its reviewer to `""`** — a review attests one
   specific value, not the key. (`stamp-provenance.py` enforces this on `--author`
   restamps.)
@@ -69,19 +77,30 @@ part of this per-line system that enters the jar:
 
 ```json
 {
-  "_note": "Generated from … — do not hand-edit. \"*\" = every unit in that body is AI-authored and unreviewed.",
+  "_note": "Generated from … — do not hand-edit. \"*\" = every unit in that body. …",
   "locale": "de_de",
   "lang": { "dungeontrain": "*", "adventureitemnames": "*", "playermob": "*", "discordpresence": "*" },
-  "books": "*"
+  "source_changed": { "dungeontrain": ["command.dungeontrain.report_carriage.success", "…"], "adventureitemnames": [], "playermob": [], "discordpresence": [] },
+  "books": "*",
+  "books_source_changed": ["death_lore/default", "…"]
 }
 ```
 
 - One manifest per locale spans **both** bodies — every lang namespace plus the narrative
   books — because the editor lists them in one screen.
-- Each value is `"*"` (every unit in that body is AI-authored and unreviewed), `[]`, or an
-  explicit list of keys / book paths. `"*"` is what keeps these small: 17 locales are wholly
-  machine-translated, so they collapse to a few hundred bytes; only zh_cn and zh_tw carry
-  real lists.
+- `lang` / `books`: which units are AI-authored and unreviewed (the editor's `AI` badge).
+  `source_changed` / `books_source_changed`: which units' **English was edited after they
+  were last translated or reviewed** — every entry whose `source_hash` no longer matches the
+  current English (the editor's amber `↻` badge, and the "edited after this was translated"
+  heading on the edit screen). Both kinds land in the editor's "Needs a human" queue. A
+  sibling namespace always lists `[]` here: its English is not in this repo to compare.
+- Each value is `"*"` (every unit in that body), `[]`, or an explicit list of keys / book
+  paths. `"*"` is what keeps these small: 17 locales are wholly machine-translated, so their
+  `lang` collapses to a few hundred bytes; only zh_cn and zh_tw carry real lists there.
+- **Editing `en_us.json` (or an English book) changes the manifests** even though it changes
+  no sidecar — so after an English edit, re-run `stamp-provenance.py --sync` (no `--author`
+  needed when no key is new) and commit the refreshed manifests, or `check-provenance.py`
+  fails on drift. `import-english-edits.yml` does this itself before its checks.
 - A body with **no sidecar** for that locale is omitted entirely, so "absent" (DiscordPresence
   has no `zh_cn` here) stays distinguishable from "nothing needs review".
 - Generated, like the credit counts — **never hand-edit**. Both `stamp-provenance.py` and
@@ -151,6 +170,9 @@ author registry** as dungeontrain, with two differences:
 
 - They have **no shipped credit files or in-game AI-ring** (bookkeeping only) — so no
   `total_keys`/`ai_authored`/`ai_unreviewed` counts and no `translation_contributors.json`.
+- Their English is not in this repo, so every entry's `source_hash` is `""` and they never
+  appear in a manifest's `source_changed` list — the in-game editor cannot tell a translator
+  that a sibling's English moved on.
 - Their locale set is whatever each namespace's lang dir actually contains — e.g.
   DiscordPresence has no `zh_cn` here (it lives in its source repo), so it simply has no
   `zh_cn` sidecar. Nothing is hardcoded; the tooling discovers each namespace's locales.
@@ -168,13 +190,16 @@ locale dir (sans `.json`):
 
 ```json
 {
-  "random_books/deathnote": {"author": "老本願", "reviewer": "老本願"},
-  "starting_books/questions": {"author": "Opus 4.8 (Claude)", "reviewer": ""}
+  "random_books/deathnote": {"author": "老本願", "reviewer": "老本願", "source_hash": "5d2e9a17c4b3f086"},
+  "starting_books/questions": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "b7a0c3e6d1f24958"}
 }
 ```
 
-Same `{author, reviewer}` semantics, same author registry, same on-disk format and the same
-"restamp author resets reviewer" rule. There is no `en_us` locale here (the English books
+Same `{author, reviewer, source_hash}` semantics, same author registry, same on-disk format
+and the same "restamp author resets reviewer" rule. A book's `source_hash` digests the English
+book's **editable fields only** (`provenance_io.book_source_hash`, the same walk as
+`NarrativeBookFields.flatten`), so a structural or whitespace-only edit to the English file
+does not flag every locale. There is no `en_us` locale here (the English books
 live in `data/dungeontrain/narratives/`, not as a locale) and no shipped credits. Driven by
 `stamp-narrative-provenance.py` / `check-narrative-provenance.py` (same verbs as the lang
 scripts, but `--files` selects books and `--report` counts books):
@@ -230,13 +255,12 @@ python3 scripts/localization/apply-review-csv.py --reviewer 老本願 \
     localization/review/zh_cn/dungeontrain-ui.csv               # the return leg
 ```
 
-The package flags two conditions. `needs_first_review` is machine translation with an empty
-reviewer — straight from the sidecars. **`source_changed_since_review`** is the one nothing else
-here can see: the line *is* human-reviewed, but `en_us` has been edited since, so the review
-attests text that no longer exists. The schema can't record that (a reviewer reset tracks changes
-to the *translation*, not the *source*), so it's derived from git history — per-key last `en_us`
-value change vs the commit that stamped the current reviewer. Proved by
-`test_build_review_package.py`, since no line in the repo currently trips it.
+The package flags two conditions, both straight from the sidecars. `needs_first_review` is
+machine translation with an empty reviewer. **`source_changed_since_review`** is a line that
+*is* human-reviewed, but whose `en_us` has been edited since — its `source_hash` no longer
+matches the current English, so the review attests text that no longer exists. (The same
+comparison the shipped manifests carry in-game; git history is consulted only to *date* the
+`english_changed_at` / `reviewed_at` columns.) Proved by `test_build_review_package.py`.
 
 `apply-review-csv.py` writes `verdict: fixed` rows into the lang file (translator becomes author
 **and** reviewer) and stamps `verdict: ok` rows as reviewed with their original author kept — both
@@ -283,6 +307,18 @@ An approval whose submitter unticked "credit me" arrives with no name; those lin
 a registered **`Anonymous contributor`** rather than left reading as machine translation. A book
 whose every editable field an import replaced takes the translator as its author; one where they
 fixed a line or two records them as its reviewer, since narrative provenance is per book.
+
+## Backfill notes (September 2026) — `source_hash`
+
+`source_hash` was added to the schema on 2026-09-13 and seeded into every sidecar by
+`scripts/localization/backfill-source-hash.py` (committed as the audit trail; one-off, like
+the July backfill below). For each entry it hashed the English **as of the commit that last
+changed that entry's author or reviewer** — i.e. what that stamp actually attested — rather
+than today's English, so lines whose English had already moved on surfaced as stale instead
+of being absorbed. Result at seeding: 82–108 stale lines per dungeontrain locale (all of them
+AI-unreviewed — English rewrites that never got re-translated), 22–25 stale books per locale,
+0 across the siblings (`""`, no English here). Entries with no sidecar history yet (a few
+dozen in pl_pl/ro_ro/ru_ru/zh_*) fell back to today's English.
 
 ## Backfill notes (July 2026)
 
