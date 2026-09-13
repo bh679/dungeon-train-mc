@@ -88,12 +88,12 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Keep Trim is jarJar'd INSIDE this jar too (crafting-grid repair keeps the left-most
-# item's armor trim), so the shipped version is always exactly keeptrim_version.
+# Keep Trim — un-bundled required sibling (crafting-grid repair keeps the left-most item's
+# armor trim). Range keys off the FLOOR, not the build-against version, like the other siblings.
 [[dependencies.${mod_id}]]
     modId="keeptrim"
     type="required"
-    versionRange="[${keeptrim_version},)"
+    versionRange="[${keeptrim_min_version},)"
     ordering="AFTER"
     side="BOTH"
 

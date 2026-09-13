@@ -139,6 +139,8 @@ public final class VariantOverlayRenderer {
      * inside this per-tick path.
      */
     private static final Map<UUID, String> LAST_STAGE_STRIPS_KEY = new HashMap<>();
+    /** Per-player dedup key for the stage icon palette push: index generation + effective stage. */
+    private static final Map<UUID, String> LAST_STAGE_ICON_KEY = new HashMap<>();
 
     /** Per-player dedup key for the part-visibility mirror — just {@code EditorPartVisibility.generation()}. */
     private static final Map<UUID, String> LAST_PART_VIS_KEY = new HashMap<>();
@@ -192,6 +194,7 @@ public final class VariantOverlayRenderer {
         LAST_PLOT_LABELS_KEY.clear();
         LAST_TYPE_MENUS_KEY.clear();
         LAST_STAGE_STRIPS_KEY.clear();
+        LAST_STAGE_ICON_KEY.clear();
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
@@ -306,6 +309,7 @@ public final class VariantOverlayRenderer {
             pushPlotLabelsSnapshot(player, dims);
             pushTypeMenusSnapshot(player, dims);
             pushStageStripsSnapshot(player, level);
+            pushStageIconPaletteSnapshot(player);
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
@@ -1017,6 +1021,34 @@ public final class VariantOverlayRenderer {
             DungeonTrainNet.sendTo(player,
                 games.brennan.dungeontrain.net.StageBlockStripsPacket.empty());
         }
+        if (LAST_STAGE_ICON_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.StageIconPalettePacket.empty());
+        }
+    }
+
+    /**
+     * Push the effective stage's placeholder resolutions (the stage-aware item icons' feed) when
+     * the index generation or the selected stage changed since the player's last push. The
+     * strips push above already cleared it on editor exit.
+     */
+    private static void pushStageIconPaletteSnapshot(ServerPlayer player) {
+        if (EditorStampedCategoryState.current().isEmpty()) return;
+        String stageId = EditorStageSelection.effective();
+        if (stageId == null) return;
+        UUID uuid = player.getUUID();
+        String key = "g" + StageBlockIndex.generation() + ":" + stageId;
+        if (key.equals(LAST_STAGE_ICON_KEY.get(uuid))) return;
+        LAST_STAGE_ICON_KEY.put(uuid, key);
+        games.brennan.dungeontrain.template.StagePalette pal =
+            games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.paletteFor(stageId);
+        java.util.List<games.brennan.dungeontrain.net.StageIconPalettePacket.Entry> entries = new java.util.ArrayList<>();
+        for (games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.Placeholder p
+                : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.placeholders()) {
+            entries.add(new games.brennan.dungeontrain.net.StageIconPalettePacket.Entry(p.name(),
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.effectiveTarget(p, pal),
+                games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.isRepeat(p, pal)));
+        }
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.StageIconPalettePacket(stageId, entries));
     }
 
     /**

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "dungeontrain:block/stage_stone_mossy",
+    "side": "dungeontrain:block/stage_stone_mossy",
+    "top": "dungeontrain:block/stage_stone_mossy"
+  }
+}

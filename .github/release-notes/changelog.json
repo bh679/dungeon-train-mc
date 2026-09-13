@@ -16632,8 +16632,51 @@
       "released_at": null
     },
     {
-      "id": "dungeon-backup-sibling-extraction",
+      "id": "keep-trim-unbundled",
       "version": "0.863.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Keep Trim is now its own download",
+      "summary": "Keep Trim, the mod that keeps your armor trim when you repair two trimmed pieces in a crafting grid, used to be packed inside Dungeon Train's jar. It now installs as a separate required mod, the same way Adventure Item Names and the other companion mods do, so your launcher fetches and updates it on its own and the Keep Trim page gets the credit. Nothing changes in play. If you install Dungeon Train by hand rather than through the CurseForge app or a modpack, add Keep Trim 0.2.0 or newer to your mods folder.",
+      "highlights": [
+        "Keep Trim moves from inside the Dungeon Train jar to a separate required mod",
+        "CurseForge app and both modpacks install it for you; manual installs need Keep Trim 0.2.0+"
+      ],
+      "pr": 1388,
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stage-placeholder-blocks",
+      "version": "0.864.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Stage placeholder blocks \u2014 build once, resolve per stage",
+      "summary": "A new set of editor blocks that stand in for \"whatever this stage is built from\". Place them in a carriage part or contents build and, when that carriage spawns, each one becomes the matching real block of the stage it lands in \u2014 so one build can serve the stone, desert, deep dark, wood and Nether stretches alike. Ten most-used solid slots, stairs, slabs, a button and pressure plate, a full wood set (logs, planks, stairs, slab, fence, gate, button, plate, door, trapdoor) and a stone set (cobbled, stone, bricks, polished, cracked, mossy, feature \u2014 each with stairs, slab and wall) resolve through each stage's baked palette; a new Stage Palette panel beside the Stage Blocks panel shows the whole table per stage and lets you override any slot or pick the wood/stone family from a held block. In the editor, the placeholders render as the selected stage's block with their own tile ghosted over it, so a build reads as both.",
+      "highlights": [
+        "57 stage placeholder blocks in a new Dungeon Train \u2014 Stage Blocks creative tab",
+        "Per-stage palettes baked into stages.json (re-baked on stage save; /dungeontrain editor stage bake)",
+        "Stage Palette panel: families \u00d7 block types, click-to-override from the held block, wood/stone family locks",
+        "Stage-aware icons and blended placed blocks in the editor; repeat slots dimmed",
+        "/dungeontrain debug stage-placeholders checks a live train for unresolved placeholders"
+      ],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dungeon-backup-sibling-extraction",
+      "version": "0.865.0",
       "type": "refactor",
       "tags": [
         "compatibility",
