@@ -49,6 +49,7 @@
     "RapierPipelineRotationLockMixin",
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",
+    "SubLevelEntityCollisionShapeClipMixin",
     "SableBlockChangeGuardMixin",
     "MergedMassTrackerPivotFreezeMixin",
     "SubLevelHoldingChunkFileMixin",

@@ -4,12 +4,12 @@
   "variants": [
     {
       "id": "skymaze",
-      "weight": 1,
+      "weight": 2,
       "minLevel": 4
     },
     {
       "id": "jumps",
-      "weight": 1,
+      "weight": 2,
       "minLevel": 10
     },
     {
