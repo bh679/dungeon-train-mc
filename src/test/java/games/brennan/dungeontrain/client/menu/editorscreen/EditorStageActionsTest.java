@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
-import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
@@ -68,22 +67,29 @@ final class EditorStageActionsTest {
     }
 
     @Test
-    @DisplayName("Min Lv and Max Lv step and type; the bands row lights the set dimensions and each toggles the other way")
-    void settingRows() {
-        List<CommandMenuEntry> rows = EditorStageActions.settingRows(desert());
-        assertEquals(3, rows.size());
-        CommandMenuEntry.Triple min = assertInstanceOf(CommandMenuEntry.Triple.class, rows.get(0));
-        assertEquals("dungeontrain editor stage minlevel desert dec", ((CommandMenuEntry.Stay) min.leftEntry()).command());
-        assertEquals("dungeontrain editor stage minlevel desert", ((CommandMenuEntry.TypeArg) min.middleEntry()).commandPrefix());
-        assertEquals("dungeontrain editor stage maxlevel desert inc",
-            ((CommandMenuEntry.Stay) ((CommandMenuEntry.Triple) rows.get(1)).rightEntry()).command());
-        CommandMenuEntry[] bands = MenuRowPainter.cellsOf(rows.get(2));
-        assertEquals(1 + TrainPhase.values().length, bands.length);
-        CommandMenuEntry.Stay overworld = assertInstanceOf(CommandMenuEntry.Stay.class, bands[1]);
-        assertTrue(overworld.highlighted());
-        assertEquals("dungeontrain editor stage phase desert overworld off", overworld.command());
-        CommandMenuEntry.Stay nether = assertInstanceOf(CommandMenuEntry.Stay.class, bands[2]);
-        assertFalse(nether.highlighted());
-        assertEquals("dungeontrain editor stage phase desert nether on", nether.command());
+    @DisplayName("the sheet's Spawns line is the template sheet's gate: bounds that step and type, letters that toggle")
+    void sheetLines() {
+        List<TemplateDataSheet.Line> lines = EditorStageActions.sheetLines(desert(), 4);
+        assertEquals(4, lines.size());
+        List<TemplateDataSheet.Cell> gate = lines.get(0).cells();
+        // Lv · min · — · max · · · six letters
+        assertEquals(5 + TrainPhase.values().length, gate.size());
+        TemplateDataSheet.Action.Step min = assertInstanceOf(TemplateDataSheet.Action.Step.class, gate.get(1).action());
+        assertEquals("10", gate.get(1).text());
+        assertEquals("dungeontrain editor stage minlevel desert", min.prefix());
+        assertEquals("dungeontrain editor stage minlevel desert dec", min.dec());
+        assertEquals("dungeontrain editor stage minlevel desert inc", min.inc());
+        TemplateDataSheet.Action.Step max = assertInstanceOf(TemplateDataSheet.Action.Step.class, gate.get(3).action());
+        assertEquals("dungeontrain editor stage maxlevel desert inc", max.inc());
+        TemplateDataSheet.Cell overworld = gate.get(5);
+        assertTrue(overworld.on());
+        assertEquals("dungeontrain editor stage phase desert overworld off",
+            assertInstanceOf(TemplateDataSheet.Action.Run.class, overworld.action()).command());
+        TemplateDataSheet.Cell nether = gate.get(6);
+        assertFalse(nether.on());
+        assertEquals("dungeontrain editor stage phase desert nether on",
+            assertInstanceOf(TemplateDataSheet.Action.Run.class, nether.action()).command());
+        assertEquals("1", lines.get(1).cells().get(0).text(), "one linked part");
+        assertEquals("4", lines.get(2).cells().get(0).text(), "templates as counted by the caller");
     }
 }

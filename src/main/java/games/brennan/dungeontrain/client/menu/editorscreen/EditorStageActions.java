@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.client.menu.ConfirmScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
-import games.brennan.dungeontrain.worldgen.TrainPhase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,9 +26,6 @@ public final class EditorStageActions {
     static final String PREV = "prev";
     static final String NEXT = "next";
 
-    /** The bands row's bounds: a title cell, then one cell per phase. */
-    static final List<Double> BAND_BOUNDS = bandBounds();
-
     private EditorStageActions() {}
 
     /**
@@ -37,8 +33,8 @@ public final class EditorStageActions {
      *
      * @param stage    the shown stage
      * @param applyTo  the template the Apply button links to the stage, or null for none selected
-     * @param canPage  whether there is more than one template to page the model through
-     * @param refresh  what Refresh does on the client (re-roll the model shown)
+     * @param canPage  whether there is more than one carriage to page the model through
+     * @param refresh  what Refresh does on the client (re-roll the model's block variants)
      * @param step     what Previous / Next do on the client ({@code -1} / {@code +1})
      */
     public static List<EditorScreenActions.Icon> icons(EditorRosterPacket.StageEntry stage, VariantKey applyTo,
@@ -67,10 +63,10 @@ public final class EditorStageActions {
             null));
         out.add(new EditorScreenActions.Icon(PREV, EditorScreenLang.STAGES_ICON_PREV,
             canPage ? new CommandMenuEntry.ClientAction(PREV, () -> step.accept(-1), false) : null,
-            EditorScreenLang.STAGES_ONE_TEMPLATE));
+            EditorScreenLang.STAGES_ONE_CARRIAGE));
         out.add(new EditorScreenActions.Icon(NEXT, EditorScreenLang.STAGES_ICON_NEXT,
             canPage ? new CommandMenuEntry.ClientAction(NEXT, () -> step.accept(+1), false) : null,
-            EditorScreenLang.STAGES_ONE_TEMPLATE));
+            EditorScreenLang.STAGES_ONE_CARRIAGE));
         return out;
     }
 
@@ -88,17 +84,32 @@ public final class EditorStageActions {
         return EditorPlotTeleport.stageApplyCommandFor(target.category(), target.modelId(), target.modelName(), stageId);
     }
 
-    /** Min Lv · Max Lv · Bands — the rows under the model. */
-    public static List<CommandMenuEntry> settingRows(EditorRosterPacket.StageEntry stage) {
-        List<CommandMenuEntry> out = new ArrayList<>(3);
+    /**
+     * The sheet under the model: the gate as the template sheet shows a Stage's — {@code Lv [min]
+     * — [max] · O N V E U C}, bounds that step and letters that toggle — then what links to it.
+     */
+    public static List<TemplateDataSheet.Line> sheetLines(EditorRosterPacket.StageEntry stage,
+                                                          int templateCount) {
+        List<TemplateDataSheet.Line> out = new ArrayList<>(4);
+        String id = stage.id();
         int min = stage.stage().minLevel();
         int max = stage.stage().maxLevel();
-        out.add(levelRow(stage.id(), "minlevel",
-            EditorScreenLang.text(EditorScreenLang.STAGES_MIN_LEVEL, min), "0-1000"));
-        out.add(levelRow(stage.id(), "maxlevel",
-            EditorScreenLang.text(EditorScreenLang.STAGES_MAX_LEVEL, max < 0 ? EditorStagesPage.OPEN_MAX : Integer.toString(max)),
-            "-1..1000"));
-        out.add(bandsRow(stage.id(), stage.stage().phaseMask()));
+        out.add(new TemplateDataSheet.Line(EditorScreenLang.text(EditorScreenLang.SHEET_SPAWNS),
+            TemplateDataSheet.gateCells(
+                min, TemplateDataSheet.Stepper.of(levelRow(id, "minlevel",
+                    EditorScreenLang.text(EditorScreenLang.STAGES_MIN_LEVEL, min), "0-1000")),
+                max, TemplateDataSheet.Stepper.of(levelRow(id, "maxlevel",
+                    EditorScreenLang.text(EditorScreenLang.STAGES_MAX_LEVEL,
+                        max < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(max)),
+                    "-1..1000")),
+                stage.stage().phaseMask(),
+                (p, on) -> EditorPlotTeleport.stagePhaseCommandFor(id, p.token(), on ? "off" : "on"))));
+        out.add(TemplateDataSheet.Line.of(EditorScreenLang.text(EditorScreenLang.STAGES_PARTS_LABEL),
+            Integer.toString(stage.partCount())));
+        out.add(TemplateDataSheet.Line.of(EditorScreenLang.text(EditorScreenLang.STAGES_TEMPLATES_LABEL),
+            Integer.toString(templateCount)));
+        out.add(TemplateDataSheet.Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS),
+            Integer.toString(stage.totalUnique())));
         return out;
     }
 
@@ -109,27 +120,5 @@ public final class EditorStageActions {
             new CommandMenuEntry.TypeArg(label, hint, "dungeontrain editor stage " + sub + " " + stageId),
             new CommandMenuEntry.Stay("+", EditorPlotTeleport.stageLevelCommandFor(stageId, sub, "inc")),
             0.10, 0.90);
-    }
-
-    /** {@code Bands · O · N · V · E · U · C}: each letter a lit toggle for its dimension. */
-    static CommandMenuEntry bandsRow(String stageId, int phaseMask) {
-        List<CommandMenuEntry> cells = new ArrayList<>(TrainPhase.values().length + 1);
-        cells.add(new CommandMenuEntry.Label(EditorScreenLang.text(EditorScreenLang.STAGES_BANDS)));
-        for (TrainPhase p : TrainPhase.values()) {
-            boolean on = (phaseMask & p.bit()) != 0;
-            cells.add(new CommandMenuEntry.Stay(p.letter(),
-                EditorPlotTeleport.stagePhaseCommandFor(stageId, p.token(), on ? "off" : "on"), on));
-        }
-        return new CommandMenuEntry.Cells(cells, BAND_BOUNDS);
-    }
-
-    /** The title cell's right edge, then the edges between the phase cells: one boundary per gap. */
-    private static List<Double> bandBounds() {
-        int n = TrainPhase.values().length;
-        double title = 0.34;
-        List<Double> out = new ArrayList<>(n);
-        out.add(title);
-        for (int i = 1; i < n; i++) out.add(title + (1.0 - title) * i / n);
-        return List.copyOf(out);
     }
 }

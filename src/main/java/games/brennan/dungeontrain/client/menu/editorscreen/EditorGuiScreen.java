@@ -161,6 +161,7 @@ public final class EditorGuiScreen extends Screen {
         super.removed();
         BuilderTilePreviews.clear();
         RelayBuildPreviews.clear();
+        games.brennan.dungeontrain.client.builder.StagePreviews.clear();
         search.close();
         EditorCreatorBuilds.detach();
         BuilderProfileState.listenForDownloads(null);
@@ -249,6 +250,7 @@ public final class EditorGuiScreen extends Screen {
         float seconds = frameSeconds();
         BuilderTilePreviews.beginFrame(BAKES_PER_FRAME);
         RelayBuildPreviews.beginFrame();
+        games.brennan.dungeontrain.client.builder.StagePreviews.beginFrame();
 
         EditorScreenActions.Ctx ctx = context(index);
         if (previewKey == null ? ctx.selection() != null : !previewKey.equals(ctx.selection())) {
@@ -741,9 +743,10 @@ public final class EditorGuiScreen extends Screen {
                     orbit.beginDrag();
                     return true;
                 }
-                case SETTING -> {
-                    click();
-                    dispatchAt(stageDetail.settings().get(stageHit.index()), stageHit.sub());
+                case SHEET -> {
+                    TemplateDataSheet.Placed placed = stageDetail.sheetCell(stageHit.index());
+                    if (placed == null) return false;
+                    if (onSheetCell(placed)) click();
                     return true;
                 }
                 case ROW -> {

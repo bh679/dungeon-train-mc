@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.builder.StagePreviews;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.MenuBlockIcons;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
@@ -30,18 +31,14 @@ final class EditorStageDetailPane {
     /** An item icon is 16px; the cell gives it a pixel of air each side. */
     static final int CELL = 18;
 
-    enum HitKind { NONE, ICON, PREVIEW, SETTING, BLOCK, ROW, PAGE_PREV, PAGE_NEXT }
+    enum HitKind { NONE, ICON, PREVIEW, SHEET, BLOCK, ROW, PAGE_PREV, PAGE_NEXT }
 
     /**
-     * What the pointer is over; {@code index} is the icon's, setting row's, block's or linked row's
-     * index in its list, and {@code sub} the cell of a setting row.
+     * What the pointer is over; {@code index} is the icon's, placed sheet cell's, block's or linked
+     * row's index in its list.
      */
-    record Hit(HitKind kind, int index, int sub) {
-        static final Hit NONE = new Hit(HitKind.NONE, -1, -1);
-
-        Hit(HitKind kind, int index) {
-            this(kind, index, -1);
-        }
+    record Hit(HitKind kind, int index) {
+        static final Hit NONE = new Hit(HitKind.NONE, -1);
     }
 
     /** The overview is always the first page. */
@@ -109,15 +106,19 @@ final class EditorStageDetailPane {
     private String pagedStageId = "";
     private Hit hovered = Hit.NONE;
 
-    /** The overview: its icons and their geometry, the model shown, and the gate rows. */
+    /** The overview: its icons and their geometry, the carriage shown at which roll, and the sheet. */
     private List<EditorScreenActions.Icon> icons = List.of();
     private int[] iconX = new int[0];
     private int iconCell = EditorDetailPane.ICON_CELL;
-    private List<VariantKey> models = List.of();
-    private int modelIdx;
-    private VariantKey modelKey;
-    private List<CommandMenuEntry> settings = List.of();
+    private List<String> carriages = List.of();
+    private int carriageIdx;
+    private long seed;
+    private StagePreviews.Key modelKey;
+    private List<TemplateDataSheet.Line> sheetLines = List.of();
+    private List<TemplateDataSheet.Placed> sheetCells = List.of();
     private static final Random RESEED = new Random();
+    /** The carriage the overview opens on, when the roster has it. */
+    static final String DEFAULT_CARRIAGE = "standard";
 
     /** The column below the header down to the Test row: info line + page + pager slot. */
     static InventoryEditorLayout.Rect bodyOf(InventoryEditorLayout layout) {
@@ -151,8 +152,8 @@ final class EditorStageDetailPane {
     }
 
     /**
-     * Lay the pane out for {@code stage} (null when the roster lists none). Page and model reset
-     * when the stage changes; {@code applyTo} is the template the Apply button would link.
+     * Lay the pane out for {@code stage} (null when the roster lists none). Page, carriage and seed
+     * reset when the stage changes; {@code applyTo} is the template the Apply button would link.
      */
     void layout(InventoryEditorLayout layout, EditorRosterPacket.StageEntry stage, EditorRosterIndex index,
                 VariantKey applyTo) {
@@ -163,80 +164,64 @@ final class EditorStageDetailPane {
         if (!id.equalsIgnoreCase(pagedStageId)) {
             pagedStageId = id;
             page = 0;
-            modelIdx = 0;
+            carriageIdx = -1;
+            seed = RESEED.nextLong();
         }
         InventoryEditorLayout.Rect r = gridRect();
         pages = new Pages(pagesFor(r, stage == null ? 0 : stage.blocks().size()), templates.size(), r.h() / ROW_H);
         page = pages.clamp(page);
 
-        models = modelsFor(templates, index);
-        modelIdx = models.isEmpty() ? 0 : Math.floorMod(modelIdx, models.size());
-        modelKey = models.isEmpty() ? null : models.get(modelIdx);
+        carriages = carriagesOf(index);
+        if (carriageIdx < 0) carriageIdx = Math.max(0, carriages.indexOf(DEFAULT_CARRIAGE));
+        carriageIdx = carriages.isEmpty() ? 0 : Math.floorMod(carriageIdx, carriages.size());
+        modelKey = stage == null || carriages.isEmpty() ? null
+            : new StagePreviews.Key(stage.id(), carriages.get(carriageIdx), seed);
         if (stage == null) {
             icons = List.of();
-            settings = List.of();
+            sheetLines = List.of();
         } else {
-            icons = EditorStageActions.icons(stage, applyTo, models.size() > 1, this::reseed, this::stepModel);
-            settings = EditorStageActions.settingRows(stage);
+            icons = EditorStageActions.icons(stage, applyTo, carriages.size() > 1, this::reseed, this::stepCarriage);
+            sheetLines = EditorStageActions.sheetLines(stage, templates.size());
         }
         EditorDetailPane.IconRow row = EditorDetailPane.layoutIcons(icons.size(), layout.icons().x(), layout.icons().w());
         iconX = row.x();
         iconCell = row.cell();
     }
 
-    /**
-     * What the overview's model can show: every template and part linked to the stage, or — for a
-     * stage nothing links to yet — the roster's first carriage, so the page is never a blank box.
-     */
-    static List<VariantKey> modelsFor(List<EditorStageTemplates.Row> linked, EditorRosterIndex index) {
-        List<VariantKey> out = new java.util.ArrayList<>(linked.size());
-        for (EditorStageTemplates.Row r : linked) {
-            if (TemplateArt.of(r.key()) != null) out.add(r.key());
-        }
-        if (!out.isEmpty() || index == null) return out;
+    /** Every carriage the roster lists, in its order — what the overview's model pages through. */
+    static List<String> carriagesOf(EditorRosterIndex index) {
+        List<String> out = new java.util.ArrayList<>();
+        if (index == null) return out;
         for (EditorRosterPacket.Group g : index.groups()) {
-            if (!"carriages".equals(g.categoryId()) || g.entries().isEmpty()) continue;
-            out.add(VariantKey.of(g.entries().get(0).variant(), ""));
-            break;
+            if (!"carriages".equals(g.categoryId())) continue;
+            for (EditorRosterPacket.Entry e : g.entries()) out.add(e.variant().modelId());
         }
         return out;
     }
 
-    /** The template the overview's model shows, or null with nothing to show. */
-    VariantKey modelKey() {
+    /** The stage-stamped carriage the overview shows, or null with nothing to show. */
+    StagePreviews.Key modelKey() {
         return modelKey;
     }
 
-    /** Previous / Next: the model steps through the linked templates, wrapping. */
-    private void stepModel(int dir) {
-        if (models.isEmpty()) return;
-        modelIdx = Math.floorMod(modelIdx + dir, models.size());
-        modelKey = models.get(modelIdx);
+    /** Previous / Next: the model steps through the roster's carriages, wrapping. */
+    private void stepCarriage(int dir) {
+        if (carriages.isEmpty()) return;
+        carriageIdx = Math.floorMod(carriageIdx + dir, carriages.size());
     }
 
-    /** Refresh: drop the baked models and land on another linked template, so the box re-rolls. */
+    /** Refresh: a new seed, so the parts' and shell's block variants roll again. */
     private void reseed() {
-        games.brennan.dungeontrain.client.builder.BuilderTilePreviews.clear();
-        if (models.size() > 1) {
-            int next = RESEED.nextInt(models.size() - 1);
-            modelIdx = next >= modelIdx ? next + 1 : next;
-            modelKey = models.get(modelIdx);
-        }
+        seed = RESEED.nextLong();
     }
 
     List<EditorScreenActions.Icon> icons() {
         return icons;
     }
 
-    List<CommandMenuEntry> settings() {
-        return settings;
-    }
-
-    /** The overview's gate rows: from the sheet's top down to the pager slot. */
-    private InventoryEditorLayout.Rect settingsRect() {
-        InventoryEditorLayout.Rect b = body();
-        int top = layout.sheet().y();
-        return new InventoryEditorLayout.Rect(b.x(), top, b.w(), Math.max(0, b.bottom() - ROW_H - top));
+    /** The sheet cell a SHEET hit names, or null. */
+    TemplateDataSheet.Placed sheetCell(int index) {
+        return index >= 0 && index < sheetCells.size() ? sheetCells.get(index) : null;
     }
 
     Hit hovered() {
@@ -280,20 +265,35 @@ final class EditorStageDetailPane {
         g.drawString(font, name, h.x() + 2, ty, theme.panelText(), !theme.isLight());
     }
 
-    /** Icons over the model of one linked template, and the gate rows under it. */
+    /** Icons over the model of one carriage stamped with the stage, and the gate sheet under it. */
     private void drawOverview(GuiGraphics g, Font font, EditorScreenTheme theme, float yaw) {
         drawIcons(g);
-        TemplateArt art = TemplateArt.of(modelKey);
-        String name = modelKey == null ? "" : modelKey.displayName();
-        PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, 0);
-        InventoryEditorLayout.Rect r = settingsRect();
-        int visible = r.h() / ROW_H;
-        for (int i = 0; i < settings.size() && i < visible; i++) {
-            int top = r.y() + i * ROW_H;
-            boolean hov = hovered.kind() == HitKind.SETTING && hovered.index() == i;
-            MenuRowPainter.drawRow(g, font, settings.get(i), r.x(), top, r.right(), ROW_H - 1, i, hov,
-                hov ? hovered.sub() : -1, null);
+        drawModel(g, font, theme, yaw);
+        sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
+        TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
+            hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
+    }
+
+    /** The preview box: the stamped carriage once it has arrived, its name and "…" until then. */
+    private void drawModel(GuiGraphics g, Font font, EditorScreenTheme theme, float yaw) {
+        InventoryEditorLayout.Rect r = layout.preview();
+        g.fill(r.x(), r.y(), r.right(), r.bottom(), PreviewPane.BACKDROP);
+        boolean drawn = false;
+        if (modelKey != null) {
+            StagePreviews.request(modelKey);
+            drawn = StagePreviews.draw(g, modelKey, r.x(), r.y(), r.w(), r.h(), yaw, PreviewPane.FILL);
         }
+        if (!drawn) {
+            String pending = EditorScreenLang.text(modelKey == null
+                ? EditorScreenLang.NOTHING_SELECTED : EditorScreenLang.SHEET_PENDING);
+            g.drawString(font, pending, r.x() + (r.w() - font.width(pending)) / 2,
+                r.y() + (r.h() - font.lineHeight) / 2, PreviewPane.HINT, false);
+        }
+        if (modelKey != null) {
+            g.drawString(font, font.plainSubstrByWidth(modelKey.carriageId(), r.w() - 6), r.x() + 3, r.y() + 2,
+                PreviewPane.CAPTION, true);
+        }
+        g.renderOutline(r.x(), r.y(), r.w(), r.h(), theme.outline());
     }
 
     private void drawIcons(GuiGraphics g) {
@@ -407,14 +407,8 @@ final class EditorStageDetailPane {
                 }
             }
             if (layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0);
-            InventoryEditorLayout.Rect sr = settingsRect();
-            if (sr.contains(mx, my)) {
-                int i = (int) ((my - sr.y()) / ROW_H);
-                if (i < 0 || i >= settings.size()) return Hit.NONE;
-                int sub = MenuRowPainter.hitCell(settings.get(i), (int) mx, sr.x(), sr.right());
-                return sub < 0 ? Hit.NONE : new Hit(HitKind.SETTING, i, sub);
-            }
-            return Hit.NONE;
+            int cell = TemplateDataSheet.hit(sheetCells, mx, my);
+            return cell >= 0 ? new Hit(HitKind.SHEET, cell) : Hit.NONE;
         }
         InventoryEditorLayout.Rect r = gridRect();
         if (!r.contains(mx, my)) return Hit.NONE;
@@ -450,6 +444,11 @@ final class EditorStageDetailPane {
                 return icon.disabledKey() == null ? List.of(label) : List.of(label, EditorScreenLang.text(icon.disabledKey()));
             }
             return icon.detail() == null ? List.of(label) : List.of(label, icon.detail());
+        }
+        if (hit.kind() == HitKind.SHEET) {
+            TemplateDataSheet.Placed placed = sheetCell(hit.index());
+            return placed == null || placed.cell().tooltip() == null ? List.of()
+                : List.of(placed.cell().tooltip().split("\n"));
         }
         if (hit.kind() != HitKind.BLOCK) return List.of();
         if (hit.index() < 0 || hit.index() >= stage.blocks().size()) return List.of();

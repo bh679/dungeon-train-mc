@@ -64,6 +64,10 @@ public final class EditorScreenLang {
     public static final String STAGES_MIN_LEVEL = PREFIX + "stages.min_level";
     public static final String STAGES_MAX_LEVEL = PREFIX + "stages.max_level";
     public static final String STAGES_BANDS = PREFIX + "stages.bands";
+    /** The stage sheet's two count lines and the one-carriage off reason for Prev / Next. */
+    public static final String STAGES_PARTS_LABEL = PREFIX + "stages.parts_label";
+    public static final String STAGES_TEMPLATES_LABEL = PREFIX + "stages.templates_label";
+    public static final String STAGES_ONE_CARRIAGE = PREFIX + "stages.one_carriage";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */

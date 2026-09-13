@@ -284,26 +284,12 @@ public final class TemplateDataSheet {
                 linked ? v.primaryStageId() : "")), true)
             .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP));
 
-        List<Cell> cells = new ArrayList<>(11);
-        cells.add(Cell.plain("Lv"));
-        addLevelCell(cells, key, "minlevel", Integer.toString(v.minLevel()), linked,
-            EditorScreenLang.SHEET_MIN_LEVEL);
-        cells.add(Cell.plain("—"));
-        addLevelCell(cells, key, "maxlevel", v.maxLevel() < 0
-                ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()),
-            linked, EditorScreenLang.SHEET_MAX_LEVEL);
-        cells.add(Cell.plain("·"));
-        for (TrainPhase p : TrainPhase.values()) {
-            boolean on = (v.phaseMask() & p.bit()) != 0;
-            String letter = String.valueOf(Character.toUpperCase(p.name().charAt(0)));
-            String phaseName = phaseName(p);
-            String command = linked ? null : EditorPlotTeleport.phaseCommandFor(key.category(),
-                key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
-            Cell cell = command == null
-                ? new Cell(letter, null, on)
-                : new Cell(letter, new Action.Run(command), on);
-            cells.add(cell.withTooltip(phaseName));
-        }
+        List<Cell> cells = gateCells(
+            v.minLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "minlevel", Integer.toString(v.minLevel()))),
+            v.maxLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "maxlevel",
+                v.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()))),
+            v.phaseMask(), linked ? null : (p, on) -> EditorPlotTeleport.phaseCommandFor(key.category(),
+                key.modelId(), key.modelName(), p.token(), on ? "off" : "on"));
         // Custom means the bounds and letters are all live, which is too much to sit beside the
         // stage name — so they take a line of their own. A linked Stage's are read-only and fit.
         return linked
@@ -325,9 +311,40 @@ public final class TemplateDataSheet {
         return Character.toUpperCase(n.charAt(0)) + n.substring(1);
     }
 
-    private static void addLevelCell(List<Cell> cells, VariantKey key, String sub, String shown,
-                                     boolean linked, String tooltipKey) {
-        Stepper stepper = linked ? null : Stepper.of(EditorScreenActions.levelRow(key, sub, shown));
+    /** The command a phase letter sends: {@code on} is the letter's state before the click. */
+    @FunctionalInterface
+    interface PhaseCommand {
+        String of(TrainPhase phase, boolean on);
+    }
+
+    /**
+     * {@code Lv [min] — [max] · O N V E U C}: a gate's cells, shared by a template's Stage line and
+     * a Stage's own sheet so the two read and click the same. A null stepper or phase command
+     * makes that part read-only (a template whose gate a Stage owns).
+     */
+    static List<Cell> gateCells(int minLevel, Stepper minStepper, int maxLevel, Stepper maxStepper,
+                                int phaseMask, PhaseCommand phaseCommand) {
+        List<Cell> cells = new ArrayList<>(11);
+        cells.add(Cell.plain("Lv"));
+        addLevelCell(cells, Integer.toString(minLevel), minStepper, EditorScreenLang.SHEET_MIN_LEVEL);
+        cells.add(Cell.plain("—"));
+        addLevelCell(cells, maxLevel < 0
+                ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(maxLevel),
+            maxStepper, EditorScreenLang.SHEET_MAX_LEVEL);
+        cells.add(Cell.plain("·"));
+        for (TrainPhase p : TrainPhase.values()) {
+            boolean on = (phaseMask & p.bit()) != 0;
+            String letter = String.valueOf(Character.toUpperCase(p.name().charAt(0)));
+            String command = phaseCommand == null ? null : phaseCommand.of(p, on);
+            Cell cell = command == null
+                ? new Cell(letter, null, on)
+                : new Cell(letter, new Action.Run(command), on);
+            cells.add(cell.withTooltip(phaseName(p)));
+        }
+        return cells;
+    }
+
+    private static void addLevelCell(List<Cell> cells, String shown, Stepper stepper, String tooltipKey) {
         String tooltip = EditorScreenLang.text(tooltipKey);
         if (stepper == null) {
             cells.add(new Cell(shown, null, true).withTooltip(tooltip));
