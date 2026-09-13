@@ -39,6 +39,21 @@ class CreditEditPayloadTest {
     }
 
     @Test
+    @DisplayName("hide_amount / show_amount are the one edit scoped to funders, not all; the new cards have wire names")
+    void amountPayload() {
+        JsonObject hide = CreditEditClient.buildPayload("abc", Action.HIDE_AMOUNT, "x", "y");
+        assertEquals("funders", hide.get("section").getAsString(), "the figure only means something on the Funders card");
+        assertEquals("hide_amount", hide.get("action").getAsString());
+        assertEquals(3, hide.size());
+        assertEquals("show_amount", CreditEditClient.buildPayload("abc", Action.SHOW_AMOUNT, null, null).get("action").getAsString());
+        assertTrue(Action.HIDE_AMOUNT.amountOnly());
+        assertTrue(Action.SHOW_AMOUNT.amountOnly());
+        assertFalse(Action.RENAME.amountOnly());
+        assertEquals("funders", Section.FUNDERS.wire());
+        assertEquals("community", Section.COMMUNITY.wire());
+    }
+
+    @Test
     @DisplayName("on a dev build the live pool's answer wins unless the branch cap is the one that owned the credit")
     void twoPools() {
         CreditEditClient.Result ok = new CreditEditClient.Result(true, CreditEditClient.Error.NONE, 2);

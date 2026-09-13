@@ -58,4 +58,27 @@ final class CreditsSelfEditsTest {
             CreditsSelfEdits.parseEntry(JsonParser.parseString("{\"from\":\"Ada\",\"to\":\"Ada L\",\"hidden\":true}").getAsJsonObject()));
         assertEquals(Entry.NONE, CreditsSelfEdits.parseEntry(JsonParser.parseString("{}").getAsJsonObject()));
     }
+
+    @Test
+    @DisplayName("the hidden amount is its own flag: carried by every with*, read tolerantly, OR-ed with the relay's answer")
+    void amountHidden() {
+        Entry e = new Entry("Ada", "Ada L", false, true);
+        assertFalse(e.isEmpty(), "a hidden amount alone is an edit worth keeping");
+        assertTrue(e.withRename("Ada L", "Lovelace").amountHidden());
+        assertTrue(e.withHidden(true).amountHidden());
+        assertTrue(e.withoutRename().amountHidden());
+        assertFalse(e.withAmountHidden(false).amountHidden());
+        assertEquals("Ada L", e.withAmountHidden(false).to(), "the rename survives the toggle");
+        assertEquals(new Entry("", "", false, true),
+            CreditsSelfEdits.parseEntry(JsonParser.parseString("{\"amountHidden\":true}").getAsJsonObject()));
+        assertFalse(CreditsSelfEdits.parseEntry(JsonParser.parseString("{\"hidden\":true}").getAsJsonObject()).amountHidden(),
+            "a self.json from before the flag existed reads as not hidden");
+        assertFalse(CreditsSelfEdits.parseEntry(JsonParser.parseString("{\"amountHidden\":\"yes\"}").getAsJsonObject()).amountHidden());
+        // Either side hides; only both showing shows.
+        assertTrue(CreditsSelfEdits.amountHidden(e, false));
+        assertTrue(CreditsSelfEdits.amountHidden(Entry.NONE, true));
+        assertFalse(CreditsSelfEdits.amountHidden(Entry.NONE, false));
+        // The name overlay is untouched by the flag.
+        assertEquals(new CreditsSelfEdits.Shown("Ada L", false), CreditsSelfEdits.apply(e, "Ada", false));
+    }
 }
