@@ -118,6 +118,9 @@ public final class PortalPuppets {
      */
     private static final Map<UUID, Map<Integer, PortalPuppetDelta.Sent>> KNOWN = new HashMap<>();
 
+    /** Pairs whose grid-snap residual has been logged; see {@link #poseAligned}. */
+    private static final Set<Integer> ALIGN_LOGGED = new HashSet<>();
+
     private PortalPuppets() {}
 
     /**
@@ -242,14 +245,17 @@ public final class PortalPuppets {
 
         List<Candidate> chosen = select(candidates, MAX_PER_PAIR);
 
+        // One pose-aligned frame for the whole pair this tick; see poseAligned.
+        PortalFrames aligned = poseAligned(frames, ship, carriageIndex);
+
         for (Candidate candidate : chosen) {
             Entity source = occupants.get(candidate.index());
 
-            PortalPuppetsPacket.Entry entry = describe(frames, ship, source);
+            PortalPuppetsPacket.Entry entry = describe(aligned, ship, source);
             if (entry == null) continue;
 
             entries.add(entry);
-            live.put(entry.key(), label(frames, source));
+            live.put(entry.key(), label(aligned, source));
         }
 
         logDropped(carriageIndex, candidates.size() - chosen.size());
@@ -323,11 +329,53 @@ public final class PortalPuppets {
         return nearest;
     }
 
+    /**
+     * The pair's frames with the carriage origin read off the ship's <i>pose</i>, not its bounding box.
+     *
+     * <p>The carriage origin the tick hands in comes from {@code ship.worldAABB()}, and Sable's box
+     * lags its logical pose by a fraction of a block that changes tick to tick. Everything else a
+     * puppet's position goes through — {@code worldToShip} here, the carry that moves a rider on the
+     * server — reads the pose. Mixing the two puts the lag into the corridor-local offset, so a
+     * twin-side zombie's plot-local coordinates wobble on the carriage and a carriage-side rider's
+     * twin puppet wobbles at the world floor, both against a floor that is standing perfectly still
+     * from the viewer's point of view. That is the shimmer a moving train shows.</p>
+     *
+     * <p>The corridor is stamped block-aligned in plot space, so the box-derived origin, taken into
+     * plot space, lands within the lag of an integer corner. Rounding recovers the exact corner and
+     * the pose puts it back in the world — a point that moves with the pose and only with the pose.
+     * Scoped to puppets: the swap and facing logic keep the box-derived frame and the hysteresis
+     * that was sized for it.</p>
+     *
+     * <p>Logged once per pair with the residual the rounding removed, so a corridor whose origin is
+     * not on the grid — where rounding would introduce a constant offset rather than remove a
+     * jitter — shows itself in the log as a residual near a half block.</p>
+     */
+    static PortalFrames poseAligned(PortalFrames frames, ManagedShip ship, int carriageIndex) {
+        PortalFrames.Origin o = frames.originOf(PortalFrames.FRAME_CARRIAGE);
+        Vector3d plot = ship.worldToShip(new Vector3d(o.x(), o.y(), o.z()));
+        double rx = Math.rint(plot.x), ry = Math.rint(plot.y), rz = Math.rint(plot.z);
+
+        if (ALIGN_LOGGED.add(carriageIndex)) {
+            LOGGER.info("[DungeonTrain] Portal puppet frame for carriage {} snapped to plot grid — "
+                    + "residual ({}, {}, {})",
+                carriageIndex, fmt(plot.x - rx), fmt(plot.y - ry), fmt(plot.z - rz));
+        }
+
+        Vector3d world = ship.shipToWorld(new Vector3d(rx, ry, rz));
+        return new PortalFrames(frames.layout(),
+            new PortalFrames.Origin(world.x, world.y, world.z), frames.twin(), frames.role());
+    }
+
+    private static String fmt(double v) {
+        return String.format(java.util.Locale.ROOT, "%.3f", v);
+    }
+
     /** Drop a pair's puppets — it is out of range, or nobody is in it any more. */
     public static void forget(int carriageIndex) {
         logTransitions(carriageIndex, Map.of());
         LIVE.remove(carriageIndex);
         DROPPED.remove(carriageIndex);
+        ALIGN_LOGGED.remove(carriageIndex);
     }
 
     /** Forget everything, for a world unload or a server stop. */
@@ -336,6 +384,7 @@ public final class PortalPuppets {
         SENT.clear();
         DROPPED.clear();
         KNOWN.clear();
+        ALIGN_LOGGED.clear();
     }
 
     /**
