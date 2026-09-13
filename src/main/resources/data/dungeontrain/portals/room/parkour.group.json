@@ -5,7 +5,7 @@
     {
       "id": "skymaze",
       "weight": 2,
-      "minLevel": 4
+      "minLevel": 6
     },
     {
       "id": "jumps",
@@ -15,7 +15,12 @@
     {
       "id": "gemotricwalk",
       "weight": 1,
-      "minLevel": 6
+      "minLevel": 8
+    },
+    {
+      "id": "safe",
+      "weight": 1,
+      "maxLevel": 15
     }
   ]
 }
