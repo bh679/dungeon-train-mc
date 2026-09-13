@@ -146,7 +146,7 @@ def rename_in_sidecar(path: Path, src: str, dst: str, dry_run: bool) -> int:
     for key, entry in prov.items():
         if isinstance(entry, dict):
             new_entry = dict(entry)
-            for field in pio.ENTRY_FIELDS:
+            for field in pio.NAME_FIELDS:
                 if new_entry.get(field) == src:
                     new_entry[field] = dst
                     changed += 1

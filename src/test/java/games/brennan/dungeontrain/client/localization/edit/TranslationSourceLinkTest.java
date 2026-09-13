@@ -15,12 +15,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TranslationSourceLinkTest {
 
     private static TranslationUnit lang(String namespace, String key) {
-        return new TranslationUnit(TranslationUnit.Type.LANG, namespace, key, "English", "", false);
+        return new TranslationUnit(TranslationUnit.Type.LANG, namespace, key, "English", "", false,
+            false);
     }
 
     private static TranslationUnit book(String id) {
         return new TranslationUnit(TranslationUnit.Type.BOOK, "dungeontrain", id, "English", "",
-            false);
+            false, false);
     }
 
     @Test

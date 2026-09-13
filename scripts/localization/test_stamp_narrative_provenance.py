@@ -13,15 +13,18 @@ import subprocess
 import sys
 import tempfile
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import provenance_io as pio  # noqa: E402
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, "stamp-narrative-provenance.py")
 
 # Book keys (path relative to the locale dir, sans .json), in sorted order.
 BOOKS = ["random_books/deathnote", "random_books/quiet_rules", "starting_books/intro"]
 PROV = {
-    "random_books/deathnote": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-    "random_books/quiet_rules": {"author": "老本願", "reviewer": "老本願"},
-    "starting_books/intro": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+    "random_books/deathnote": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
+    "random_books/quiet_rules": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},
+    "starting_books/intro": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
 }
 AUTHORS = {
     "Opus 4.8 (Claude)": "ai",
@@ -72,12 +75,12 @@ def test_sync_adds_missing_book_unreviewed():
     narrative_dir, prov_dir = workspace(books=books)
     proc = run(narrative_dir, prov_dir, "--sync", "--author", "Opus 4.8 (Claude)")
     assert proc.returncode == 0, proc.stderr
-    assert read(prov_dir)["stories/new_tale"] == {"author": "Opus 4.8 (Claude)", "reviewer": ""}
+    assert read(prov_dir)["stories/new_tale"] == {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""}
     assert "added 1" in proc.stdout
 
 
 def test_sync_removes_orphan():
-    prov = dict(PROV, **{"random_books/gone": {"author": "unused", "reviewer": ""}})
+    prov = dict(PROV, **{"random_books/gone": {"author": "unused", "reviewer": "", "source_hash": ""}})
     narrative_dir, prov_dir = workspace(prov=prov)
     proc = run(narrative_dir, prov_dir, "--sync", "--author", "unused")
     assert proc.returncode == 0, proc.stderr
@@ -110,7 +113,7 @@ def test_sync_creates_sidecar_from_scratch():
     assert proc.returncode == 0, proc.stderr
     result = read(prov_dir)
     assert list(result) == sorted(BOOKS)
-    assert all(e == {"author": "Opus 4.8 (Claude)", "reviewer": ""} for e in result.values())
+    assert all(e == {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""} for e in result.values())
 
 
 def test_reviewer_stamp_by_files():
@@ -141,7 +144,7 @@ def test_author_restamp_resets_reviewer():
                "--files", "random_books/quiet_rules")
     assert proc.returncode == 0, proc.stderr
     assert read(prov_dir)["random_books/quiet_rules"] == {
-        "author": "New Model (Claude)", "reviewer": ""}
+        "author": "New Model (Claude)", "reviewer": "", "source_hash": ""}
 
 
 def test_stamp_nonexistent_book_fails_without_writing():
@@ -177,7 +180,7 @@ def test_locale_filter_leaves_others_untouched():
         json.dump({"id": "deathnote"}, f)
     other = os.path.join(prov_dir, "ja_jp.json")
     with open(other, "w", encoding="utf-8") as f:
-        json.dump({"random_books/deathnote": {"author": "unused", "reviewer": ""}}, f,
+        json.dump({"random_books/deathnote": {"author": "unused", "reviewer": "", "source_hash": ""}}, f,
                   ensure_ascii=False)
     before = open(other, encoding="utf-8").read()
     proc = run(narrative_dir, prov_dir, "--locale", "zh_cn", "--reviewer", "R", "--all")
@@ -206,6 +209,27 @@ def test_output_format_lock():
     first = open(path, "rb").read()
     assert run(narrative_dir, prov_dir, "--sync", "--author", "unused").returncode == 0
     assert open(path, "rb").read() == first
+
+
+
+def test_stamp_records_the_english_book_hash():
+    """The English books live beside the locale tree (data/dungeontrain/narratives), which is
+    the default --english-dir: the parent of --narrative-dir."""
+    narrative_dir, prov_dir = workspace()
+    english = {"id": "deathnote", "title": "T", "variants": ["one"]}
+    english_dir = os.path.join(os.path.dirname(narrative_dir), "english")
+    en_path = os.path.join(english_dir, "narratives", "random_books", "deathnote.json")
+    os.makedirs(os.path.dirname(en_path))
+    with open(en_path, "w", encoding="utf-8") as f:
+        json.dump(english, f)
+    proc = run(narrative_dir, prov_dir, "--english-dir", english_dir,
+               "--reviewer", "老本願", "--files", "random_books/deathnote")
+    assert proc.returncode == 0, proc.stderr
+    with open(os.path.join(prov_dir, "zh_cn.json"), encoding="utf-8") as f:
+        prov = json.load(f)
+    assert prov["random_books/deathnote"]["source_hash"] == pio.book_source_hash(english)
+    # A book with no English original records "unknown".
+    assert prov["random_books/quiet_rules"]["source_hash"] == ""
 
 
 def _main():

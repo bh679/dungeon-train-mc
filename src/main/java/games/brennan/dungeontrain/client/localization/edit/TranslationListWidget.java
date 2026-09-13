@@ -49,6 +49,13 @@ public final class TranslationListWidget extends AbstractWidget {
     /** The same blue the language list's AI-fraction ring uses. */
     private static final int AI_COLOUR = 0xFF5B9BD5;
     private static final String AI_TAG = "AI";
+    /**
+     * The English behind this row was edited after it was last translated or reviewed, so the
+     * translation may no longer say what it says — see {@link TranslationUnit#sourceChanged()}.
+     * Same amber as a reviewer's note: both mean "somebody has to look again".
+     */
+    private static final String STALE_TAG = "\u21BB";
+    private static final int STALE_COLOUR = 0xFFE8A33D;
     /** A reviewer has written back about this string — see TranslationReviewNotes. */
     private static final String NOTE_TAG = "\u25CF";
     private static final int NOTE_COLOUR = 0xFFE8A33D;
@@ -213,7 +220,7 @@ public final class TranslationListWidget extends AbstractWidget {
         // several strings, and reading it as a badge on this one would be wrong. Measured before
         // the key is drawn, because the key has to give it the room rather than run under it.
         String badge = badgeText(unit);
-        int tagRoom = 32 + (badge == null ? 0 : font.width(badge) + PAD);
+        int tagRoom = 32 + font.width(STALE_TAG) + PAD + (badge == null ? 0 : font.width(badge) + PAD);
         g.drawString(font, font.plainSubstrByWidth(unit.label(), Math.max(0, textWidth - tagRoom)),
             textX, lineY, KEY_COLOUR, false);
         int tagX = getX() + width - SCROLLBAR_W - 3;
@@ -232,9 +239,18 @@ public final class TranslationListWidget extends AbstractWidget {
             // point of the mark — the queue must stop offering it.
             tagX -= font.width(DISMISSED_TAG);
             g.drawString(font, DISMISSED_TAG, tagX, lineY, DISMISSED_COLOUR, false);
-        } else if (TranslationFilters.needsHuman(unit, approved)) {
-            tagX -= font.width(AI_TAG);
-            g.drawString(font, AI_TAG, tagX, lineY, AI_COLOUR, false);
+        } else {
+            // A row can carry both: machine translation nobody reviewed, whose English has ALSO
+            // moved on since. Stale sits outermost — it is the newer of the two facts.
+            if (TranslationFilters.sourceChanged(unit, approved)) {
+                tagX -= font.width(STALE_TAG);
+                g.drawString(font, STALE_TAG, tagX, lineY, STALE_COLOUR, false);
+                tagX -= PAD;
+            }
+            if (unit.aiUnreviewed() && TranslationFilters.needsHuman(unit, approved)) {
+                tagX -= font.width(AI_TAG);
+                g.drawString(font, AI_TAG, tagX, lineY, AI_COLOUR, false);
+            }
         }
         lineY += font.lineHeight;
 

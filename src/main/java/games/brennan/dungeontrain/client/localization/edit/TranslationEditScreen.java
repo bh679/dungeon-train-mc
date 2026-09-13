@@ -37,6 +37,8 @@ public final class TranslationEditScreen extends Screen {
     /** The soft red this package already uses for errors (TranslationScreen.STATUS_ERROR). */
     private static final int ERROR_COLOUR = 0xFFDD7F7F;
     private static final int AI_COLOUR = 0xFF5B9BD5;
+    /** The list widget's ↻ amber: the English moved on after this line was translated. */
+    private static final int STALE_COLOUR = 0xFFE8A33D;
     /** The gap between the English and the edit box, which is also the divider's grab area. */
     private static final int SPLITTER_H = GAP * 3;
     /** The set readout's colour — the same blue the AI badge and the AI heading use. */
@@ -110,11 +112,15 @@ public final class TranslationEditScreen extends Screen {
         Component replyBy = reply == null ? CommonComponents.EMPTY
             : Component.translatable("gui.dungeontrain.translate.edit.reply",
                 reply.noteBy() == null || reply.noteBy().isBlank() ? "admin" : reply.noteBy());
-        Component heading = unit.aiUnreviewed()
-            ? Component.translatable("gui.dungeontrain.translate.edit.source_ai")
-            : Component.translatable("gui.dungeontrain.translate.edit.source");
+        // Stale outranks AI in the heading: "the English changed under this" is the fact the
+        // translator has to act on, whoever wrote the current line. The list row carries both.
+        Component heading = unit.sourceChanged()
+            ? Component.translatable("gui.dungeontrain.translate.edit.source_changed")
+            : unit.aiUnreviewed()
+                ? Component.translatable("gui.dungeontrain.translate.edit.source_ai")
+                : Component.translatable("gui.dungeontrain.translate.edit.source");
         sourcePane = TranslationSourcePane.wrap(font, contentWidth, heading,
-            unit.aiUnreviewed() ? AI_COLOUR : LABEL_COLOUR,
+            unit.sourceChanged() ? STALE_COLOUR : unit.aiUnreviewed() ? AI_COLOUR : LABEL_COLOUR,
             // Styled, not flat: every %s in the English is underlined and hovers what the game
             // actually puts there. A translator who cannot tell a placeholder from prose moves it
             // into a slot the real value does not fit — the commonest way a translation breaks.

@@ -451,17 +451,9 @@ def targets_structure(field: str) -> bool:
 
 
 def english_book_path(english_dir: Path, book_path: str) -> Path:
-    """The English original for a locale-relative book path.
-
-    The Python inverse of ``TranslationCatalog.bookPathFor``, which is what named these paths in
-    the first place: the locale overlay flattens two English trees into one namespace, keeping
-    ``death_lore/`` as its own category and dropping the ``narratives/`` prefix from everything
-    else. Shared with ``check-book-placeholders.py``, which asks the same question of the whole
-    repo rather than of one import.
-    """
-    if book_path == "death_lore" or book_path.startswith("death_lore/"):
-        return english_dir / f"{book_path}.json"
-    return english_dir / "narratives" / f"{book_path}.json"
+    """The English original for a locale-relative book path — provenance_io's, which the
+    narrative stamp hashes with, so both legs resolve a book to the same file."""
+    return pio.english_book_path(english_dir, book_path)
 
 
 def english_fields(path: Path) -> dict | None:
@@ -609,7 +601,8 @@ def stamp_books(rewritten: dict, revised: dict, args) -> None:
     ):
         locale, name = group
         cmd = [sys.executable, str(STAMP_NARRATIVE), "--authors-file", str(args.authors_file),
-               "--narrative-dir", str(args.narrative_dir)]
+               "--narrative-dir", str(args.narrative_dir),
+               "--english-dir", str(args.narrative_en_dir)]
         if args.narrative_provenance_dir:
             cmd += ["--provenance-dir", str(args.narrative_provenance_dir)]
         if args.manifest_dir:

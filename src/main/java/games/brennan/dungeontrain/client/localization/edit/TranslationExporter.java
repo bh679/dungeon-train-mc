@@ -47,6 +47,8 @@ public final class TranslationExporter {
 
     /** The {@code reason} value build-review-package.py uses for unreviewed machine output. */
     private static final String NEEDS_FIRST_REVIEW = "needs_first_review";
+    /** {@code build-review-package.py}'s other reason: reviewed, but the English moved on since. */
+    private static final String SOURCE_CHANGED_SINCE_REVIEW = "source_changed_since_review";
     private static final String VERDICT_FIXED = "fixed";
 
     private static final String DT_NAMESPACE = "dungeontrain";
@@ -120,9 +122,12 @@ public final class TranslationExporter {
             String override = edits.lang().get(unit.id());
             lines.add(Csv.writeRow(List.of(
                 dungeonTrainOnly ? unit.id() : unit.namespace() + ":" + unit.id(),
-                unit.aiUnreviewed() ? NEEDS_FIRST_REVIEW : "",
+                // Same precedence as the Python builder: an unreviewed machine line is a
+                // first-review item whatever its English did.
+                unit.aiUnreviewed() ? NEEDS_FIRST_REVIEW
+                    : unit.sourceChanged() ? SOURCE_CHANGED_SINCE_REVIEW : "",
                 // author / reviewer / the two timestamps are repo-side provenance the jar does
-                // not carry — only the AI-unreviewed bit survives into the shipped manifest.
+                // not carry — only the two flag bits survive into the shipped manifest.
                 "", "",
                 unit.source(),
                 override != null ? override : unit.shipped(),

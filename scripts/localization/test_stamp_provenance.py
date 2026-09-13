@@ -14,13 +14,21 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import provenance_io as pio  # noqa: E402
+
+
+def h(text):
+    """The source_hash a stamp records for English ``text``."""
+    return pio.source_hash(text)
+
 SCRIPT = os.path.join(HERE, "stamp-provenance.py")
 
 LANG = {"a.key": "Alpha", "b.key": "Beta", "c.key": "Gamma"}
 PROV = {
-    "a.key": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
-    "b.key": {"author": "老本願", "reviewer": "老本願"},
-    "c.key": {"author": "Opus 4.8 (Claude)", "reviewer": ""},
+    "a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
+    "b.key": {"author": "老本願", "reviewer": "老本願", "source_hash": ""},
+    "c.key": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},
 }
 
 
@@ -85,12 +93,12 @@ def test_sync_adds_missing_key_unreviewed():
     lang_dir, prov_dir = workspace(lang=lang)
     proc = run(lang_dir, prov_dir, "--sync", "--author", "Opus 4.8 (Claude)")
     assert proc.returncode == 0, proc.stderr
-    assert read(prov_dir)["d.key"] == {"author": "Opus 4.8 (Claude)", "reviewer": ""}
+    assert read(prov_dir)["d.key"] == {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": h("Delta")}
     assert "added 1" in proc.stdout
 
 
 def test_sync_removes_orphan():
-    prov = dict(PROV, **{"gone.key": {"author": "X", "reviewer": ""}})
+    prov = dict(PROV, **{"gone.key": {"author": "X", "reviewer": "", "source_hash": ""}})
     lang_dir, prov_dir = workspace(prov=prov)
     proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
     assert proc.returncode == 0, proc.stderr
@@ -124,7 +132,37 @@ def test_sync_creates_sidecar_from_scratch():
     assert proc.returncode == 0, proc.stderr
     result = read(prov_dir)
     assert list(result) == list(LANG)
-    assert all(e == {"author": "Opus 4.8 (Claude)", "reviewer": ""} for e in result.values())
+    assert result == {k: {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": h(v)}
+                      for k, v in LANG.items()}
+
+
+def test_review_stamp_attests_the_current_english():
+    """A reviewer read the English of this moment, so the review refreshes source_hash."""
+    prov = dict(PROV, **{"a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "",
+                                   "source_hash": h("Old Alpha")}})
+    lang_dir, prov_dir = workspace(prov=prov)
+    proc = run(lang_dir, prov_dir, "--reviewer", "阿世xAsh", "--keys", "a.key")
+    assert proc.returncode == 0, proc.stderr
+    assert read(prov_dir)["a.key"]["source_hash"] == h("Alpha")
+
+
+def test_sync_keeps_an_existing_source_hash():
+    """--sync after an English edit must NOT absorb it: the stale hash is the signal."""
+    prov = dict(PROV, **{"a.key": {"author": "阿世xAsh", "reviewer": "阿世xAsh",
+                                   "source_hash": h("Old Alpha")}})
+    lang_dir, prov_dir = workspace(prov=prov)
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "unused")
+    assert proc.returncode == 0, proc.stderr
+    assert read(prov_dir)["a.key"]["source_hash"] == h("Old Alpha")
+
+
+def test_sync_without_english_file_records_unknown_source():
+    """Sibling namespaces keep their English in their own repos: no en_us, hash is ""."""
+    lang_dir, prov_dir = workspace(prov=None)
+    os.remove(os.path.join(lang_dir, "en_us.json"))
+    proc = run(lang_dir, prov_dir, "--sync", "--author", "Opus 4.8 (Claude)")
+    assert proc.returncode == 0, proc.stderr
+    assert all(e["source_hash"] == "" for e in read(prov_dir).values())
 
 
 def test_reviewer_stamp_by_keys():
@@ -139,7 +177,7 @@ def test_reviewer_stamp_by_keys():
 
 def test_reviewer_stamp_by_prefix():
     lang = {"x.one": "1", "x.two": "2", "y.other": "3"}
-    prov = {k: {"author": "A", "reviewer": ""} for k in lang}
+    prov = {k: {"author": "A", "reviewer": "", "source_hash": ""} for k in lang}
     lang_dir, prov_dir = workspace(lang=lang, prov=prov)
     proc = run(lang_dir, prov_dir, "--reviewer", "R", "--prefix", "x.")
     assert proc.returncode == 0, proc.stderr
@@ -168,7 +206,7 @@ def test_author_restamp_resets_reviewer():
     lang_dir, prov_dir = workspace()
     proc = run(lang_dir, prov_dir, "--author", "New Model (Claude)", "--keys", "b.key")
     assert proc.returncode == 0, proc.stderr
-    assert read(prov_dir)["b.key"] == {"author": "New Model (Claude)", "reviewer": ""}
+    assert read(prov_dir)["b.key"] == {"author": "New Model (Claude)", "reviewer": "", "source_hash": h("Beta")}
 
 
 def test_author_with_reviewer_sets_both():
@@ -176,7 +214,7 @@ def test_author_with_reviewer_sets_both():
     proc = run(lang_dir, prov_dir,
                "--author", "阿世xAsh", "--reviewer", "阿世xAsh", "--keys", "a.key")
     assert proc.returncode == 0, proc.stderr
-    assert read(prov_dir)["a.key"] == {"author": "阿世xAsh", "reviewer": "阿世xAsh"}
+    assert read(prov_dir)["a.key"] == {"author": "阿世xAsh", "reviewer": "阿世xAsh", "source_hash": h("Alpha")}
 
 
 def test_locale_filter_leaves_others_untouched():
@@ -370,7 +408,7 @@ def test_output_format_lock():
     assert text.endswith("}\n")
     lines = text.splitlines()
     assert len(lines) == len(LANG) + 2  # { + one per entry + }
-    assert lines[1] == '  "a.key": {"author": "Opus 4.8 (Claude)", "reviewer": ""},'
+    assert lines[1] == '  "a.key": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": ""},'
     first = open(path, "rb").read()
     assert run(lang_dir, prov_dir, "--sync", "--author", "unused").returncode == 0
     assert open(path, "rb").read() == first

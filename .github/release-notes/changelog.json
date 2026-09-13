@@ -16342,8 +16342,30 @@
       "released_at": null
     },
     {
-      "id": "portal-puppets-whole-room",
+      "id": "translation-outdated-flag",
       "version": "0.874.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Translation editor flags lines whose English changed",
+      "summary": "Every translated line now remembers the English it was translated from. When we rewrite the English, the in-game translation editor marks that line as outdated instead of leaving a translation that quietly says the wrong thing \u2014 so translators can find and fix exactly what moved.",
+      "highlights": [
+        "New Outdated filter in the translation editor: only the lines whose English was edited after they were last translated or reviewed",
+        "Outdated rows carry an amber \u21bb badge beside the key, and the edit screen says the English changed after this was translated",
+        "Outdated lines also join Needs a human / Still to do, and export as source_changed_since_review in the review CSV",
+        "Seeding the record surfaced ~100 outdated lines and ~25 outdated books per language that had never been re-translated"
+      ],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-puppets-whole-room",
+      "version": "0.875.0",
       "type": "fix",
       "tags": [
         "fix",

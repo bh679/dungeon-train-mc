@@ -124,7 +124,8 @@ public final class TranslationCatalog {
                     key,
                     english.getOrDefault(key, ""),
                     translated.getOrDefault(key, ""),
-                    ProvenanceManifestRegistry.isAiUnreviewedLang(locale, namespace, key)));
+                    ProvenanceManifestRegistry.isAiUnreviewedLang(locale, namespace, key),
+                    ProvenanceManifestRegistry.isSourceChangedLang(locale, namespace, key)));
             }
         }
     }
@@ -167,6 +168,7 @@ public final class TranslationCatalog {
                 continue; // not prose — an index or a malformed file, with nothing to show either way
             }
             boolean aiUnreviewed = ProvenanceManifestRegistry.isAiUnreviewedBook(locale, bookPath);
+            boolean sourceChanged = ProvenanceManifestRegistry.isSourceChangedBook(locale, bookPath);
             Set<String> fields = new LinkedHashSet<>(english.keySet());
             fields.addAll(translated.keySet());
             for (String field : fields) {
@@ -176,7 +178,8 @@ public final class TranslationCatalog {
                     bookPath + "#" + field,
                     english.getOrDefault(field, ""),
                     translated.getOrDefault(field, ""),
-                    aiUnreviewed));
+                    aiUnreviewed,
+                    sourceChanged));
             }
         }
     }
