@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.builder;
 
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -12,8 +13,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -29,6 +32,14 @@ import java.util.function.Function;
  * <p><b>No snapshot means clean.</b> Snapshots live in memory and are lost on a server restart, so
  * a reopened builder world has no baseline; reporting everything dirty there would be worse than
  * useless. The editor takes the same position.</p>
+ *
+ * <p><b>Variant cells are skipped.</b> {@code VariantEditorPreviewTicker} animates every cell in
+ * this build's variant sidecar — entries cycle every few seconds and RANDOM / OPTIONS rotations
+ * turn every second — and it resolves a builder world's {@link BuilderCarriagePlot} just as it
+ * does an editor plot. Comparing those positions against the frame the baseline happened to
+ * capture would flag a build as unsaved the moment a preview turned. The skip set is read from
+ * the same document the ticker writes from ({@link BuilderVariantStore#loadFor}), so what it
+ * animates is exactly what the comparison ignores. Same rule as {@code EditorDirtyCheck}.</p>
  */
 public final class BuilderDirtyCheck {
 
@@ -76,7 +87,8 @@ public final class BuilderDirtyCheck {
             BlockPos origin = BuilderBounds.originOf(box);
             // Size from the box: a room's is the author's and a track plot's is its footprint,
             // neither of which is CarriageDims.
-            if (isDirty(baseline, BuilderBounds.sizeOf(box),
+            Vec3i size = BuilderBounds.sizeOf(box);
+            if (isDirty(baseline, size, variantCellPositions(level, size),
                     local -> level.getBlockState(origin.offset(local)))) {
                 dirty.add(i);
             }
@@ -115,6 +127,16 @@ public final class BuilderDirtyCheck {
      */
     public static boolean isDirty(Map<BlockPos, BlockState> baseline, Vec3i size,
                                   Function<BlockPos, BlockState> liveAt) {
+        return isDirty(baseline, size, Set.of(), liveAt);
+    }
+
+    /**
+     * As above, ignoring {@code skip} — the build's variant cells, in local coordinates. The
+     * preview ticker rewrites those every second, so their live state says nothing about whether
+     * the author has changed anything.
+     */
+    public static boolean isDirty(Map<BlockPos, BlockState> baseline, Vec3i size,
+                                  Set<BlockPos> skip, Function<BlockPos, BlockState> liveAt) {
         if (baseline == null) {
             return false;
         }
@@ -122,6 +144,9 @@ public final class BuilderDirtyCheck {
             for (int dy = 0; dy < size.getY(); dy++) {
                 for (int dz = 0; dz < size.getZ(); dz++) {
                     BlockPos local = new BlockPos(dx, dy, dz);
+                    if (skip.contains(local)) {
+                        continue;
+                    }
                     BlockState expected = baseline.get(local);
                     BlockState live = liveAt.apply(local);
                     if (expected == null) {
@@ -136,6 +161,15 @@ public final class BuilderDirtyCheck {
             }
         }
         return false;
+    }
+
+    /** Local positions of this build's variant cells — the ones the preview ticker animates. */
+    private static Set<BlockPos> variantCellPositions(ServerLevel level, Vec3i size) {
+        Set<BlockPos> out = new HashSet<>();
+        for (CarriageVariantBlocks.Entry e : BuilderVariantStore.loadFor(level, size).entries()) {
+            out.add(e.localPos());
+        }
+        return out;
     }
 
     /** Convenience for tests and callers that only have a sparse map of live blocks. */
