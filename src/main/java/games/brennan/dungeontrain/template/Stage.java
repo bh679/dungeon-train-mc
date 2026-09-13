@@ -25,8 +25,10 @@ import java.util.Locale;
  * @param gate the preset gate.
  * @param palette the baked stage-placeholder palette ({@code "palette"} object), or {@code null}
  *                when this stage has not been baked yet — see {@code editor.StagePaletteBaker}.
+ * @param builder who authored the stage, as a template's credit reads ({@code "builder": {uuid,
+ *                name}} on disk, the same codec); null when nobody is credited.
  */
-public record Stage(String id, String name, TemplateGate gate, StagePalette palette) {
+public record Stage(String id, String name, TemplateGate gate, StagePalette palette, BuilderCredit builder) {
 
     public static final String K_NAME = "name";
     public static final String K_PALETTE = "palette";
@@ -37,24 +39,34 @@ public record Stage(String id, String name, TemplateGate gate, StagePalette pale
         if (gate == null) gate = TemplateGate.DEFAULT;
     }
 
-    /** Unbaked stage — the pre-palette shape every existing caller and test uses. */
+    /** Unbaked, uncredited — the pre-palette shape every existing caller and test uses. */
     public Stage(String id, String name, TemplateGate gate) {
-        this(id, name, gate, null);
+        this(id, name, gate, null, null);
     }
 
-    /** Copy with a new gate, keeping id + name + palette. */
+    /** Baked but uncredited — the shape the palette baker builds. */
+    public Stage(String id, String name, TemplateGate gate, StagePalette palette) {
+        this(id, name, gate, palette, null);
+    }
+
+    /** Copy with a new gate, keeping the rest. */
     public Stage withGate(TemplateGate newGate) {
-        return new Stage(id, name, newGate, palette);
+        return new Stage(id, name, newGate, palette, builder);
     }
 
-    /** Copy with a new display name, keeping id + gate + palette. */
+    /** Copy with a new display name, keeping the rest. */
     public Stage withName(String newName) {
-        return new Stage(id, newName, gate, palette);
+        return new Stage(id, newName, gate, palette, builder);
     }
 
-    /** Copy with a new baked palette, keeping id + name + gate. */
+    /** Copy with a new baked palette, keeping the rest. */
     public Stage withPalette(StagePalette newPalette) {
-        return new Stage(id, name, gate, newPalette);
+        return new Stage(id, name, gate, newPalette, builder);
+    }
+
+    /** Copy with a new credit (null clears it), keeping the rest. */
+    public Stage withBuilder(BuilderCredit newBuilder) {
+        return new Stage(id, name, gate, palette, newBuilder);
     }
 
     /** Serialise this Stage's value (everything except the id, which is the map key). */
@@ -63,6 +75,7 @@ public record Stage(String id, String name, TemplateGate gate, StagePalette pale
         o.addProperty(K_NAME, name);
         TemplateWeightCodec.writeGateFields(o, gate);
         if (palette != null) o.add(K_PALETTE, palette.toJson());
+        TemplateWeightCodec.writeBuilder(o, builder);
         return o;
     }
 
@@ -85,6 +98,6 @@ public record Stage(String id, String name, TemplateGate gate, StagePalette pale
             name = ne.getAsString();
         }
         return new Stage(key, name, TemplateWeightCodec.parseGate(o),
-            StagePalette.fromJson(o.get(K_PALETTE)));
+            StagePalette.fromJson(o.get(K_PALETTE)), TemplateWeightCodec.parseBuilder(o));
     }
 }

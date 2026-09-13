@@ -18,19 +18,21 @@ final class EditorTabBarTest {
     }
 
     @Test
-    @DisplayName("Templates then Layout from the left; Settings and Exit are locked to the right")
+    @DisplayName("Templates, Layout then Stages from the left; Settings and Exit are locked to the right")
     void order() {
         List<EditorTabBar.Tab> t = tabs(640);
-        assertEquals(4, t.size());
+        assertEquals(5, t.size());
         assertEquals(EditorScreenPage.TEMPLATES, t.get(0).page());
         assertEquals(EditorScreenPage.LAYOUT, t.get(1).page());
-        assertEquals(EditorScreenPage.SETTINGS, t.get(2).page());
-        assertEquals(EditorTabBar.Kind.EXIT, t.get(3).kind());
-        EditorTabBar.Tab exit = t.get(3);
+        assertEquals(EditorScreenPage.STAGES, t.get(2).page());
+        assertEquals(EditorScreenPage.SETTINGS, t.get(3).page());
+        assertEquals(EditorTabBar.Kind.EXIT, t.get(4).kind());
+        EditorTabBar.Tab exit = t.get(4);
         assertEquals(6 + 640 - 12, exit.x() + exit.w());
-        assertTrue(t.get(2).x() + t.get(2).w() <= exit.x());
+        assertTrue(t.get(3).x() + t.get(3).w() <= exit.x());
+        assertTrue(t.get(2).x() + t.get(2).w() <= t.get(3).x());
         assertTrue(t.get(1).x() + t.get(1).w() <= t.get(2).x());
-        assertEquals("SETTINGS", t.get(2).label());
+        assertEquals("SETTINGS", t.get(3).label());
     }
 
     @Test

@@ -20,6 +20,12 @@ public final class EditorIcons {
     public static final ResourceLocation PLAY = mod("icon/play");
     public static final ResourceLocation EXIT = mod("icon/exit");
     public static final ResourceLocation GROUP = mod("icon/group");
+    /** The stage overview's own buttons: link, copy, and step the model back / forward. */
+    public static final ResourceLocation APPLY = mod("icon/apply");
+    public static final ResourceLocation DUPLICATE = mod("icon/duplicate");
+    public static final ResourceLocation PREV = mod("icon/prev");
+    public static final ResourceLocation NEXT = mod("icon/next");
+    public static final ResourceLocation BAKE = mod("icon/bake");
     public static final ResourceLocation SEARCH = ResourceLocation.withDefaultNamespace("icon/search");
 
     private EditorIcons() {}
@@ -43,6 +49,14 @@ public final class EditorIcons {
             case "move" -> GROUP;
             case "submit" -> SUBMIT;
             case "withdraw" -> WITHDRAW;
+            // The stage overview: Refresh re-rolls like Reset re-rolls, Delete is the same bin.
+            case EditorStageActions.REFRESH -> RESET;
+            case EditorStageActions.APPLY -> APPLY;
+            case EditorStageActions.DUPLICATE -> DUPLICATE;
+            case EditorStageActions.DELETE -> TRASH;
+            case EditorStageActions.PREV -> PREV;
+            case EditorStageActions.NEXT -> NEXT;
+            case EditorStageActions.REBAKE -> BAKE;
             default -> SAVE;
         };
     }

@@ -1,4 +1,76 @@
 {
+  "gui.dungeontrain.editor_screen.stages.delete_confirm": {
+    "1": {
+      "label": "the display name of the stage about to be deleted",
+      "examples": [
+        "desert",
+        "Nether Depths"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.min_level": {
+    "1": {
+      "label": "the stage's lowest difficulty level",
+      "examples": [
+        "0",
+        "176"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.max_level": {
+    "1": {
+      "label": "the stage's highest difficulty level, or ∞ when unbounded",
+      "examples": [
+        "205",
+        "∞"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.templates": {
+    "1": {
+      "label": "how many templates and carriage parts link to the stage",
+      "examples": [
+        "6",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.blocks": {
+    "1": {
+      "label": "how many distinct blocks the stage's linked parts use",
+      "examples": [
+        "12",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.parts": {
+    "1": {
+      "label": "how many carriage parts (floors, walls, roofs, doors) link to the stage",
+      "examples": [
+        "4",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.more": {
+    "1": {
+      "label": "how many further distinct blocks the capped grid left out",
+      "examples": [
+        "5",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.block_tip": {
+    "1": {
+      "label": "how many times the block is used across the stage's parts",
+      "examples": [
+        "120",
+        "1"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.open.0": {
     "1": {
       "label": "the name of the player reading this note",
