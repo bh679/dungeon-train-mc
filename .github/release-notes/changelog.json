@@ -16650,6 +16650,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stage-placeholder-blocks",
+      "version": "0.864.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Stage placeholder blocks \u2014 build once, resolve per stage",
+      "summary": "A new set of editor blocks that stand in for \"whatever this stage is built from\". Place them in a carriage part or contents build and, when that carriage spawns, each one becomes the matching real block of the stage it lands in \u2014 so one build can serve the stone, desert, deep dark, wood and Nether stretches alike. Ten most-used solid slots, stairs, slabs, a button and pressure plate, a full wood set (logs, planks, stairs, slab, fence, gate, button, plate, door, trapdoor) and a stone set (cobbled, stone, bricks, polished, cracked, mossy, feature \u2014 each with stairs, slab and wall) resolve through each stage's baked palette; a new Stage Palette panel beside the Stage Blocks panel shows the whole table per stage and lets you override any slot or pick the wood/stone family from a held block. In the editor, the placeholders render as the selected stage's block with their own tile ghosted over it, so a build reads as both.",
+      "highlights": [
+        "57 stage placeholder blocks in a new Dungeon Train \u2014 Stage Blocks creative tab",
+        "Per-stage palettes baked into stages.json (re-baked on stage save; /dungeontrain editor stage bake)",
+        "Stage Palette panel: families \u00d7 block types, click-to-override from the held block, wood/stone family locks",
+        "Stage-aware icons and blended placed blocks in the editor; repeat slots dimmed",
+        "/dungeontrain debug stage-placeholders checks a live train for unresolved placeholders"
+      ],
+      "date": "2026-09-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
