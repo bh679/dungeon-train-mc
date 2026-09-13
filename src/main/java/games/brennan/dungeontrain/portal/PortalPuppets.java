@@ -14,6 +14,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -254,6 +255,8 @@ public final class PortalPuppets {
             PortalPuppetsPacket.Entry entry = describe(aligned, ship, source);
             if (entry == null) continue;
 
+            if (PortalPuppetTrace.isEnabled()) trace(carriageIndex, frames, aligned, ship, source, entry);
+
             entries.add(entry);
             live.put(entry.key(), label(aligned, source));
         }
@@ -364,6 +367,28 @@ public final class PortalPuppets {
         Vector3d world = ship.shipToWorld(new Vector3d(rx, ry, rz));
         return new PortalFrames(frames.layout(),
             new PortalFrames.Origin(world.x, world.y, world.z), frames.twin(), frames.role());
+    }
+
+    /**
+     * One line per described puppet per tick, for {@code /dungeontrain debug puppet-trace}.
+     *
+     * <p>Everything a wobble could hide in, side by side: where the source is, where it was sent
+     * to and in which space, and the two readings of the carriage origin — box and pose — so a
+     * varying gap between them, or a source that is itself moving, shows in the numbers.</p>
+     */
+    private static void trace(int carriageIndex, PortalFrames box, PortalFrames aligned, ManagedShip ship,
+                              Entity source, PortalPuppetsPacket.Entry entry) {
+        PortalFrames.Origin b = box.originOf(PortalFrames.FRAME_CARRIAGE);
+        PortalFrames.Origin a = aligned.originOf(PortalFrames.FRAME_CARRIAGE);
+        Vector3dc pose = ship.currentWorldPosition();
+        LOGGER.info("[DungeonTrain][puppet] c={} key={} {} src=({}, {}, {}) sent=({}, {}, {}) {} "
+                + "boxOrigin=({}, {}, {}) poseOrigin=({}, {}, {}) pose=({}, {}, {}) onGround={} dm=({}, {}, {})",
+            carriageIndex, entry.key(), label(aligned, source),
+            fmt(source.getX()), fmt(source.getY()), fmt(source.getZ()),
+            fmt(entry.x()), fmt(entry.y()), fmt(entry.z()), entry.isPlotSpace() ? "PLOT" : "WORLD",
+            fmt(b.x()), fmt(b.y()), fmt(b.z()), fmt(a.x()), fmt(a.y()), fmt(a.z()),
+            fmt(pose.x()), fmt(pose.y()), fmt(pose.z()), source.onGround(),
+            fmt(source.getDeltaMovement().x), fmt(source.getDeltaMovement().y), fmt(source.getDeltaMovement().z));
     }
 
     private static String fmt(double v) {

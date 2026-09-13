@@ -7,6 +7,7 @@ import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.PortalPuppetsPacket;
+import games.brennan.dungeontrain.portal.PortalPuppetTrace;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -94,6 +95,10 @@ public final class PortalPuppetRenderer {
                 z = world.z;
             }
 
+            if (PortalPuppetTrace.isEnabled()) {
+                traceNearest(entry, partialTick, puppet, x, y, z, cam);
+            }
+
             // The model's own position drives lighting, the shadow and the nameplate's distance
             // fade, so it is set even though the draw below takes explicit coordinates.
             model.setPos(x, y, z);
@@ -112,6 +117,37 @@ public final class PortalPuppetRenderer {
         // Flush what we queued. The level's own entity batch has already been drawn by this stage,
         // so nothing else is going to end it for us.
         buffer.endBatch();
+    }
+
+    /** Which puppet {@link #traceNearest} follows, chosen once per frame by distance to the camera. */
+    private static double traceBestDistSq;
+    private static long traceFrame = -1;
+
+    /**
+     * One line per frame for the puppet nearest the camera, for {@code /dungeontrain debug
+     * puppet-trace} in single-player. The interpolated local coordinate, the world point it
+     * resolved to and the camera, so a wobble that is not in the server's numbers shows here.
+     */
+    private static void traceNearest(PortalPuppetsPacket.Entry entry, float partialTick,
+                                     PortalPuppetsClient.Puppet puppet,
+                                     double x, double y, double z, Vec3 cam) {
+        long frame = Minecraft.getInstance().getFrameTimeNs();
+        if (frame != traceFrame) {
+            traceFrame = frame;
+            traceBestDistSq = Double.MAX_VALUE;
+        }
+        double d = cam.distanceToSqr(x, y, z);
+        if (d >= traceBestDistSq) return;
+        traceBestDistSq = d;
+        PortalPuppetsClient.LOGGER.info("[DungeonTrain][puppet-client] key={} pt={} local=({}, {}, {}) "
+                + "world=({}, {}, {}) cam=({}, {}, {}) {}",
+            entry.key(), String.format(java.util.Locale.ROOT, "%.3f", partialTick),
+            f(puppet.lerpX(partialTick)), f(puppet.lerpY(partialTick)), f(puppet.lerpZ(partialTick)),
+            f(x), f(y), f(z), f(cam.x), f(cam.y), f(cam.z), entry.isPlotSpace() ? "PLOT" : "WORLD");
+    }
+
+    private static String f(double v) {
+        return String.format(java.util.Locale.ROOT, "%.4f", v);
     }
 
     private static Map<UUID, ClientSubLevel> indexSubLevels(ClientLevel level) {

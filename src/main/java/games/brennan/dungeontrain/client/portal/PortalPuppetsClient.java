@@ -40,7 +40,7 @@ import java.util.Set;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PortalPuppetsClient {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
+    static final Logger LOGGER = LogUtils.getLogger();
 
     /**
      * Drop everything if no snapshot arrives for this long.

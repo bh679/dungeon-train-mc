@@ -202,6 +202,13 @@ public final class DebugCommand {
             .then(Commands.literal("trains-trace")
                 .then(Commands.literal("on").executes(ctx -> setTrainsTrace(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setTrainsTrace(ctx.getSource(), false))))
+            // /dungeontrain debug puppet-trace on|off — where each portal puppet is described to be,
+            // every tick, and (single-player) where the client resolves the nearest one each frame.
+            // For chasing shimmer: it says whether the wobble is in the numbers the server sends or
+            // in how the client draws them.
+            .then(Commands.literal("puppet-trace")
+                .then(Commands.literal("on").executes(ctx -> setPuppetTrace(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setPuppetTrace(ctx.getSource(), false))))
             // /dungeontrain debug dupe-guard on|off|status — the duplicate-anchor guard.
             // Two live sub-levels can land on one anchor (a group reaped as gone and respawned,
             // then resurrected from Sable's holding store), which reads in-game as two identical
@@ -469,6 +476,16 @@ public final class DebugCommand {
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Seam-gap trace " + (enabled ? "ON" : "OFF")
                 + (enabled ? " — grep [seamgap]/[bwd-place]/[anchor-div]/[capture-lag] in latest.log" : "")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setPuppetTrace(CommandSourceStack source, boolean enabled) {
+        games.brennan.dungeontrain.portal.PortalPuppetTrace.setEnabled(enabled);
+        LOGGER.info("[DungeonTrain] puppet-trace diagnostic {}", enabled ? "ENABLED" : "DISABLED");
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Portal puppet trace " + (enabled ? "ON" : "OFF")
+                + (enabled ? " — grep [puppet] in latest.log" : "")
         ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }
