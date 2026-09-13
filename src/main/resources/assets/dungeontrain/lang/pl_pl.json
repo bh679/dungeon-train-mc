@@ -1821,6 +1821,7 @@
   "gui.dungeontrain.translate.edit.hint": "Wpisz tu tłumaczenie",
   "gui.dungeontrain.translate.edit.source": "Angielski",
   "gui.dungeontrain.translate.edit.source_ai": "Angielski — obecne tłumaczenie to AI, niesprawdzone",
+  "gui.dungeontrain.translate.edit.source_changed": "Angielski — zmieniony po przetłumaczeniu; sprawdź, czy tłumaczenie nadal pasuje",
   "gui.dungeontrain.translate.edit.save": "Zapisz",
   "gui.dungeontrain.translate.edit.revert": "Użyj dołączonego",
   "gui.dungeontrain.translate.edit.book_note": "Zmiany w tekstach książek działają w światach jednoosobowych, które hostujesz.",

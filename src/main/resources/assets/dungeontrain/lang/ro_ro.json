@@ -2243,6 +2243,7 @@
   "gui.dungeontrain.translate.edit.resize.tip": "Trage ca să împarți spațiul între engleză și traducerea ta — în jos pentru mai multă engleză, în sus pentru o casetă mai mare. Rămâne unde o pui.",
   "gui.dungeontrain.translate.edit.source": "Engleză",
   "gui.dungeontrain.translate.edit.source_ai": "Engleză — traducerea actuală e făcută de AI, neverificată",
+  "gui.dungeontrain.translate.edit.source_changed": "Engleză — modificat după traducere; verifică dacă traducerea mai corespunde",
   "gui.dungeontrain.translate.edit.source_link": "Vezi sursa",
   "gui.dungeontrain.translate.edit.source_link.tip": "Caută cheia acestui șir în depozitul Dungeon Train de pe GitHub, ca să vezi unde îl folosește jocul. Se deschide în browser; căutarea de cod GitHub cere să fii autentificat.",
   "gui.dungeontrain.translate.edit.save": "Salvează",

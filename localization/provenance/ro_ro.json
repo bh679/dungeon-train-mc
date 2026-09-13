@@ -2243,6 +2243,7 @@
   "gui.dungeontrain.translate.edit.resize.tip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a1603b0ecb9dec66"},
   "gui.dungeontrain.translate.edit.source": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "ba118bf7fc9c1aed"},
   "gui.dungeontrain.translate.edit.source_ai": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "ad9f4f5ff67ea9c3"},
+  "gui.dungeontrain.translate.edit.source_changed": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "4654940052ba8f64"},
   "gui.dungeontrain.translate.edit.source_link": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6ee818aa2de35ea6"},
   "gui.dungeontrain.translate.edit.source_link.tip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d91d7c0400850e44"},
   "gui.dungeontrain.translate.edit.save": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "1509f561f2416598"},

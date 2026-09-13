@@ -1751,6 +1751,7 @@
   "gui.dungeontrain.translate.edit.hint": "Ketik terjemahan di sini",
   "gui.dungeontrain.translate.edit.source": "Bahasa Inggris",
   "gui.dungeontrain.translate.edit.source_ai": "Bahasa Inggris — terjemahan saat ini dari AI, belum diperiksa",
+  "gui.dungeontrain.translate.edit.source_changed": "Bahasa Inggris — diubah setelah diterjemahkan; periksa apakah terjemahannya masih sesuai",
   "gui.dungeontrain.translate.edit.save": "Simpan",
   "gui.dungeontrain.translate.edit.revert": "Pakai bawaan",
   "gui.dungeontrain.translate.edit.book_note": "Perubahan teks buku berlaku di dunia pemain tunggal yang kamu jalankan sendiri.",

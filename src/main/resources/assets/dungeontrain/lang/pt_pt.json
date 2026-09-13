@@ -1786,6 +1786,7 @@
   "gui.dungeontrain.translate.edit.hint": "Escreve aqui a tradução",
   "gui.dungeontrain.translate.edit.source": "Inglês",
   "gui.dungeontrain.translate.edit.source_ai": "Inglês — a tradução atual é de IA, sem revisão",
+  "gui.dungeontrain.translate.edit.source_changed": "Inglês — editado depois da tradução; verifique se a tradução ainda corresponde",
   "gui.dungeontrain.translate.edit.save": "Guardar",
   "gui.dungeontrain.translate.edit.revert": "Usar a incluída",
   "gui.dungeontrain.translate.edit.book_note": "As alterações ao texto dos livros aplicam-se em mundos de um jogador alojados por ti.",

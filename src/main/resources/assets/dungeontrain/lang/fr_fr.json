@@ -1786,6 +1786,7 @@
   "gui.dungeontrain.translate.edit.hint": "Saisis la traduction ici",
   "gui.dungeontrain.translate.edit.source": "Anglais",
   "gui.dungeontrain.translate.edit.source_ai": "Anglais — traduction actuelle par IA, non relue",
+  "gui.dungeontrain.translate.edit.source_changed": "Anglais — modifié après la traduction ; vérifiez que la traduction correspond toujours",
   "gui.dungeontrain.translate.edit.save": "Enregistrer",
   "gui.dungeontrain.translate.edit.revert": "Utiliser la version fournie",
   "gui.dungeontrain.translate.edit.book_note": "Les modifications de texte des livres s'appliquent dans les mondes solo que tu héberges.",

@@ -1751,6 +1751,7 @@
   "gui.dungeontrain.translate.edit.hint": "Nhập bản dịch tại đây",
   "gui.dungeontrain.translate.edit.source": "Tiếng Anh",
   "gui.dungeontrain.translate.edit.source_ai": "Tiếng Anh — bản dịch hiện tại do AI, chưa kiểm tra",
+  "gui.dungeontrain.translate.edit.source_changed": "Tiếng Anh — đã sửa sau khi dịch; hãy kiểm tra bản dịch còn khớp không",
   "gui.dungeontrain.translate.edit.save": "Lưu",
   "gui.dungeontrain.translate.edit.revert": "Dùng bản đi kèm",
   "gui.dungeontrain.translate.edit.book_note": "Thay đổi văn bản sách có hiệu lực trong thế giới một người chơi do bạn tự chạy.",

@@ -1786,6 +1786,7 @@
   "gui.dungeontrain.translate.edit.hint": "Typ de vertaling hier",
   "gui.dungeontrain.translate.edit.source": "Engels",
   "gui.dungeontrain.translate.edit.source_ai": "Engels — huidige vertaling is AI, niet nagekeken",
+  "gui.dungeontrain.translate.edit.source_changed": "Engels — gewijzigd na de vertaling; controleer of de vertaling nog klopt",
   "gui.dungeontrain.translate.edit.save": "Opslaan",
   "gui.dungeontrain.translate.edit.revert": "Meegeleverde gebruiken",
   "gui.dungeontrain.translate.edit.book_note": "Wijzigingen aan boekteksten werken in singleplayerwerelden die jij host.",

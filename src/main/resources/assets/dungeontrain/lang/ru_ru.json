@@ -1826,6 +1826,7 @@
   "gui.dungeontrain.translate.edit.hint": "Введите перевод здесь",
   "gui.dungeontrain.translate.edit.source": "Английский",
   "gui.dungeontrain.translate.edit.source_ai": "Английский — текущий перевод сделан ИИ и не проверен",
+  "gui.dungeontrain.translate.edit.source_changed": "Английский — изменён после перевода; проверьте, что перевод всё ещё соответствует",
   "gui.dungeontrain.translate.edit.save": "Сохранить",
   "gui.dungeontrain.translate.edit.revert": "Вернуть оригинал",
   "gui.dungeontrain.translate.edit.book_note": "Локальные изменения текста книг будут только в одиночных мирах, которые вы хостите.",

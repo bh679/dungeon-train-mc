@@ -1751,6 +1751,7 @@
   "gui.dungeontrain.translate.edit.hint": "ここに翻訳を入力",
   "gui.dungeontrain.translate.edit.source": "英語",
   "gui.dungeontrain.translate.edit.source_ai": "英語 — 現在の翻訳はAI、未確認",
+  "gui.dungeontrain.translate.edit.source_changed": "英語 — 翻訳後に変更されています。訳文がまだ合っているか確認してください",
   "gui.dungeontrain.translate.edit.save": "保存",
   "gui.dungeontrain.translate.edit.revert": "同梱の翻訳を使う",
   "gui.dungeontrain.translate.edit.book_note": "本のテキストの変更は、あなたがホストするシングルプレイヤーのワールドで反映されます。",

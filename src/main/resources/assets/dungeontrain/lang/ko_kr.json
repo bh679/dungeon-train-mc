@@ -1751,6 +1751,7 @@
   "gui.dungeontrain.translate.edit.hint": "여기에 번역을 입력하세요",
   "gui.dungeontrain.translate.edit.source": "영어",
   "gui.dungeontrain.translate.edit.source_ai": "영어 — 현재 번역은 AI, 미검수",
+  "gui.dungeontrain.translate.edit.source_changed": "영어 — 번역 이후 수정됨; 번역이 여전히 맞는지 확인하세요",
   "gui.dungeontrain.translate.edit.save": "저장",
   "gui.dungeontrain.translate.edit.revert": "기본 번역 사용",
   "gui.dungeontrain.translate.edit.book_note": "책 텍스트 변경은 직접 호스팅하는 싱글플레이 월드에서 적용됩니다.",

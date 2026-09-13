@@ -17,13 +17,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TranslationFiltersTest {
 
     private static TranslationUnit langUnit(String key, boolean aiUnreviewed) {
+        return langUnit(key, aiUnreviewed, false);
+    }
+
+    private static TranslationUnit langUnit(String key, boolean aiUnreviewed, boolean sourceChanged) {
         return new TranslationUnit(TranslationUnit.Type.LANG, "dungeontrain", key,
-            "Depart", "Abfahren", aiUnreviewed);
+            "Depart", "Abfahren", aiUnreviewed, sourceChanged);
     }
 
     private static TranslationUnit bookUnit(String id, boolean aiUnreviewed) {
         return new TranslationUnit(TranslationUnit.Type.BOOK, "dungeontrain", id,
-            "The Lost Conductor", "Der verlorene Schaffner", aiUnreviewed);
+            "The Lost Conductor", "Der verlorene Schaffner", aiUnreviewed, false);
     }
 
     private static TranslationEdits approvedLang(String key, String value) {
@@ -61,6 +65,38 @@ class TranslationFiltersTest {
             TranslationEdits.empty("de_de")));
         assertFalse(TranslationFilters.needsHuman(langUnit("gui.a", false),
             approvedLang("gui.a", "Abfahren!")));
+    }
+
+    @Test
+    @DisplayName("a human-reviewed string whose English moved on since needs a human again")
+    void staleReviewedStringNeedsHuman() {
+        // The reviewer attested a translation of English that no longer exists. Provenance still
+        // says "reviewed", so aiUnreviewed is false — the manifest's source_changed bit is what
+        // puts it back in the queue.
+        TranslationUnit unit = langUnit("gui.a", false, true);
+        assertTrue(TranslationFilters.sourceChanged(unit, TranslationEdits.empty("de_de")));
+        assertTrue(TranslationFilters.needsHuman(unit, TranslationEdits.empty("de_de")));
+    }
+
+    @Test
+    @DisplayName("an approved replacement answers the newer English, clearing the stale flag")
+    void approvalClearsStale() {
+        // The relay keeps the English each submission was written against and the repo import
+        // refuses one the English has since left behind, so an approval here is current.
+        TranslationUnit unit = langUnit("gui.a", false, true);
+        assertFalse(TranslationFilters.sourceChanged(unit, approvedLang("gui.a", "Abfahren!")));
+        assertFalse(TranslationFilters.needsHuman(unit, approvedLang("gui.a", "Abfahren!")));
+    }
+
+    @Test
+    @DisplayName("a line can be both unreviewed and stale; a current line is neither")
+    void bothFlagsAndNeither() {
+        assertTrue(TranslationFilters.needsHuman(langUnit("gui.a", true, true),
+            TranslationEdits.empty("de_de")));
+        assertFalse(TranslationFilters.sourceChanged(langUnit("gui.a", true, false),
+            TranslationEdits.empty("de_de")));
+        assertFalse(TranslationFilters.needsHuman(langUnit("gui.a", false, false),
+            TranslationEdits.empty("de_de")));
     }
 
     @Test

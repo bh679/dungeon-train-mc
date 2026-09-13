@@ -734,6 +734,7 @@
       "gui.dungeontrain.translate.edit.hint",
       "gui.dungeontrain.translate.edit.source",
       "gui.dungeontrain.translate.edit.source_ai",
+      "gui.dungeontrain.translate.edit.source_changed",
       "gui.dungeontrain.translate.edit.save",
       "gui.dungeontrain.translate.edit.revert",
       "gui.dungeontrain.translate.edit.book_note",

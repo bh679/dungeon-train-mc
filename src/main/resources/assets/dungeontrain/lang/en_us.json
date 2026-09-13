@@ -2206,6 +2206,7 @@
   "gui.dungeontrain.translate.edit.resize.tip": "Drag to trade room between the English and your translation — down for more English, up for a bigger box. It stays where you put it.",
   "gui.dungeontrain.translate.edit.source": "English",
   "gui.dungeontrain.translate.edit.source_ai": "English — current translation is AI, unreviewed",
+  "gui.dungeontrain.translate.edit.source_changed": "English — edited after this was translated; check the translation still matches",
   "gui.dungeontrain.translate.edit.source_link": "View source",
   "gui.dungeontrain.translate.edit.source_link.tip": "Search this string's key in the Dungeon Train repository on GitHub, to see where the game uses it. Opens in your browser; GitHub code search needs you signed in.",
   "gui.dungeontrain.translate.edit.save": "Save",

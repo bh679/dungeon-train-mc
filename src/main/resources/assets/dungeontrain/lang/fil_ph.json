@@ -1751,6 +1751,7 @@
   "gui.dungeontrain.translate.edit.hint": "I-type dito ang salin",
   "gui.dungeontrain.translate.edit.source": "Ingles",
   "gui.dungeontrain.translate.edit.source_ai": "Ingles — AI ang kasalukuyang salin, hindi pa nasusuri",
+  "gui.dungeontrain.translate.edit.source_changed": "Ingles — binago matapos isalin; tingnan kung tugma pa rin ang salin",
   "gui.dungeontrain.translate.edit.save": "I-save",
   "gui.dungeontrain.translate.edit.revert": "Gamitin ang orihinal",
   "gui.dungeontrain.translate.edit.book_note": "Gumagana ang pagbabago sa teksto ng libro sa single-player na mundo na ikaw ang host.",

@@ -1751,6 +1751,7 @@
   "gui.dungeontrain.translate.edit.hint": "在此输入翻译",
   "gui.dungeontrain.translate.edit.source": "英文",
   "gui.dungeontrain.translate.edit.source_ai": "英文 — 当前翻译由 AI 生成，未经校对",
+  "gui.dungeontrain.translate.edit.source_changed": "英文 — 翻译后已修改，请检查译文是否仍然对应",
   "gui.dungeontrain.translate.edit.save": "保存",
   "gui.dungeontrain.translate.edit.revert": "使用自带翻译",
   "gui.dungeontrain.translate.edit.book_note": "书籍文本的修改会在你自己开的单人世界中生效。",
