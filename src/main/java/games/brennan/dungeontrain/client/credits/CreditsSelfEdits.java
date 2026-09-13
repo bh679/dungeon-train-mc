@@ -19,8 +19,9 @@ import java.util.Map;
  * once — the relay's boards rebuild on a five-minute sweep and the jar's baked credits only change
  * at the next release.
  *
- * <p>One identity: the name the player chose ({@code from → to}) and whether they asked to be
- * anonymous, applied to their row on <b>every</b> card. {@link #apply} lays that over what the relay
+ * <p>One identity: the name the player chose ({@code from → to}), whether they asked to be
+ * anonymous, and — Funders card only — whether they hid the figure beside their name, applied to
+ * their row on <b>every</b> card. {@link #apply} lays that over what the relay
  * (or the jar) currently says about the row, and <b>forgets the rename the moment the relay has
  * caught up</b> on that card — it is needed only while the relay still shows {@code from} — so a
  * change made from another machine later is never masked by a stale local copy. The opt-out is
@@ -36,13 +37,21 @@ public final class CreditsSelfEdits {
     static final String SUBDIR = "credits";
     static final String FILE = "self.json";
 
-    /** One section's remembered edits. Immutable; a change is a new value. */
-    public record Entry(String from, String to, boolean hidden) {
-        public static final Entry NONE = new Entry("", "", false);
+    /**
+     * The remembered edits. Immutable; a change is a new value. {@code amountHidden} is the Funders
+     * card's figure, independent of the name: an anonymous funder can still show a figure and a
+     * named one can hide it.
+     */
+    public record Entry(String from, String to, boolean hidden, boolean amountHidden) {
+        public static final Entry NONE = new Entry("", "", false, false);
 
         public Entry {
             from = from == null ? "" : from.trim();
             to = to == null ? "" : to.trim();
+        }
+
+        public Entry(String from, String to, boolean hidden) {
+            this(from, to, hidden, false);
         }
 
         public boolean hasRename() {
@@ -50,19 +59,23 @@ public final class CreditsSelfEdits {
         }
 
         public boolean isEmpty() {
-            return !hasRename() && !hidden;
+            return !hasRename() && !hidden && !amountHidden;
         }
 
         Entry withRename(String f, String t) {
-            return new Entry(f, t, hidden);
+            return new Entry(f, t, hidden, amountHidden);
         }
 
         Entry withHidden(boolean h) {
-            return new Entry(from, to, h);
+            return new Entry(from, to, h, amountHidden);
+        }
+
+        Entry withAmountHidden(boolean a) {
+            return new Entry(from, to, hidden, a);
         }
 
         Entry withoutRename() {
-            return new Entry("", "", hidden);
+            return new Entry("", "", hidden, amountHidden);
         }
     }
 
@@ -90,6 +103,30 @@ public final class CreditsSelfEdits {
     public static synchronized void setHidden(boolean hidden) {
         ensureLoaded();
         put(entry.withHidden(hidden));
+    }
+
+    /** Remember that the player hid the figure beside their name on the Funders card — or showed it. */
+    public static synchronized void setAmountHidden(boolean amountHidden) {
+        ensureLoaded();
+        put(entry.withAmountHidden(amountHidden));
+    }
+
+    /**
+     * Whether the player's own Funders line should go figureless: what the relay currently says
+     * ({@code sourceHidden}) or what they asked for since. Pure — see {@link #amountHidden(Entry, boolean)}.
+     */
+    public static synchronized boolean amountHidden(boolean sourceHidden) {
+        ensureLoaded();
+        return amountHidden(entry, sourceHidden);
+    }
+
+    /**
+     * The overlay rule for the figure, pure: hidden if either side says so. Like the opt-out (and
+     * unlike the rename) it is kept until the player shows the figure again — the relay's list is
+     * edge-cached for minutes, so "show" lags too, and it is the relay's answer that catches up.
+     */
+    static boolean amountHidden(Entry entry, boolean sourceHidden) {
+        return sourceHidden || entry.amountHidden();
     }
 
     /**
@@ -179,8 +216,12 @@ public final class CreditsSelfEdits {
     }
 
     static Entry parseEntry(JsonObject o) {
-        return new Entry(str(o.get("from")), str(o.get("to")),
-            o.has("hidden") && o.get("hidden").isJsonPrimitive() && o.get("hidden").getAsBoolean());
+        return new Entry(str(o.get("from")), str(o.get("to")), flag(o, "hidden"), flag(o, "amountHidden"));
+    }
+
+    private static boolean flag(JsonObject o, String key) {
+        JsonElement el = o.get(key);
+        return el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isBoolean() && el.getAsBoolean();
     }
 
     private static String str(JsonElement el) {
@@ -197,6 +238,7 @@ public final class CreditsSelfEdits {
                 root.addProperty("to", entry.to());
             }
             if (entry.hidden()) root.addProperty("hidden", true);
+            if (entry.amountHidden()) root.addProperty("amountHidden", true);
             Files.writeString(path, root.toString(), StandardCharsets.UTF_8);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Credits: could not save {} — {}", FILE, e.toString());
