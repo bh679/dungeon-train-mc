@@ -90,11 +90,12 @@ After implementation is complete:
 Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 1. Push branch, open PR with conventional commit title
 2. **Log + confirm the changelog entry** — append it on the feature branch with
-   `scripts/release-notes/append-entry.py` (curated player-facing notes, plus `--tag` for each
-   topical tag — editor/multiplayer/community/translations/compatibility/train/world/mobs/
-   loot/books/advancements/ui/balance; the type-derived tag is automatic) so it lands in the PR
-   diff, and present those notes to the user to confirm before merging — see
-   `.github/release-notes/README.md`
+   `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
+   diff, and present those notes **and tags** to the user to confirm before merging — see
+   `.github/release-notes/README.md`. **You choose the tags, from the diff** — there is no
+   keyword classifier. Run `append-entry.py --tag-guide`, answer its question per tag, pass
+   `--tag` for each yes or `--no-topical-tags` if none apply (one or the other is required).
+   Tag what the change is *about*, not what its prose mentions; the type-derived tag is automatic.
 3. Verify CI green
 4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch

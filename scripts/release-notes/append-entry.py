@@ -18,9 +18,13 @@ Usage:
     --pr 360
 
 Tags: the type-derived tag (feat→feature, fix→fix, content→content,
-perf→performance) is added automatically; pass --tag for each topical tag on top
+perf→performance) is added automatically. Topical tags are the agent's call,
+made from the diff and intent it holds at Gate 3 — there is no keyword fallback.
+A tag decision is mandatory: pass --tag for each topical tag that applies
 (editor, multiplayer, community, translations, compatibility, train, world, mobs,
-loot, books, advancements, ui, balance). The Versions page filters release notes by these.
+loot, books, advancements, ui, balance), or --no-topical-tags to state that only
+the type-derived tag applies. `--tag-guide` prints the question to answer for
+each tag. The Versions page filters release notes by these.
 
 Optional:
   --version X.Y.Z   Override the computed version (rarely needed).
@@ -35,10 +39,15 @@ import changelog_io
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Append a changelog ledger entry.")
-    p.add_argument("--id", required=True, help="Unique slug, e.g. toolsmith-shop-carriage")
-    p.add_argument("--type", required=True, choices=changelog_io.VALID_TYPES)
-    p.add_argument("--title", required=True, help="Short headline.")
-    p.add_argument("--summary", required=True, help="Player-facing prose.")
+    p.add_argument(
+        "--tag-guide",
+        action="store_true",
+        help="Print the per-tag question to answer when choosing --tag, then exit.",
+    )
+    p.add_argument("--id", help="Unique slug, e.g. toolsmith-shop-carriage")
+    p.add_argument("--type", choices=changelog_io.VALID_TYPES)
+    p.add_argument("--title", help="Short headline.")
+    p.add_argument("--summary", help="Player-facing prose.")
     p.add_argument(
         "--highlight",
         action="append",
@@ -56,6 +65,11 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="A topical tag (repeatable). One of: " + ", ".join(changelog_io.VALID_TAGS)
         + ". The type-derived tag is always added.",
     )
+    p.add_argument(
+        "--no-topical-tags",
+        action="store_true",
+        help="Explicitly state that no topical tag applies (only the type-derived tag).",
+    )
     p.add_argument("--pr", type=int, default=None, help="PR number (optional).")
     p.add_argument(
         "--version",
@@ -67,6 +81,29 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+
+    if args.tag_guide:
+        print(changelog_io.render_tag_guide())
+        return 0
+
+    missing = [f for f in ("id", "type", "title", "summary") if getattr(args, f) is None]
+    if missing:
+        print(
+            "::error::missing required argument(s): " + ", ".join(f"--{f}" for f in missing),
+            file=sys.stderr,
+        )
+        return 1
+
+    if args.tags and args.no_topical_tags:
+        print("::error::--no-topical-tags contradicts --tag", file=sys.stderr)
+        return 1
+    if not args.tags and not args.no_topical_tags:
+        print(
+            "::error::no tag decision: pass --tag for each topical tag that applies, "
+            "or --no-topical-tags if none do.\n" + changelog_io.render_tag_guide(),
+            file=sys.stderr,
+        )
+        return 1
 
     if args.version is not None:
         if changelog_io.parse_semver(args.version) is None:

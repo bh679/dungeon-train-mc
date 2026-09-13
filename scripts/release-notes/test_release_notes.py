@@ -18,7 +18,7 @@ APPEND = os.path.join(HERE, "append-entry.py")
 RENDER = os.path.join(HERE, "render-unreleased.py")
 RENDER_LAST = os.path.join(HERE, "render-last-released.py")
 MARK = os.path.join(HERE, "mark-released.py")
-BACKFILL = os.path.join(HERE, "backfill-tags.py")
+SET_TAGS = os.path.join(HERE, "set-tags.py")
 sys.path.insert(0, HERE)
 import changelog_io  # noqa: E402
 SCHEMA_FILE = os.path.join(
@@ -82,6 +82,9 @@ def append(ws: str, entry_id: str, *args: str, **extra_env: str) -> subprocess.C
         "--title", f"Title {entry_id}",
         "--summary", f"Summary for {entry_id}.",
     ]
+    # A tag decision is mandatory; tests that don't make one get the explicit "none".
+    if "--tag" not in args and "--no-topical-tags" not in args:
+        base.append("--no-topical-tags")
     return run(APPEND, ws, *base, *args, **extra_env)
 
 
@@ -127,6 +130,7 @@ def test_append_records_all_fields() -> None:
         "--summary", "It fixes things.",
         "--highlight", "one",
         "--highlight", "two",
+        "--tag", "ui",
         "--pr", "360",
     )
     assert r.returncode == 0, r.stderr
@@ -214,37 +218,97 @@ def test_normalise_tags_chore_may_be_empty() -> None:
 
 
 # ---------------------------------------------------------------------------
-# backfill-tags.py
+# tag decision is mandatory
 # ---------------------------------------------------------------------------
 
-def _untagged(entry_id: str, entry_type: str, title: str, summary: str = "") -> dict:
+def test_append_refuses_without_tag_decision() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = run(APPEND, ws, "--id", "undecided", "--type", "feat", "--title", "t", "--summary", "s")
+    assert r.returncode != 0
+    assert "no tag decision" in r.stderr, r.stderr
+    assert "multiplayer" in r.stderr, "error should print the tag guide"
+    assert not os.path.exists(changelog_path(ws))
+
+
+def test_append_no_topical_tags_is_explicit_opt_out() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = run(APPEND, ws, "--id", "perf-only", "--type", "perf", "--title", "t", "--summary", "s",
+            "--no-topical-tags")
+    assert r.returncode == 0, r.stderr
+    assert read_changelog(ws)["entries"][0]["tags"] == ["performance"]
+    r = run(APPEND, ws, "--id", "contradiction", "--type", "fix", "--title", "t", "--summary", "s",
+            "--no-topical-tags", "--tag", "ui")
+    assert r.returncode != 0
+    assert len(read_changelog(ws)["entries"]) == 1
+
+
+def test_append_tag_guide_prints_every_topical_tag() -> None:
+    ws = make_workspace()
+    r = run(APPEND, ws, "--tag-guide")
+    assert r.returncode == 0, r.stderr
+    for tag in changelog_io.VALID_TAGS:
+        if tag in changelog_io.TYPE_TAGS.values() and tag != "performance":
+            continue
+        assert tag in r.stdout, f"{tag} missing from guide"
+    assert set(changelog_io.TAG_GUIDE) == set(changelog_io.VALID_TAGS) - {"feature", "content", "fix"}
+
+
+# ---------------------------------------------------------------------------
+# set-tags.py
+# ---------------------------------------------------------------------------
+
+def _tagged(entry_id: str, entry_type: str, tags: list[str], title: str = "T") -> dict:
     return {
-        "id": entry_id, "version": "0.1.0", "type": entry_type, "title": title,
-        "summary": summary, "highlights": [], "date": "2026-01-01",
+        "id": entry_id, "version": "0.1.0", "type": entry_type, "tags": tags, "title": title,
+        "summary": "s", "highlights": [], "date": "2026-01-01",
         "released": True, "released_in": "v0.1.0", "released_at": "2026-01-01T00:00:00Z",
     }
 
 
-def test_backfill_tags_untagged_entries_and_leaves_tagged_alone() -> None:
+def _write_mapping(ws: str, mapping: dict) -> str:
+    path = os.path.join(ws, "mapping.json")
+    with open(path, "w") as f:
+        json.dump(mapping, f)
+    return path
+
+
+def test_set_tags_applies_mapping_and_rederives_type_tag() -> None:
     ws = make_workspace()
     write_changelog(ws, {"entries": [
-        _untagged("ed", "fix", "Editor: sub-variant weight no longer resets"),
-        _untagged("tr", "feat", "Vietnamese translation refreshed"),
-        {**_untagged("kept", "feat", "Editor thing"), "tags": ["feature"]},
-        _untagged("chore", "chore", "Internal tooling"),
+        _tagged("a", "fix", ["fix", "ui", "train"]),
+        _tagged("b", "feat", ["feature", "editor"]),
+        _tagged("c", "chore", []),
     ]})
-    r = run(BACKFILL, ws)
+    r = run(SET_TAGS, ws, _write_mapping(ws, {"a": ["multiplayer"], "c": ["ui"]}), "--show-changes")
     assert r.returncode == 0, r.stderr
     by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
-    assert by_id["ed"]["tags"] == ["fix", "editor"]
-    assert by_id["tr"]["tags"] == ["feature", "translations"]
-    assert by_id["kept"]["tags"] == ["feature"], "already-tagged entry must not be rewritten"
-    assert by_id["chore"]["tags"] == []
-    assert list(by_id["ed"].keys()).index("tags") == list(by_id["ed"].keys()).index("type") + 1
-    # Idempotent.
+    assert by_id["a"]["tags"] == ["fix", "multiplayer"], "topical tags replaced, type tag kept"
+    assert by_id["b"]["tags"] == ["feature", "editor"], "unmapped entry untouched"
+    assert by_id["c"]["tags"] == ["ui"]
+    assert "2 changed" in r.stdout, r.stdout
+    assert "- a: ['fix', 'ui', 'train'] -> ['fix', 'multiplayer']" in r.stdout, r.stdout
+
+
+def test_set_tags_rejects_unknown_id_or_tag_without_writing() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [_tagged("a", "fix", ["fix"])]})
     before = read_changelog(ws)
-    run(BACKFILL, ws)
+    r = run(SET_TAGS, ws, _write_mapping(ws, {"a": ["ui"], "ghost": ["ui"]}))
+    assert r.returncode != 0 and "ghost" in r.stderr, r.stderr
+    r = run(SET_TAGS, ws, _write_mapping(ws, {"a": ["bogus"]}))
+    assert r.returncode != 0 and "bogus" in r.stderr, r.stderr
     assert read_changelog(ws) == before
+
+
+def test_set_tags_dry_run_writes_nothing() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [_tagged("a", "fix", ["fix"])]})
+    r = run(SET_TAGS, ws, _write_mapping(ws, {"a": ["ui"]}), "--dry-run")
+    assert r.returncode == 0, r.stderr
+    assert "1 changed" in r.stdout and "ui" in r.stdout, r.stdout
+    assert read_changelog(ws)["entries"][0]["tags"] == ["fix"]
 
 
 def test_render_leads_with_tag_counts() -> None:
@@ -263,42 +327,6 @@ def test_render_leads_with_tag_counts() -> None:
 def test_render_tag_line_empty_when_untagged() -> None:
     assert changelog_io.render_tag_line([{"tags": []}, {}]) == ""
     assert changelog_io.tag_counts([{"tags": ["ui", "fix"]}, {"tags": ["ui"]}]) == [("ui", 2), ("fix", 1)]
-
-
-def test_backfill_title_only_tags_ignore_body_mentions() -> None:
-    ws = make_workspace()
-    write_changelog(ws, {"entries": [
-        _untagged("aside", "perf", "Smoother long trains",
-                  "Most noticeable on multiplayer servers; other players see it too."),
-        _untagged("real", "fix", "Death recap now works in multiplayer"),
-    ]})
-    run(BACKFILL, ws)
-    by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
-    assert "multiplayer" not in by_id["aside"]["tags"], "a body mention is narration, not the subject"
-    assert "multiplayer" in by_id["real"]["tags"]
-
-
-def test_backfill_retag_recomputes_one_tag_only() -> None:
-    ws = make_workspace()
-    write_changelog(ws, {"entries": [
-        {**_untagged("stale", "feat", "Death recap now works in multiplayer"),
-         "tags": ["feature", "editor"]},
-        {**_untagged("wrong", "feat", "Plain title", "mentions multiplayer"),
-         "tags": ["feature", "multiplayer", "ui"]},
-    ]})
-    r = run(BACKFILL, ws, "--retag", "multiplayer")
-    assert r.returncode == 0, r.stderr
-    by_id = {e["id"]: e for e in read_changelog(ws)["entries"]}
-    assert by_id["stale"]["tags"] == ["feature", "editor", "multiplayer"], "gained; editor kept"
-    assert by_id["wrong"]["tags"] == ["feature", "ui"], "lost; ui kept"
-
-
-def test_backfill_dry_run_writes_nothing() -> None:
-    ws = make_workspace()
-    write_changelog(ws, {"entries": [_untagged("x", "feat", "Anything")]})
-    r = run(BACKFILL, ws, "--dry-run")
-    assert r.returncode == 0, r.stderr
-    assert "tags" not in read_changelog(ws)["entries"][0]
 
 
 # ---------------------------------------------------------------------------
@@ -532,10 +560,12 @@ def main() -> int:
         test_append_topical_tags_merged_and_ordered,
         test_append_unknown_tag_rejected,
         test_normalise_tags_chore_may_be_empty,
-        test_backfill_tags_untagged_entries_and_leaves_tagged_alone,
-        test_backfill_dry_run_writes_nothing,
-        test_backfill_title_only_tags_ignore_body_mentions,
-        test_backfill_retag_recomputes_one_tag_only,
+        test_append_refuses_without_tag_decision,
+        test_append_no_topical_tags_is_explicit_opt_out,
+        test_append_tag_guide_prints_every_topical_tag,
+        test_set_tags_applies_mapping_and_rederives_type_tag,
+        test_set_tags_rejects_unknown_id_or_tag_without_writing,
+        test_set_tags_dry_run_writes_nothing,
         test_render_leads_with_tag_counts,
         test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,

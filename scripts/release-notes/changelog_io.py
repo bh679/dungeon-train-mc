@@ -24,6 +24,7 @@ Public surface:
   load_changelog / save_changelog — read/write the ledger object.
   find_entry / make_entry / append_entry — entry construction (immutable).
   normalise_tags(type, tags) — type-derived tag + topical tags, canonical order.
+  TAG_GUIDE / render_tag_guide() — the per-tag question the agent answers when tagging.
   unreleased_entries / mark_all_released — the released-flag boundary.
   render_markdown(entries) — player-facing Markdown: tag-count line, then
       entries grouped by version desc.
@@ -90,6 +91,39 @@ TYPE_TAGS = {
     "content": "content",
     "perf": "performance",
 }
+
+
+# Topical tags are chosen by the agent writing the entry, from the diff and
+# intent it has in hand at Gate 3 — not by a keyword filter over the prose.
+# One question per tag; the answer is about what the change *is*, not what its
+# summary happens to mention ("rides the train", "other players' books" and
+# "server owners can…" are narration, not subjects). Rendered by
+# `append-entry.py --tag-guide` and quoted in the release-notes README.
+TAG_GUIDE: dict[str, str] = {
+    "performance": "Does it make the game faster, smoother, or lighter on memory (lag, stutter, freezes, leaks)? Automatic for type perf.",
+    "editor": "Is it about the builder / editor — templates, stages, parts, the X menu, the workshop, or how builds are authored?",
+    "multiplayer": "Does it change behaviour that only exists with other players on a server (sync, joining, per-player state, server-side rules)?",
+    "community": "Is it about relay-backed shared content — shared carriages and books, leaderboards, credits, videos, menu chat, Discord?",
+    "translations": "Is it a locale addition or an i18n/text-localisation fix?",
+    "compatibility": "Is it about coexisting with something external — shaders, Distant Horizons, Sable, companion mods, the modpack, NeoForge/MC versions?",
+    "train": "Is it about the train itself — carriages, flatbeds, tracks, the engine, dimensional carriages, how the train moves or is assembled?",
+    "world": "Is it about the world around the train — worldgen, biomes, bands (Nether/End/upside-down), terrain, tunnels and bridges?",
+    "mobs": "Is it about creatures — echoes, villagers, hostiles, animals, spawning, AI, drops?",
+    "loot": "Is it about what players find or trade — chests, potions, gear, enchantments, shops, brushable loot?",
+    "books": "Is it about written content — playerbooks, letters, lecterns, narrative books, the Death Note?",
+    "advancements": "Is it about advancements / achievements — new ones, criteria, hints, the advancements screen?",
+    "ui": "Is it about a menu, screen, HUD element, popup, tooltip, or keybind the player interacts with?",
+    "balance": "Does it change difficulty, weights, rates, or numbers that make the game harder or easier?",
+}
+
+
+def render_tag_guide() -> str:
+    """The tag guide as text: type-derived tags first, then one line per topical tag."""
+    lines = ["Type-derived (automatic): " + ", ".join(f"{t}→{tag}" for t, tag in TYPE_TAGS.items())]
+    lines.append("Topical (pass --tag for each that applies; tag what the change is ABOUT, not what its prose mentions):")
+    lines.extend(f"  {tag:14} {question}" for tag, question in TAG_GUIDE.items())
+    lines.append("None apply? Pass --no-topical-tags to say so explicitly.")
+    return "\n".join(lines)
 
 
 def normalise_tags(entry_type: str, tags: list[str] | None) -> list[str]:
