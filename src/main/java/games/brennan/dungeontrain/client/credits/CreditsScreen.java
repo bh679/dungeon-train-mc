@@ -51,12 +51,17 @@ import java.util.Set;
  *       which is the normal en_us release-build path rather than an edge case.</li>
  *   <li><b>Writers</b> and <b>Builders</b> — the relay's most-praised writers and everyone credited
  *       as a shipped template's builder ({@link RelayWriters}, {@link TemplateBuilderCredits}).</li>
+ *   <li><b>Funders</b> — everyone in the relay's donation ledger, biggest contribution first, with
+ *       the figure beside the name ({@link RelayFunders}). Skipped when the ledger is empty.</li>
+ *   <li><b>Community</b> — the Discord's Value Adders by MEE6 level ({@link RelayCommunity}). Always
+ *       drawn: its footer is where a player links their Discord ({@link DiscordLinkScreen}).</li>
  * </ol>
  *
  * <p>Any line that is this player's own — a translator name they submitted under
- * ({@link TranslatorOwnNames}), the writer row the relay ranks their uuid at, a builder credit
- * carrying their uuid — gets an <b>Edit</b> button opening {@link CreditEditScreen}: rename, be
- * listed as Anonymous, or come back. What the relay has not caught up with yet is laid over by
+ * ({@link TranslatorOwnNames}), the writer / funder / community row the relay ranks their uuid at,
+ * a builder credit carrying their uuid — gets an <b>Edit</b> button opening
+ * {@link CreditEditScreen}: rename, be listed as Anonymous, or come back; on the Funders card also
+ * hide or show the figure. What the relay has not caught up with yet is laid over by
  * {@link CreditsSelfEdits} (and {@link TranslatorRenames} for translator names).</p>
  *
  * <p>Scrolling, clipping, the card/rule/photo draw order, inline-link hit-testing and the palette
@@ -81,6 +86,10 @@ public final class CreditsScreen extends Screen {
     private static final int ACCENT_BUILDERS = 0xFFC98A5B;
     /** Parchment for the writers. */
     private static final int ACCENT_WRITERS = 0xFFD9C08A;
+    /** Gold for the funders — brighter than the team's amber, the colour of what they gave. */
+    private static final int ACCENT_FUNDERS = 0xFFF2C230;
+    /** Discord's blurple for the community — where they are. */
+    private static final int ACCENT_COMMUNITY = 0xFF7289DA;
 
     /** Team photos are 128×128 sources. */
     private static final int TEX = 128;
@@ -116,10 +125,15 @@ public final class CreditsScreen extends Screen {
     private final String ownUuid;
     /** Where the relay ranks this player among the writers; null until it answers (or unranked). */
     private RelayWriters.Standing writerStanding;
+    /** The same for the funders and the community; the latter stays null until they have linked their Discord. */
+    private RelayFunders.Standing fundersStanding;
+    private RelayCommunity.Standing communityStanding;
     /** How much of each long list is showing — survives a re-layout, not a fresh screen. */
     private CreditsPaging translatorsPaging = CreditsPaging.START;
     private CreditsPaging buildersPaging = CreditsPaging.START;
     private CreditsPaging writersPaging = CreditsPaging.START;
+    private CreditsPaging fundersPaging = CreditsPaging.START;
+    private CreditsPaging communityPaging = CreditsPaging.START;
     /** In-page control links carry this prefix in a RUN_COMMAND click event; see {@link #mouseClicked}. */
     private static final String CONTROL_PREFIX = "dt:credits/";
     private boolean askedForOwnNames;
@@ -186,6 +200,20 @@ public final class CreditsScreen extends Screen {
             y = addBuildersCard(builders, y);
         }
 
+        // Everyone who has funded the game, biggest contribution first — the relay's ledger, the
+        // same names and figures the death screen's donation page shows. Skipped when empty.
+        List<RelayFunders.Funder> funders = RelayFunders.current();
+        if (!funders.isEmpty()) {
+            y += CardCanvas.CARD_GAP;
+            y = addFundersCard(funders, y);
+        }
+
+        // The Discord's Value Adders by level. Drawn even when the relay has nothing (or is
+        // unreachable): the card's footer is the only way onto it — a player links their Discord
+        // there — so it has to be on the page for a fresh install too.
+        y += CardCanvas.CARD_GAP;
+        y = addCommunityCard(RelayCommunity.current(), y);
+
         // One bottom row: "Support the Developer" and the AI Policy icon beside Done. The viewport
         // ends just above the row so scrolling content never overlaps the buttons.
         int rowY = this.height - 28;
@@ -231,6 +259,12 @@ public final class CreditsScreen extends Screen {
             RelayWriters.refresh(() -> Minecraft.getInstance().execute(() -> {
                 if (Minecraft.getInstance().screen == this) rebuildWidgets();
             }));
+            RelayFunders.refresh(() -> Minecraft.getInstance().execute(() -> {
+                if (Minecraft.getInstance().screen == this) rebuildWidgets();
+            }));
+            RelayCommunity.refresh(() -> Minecraft.getInstance().execute(() -> {
+                if (Minecraft.getInstance().screen == this) rebuildWidgets();
+            }));
             TranslatorOwnNames.fetch(names -> {
                 if (!names.equals(ownNames) && Minecraft.getInstance().screen == this) {
                     ownNames = names;
@@ -243,6 +277,18 @@ public final class CreditsScreen extends Screen {
                 RelayWriters.fetchStanding(ownUuid, standing -> Minecraft.getInstance().execute(() -> {
                     if (Minecraft.getInstance().screen != this) return;
                     writerStanding = standing;
+                    rebuildWidgets();
+                }));
+                // Same question of the other two uuid-free lists. Community answers "unranked"
+                // until the player has linked their Discord (DiscordLinkScreen).
+                RelayFunders.fetchStanding(ownUuid, standing -> Minecraft.getInstance().execute(() -> {
+                    if (Minecraft.getInstance().screen != this) return;
+                    fundersStanding = standing;
+                    rebuildWidgets();
+                }));
+                RelayCommunity.fetchStanding(ownUuid, standing -> Minecraft.getInstance().execute(() -> {
+                    if (Minecraft.getInstance().screen != this) return;
+                    communityStanding = standing;
                     rebuildWidgets();
                 }));
             }
@@ -269,15 +315,21 @@ public final class CreditsScreen extends Screen {
             }
             case REMOVE -> CreditsSelfEdits.setHidden(true);
             case RESTORE -> CreditsSelfEdits.setHidden(false);
+            case HIDE_AMOUNT -> CreditsSelfEdits.setAmountHidden(true);
+            case SHOW_AMOUNT -> CreditsSelfEdits.setAmountHidden(false);
         }
         // Refetch WITHOUT clearing: the overlay already renders the change from the cached lists,
         // and an empty cache while the answer is in flight would drop them from the page.
         TranslationCoverageClient.refetch();
         RelayWriters.refresh(null);
         RelayTemplateBuilders.refresh(null);
+        RelayFunders.refresh(null);
+        RelayCommunity.refresh(null);
         CreditsScreen fresh = new CreditsScreen(parent);
         fresh.ownNames = Set.copyOf(names);
         fresh.writerStanding = writerStanding;
+        fresh.fundersStanding = fundersStanding;
+        fresh.communityStanding = communityStanding;
         fresh.askedForOwnNames = true;
         Minecraft.getInstance().setScreen(fresh);
     }
@@ -289,13 +341,19 @@ public final class CreditsScreen extends Screen {
      */
     private int addCreditRow(Component line, boolean own, Section section, String name, boolean hidden,
                              int innerX, int innerW, int y) {
+        return addCreditRow(line, own, section, name, hidden, false, innerX, innerW, y);
+    }
+
+    /** As above, with the Funders card's extra fact: whether the player's figure is currently hidden. */
+    private int addCreditRow(Component line, boolean own, Section section, String name, boolean hidden,
+                             boolean amountHidden, int innerX, int innerW, int y) {
         if (!own) {
             return canvas.addWrappedAt(line, innerX, innerW, y, CardCanvas.COLOUR_DESC);
         }
         DarkTintedButton edit = new DarkTintedButton(innerX + innerW - EDIT_W, 0, EDIT_W, EDIT_H,
                 Component.translatable("gui.dungeontrain.credits.translations.edit"),
                 b -> Minecraft.getInstance().setScreen(
-                        new CreditEditScreen(this, section, name, hidden, this::onEdited)));
+                        new CreditEditScreen(this, section, name, hidden, amountHidden, this::onEdited)));
         edit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.credits.rename.title")));
         addWidget(edit);
         editSlots.add(new EditSlot(edit, y));
@@ -434,6 +492,97 @@ public final class CreditsScreen extends Screen {
         return y;
     }
 
+    /**
+     * The "Funders" card: heading, accent bar, the thank-you line, then one line per funder —
+     * "&lt;Name&gt; — A$N", or the name alone when they hid the figure. The player's own line is
+     * the one at the rank the relay gave for their uuid; their hidden-amount choice is laid over
+     * what the relay currently says, like the name edits.
+     */
+    private int addFundersCard(List<RelayFunders.Funder> funders, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.funders.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_FUNDERS);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.funders.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        List<RelayFunders.Funder> topFive = funders.subList(0, Math.min(funders.size(), CreditsPaging.BUILDERS_COLLAPSED));
+        CreditsPaging.View<RelayFunders.Funder> view = fundersPaging.view(topFive, funders);
+        for (RelayFunders.Funder funder : view.rows()) {
+            boolean own = fundersStanding != null && funder.rank() > 0 && funder.rank() == fundersStanding.rank();
+            CreditsSelfEdits.Shown shown = own
+                    ? CreditsSelfEdits.apply(Section.FUNDERS, funder.name(), funder.anonymous())
+                    : new CreditsSelfEdits.Shown(funder.name(), funder.anonymous());
+            boolean amountHidden = own ? CreditsSelfEdits.amountHidden(funder.amountHidden()) : funder.amountHidden();
+            Component name = shown.anonymous() ? anonymousName(own) : Component.literal(shown.name());
+            Component line = amountHidden
+                    ? Component.translatable("gui.dungeontrain.credits.funders.person_line_hidden", name)
+                    : Component.translatable("gui.dungeontrain.credits.funders.person_line", name,
+                            Component.literal(Integer.toString(funder.amountAud())));
+            y = addCreditRow(line, own, Section.FUNDERS, shown.name(), shown.anonymous(), amountHidden,
+                    innerX, innerW, y);
+        }
+        y = addControls(view, "funders", innerX, innerW, y);
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
+    /**
+     * The "Community" card: heading, accent bar, the thank-you line, one line per Value Adder —
+     * "&lt;Name&gt; — Level N" — and, at the end of the list, the way onto it: a link to
+     * {@link DiscordLinkScreen}. The player's own line is the one at the rank the relay gave for
+     * their uuid, which it only can once they have linked.
+     */
+    private int addCommunityCard(List<RelayCommunity.Member> members, int top) {
+        int innerX = canvas.colX() + CardCanvas.CARD_PAD;
+        int innerW = Math.max(1, canvas.colW() - CardCanvas.CARD_PAD * 2);
+        int y = top + CardCanvas.CARD_PAD;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.community.header"),
+                innerX, innerW, y, CardCanvas.COLOUR_HEADER);
+        y += CardCanvas.RULE_GAP;
+        y = canvas.addRule(innerX, y, Math.min(CardCanvas.RULE_W, innerW), ACCENT_COMMUNITY);
+        y += CardCanvas.RULE_TO_BODY;
+
+        y = canvas.addWrappedAt(Component.translatable("gui.dungeontrain.credits.community.desc"),
+                innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        y += DESC_GAP;
+        List<RelayCommunity.Member> topFive = members.subList(0, Math.min(members.size(), CreditsPaging.BUILDERS_COLLAPSED));
+        CreditsPaging.View<RelayCommunity.Member> view = communityPaging.view(topFive, members);
+        for (RelayCommunity.Member member : view.rows()) {
+            boolean own = communityStanding != null && member.rank() > 0 && member.rank() == communityStanding.rank();
+            CreditsSelfEdits.Shown shown = own
+                    ? CreditsSelfEdits.apply(Section.COMMUNITY, member.name(), member.anonymous())
+                    : new CreditsSelfEdits.Shown(member.name(), member.anonymous());
+            Component name = shown.anonymous() ? anonymousName(own) : Component.literal(shown.name());
+            y = addCreditRow(Component.translatable("gui.dungeontrain.credits.community.person_line",
+                    name, Component.literal(Integer.toString(member.level()))),
+                    own, Section.COMMUNITY, shown.name(), shown.anonymous(), innerX, innerW, y);
+        }
+        y = addControls(view, "community", innerX, innerW, y);
+        // The on-ramp, at the end of the list like the Writers card's "how": once linked there is
+        // nothing left to do here, so the line only shows while the player is not yet on the card.
+        if (view.atEnd() && communityStanding == null) {
+            y += DESC_GAP;
+            MutableComponent footer = Component.translatable("gui.dungeontrain.credits.community.link_footer")
+                    .append(" ")
+                    .append(control("gui.dungeontrain.credits.community.link_action", "community/link"));
+            y = canvas.addWrappedAt(footer, innerX, innerW, y, CardCanvas.COLOUR_DESC);
+        }
+
+        y += CardCanvas.CARD_PAD;
+        canvas.addCard(top, y - top);
+        return y;
+    }
+
     /** "&lt;Name&gt; — N templates" (or "1 template"): one line per builder. */
     private static Component builderLine(TemplateBuilderCredits.Builder builder, Component name) {
         String key = builder.templates() == 1
@@ -521,9 +670,16 @@ public final class CreditsScreen extends Screen {
     private void onControl(String action) {
         String[] parts = action.split("/");
         if (parts.length != 2) return;
+        if ("community".equals(parts[0]) && "link".equals(parts[1])) {
+            // Done-after-linking lands on a new page, which asks afresh where the player stands.
+            Minecraft.getInstance().setScreen(new DiscordLinkScreen(this, () -> new CreditsScreen(parent)));
+            return;
+        }
         CreditsPaging paging = switch (parts[0]) {
             case "builders" -> buildersPaging;
             case "writers" -> writersPaging;
+            case "funders" -> fundersPaging;
+            case "community" -> communityPaging;
             default -> translatorsPaging;
         };
         CreditsPaging next = switch (parts[1]) {
@@ -536,6 +692,8 @@ public final class CreditsScreen extends Screen {
         switch (parts[0]) {
             case "builders" -> buildersPaging = next;
             case "writers" -> writersPaging = next;
+            case "funders" -> fundersPaging = next;
+            case "community" -> communityPaging = next;
             default -> translatorsPaging = next;
         }
         rebuildWidgets();

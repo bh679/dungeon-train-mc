@@ -51,8 +51,10 @@ public record EditorRosterRequestPacket() implements CustomPacketPayload {
                 LOGGER.debug("[editor.timing] roster {} groups / {} rows built in {} ms",
                     groups.size(), rows, (System.nanoTime() - started) / 1_000_000);
             }
+            java.util.List<EditorRosterPacket.StageEntry> stages =
+                EditorRoster.stages(player.serverLevel().getServer().overworld());
             DungeonTrainNet.sendTo(player, new EditorRosterPacket(groups, stamped,
-                new EditorRosterPacket.TrainSize(dims.length(), dims.width(), dims.height())));
+                new EditorRosterPacket.TrainSize(dims.length(), dims.width(), dims.height()), stages));
         });
     }
 }

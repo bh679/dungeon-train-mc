@@ -12,6 +12,8 @@ public final class EditorScreenLang {
 
     public static final String TAB_TEMPLATES = PREFIX + "tab.templates";
     public static final String TAB_LAYOUT = PREFIX + "tab.layout";
+    public static final String TAB_STAGES = PREFIX + "tab.stages";
+    public static final String TAB_NAV = PREFIX + "tab.nav";
     public static final String TAB_SETTINGS = PREFIX + "tab.settings";
     public static final String TAB_EXIT = PREFIX + "tab.exit";
 
@@ -21,6 +23,15 @@ public final class EditorScreenLang {
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
     public static final String TAB_DIMENSIONS = PREFIX + "tab.dimensions";
+
+    /**
+     * The Nav tab: the red button under the picked area, its greyed form when already there, the
+     * button's tooltip, and the confirm that stands between it and a plot-wiping category switch.
+     */
+    public static final String NAV_GO_HERE = PREFIX + "nav.go_here";
+    public static final String NAV_HERE = PREFIX + "nav.here";
+    public static final String NAV_GO_HERE_TIP = PREFIX + "nav.go_here_tip";
+    public static final String NAV_CONFIRM = PREFIX + "nav.confirm";
 
     /** The filter bar's toggle and its tooltips, and what clicking an active chip does. */
     public static final String FILTERS = PREFIX + "filters";
@@ -36,6 +47,51 @@ public final class EditorScreenLang {
     public static final String LAYOUT_NO_MATCHES = PREFIX + "layout.no_matches";
     /** The weight cell's tooltip: the same three clicks the world-space menus take. */
     public static final String LAYOUT_WEIGHT_TIP = PREFIX + "layout.weight_tip";
+
+    /** The Stages tab: a row's block-count cell, the detail's parts line, its pager, and its empty states. */
+    public static final String STAGES_BLOCKS = PREFIX + "stages.blocks";
+    public static final String STAGES_PARTS = PREFIX + "stages.parts";
+    public static final String STAGES_MORE = PREFIX + "stages.more";
+    public static final String STAGES_NONE = PREFIX + "stages.none";
+    public static final String STAGES_NO_BLOCKS = PREFIX + "stages.no_blocks";
+    public static final String STAGES_BLOCK_TIP = PREFIX + "stages.block_tip";
+    public static final String STAGES_TEMPLATES = PREFIX + "stages.templates";
+    public static final String STAGES_NO_TEMPLATES = PREFIX + "stages.no_templates";
+    /** The Stages list's two titles, each a sort key. */
+    public static final String STAGES_COL_NAME = PREFIX + "stages.col.name";
+    public static final String STAGES_COL_LEVEL = PREFIX + "stages.col.level";
+    /** The stage overview page: its icon row, the Apply button's off reason, and the gate rows. */
+    public static final String STAGES_ICON_REFRESH = PREFIX + "stages.icon.refresh";
+    public static final String STAGES_ICON_APPLY = PREFIX + "stages.icon.apply";
+    public static final String STAGES_ICON_RENAME = PREFIX + "stages.icon.rename";
+    public static final String STAGES_ICON_DUPLICATE = PREFIX + "stages.icon.duplicate";
+    public static final String STAGES_ICON_DELETE = PREFIX + "stages.icon.delete";
+    public static final String STAGES_ICON_PREV = PREFIX + "stages.icon.prev";
+    public static final String STAGES_ICON_NEXT = PREFIX + "stages.icon.next";
+    public static final String STAGES_APPLY_NONE = PREFIX + "stages.apply_none";
+    public static final String STAGES_ONE_TEMPLATE = PREFIX + "stages.one_template";
+    public static final String STAGES_DELETE_CONFIRM = PREFIX + "stages.delete_confirm";
+    public static final String STAGES_MIN_LEVEL = PREFIX + "stages.min_level";
+    public static final String STAGES_MAX_LEVEL = PREFIX + "stages.max_level";
+    public static final String STAGES_BANDS = PREFIX + "stages.bands";
+    /** The stage sheet's two count lines and the one-carriage off reason for Prev / Next. */
+    public static final String STAGES_PARTS_LABEL = PREFIX + "stages.parts_label";
+    public static final String STAGES_TEMPLATES_LABEL = PREFIX + "stages.templates_label";
+    public static final String STAGES_ONE_CARRIAGE = PREFIX + "stages.one_carriage";
+    /** The Palette and Stone pages: their headings, a cell's tooltip lines, and the Re-bake button. */
+    public static final String STAGES_PALETTE_SOLID = PREFIX + "stages.palette.solid";
+    public static final String STAGES_PALETTE_SHAPES = PREFIX + "stages.palette.shapes";
+    public static final String STAGES_PALETTE_WOOD = PREFIX + "stages.palette.wood";
+    public static final String STAGES_PALETTE_STONE = PREFIX + "stages.palette.stone";
+    public static final String STAGES_PALETTE_TITLE = PREFIX + "stages.palette.title";
+    public static final String STAGES_PALETTE_OVERRIDE = PREFIX + "stages.palette.override";
+    public static final String STAGES_PALETTE_DERIVED = PREFIX + "stages.palette.derived";
+    public static final String STAGES_PALETTE_CELL_TIP = PREFIX + "stages.palette.cell_tip";
+    public static final String STAGES_PALETTE_FAMILY_TIP = PREFIX + "stages.palette.family_tip";
+    public static final String STAGES_ICON_REBAKE = PREFIX + "stages.icon.rebake";
+    /** The list's view toggle: what pressing it switches to. */
+    public static final String STAGES_VIEW_GRID = PREFIX + "stages.view.grid";
+    public static final String STAGES_VIEW_LIST = PREFIX + "stages.view.list";
 
     public static final String FILTER_HINT = PREFIX + "filter.hint";
     /** The two keys that end a name prompt, under the field. */

@@ -19,11 +19,13 @@ import net.minecraft.util.FormattedCharSequence;
 import java.util.List;
 
 /**
- * The small form behind the Credits page's <b>Edit</b> button, on any of its three cards: one box
+ * The small form behind the Credits page's <b>Edit</b> button, on any of its five cards: one box
  * holding the name the player is credited under, Save, <b>Remove</b> (be listed as Anonymous —
  * behind a confirm), Cancel, and a line saying what happened. A line that is already anonymous
  * offers <b>Restore</b> instead of the box. Whichever card it was opened from, the edit is to the
- * player's <b>one</b> identity — every card follows.
+ * player's <b>one</b> identity — every card follows. Opened from the Funders card it adds one more
+ * row, <b>Hide my amount</b> / <b>Show my amount</b>: the figure beside the name, not the name, so
+ * it is the one edit that stays on that card alone.
  *
  * <p>Deliberately not a settings option. The credited name is the player's, not the game's, and
  * the place to change it is beside where it is shown. Every button is a relay call — the change has
@@ -50,23 +52,37 @@ public final class CreditEditScreen extends Screen {
     private final String from;
     /** The line is already anonymous — offer Restore rather than a name box. */
     private final boolean hidden;
+    /** Funders card only: the figure beside the name is currently hidden — offer Show rather than Hide. */
+    private final boolean amountHidden;
     private final OnEdited onEdited;
 
     private EditBox nameBox;
     private Button saveButton;
     private Button removeButton;
     private Button restoreButton;
+    private Button amountButton;
     private Component status = Component.empty();
     private List<FormattedCharSequence> hintLines = List.of();
     private boolean sending;
 
     public CreditEditScreen(Screen parent, Section section, String from, boolean hidden, OnEdited onEdited) {
+        this(parent, section, from, hidden, false, onEdited);
+    }
+
+    public CreditEditScreen(Screen parent, Section section, String from, boolean hidden, boolean amountHidden,
+                            OnEdited onEdited) {
         super(Component.translatable("gui.dungeontrain.credits.rename.title"));
         this.parent = parent;
         this.section = section;
         this.from = from == null ? "" : from;
         this.hidden = hidden;
+        this.amountHidden = amountHidden;
         this.onEdited = onEdited;
+    }
+
+    /** The amount row belongs to the Funders card alone, and only while the name is on show. */
+    private boolean offersAmount() {
+        return section == Section.FUNDERS && !hidden;
     }
 
     @Override
@@ -102,11 +118,20 @@ public final class CreditEditScreen extends Screen {
         if (!hidden) {
             removeButton = addRenderableWidget(new DarkTintedButton(left, y, formW, ROW_H,
                 Component.translatable("gui.dungeontrain.credits.rename.remove"), b -> confirmRemove()));
+            y += ROW_H + GAP;
+        }
+        if (offersAmount()) {
+            // Reversible in one click and visible only to the player's own line, so no confirm.
+            amountButton = addRenderableWidget(new DarkTintedButton(left, y, formW, ROW_H,
+                Component.translatable(amountHidden
+                    ? "gui.dungeontrain.credits.rename.show_amount"
+                    : "gui.dungeontrain.credits.rename.hide_amount"), b -> toggleAmount()));
         }
 
         Component hint = !RelayChatClient.canConnect()
             ? Component.translatable("gui.dungeontrain.credits.rename.no_consent")
             : hidden ? Component.translatable("gui.dungeontrain.credits.rename.hint.hidden")
+            : offersAmount() ? Component.translatable("gui.dungeontrain.credits.rename.hint.funders")
             : Component.translatable("gui.dungeontrain.credits.rename.hint");
         hintLines = font.split(FormattedText.of(hint.getString()), formW);
         updateButtons();
@@ -128,6 +153,7 @@ public final class CreditEditScreen extends Screen {
         }
         if (removeButton != null) removeButton.active = !sending;
         if (restoreButton != null) restoreButton.active = !sending;
+        if (amountButton != null) amountButton.active = !sending;
     }
 
     private boolean consentOk() {
@@ -162,6 +188,12 @@ public final class CreditEditScreen extends Screen {
     private void restore() {
         if (!consentOk()) return;
         begin(Action.RESTORE, "", CreditEditClient.restore());
+    }
+
+    private void toggleAmount() {
+        if (!consentOk()) return;
+        if (amountHidden) begin(Action.SHOW_AMOUNT, "", CreditEditClient.showAmount());
+        else begin(Action.HIDE_AMOUNT, "", CreditEditClient.hideAmount());
     }
 
     private void begin(Action action, String to, java.util.concurrent.CompletableFuture<CreditEditClient.Result> call) {
@@ -203,8 +235,9 @@ public final class CreditEditScreen extends Screen {
         int left = (this.width - formW) / 2;
         g.drawCenteredString(font, title, this.width / 2, formTop() - 16, 0xFFFFFFFF);
 
-        // Below the last row of buttons: name box + Save/Cancel + Remove, or Restore/Cancel alone.
-        int rows = hidden ? 1 : 3;
+        // Below the last row of buttons: name box + Save/Cancel + Remove (+ the amount row on the
+        // Funders card), or Restore/Cancel alone.
+        int rows = hidden ? 1 : offersAmount() ? 4 : 3;
         int y = formTop() + rows * (ROW_H + GAP) + 2;
         for (FormattedCharSequence line : hintLines) {
             g.drawString(font, line, left, y, 0xFFA0A0A0, false);

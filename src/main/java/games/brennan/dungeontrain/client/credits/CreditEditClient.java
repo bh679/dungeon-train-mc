@@ -30,9 +30,11 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p><b>One identity.</b> The body carries {@code section: "all"}: the relay applies the edit to
  * every card the player is credited on, so a name changed beside one card changes beside all
- * three. It goes to the <b>live</b> pool, where the writers and builders are read from; a dev
+ * of them. It goes to the <b>live</b> pool, where the writers and builders are read from; a dev
  * build whose branch-routed cap differs (its translations live there) posts to that cap too, and
- * the edit is ok when either pool accepted it.</p>
+ * the edit is ok when either pool accepted it. The two amount actions are the one exception:
+ * hiding the figure beside a name only means something on the Funders card, so they carry
+ * {@code section: "funders"} — the relay refuses them under {@code all}.</p>
  *
  * <p>The relay's refusals are surfaced as distinct {@link Error}s rather than one "failed",
  * because a player can act on them: {@code NAME_TAKEN} wants a different name, {@code
@@ -56,9 +58,9 @@ public final class CreditEditClient {
 
     private CreditEditClient() {}
 
-    /** The three cards of the Credits page — which one an Edit button sits on. The edit itself is for all. */
+    /** The five cards of the Credits page — which one an Edit button sits on. The edit itself is for all. */
     public enum Section {
-        TRANSLATIONS, WRITERS, BUILDERS;
+        TRANSLATIONS, WRITERS, BUILDERS, FUNDERS, COMMUNITY;
 
         /** The relay's wire name. */
         public String wire() {
@@ -69,12 +71,17 @@ public final class CreditEditClient {
     /** The wire value asking for every section at once. */
     static final String ALL = "all";
 
-    /** What the player asked for. */
+    /** What the player asked for. The amount pair is Funders-only (see {@link #amountOnly}). */
     public enum Action {
-        RENAME, REMOVE, RESTORE;
+        RENAME, REMOVE, RESTORE, HIDE_AMOUNT, SHOW_AMOUNT;
 
         public String wire() {
             return name().toLowerCase(Locale.ROOT);
+        }
+
+        /** True for the two actions about the figure beside a funder's name rather than the name. */
+        public boolean amountOnly() {
+            return this == HIDE_AMOUNT || this == SHOW_AMOUNT;
         }
     }
 
@@ -92,7 +99,7 @@ public final class CreditEditClient {
     static JsonObject buildPayload(String uuid, Action action, String from, String to) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid == null ? "" : uuid);
-        body.addProperty("section", ALL);
+        body.addProperty("section", action.amountOnly() ? Section.FUNDERS.wire() : ALL);
         body.addProperty("action", action.wire());
         if (action == Action.RENAME) {
             body.addProperty("from", from == null ? "" : from);
@@ -114,6 +121,16 @@ public final class CreditEditClient {
     /** Put this player's name back on every card. */
     public static CompletableFuture<Result> restore() {
         return send(Action.RESTORE, "", "");
+    }
+
+    /** Keep this player's name on the Funders card without the figure beside it. */
+    public static CompletableFuture<Result> hideAmount() {
+        return send(Action.HIDE_AMOUNT, "", "");
+    }
+
+    /** Show the figure beside this player's name on the Funders card again. */
+    public static CompletableFuture<Result> showAmount() {
+        return send(Action.SHOW_AMOUNT, "", "");
     }
 
     /**

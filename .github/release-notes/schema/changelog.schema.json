@@ -40,10 +40,10 @@
             "enum": [
               "feature", "content", "fix", "performance", "editor", "multiplayer", "community",
               "translations", "compatibility", "train", "world", "mobs", "loot", "books", "advancements",
-              "ui", "balance"
+              "ui", "balance", "internal"
             ]
           },
-          "description": "Player-facing classification the Versions page filters by. The type-derived tag (feat→feature, fix→fix, content→content, perf→performance) is always present; topical tags are added on top. May be empty only for non-player-facing types (chore/ci/refactor/docs/test)."
+          "description": "Player-facing classification the Versions page filters by. The type-derived tag (feat→feature, fix→fix, content→content, perf→performance, chore/ci/refactor/docs/test→internal) is always present, so the list is never empty; topical tags are added on top."
         },
         "title": {"type": "string", "minLength": 1},
         "summary": {"type": "string", "minLength": 1},

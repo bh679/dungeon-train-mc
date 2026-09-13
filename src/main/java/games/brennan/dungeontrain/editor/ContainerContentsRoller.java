@@ -398,7 +398,8 @@ public final class ContainerContentsRoller {
         // Chests and barrels also bake their Luck-potion bonus candidates now, from the
         // same pool, so the open-time hook never has to recover the pool from a position.
         if (LuckyBonusRoller.isBonusContainer(state)) {
-            ListTag bonus = LuckyBonusRoller.preRoll(pool, localPos, worldSeed, carriageIndex, diffIndex, registries);
+            ListTag bonus = LuckyBonusRoller.preRoll(
+                pool, localPos, worldSeed, carriageIndex, diffIndex, LuckyBonusRoller.MAX_LUCKY_BONUS, registries);
             out = LuckyBonusRoller.withBonus(out, bonus);
         }
         return out;
@@ -592,6 +593,12 @@ public final class ContainerContentsRoller {
 
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
         out.remove(NBT_POT_ITEM);
+        // Vases also bake their single Luck-potion bonus candidate now, from the same pool —
+        // whether or not the base roll below lands an item, so a lucky breaker can still get
+        // one out of a vase that rolled empty (mirrors chests, whose bonus fills empty slots).
+        ListTag bonus = LuckyBonusRoller.preRoll(
+            pool, localPos, worldSeed, carriageIndex, diffIndex, LuckyBonusRoller.VASE_BONUS, registries);
+        out = LuckyBonusRoller.withBonus(out, bonus);
         if (k <= 0) return out;
 
         ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, /*slot*/ 0);

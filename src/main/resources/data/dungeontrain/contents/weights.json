@@ -5,7 +5,11 @@
   "craft": 7,
   "dangerous_1": {
     "weight": 1,
-    "name": "tntbarrel"
+    "name": "tntbarrel",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "default": 1,
   "dirt": 2,
@@ -17,19 +21,35 @@
   "maze": 4,
   "mild_1": {
     "weight": 1,
-    "name": "trap_chest"
+    "name": "trap_chest",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "mild_2": {
     "weight": 1,
-    "name": "wishingwell"
+    "name": "wishingwell",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "mild_3": {
     "weight": 1,
-    "name": "trapwall"
+    "name": "trapwall",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "mild_4": {
     "weight": 1,
-    "name": "creepertrap"
+    "name": "creepertrap",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "narrative": 3,
   "portal": 0,

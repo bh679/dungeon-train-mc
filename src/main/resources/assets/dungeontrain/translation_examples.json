@@ -1,4 +1,76 @@
 {
+  "gui.dungeontrain.editor_screen.stages.delete_confirm": {
+    "1": {
+      "label": "the display name of the stage about to be deleted",
+      "examples": [
+        "desert",
+        "Nether Depths"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.min_level": {
+    "1": {
+      "label": "the stage's lowest difficulty level",
+      "examples": [
+        "0",
+        "176"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.max_level": {
+    "1": {
+      "label": "the stage's highest difficulty level, or ∞ when unbounded",
+      "examples": [
+        "205",
+        "∞"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.templates": {
+    "1": {
+      "label": "how many templates and carriage parts link to the stage",
+      "examples": [
+        "6",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.blocks": {
+    "1": {
+      "label": "how many distinct blocks the stage's linked parts use",
+      "examples": [
+        "12",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.parts": {
+    "1": {
+      "label": "how many carriage parts (floors, walls, roofs, doors) link to the stage",
+      "examples": [
+        "4",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.more": {
+    "1": {
+      "label": "how many further distinct blocks the capped grid left out",
+      "examples": [
+        "5",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.stages.block_tip": {
+    "1": {
+      "label": "how many times the block is used across the stage's parts",
+      "examples": [
+        "120",
+        "1"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.open.0": {
     "1": {
       "label": "the name of the player reading this note",
@@ -2413,28 +2485,6 @@
       ]
     }
   },
-  "command.dungeontrain.backup.fail": {
-    "1": {
-      "label": "the error that stopped the backup",
-      "examples": [
-        "java.nio.file.AccessDeniedException: backups"
-      ]
-    }
-  },
-  "command.dungeontrain.backup.success": {
-    "1": {
-      "label": "the backup file's name",
-      "examples": [
-        "dungeontrain-backup-20260828-014500.zip"
-      ]
-    },
-    "2": {
-      "label": "how many files it holds",
-      "examples": [
-        "142"
-      ]
-    }
-  },
   "command.dungeontrain.fix_ais.backup": {
     "1": {
       "label": "the backup file's name",
@@ -2462,58 +2512,6 @@
       "label": "the settings files that could not be moved",
       "examples": [
         "dungeontrain-common.toml, adventureitemstats.properties"
-      ]
-    }
-  },
-  "command.dungeontrain.restore.entry": {
-    "1": {
-      "label": "the entry's number, for passing to /dtrestore",
-      "examples": [
-        "1",
-        "2"
-      ]
-    },
-    "2": {
-      "label": "what that entry holds",
-      "examples": [
-        "builds and progress",
-        "builds"
-      ]
-    },
-    "3": {
-      "label": "the backup file, or the path to the other Minecraft install",
-      "examples": [
-        "dungeontrain-backup-20260828-014500.zip"
-      ]
-    }
-  },
-  "command.dungeontrain.restore.fail": {
-    "1": {
-      "label": "the error that stopped the restore",
-      "examples": [
-        "java.util.zip.ZipException: invalid entry"
-      ]
-    }
-  },
-  "command.dungeontrain.restore.no_such": {
-    "1": {
-      "label": "the entry number the player asked for",
-      "examples": [
-        "7"
-      ]
-    }
-  },
-  "command.dungeontrain.restore.success": {
-    "1": {
-      "label": "how many files were put back",
-      "examples": [
-        "142"
-      ]
-    },
-    "2": {
-      "label": "where they came from",
-      "examples": [
-        "dungeontrain-backup-20260828-014500.zip"
       ]
     }
   },
@@ -3260,6 +3258,42 @@
       ]
     }
   },
+  "gui.dungeontrain.credits.funders.person_line": {
+    "1": {
+      "label": "the funder's name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "how many Australian dollars they have contributed in total, whole number (the A$ sign is in the text)",
+      "examples": [
+        "120"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.funders.person_line_hidden": {
+    "1": {
+      "label": "the funder's name (they chose not to show the amount)",
+      "examples": [
+        "Mika"
+      ]
+    }
+  },
+  "gui.dungeontrain.credits.community.person_line": {
+    "1": {
+      "label": "the community member's Discord display name",
+      "examples": [
+        "Mika"
+      ]
+    },
+    "2": {
+      "label": "their level on the Discord (a whole number, higher is more active)",
+      "examples": [
+        "23"
+      ]
+    }
+  },
   "gui.dungeontrain.credits.writers.person_line": {
     "1": {
       "label": "the writer's name",
@@ -3288,59 +3322,6 @@
       "examples": [
         "Aether Trains",
         "Aether Trains, Brennan's Extras"
-      ]
-    }
-  },
-  "gui.dungeontrain.data_recovery.candidate.backup": {
-    "1": {
-      "label": "the backup file's name",
-      "examples": [
-        "dungeontrain-backup-20260828-114927.zip"
-      ]
-    }
-  },
-  "gui.dungeontrain.data_recovery.candidate.external": {
-    "1": {
-      "label": "the backup file's name",
-      "examples": [
-        "dungeontrain-backup-20260828-114927.zip"
-      ]
-    },
-    "2": {
-      "label": "the folder outside the Minecraft install where it is kept",
-      "examples": [
-        "/Users/sam/Library/Application Support/DungeonTrain/backups"
-      ]
-    }
-  },
-  "gui.dungeontrain.data_recovery.candidate.folder": {
-    "1": {
-      "label": "the folder the backups are kept in",
-      "examples": [
-        "/Users/sam/minecraft/dungeontrain/backups"
-      ]
-    }
-  },
-  "gui.dungeontrain.data_recovery.candidate.sibling": {
-    "1": {
-      "label": "what the other install holds",
-      "examples": [
-        "builds and progress",
-        "progress"
-      ]
-    },
-    "2": {
-      "label": "the full path to the other Minecraft install",
-      "examples": [
-        "/Users/sam/curseforge/minecraft/Instances/Dungeon Train"
-      ]
-    }
-  },
-  "gui.dungeontrain.data_recovery.done.body": {
-    "1": {
-      "label": "how many files were put back",
-      "examples": [
-        "142"
       ]
     }
   },
@@ -3559,6 +3540,24 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.nav.go_here_tip": {
+    "1": {
+      "label": "the name of the editor area the tile stands for",
+      "examples": [
+        "Train Outside",
+        "Dimensional Carriages"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.nav.confirm": {
+    "1": {
+      "label": "the name of the editor area the tile stands for",
+      "examples": [
+        "Train Outside",
+        "Dimensional Carriages"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.standing_in": {
     "1": {
       "label": "the name of the editor plot the player is currently standing in",
@@ -3668,46 +3667,6 @@
       "examples": [
         "Fill all",
         "Burst 2"
-      ]
-    }
-  },
-  "gui.dungeontrain.options.clear_backups": {
-    "1": {
-      "label": "the total size of the backups on disk",
-      "examples": [
-        "1.2 GB",
-        "512 KB",
-        "0 B"
-      ]
-    }
-  },
-  "gui.dungeontrain.options.clear_backups.confirm.both": {
-    "1": {
-      "label": "the backups folder inside the Minecraft install",
-      "examples": [
-        "/Users/sam/minecraft/dungeontrain/backups"
-      ]
-    },
-    "2": {
-      "label": "the backups folder outside the Minecraft install",
-      "examples": [
-        "/Users/sam/Library/Application Support/DungeonTrain/backups"
-      ]
-    }
-  },
-  "gui.dungeontrain.options.clear_backups.confirm.one": {
-    "1": {
-      "label": "the backups folder",
-      "examples": [
-        "/Users/sam/minecraft/dungeontrain/backups"
-      ]
-    }
-  },
-  "gui.dungeontrain.options.clear_backups.confirm.title": {
-    "1": {
-      "label": "how many backup files will be deleted",
-      "examples": [
-        "14"
       ]
     }
   },
