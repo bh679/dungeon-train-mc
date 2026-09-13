@@ -123,6 +123,12 @@ public final class PortalRoomCopiesPlot implements BlockVariantPlot {
         return KEY_PREFIX + plane.id() + KEY_SEPARATOR + roomName;
     }
 
+    /** A copies setting is part of the room, so an edit here is the room reading as unsaved. */
+    @Override
+    public String dirtySnapshotKey() {
+        return games.brennan.dungeontrain.editor.PortalRoomEditor.snapshotKey(roomName);
+    }
+
     @Override
     public BlockPos origin() {
         return origin;
@@ -165,6 +171,7 @@ public final class PortalRoomCopiesPlot implements BlockVariantPlot {
      */
     @Override
     public void save() throws IOException {
+        BlockVariantPlot.noteEdit(this, null);
         variant.save(roomName);
         if (games.brennan.dungeontrain.editor.EditorDevMode.isEnabled()) {
             variant.saveToSource(roomName);

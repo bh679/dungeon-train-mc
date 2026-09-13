@@ -75,25 +75,37 @@ public final class BuilderDirtyCheck {
      */
     public static List<Integer> dirtyCarriages(ServerLevel level) {
         List<Integer> dirty = new ArrayList<>();
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
-        TrackKind trackKind = BuilderTrackBuild.kindOf(data);
-        boolean track = trackKind != null && BuilderWorldSetup.parkedCarriages(data) <= 0;
         List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
 
         for (int i = 0; i < volumes.size(); i++) {
             BoundingBox box = volumes.get(i);
-            String key = track ? snapshotKey(trackKind, data.builderName()) : snapshotKey(i);
+            String key = snapshotKeyForVolume(level, i);
             Map<BlockPos, BlockState> baseline = EditorPlotSnapshots.get(key);
             BlockPos origin = BuilderBounds.originOf(box);
             // Size from the box: a room's is the author's and a track plot's is its footprint,
             // neither of which is CarriageDims.
             Vec3i size = BuilderBounds.sizeOf(box);
-            if (isDirty(baseline, size, variantCellPositions(level, size),
-                    local -> level.getBlockState(origin.offset(local)))) {
+            // A variant-pool edit is unsaved work the block compare skips by design — the Z menu
+            // writes this build's own document, but only Save carries it onto a template.
+            if (EditorPlotSnapshots.sidecarEdited(key)
+                    || isDirty(baseline, size, variantCellPositions(level, size),
+                        local -> level.getBlockState(origin.offset(local)))) {
                 dirty.add(i);
             }
         }
         return dirty;
+    }
+
+    /**
+     * The baseline key for the {@code index}th build volume of {@code level} — a parked carriage's
+     * slot, or the single track / room plot when the mode parks none. One place for the choice so
+     * the scan and {@link BuilderCarriagePlot#dirtySnapshotKey} cannot read different rows.
+     */
+    public static String snapshotKeyForVolume(ServerLevel level, int index) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
+        TrackKind trackKind = BuilderTrackBuild.kindOf(data);
+        boolean track = trackKind != null && BuilderWorldSetup.parkedCarriages(data) <= 0;
+        return track ? snapshotKey(trackKind, data.builderName()) : snapshotKey(index);
     }
 
     public static boolean hasUnsavedChanges(ServerLevel level) {
