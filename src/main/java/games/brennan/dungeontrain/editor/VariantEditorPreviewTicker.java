@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
@@ -83,6 +84,12 @@ public final class VariantEditorPreviewTicker {
      * LOCK entries, subsequent ticks no-op.
      */
     private static void updatePlot(ServerLevel level, BlockVariantPlot plot, long previewTick) {
+        // Under the stamp guard so an observer facing a cycling cell stays quiet: the display
+        // rewrite is DT's own scaffolding, not a gameplay event (ObserverBlockStampMixin).
+        CarriageStampGuard.run(() -> updatePlotGuarded(level, plot, previewTick));
+    }
+
+    private static void updatePlotGuarded(ServerLevel level, BlockVariantPlot plot, long previewTick) {
         java.util.Map<BlockPos, java.util.List<VariantState>> snapshot = collectCells(plot);
         for (java.util.Map.Entry<BlockPos, java.util.List<VariantState>> e : snapshot.entrySet()) {
             BlockPos localPos = e.getKey();

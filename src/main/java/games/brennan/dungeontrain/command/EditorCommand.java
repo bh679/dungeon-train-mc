@@ -60,6 +60,7 @@ import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriagePartPlacer;
@@ -3984,7 +3985,9 @@ public final class EditorCommand {
             }
             int oldCount = rowBefore.size();
 
-            CarriageEditor.clearPlot(overworld, variant, dims);
+            // Plot erase + row restamp are DT's own rewrites — guarded so observers in the
+            // touched plots stay quiet (ObserverBlockStampMixin).
+            CarriageStampGuard.run(() -> CarriageEditor.clearPlot(overworld, variant, dims));
             boolean deleted = CarriageTemplateStore.delete(variant);
             // Sidecars and weight — and in dev mode the bundled copies of each.
             TemplateDeletes.Report cleanup = TemplateDeletes.carriage(variant);
@@ -3992,7 +3995,9 @@ public final class EditorCommand {
             if (wasCustom) {
                 CarriageVariantRegistry.unregister(variant.id());
                 if (oldIdx >= 0) {
-                    CarriageEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
+                    final int idx = oldIdx;
+                    CarriageStampGuard.run(() ->
+                        CarriageEditor.restampRowAfterDeletion(overworld, idx, oldCount, dims));
                 }
             }
             source.sendSuccess(() -> Component.literal(
@@ -4969,7 +4974,7 @@ public final class EditorCommand {
         }
         int oldCount = rowBefore.size();
 
-        CarriageContentsEditor.clearPlot(overworld, contents, dims);
+        CarriageStampGuard.run(() -> CarriageContentsEditor.clearPlot(overworld, contents, dims));
         boolean deleted = CarriageContentsStore.delete(contents);
         // Sidecars, weight, group slot — and in dev mode the bundled copies of each.
         TemplateDeletes.Report cleanup = TemplateDeletes.contents(contents);
@@ -4977,7 +4982,9 @@ public final class EditorCommand {
         if (wasCustom) {
             CarriageContentsRegistry.unregister(contents.id());
             if (oldIdx >= 0) {
-                CarriageContentsEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
+                final int idx = oldIdx;
+                CarriageStampGuard.run(() ->
+                    CarriageContentsEditor.restampRowAfterDeletion(overworld, idx, oldCount, dims));
             }
         }
         return (deleted
@@ -5704,7 +5711,7 @@ public final class EditorCommand {
             int oldIdx = rowBefore.indexOf(name);
             int oldCount = rowBefore.size();
 
-            CarriagePartEditor.clearPlot(overworld, kind, name, dims);
+            CarriageStampGuard.run(() -> CarriagePartEditor.clearPlot(overworld, kind, name, dims));
             boolean deleted = CarriagePartTemplateStore.delete(kind, name);
             // Sidecars — and in dev mode the bundled copies, including the src .nbt. `bundled` below
             // still reads the classpath copy, so the registry entry survives until the next build.
@@ -5714,7 +5721,8 @@ public final class EditorCommand {
             if (!stillBundled) {
                 CarriagePartRegistry.unregister(kind, name);
                 if (oldIdx >= 0) {
-                    CarriagePartEditor.restampRowAfterDeletion(overworld, kind, oldIdx, oldCount, dims);
+                    CarriageStampGuard.run(() ->
+                        CarriagePartEditor.restampRowAfterDeletion(overworld, kind, oldIdx, oldCount, dims));
                 }
             }
             final String msg = (deleted

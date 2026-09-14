@@ -13,8 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Keeps observers quiet while Dungeon Train's own systems are writing blocks — a template being
  * stamped into an editor plot, a carriage being spawned onto the train and lifted into its Sable
  * sub-level, the contents / parts / variant passes that fill it in afterwards, and the loaders that
- * restore a saved carriage. Only a player or a gameplay cause (a block broken or placed, a piston,
- * a door) should pulse an observer; the mod's construction scaffolding is not a gameplay event.
+ * restore a saved carriage — and the editor's own display rewrites: the 1 Hz variant preview cycle,
+ * a row click in the variant menu, the mirrored-cell stamp, and a plot reset / delete-and-restamp.
+ * Only a player or a gameplay cause (a block broken or placed, a piston, a door) should pulse an
+ * observer; the mod's construction scaffolding is not a gameplay event.
  *
  * <p><b>Why.</b> Vanilla fires an observer from {@code ObserverBlock.updateShape}, which every
  * neighbour-shape cascade reaches: {@code Level.setBlock} runs one for any write without
