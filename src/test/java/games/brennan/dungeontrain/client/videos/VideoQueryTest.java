@@ -167,13 +167,35 @@ class VideoQueryTest {
         List<VideoEntry> all = List.of(A, B, C, marker(9, "livenow", "2026-09-12", true), marker(7, "droneleg", "2026-08-21"));
         assertEquals(List.of("s:livenow", "v2", "v1", "s:droneleg", "v3"),
                 rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.DEFAULT)),
-                "Default: live → ★ → views → recent");
+                "Default: live, then newest (B) / top ★ is B so next pick A / next newest droneleg / next pick C");
         assertEquals(List.of("s:livenow", "v2", "v1", "s:droneleg", "v3"),
                 rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.RECENT)),
                 "Recent: live first, then newest day (B 09-05, A 09-01, droneleg 08-21, C undated)");
         assertEquals(List.of("v1", "v2", "s:livenow", "s:droneleg", "v3"),
                 rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.VIEWS)),
                 "Views: a live streamer is still view-less");
+    }
+
+    @Test
+    void defaultAlternatesNewestWithDevPicksThenViews() {
+        VideoEntry newest = v(10, YOUTUBE, "2026-09-13", 5, "n", false);
+        VideoEntry second = v(11, YOUTUBE, "2026-09-12", 50, "n", false);
+        VideoEntry favBig = v(12, YOUTUBE, "2026-08-01", 1_000, "f", true);
+        VideoEntry favSmall = v(13, YOUTUBE, "2026-07-01", 10, "f", true);
+        VideoEntry popular = v(14, YOUTUBE, "2026-06-01", 5_000, "p", false);
+        VideoEntry undated = v(15, YOUTUBE, null, 300, "u", false);
+        List<VideoEntry> all = List.of(undated, popular, favSmall, favBig, second, newest, marker(9, "livenow", "2026-09-12", true));
+        assertEquals(List.of("s:livenow", "v10", "v12", "v11", "v13", "v14", "v15"),
+                rowKeys(VideoQuery.applyRows(all, VideoQuery.Filter.ALL, VideoQuery.Sort.DEFAULT)),
+                "live first; then newest / ★ (by views) / next newest / next ★ / then the recent side skips both placed ★ "
+                        + "to the next newest, and the picks side, ★ spent, falls through to most-viewed (undated only arrives here)");
+        // Same alternation without the streamer wrapper, and every video exactly once.
+        assertEquals(List.of(10, 12, 11, 13, 14, 15), ids(VideoQuery.apply(all, VideoQuery.Filter.ALL, VideoQuery.Sort.DEFAULT)));
+        assertEquals(List.of(10, 12, 11), ids(VideoQuery.apply(List.of(favBig, second, newest), VideoQuery.Filter.ALL, VideoQuery.Sort.DEFAULT)),
+                "one ★ only: newest / ★ / then the recent side alone");
+        assertEquals(List.of(12, 11, 10), ids(VideoQuery.apply(List.of(favBig, second, newest), VideoQuery.Filter.ALL, VideoQuery.Sort.DEV_PICKS)),
+                "Dev picks sort is unchanged: ★ then views");
+        assertEquals(List.of(), ids(VideoQuery.apply(List.of(), VideoQuery.Filter.ALL, VideoQuery.Sort.DEFAULT)));
     }
 
     @Test
