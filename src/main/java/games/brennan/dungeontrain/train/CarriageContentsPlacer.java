@@ -304,8 +304,8 @@ public final class CarriageContentsPlacer {
      */
     public static final int EDITOR_SENTINEL_PIDX = -1;
 
-    /** How many carriages ahead {@link #applyHeadSkins} warms the death-skin pool for. */
-    private static final int PREFETCH_CARRIAGES_AHEAD = 2;
+    /** How many carriage groups ahead {@link #applyHeadSkins} warms the death-skin pool for. */
+    private static final int PREFETCH_GROUPS_AHEAD = 1;
 
     /**
      * Train-spawn helper — stamp the contents BLOCKS at {@code carriageOrigin}
@@ -729,7 +729,7 @@ public final class CarriageContentsPlacer {
 
     /**
      * Dress every generated {@code player_head} in this carriage with the skin of a player who died
-     * at this same carriage index (see {@link DeathHeadSkins}).
+     * in this same carriage group (see {@link DeathHeadSkins}).
      *
      * <p>Heads reach a carriage as ordinary weighted decoration in the contents variant tables —
      * {@code campire}, {@code trimming}, {@code cake} and friends all offer one — and until this pass
@@ -751,11 +751,15 @@ public final class CarriageContentsPlacer {
      */
     private static void applyHeadSkins(ServerLevel level, BlockPos origin, Vec3i size,
                                        long seed, int carriageIndex, PortalCorridorMask mask, Flip flip) {
-        // Warm the pools for the carriages just ahead of this one. The fetch is off-thread and a miss
+        // Pools are keyed per carriage GROUP (the granularity deaths are recorded at — see
+        // DeathHeadSkins.poolIndexFor), so the group size is part of every lookup here.
+        int groupSize = games.brennan.dungeontrain.world.DungeonTrainWorldData.get(level)
+            .getGenerationConfig().groupSize();
+        // Warm the pools for the groups just ahead of this one. The fetch is off-thread and a miss
         // costs nothing but a fallback skin, so the point is only that a run walking up the train
-        // finds each index already resolved by the time it is generated.
-        for (int ahead = 1; ahead <= PREFETCH_CARRIAGES_AHEAD; ahead++) {
-            DeathHeadSkins.prefetch(carriageIndex + ahead);
+        // finds each group already resolved by the time it is generated.
+        for (int ahead = 1; ahead <= PREFETCH_GROUPS_AHEAD; ahead++) {
+            DeathHeadSkins.prefetch(carriageIndex + ahead * groupSize, groupSize);
         }
         for (int x = 0; x < size.getX(); x++) {
             for (int y = 0; y < size.getY(); y++) {
@@ -771,7 +775,7 @@ public final class CarriageContentsPlacer {
                     if (!(level.getBlockEntity(worldPos)
                             instanceof net.minecraft.world.level.block.entity.SkullBlockEntity skull)) continue;
                     if (skull.getOwnerProfile() != null) continue; // authored face wins
-                    DeathHeadSkins.pick(carriageIndex, seed, authored).ifPresent(profile -> {
+                    DeathHeadSkins.pick(carriageIndex, groupSize, seed, authored).ifPresent(profile -> {
                         skull.setOwner(profile);
                         skull.setChanged();
                     });

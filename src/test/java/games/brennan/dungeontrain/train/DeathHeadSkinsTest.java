@@ -14,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Unit tests for {@link DeathHeadSkins#mix} — the determinism the whole feature rests on: a carriage
  * regenerated after a cull must dress its heads exactly as it did the first time, and two heads in
- * the same carriage must not all end up wearing one face.
+ * the same carriage must not all end up wearing one face — and for {@link DeathHeadSkins#poolIndexFor},
+ * the carriage → group-anchor mapping that decides which relay pool a head draws from.
  *
  * <p>{@code pick} itself is left to the in-game Gate 2 check: it reads the config and PlayerMob's
  * skin registry, neither of which exists without a Forge bootstrap this source set avoids.</p>
@@ -52,6 +53,39 @@ final class DeathHeadSkinsTest {
             picked.add((int) Math.floorMod(DeathHeadSkins.mix(SEED, 2, new BlockPos(x, 1, 0)), 4));
         }
         assertTrue(picked.size() >= 3, "expected varied skins across cells, got " + picked);
+    }
+
+    @Test
+    @DisplayName("every carriage in a group resolves to the group's anchor pool")
+    void poolIndexFor_snapsToGroupAnchor() {
+        // Deaths are recorded at the group anchor the boarding scan reports, so the relay has pools
+        // at 0, 3, 6, … — carriage 4 must look in pool 3, not ask for an index nobody died at.
+        assertEquals(0, DeathHeadSkins.poolIndexFor(0, 3));
+        assertEquals(0, DeathHeadSkins.poolIndexFor(1, 3));
+        assertEquals(0, DeathHeadSkins.poolIndexFor(2, 3));
+        assertEquals(3, DeathHeadSkins.poolIndexFor(3, 3));
+        assertEquals(3, DeathHeadSkins.poolIndexFor(4, 3));
+        assertEquals(3, DeathHeadSkins.poolIndexFor(5, 3));
+        assertEquals(6, DeathHeadSkins.poolIndexFor(6, 3));
+        assertEquals(12, DeathHeadSkins.poolIndexFor(14, 4));
+    }
+
+    @Test
+    @DisplayName("backward carriages share the pool of their forward twin")
+    void poolIndexFor_isAbsolute() {
+        // A death's carriage is an absolute count of carriages traversed, so a backward run's
+        // death at -4 is filed under 3 — exactly where the heads at -4 should look.
+        assertEquals(3, DeathHeadSkins.poolIndexFor(-4, 3));
+        assertEquals(0, DeathHeadSkins.poolIndexFor(-2, 3));
+        assertEquals(DeathHeadSkins.poolIndexFor(7, 3), DeathHeadSkins.poolIndexFor(-7, 3));
+    }
+
+    @Test
+    @DisplayName("a group size of one is the identity, and a bad group size is treated as one")
+    void poolIndexFor_degenerateGroupSizes() {
+        assertEquals(5, DeathHeadSkins.poolIndexFor(5, 1));
+        assertEquals(5, DeathHeadSkins.poolIndexFor(5, 0));
+        assertEquals(5, DeathHeadSkins.poolIndexFor(5, -3));
     }
 
     @Test
