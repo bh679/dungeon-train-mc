@@ -1394,7 +1394,8 @@ public final class ContainerContentsRoller {
      *
      * <p>Simpler than {@link #bakeLeaderboardPlaceholder} in the one way that matters: nothing has to
      * be fetched, so this always produces a real, readable, signed book and never returns empty. The
-     * seed fixes the note's WORDING — its opener and its closing remark — here and for good.</p>
+     * seed fixes the note's opener here and for good; the closing remark is drawn by the same seed,
+     * but from the pool the eventual subject's tone allows, so it settles at the first refresh.</p>
      *
      * <p>What a container cannot know is the READER, and the number is about them. So the book leaves
      * here with no stat line at all — an opener and a follow-up, which is a terse but honest scrap —

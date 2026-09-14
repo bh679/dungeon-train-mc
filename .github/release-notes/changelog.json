@@ -16657,6 +16657,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "faulthurst-toned-follow-ups",
+      "version": "0.886.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "books",
+        "balance"
+      ],
+      "title": "Faulthurst has stronger opinions",
+      "summary": "A Note From Faulthurst has more to say, and means it. He greets you in new ways, asks harder questions, and isn't shy about telling you what he thinks of how you've been travelling.",
+      "highlights": [
+        "Many new openers and closing lines, in every language.",
+        "He notices how you play \u2014 and says so."
+      ],
+      "pr": 1417,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -45,7 +45,9 @@ class RunStatBookFactoryTest {
     }
 
     private static String render(long seed, RunStatSubject subject, long value, String name) {
-        List<Component> pages = RunStatBookFactory.pages(seed, subject, "en_us", value, name);
+        RunStatSubject.Reading reading = subject == null ? null
+            : new RunStatSubject.Reading(value, subject.tone(), false);
+        List<Component> pages = RunStatBookFactory.pages(seed, subject, reading, "en_us", name);
         assertEquals(1, pages.size(), "a stat book is one page");
         return pages.get(0).getString();
     }
@@ -127,11 +129,92 @@ class RunStatBookFactoryTest {
     }
 
     @Test
-    @DisplayName("Every follow-up is reachable")
+    @DisplayName("Every follow-up is reachable from some tone, and each pool covers its tones")
     void everyFollowUpIsReachable() {
+        Set<String> afterPlain = tailsSeen(RunStatSubject.Tone.PLAIN);
+        Set<String> afterKind = tailsSeen(RunStatSubject.Tone.KIND);
+        Set<String> afterGrim = tailsSeen(RunStatSubject.Tone.GRIM);
+        Set<String> beforeReader = tailsSeen(null);                  // still in the chest
+
+        assertEquals(afterPlain, afterKind, "kind and plain stats share one pool");
+        assertEquals(afterPlain, beforeReader, "a book with no subject yet is treated as plain");
+
+        Set<String> all = new HashSet<>(afterPlain);
+        all.addAll(afterGrim);
+        assertEquals(RunStatBookFactory.TAIL_COUNT, all.size(), "unreachable follow-ups; saw " + all);
+
+        for (int i = 0; i < RunStatBookFactory.TAIL_COUNT; i++) {
+            String key = RunStatSubject.KEY_ROOT + "tail." + i;
+            RunStatBookFactory.TailTone tone = RunStatBookFactory.TAIL_TONES[i];
+            assertEquals(tone != RunStatBookFactory.TailTone.NEGATIVE, afterKind.contains(key),
+                key + " (" + tone + ") after a kind stat");
+            assertEquals(tone != RunStatBookFactory.TailTone.POSITIVE, afterGrim.contains(key),
+                key + " (" + tone + ") after a grim stat");
+        }
+    }
+
+    @Test
+    @DisplayName("He never congratulates a grim reading, and never scolds a kind one")
+    void toneNeverContradictsTheReading() {
+        for (long seed = 0; seed < 3000; seed++) {
+            RunStatBookFactory.TailTone grim = toneOf(RunStatBookFactory.tail(seed, RunStatSubject.Tone.GRIM));
+            assertTrue(grim != RunStatBookFactory.TailTone.POSITIVE, "seed " + seed + " praised a grim reading");
+            RunStatBookFactory.TailTone kind = toneOf(RunStatBookFactory.tail(seed, RunStatSubject.Tone.KIND));
+            assertTrue(kind != RunStatBookFactory.TailTone.NEGATIVE, "seed " + seed + " scolded a kind reading");
+        }
+    }
+
+    @Test
+    @DisplayName("The follow-up is fixed by the seed once the tone is")
+    void followUpIsStableForATone() {
+        for (long seed = 0; seed < 200; seed++) {
+            assertEquals(keyOf(RunStatBookFactory.tail(seed, RunStatSubject.Tone.PLAIN)),
+                         keyOf(RunStatBookFactory.tail(seed, RunStatSubject.Tone.PLAIN)));
+            // Same pool, same pick: kind and plain share one, so the line never moves between them.
+            assertEquals(keyOf(RunStatBookFactory.tail(seed, RunStatSubject.Tone.PLAIN)),
+                         keyOf(RunStatBookFactory.tail(seed, RunStatSubject.Tone.KIND)));
+        }
+    }
+
+    @Test
+    @DisplayName("A page about a run's kills is judged by the run, not the subject")
+    void pageToneFollowsTheRun() {
+        PlayerRunState quiet = new PlayerRunState();
+        quiet.advanceTravelled(100);
+        for (int i = 0; i < 10; i++) quiet.incrementMobKills();   // 10 per 100: within budget
+        PlayerRunState bloody = new PlayerRunState();
+        bloody.advanceTravelled(100);
+        for (int i = 0; i < 60; i++) bloody.incrementMobKills();  // 60 per 100: over
+
+        for (long seed = 0; seed < 500; seed++) {
+            String quietTail = lastLine(seed, RunStatSubject.MOB_KILLS, quiet);
+            String bloodyTail = lastLine(seed, RunStatSubject.MOB_KILLS, bloody);
+            assertTrue(toneOfKey(quietTail) != RunStatBookFactory.TailTone.NEGATIVE,
+                "seed " + seed + " scolded a modest kill count");
+            assertTrue(toneOfKey(bloodyTail) != RunStatBookFactory.TailTone.POSITIVE,
+                "seed " + seed + " praised a bloodbath");
+        }
+    }
+
+    private static String lastLine(long seed, RunStatSubject subject, PlayerRunState run) {
+        List<Component> pages = RunStatBookFactory.pages(seed, subject, subject.read(run), "en_us", READER);
+        String[] parts = pages.get(0).getString().split("\n\n");
+        return parts[parts.length - 1];
+    }
+
+    private static Set<String> tailsSeen(RunStatSubject.Tone tone) {
         Set<String> seen = new HashSet<>();
-        for (long seed = 0; seed < 6000; seed++) seen.add(RunStatBookFactory.tail(seed).getString());
-        assertEquals(RunStatBookFactory.TAIL_COUNT, seen.size(), "unreachable follow-ups: " + seen);
+        for (long seed = 0; seed < 6000; seed++) seen.add(RunStatBookFactory.tail(seed, tone).getString());
+        return seen;
+    }
+
+    private static RunStatBookFactory.TailTone toneOf(Component tail) {
+        return toneOfKey(keyOf(tail));
+    }
+
+    private static RunStatBookFactory.TailTone toneOfKey(String key) {
+        int index = Integer.parseInt(key.substring(key.lastIndexOf('.') + 1));
+        return RunStatBookFactory.TAIL_TONES[index];
     }
 
     @Test
