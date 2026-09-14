@@ -134,6 +134,78 @@
       ]
     }
   },
+  "book.dungeontrain.statbook.open.7": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.8": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.9": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.10": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.11": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.12": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.13": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.14": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.stat.backwards.one": {
     "1": {
       "label": "carriages the reader has walked back through this run",
@@ -278,6 +350,24 @@
       ]
     }
   },
+  "book.dungeontrain.statbook.stat.echoes.none.one": {
+    "1": {
+      "label": "carriages the reader has come without putting down an echo",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.echoes.none.other": {
+    "1": {
+      "label": "carriages the reader has come without putting down an echo",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.stat.encounters.one": {
     "1": {
       "label": "passengers the reader has come near this run",
@@ -350,6 +440,24 @@
       ]
     }
   },
+  "book.dungeontrain.statbook.stat.mob_kills.none.one": {
+    "1": {
+      "label": "carriages the reader has come without killing anything",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.mob_kills.none.other": {
+    "1": {
+      "label": "carriages the reader has come without killing anything",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.stat.no_chest.one": {
     "1": {
       "label": "the most carriages the reader has passed without opening anything",
@@ -401,6 +509,24 @@
       "examples": [
         "1",
         "17"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.player_kills.none.one": {
+    "1": {
+      "label": "carriages the reader has come without killing a passenger",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.player_kills.none.other": {
+    "1": {
+      "label": "carriages the reader has come without killing a passenger",
+      "examples": [
+        "4",
+        "40"
       ]
     }
   },

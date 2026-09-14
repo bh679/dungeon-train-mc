@@ -37,37 +37,40 @@ import java.util.function.ToLongFunction;
  */
 public enum RunStatSubject {
 
-    // id              key base         format           floor  extractor
+    // id              key base         format           floor  tone   extractor
     /** Net carriages travelled this life. Absolute: going backwards is still getting somewhere. */
-    CARRIAGE("carriage", Format.PLAIN, 1, s -> Math.abs(s.travelledCarriageIndex()), "carriages"),
+    CARRIAGE("carriage", Format.PLAIN, 1, Tone.PLAIN, s -> Math.abs(s.travelledCarriageIndex()), "carriages"),
 
     /**
      * Seconds spent aboard this life — the "Longest Aboard" boards' figure, gated by
      * {@link games.brennan.dungeontrain.event.PlayerActivityTracker} so idle and paused stretches
      * do not count. The fallback subject — see {@link #eligible}.
      */
-    PLAYTIME("playtime", Format.DURATION, 60, s -> s.trainTimeTicks() / Ticks.PER_SECOND, "playtime"),
+    PLAYTIME("playtime", Format.DURATION, 60, Tone.PLAIN, s -> s.trainTimeTicks() / Ticks.PER_SECOND, "playtime"),
 
-    CHESTS("chests", Format.COUNT, 1, PlayerRunState::containersOpened, "chests"),
-    MOB_KILLS("mob_kills", Format.COUNT, 1, PlayerRunState::mobKills),
-    DISTANCE("distance", Format.COUNT, 100, s -> (long) s.distanceBlocks(), "distance"),
-    BOOKS_READ("books_read", Format.COUNT, 1, PlayerRunState::booksReadCount, "books_read"),
-    BOOKS_WRITTEN("books_written", Format.COUNT, 1, PlayerRunState::booksWrittenCount, "books_written"),
-    FRIENDS("friends", Format.COUNT, 1, PlayerRunState::befriendedCount, "friends"),
-    ENCOUNTERS("encounters", Format.COUNT, 1, PlayerRunState::encounteredCount),
-    ECHOES("echoes", Format.COUNT, 1, PlayerRunState::echoesKilled, "echoes_killed"),
-    TAMED("tamed", Format.COUNT, 1, PlayerRunState::tamedCount),
-    DAMAGE_TAKEN("damage_taken", Format.PLAIN, 10, s -> (long) s.damageTaken()),
-    PLAYER_KILLS("player_kills", Format.COUNT, 1, PlayerRunState::playerKills),
-    NO_CHEST("no_chest", Format.COUNT, 3, PlayerRunState::maxCarriagesNoChest, "carriages_no_chest"),
-    BACKWARDS("backwards", Format.COUNT, 1, PlayerRunState::cartsBackwardSinceDeath),
-    PACIFIST("pacifist", Format.COUNT, 3, PlayerRunState::pacifistCarriages, "pacifist_carriages"),
+    CHESTS("chests", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::containersOpened, "chests"),
+    /** Things killed. Judged by rate — see {@link KillBudget}: more than 25 per 100 carriages is grim. */
+    MOB_KILLS("mob_kills", Format.COUNT, 1, Tone.GRIM, PlayerRunState::mobKills, null, new KillBudget(25, 100, false)),
+    DISTANCE("distance", Format.COUNT, 100, Tone.PLAIN, s -> (long) s.distanceBlocks(), "distance"),
+    BOOKS_READ("books_read", Format.COUNT, 1, Tone.KIND, PlayerRunState::booksReadCount, "books_read"),
+    BOOKS_WRITTEN("books_written", Format.COUNT, 1, Tone.KIND, PlayerRunState::booksWrittenCount, "books_written"),
+    FRIENDS("friends", Format.COUNT, 1, Tone.KIND, PlayerRunState::befriendedCount, "friends"),
+    ENCOUNTERS("encounters", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::encounteredCount),
+    /** Echoes put down. More than 1 per 500 carriages is grim; none, once someone has been met, is kind. */
+    ECHOES("echoes", Format.COUNT, 1, Tone.GRIM, PlayerRunState::echoesKilled, "echoes_killed", new KillBudget(1, 500, true)),
+    TAMED("tamed", Format.COUNT, 1, Tone.KIND, PlayerRunState::tamedCount),
+    DAMAGE_TAKEN("damage_taken", Format.PLAIN, 10, Tone.PLAIN, s -> (long) s.damageTaken()),
+    /** Passengers killed. More than 1 per 250 carriages is grim; none, once someone has been met, is kind. */
+    PLAYER_KILLS("player_kills", Format.COUNT, 1, Tone.GRIM, PlayerRunState::playerKills, null, new KillBudget(1, 250, true)),
+    NO_CHEST("no_chest", Format.COUNT, 3, Tone.PLAIN, PlayerRunState::maxCarriagesNoChest, "carriages_no_chest"),
+    BACKWARDS("backwards", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::cartsBackwardSinceDeath),
+    PACIFIST("pacifist", Format.COUNT, 3, Tone.KIND, PlayerRunState::pacifistCarriages, "pacifist_carriages"),
 
     // The remaining leaderboard subjects that have a per-run twin at all. Every RUN-scoped board
     // above already had one; these two are boards kept as lifetime tallies whose one-life half is
     // nonetheless a real, countable thing — so Faulthurst can remark on it.
-    DEATH_NOTES("death_notes", Format.COUNT, 1, PlayerRunState::deathNotesWritten, "deathnotes_written"),
-    LOVE_NOTES("love_notes", Format.COUNT, 1, PlayerRunState::loveNotesWritten, "lovenotes_written");
+    DEATH_NOTES("death_notes", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::deathNotesWritten, "deathnotes_written"),
+    LOVE_NOTES("love_notes", Format.COUNT, 1, Tone.KIND, PlayerRunState::loveNotesWritten, "lovenotes_written");
 
     /**
      * Vanilla server tick rate — {@link #PLAYTIME} reports seconds, not ticks.
@@ -100,23 +103,81 @@ public enum RunStatSubject {
      */
     public enum Format { COUNT, DURATION, PLAIN }
 
+    /**
+     * How the number sits with Faulthurst — which decides what he is allowed to say after it
+     * ({@code RunStatBookFactory#tailPool}).
+     *
+     * <ul>
+     *   <li>{@link #KIND} — friends made, animals tamed, nothing killed. He may approve.</li>
+     *   <li>{@link #PLAIN} — carriages, chests, distance; or a kill count kept within its
+     *       {@link KillBudget}. He may approve or wonder.</li>
+     *   <li>{@link #GRIM} — a kill count over budget. He may wonder or disapprove; he never says
+     *       "Keep it up."</li>
+     * </ul>
+     *
+     * <p>Most subjects have one tone for life. The kill subjects are read against the run — see
+     * {@link #read} — because killing three slimes in a hundred carriages and killing three hundred
+     * are not the same remark.</p>
+     */
+    public enum Tone { KIND, PLAIN, GRIM }
+
+    /**
+     * What a kill counter is judged against: at most {@code limit} kills per {@code per} carriages
+     * is PLAIN; more is GRIM; none at all — once the run is {@link #ZERO_FLOOR} carriages in, and
+     * (when {@code needsEncounter}) once at least one PlayerMob has actually been met — is KIND, and
+     * said with the subject's {@code .none} line, whose number is the carriage count.
+     */
+    public record KillBudget(long limit, long per, boolean needsEncounter) {
+        /** Carriages a run must have covered before "none" is worth a sentence. */
+        public static final long ZERO_FLOOR = 3;
+
+        boolean noneIsWorthSaying(PlayerRunState run) {
+            return carriages(run) >= ZERO_FLOOR && (!needsEncounter || run.encounteredCount() > 0);
+        }
+
+        /** {@code kills / carriages <= limit / per}, kept in integers. */
+        boolean within(long kills, PlayerRunState run) {
+            return kills * per <= limit * Math.max(1L, carriages(run));
+        }
+
+        static long carriages(PlayerRunState run) {
+            return Math.abs(run.travelledCarriageIndex());
+        }
+    }
+
+    /**
+     * One subject read against one run: the number the line shows, the tone the run has earned, and
+     * whether this is the {@code .none} line (in which case {@code number} is carriages, not kills).
+     */
+    public record Reading(long number, Tone tone, boolean none) {}
+
     private final String id;
     private final Format format;
     private final long floor;
+    private final Tone tone;
     private final ToLongFunction<PlayerRunState> extractor;
     private final String boardBase;
+    private final KillBudget budget;
 
-    RunStatSubject(String id, Format format, long floor, ToLongFunction<PlayerRunState> extractor) {
-        this(id, format, floor, extractor, null);
+    RunStatSubject(String id, Format format, long floor, Tone tone,
+                   ToLongFunction<PlayerRunState> extractor) {
+        this(id, format, floor, tone, extractor, null, null);
     }
 
-    RunStatSubject(String id, Format format, long floor, ToLongFunction<PlayerRunState> extractor,
-                   String boardBase) {
+    RunStatSubject(String id, Format format, long floor, Tone tone,
+                   ToLongFunction<PlayerRunState> extractor, String boardBase) {
+        this(id, format, floor, tone, extractor, boardBase, null);
+    }
+
+    RunStatSubject(String id, Format format, long floor, Tone tone,
+                   ToLongFunction<PlayerRunState> extractor, String boardBase, KillBudget budget) {
         this.id = id;
         this.format = format;
         this.floor = floor;
+        this.tone = tone;
         this.extractor = extractor;
         this.boardBase = boardBase;
+        this.budget = budget;
     }
 
     /** Stable wire id — stamped into {@link RunStatBookTag} and used to build the lang key. */
@@ -138,6 +199,29 @@ public enum RunStatSubject {
 
     public Format format() { return format; }
 
+    /**
+     * The tone this subject has regardless of the run — the whole story for most subjects, and the
+     * worst case for the kill subjects, which {@link #read} may soften.
+     */
+    public Tone tone() { return tone; }
+
+    /** The rate a kill counter is judged against, or {@code null} for subjects that are not kills. */
+    public KillBudget budget() { return budget; }
+
+    /**
+     * This subject as {@code run} has earned it.
+     *
+     * <p>For every subject but the kills this is {@code (value, tone(), false)}. A kill subject is
+     * KIND with its {@code .none} line while the count is zero and there has been room for it not to
+     * be, PLAIN while the count stays within {@link #budget}, and GRIM beyond it.</p>
+     */
+    public Reading read(PlayerRunState run) {
+        long value = value(run);
+        if (budget == null || run == null) return new Reading(value, tone, false);
+        if (value == 0) return new Reading(KillBudget.carriages(run), Tone.KIND, true);
+        return new Reading(value, budget.within(value, run) ? Tone.PLAIN : Tone.GRIM, false);
+    }
+
     /** The value below which this subject is not worth a sentence. */
     public long floor() { return floor; }
 
@@ -146,9 +230,13 @@ public enum RunStatSubject {
         return run == null ? 0L : Math.max(0L, extractor.applyAsLong(run));
     }
 
-    /** Whether {@code run} has done enough of this for Faulthurst to remark on it. */
+    /**
+     * Whether {@code run} has done enough of this for Faulthurst to remark on it — or, for a kill
+     * subject, has pointedly done none of it over enough carriages for that to be the remark.
+     */
     public boolean clearsFloor(PlayerRunState run) {
-        return value(run) >= floor;
+        if (value(run) >= floor) return true;
+        return budget != null && run != null && value(run) == 0 && budget.noneIsWorthSaying(run);
     }
 
     /** Base translation key; {@link Format#COUNT} appends a CLDR category to it. */
@@ -162,12 +250,24 @@ public enum RunStatSubject {
      * preformatted string, so there is nothing to decline and the key is used flat.</p>
      */
     public MutableComponent line(String localeCode, long value) {
+        return line(localeCode, value, false);
+    }
+
+    /**
+     * As {@link #line(String, long)}, or — with {@code none} — the subject's zero line, which counts
+     * carriages rather than kills and so is always a {@link Format#COUNT} clause off {@link #noneKey}.
+     */
+    public MutableComponent line(String localeCode, long value, boolean none) {
+        if (none) return PluralRules.clause(localeCode, noneKey(), value);
         return switch (format) {
             case COUNT -> PluralRules.clause(localeCode, key(), value);
             case DURATION -> Component.translatable(key(), LeaderboardCategory.duration(value));
             case PLAIN -> Component.translatable(key(), Long.toString(value));
         };
     }
+
+    /** The line for a kill subject whose count is still zero; only kill subjects have one. */
+    public String noneKey() { return key() + ".none"; }
 
     /**
      * The value as it appears in the sentence — the string {@link RunStatBookTag} remembers so a
