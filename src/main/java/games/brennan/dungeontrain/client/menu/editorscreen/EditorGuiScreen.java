@@ -322,7 +322,7 @@ public final class EditorGuiScreen extends Screen {
                 creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null,
                 previewSeq, mx, my);
         } else if (onStages()) {
-            stageDetail.layout(layout, EditorScreenState.effectiveStage(index), index, ctx.selection());
+            stageDetail.layout(layout, EditorScreenState.effectiveStage(index), index);
             stageDetail.render(g, this.font, theme, orbit.yaw(), mx, my);
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
