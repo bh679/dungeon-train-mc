@@ -241,9 +241,10 @@ public final class VideoList extends AbstractWidget {
 
     /**
      * A pulsing green dot: a {@code size}-px square with its corners knocked off, alpha breathing on
-     * a ~1.6 s cycle. Shared with the submit screen's "Currently live" line.
+     * a ~1.6 s cycle. Shared with the submit screen's "Currently live" line and the menu's
+     * Videos icon badge ({@code VideosIconButton}).
      */
-    static void drawLiveDot(GuiGraphics g, int x, int y, int size) {
+    public static void drawLiveDot(GuiGraphics g, int x, int y, int size) {
         double phase = (System.currentTimeMillis() % 1600L) / 1600.0;
         int alpha = 0x90 + (int) Math.round(0x6F * (0.5 + 0.5 * Math.sin(phase * Math.PI * 2)));
         int colour = (LIVE_COLOUR & 0x00FFFFFF) | (alpha << 24);
