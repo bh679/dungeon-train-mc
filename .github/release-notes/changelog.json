@@ -16593,9 +16593,9 @@
         "Three times fewer relay requests: one per carriage group instead of one per carriage"
       ],
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.885.0",
+      "released_at": "2026-09-14T12:36:22Z"
     },
     {
       "id": "advancement-relay-flags",
