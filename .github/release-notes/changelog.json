@@ -16430,6 +16430,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "videos-default-order-live-dot-age",
+      "version": "0.878.0",
+      "type": "feat",
+      "tags": [
+        "community",
+        "ui"
+      ],
+      "title": "Videos page: fresher default order, a live dot on the menu icon, and 'N days ago' dates",
+      "summary": "The Videos page now opens with new uploads and popular picks taking turns \u2014 live streamers first, then the newest video, then the top dev pick, and so on \u2014 instead of the same most-viewed list every time. The Videos icon on the main menu (and pause menu) shows a pulsing green dot whenever a streamer is live with the game right now, and each row says how long ago it was published instead of a bare date.",
+      "highlights": [
+        "Default sort alternates newest with dev picks (then most-viewed once the picks run out); live streamers still lead",
+        "Green live dot on the Videos icon while someone is streaming Dungeon Train",
+        "Rows read Today / 3 days ago / 2 weeks ago / 5 months ago; the date once a video is over a year old",
+        "Views, Recent and Dev picks sorts are unchanged"
+      ],
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

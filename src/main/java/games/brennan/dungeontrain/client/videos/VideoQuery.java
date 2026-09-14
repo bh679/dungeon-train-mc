@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.client.videos;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -83,7 +85,11 @@ public final class VideoQuery {
 
     /** How to order. Each carries its lang-key suffix under {@code gui.dungeontrain.videos.sort.}. */
     public enum Sort {
-        /** The page's opening order: live streams, then ★ picks, then by views, then newest. */
+        /**
+         * The page's opening order: live streams first, then the rest alternate between two
+         * rankings — odd rows take the newest video not yet shown, even rows take the top ★ pick
+         * (then most-viewed once the picks run out). See {@link #interleaveDefault}.
+         */
         DEFAULT("default"),
         /** Most viewed first; rows with no count sink to the bottom, newest of those first. */
         VIEWS("views"),
@@ -146,11 +152,12 @@ public final class VideoQuery {
     /** Filter then sort the videos only — a new list; {@code entries} is untouched. */
     public static List<VideoEntry> apply(List<VideoEntry> entries, Filter filter, Sort sort) {
         Filter f = filter == null ? Filter.ALL : filter;
-        List<VideoEntry> out = new ArrayList<>();
+        List<Row> rows = new ArrayList<>();
         for (VideoEntry v : entries) {
-            if (f.matches(v)) out.add(v);
+            if (f.matches(v)) rows.add(new VideoRow(v));
         }
-        out.sort(Comparator.comparing(VideoRow::new, comparator(sort == null ? Sort.DEFAULT : sort)));
+        List<VideoEntry> out = new ArrayList<>();
+        for (Row r : order(rows, sort)) out.add(((VideoRow) r).video());
         return List.copyOf(out);
     }
 
@@ -167,9 +174,64 @@ public final class VideoQuery {
         for (TwitchStreamers.Streamer s : TwitchStreamers.group(entries)) {
             if (f.matches(s)) out.add(new StreamerRow(s));
         }
-        out.sort(comparator(sort == null ? Sort.DEFAULT : sort));
+        return order(out, sort);
+    }
+
+    /** The rows in {@code sort} order — a new list; {@code rows} is untouched. */
+    private static List<Row> order(List<Row> rows, Sort sort) {
+        Sort s = sort == null ? Sort.DEFAULT : sort;
+        if (s == Sort.DEFAULT) return interleaveDefault(rows);
+        List<Row> out = new ArrayList<>(rows);
+        out.sort(comparator(s));
         return List.copyOf(out);
     }
+
+    /**
+     * The Default order. Live rows lead (★ → views → newest among themselves). The rest fill the
+     * list from two rankings in turn: the RECENT ranking (newest day, undated never wins a turn)
+     * supplies the 1st, 3rd, 5th… rows and the PICKS ranking (★ first, then views) the 2nd, 4th,
+     * 6th…, each turn taking the highest row that ranking has not already seen placed. When one
+     * ranking is spent the other supplies every remaining row, so nothing is shown twice or dropped.
+     */
+    static List<Row> interleaveDefault(List<Row> rows) {
+        List<Row> live = new ArrayList<>();
+        List<Row> rest = new ArrayList<>();
+        for (Row r : rows) (r.sortLive() ? live : rest).add(r);
+        live.sort(BY_FAV.thenComparing(BY_VIEWS).thenComparing(BY_DAY).thenComparing(BY_ID));
+
+        List<Row> recent = new ArrayList<>(rest);
+        recent.sort(BY_DAY.thenComparing(BY_ID));
+        List<Row> picks = new ArrayList<>(rest);
+        picks.sort(BY_FAV.thenComparing(BY_VIEWS).thenComparing(BY_DAY).thenComparing(BY_ID));
+
+        List<Row> out = new ArrayList<>(live);
+        Set<Row> placed = Collections.newSetFromMap(new IdentityHashMap<>());
+        int ri = 0;
+        int pi = 0;
+        boolean recentTurn = true;
+        while (out.size() < rows.size()) {
+            List<Row> from = recentTurn ? recent : picks;
+            int i = recentTurn ? ri : pi;
+            while (i < from.size() && placed.contains(from.get(i))) i++;
+            if (i < from.size()) {
+                out.add(from.get(i));
+                placed.add(from.get(i));
+                i++;
+            }
+            if (recentTurn) ri = i; else pi = i;
+            // A spent ranking passes every later turn to the other one.
+            recentTurn = (ri < recent.size()) == (pi < picks.size()) ? !recentTurn : ri < recent.size();
+        }
+        return List.copyOf(out);
+    }
+
+    private static final Comparator<Row> BY_VIEWS = Comparator.comparingLong(Row::sortViews).reversed();
+    // Nulls sort last: an undated row cannot claim "newest".
+    private static final Comparator<Row> BY_DAY = Comparator.comparing(Row::sortDay,
+            Comparator.nullsLast(Comparator.<String>reverseOrder()));
+    private static final Comparator<Row> BY_ID = Comparator.comparingInt(Row::sortId).reversed();
+    private static final Comparator<Row> BY_LIVE = Comparator.comparing(Row::sortLive, Comparator.reverseOrder());
+    private static final Comparator<Row> BY_FAV = Comparator.comparing(Row::sortFav, Comparator.reverseOrder());
 
     /**
      * Distinct uploader names across every row, in case-insensitive alphabetical order — what the
@@ -243,19 +305,13 @@ public final class VideoQuery {
         return s.endsWith(".0") ? s.substring(0, s.length() - 2) : s;
     }
 
+    /** The single-key orders; {@link Sort#DEFAULT} is not one — see {@link #interleaveDefault}. */
     private static Comparator<Row> comparator(Sort sort) {
-        Comparator<Row> byViews = Comparator.comparingLong(Row::sortViews).reversed();
-        // Nulls sort last: an undated row cannot claim "newest".
-        Comparator<Row> byDay = Comparator.comparing(Row::sortDay,
-                Comparator.nullsLast(Comparator.<String>reverseOrder()));
-        Comparator<Row> byId = Comparator.comparingInt(Row::sortId).reversed();
-        Comparator<Row> byLive = Comparator.comparing(Row::sortLive, Comparator.reverseOrder());
-        Comparator<Row> byFav = Comparator.comparing(Row::sortFav, Comparator.reverseOrder());
         return switch (sort) {
-            case DEFAULT -> byLive.thenComparing(byFav).thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
-            case VIEWS -> byViews.thenComparing(byDay).thenComparing(byId);
-            case RECENT -> byLive.thenComparing(byDay).thenComparing(byViews).thenComparing(byId);
-            case DEV_PICKS -> byFav.thenComparing(byViews).thenComparing(byDay).thenComparing(byId);
+            case VIEWS -> BY_VIEWS.thenComparing(BY_DAY).thenComparing(BY_ID);
+            case RECENT -> BY_LIVE.thenComparing(BY_DAY).thenComparing(BY_VIEWS).thenComparing(BY_ID);
+            case DEV_PICKS -> BY_FAV.thenComparing(BY_VIEWS).thenComparing(BY_DAY).thenComparing(BY_ID);
+            case DEFAULT -> throw new IllegalArgumentException("DEFAULT is interleaved, not a comparator");
         };
     }
 }

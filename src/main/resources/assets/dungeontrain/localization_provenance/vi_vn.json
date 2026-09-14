@@ -2051,6 +2051,8 @@
       "gui.dungeontrain.videos.sort.recent",
       "gui.dungeontrain.videos.sort.dev_picks",
       "gui.dungeontrain.videos.views",
+      "gui.dungeontrain.videos.today",
+      "gui.dungeontrain.videos.ago",
       "gui.dungeontrain.videos.state.loading",
       "gui.dungeontrain.videos.state.failed",
       "gui.dungeontrain.videos.state.empty",

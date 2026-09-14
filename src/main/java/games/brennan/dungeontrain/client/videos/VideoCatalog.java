@@ -8,10 +8,10 @@ import java.util.Set;
 /**
  * Session cache of the relay's curated video list — the data behind the main-menu Videos page.
  *
- * <p>Fetched <b>lazily, on first open</b> of the page rather than at title-screen init like the
- * official-links overlay: most sessions never open the page, and a list of 90 rows is not worth a
- * request they will never look at. One successful fetch lasts the session; a failure can be retried
- * from the page's Retry button.</p>
+ * <p>Fetched at <b>title-screen init</b> like the official-links overlay ({@code
+ * TitleScreenLayoutHandler}) — the menu's Videos icon shows a live dot ({@link #anyLive()}) when
+ * a streamer is on, so the catalogue has to be in hand before anyone opens the page. One
+ * anonymous relay GET a session; a failure can be retried from the page's Retry button.</p>
  *
  * <p>State is a pair of volatiles swapped whole — the list is never mutated, only replaced — so
  * the HTTP completion thread and the render thread never see a half-written catalogue.</p>
@@ -34,6 +34,14 @@ public final class VideoCatalog {
     /** The last successful fetch, or an empty list. Immutable. */
     public static List<VideoEntry> entries() {
         return entries;
+    }
+
+    /** Is any streamer relay-verified live right now? The menu icon's green dot. */
+    public static boolean anyLive() {
+        for (VideoEntry v : entries) {
+            if (v.live()) return true;
+        }
+        return false;
     }
 
     /** Start the fetch unless one has already succeeded or is in flight. */
