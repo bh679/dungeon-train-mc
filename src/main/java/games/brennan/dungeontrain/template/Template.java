@@ -377,7 +377,11 @@ public sealed interface Template
             return CarriageContentsEditor.plotOrigin(contents, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
-            return new Vec3i(dims.length(), dims.height(), dims.width());
+            // The plot's own box, not the carriage's: the portal contents (and its sub-variants) are
+            // authored in the corridor, which is longer. Sized as a carriage, the corridor's tail
+            // read as strays, and an erase of the plot left it standing.
+            CarriageDims box = CarriageContentsEditor.plotDims(contents, dims);
+            return new Vec3i(box.length(), box.height(), box.width());
         }
         @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
             CarriageContentsPlacer.placeAt(level, origin, contents, dims);
@@ -584,7 +588,8 @@ public sealed interface Template
             return TrackTemplateStore.getBundled(level, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return TrackEditor.plotOrigin(dims);
+            // This tile's own slot — every named tile past the default stacks along +Z.
+            return TrackEditor.plotOrigin(name, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
