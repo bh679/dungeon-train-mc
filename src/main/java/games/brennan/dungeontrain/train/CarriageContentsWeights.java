@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.template.FlipOptions;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.TemplateMeta;
 import games.brennan.dungeontrain.template.TemplateWeightCodec;
+import games.brennan.dungeontrain.template.TemplateWeightOverlay;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -43,7 +44,10 @@ import java.util.Map;
  *   <li><b>Bundled default</b> — {@code /data/dungeontrain/contents/weights.json}
  *       on the classpath. Ships with the mod jar.</li>
  *   <li><b>Per-install override</b> — {@code config/dungeontrain/user/contents/weights.json}.
- *       Per-id entries in this file replace entries from the bundled copy.</li>
+ *       Per-id entries in this file replace entries from the bundled copy. Only entries that
+ *       differ from the bundled record are ever written there — see
+ *       {@link games.brennan.dungeontrain.template.TemplateWeightOverlay} — and the file is not
+ *       read at all while the world has disabled custom content.</li>
  * </ol>
  *
  * <p>Schema: a flat JSON object mapping contents id to a non-negative integer.
@@ -73,6 +77,12 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
 
     /** Cached weights for the active server. Loaded on ServerStartingEvent, cleared on stop. */
     private static volatile CarriageContentsWeights current = EMPTY;
+
+    /**
+     * The bundled tier exactly as loaded, kept beside the merged view so {@link #writeConfig} can
+     * persist only what differs from it. See {@link TemplateWeightOverlay#diff}.
+     */
+    private static volatile Map<String, TemplateMeta> bundledCatalogue = Map.of();
 
     public CarriageContentsWeights {
         byId = Map.copyOf(byId);
@@ -148,6 +158,7 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
     public static synchronized void reload() {
         Map<String, TemplateMeta> merged = new HashMap<>();
         int bundled = loadInto(BUNDLED_RESOURCE, merged, true);
+        bundledCatalogue = Map.copyOf(merged);
         int config = loadInto(null, merged, false);
         current = new CarriageContentsWeights(merged);
         LOGGER.info("[DungeonTrain] Carriage contents weights loaded — {} entries ({} bundled, {} config overlays).",
@@ -156,6 +167,7 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
 
     public static synchronized void clear() {
         current = EMPTY;
+        bundledCatalogue = Map.of();
     }
 
     /**
@@ -335,9 +347,12 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
     private static void writeConfig(CarriageContentsWeights weights) throws IOException {
         Path file = configPath();
         Files.createDirectories(file.getParent());
+        // Only the player's own changes go to disk. Writing the whole merged view froze every
+        // bundled weight into the overlay and hid later retunes — see TemplateWeightOverlay.
+        Map<String, TemplateMeta> overlay = TemplateWeightOverlay.diff(weights.byId(), bundledCatalogue);
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             new GsonBuilder().setPrettyPrinting().create()
-                    .toJson(TemplateWeightCodec.toJson(weights.byId()), w);
+                    .toJson(TemplateWeightCodec.toJson(overlay), w);
         }
     }
 
@@ -378,6 +393,8 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
     }
 
     private static Reader openConfig() {
+        // A world that disabled custom content gets the bundled catalogue and nothing else.
+        if (!TemplateWeightOverlay.overlayReadable()) return null;
         Path file = configPath();
         if (!Files.isRegularFile(file)) return null;
         try {

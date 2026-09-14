@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.client.DevQuickWorldHandler;
 import games.brennan.dungeontrain.client.EditorAutoOpenHandler;
+import games.brennan.dungeontrain.client.menu.editorscreen.EditorScreenLang;
 import games.brennan.dungeontrain.editor.BuilderModeCategory;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorDevMode;
@@ -15,13 +16,24 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
 
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
 /**
- * The Train Builder picker: four image tiles, two per row, each opening a fresh flat world for
- * one kind of building work.
+ * The Train Builder picker: four image tiles on the left, and on the right what the picked one
+ * is — its name, its picture, a sentence or two, and a <b>Go here</b> that opens a fresh flat
+ * world for that kind of building work.
+ *
+ * <p>The same shape as the editor's Nav tab ({@code EditorNavPane}), so the front door and the
+ * in-editor switch read as one thing. Clicking a tile only picks it; nothing launches until
+ * Go here. Tiles have no hover state — only the chosen one is lit — so the cursor passing over
+ * the grid never looks like the choice moving. Geometry is {@link BuilderPickerLayout}.</p>
  *
  * <p>This is the friendly front door for both title-screen tools. The slot says <b>Train
  * Editor</b> normally and <b>Train Builder</b> while Shift is held (see
@@ -41,13 +53,23 @@ public final class TrainBuilderScreen extends Screen {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int TITLE_TOP = 20;
-    private static final int GRID_TOP_PADDING = 16;
-    private static final int BACK_BUTTON_WIDTH = 200;
-    private static final int BACK_BUTTON_HEIGHT = 20;
-    private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
+    private static final int BODY_TOP_PADDING = 16;
+    private static final int BODY_BOTTOM_MARGIN = 12;
+    /** The Nav tab's text metrics, so the two descriptions set the same. */
+    private static final int LINE_H = 10;
+    private static final int TEXT_PAD = 3;
+    private static final int DESCRIPTION = 0xFFDDDDDD;
+    private static final int PREVIEW_BACKDROP = 0xFF000000;
+    private static final int PREVIEW_OUTLINE = 0xFF000000;
+    private static final int HEADER_TEXT = 0xFFFFFF;
 
     private final Screen lastScreen;
     private final Launch launch;
+    /** Probed once per mode per screen rather than per frame; a resource reload rebuilds the screen. */
+    private final Map<BuilderMode, Boolean> artAvailable = new EnumMap<>(BuilderMode.class);
+    /** The picked tile. Survives {@link #rebuildWidgets()} — that is how a click re-lights the grid. */
+    private BuilderMode selected = BuilderMode.values()[0];
+    private BuilderPickerLayout layout;
 
     /** What a tile click does. One branch each, so a flavour can't half-apply. */
     private enum Launch {
@@ -95,28 +117,73 @@ public final class TrainBuilderScreen extends Screen {
 
     @Override
     protected void init() {
-        int backY = this.height - BACK_BUTTON_BOTTOM_MARGIN;
-        int topY = TITLE_TOP + this.font.lineHeight + GRID_TOP_PADDING;
+        int topY = TITLE_TOP + this.font.lineHeight + BODY_TOP_PADDING;
 
-        BuilderGridLayout layout = BuilderGridLayout.of(this.width, this.height, topY, backY - GRID_TOP_PADDING);
+        layout = BuilderPickerLayout.of(this.width, this.height, topY, this.height - BODY_BOTTOM_MARGIN);
 
         BuilderMode[] modes = BuilderMode.values();
-        for (int i = 0; i < modes.length; i++) {
+        List<BuilderPickerLayout.Rect> cells = layout.tiles();
+        for (int i = 0; i < modes.length && i < cells.size(); i++) {
             BuilderMode mode = modes[i];
-            this.addRenderableWidget(new BuilderTileButton(
-                    layout.xFor(i), layout.yFor(i), layout.tileWidth(), layout.tileHeight(),
-                    mode, b -> launch(mode)));
+            BuilderPickerLayout.Rect cell = cells.get(i);
+            this.addRenderableWidget(BuilderTileButton.pickerTile(
+                    cell.x(), cell.y(), cell.w(), cell.h(), mode, mode == selected, b -> select(mode)));
         }
 
-        this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> this.onClose())
-                .bounds((this.width - BACK_BUTTON_WIDTH) / 2, backY, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT)
+        BuilderPickerLayout.Rect go = layout.go();
+        this.addRenderableWidget(Button.builder(
+                        Component.translatable(EditorScreenLang.NAV_GO_HERE), b -> launch(selected))
+                .bounds(go.x(), go.y(), go.w(), go.h())
                 .build());
+
+        // Back shares Go here's row, under the tiles: the two ways out, side by side.
+        BuilderPickerLayout.Rect back = layout.back();
+        this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> this.onClose())
+                .bounds(back.x(), back.y(), back.w(), back.h())
+                .build());
+    }
+
+    /** A tile click: re-light the grid around the new choice; the detail column follows on render. */
+    private void select(BuilderMode mode) {
+        if (mode == selected) return;
+        selected = mode;
+        this.rebuildWidgets();
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(this.font, this.title, this.width / 2, TITLE_TOP, 0xFFFFFF);
+        if (layout != null) {
+            drawDetail(g);
+        }
+    }
+
+    /** The right column: name, picture, description. The Go here button is a widget and draws itself. */
+    private void drawDetail(GuiGraphics g) {
+        BuilderPickerLayout.Rect h = layout.header();
+        String name = Component.translatable(selected.labelKey()).getString();
+        g.drawString(this.font, this.font.plainSubstrByWidth(name, h.w() - 4), h.x() + 2,
+                h.y() + (h.h() - this.font.lineHeight) / 2, HEADER_TEXT, true);
+
+        BuilderPickerLayout.Rect p = layout.preview();
+        g.fill(p.x(), p.y(), p.right(), p.bottom(), PREVIEW_BACKDROP);
+        BuilderTileArt.render(g, selected, available(selected), p.x(), p.y(), p.w(), p.h(), 1.0F);
+        g.renderOutline(p.x(), p.y(), p.w(), p.h(), PREVIEW_OUTLINE);
+
+        BuilderPickerLayout.Rect d = layout.description();
+        int textW = Math.max(0, d.w() - TEXT_PAD * 2);
+        List<FormattedCharSequence> lines = this.font.split(Component.translatable(selected.descriptionKey()), textW);
+        int y = d.y() + TEXT_PAD;
+        for (FormattedCharSequence line : lines) {
+            if (y + LINE_H > d.bottom()) break;
+            g.drawString(this.font, line, d.x() + TEXT_PAD, y, DESCRIPTION, false);
+            y += LINE_H;
+        }
+    }
+
+    private boolean available(BuilderMode mode) {
+        return artAvailable.computeIfAbsent(mode, BuilderTileArt::isAvailable);
     }
 
     @Override

@@ -16387,6 +16387,49 @@
       "released": true,
       "released_in": "v0.875.0",
       "released_at": "2026-09-13T14:27:59Z"
+    },
+    {
+      "id": "retired-dimensional-carriages-stop-spawning",
+      "version": "0.876.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Retired dimensional carriages no longer sneak into your runs",
+      "summary": "A dimensional carriage the mod had taken out of rotation (weight 0) could still turn up for some players. If you had ever changed one setting on any dimensional carriage or carriage in the Train Editor, the mod saved a copy of every weight as it was that day, and that copy silently overrode every rebalance shipped since \u2014 even in normal runs where custom content was switched off. Your saved weights now hold only the things you actually changed, and a run with custom content disabled uses the shipped weights, exactly as intended.",
+      "highlights": [
+        "Runs with custom content disabled always use the mod's shipped carriage weights",
+        "Your Train Editor weight edits are kept; everything else follows the mod's updates again",
+        "Old saved weight files clean themselves up the next time you change a weight"
+      ],
+      "pr": 1404,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-editor-picker-nav-layout",
+      "version": "0.877.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Train Editor picker shows what each area is before you go",
+      "summary": "The screen behind the title's Train Editor button (and Train Builder) now works like the editor's Nav tab: the four areas are tiles on the left, and picking one shows its picture and a short description on the right. Nothing opens until you press Go here, so you can read about each area first. Back sits beside Go here.",
+      "highlights": [
+        "Pick a tile to see its picture and description; Go here opens it",
+        "Tiles no longer light up under the mouse \u2014 only the chosen one"
+      ],
+      "pr": 1405,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
