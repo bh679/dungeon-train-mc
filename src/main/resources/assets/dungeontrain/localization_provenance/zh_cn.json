@@ -65,6 +65,10 @@
       "container.dungeontrain.enderchest.profile",
       "container.dungeontrain.enderchest.separator",
       "container.dungeontrain.enderchest.free_play",
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
+      "gui.dungeontrain.enderchest.shrink",
+      "gui.dungeontrain.enderchest.shrink.tooltip",
       "gui.dungeontrain.difficulty_confirm.title",
       "gui.dungeontrain.difficulty_confirm.body",
       "gui.dungeontrain.difficulty_confirm.loss",
@@ -1369,6 +1373,8 @@
   },
   "source_changed": {
     "dungeontrain": [
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
       "effect.dungeontrain.free_play.desc.1",
       "effect.dungeontrain.free_play.desc.3",
       "chat.dungeontrain.shared_carriage.deaths.few.1",

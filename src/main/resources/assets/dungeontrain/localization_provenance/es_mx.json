@@ -9,6 +9,8 @@
   },
   "source_changed": {
     "dungeontrain": [
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
       "command.dungeontrain.report_carriage.success",
       "command.dungeontrain.report_carriage.not_shared",
       "effect.dungeontrain.free_play.desc.1",
