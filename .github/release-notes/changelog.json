@@ -16492,6 +16492,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-world-vanilla-exit-menu",
+      "version": "0.881.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Train Editor pause menu keeps Save and Quit",
+      "summary": "The Train Editor world's pause menu no longer offers Abandon This Run \u2014 there is no run to abandon there, and taking it killed the author. It now shows the normal Save and Quit to Title, with My Builds above it, and Shift still reveals Exit to Title | Quit Game.",
+      "highlights": [
+        "Train Editor: Esc menu shows Save and Quit to Title instead of the red Abandon This Run",
+        "My Builds stays above the exit; Shift still swaps in Exit to Title | Quit Game"
+      ],
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
