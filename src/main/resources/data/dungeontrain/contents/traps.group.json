@@ -26,7 +26,12 @@
     {
       "id": "mild_2",
       "weight": 1,
-      "maxLevel": 25
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "UPSIDE_DOWN",
+        "CHUNCKS"
+      ]
     },
     {
       "id": "trap_easy",

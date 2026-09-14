@@ -16636,6 +16636,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-midlibrary-floor-variants-mild2-phases",
+      "version": "0.886.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Mid-library floors vary; mild trap at any level",
+      "summary": "The mid-library dimensional carriage now picks its floor material per train, and the mild trap carriage is no longer capped at the early levels.",
+      "highlights": [
+        "Mid-library floor varies per train",
+        "Mild trap carriage can appear at any level"
+      ],
+      "pr": 1406,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
