@@ -16451,6 +16451,26 @@
       "released": true,
       "released_in": "v0.878.0",
       "released_at": "2026-09-14T09:17:42Z"
+    },
+    {
+      "id": "stages-tab-real-palette-and-select",
+      "version": "0.879.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Stages tab previews show each stage's real blocks, and \u2713 selects the stage",
+      "summary": "In the Train Editor's Stages tab, every wood stage's preview used to look identical \u2014 the tiles were drawn with the raw stage placeholder blocks instead of that stage's wood. Previews now resolve through each stage's palette, so acacia, birch, cherry, warped and the rest each show their own blocks. The \u2713 button on the preview pane now selects the shown stage: the stage block icons, the placed placeholder textures and the carriage plot previews all follow it, and clicking again deselects. Linking a template to a stage lives on the template's own sheet.",
+      "highlights": [
+        "Stage previews stamp with the stage's real palette instead of placeholder blocks",
+        "\u2713 on the stage preview selects (or deselects) that stage \u2014 icons, textures and plots follow"
+      ],
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
