@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.builder.BuilderMode;
  * Pure geometry for the Open screen's mode strip — every builder mode on one row, the selected one
  * large and captioned, the rest small thumbnails beside it.
  *
- * <p>The sibling of {@link BuilderGridLayout} and {@link BuilderTemplateGridLayout}, split out for
+ * <p>The sibling of {@link BuilderPickerLayout} and {@link BuilderTemplateGridLayout}, split out for
  * the same reason: this arithmetic has to survive GUI scale 1 (a very wide, short viewport) through
  * scale 4 (a small one) without tiles overlapping each other or running off the edge, and that is
  * cheap to test here and tedious to eyeball in-game at four scales.</p>
