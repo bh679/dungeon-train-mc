@@ -22,12 +22,16 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * The relay's requirement overrides — the operator's live values for advancement milestones —
- * fetched once per session and cached to disk so an offline launch keeps the last-known set.
+ * The relay's requirement overrides — the operator's live values for advancement milestones,
+ * and the per-advancement {@link AdvancementFlag flags} that ride the same payload — fetched once
+ * per session and cached to disk so an offline launch keeps the last-known set.
  *
  * <p>Same posture as {@code CheatModListFetcher}: own HTTP/1.1-pinned client, fire-and-forget,
  * no-throw, and anonymous — the request carries nothing about the player, so it runs regardless
@@ -68,12 +72,33 @@ public final class AdvancementRequirementOverrides {
     private static volatile boolean attempted;
     private static volatile boolean failed;
 
+    /**
+     * One relay payload, parsed: the requirement values and the raised flags. Both maps are
+     * unmodifiable and never null.
+     *
+     * @param values advancement id → the value in force for its requirement field
+     * @param flags  advancement id → the flags the operator has raised on it
+     */
+    public record Payload(Map<ResourceLocation, Long> values,
+                          Map<ResourceLocation, Set<AdvancementFlag>> flags) {
+        public static final Payload EMPTY = new Payload(Collections.emptyMap(), Collections.emptyMap());
+
+        /** The ids carrying {@code flag}. */
+        public Set<ResourceLocation> with(AdvancementFlag flag) {
+            Set<ResourceLocation> out = new LinkedHashSet<>();
+            for (Map.Entry<ResourceLocation, Set<AdvancementFlag>> e : flags.entrySet()) {
+                if (e.getValue().contains(flag)) out.add(e.getKey());
+            }
+            return Collections.unmodifiableSet(out);
+        }
+    }
+
     /** The last successful fetch this session, or null before one lands. */
-    private static volatile Map<ResourceLocation, Long> fetched;
+    private static volatile Payload fetched;
     /** The disk cache, read once; empty when there is none. */
-    private static volatile Map<ResourceLocation, Long> cached;
+    private static volatile Payload cached;
     /** What the running server's last datapack apply used — compared against a late fetch. */
-    private static volatile Map<ResourceLocation, Long> applied;
+    private static volatile Payload applied;
 
     private AdvancementRequirementOverrides() {}
 
@@ -85,11 +110,11 @@ public final class AdvancementRequirementOverrides {
         fetchAsync();
     }
 
-    /** The overrides in force right now: fetched, else cached, else none. Never null. */
-    public static Map<ResourceLocation, Long> effective() {
-        Map<ResourceLocation, Long> f = fetched;
+    /** The payload in force right now: fetched, else cached, else empty. Never null. */
+    public static Payload effectivePayload() {
+        Payload f = fetched;
         if (f != null) return f;
-        Map<ResourceLocation, Long> c = cached;
+        Payload c = cached;
         if (c == null) {
             c = readCache();
             cached = c;
@@ -97,8 +122,22 @@ public final class AdvancementRequirementOverrides {
         return c;
     }
 
+    /** The requirement overrides in force right now — {@link #effectivePayload()}'s values. */
+    public static Map<ResourceLocation, Long> effective() {
+        return effectivePayload().values();
+    }
+
+    /**
+     * The advancements the capstone must NOT require right now. Read live at every capstone
+     * check, so a raised flag needs no datapack reload — only a fetch. A player made eligible by
+     * the change gets the capstone at their next login or next earn, as any backfill does.
+     */
+    public static Set<ResourceLocation> notRequired() {
+        return effectivePayload().with(AdvancementFlag.NOT_REQUIRED);
+    }
+
     /** Record what a datapack apply used, so a later fetch can tell whether it changed anything. */
-    public static void markApplied(Map<ResourceLocation, Long> used) {
+    public static void markApplied(Payload used) {
         applied = used;
     }
 
@@ -123,7 +162,7 @@ public final class AdvancementRequirementOverrides {
                             failed = true;
                             return;
                         }
-                        accept(resp.body(), parse(resp.body()));
+                        accept(resp.body(), parsePayload(resp.body()));
                     } catch (Throwable t) {
                         LOGGER.debug("[DungeonTrain] requirement overrides parse failed: {}", t.toString());
                         failed = true;
@@ -136,13 +175,13 @@ public final class AdvancementRequirementOverrides {
     }
 
     /** A successful fetch: remember it, cache it, and re-apply on a server that used something else. */
-    private static void accept(String body, Map<ResourceLocation, Long> units) {
-        fetched = units;
+    private static void accept(String body, Payload payload) {
+        fetched = payload;
         writeCache(body);
-        LOGGER.info("[DungeonTrain] Advancement requirement overrides updated from relay ({} value(s)).",
-            units.size());
-        Map<ResourceLocation, Long> used = applied;
-        if (used == null || used.equals(units)) return;
+        LOGGER.info("[DungeonTrain] Advancement requirement overrides updated from relay ({} value(s), {} flagged).",
+            payload.values().size(), payload.flags().size());
+        Payload used = applied;
+        if (used == null || used.equals(payload)) return;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null || !server.isRunning()) return;
         LOGGER.info("[DungeonTrain] Requirement overrides changed since this server loaded its "
@@ -163,8 +202,47 @@ public final class AdvancementRequirementOverrides {
      * rather than silently applying to whatever field the advancement has.
      */
     public static Map<ResourceLocation, Long> parse(String body) {
-        Map<ResourceLocation, Long> out = new LinkedHashMap<>();
+        return parseUnits(JsonParser.parseString(body));
+    }
+
+    /**
+     * Parse the payload's {@code {"flags": {"<id>": {"disabled": {...}, "notRequired": {...}}}}}
+     * into id → raised flags, dropping anything malformed: an id outside
+     * {@code dungeontrain:dungeon_train/}, a key that is not an {@link AdvancementFlag}. The
+     * value under a flag key is who/when — anything non-null counts as raised; the relay never
+     * sends a lowered flag. An advancement with no recognised flag is left out.
+     */
+    public static Map<ResourceLocation, Set<AdvancementFlag>> parseFlags(String body) {
+        return parseFlags(JsonParser.parseString(body));
+    }
+
+    /** Both products of one body — what {@link #effectivePayload()} holds. */
+    public static Payload parsePayload(String body) {
         JsonElement root = JsonParser.parseString(body);
+        return new Payload(parseUnits(root), parseFlags(root));
+    }
+
+    private static Map<ResourceLocation, Set<AdvancementFlag>> parseFlags(JsonElement root) {
+        Map<ResourceLocation, Set<AdvancementFlag>> out = new LinkedHashMap<>();
+        if (!root.isJsonObject()) return Collections.unmodifiableMap(out);
+        JsonElement flagsEl = root.getAsJsonObject().get("flags");
+        if (flagsEl == null || !flagsEl.isJsonObject()) return Collections.unmodifiableMap(out);
+        for (Map.Entry<String, JsonElement> e : flagsEl.getAsJsonObject().entrySet()) {
+            ResourceLocation id = ResourceLocation.tryParse(e.getKey());
+            if (!RequirementJsonRewriter.isOurs(id, DungeonTrain.MOD_ID)) continue;
+            if (!e.getValue().isJsonObject()) continue;
+            EnumSet<AdvancementFlag> raised = EnumSet.noneOf(AdvancementFlag.class);
+            for (Map.Entry<String, JsonElement> f : e.getValue().getAsJsonObject().entrySet()) {
+                if (f.getValue() == null || f.getValue().isJsonNull()) continue;
+                AdvancementFlag.byKey(f.getKey()).ifPresent(raised::add);
+            }
+            if (!raised.isEmpty()) out.put(id, Collections.unmodifiableSet(raised));
+        }
+        return Collections.unmodifiableMap(out);
+    }
+
+    private static Map<ResourceLocation, Long> parseUnits(JsonElement root) {
+        Map<ResourceLocation, Long> out = new LinkedHashMap<>();
         if (!root.isJsonObject()) return Collections.unmodifiableMap(out);
         JsonElement unitsEl = root.getAsJsonObject().get("units");
         if (unitsEl == null || !unitsEl.isJsonObject()) return Collections.unmodifiableMap(out);
@@ -196,14 +274,14 @@ public final class AdvancementRequirementOverrides {
         return PlayerDataPaths.root().resolve(CACHE_FILE);
     }
 
-    private static Map<ResourceLocation, Long> readCache() {
+    private static Payload readCache() {
         try {
             Path p = cachePath();
-            if (!Files.isRegularFile(p)) return Collections.emptyMap();
-            return parse(Files.readString(p, StandardCharsets.UTF_8));
+            if (!Files.isRegularFile(p)) return Payload.EMPTY;
+            return parsePayload(Files.readString(p, StandardCharsets.UTF_8));
         } catch (IOException | RuntimeException e) {
             LOGGER.debug("[DungeonTrain] requirement overrides cache unreadable: {}", e.toString());
-            return Collections.emptyMap();
+            return Payload.EMPTY;
         }
     }
 

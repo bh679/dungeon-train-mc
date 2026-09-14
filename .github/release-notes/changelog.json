@@ -16578,8 +16578,47 @@
       "released_at": "2026-09-14T11:23:55Z"
     },
     {
-      "id": "playermob-0-98-0-door-fix-pin",
+      "id": "head-skins-every-carriage",
       "version": "0.885.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "train"
+      ],
+      "title": "Player heads remember the dead in every carriage",
+      "summary": "The player heads decorating the train wear the skin and name of a real player whose run ended in that carriage. Until now that only worked in every third carriage \u2014 deaths are recorded per carriage group, and the other two carriages in each group asked for a record nobody could ever match, so they always fell back to a stock face. Every carriage now draws from its group's fallen players.",
+      "highlights": [
+        "Heads in carriages 1, 2, 4, 5\u2026 now show real fallen players, not just carriages 0, 3, 6\u2026",
+        "Three times fewer relay requests: one per carriage group instead of one per carriage"
+      ],
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.885.0",
+      "released_at": "2026-09-14T12:36:22Z"
+    },
+    {
+      "id": "advancement-relay-flags",
+      "version": "0.885.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancements can be switched off, or out of the final tally, without an update",
+      "summary": "Individual advancements can now be switched off remotely \u2014 one that is switched off is not shown and cannot be earned, and the advancements beneath it move up to its parent. Separately, an advancement can be kept in the game but dropped from the set a late-game advancement counts. Both take effect the next time you launch.",
+      "highlights": [
+        "Switched-off advancements disappear from the L screen; their children re-attach to the nearest one still on.",
+        "Nothing changes unless the operator flips a switch \u2014 every advancement stays on and counted by default."
+      ],
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermob-0-98-0-door-fix-pin",
+      "version": "0.886.0",
       "type": "fix",
       "tags": [
         "fix",
