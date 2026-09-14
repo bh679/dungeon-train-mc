@@ -89,6 +89,49 @@ final class DeathHeadSkinsTest {
     }
 
     @Test
+    @DisplayName("the famous roll is deterministic in seed, carriage and cell")
+    void isFamousCell_isDeterministic() {
+        for (int x = 0; x < 40; x++) {
+            BlockPos pos = new BlockPos(x, 1, x % 7);
+            assertEquals(DeathHeadSkins.isFamousCell(SEED, 4, pos), DeathHeadSkins.isFamousCell(SEED, 4, pos));
+        }
+    }
+
+    @Test
+    @DisplayName("about one cell in twenty rolls famous")
+    void isFamousCell_isAboutOneInTwenty() {
+        int famous = 0, total = 0;
+        for (int carriage = 0; carriage < 5; carriage++) {
+            for (int x = 0; x < 40; x++) {
+                for (int z = 0; z < 40; z++) {
+                    total++;
+                    if (DeathHeadSkins.isFamousCell(SEED, carriage, new BlockPos(x, 1, z))) famous++;
+                }
+            }
+        }
+        double rate = famous / (double) total;
+        assertTrue(rate > 0.03 && rate < 0.07, "expected ~5% famous, got " + rate);
+    }
+
+    @Test
+    @DisplayName("the famous roll does not line up with the death-pool roll")
+    void isFamousCell_isIndependentOfPoolRoll() {
+        // If the two rolls shared a salt, every cell whose pool roll is a multiple of 20 would also
+        // be famous and the famous heads would all be the same "slot" of the death pool.
+        boolean poolHitButNotFamous = false, famousButNotPoolHit = false;
+        for (int x = 0; x < 60 && !(poolHitButNotFamous && famousButNotPoolHit); x++) {
+            for (int z = 0; z < 60; z++) {
+                BlockPos pos = new BlockPos(x, 1, z);
+                boolean poolHit = Math.floorMod(DeathHeadSkins.mix(SEED, 3, pos), 20) == 0;
+                boolean famous = DeathHeadSkins.isFamousCell(SEED, 3, pos);
+                if (poolHit && !famous) poolHitButNotFamous = true;
+                if (famous && !poolHit) famousButNotPoolHit = true;
+            }
+        }
+        assertTrue(poolHitButNotFamous && famousButNotPoolHit, "famous roll is correlated with the pool roll");
+    }
+
+    @Test
     @DisplayName("the pool index is always in range, including for negative mix states")
     void mix_indexAlwaysInRange() {
         for (int x = -8; x < 8; x++) {

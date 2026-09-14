@@ -39,6 +39,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * keyed on the real carriage so neighbouring carriages wear different faces from it. See
  * {@link #poolIndexFor}.</p>
  *
+ * <p><b>One head in twenty is a famous player</b> whatever the death pool holds — the PlayerMob
+ * skins are the well-known faces of the game (Notch, jeb_, Dream, Technoblade, the Hermits…), and
+ * a train dressed only in its dead loses that sprinkle wherever people have actually died. The
+ * roll is {@link #isFamousCell}, salted independently of the pool roll so which cells go famous
+ * has nothing to do with which dead player they would otherwise have drawn.</p>
+ *
  * <p><b>Never blocks generation.</b> {@link #pick} reads the cache and returns immediately; a miss
  * fires an off-thread {@link DeathSkinClient} fetch for NEXT time and dresses this head from
  * PlayerMob meanwhile. Worldgen runs on a hot path and must never wait on a socket, so a warm-up
@@ -55,6 +61,12 @@ public final class DeathHeadSkins {
 
     /** Salt keeping this roll independent of every other deterministic roll on the same cell. */
     private static final long SALT_HEAD_SKIN = 0x8EAD5C1D5EEDBEEFL;
+
+    /** Salt for the famous-player roll — its own so it never lines up with the pool roll. */
+    private static final long SALT_FAMOUS = 0xFA3005FACE5EEDL;
+
+    /** One head in this many wears a famous player regardless of the death pool. */
+    private static final int FAMOUS_ONE_IN = 20;
 
     private static final long MIX_X = 0x9E3779B97F4A7C15L;
     private static final long MIX_Y = 0xBF58476D1CE4E5B9L;
@@ -119,6 +131,9 @@ public final class DeathHeadSkins {
     public static Optional<ResolvableProfile> pick(int carriage, int groupSize, long worldSeed,
                                                    BlockPos localPos) {
         long state = mix(worldSeed, carriage, localPos);
+        if (isFamousCell(worldSeed, carriage, localPos)) {
+            return fallback(state, carriage, localPos, "famous");
+        }
         int poolIndex = poolIndexFor(carriage, groupSize);
         List<DeathSkinClient.Skin> pool = poolFor(carriage, groupSize);
         if (!pool.isEmpty()) {
@@ -133,7 +148,16 @@ public final class DeathHeadSkins {
                 return profile;
             }
         }
-        return fallback(state, carriage, localPos);
+        return fallback(state, carriage, localPos, "playermob");
+    }
+
+    /**
+     * Whether the head at {@code localPos} in {@code carriage} is one of the one-in-{@value #FAMOUS_ONE_IN}
+     * that wears a famous player instead of a dead one. Deterministic in the same inputs as
+     * {@link #mix}, under a different salt.
+     */
+    static boolean isFamousCell(long worldSeed, int carriage, BlockPos localPos) {
+        return Math.floorMod(mix(worldSeed ^ SALT_FAMOUS, carriage, localPos), FAMOUS_ONE_IN) == 0;
     }
 
     /** Cached skins for {@code carriage}'s group, kicking off a refresh when stale or absent. */
@@ -152,12 +176,16 @@ public final class DeathHeadSkins {
      * A bundled PlayerMob skin, chosen with the same deterministic state. The hard reference to
      * playermob is safe — it is jarJar'd into Dungeon Train, the same guarantee
      * {@link games.brennan.dungeontrain.compat.EchoIdentity} relies on.
+     *
+     * <p>{@code source} is only for the log: {@code famous} when the cell rolled famous on purpose,
+     * {@code playermob} when it landed here because nobody has died at this group yet.</p>
      */
-    private static Optional<ResolvableProfile> fallback(long state, int carriage, BlockPos localPos) {
+    private static Optional<ResolvableProfile> fallback(long state, int carriage, BlockPos localPos,
+                                                        String source) {
         Optional<PlayerMobSkin> skin = PlayerMobSkinRegistry.pickRandom(RandomSource.create(state));
         if (skin.isEmpty()) return Optional.empty();
-        LOGGER.debug("[DungeonTrain] head skin carriage={} cell={} source=playermob name={} skin=...{}",
-            carriage, localPos, skin.get().displayName(), tail(skin.get().textureUrl()));
+        LOGGER.debug("[DungeonTrain] head skin carriage={} cell={} source={} name={} skin=...{}",
+            carriage, localPos, source, skin.get().displayName(), tail(skin.get().textureUrl()));
         // A bundled skin's displayName documents the real player it portrays, so it titles the head
         // the same way a dead player's name does. HeadProfiles drops it if it is not a username.
         return HeadProfiles.of(skin.get().textureUrl(), skin.get().model() == SkinModel.SLIM,
