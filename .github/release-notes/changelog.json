@@ -16612,9 +16612,9 @@
         "Nothing changes unless the operator flips a switch \u2014 every advancement stays on and counted by default."
       ],
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
     },
     {
       "id": "playermob-0-98-0-door-fix-pin",
@@ -16633,9 +16633,9 @@
       ],
       "pr": 1414,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
     },
     {
       "id": "editor-midlibrary-floor-variants-mild2-phases",
@@ -16654,9 +16654,9 @@
       ],
       "pr": 1406,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
     },
     {
       "id": "faulthurst-toned-follow-ups",
@@ -16675,9 +16675,9 @@
       ],
       "pr": 1417,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
     },
     {
       "id": "enemies-zombieroom3-zombie4-skeleton2",
@@ -16697,9 +16697,9 @@
       ],
       "pr": 1419,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
     }
   ]
 }
