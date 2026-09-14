@@ -16406,9 +16406,9 @@
       ],
       "pr": 1404,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.878.0",
+      "released_at": "2026-09-14T09:17:42Z"
     },
     {
       "id": "train-editor-picker-nav-layout",
@@ -16427,9 +16427,9 @@
       ],
       "pr": 1405,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.878.0",
+      "released_at": "2026-09-14T09:17:42Z"
     },
     {
       "id": "videos-default-order-live-dot-age",
@@ -16448,9 +16448,9 @@
         "Views, Recent and Dev picks sorts are unchanged"
       ],
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.878.0",
+      "released_at": "2026-09-14T09:17:42Z"
     },
     {
       "id": "sheet-blocks-count-with-entities",
