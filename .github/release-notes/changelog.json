@@ -16409,6 +16409,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-editor-picker-nav-layout",
+      "version": "0.877.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Train Editor picker shows what each area is before you go",
+      "summary": "The screen behind the title's Train Editor button (and Train Builder) now works like the editor's Nav tab: the four areas are tiles on the left, and picking one shows its picture and a short description on the right. Nothing opens until you press Go here, so you can read about each area first. Back sits beside Go here.",
+      "highlights": [
+        "Pick a tile to see its picture and description; Go here opens it",
+        "Tiles no longer light up under the mouse \u2014 only the chosen one"
+      ],
+      "pr": 1405,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

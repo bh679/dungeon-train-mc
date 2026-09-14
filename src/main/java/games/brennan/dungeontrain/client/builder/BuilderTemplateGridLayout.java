@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.client.builder;
 /**
  * Pure geometry for the Open screen's scrolling template grid.
  *
- * <p>The sibling of {@link BuilderGridLayout}, and split out for the same reason: this arithmetic
+ * <p>The sibling of {@link BuilderPickerLayout}, and split out for the same reason: this arithmetic
  * has to survive GUI scale 1 (a very wide, short viewport) through scale 4 (a small one) without
  * cells overlapping the controls above them, the Back button below them, or each other — and that
  * is cheap to test here and tedious to eyeball in-game at four scales.</p>
