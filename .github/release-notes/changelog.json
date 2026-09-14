@@ -16625,13 +16625,12 @@
         "books",
         "balance"
       ],
-      "title": "Faulthurst's notes have more to say \u2014 and read the room",
-      "summary": "A Note From Faulthurst now opens 15 different ways and closes with one of 61 lines: more questions, opinions, and a few quiet disapprovals. Which closing line you get depends on what the number says about you. Kind things \u2014 friends made, animals tamed, nothing killed \u2014 earn approval; a modest kill count gets a plain remark; a bloodbath gets a pointed one. He never says \"Keep it up\" under a body count.",
+      "title": "Faulthurst's notes read the room",
+      "summary": "A Note From Faulthurst has far more to say \u2014 new ways to greet you, more questions, opinions, and the odd quiet disapproval. What he says after your number now depends on what that number says about you: kind things earn approval, a grim tally does not.",
       "highlights": [
-        "8 new openers and 41 new closing lines, in all 21 languages.",
-        "Closing lines are matched to the stat: approving after kind stats, neutral or disapproving after grim ones.",
-        "Kills are judged by rate \u2014 up to 25 things per 100 carriages, 1 echo per 500, 1 passenger per 250 reads as plain; more reads as grim.",
-        "Zero kills is its own line once you're three carriages in: \"You've put down no echoes, 40 carriages in.\""
+        "Many new openers and closing lines, in every language.",
+        "Closing lines match the stat \u2014 he never congratulates a killing.",
+        "Kills are judged by how often, not just how many; none at all gets its own line."
       ],
       "pr": 1417,
       "date": "2026-09-14",
