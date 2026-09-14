@@ -16678,6 +16678,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "enemies-zombieroom3-zombie4-skeleton2",
+      "version": "0.887.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs",
+        "balance"
+      ],
+      "title": "Three new enemy carriages",
+      "summary": "The enemies pool grows by three: a split zombie room, a zombie pack, and a skeleton carriage that starts showing up from Diff-Level 3. Existing enemy carriages were reweighted slightly to make room for them.",
+      "highlights": [
+        "New: zombiesplit, zombie4 and skeleton2 enemy carriages",
+        "Enemies group weights retuned; skeleton2 appears from Diff-Level 3"
+      ],
+      "pr": 1419,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

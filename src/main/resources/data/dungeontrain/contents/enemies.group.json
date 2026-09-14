@@ -4,11 +4,11 @@
   "variants": [
     {
       "id": "cagedzombie",
-      "weight": 8
+      "weight": 6
     },
     {
       "id": "piglin",
-      "weight": 10
+      "weight": 9
     },
     {
       "id": "brute",
@@ -17,15 +17,15 @@
     },
     {
       "id": "zombieroom",
-      "weight": 7
+      "weight": 6
     },
     {
       "id": "skeleton",
-      "weight": 10
+      "weight": 8
     },
     {
       "id": "pillager",
-      "weight": 5,
+      "weight": 4,
       "minLevel": 2
     },
     {
@@ -44,12 +44,12 @@
     },
     {
       "id": "slimes",
-      "weight": 10,
+      "weight": 9,
       "maxLevel": 20
     },
     {
       "id": "bogged",
-      "weight": 3,
+      "weight": 2,
       "minLevel": 2
     },
     {
@@ -118,7 +118,8 @@
       "id": "blaze",
       "weight": 4,
       "phases": [
-        "NETHER"
+        "NETHER",
+        "CHUNCKS"
       ]
     },
     {
@@ -162,6 +163,19 @@
       "id": "creeperdrop",
       "weight": 1,
       "minLevel": 20
+    },
+    {
+      "id": "zombieroom3",
+      "weight": 4
+    },
+    {
+      "id": "zombie4",
+      "weight": 4
+    },
+    {
+      "id": "skeleton2",
+      "weight": 3,
+      "minLevel": 3
     }
   ]
 }
