@@ -94,6 +94,8 @@ public final class PortalRoomEditor {
      * margin and the same +2 Y headroom every other plot uses for a player who landed on the cage.
      */
     public static String plotContaining(BlockPos pos, CarriageDims dims) {
+        // Answers only while PORTALS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.PORTALS)) return null;
         for (String name : names()) {
             BlockPos o = plotOrigin(name, dims);
             Vec3i size = plotSize(name, dims);
@@ -457,68 +459,23 @@ public final class PortalRoomEditor {
             }
             clearBox(overworld, predicted, name);
         }
-        sweepColumn(overworld, dims, recorded);
     }
 
-    /** Past the furthest plot on each axis, how much further the sweep looks for what earlier layouts left. */
-    private static final int SWEEP_MARGIN_X = 120;
-    private static final int SWEEP_MARGIN_Z = TrackSidePlots.SLOT_STEP * 6;
-
     /**
-     * Erase whatever is still standing in the portal-room column that no plot accounts for.
-     *
-     * <p>Rooms stamped by a layout this world has since stopped predicting — before boxes were
-     * recorded, before a row reserved its deepest member — have no plot that will ever clear them,
-     * and they sit exactly where the corrected layout now wants to put things. Only the rooms live
-     * in this column: it is the last track-side column and every other category is at a lower Z,
-     * so anything non-air here above the plot floor is either a plot or a leftover, and the plots
-     * were just erased.</p>
-     *
-     * <p>Section by section, and only sections that hold anything: the column is mostly sky, and
-     * asking each chunk section whether it is all air is what keeps a sweep this wide cheap.
-     * Loaded chunks only — a leftover in a chunk nobody has been near is not in anybody's way, and
-     * it is swept the first time a clear runs with that chunk in.</p>
+     * One box around every room plot — the recorded ones and the predicted ones — or null when
+     * there are none. The footprint of the {@link #clearAllPlots} job, so a category entry knows
+     * whether that job has to run before its landing plot is stamped.
      */
-    private static void sweepColumn(ServerLevel overworld, CarriageDims dims, Map<String, int[]> recorded) {
-        int minX = TrackSidePlots.X_PORTALS - 1;
-        int minZ = TrackSidePlots.Z_BASELINE - 1;
-        int maxX = minX;
-        int maxZ = minZ;
+    public static BoundingBox allPlotsBox(ServerLevel overworld, CarriageDims dims) {
+        primeSizes(overworld, dims);
+        List<BoundingBox> boxes = new java.util.ArrayList<>();
+        for (int[] b : DungeonTrainWorldData.get(overworld).portalPlotBoxes().values()) {
+            boxes.add(EditorLayerSweep.plotBox(new BlockPos(b[0], b[1], b[2]), new Vec3i(b[3], b[4], b[5])));
+        }
         for (String name : names()) {
-            BlockPos o = plotOrigin(name, dims);
-            Vec3i sz = plotSize(name, dims);
-            maxX = Math.max(maxX, o.getX() + sz.getX());
-            maxZ = Math.max(maxZ, o.getZ() + sz.getZ());
+            boxes.add(EditorLayerSweep.plotBox(plotOrigin(name, dims), plotSize(name, dims)));
         }
-        for (int[] b : recorded.values()) {
-            maxX = Math.max(maxX, b[0] + b[3]);
-            maxZ = Math.max(maxZ, b[2] + b[5]);
-        }
-        maxX += SWEEP_MARGIN_X;
-        maxZ += SWEEP_MARGIN_Z;
-        int minY = EditorLayout.PLOT_Y - 1;
-        int maxY = EditorLayout.PLOT_Y + games.brennan.dungeontrain.portal.PortalRoomLayout.MAX_HEIGHT + 2;
-
-        int swept = 0;
-        for (int cx = minX >> 4; cx <= maxX >> 4; cx++) {
-            for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
-                net.minecraft.world.level.chunk.LevelChunk chunk = overworld.getChunkSource().getChunkNow(cx, cz);
-                if (chunk == null) continue;
-                for (int sy = minY >> 4; sy <= maxY >> 4; sy++) {
-                    int index = chunk.getSectionIndex(sy << 4);
-                    if (index < 0 || index >= chunk.getSectionsCount()) continue;
-                    if (chunk.getSection(index).hasOnlyAir()) continue;
-                    BoundingBox box = new BoundingBox(
-                        Math.max(minX, cx << 4), Math.max(minY, sy << 4), Math.max(minZ, cz << 4),
-                        Math.min(maxX, (cx << 4) + 15), Math.min(maxY, (sy << 4) + 15), Math.min(maxZ, (cz << 4) + 15));
-                    if (box.maxX() < box.minX() || box.maxY() < box.minY() || box.maxZ() < box.minZ()) continue;
-                    swept += PortalClear.clearBoxRelit(overworld, box, PortalCorridorMask.NONE);
-                }
-            }
-        }
-        if (swept > 0) {
-            LOGGER.info("[DungeonTrain] Portal room column sweep erased {} leftover blocks outside every plot", swept);
-        }
+        return EditorLayerSweep.unionOf(boxes);
     }
 
     /** Erase a single room plot — interior + outline cleared to air. */

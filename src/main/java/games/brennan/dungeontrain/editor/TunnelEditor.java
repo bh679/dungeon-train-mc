@@ -96,6 +96,8 @@ public final class TunnelEditor {
      * {@code pos}, or null. Includes the 1-block outline-cage margin.
      */
     public static TunnelPlot plotContainingNamed(BlockPos pos) {
+        // Answers only while TRACKS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (TunnelVariant variant : TunnelVariant.values()) {
             for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
                 BlockPos o = plotOrigin(variant, name);

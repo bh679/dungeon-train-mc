@@ -7,12 +7,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongSupplier;
 
@@ -49,8 +52,42 @@ public final class EditorStampQueue {
     /** How often the action-bar progress line is refreshed while the queue is busy. */
     private static final int PROGRESS_PERIOD_TICKS = 20;
 
-    /** One unit of stamping work — a plot erase or a plot stamp — named for the log. */
-    public record Job(String label, Runnable work) {}
+    /**
+     * One unit of stamping work — a plot erase or a plot stamp — named for the log.
+     *
+     * @param footprint the blocks the job writes, when known — an erase's plot box, cage included.
+     *                  Every category is laid out from the same origin, so an erase of the previous
+     *                  category can land on the plot the entry has just stamped for the player to
+     *                  stand on; {@link #partitionOverlapping} pulls those out to run first. Null
+     *                  when the job's extent is unknown; such a job is queued as it always was.
+     */
+    public record Job(String label, Runnable work, @Nullable BoundingBox footprint) {
+        public Job(String label, Runnable work) {
+            this(label, work, null);
+        }
+    }
+
+    /** The jobs whose footprint intersects {@code box}, in order — and, separately, the rest. */
+    public record Partition(List<Job> overlapping, List<Job> rest) {}
+
+    /**
+     * Split {@code jobs} by whether their footprint touches {@code box}. A category entry runs the
+     * overlapping erases synchronously before it stamps the landing plot; queued behind that stamp
+     * they would wipe it out from under the player.
+     */
+    public static Partition partitionOverlapping(List<Job> jobs, @Nullable BoundingBox box) {
+        if (box == null) return new Partition(List.of(), List.copyOf(jobs));
+        List<Job> overlapping = new ArrayList<>();
+        List<Job> rest = new ArrayList<>();
+        for (Job job : jobs) {
+            if (job.footprint() != null && job.footprint().intersects(box)) {
+                overlapping.add(job);
+            } else {
+                rest.add(job);
+            }
+        }
+        return new Partition(List.copyOf(overlapping), List.copyOf(rest));
+    }
 
     private static List<Job> queue = List.of();
     private static int cursor = 0;

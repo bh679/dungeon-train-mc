@@ -81,6 +81,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
+    private static final String TAG_EDITOR_STAMPED_CATEGORY = "editorStampedCategory";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -94,6 +95,14 @@ public final class DungeonTrainWorldData extends SavedData {
      * before the flag existed keeps the full clear; only {@link #createDefault()} starts it false.
      */
     private boolean editorPlotsStamped = true;
+    /**
+     * The {@code EditorCategory} id whose plots stand in the sky right now, or empty when none does.
+     * The in-memory copy ({@code EditorStampedCategoryState}) is what every editor reads; this is
+     * how it survives a restart, so the plots still standing after a reload keep answering to the
+     * HUD and to {@code /dt save}. Empty on a world saved before it was recorded — those worlds
+     * erase every category on the next entry instead of just the last one.
+     */
+    private String editorStampedCategory = "";
     /**
      * Where each portal-room plot was last stamped, by room name: {@code [x, y, z, sx, sy, sz]}.
      *
@@ -445,6 +454,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_EDITOR_PLOTS_STAMPED)) {
             data.editorPlotsStamped = tag.getBoolean(TAG_EDITOR_PLOTS_STAMPED);
         }
+        if (tag.contains(TAG_EDITOR_STAMPED_CATEGORY)) {
+            data.editorStampedCategory = tag.getString(TAG_EDITOR_STAMPED_CATEGORY);
+        }
         // Absent on legacy worlds → false → the join-info report fires once on the next join.
         if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
             data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
@@ -569,6 +581,7 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         tag.putBoolean(TAG_EDITOR_PLOTS_STAMPED, editorPlotsStamped);
+        tag.putString(TAG_EDITOR_STAMPED_CATEGORY, editorStampedCategory);
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
@@ -836,6 +849,19 @@ public final class DungeonTrainWorldData extends SavedData {
     /** {@code name}'s plot has been erased — or was never there. */
     public void forgetPortalPlotBox(String name) {
         if (name != null && editorPortalPlotBoxes.remove(name) != null) setDirty();
+    }
+
+    /** The id of the category whose plots are stamped, or empty — see {@link #setEditorStampedCategory}. */
+    public String editorStampedCategory() {
+        return editorStampedCategory;
+    }
+
+    /** Record which category's plots stand in the sky ({@code ""} for none). */
+    public void setEditorStampedCategory(String id) {
+        String next = id == null ? "" : id;
+        if (next.equals(editorStampedCategory)) return;
+        editorStampedCategory = next;
+        setDirty();
     }
 
     /** Record that plots may now hold blocks; from here on every clear has to actually erase them. */

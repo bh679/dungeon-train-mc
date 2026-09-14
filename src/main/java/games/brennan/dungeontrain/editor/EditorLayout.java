@@ -4,30 +4,32 @@ import games.brennan.dungeontrain.train.CarriageDims;
 
 /**
  * Shared layout constants for every editor (carriage, contents, parts,
- * track-side). The single {@link #GAP} value is the empty-block separation
+ * track-side, portal rooms). The single {@link #GAP} value is the empty-block separation
  * between any two adjacent template footprints — same on every axis,
  * across every editor — so the world above {@link #PLOT_Y} reads as a
  * uniform grid.
  *
- * <p>The three editor categories (CARRIAGES, CONTENTS, TRACKS) each own a
- * disjoint {@code Z} range in plan view so that {@link
- * CarriageContentsEditor#plotContaining}, {@link
- * TrackSidePlots#locate}, and {@link CarriagePartEditor#plotContaining}
- * never claim the same world position. This keeps the editor status HUD
- * unambiguous and means a stale stamp in one category can't leave residue
- * in another category's plot footprint. The boundary constants below are
- * the single source of truth — each editor reads its baseline from here
- * rather than hard-coding a number.</p>
+ * <p><b>One origin, one resident type.</b> Every editor category (CARRIAGES, CONTENTS, TRACKS,
+ * PORTALS) lays its plots out from the same {@code (0, PLOT_Y, 0)} origin. Only one category is
+ * ever stamped in the world at a time ({@link EditorStampedCategoryState}); switching category
+ * erases the previous one first, and every {@code plotContaining} answers only for the resident
+ * category. So the categories' footprints may — and do — overlap in plan view, and no category
+ * reserves a Z range for another: a contents group can run as far along {@code +Z} as it has
+ * members, and the track-side rows can hold as many named variants as an author makes.</p>
  *
- * <p>Layout (all at {@link #PLOT_Y}, in {@code +Z} order):
+ * <p>This replaced disjoint per-category Z lanes. Those lanes had to be sized by a guess at how
+ * many sub-variants a group would ever hold, and the guess was wrong the day a contents group
+ * outgrew it: its deepest members sat in the next lane, the status HUD called them by the other
+ * category's name, and that category's stamps overlapped them.</p>
+ *
+ * <p>Layout (all at {@link #PLOT_Y}, in {@code +Z} order, <em>within</em> a category):
  * <ul>
- *   <li>{@code Z=0..MAX_WIDTH-1} — carriage row (CARRIAGES view)</li>
- *   <li>{@code Z=PARTS_FIRST_Z..CARRIAGES_VIEW_MAX_Z} — parts grid
- *       (CARRIAGES view): FLOOR / WALLS / ROOF / DOORS rows</li>
- *   <li>{@code Z=CONTENTS_FIRST_Z..CONTENTS_VIEW_MAX_Z} — contents row
- *       (CONTENTS view)</li>
- *   <li>{@code Z=TRACKS_FIRST_Z..} — track / pillar / tunnel / stair
- *       rows (TRACKS view)</li>
+ *   <li>CARRIAGES: {@code Z=0..MAX_WIDTH-1} carriage row, then from {@link #PARTS_FIRST_Z} the parts
+ *       grid — FLOOR / WALLS / ROOF / DOORS rows</li>
+ *   <li>CONTENTS: {@code Z=CONTENTS_FIRST_Z} row, each group's members stacked along {@code +Z}
+ *       below their parent by {@link #SUB_VARIANT_GAP}</li>
+ *   <li>TRACKS / PORTALS: from {@code Z=TRACKS_FIRST_Z}, one X column per kind, named variants
+ *       stacked along {@code +Z} (see {@link TrackSidePlots})</li>
  * </ul></p>
  */
 public final class EditorLayout {
@@ -49,23 +51,10 @@ public final class EditorLayout {
     public static final int PARTS_FIRST_Z = CarriageDims.MAX_WIDTH + GAP;
 
     /**
-     * Maximum Z occupied by the CARRIAGES view at max dims — parts grid
-     * extends in {@code +Z} from {@link #PARTS_FIRST_Z} by FLOOR + WALLS +
-     * ROOF + DOORS rows separated by {@link #GAP}. Drives the
-     * {@link #CONTENTS_FIRST_Z} baseline so the next view never overlaps.
-     *
-     * <p>FLOOR / ROOF row {@code Z = MAX_WIDTH - 2}; WALLS row
-     * {@code Z = 1}; DOORS row {@code Z = MAX_WIDTH}; three inter-row
-     * GAPs.</p>
+     * First Z slot of the contents row (CONTENTS view). The shared origin — see the class doc for
+     * why this is not past the CARRIAGES view any more.
      */
-    public static final int CARRIAGES_VIEW_MAX_Z = PARTS_FIRST_Z
-        + (CarriageDims.MAX_WIDTH - 2)        // FLOOR row Z
-        + GAP + 1                             // gap + WALLS row Z
-        + GAP + (CarriageDims.MAX_WIDTH - 2)  // gap + ROOF row Z
-        + GAP + CarriageDims.MAX_WIDTH;       // gap + DOORS row Z
-
-    /** First Z slot of the contents row (CONTENTS view). */
-    public static final int CONTENTS_FIRST_Z = CARRIAGES_VIEW_MAX_Z + GAP;
+    public static final int CONTENTS_FIRST_Z = 0;
 
     /**
      * Tighter inter-plot gap used inside a contents-group column (parent →
@@ -74,28 +63,8 @@ public final class EditorLayout {
      */
     public static final int SUB_VARIANT_GAP = 4;
 
-    /**
-     * Maximum sub-variants reserved per contents group. The CONTENTS view's
-     * +Z extent is sized so a group of this many members fits inside the
-     * region without overlapping the TRACKS view that follows. Authors who
-     * exceed this cap will see the deepest sub-variants' cages bleed into
-     * the TRACKS region — soft cap, not enforced at command time.
-     */
-    public static final int MAX_SUB_VARIANTS_PER_PARENT = 8;
-
-    /**
-     * Maximum Z occupied by the CONTENTS view at max dims — the parent's own
-     * row footprint plus {@link #MAX_SUB_VARIANTS_PER_PARENT} reserved
-     * sub-variant rows separated by {@link #SUB_VARIANT_GAP}. Drives the
-     * {@link #TRACKS_FIRST_Z} baseline so sub-variant columns don't collide
-     * with track-side plots.
-     */
-    public static final int CONTENTS_VIEW_MAX_Z = CONTENTS_FIRST_Z
-        + CarriageDims.MAX_WIDTH
-        + MAX_SUB_VARIANTS_PER_PARENT * (CarriageDims.MAX_WIDTH + SUB_VARIANT_GAP);
-
-    /** First Z slot of the track-side row (TRACKS view). */
-    public static final int TRACKS_FIRST_Z = CONTENTS_VIEW_MAX_Z + GAP;
+    /** First Z slot of the track-side row (TRACKS and PORTALS views). The shared origin. */
+    public static final int TRACKS_FIRST_Z = 0;
 
     /**
      * Shared plot floor for every editor — the Y every plot's origin sits at.

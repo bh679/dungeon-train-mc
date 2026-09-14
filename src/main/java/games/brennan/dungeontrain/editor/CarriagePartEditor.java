@@ -70,11 +70,10 @@ public final class CarriagePartEditor {
 
     /**
      * First Z row — sourced from {@link EditorLayout#PARTS_FIRST_Z}.
-     * Sits inside the CARRIAGES view's Z range, right after the carriage
-     * row, with the contents and tracks views shifted to disjoint Z
-     * regions past {@link EditorLayout#CARRIAGES_VIEW_MAX_Z} so no other
-     * editor's {@code plotContaining} can ever claim a position inside a
-     * parts plot.
+     * Right after the carriage row, inside the CARRIAGES view. The other
+     * categories lay out from the same origin and predict plots across
+     * these rows; they never claim a position here because
+     * {@code plotContaining} answers only for the resident category.
      */
     private static final int FIRST_PLOT_Z = EditorLayout.PARTS_FIRST_Z;
 
@@ -178,6 +177,8 @@ public final class CarriagePartEditor {
 
     /** Resolve the plot the player is standing in, or {@code null} if outside every part plot (1-block outline margin included). */
     public static PlotLocation plotContaining(BlockPos pos, CarriageDims dims) {
+        // Answers only while CARRIAGES is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES)) return null;
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             for (String name : CarriagePartRegistry.registeredNames(kind)) {
                 BlockPos o = plotOrigin(kind, name, dims);

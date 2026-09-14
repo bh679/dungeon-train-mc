@@ -51,10 +51,10 @@ public final class TrackSidePlots {
 
     /**
      * Z baseline for the track-side row — sourced from {@link
-     * EditorLayout#TRACKS_FIRST_Z}. Sits past every other view's Z range
-     * (CARRIAGES extends through the parts grid; CONTENTS sits between)
-     * so {@link #locate} can never claim a position that also belongs to
-     * a parts, contents, or carriage plot.
+     * EditorLayout#TRACKS_FIRST_Z}: the origin every category shares. The
+     * carriage, parts and contents plots predict the same positions, which
+     * is fine because only one category is ever stamped at a time and
+     * {@link #locate} answers only while its category is the resident one.
      */
     public static final int Z_BASELINE = EditorLayout.TRACKS_FIRST_Z;
 
@@ -158,6 +158,10 @@ public final class TrackSidePlots {
      */
     public static TrackPlotLocator.PlotInfo locate(BlockPos pos, CarriageDims dims) {
         for (TrackKind kind : TrackKind.values()) {
+            // Every category shares the origin, so a kind answers only while its category is the
+            // resident one — the room column belongs to PORTALS, the rest to TRACKS.
+            EditorCategory owner = kind == TrackKind.PORTAL_ROOM ? EditorCategory.PORTALS : EditorCategory.TRACKS;
+            if (!EditorStampedCategoryState.isActive(owner)) continue;
             List<String> names = TrackVariantRegistry.namesFor(kind);
             for (String name : names) {
                 BlockPos origin = plotOrigin(kind, name, dims);
