@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PauseMenuActionButton;
 import games.brennan.dungeontrain.client.version.VersionCheckState;
 import games.brennan.dungeontrain.client.version.VersionStatusButton;
+import games.brennan.dungeontrain.editor.EditorWorldLayout;
 import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
@@ -60,9 +61,11 @@ import org.slf4j.Logger;
  * editor's sky plots live and the only other way in is the worldspace editor menu (which
  * needs you to be standing in a plot).</p>
  *
- * <p>The Abandon-run reshuffle is gated to singleplayer (integrated server present) — multiplayer keeps the
- * vanilla "Disconnect" button, and with it loses the My Builds row, since both hang off
- * the slot this handler takes over. If the Save-and-Quit button can't be located
+ * <p>The Abandon-run reshuffle is gated to singleplayer <em>run</em> worlds (integrated server
+ * present) — multiplayer keeps the vanilla "Disconnect" button, and with it loses the My Builds
+ * row, since both hang off the slot this handler takes over. The Train Builder and Train Editor
+ * worlds keep vanilla Save and Quit too: there is no run in either to abandon (see
+ * {@link #layoutEditorWorld}). If the Save-and-Quit button can't be located
  * (a third-party mod rewrote the menu) the menu is left untouched, mirroring
  * {@link TitleScreenLayoutHandler}'s defensive stance.</p>
  */
@@ -133,7 +136,15 @@ public final class PauseMenuLayoutHandler {
         int slotY = returnToMenu.getY();
         int slotW = returnToMenu.getWidth();
         int slotH = returnToMenu.getHeight();
-        int halfW = (slotW - GAP) / 2;
+
+        // The Train Editor's void world is an authoring sandbox like the builder's: nothing to
+        // abandon, and "abandoning" would kill the author and narrate a death. Unlike the builder
+        // it has no pause menu of its own, so vanilla Save and Quit stands in for the red button
+        // and the rest of the layout — My Builds above, Exit | Quit behind Shift — is kept.
+        if (EditorWorldLayout.isEditorWorld(Minecraft.getInstance().level)) {
+            layoutEditorWorld(event, returnToMenu, slotX, slotY, slotW, slotH);
+            return;
+        }
 
         // Neutralise the vanilla button but leave it in the listener list (harmless).
         returnToMenu.visible = false;
@@ -159,7 +170,31 @@ public final class PauseMenuLayoutHandler {
                 b -> confirmAbandonRun(event.getScreen()));
         event.addListener(abandon);
 
-        // Shift-revealed pair, splitting the same slot: Exit to Title (grey) | Quit Game (dark grey).
+        addShiftExitPair(event, slotX, slotY, slotW, slotH);
+        applyShiftVisibility(abandon);
+    }
+
+    /**
+     * Editor-world layout: vanilla <b>Save and Quit to Title</b> takes the red button's place —
+     * shown when Shift is NOT held, swapped for the same Exit | Quit pair when it is (see
+     * {@link #onScreenRenderPre}) — with the <b>My Builds</b> row slotted in above it, pushing
+     * the vanilla button down one row. My Builds needs a creative player, which in the editor world
+     * they always are.
+     */
+    private static void layoutEditorWorld(ScreenEvent.Init.Post event, Button returnToMenu,
+                                          int slotX, int slotY, int slotW, int slotH) {
+        if (addMyBuildsRow(event, slotX, slotY, slotW, slotH)) {
+            slotY += slotH + GAP;
+            returnToMenu.setY(slotY);
+        }
+        addShiftExitPair(event, slotX, slotY, slotW, slotH);
+        returnToMenu.visible = !Screen.hasShiftDown();
+    }
+
+    /** Shift-revealed pair, splitting the slot: Exit to Title (grey) | Quit Game (dark grey). */
+    private static void addShiftExitPair(ScreenEvent.Init.Post event,
+                                         int slotX, int slotY, int slotW, int slotH) {
+        int halfW = (slotW - GAP) / 2;
         PauseMenuActionButton exitTitle = new PauseMenuActionButton(
                 slotX, slotY, halfW, slotH, EXIT_LABEL,
                 1.0F, 1.0F, 1.0F, true,
@@ -171,8 +206,7 @@ public final class PauseMenuLayoutHandler {
                 0.50F, 0.50F, 0.50F, true,
                 b -> DeathScreenLayoutHandler.quitToDesktop());
         event.addListener(quitGame);
-
-        applyShiftVisibility(abandon, exitTitle, quitGame);
+        applyShiftVisibility(exitTitle, quitGame);
     }
 
     /**
@@ -235,9 +269,15 @@ public final class PauseMenuLayoutHandler {
         if (!(event.getScreen() instanceof PauseScreen screen)) {
             return;
         }
+        boolean editorWorld = EditorWorldLayout.isEditorWorld(Minecraft.getInstance().level);
         for (GuiEventListener listener : screen.children()) {
             if (listener instanceof PauseMenuActionButton button) {
                 applyShiftVisibility(button);
+            } else if (editorWorld && listener instanceof Button button
+                    && RETURN_TO_MENU_KEY.equals(button.getMessage())) {
+                // In the editor world vanilla Save and Quit is the un-Shifted face of the exit
+                // slot, so it follows the same swap as the pair it shares the slot with.
+                button.visible = !Screen.hasShiftDown();
             }
         }
     }

@@ -60,6 +60,7 @@ import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriagePartPlacer;
@@ -716,6 +717,9 @@ public final class EditorCommand {
             .then(Commands.literal("helppanel")
                 .then(Commands.literal("on").executes(ctx -> runHelpPanel(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runHelpPanel(ctx.getSource(), false))))
+            .then(Commands.literal("observers")
+                .then(Commands.literal("on").executes(ctx -> runObservers(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runObservers(ctx.getSource(), false))))
             .then(Commands.literal("carriage-contents")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -3984,7 +3988,9 @@ public final class EditorCommand {
             }
             int oldCount = rowBefore.size();
 
-            CarriageEditor.clearPlot(overworld, variant, dims);
+            // Plot erase + row restamp are DT's own rewrites — guarded so observers in the
+            // touched plots stay quiet (ObserverBlockStampMixin).
+            CarriageStampGuard.run(() -> CarriageEditor.clearPlot(overworld, variant, dims));
             boolean deleted = CarriageTemplateStore.delete(variant);
             // Sidecars and weight — and in dev mode the bundled copies of each.
             TemplateDeletes.Report cleanup = TemplateDeletes.carriage(variant);
@@ -3992,7 +3998,9 @@ public final class EditorCommand {
             if (wasCustom) {
                 CarriageVariantRegistry.unregister(variant.id());
                 if (oldIdx >= 0) {
-                    CarriageEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
+                    final int idx = oldIdx;
+                    CarriageStampGuard.run(() ->
+                        CarriageEditor.restampRowAfterDeletion(overworld, idx, oldCount, dims));
                 }
             }
             source.sendSuccess(() -> Component.literal(
@@ -4334,6 +4342,28 @@ public final class EditorCommand {
         source.sendSuccess(() -> Component.literal(on
             ? "Welcome panel: ON"
             : "Welcome panel: OFF — press X and pick 'Welcome Panel' to bring it back."
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    /**
+     * Settings → Observers On / Off for this world: while Off, an observer inside an editor plot
+     * never pulses, so an author can place and break around a contraption without firing it
+     * ({@link games.brennan.dungeontrain.editor.EditorObservers}). World state, so every online
+     * player's Settings row is told.
+     */
+    private static int runObservers(CommandSourceStack source, boolean on) {
+        net.minecraft.server.MinecraftServer server = source.getServer();
+        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
+            .setEditorObserversOn(on);
+        games.brennan.dungeontrain.net.EditorObserversPacket packet =
+            new games.brennan.dungeontrain.net.EditorObserversPacket(on);
+        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
+            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
+        }
+        source.sendSuccess(() -> Component.literal(on
+            ? "Observers: ON — observers in editor plots pulse as normal."
+            : "Observers: OFF — observers in editor plots stay quiet while you build."
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }
@@ -4969,7 +4999,7 @@ public final class EditorCommand {
         }
         int oldCount = rowBefore.size();
 
-        CarriageContentsEditor.clearPlot(overworld, contents, dims);
+        CarriageStampGuard.run(() -> CarriageContentsEditor.clearPlot(overworld, contents, dims));
         boolean deleted = CarriageContentsStore.delete(contents);
         // Sidecars, weight, group slot — and in dev mode the bundled copies of each.
         TemplateDeletes.Report cleanup = TemplateDeletes.contents(contents);
@@ -4977,7 +5007,9 @@ public final class EditorCommand {
         if (wasCustom) {
             CarriageContentsRegistry.unregister(contents.id());
             if (oldIdx >= 0) {
-                CarriageContentsEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
+                final int idx = oldIdx;
+                CarriageStampGuard.run(() ->
+                    CarriageContentsEditor.restampRowAfterDeletion(overworld, idx, oldCount, dims));
             }
         }
         return (deleted
@@ -5704,7 +5736,7 @@ public final class EditorCommand {
             int oldIdx = rowBefore.indexOf(name);
             int oldCount = rowBefore.size();
 
-            CarriagePartEditor.clearPlot(overworld, kind, name, dims);
+            CarriageStampGuard.run(() -> CarriagePartEditor.clearPlot(overworld, kind, name, dims));
             boolean deleted = CarriagePartTemplateStore.delete(kind, name);
             // Sidecars — and in dev mode the bundled copies, including the src .nbt. `bundled` below
             // still reads the classpath copy, so the registry entry survives until the next build.
@@ -5714,7 +5746,8 @@ public final class EditorCommand {
             if (!stillBundled) {
                 CarriagePartRegistry.unregister(kind, name);
                 if (oldIdx >= 0) {
-                    CarriagePartEditor.restampRowAfterDeletion(overworld, kind, oldIdx, oldCount, dims);
+                    CarriageStampGuard.run(() ->
+                        CarriagePartEditor.restampRowAfterDeletion(overworld, kind, oldIdx, oldCount, dims));
                 }
             }
             final String msg = (deleted

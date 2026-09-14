@@ -4632,6 +4632,31 @@
       ]
     }
   },
+  "gui.dungeontrain.videos.ago": {
+    "1": {
+      "label": "how long ago the video was published, as a whole clause (days, weeks or months)",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.day.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.week.one",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.month.other",
+          "args": [
+            "5"
+          ]
+        }
+      ]
+    }
+  },
   "gui.dungeontrain.number_input.range": {
     "1": {
       "label": "the lowest value this field accepts",

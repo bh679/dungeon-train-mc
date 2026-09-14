@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorMenusModeState;
+import games.brennan.dungeontrain.client.EditorObserversState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -420,6 +421,11 @@ public final class EditorMenuScreen implements MenuScreen {
         // switched it off from a portal plot must be able to switch it back on from anywhere.
         out.add(plotLightingRow());
 
+        // Observers — Off keeps every observer inside an editor plot quiet, hand-placed blocks
+        // included, so a contraption can be wired without firing. World state (persisted), which is
+        // why it is a server round-trip rather than a client preference like Plot Lighting.
+        out.add(observersRow());
+
         // Welcome Panel — the onboarding board floating beside the first nav menu. Its own close
         // (X) button writes the same per-player, per-world flag; this row is the only way back,
         // so it stays in the menu whether the panel is currently up or not.
@@ -549,6 +555,16 @@ public final class EditorMenuScreen implements MenuScreen {
         return new CommandMenuEntry.ClientAction(
             "Plot Lighting  [" + (on ? "ON" : "OFF") + "]",
             () -> ClientDisplayConfig.setEditorPlotLighting(!ClientDisplayConfig.isEditorPlotLighting()));
+    }
+
+    /** Observers | On | Off — the same Label-plus-state-cells shape as Editor Menus. */
+    private static CommandMenuEntry observersRow() {
+        boolean on = EditorObserversState.on();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label("Observers"),
+            new CommandMenuEntry.Stay("On", "dungeontrain editor observers on", on),
+            new CommandMenuEntry.Stay("Off", "dungeontrain editor observers off", !on),
+            0.46, 0.73);
     }
 
     private static CommandMenuEntry modeCell(String label, EditorMenusMode cell, EditorMenusMode active) {

@@ -16406,9 +16406,9 @@
       ],
       "pr": 1404,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.878.0",
+      "released_at": "2026-09-14T09:17:42Z"
     },
     {
       "id": "train-editor-picker-nav-layout",
@@ -16426,6 +16426,110 @@
         "Tiles no longer light up under the mouse \u2014 only the chosen one"
       ],
       "pr": 1405,
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.878.0",
+      "released_at": "2026-09-14T09:17:42Z"
+    },
+    {
+      "id": "videos-default-order-live-dot-age",
+      "version": "0.878.0",
+      "type": "feat",
+      "tags": [
+        "community",
+        "ui"
+      ],
+      "title": "Videos page: fresher default order, a live dot on the menu icon, and 'N days ago' dates",
+      "summary": "The Videos page now opens with new uploads and popular picks taking turns \u2014 live streamers first, then the newest video, then the top dev pick, and so on \u2014 instead of the same most-viewed list every time. The Videos icon on the main menu (and pause menu) shows a pulsing green dot whenever a streamer is live with the game right now, and each row says how long ago it was published instead of a bare date.",
+      "highlights": [
+        "Default sort alternates newest with dev picks (then most-viewed once the picks run out); live streamers still lead",
+        "Green live dot on the Videos icon while someone is streaming Dungeon Train",
+        "Rows read Today / 3 days ago / 2 weeks ago / 5 months ago; the date once a video is over a year old",
+        "Views, Recent and Dev picks sorts are unchanged"
+      ],
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.878.0",
+      "released_at": "2026-09-14T09:17:42Z"
+    },
+    {
+      "id": "sheet-blocks-count-with-entities",
+      "version": "0.879.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor sheet keeps its block count when a build holds an armour stand",
+      "summary": "In the editor screen, the Blocks line of a build's data sheet went blank as soon as the build contained an entity such as an armour stand. The count now always shows, with the entity and container tallies beside it when there is room.",
+      "highlights": [
+        "Blocks line reads e.g. '312 \u00b7 1 entities' instead of disappearing",
+        "On a narrow window only the tallies drop off, never the count"
+      ],
+      "pr": 1409,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stages-tab-real-palette-and-select",
+      "version": "0.880.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Stages tab previews show each stage's real blocks, and \u2713 selects the stage",
+      "summary": "In the Train Editor's Stages tab, every wood stage's preview used to look identical \u2014 the tiles were drawn with the raw stage placeholder blocks instead of that stage's wood. Previews now resolve through each stage's palette, so acacia, birch, cherry, warped and the rest each show their own blocks. The \u2713 button on the preview pane now selects the shown stage: the stage block icons, the placed placeholder textures and the carriage plot previews all follow it, and clicking again deselects. Linking a template to a stage lives on the template's own sheet.",
+      "highlights": [
+        "Stage previews stamp with the stage's real palette instead of placeholder blocks",
+        "\u2713 on the stage preview selects (or deselects) that stage \u2014 icons, textures and plots follow"
+      ],
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-world-vanilla-exit-menu",
+      "version": "0.881.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Train Editor pause menu keeps Save and Quit",
+      "summary": "The Train Editor world's pause menu no longer offers Abandon This Run \u2014 there is no run to abandon there, and taking it killed the author. It now shows the normal Save and Quit to Title, with My Builds above it, and Shift still reveals Exit to Title | Quit Game.",
+      "highlights": [
+        "Train Editor: Esc menu shows Save and Quit to Title instead of the red Abandon This Run",
+        "My Builds stays above the exit; Shift still swaps in Exit to Title | Quit Game"
+      ],
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-observers-quiet-and-setting",
+      "version": "0.882.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor: observers stay quiet while you build",
+      "summary": "Observers in an editor plot no longer fire on their own while the editor shows you things \u2014 the variant preview cycle, a row click in the variant menu, a plot reset. And there is a new Observers On / Off switch in the editor Settings: switch it Off and every observer inside a plot stays quiet even for blocks you place and break by hand, so you can wire a contraption without setting it off. Trains in play worlds are untouched.",
+      "highlights": [
+        "Variant previews, menu previews, mirror stamps and plot resets never pulse an observer",
+        "Settings \u2192 Observers | On | Off \u2014 Off mutes observers in editor plots, hand edits included; remembered per world",
+        "Wallminer trap: TNT joins the wall-cell variant pool; new 'very_dangerouds_1' trap contents"
+      ],
+      "pr": 1407,
       "date": "2026-09-14",
       "released": false,
       "released_in": null,
