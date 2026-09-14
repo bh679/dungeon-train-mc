@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.template.BuilderCredit;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.TemplateMeta;
 import games.brennan.dungeontrain.template.TemplateWeightCodec;
+import games.brennan.dungeontrain.template.TemplateWeightOverlay;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -43,7 +44,10 @@ import java.util.Map;
  * a flat JSON object mapping name to integer weight, e.g.
  * {@code {"default": 1, "stone_section": 3}}. Bundled defaults at
  * {@code /data/dungeontrain/<kind.subdir>/weights.json} on the classpath.
- * Both files optional; missing or empty = uniform pick.</p>
+ * Both files optional; missing or empty = uniform pick. Only entries that differ from the bundled
+ * record are ever written to the config file — see
+ * {@link games.brennan.dungeontrain.template.TemplateWeightOverlay} — and it is not read at all
+ * while the world has disabled custom content.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrackVariantWeights {
@@ -56,8 +60,16 @@ public final class TrackVariantWeights {
 
     /** Per-kind cache, populated on {@link #reload()}. */
     private static final Map<TrackKind, Map<String, TemplateMeta>> CURRENT = new EnumMap<>(TrackKind.class);
+    /**
+     * Per-kind bundled tier exactly as loaded, kept beside the merged view so {@link #writeConfig}
+     * can persist only what differs from it. See {@link TemplateWeightOverlay#diff}.
+     */
+    private static final Map<TrackKind, Map<String, TemplateMeta>> BUNDLED = new EnumMap<>(TrackKind.class);
     static {
-        for (TrackKind k : TrackKind.values()) CURRENT.put(k, Map.of());
+        for (TrackKind k : TrackKind.values()) {
+            CURRENT.put(k, Map.of());
+            BUNDLED.put(k, Map.of());
+        }
     }
 
     private TrackVariantWeights() {}
@@ -328,6 +340,7 @@ public final class TrackVariantWeights {
         for (TrackKind kind : TrackKind.values()) {
             Map<String, TemplateMeta> merged = new HashMap<>();
             int bundled = loadInto(kind, merged, true);
+            BUNDLED.put(kind, Map.copyOf(merged));
             int config = loadInto(kind, merged, false);
             CURRENT.put(kind, Map.copyOf(merged));
             total += merged.size();
@@ -341,7 +354,10 @@ public final class TrackVariantWeights {
     }
 
     public static synchronized void clear() {
-        for (TrackKind k : TrackKind.values()) CURRENT.put(k, Map.of());
+        for (TrackKind k : TrackKind.values()) {
+            CURRENT.put(k, Map.of());
+            BUNDLED.put(k, Map.of());
+        }
     }
 
     /**
@@ -422,9 +438,13 @@ public final class TrackVariantWeights {
     private static void writeConfig(TrackKind kind, Map<String, TemplateMeta> weights) throws IOException {
         Path file = configPath(kind);
         Files.createDirectories(file.getParent());
+        // Only the player's own changes go to disk. Writing the whole merged view froze every
+        // bundled weight into the overlay and hid later retunes — a room retired to weight 0 kept
+        // spawning for anyone who had ever touched a room setting. See TemplateWeightOverlay.
+        Map<String, TemplateMeta> overlay = TemplateWeightOverlay.diff(weights, BUNDLED.get(kind));
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             new GsonBuilder().setPrettyPrinting().create()
-                .toJson(TemplateWeightCodec.toJson(weights), w);
+                .toJson(TemplateWeightCodec.toJson(overlay), w);
         }
     }
 
@@ -470,6 +490,8 @@ public final class TrackVariantWeights {
     }
 
     private static Reader openConfig(TrackKind kind) {
+        // A world that disabled custom content gets the bundled catalogue and nothing else.
+        if (!TemplateWeightOverlay.overlayReadable()) return null;
         Path file = configPath(kind);
         if (!Files.isRegularFile(file)) return null;
         try {
