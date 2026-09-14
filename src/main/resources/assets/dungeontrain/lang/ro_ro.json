@@ -146,6 +146,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Joc Liber",
+  "gui.dungeontrain.enderchest.expand": "Extinde ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Doar în Joc Liber: mărește acest cufăr Ender la %s sloturi. Păstrează această mărime în fiecare lume de Joc Liber și nu mai poate fi micșorat.",
   "gui.dungeontrain.difficulty_confirm.title": "Schimbi dificultatea în %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Fiecare dificultate e o partidă separată.",
   "gui.dungeontrain.difficulty_confirm.loss": "Tot ce ai la tine îți este luat — tot inventarul, XP-ul și Ender Chest-ul.",

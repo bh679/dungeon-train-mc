@@ -114,6 +114,8 @@
   "container.dungeontrain.enderchest.profile": "%s（%s）",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "フリープレイ",
+  "gui.dungeontrain.enderchest.expand": "拡張 ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "フリープレイ限定：このエンダーチェストを%sスロットに拡張します。フリープレイのどのワールドでもこの大きさのままで、元に戻すことはできません。",
   "gui.dungeontrain.difficulty_confirm.title": "難易度を%sに変更しますか？",
   "gui.dungeontrain.difficulty_confirm.body": "難易度ごとに、それぞれ別の旅になります。",
   "gui.dungeontrain.difficulty_confirm.loss": "持っているものはすべて手元から離れます——インベントリ全部、経験値、エンダーチェストも。",

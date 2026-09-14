@@ -114,6 +114,8 @@
   "container.dungeontrain.enderchest.profile": "%s（%s）",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "自由模式",
+  "gui.dungeontrain.enderchest.expand": "擴充 ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "僅限自由模式：將此終界箱擴充為 %s 格。在所有自由模式世界中都保持此大小，且無法再縮回。",
   "gui.dungeontrain.difficulty_confirm.title": "要把難度改成 %s 嗎？",
   "gui.dungeontrain.difficulty_confirm.body": "每個難度都是各自獨立的一趟旅程。",
   "gui.dungeontrain.difficulty_confirm.loss": "你身上帶的一切都會被收走——整個物品欄、你的經驗值，還有你的終界箱。",

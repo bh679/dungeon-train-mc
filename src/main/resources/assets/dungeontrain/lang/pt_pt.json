@@ -129,6 +129,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Jogo Livre",
+  "gui.dungeontrain.enderchest.expand": "Expandir ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Apenas em Jogo Livre: amplia esta arca do End para %s espaços. Mantém esse tamanho em todos os mundos de Jogo Livre e não pode voltar a ser reduzida.",
   "gui.dungeontrain.difficulty_confirm.title": "Mudar a dificuldade para %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Cada dificuldade é uma partida à parte.",
   "gui.dungeontrain.difficulty_confirm.loss": "Tudo o que levas contigo é-te retirado — o inventário inteiro, a tua XP e o teu Baú de Ender.",

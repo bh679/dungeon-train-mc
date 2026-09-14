@@ -144,6 +144,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Свободная игра",
+  "gui.dungeontrain.enderchest.expand": "Расширить ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Только в Свободной игре: расширяет этот сундук Края до %s ячеек. Он останется таким во всех мирах Свободной игры, и уменьшить его обратно нельзя.",
   "gui.dungeontrain.difficulty_confirm.title": "Изменить сложность на %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Каждая сложность имеет свой индивидуальный забег.",
   "gui.dungeontrain.difficulty_confirm.loss": "Всё нажитое забирут - твой инвентарь, опыт и вещи из сундука Края.",

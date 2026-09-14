@@ -70,6 +70,8 @@
       "chat.dungeontrain.free_play.cheat_mods",
       "container.dungeontrain.enderchest.profile",
       "container.dungeontrain.enderchest.separator",
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
       "chat.dungeontrain.free_play.ais_changed",
       "command.dungeontrain.fix_ais.backup",
       "command.dungeontrain.report_carriage.player_only",

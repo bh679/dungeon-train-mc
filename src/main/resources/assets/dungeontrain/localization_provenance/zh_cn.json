@@ -65,6 +65,8 @@
       "container.dungeontrain.enderchest.profile",
       "container.dungeontrain.enderchest.separator",
       "container.dungeontrain.enderchest.free_play",
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
       "gui.dungeontrain.difficulty_confirm.title",
       "gui.dungeontrain.difficulty_confirm.body",
       "gui.dungeontrain.difficulty_confirm.loss",

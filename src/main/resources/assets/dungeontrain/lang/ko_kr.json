@@ -114,6 +114,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "무료 시작\n",
+  "gui.dungeontrain.enderchest.expand": "확장 ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "자유 플레이 전용: 이 엔더 상자를 %s칸으로 확장합니다. 모든 자유 플레이 월드에서 이 크기가 유지되며 다시 줄일 수 없습니다.",
   "gui.dungeontrain.difficulty_confirm.title": "난이도를 %s(으)로 바꿀까요?",
   "gui.dungeontrain.difficulty_confirm.body": "난이도마다 완전히 별개의 플레이입니다.",
   "gui.dungeontrain.difficulty_confirm.loss": "지금 지니고 있는 것은 모두 회수됩니다 — 인벤토리 전부, 경험치, 엔더 상자까지.",

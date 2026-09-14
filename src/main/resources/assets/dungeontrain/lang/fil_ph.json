@@ -114,6 +114,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Malayang Paglalaro",
+  "gui.dungeontrain.enderchest.expand": "Palakihin ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Sa Malayang Paglalaro lang: palakihin ang Ender Chest na ito sa %s na puwesto. Mananatili ito sa laking iyon sa bawat mundo ng Malayang Paglalaro at hindi na maibabalik sa dati.",
   "gui.dungeontrain.difficulty_confirm.title": "Palitan ang antas ng hirap sa %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Bawat antas ng hirap ay sariling hiwalay na takbo.",
   "gui.dungeontrain.difficulty_confirm.loss": "Kukunin sa iyo ang lahat ng dala mo — ang buong inventory mo, ang XP mo at ang Ender Chest mo.",

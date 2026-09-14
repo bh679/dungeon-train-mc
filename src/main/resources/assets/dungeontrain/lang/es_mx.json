@@ -129,6 +129,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Juego Libre",
+  "gui.dungeontrain.enderchest.expand": "Ampliar ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Solo en Juego Libre: amplía este cofre de Ender a %s espacios. Conserva ese tamaño en todos los mundos de Juego Libre y ya no se puede reducir.",
   "gui.dungeontrain.difficulty_confirm.title": "¿Cambiar la dificultad a %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Cada dificultad es una partida aparte.",
   "gui.dungeontrain.difficulty_confirm.loss": "Todo lo que traes encima se te quita: tu inventario completo, tu XP y tu cofre de Ender.",

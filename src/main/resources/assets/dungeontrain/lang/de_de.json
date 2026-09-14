@@ -129,6 +129,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Freies Spiel",
+  "gui.dungeontrain.enderchest.expand": "Erweitern ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Nur im Freien Spiel: Vergrößert diese Endertruhe auf %s Plätze. Sie behält diese Größe in jeder Welt im Freien Spiel und kann nicht wieder verkleinert werden.",
   "gui.dungeontrain.difficulty_confirm.title": "Schwierigkeit auf %s ändern?",
   "gui.dungeontrain.difficulty_confirm.body": "Jede Schwierigkeit ist eine eigene, getrennte Partie.",
   "gui.dungeontrain.difficulty_confirm.loss": "Alles, was du bei dir trägst, wird dir abgenommen — dein ganzes Inventar, deine Erfahrung und deine Endertruhe.",

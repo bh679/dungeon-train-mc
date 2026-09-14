@@ -114,6 +114,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Main Bebas",
+  "gui.dungeontrain.enderchest.expand": "Perluas ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Hanya di Main Bebas: perbesar Peti Ender ini menjadi %s slot. Ukurannya tetap sama di setiap dunia Main Bebas dan tidak bisa diperkecil lagi.",
   "gui.dungeontrain.difficulty_confirm.title": "Ubah kesulitan ke %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Setiap tingkat kesulitan adalah perjalanan tersendiri.",
   "gui.dungeontrain.difficulty_confirm.loss": "Semua yang kamu bawa akan diambil darimu — seluruh inventaris, XP, dan Peti Ender-mu.",

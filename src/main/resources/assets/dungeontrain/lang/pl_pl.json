@@ -144,6 +144,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Swobodna Gra",
+  "gui.dungeontrain.enderchest.expand": "Rozszerz ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Tylko w Swobodnej Grze: powiększa tę skrzynię Kresu do %s miejsc. Zachowa ten rozmiar w każdym świecie Swobodnej Gry i nie da się jej już zmniejszyć.",
   "gui.dungeontrain.difficulty_confirm.title": "Zmienić poziom trudności na %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Każdy poziom trudności to osobna rozgrywka.",
   "gui.dungeontrain.difficulty_confirm.loss": "Wszystko, co niesiesz, zostanie ci odebrane — cały ekwipunek, doświadczenie i skrzynia Kresu.",

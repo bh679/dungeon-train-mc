@@ -114,6 +114,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "chơi tự do",
+  "gui.dungeontrain.enderchest.expand": "Mở rộng ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Chỉ trong chơi tự do: mở rộng rương Ender này lên %s ô. Rương giữ nguyên kích thước đó trong mọi thế giới chơi tự do và không thể thu nhỏ lại.",
   "gui.dungeontrain.difficulty_confirm.title": "Chuyển độ khó sang %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Mỗi độ khó là một hành trình riêng biệt.",
   "gui.dungeontrain.difficulty_confirm.loss": "Mọi thứ bạn đang mang theo sẽ bị lấy đi — toàn bộ túi đồ, điểm kinh nghiệm và Rương Ẩn Giới của bạn.",

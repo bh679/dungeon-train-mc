@@ -114,6 +114,8 @@
   "container.dungeontrain.enderchest.profile": "%s（%s）",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "自由模式",
+  "gui.dungeontrain.enderchest.expand": "扩容 ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "仅限自由模式：将此末影箱扩展为 %s 格。在所有自由模式世界中都保持此大小，且无法再缩回。",
   "gui.dungeontrain.difficulty_confirm.title": "切换到%s难度？",
   "gui.dungeontrain.difficulty_confirm.body": "每个难度都是各自独立的一轮旅程。",
   "gui.dungeontrain.difficulty_confirm.loss": "你身上携带的一切都会被取走——整个物品栏、经验值和末影箱。",

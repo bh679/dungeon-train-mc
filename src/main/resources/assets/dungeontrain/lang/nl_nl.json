@@ -129,6 +129,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Vrij Spel",
+  "gui.dungeontrain.enderchest.expand": "Vergroten ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Alleen in Vrij Spel: vergroot deze enderkist tot %s vakken. Hij houdt die grootte in elke Vrij Spel-wereld en kan niet meer worden verkleind.",
   "gui.dungeontrain.difficulty_confirm.title": "Moeilijkheidsgraad wijzigen naar %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Elke moeilijkheidsgraad is een eigen, aparte run.",
   "gui.dungeontrain.difficulty_confirm.loss": "Alles wat je bij je draagt wordt je afgenomen — je hele inventaris, je XP en je Enderkist.",

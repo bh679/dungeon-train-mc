@@ -131,6 +131,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Free Play",
+  "gui.dungeontrain.enderchest.expand": "Expand \u00d73",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Free Play only: grow this Ender Chest to %s slots. It stays that size in every Free Play world and can't be shrunk again.",
   "gui.dungeontrain.difficulty_confirm.title": "Change difficulty to %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Each difficulty is its own separate run.",
   "gui.dungeontrain.difficulty_confirm.loss": "Everything you are carrying is taken off you — your whole inventory, your XP and your Ender Chest.",

@@ -2551,6 +2551,14 @@
       ]
     }
   },
+  "gui.dungeontrain.enderchest.expand.tooltip": {
+    "1": {
+      "label": "the expanded chest's slot count",
+      "examples": [
+        "81"
+      ]
+    }
+  },
   "death.attack.dungeontrain.abandoned": {
     "1": {
       "label": "the player who died",

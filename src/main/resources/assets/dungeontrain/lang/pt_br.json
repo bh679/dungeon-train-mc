@@ -129,6 +129,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Jogo Livre",
+  "gui.dungeontrain.enderchest.expand": "Expandir ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Somente no Jogo Livre: amplia este baú do End para %s espaços. Ele mantém esse tamanho em todos os mundos de Jogo Livre e não pode mais ser reduzido.",
   "gui.dungeontrain.difficulty_confirm.title": "Mudar a dificuldade para %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Cada dificuldade é uma jornada separada.",
   "gui.dungeontrain.difficulty_confirm.loss": "Tudo o que você está carregando é tirado de você — todo o seu inventário, seu XP e seu Baú do End.",

@@ -129,6 +129,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "Gioco Libero",
+  "gui.dungeontrain.enderchest.expand": "Espandi ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "Solo in Gioco Libero: amplia questo baule dell'End a %s slot. Mantiene quella dimensione in ogni mondo in Gioco Libero e non può più essere ridotto.",
   "gui.dungeontrain.difficulty_confirm.title": "Passare alla difficoltà %s?",
   "gui.dungeontrain.difficulty_confirm.body": "Ogni difficoltà è una partita a sé.",
   "gui.dungeontrain.difficulty_confirm.loss": "Tutto ciò che porti con te ti viene tolto: l'intero inventario, la tua esperienza e il tuo Baule dell'End.",

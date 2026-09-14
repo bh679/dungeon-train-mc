@@ -95,6 +95,8 @@
       "chat.dungeontrain.free_play.consequence",
       "container.dungeontrain.enderchest.profile",
       "container.dungeontrain.enderchest.separator",
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
       "gui.dungeontrain.difficulty_confirm.body",
       "gui.dungeontrain.difficulty_confirm.loss",
       "gui.dungeontrain.difficulty_confirm.empty",

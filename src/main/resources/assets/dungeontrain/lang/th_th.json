@@ -114,6 +114,8 @@
   "container.dungeontrain.enderchest.profile": "%s (%s)",
   "container.dungeontrain.enderchest.separator": " · ",
   "container.dungeontrain.enderchest.free_play": "โหมดเล่นอิสระ",
+  "gui.dungeontrain.enderchest.expand": "ขยาย ×3",
+  "gui.dungeontrain.enderchest.expand.tooltip": "เฉพาะโหมดเล่นอิสระ: ขยายหีบเอนเดอร์นี้เป็น %s ช่อง ขนาดนี้จะคงอยู่ในทุกโลกของโหมดเล่นอิสระและย่อกลับไม่ได้",
   "gui.dungeontrain.difficulty_confirm.title": "เปลี่ยนความยากเป็น %s?",
   "gui.dungeontrain.difficulty_confirm.body": "แต่ละความยากคือการเดินทางแยกของตัวเอง",
   "gui.dungeontrain.difficulty_confirm.loss": "ทุกอย่างที่คุณถืออยู่จะถูกนำออกไป — ทั้งช่องเก็บของ ค่าประสบการณ์ และหีบเอนเดอร์ของคุณ",
