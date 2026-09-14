@@ -16636,6 +16636,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-midlibrary-floor-variants-mild2-phases",
+      "version": "0.886.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Mid-library floors vary, and the mild trap rides the whole line",
+      "summary": "The mid-library dimensional carriage now rolls a different floor each time \u2014 polished blackstone, stripped wood or spruce planks \u2014 instead of one fixed finish, and the library carriage has been retouched. The mild trap carriage is no longer capped at the early levels: it can now turn up in every band of the journey, and the easy trap has been rewired.",
+      "highlights": [
+        "Mid-library dimensional carriage: floor material is picked per train",
+        "Mild trap carriage can appear at any level, in every band",
+        "Easy trap carriage rewired; dangerous trap retouched"
+      ],
+      "pr": 1406,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
