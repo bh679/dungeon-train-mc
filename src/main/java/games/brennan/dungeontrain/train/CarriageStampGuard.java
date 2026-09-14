@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.train;
 /**
  * Marks the current thread as being inside a Dungeon Train <b>system block write</b> — a template
  * being stamped into the world, whether for a spawning train carriage (place, Sable lift, contents),
- * an editor preview plot, or a loader restoring a saved carriage, tunnel, track or pillar.
+ * an editor preview plot, or a loader restoring a saved carriage, tunnel, track or pillar — and the
+ * editor's display-only rewrites of a plot: the variant preview ticker, menu previews, the variant
+ * mirror's cosmetic stamp, and the reset / delete-and-restamp commands.
  *
  * <p><b>Consumers.</b> {@code CropBlockCarriageSurviveMixin} relaxes the crop light check while the
  * guard is held (the original reason for it, below), and {@code ObserverBlockStampMixin} keeps

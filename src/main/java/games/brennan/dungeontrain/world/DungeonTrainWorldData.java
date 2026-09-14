@@ -77,6 +77,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_KEEP_INVENTORY_USED = "keepInventoryUsed";
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
     private static final String TAG_PORTAL_TEST_RESEED = "portalTestReseed";
+    private static final String TAG_EDITOR_OBSERVERS_ON = "editorObserversOn";
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
@@ -262,6 +263,8 @@ public final class DungeonTrainWorldData extends SavedData {
      * by default: a test then stamps the same roll every time, which is what it always did.
      */
     private boolean portalTestReseed = false;
+    /** Editor Settings → Observers. Off mutes every observer inside an editor plot; see {@code EditorObservers}. */
+    private boolean editorObserversOn = true;
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -528,6 +531,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_PORTAL_TEST_RESEED)) {
             data.portalTestReseed = tag.getBoolean(TAG_PORTAL_TEST_RESEED);
         }
+        if (tag.contains(TAG_EDITOR_OBSERVERS_ON)) {
+            data.editorObserversOn = tag.getBoolean(TAG_EDITOR_OBSERVERS_ON);
+        }
         if (tag.contains(TAG_HELP_PANEL_DISMISSED)) {
             net.minecraft.nbt.ListTag dismissed =
                     tag.getList(TAG_HELP_PANEL_DISMISSED, net.minecraft.nbt.Tag.TAG_STRING);
@@ -622,6 +628,7 @@ public final class DungeonTrainWorldData extends SavedData {
             tag.put(TAG_HELP_PANEL_DISMISSED, dismissed);
         }
         if (portalTestReseed) tag.putBoolean(TAG_PORTAL_TEST_RESEED, true);
+        if (!editorObserversOn) tag.putBoolean(TAG_EDITOR_OBSERVERS_ON, false);
         return tag;
     }
 
@@ -633,6 +640,18 @@ public final class DungeonTrainWorldData extends SavedData {
     /** True when each {@code portal test} should roll fresh room contents. */
     public boolean isPortalTestReseed() {
         return portalTestReseed;
+    }
+
+    /** True unless the editor's Observers setting is Off — the default, and every play world. */
+    public boolean isEditorObserversOn() {
+        return editorObserversOn;
+    }
+
+    /** Editor Settings → Observers On / Off. */
+    public void setEditorObserversOn(boolean on) {
+        if (editorObserversOn == on) return;
+        editorObserversOn = on;
+        setDirty();
     }
 
     /** Set whether {@code portal test} reseeds its room each time. */

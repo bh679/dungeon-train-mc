@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
@@ -1045,10 +1046,16 @@ public final class BlockVariantMenuController {
         Set<BlockPos> targets = lockId > 0 ? plot.positionsWithLockId(lockId) : Set.of(localPos);
         if (targets.isEmpty()) targets = Set.of(localPos);
 
-        for (BlockPos target : targets) {
-            BlockPos worldPos = plot.origin().offset(target);
-            SilentBlockOps.setBlockSilentNoCascade(level, worldPos, picked.state(), picked.blockEntityNbt());
-        }
+        // Guarded so an observer facing a previewed cell does not pulse on the row click —
+        // a display rewrite, not a gameplay event (ObserverBlockStampMixin).
+        VariantState shown = picked;
+        Set<BlockPos> cells = targets;
+        CarriageStampGuard.run(() -> {
+            for (BlockPos target : cells) {
+                BlockPos worldPos = plot.origin().offset(target);
+                SilentBlockOps.setBlockSilentNoCascade(level, worldPos, shown.state(), shown.blockEntityNbt());
+            }
+        });
     }
 
     /**

@@ -235,6 +235,34 @@ final class TemplateDataSheetTest {
     }
 
     @Test
+    @DisplayName("Blocks keeps its count when the entity and container tallies do not fit")
+    void blocksLineSurvivesNarrowSheet() {
+        games.brennan.dungeontrain.client.builder.TemplateSummary bare =
+            new games.brennan.dungeontrain.client.builder.TemplateSummary(312, net.minecraft.core.Vec3i.ZERO, 0, 0, 0);
+        TemplateDataSheet.Line plain = TemplateDataSheet.blocksLine(bare, "…");
+        assertEquals(List.of("312"), plain.cells().stream().map(TemplateDataSheet.Cell::text).toList());
+
+        // An armour stand and a chest saved with the template: three cells, the count first.
+        games.brennan.dungeontrain.client.builder.TemplateSummary full =
+            new games.brennan.dungeontrain.client.builder.TemplateSummary(312, net.minecraft.core.Vec3i.ZERO, 1, 1, 1);
+        TemplateDataSheet.Line line = TemplateDataSheet.blocksLine(full, "…");
+        assertEquals(3, line.cells().size());
+        assertEquals("312", line.cells().get(0).text());
+        for (TemplateDataSheet.Cell c : line.cells()) assertNull(c.action(), "read-only");
+
+        // A sheet only just wide enough for the count: the count lands, the tallies give way.
+        FixedFont font = new FixedFont();
+        int labelW = font.width(line.label());
+        InventoryEditorLayout.Rect narrow = new InventoryEditorLayout.Rect(0, 0,
+            2 + labelW + TemplateDataSheet.LABEL_GAP + font.width("312") + 1, InventoryEditorLayout.SHEET_H);
+        List<TemplateDataSheet.Placed> placed = TemplateDataSheet.place(List.of(line), narrow, font);
+        assertEquals(List.of("312"), placed.stream().map(p -> p.cell().text()).toList(),
+            "the count must survive a sheet too narrow for its tallies");
+
+        assertEquals("…", TemplateDataSheet.blocksLine(null, "…").cells().get(0).text());
+    }
+
+    @Test
     @DisplayName("Built by is read-only in play and a picker in dev mode, per category")
     void builderLine() {
         VariantKey pen = VariantKey.of(PlotCategory.CARRIAGES, "pen", "pen");

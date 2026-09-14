@@ -27,7 +27,7 @@ import java.util.Map;
  * plot and takes unsaved edits with it — the screen asks before it does.</p>
  *
  * <p>The same shape as {@link EditorSettingsPane}: lay out, render, hit-test. The tile grid is its
- * own arithmetic rather than {@code BuilderGridLayout}'s because that one centres in a whole screen
+ * own arithmetic rather than {@code BuilderPickerLayout}'s because that one centres a whole body in the screen
  * with its own margins, and here the tiles fill a column.</p>
  */
 final class EditorNavPane {

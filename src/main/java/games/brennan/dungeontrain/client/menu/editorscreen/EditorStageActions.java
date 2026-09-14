@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.client.menu.editorscreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.ConfirmScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
-import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 
 import java.util.ArrayList;
@@ -19,7 +18,7 @@ import java.util.List;
 public final class EditorStageActions {
 
     static final String REFRESH = "refresh";
-    static final String APPLY = "apply";
+    static final String SELECT = "select";
     static final String RENAME = "rename";
     static final String DUPLICATE = "duplicate";
     static final String DELETE = "delete";
@@ -30,15 +29,20 @@ public final class EditorStageActions {
     private EditorStageActions() {}
 
     /**
-     * Refresh · Apply · Rename | Duplicate · Delete | Previous · Next | Re-bake.
+     * Refresh · Select · Rename | Duplicate · Delete | Previous · Next | Re-bake.
+     *
+     * <p>Select is the editor's global focused stage ({@code editor stage select}, a toggle): the
+     * carriage plots restamp for its parts, and the stage placeholder blocks' icons and placed
+     * textures resolve through its palette. Linking a template to a stage lives on the template's
+     * own sheet ({@link TemplateDataSheet}), not here.</p>
      *
      * @param stage    the shown stage
-     * @param applyTo  the template the Apply button links to the stage, or null for none selected
+     * @param selected whether the shown stage is already the focused one (Select reads as Deselect)
      * @param canPage  whether there is more than one carriage to page the model through
      * @param refresh  what Refresh does on the client (re-roll the model's block variants)
      * @param step     what Previous / Next do on the client ({@code -1} / {@code +1})
      */
-    public static List<EditorScreenActions.Icon> icons(EditorRosterPacket.StageEntry stage, VariantKey applyTo,
+    public static List<EditorScreenActions.Icon> icons(EditorRosterPacket.StageEntry stage, boolean selected,
                                                        boolean canPage, Runnable refresh,
                                                        java.util.function.IntConsumer step) {
         List<EditorScreenActions.Icon> out = new ArrayList<>(8);
@@ -46,11 +50,9 @@ public final class EditorStageActions {
         out.add(new EditorScreenActions.Icon(REFRESH, EditorScreenLang.STAGES_ICON_REFRESH,
             new CommandMenuEntry.ClientAction(EditorScreenLang.text(EditorScreenLang.STAGES_ICON_REFRESH), refresh, false),
             null));
-        String apply = applyCommand(applyTo, id);
-        out.add(new EditorScreenActions.Icon(APPLY, EditorScreenLang.STAGES_ICON_APPLY,
-            apply == null ? null : new CommandMenuEntry.Stay(APPLY, apply),
-            EditorScreenLang.STAGES_APPLY_NONE,
-            applyTo == null ? null : applyTo.displayName()));
+        out.add(new EditorScreenActions.Icon(SELECT,
+            selected ? EditorScreenLang.STAGES_ICON_DESELECT : EditorScreenLang.STAGES_ICON_SELECT,
+            new CommandMenuEntry.Stay(SELECT, "dungeontrain editor stage select " + id), null));
         out.add(new EditorScreenActions.Icon(RENAME, EditorScreenLang.STAGES_ICON_RENAME,
             new CommandMenuEntry.TypeArg(EditorScreenLang.text(EditorScreenLang.STAGES_ICON_RENAME), "name",
                 "dungeontrain editor stage rename " + id, "", stage.name()),
@@ -72,20 +74,6 @@ public final class EditorStageActions {
         out.add(new EditorScreenActions.Icon(REBAKE, EditorScreenLang.STAGES_ICON_REBAKE,
             new CommandMenuEntry.Stay(REBAKE, "dungeontrain editor stage bake " + id), null));
         return out;
-    }
-
-    /**
-     * The command linking {@code target} to the stage, or null when nothing gateable is selected:
-     * parts link through their own packet, and track-side groups have no member verb.
-     */
-    static String applyCommand(VariantKey target, String stageId) {
-        if (target == null || target.category() == null) return null;
-        if (target.isSubVariant()) {
-            return target.category() == PlotCategory.CONTENTS
-                ? EditorPlotTeleport.groupMemberStageApplyCommandFor(target.parentId(), target.modelName(), stageId)
-                : null;
-        }
-        return EditorPlotTeleport.stageApplyCommandFor(target.category(), target.modelId(), target.modelName(), stageId);
     }
 
     /**

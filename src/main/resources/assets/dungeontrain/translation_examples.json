@@ -2641,6 +2641,34 @@
       ]
     }
   },
+  "gui.dungeontrain.enderchest.expand.tooltip": {
+    "1": {
+      "label": "the expanded chest's slot count",
+      "examples": [
+        "114"
+      ]
+    },
+    "2": {
+      "label": "rows added above the chest",
+      "examples": [
+        "3"
+      ]
+    },
+    "3": {
+      "label": "columns added on each side",
+      "examples": [
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.enderchest.shrink.tooltip": {
+    "1": {
+      "label": "the plain chest's slot count",
+      "examples": [
+        "27"
+      ]
+    }
+  },
   "death.attack.dungeontrain.abandoned": {
     "1": {
       "label": "the player who died",
@@ -4691,6 +4719,31 @@
       "examples": [
         "130",
         "1.2K"
+      ]
+    }
+  },
+  "gui.dungeontrain.videos.ago": {
+    "1": {
+      "label": "how long ago the video was published, as a whole clause (days, weeks or months)",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.time.day.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.week.one",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.time.month.other",
+          "args": [
+            "5"
+          ]
+        }
       ]
     }
   },
