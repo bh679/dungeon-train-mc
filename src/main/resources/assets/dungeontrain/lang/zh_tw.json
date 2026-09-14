@@ -2091,6 +2091,8 @@
   "gui.dungeontrain.videos.sort.recent": "最新",
   "gui.dungeontrain.videos.sort.dev_picks": "開發者推薦",
   "gui.dungeontrain.videos.views": "%s 次觀看",
+  "gui.dungeontrain.videos.today": "今天",
+  "gui.dungeontrain.videos.ago": "%s前",
   "gui.dungeontrain.videos.state.loading": "正在載入影片…",
   "gui.dungeontrain.videos.state.failed": "無法取得影片清單。請檢查網路連線後再試一次。",
   "gui.dungeontrain.videos.state.empty": "沒有符合這些篩選條件的影片。",

@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.client.localization.LocalizationCreditRegistry
 import games.brennan.dungeontrain.client.version.LauncherDetector;
 import games.brennan.dungeontrain.client.version.VersionCheckState;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareState;
+import games.brennan.dungeontrain.client.videos.VideoCatalog;
 import games.brennan.dungeontrain.client.version.VersionStatusButton;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import net.minecraft.client.Minecraft;
@@ -111,6 +112,9 @@ public final class TitleScreenLayoutHandler {
         // list stays current on shipped jars, baked ∪ disk-cache when offline. (Also refreshed at
         // server boot for dedicated servers, which have no title screen.)
         CheatModListFetcher.ensureFetched();
+        // And the Videos catalogue: the icon below shows a live dot when a streamer is on, so it
+        // is needed before the page is opened (and the page then opens already populated).
+        VideoCatalog.ensureFetched();
         LauncherDetector.source();
         event.addListener(new VersionStatusButton(4, 4));
 

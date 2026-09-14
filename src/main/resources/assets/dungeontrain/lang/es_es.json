@@ -2112,6 +2112,8 @@
   "gui.dungeontrain.videos.sort.recent": "Recientes",
   "gui.dungeontrain.videos.sort.dev_picks": "Selección del dev",
   "gui.dungeontrain.videos.views": "%s visualizaciones",
+  "gui.dungeontrain.videos.today": "Hoy",
+  "gui.dungeontrain.videos.ago": "hace %s",
   "gui.dungeontrain.videos.state.loading": "Cargando vídeos…",
   "gui.dungeontrain.videos.state.failed": "No se pudo cargar la lista de vídeos. Comprueba tu conexión e inténtalo de nuevo.",
   "gui.dungeontrain.videos.state.empty": "Ningún vídeo coincide con estos filtros.",

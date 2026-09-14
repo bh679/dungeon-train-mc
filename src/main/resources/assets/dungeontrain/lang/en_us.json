@@ -1146,6 +1146,8 @@
   "gui.dungeontrain.videos.sort.recent": "Recent",
   "gui.dungeontrain.videos.sort.dev_picks": "Dev picks",
   "gui.dungeontrain.videos.views": "%s views",
+  "gui.dungeontrain.videos.today": "Today",
+  "gui.dungeontrain.videos.ago": "%s ago",
   "gui.dungeontrain.videos.state.loading": "Loading videos…",
   "gui.dungeontrain.videos.state.failed": "Couldn't reach the video list. Check your connection and try again.",
   "gui.dungeontrain.videos.state.empty": "No videos match these filters.",

@@ -2077,6 +2077,8 @@
   "gui.dungeontrain.videos.sort.recent": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "690dbe9dc0993c42"},
   "gui.dungeontrain.videos.sort.dev_picks": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "dc23121e82693b3d"},
   "gui.dungeontrain.videos.views": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "95ca2f9e4068d8c2"},
+  "gui.dungeontrain.videos.today": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "2b065c7c9ce466e5"},
+  "gui.dungeontrain.videos.ago": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "7149cd2c78829635"},
   "gui.dungeontrain.videos.state.loading": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5653f125bb787e52"},
   "gui.dungeontrain.videos.state.failed": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "be9faf6fe715f36b"},
   "gui.dungeontrain.videos.state.empty": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5890ade13a230189"},

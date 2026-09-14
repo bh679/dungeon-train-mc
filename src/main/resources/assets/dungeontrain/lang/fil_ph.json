@@ -2077,6 +2077,8 @@
   "gui.dungeontrain.videos.sort.recent": "Pinakabago",
   "gui.dungeontrain.videos.sort.dev_picks": "Pili ng dev",
   "gui.dungeontrain.videos.views": "%s view",
+  "gui.dungeontrain.videos.today": "Ngayon",
+  "gui.dungeontrain.videos.ago": "%s ang nakalipas",
   "gui.dungeontrain.videos.state.loading": "Ikinakarga ang mga video…",
   "gui.dungeontrain.videos.state.failed": "Hindi ma-abot ang listahan ng video. Suriin ang koneksyon mo at subukan ulit.",
   "gui.dungeontrain.videos.state.empty": "Walang video na tumutugma sa mga filter na ito.",

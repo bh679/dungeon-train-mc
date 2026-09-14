@@ -2077,6 +2077,8 @@
   "gui.dungeontrain.videos.sort.recent": "Terbaru",
   "gui.dungeontrain.videos.sort.dev_picks": "Pilihan dev",
   "gui.dungeontrain.videos.views": "%s tayangan",
+  "gui.dungeontrain.videos.today": "Hari ini",
+  "gui.dungeontrain.videos.ago": "%s yang lalu",
   "gui.dungeontrain.videos.state.loading": "Memuat video…",
   "gui.dungeontrain.videos.state.failed": "Daftar video tidak dapat dimuat. Periksa koneksimu dan coba lagi.",
   "gui.dungeontrain.videos.state.empty": "Tidak ada video yang cocok dengan filter ini.",

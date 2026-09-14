@@ -2147,6 +2147,8 @@
   "gui.dungeontrain.videos.sort.recent": "Najnowsze",
   "gui.dungeontrain.videos.sort.dev_picks": "Wybór dewelopera",
   "gui.dungeontrain.videos.views": "%s wyświetleń",
+  "gui.dungeontrain.videos.today": "Dzisiaj",
+  "gui.dungeontrain.videos.ago": "%s temu",
   "gui.dungeontrain.videos.state.loading": "Wczytywanie filmów…",
   "gui.dungeontrain.videos.state.failed": "Nie udało się pobrać listy filmów. Sprawdź połączenie i spróbuj ponownie.",
   "gui.dungeontrain.videos.state.empty": "Żaden film nie pasuje do tych filtrów.",

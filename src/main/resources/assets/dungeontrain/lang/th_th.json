@@ -2077,6 +2077,8 @@
   "gui.dungeontrain.videos.sort.recent": "ล่าสุด",
   "gui.dungeontrain.videos.sort.dev_picks": "ผู้พัฒนาแนะนำ",
   "gui.dungeontrain.videos.views": "%s ครั้ง",
+  "gui.dungeontrain.videos.today": "วันนี้",
+  "gui.dungeontrain.videos.ago": "%s ที่แล้ว",
   "gui.dungeontrain.videos.state.loading": "กำลังโหลดวิดีโอ…",
   "gui.dungeontrain.videos.state.failed": "ไม่สามารถโหลดรายการวิดีโอได้ โปรดตรวจสอบการเชื่อมต่อแล้วลองใหม่",
   "gui.dungeontrain.videos.state.empty": "ไม่มีวิดีโอที่ตรงกับตัวกรองนี้",

@@ -2112,6 +2112,8 @@
   "gui.dungeontrain.videos.sort.recent": "Recent",
   "gui.dungeontrain.videos.sort.dev_picks": "Dev-keuze",
   "gui.dungeontrain.videos.views": "%s weergaven",
+  "gui.dungeontrain.videos.today": "Vandaag",
+  "gui.dungeontrain.videos.ago": "%s geleden",
   "gui.dungeontrain.videos.state.loading": "Video's laden…",
   "gui.dungeontrain.videos.state.failed": "De videolijst kon niet worden geladen. Controleer je verbinding en probeer het opnieuw.",
   "gui.dungeontrain.videos.state.empty": "Geen video's voldoen aan deze filters.",
