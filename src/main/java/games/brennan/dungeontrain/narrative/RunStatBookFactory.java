@@ -49,10 +49,12 @@ import java.util.Optional;
  *
  * <h2>He does not congratulate a killing</h2>
  * <p>Every follow-up carries a {@link TailTone}. Positive lines — the encouragements, the approving
- * opinions, the warm questions — never follow a {@link RunStatSubject.Tone#GRIM} stat; negative
+ * opinions, the warm questions — never follow a {@link RunStatSubject.Tone#GRIM} reading; negative
  * lines — the disapproving ones, the pointed questions — never follow anything else. Neutral lines
- * fit anywhere. So "You've killed 3 passengers." is met with "Would you do it again?" or "I counted
- * every one.", and never "Good. Go further."</p>
+ * fit anywhere. The tone is the RUN's, not the subject's ({@link RunStatSubject#read}): three
+ * slimes in a hundred carriages is a plain fact and gets a plain remark; three hundred is grim. So
+ * "You've killed 3 passengers." is met with "Would you do it again?" or "I counted every one.", and
+ * never "Good. Go further." — while "You've put down no echoes, 40 carriages in." may well be.</p>
  *
  * <p>A book baked at the container has no subject yet: there is no reader there to have done
  * anything. Until the first refresh it is opener + follow-up alone — a terse but honest scrap,
@@ -205,7 +207,7 @@ public final class RunStatBookFactory {
      */
     public static ItemStack create(long seed) {
         ItemStack stack = BookFactory.buildPlainBookComponents(
-            TITLE, AUTHOR, pages(seed, null, "", 0L, null));
+            TITLE, AUTHOR, pages(seed, null, null, "", null));
         RunStatBookTag.stamp(stack, seed);
         return stack;
     }
@@ -230,13 +232,15 @@ public final class RunStatBookFactory {
         Optional<RunStatSubject> stored = RunStatBookTag.subject(stack);
         RunStatSubject subject = stored.orElseGet(() -> chooseSubject(seed, run));
 
-        long value = subject.value(run);
-        String rendered = subject.rendered(value);
+        RunStatSubject.Reading reading = subject.read(run);
+        // A kill count that has just ticked from 0 to 1 renders "1" where the page said "40" (the
+        // carriage count of the .none line) — different strings, so the swap is caught here too.
+        String rendered = subject.rendered(reading.number());
         if (stored.isPresent() && rendered.equals(RunStatBookTag.renderedValue(stack))) return false;
 
         String locale = WorldInfoReporter.clientLanguage(player);
         ItemStack rebuilt = BookFactory.buildPlainBookComponents(
-            TITLE, AUTHOR, pages(seed, subject, locale, value, player.getName().getString()));
+            TITLE, AUTHOR, pages(seed, subject, reading, locale, player.getName().getString()));
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, rebuilt.get(DataComponents.WRITTEN_BOOK_CONTENT));
         RunStatBookTag.recordBaked(stack, subject, rendered);
         return true;
@@ -258,11 +262,12 @@ public final class RunStatBookFactory {
      *
      * @param subject    {@code null} while the book has not met a reader yet — the stat line is
      *                   then omitted rather than invented.
+     * @param reading    the subject read against the holder's run; {@code null} with {@code subject}.
      * @param playerName {@code null} in the same case — every opener greets someone by name, so
      *                   with nobody to greet there is no opener either.
      */
-    static List<Component> pages(long seed, RunStatSubject subject, String localeCode, long value,
-                                 String playerName) {
+    static List<Component> pages(long seed, RunStatSubject subject, RunStatSubject.Reading reading,
+                                 String localeCode, String playerName) {
         MutableComponent page = Component.empty();
         boolean first = true;
 
@@ -270,13 +275,13 @@ public final class RunStatBookFactory {
             page.append(opener(seed, playerName));
             first = false;
         }
-        if (subject != null) {
+        if (subject != null && reading != null) {
             if (!first) page.append("\n\n");
-            page.append(subject.line(localeCode, value));
+            page.append(subject.line(localeCode, reading.number(), reading.none()));
             first = false;
         }
         if (!first) page.append("\n\n");
-        page.append(tail(seed, subject));
+        page.append(tail(seed, reading == null ? null : reading.tone()));
 
         return List.of(page);
     }
@@ -301,23 +306,23 @@ public final class RunStatBookFactory {
     }
 
     /**
-     * The closing remark, drawn by the seed from the pool {@code subject}'s tone allows. The seed
-     * is fixed at the container, so the pick is stable for as long as the pool is — which is from
-     * the first refresh on.
+     * The closing remark, drawn by the seed from the pool {@code tone} allows. The seed is fixed at
+     * the container, so the pick is stable for as long as the pool is — which, for everything but a
+     * kill count crossing its budget, is from the first refresh on.
      */
-    static Component tail(long seed, RunStatSubject subject) {
-        List<Integer> pool = tailPool(subject);
+    static Component tail(long seed, RunStatSubject.Tone tone) {
+        List<Integer> pool = tailPool(tone);
         int index = pool.get((int) Math.floorMod(mix(seed, SALT_TAIL), pool.size()));
         return Component.translatable(KEY_TAIL + index);
     }
 
     /**
-     * Which follow-ups may close a page about {@code subject}. A book that has no subject yet — one
+     * Which follow-ups may close a page read as {@code tone}. A book that has no subject yet — one
      * still in its chest — is treated as plain: nothing has been said, so nothing is off-limits but
      * the disapproval.
      */
-    static List<Integer> tailPool(RunStatSubject subject) {
-        return subject != null && subject.tone() == RunStatSubject.Tone.GRIM ? TAILS_AFTER_GRIM : TAILS_AFTER_KIND;
+    static List<Integer> tailPool(RunStatSubject.Tone tone) {
+        return tone == RunStatSubject.Tone.GRIM ? TAILS_AFTER_GRIM : TAILS_AFTER_KIND;
     }
 
     private static List<Integer> tailsOf(TailTone a, TailTone b) {

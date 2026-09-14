@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -86,21 +87,51 @@ class RunStatSubjectTest {
     }
 
     @Test
-    @DisplayName("No kills is worth saying only once the run is three carriages in, and one kill ends it")
-    void noKillsIsDerivedAndGated() {
+    @DisplayName("A kill count is read against the run: none is kind, within budget plain, beyond it grim")
+    void killsAreJudgedByRate() {
         PlayerRunState run = new PlayerRunState();
         run.advanceTravelled(2);
-        assertFalse(RunStatSubject.NO_KILLS.clearsFloor(run), "two carriages of nothing is not yet a feat");
+        assertFalse(RunStatSubject.MOB_KILLS.clearsFloor(run), "two carriages of nothing is not yet a remark");
 
-        run.advanceTravelled(3);
-        assertTrue(RunStatSubject.NO_KILLS.clearsFloor(run), "five carriages in with nothing dead");
-        assertEquals(5L, RunStatSubject.NO_KILLS.value(run));
-        assertEquals(RunStatSubject.Tone.KIND, RunStatSubject.NO_KILLS.tone());
+        run.advanceTravelled(98); // 100 carriages in, nothing dead
+        assertTrue(RunStatSubject.MOB_KILLS.clearsFloor(run), "a hundred carriages of nothing is");
+        RunStatSubject.Reading none = RunStatSubject.MOB_KILLS.read(run);
+        assertEquals(new RunStatSubject.Reading(100L, RunStatSubject.Tone.KIND, true), none,
+            "the .none line counts carriages");
+
+        for (int i = 0; i < 25; i++) run.incrementMobKills();
+        assertEquals(new RunStatSubject.Reading(25L, RunStatSubject.Tone.PLAIN, false),
+            RunStatSubject.MOB_KILLS.read(run), "25 per 100 is exactly the budget");
 
         run.incrementMobKills();
-        assertEquals(0L, RunStatSubject.NO_KILLS.value(run), "one kill disqualifies the run");
-        assertFalse(RunStatSubject.NO_KILLS.clearsFloor(run));
-        assertEquals(RunStatSubject.Tone.GRIM, RunStatSubject.MOB_KILLS.tone());
+        assertEquals(RunStatSubject.Tone.GRIM, RunStatSubject.MOB_KILLS.read(run).tone(), "26 per 100 is over");
+
+        // Fixed-tone subjects read as themselves.
+        assertEquals(new RunStatSubject.Reading(0L, RunStatSubject.Tone.KIND, false), RunStatSubject.TAMED.read(run));
+        assertEquals(RunStatSubject.Tone.PLAIN, RunStatSubject.CARRIAGE.read(run).tone());
+    }
+
+    @Test
+    @DisplayName("No passengers or echoes killed is only worth saying once someone has been met")
+    void zeroSocialKillsNeedAnEncounter() {
+        PlayerRunState run = new PlayerRunState();
+        run.advanceTravelled(50);
+        assertFalse(RunStatSubject.PLAYER_KILLS.clearsFloor(run), "nobody met: nothing to have spared");
+        assertFalse(RunStatSubject.ECHOES.clearsFloor(run));
+
+        run.recordEncounter(UUID.randomUUID());
+        assertTrue(RunStatSubject.PLAYER_KILLS.clearsFloor(run));
+        assertTrue(RunStatSubject.ECHOES.clearsFloor(run));
+        assertEquals(RunStatSubject.Tone.KIND, RunStatSubject.PLAYER_KILLS.read(run).tone());
+
+        // 1 per 250 for passengers, 1 per 500 for echoes.
+        run.advanceTravelled(200); // 250 in
+        run.incrementPlayerKills();
+        assertEquals(RunStatSubject.Tone.PLAIN, RunStatSubject.PLAYER_KILLS.read(run).tone(), "1 in 250: within");
+        run.incrementEchoesKilled();
+        assertEquals(RunStatSubject.Tone.GRIM, RunStatSubject.ECHOES.read(run).tone(), "1 in 250 is over 1 per 500");
+        run.advanceTravelled(250); // 500 in
+        assertEquals(RunStatSubject.Tone.PLAIN, RunStatSubject.ECHOES.read(run).tone(), "1 in 500: within");
     }
 
     @Test
@@ -140,6 +171,12 @@ class RunStatSubjectTest {
                 }
             } else {
                 require(lang, s.key(), missing);
+            }
+            // A kill subject also has its zero line, a carriage count — so always a plural family.
+            if (s.budget() != null) {
+                for (String category : PluralRules.categoriesOf("en_us")) {
+                    require(lang, s.noneKey() + "." + category, missing);
+                }
             }
         }
         for (int i = 0; i < RunStatBookFactory.OPENER_COUNT; i++) {
@@ -225,6 +262,11 @@ class RunStatSubjectTest {
         }
         int longestStat = 0;
         for (RunStatSubject sub : RunStatSubject.values()) {
+            if (sub.budget() != null) {
+                for (String c : PluralRules.categoriesOf("en_us")) {
+                    longestStat = Math.max(longestStat, length(lang, sub.noneKey() + "." + c));
+                }
+            }
             if (sub.format() == RunStatSubject.Format.COUNT) {
                 for (String c : PluralRules.categoriesOf("en_us")) {
                     longestStat = Math.max(longestStat, length(lang, sub.key() + "." + c));

@@ -350,6 +350,24 @@
       ]
     }
   },
+  "book.dungeontrain.statbook.stat.echoes.none.one": {
+    "1": {
+      "label": "carriages the reader has come without putting down an echo",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.echoes.none.other": {
+    "1": {
+      "label": "carriages the reader has come without putting down an echo",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.stat.encounters.one": {
     "1": {
       "label": "passengers the reader has come near this run",
@@ -422,6 +440,24 @@
       ]
     }
   },
+  "book.dungeontrain.statbook.stat.mob_kills.none.one": {
+    "1": {
+      "label": "carriages the reader has come without killing anything",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.mob_kills.none.other": {
+    "1": {
+      "label": "carriages the reader has come without killing anything",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.stat.no_chest.one": {
     "1": {
       "label": "the most carriages the reader has passed without opening anything",
@@ -437,24 +473,6 @@
       "examples": [
         "3",
         "26"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.no_kills.one": {
-    "1": {
-      "label": "carriages the reader has come without killing anything",
-      "examples": [
-        "4",
-        "12"
-      ]
-    }
-  },
-  "book.dungeontrain.statbook.stat.no_kills.other": {
-    "1": {
-      "label": "carriages the reader has come without killing anything",
-      "examples": [
-        "4",
-        "12"
       ]
     }
   },
@@ -491,6 +509,24 @@
       "examples": [
         "1",
         "17"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.player_kills.none.one": {
+    "1": {
+      "label": "carriages the reader has come without killing a passenger",
+      "examples": [
+        "4",
+        "40"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.player_kills.none.other": {
+    "1": {
+      "label": "carriages the reader has come without killing a passenger",
+      "examples": [
+        "4",
+        "40"
       ]
     }
   },
