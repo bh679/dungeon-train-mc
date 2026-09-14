@@ -16451,6 +16451,27 @@
       "released": true,
       "released_in": "v0.878.0",
       "released_at": "2026-09-14T09:17:42Z"
+    },
+    {
+      "id": "sheet-blocks-count-with-entities",
+      "version": "0.879.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor sheet keeps its block count when a build holds an armour stand",
+      "summary": "In the editor screen, the Blocks line of a build's data sheet went blank as soon as the build contained an entity such as an armour stand. The count now always shows, with the entity and container tallies beside it when there is room.",
+      "highlights": [
+        "Blocks line reads e.g. '312 \u00b7 1 entities' instead of disappearing",
+        "On a narrow window only the tallies drop off, never the count"
+      ],
+      "pr": 1409,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
