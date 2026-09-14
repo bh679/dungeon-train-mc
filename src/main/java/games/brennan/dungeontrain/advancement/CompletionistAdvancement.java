@@ -2,12 +2,15 @@ package games.brennan.dungeontrain.advancement;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirementOverrides;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
+
+import java.util.Set;
 
 /**
  * The "Everything Burrito" capstone — a code-driven advancement granted once a
@@ -36,7 +39,12 @@ import org.slf4j.Logger;
  * the capstone — requiring it would make the capstone unreachable), and
  * display-less (recipe-style) advancements. A new
  * {@code dungeon_train/*} advancement added in a future update is therefore
- * required automatically, with no change to this class. The {@code editor/}
+ * required automatically, with no change to this class — and one the relay has
+ * {@link games.brennan.dungeontrain.advancement.requirement.AdvancementFlag#DISABLED disabled}
+ * is absent from the registry, so it drops out the same way. The operator can
+ * also keep an advancement in the game but out of the capstone: the relay's
+ * {@code notRequired} flag ({@link AdvancementRequirementOverrides#notRequired()}),
+ * read live on every check. The {@code editor/}
  * partition is the same one
  * {@link games.brennan.dungeontrain.cheat.RunIntegrity#isEditorAdvancement}
  * uses to tell DT gameplay advancements (gated by run integrity) from editor
@@ -70,12 +78,14 @@ public final class CompletionistAdvancement {
         if (self == null) return; // capstone data not loaded (e.g. datapack stripped)
         if (player.getAdvancements().getOrStartProgress(self).isDone()) return; // already earned
 
+        Set<ResourceLocation> notRequired = AdvancementRequirementOverrides.notRequired();
         for (AdvancementHolder holder : mgr.getAllAdvancements()) {
             ResourceLocation rl = holder.id();
             if (!DungeonTrain.MOD_ID.equals(rl.getNamespace())) continue; // other mods / vanilla
             if (rl.getPath().startsWith("editor/")) continue;             // editor tree excluded
             if (rl.equals(ID)) continue;                                  // never require itself
             if (rl.equals(StartAgainAdvancement.ID)) continue;            // downstream of the capstone, not a prerequisite
+            if (notRequired.contains(rl)) continue;                       // the operator dropped it from the capstone (relay)
             if (holder.value().display().isEmpty()) continue;             // skip recipe/display-less
             if (!player.getAdvancements().getOrStartProgress(holder).isDone()) return; // not complete yet
         }
