@@ -120,6 +120,8 @@
       "container.dungeontrain.enderchest.free_play",
       "gui.dungeontrain.enderchest.expand",
       "gui.dungeontrain.enderchest.expand.tooltip",
+      "gui.dungeontrain.enderchest.shrink",
+      "gui.dungeontrain.enderchest.shrink.tooltip",
       "gui.dungeontrain.difficulty_confirm.title",
       "gui.dungeontrain.difficulty_confirm.body",
       "gui.dungeontrain.difficulty_confirm.loss",
@@ -2387,6 +2389,8 @@
   },
   "source_changed": {
     "dungeontrain": [
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
       "command.dungeontrain.report_carriage.success",
       "command.dungeontrain.report_carriage.not_shared",
       "effect.dungeontrain.free_play.desc.1",

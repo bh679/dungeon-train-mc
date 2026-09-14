@@ -67,9 +67,18 @@ public final class EnderChestExpansionStore {
 
     /** Record that {@code uuid} expanded their Free Play chest. Best-effort; returns whether it was written. */
     public boolean markExpanded(UUID uuid) {
+        return setExpanded(uuid, true);
+    }
+
+    /** Record that {@code uuid} shrank their chest back. Best-effort; returns whether it was written. */
+    public boolean clearExpanded(UUID uuid) {
+        return setExpanded(uuid, false);
+    }
+
+    private boolean setExpanded(UUID uuid, boolean expanded) {
         Path path = file(uuid);
         CompoundTag root = new CompoundTag();
-        root.putBoolean(TAG_EXPANDED, true);
+        root.putBoolean(TAG_EXPANDED, expanded);
         try {
             Files.createDirectories(path.getParent());
             // Write-then-move so a crash mid-write can't leave a truncated file behind.
