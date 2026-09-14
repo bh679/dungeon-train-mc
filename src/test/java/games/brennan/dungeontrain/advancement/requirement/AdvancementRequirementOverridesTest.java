@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,5 +51,43 @@ final class AdvancementRequirementOverridesTest {
         assertTrue(AdvancementRequirementOverrides.parse("{}").isEmpty());
         assertTrue(AdvancementRequirementOverrides.parse("[]").isEmpty());
         assertTrue(AdvancementRequirementOverrides.parse("{\"units\":[]}").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Flags parse to id → raised flags; unknown keys, wrong tabs and lowered flags are dropped")
+    void parsesFlags() {
+        String body = """
+            {"ok":true,"units":{},"flags":{
+              "dungeontrain:dungeon_train/multiplayer":{"disabled":{"ts":1,"by":"op"},"notRequired":{"ts":2,"by":""}},
+              "dungeontrain:dungeon_train/carts_1000":{"notRequired":{"ts":3,"by":"op"},"hidden":{"ts":4}},
+              "dungeontrain:dungeon_train/friends":{"hidden":{"ts":4}},
+              "dungeontrain:dungeon_train/left_train":{"disabled":null},
+              "dungeontrain:editor/used_tunnel_stairs":{"disabled":{"ts":5}},
+              "minecraft:story/root":{"disabled":{"ts":5}},
+              "dungeontrain:dungeon_train/nope":"disabled"
+            }}""";
+        Map<ResourceLocation, Set<AdvancementFlag>> f = AdvancementRequirementOverrides.parseFlags(body);
+        assertEquals(2, f.size());
+        assertEquals(Set.of(AdvancementFlag.DISABLED, AdvancementFlag.NOT_REQUIRED),
+            f.get(ResourceLocation.parse("dungeontrain:dungeon_train/multiplayer")));
+        assertEquals(Set.of(AdvancementFlag.NOT_REQUIRED),
+            f.get(ResourceLocation.parse("dungeontrain:dungeon_train/carts_1000")));
+
+        AdvancementRequirementOverrides.Payload p = AdvancementRequirementOverrides.parsePayload(body);
+        assertTrue(p.values().isEmpty());
+        assertEquals(Set.of(ResourceLocation.parse("dungeontrain:dungeon_train/multiplayer")),
+            p.with(AdvancementFlag.DISABLED));
+        assertEquals(2, p.with(AdvancementFlag.NOT_REQUIRED).size());
+    }
+
+    @Test
+    @DisplayName("A payload without flags — an older relay — is empty flags, not an exception")
+    void noFlagsKey() {
+        AdvancementRequirementOverrides.Payload p = AdvancementRequirementOverrides.parsePayload(
+            "{\"units\":{\"dungeontrain:dungeon_train/carts_1000\":{\"field\":\"threshold\",\"value\":5}}}");
+        assertEquals(1, p.values().size());
+        assertTrue(p.flags().isEmpty());
+        assertTrue(p.with(AdvancementFlag.DISABLED).isEmpty());
+        assertTrue(AdvancementRequirementOverrides.parseFlags("[]").isEmpty());
     }
 }

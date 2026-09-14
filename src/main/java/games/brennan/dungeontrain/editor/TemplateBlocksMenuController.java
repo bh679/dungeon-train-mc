@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.net.TemplateBlocksEditPacket;
 import games.brennan.dungeontrain.net.TemplateBlocksSyncPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -253,6 +254,11 @@ public final class TemplateBlocksMenuController {
      * candidate. Transient world-only effect — the sidecar is unchanged.
      */
     private static void previewBlock(ServerLevel level, BlockVariantPlot plot, Block target) {
+        // Guarded: a preview rewrite must not pulse an observer facing the cell (ObserverBlockStampMixin).
+        CarriageStampGuard.run(() -> previewBlockGuarded(level, plot, target));
+    }
+
+    private static void previewBlockGuarded(ServerLevel level, BlockVariantPlot plot, Block target) {
         BlockPos origin = plot.origin();
         for (BlockPos flaggedLocal : plot.allFlaggedPositions()) {
             List<VariantState> states = plot.statesAt(flaggedLocal);

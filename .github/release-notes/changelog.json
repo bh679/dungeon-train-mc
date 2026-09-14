@@ -16387,6 +16387,255 @@
       "released": true,
       "released_in": "v0.875.0",
       "released_at": "2026-09-13T14:27:59Z"
+    },
+    {
+      "id": "retired-dimensional-carriages-stop-spawning",
+      "version": "0.876.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Retired dimensional carriages no longer sneak into your runs",
+      "summary": "A dimensional carriage the mod had taken out of rotation (weight 0) could still turn up for some players. If you had ever changed one setting on any dimensional carriage or carriage in the Train Editor, the mod saved a copy of every weight as it was that day, and that copy silently overrode every rebalance shipped since \u2014 even in normal runs where custom content was switched off. Your saved weights now hold only the things you actually changed, and a run with custom content disabled uses the shipped weights, exactly as intended.",
+      "highlights": [
+        "Runs with custom content disabled always use the mod's shipped carriage weights",
+        "Your Train Editor weight edits are kept; everything else follows the mod's updates again",
+        "Old saved weight files clean themselves up the next time you change a weight"
+      ],
+      "pr": 1404,
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.878.0",
+      "released_at": "2026-09-14T09:17:42Z"
+    },
+    {
+      "id": "train-editor-picker-nav-layout",
+      "version": "0.877.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Train Editor picker shows what each area is before you go",
+      "summary": "The screen behind the title's Train Editor button (and Train Builder) now works like the editor's Nav tab: the four areas are tiles on the left, and picking one shows its picture and a short description on the right. Nothing opens until you press Go here, so you can read about each area first. Back sits beside Go here.",
+      "highlights": [
+        "Pick a tile to see its picture and description; Go here opens it",
+        "Tiles no longer light up under the mouse \u2014 only the chosen one"
+      ],
+      "pr": 1405,
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.878.0",
+      "released_at": "2026-09-14T09:17:42Z"
+    },
+    {
+      "id": "videos-default-order-live-dot-age",
+      "version": "0.878.0",
+      "type": "feat",
+      "tags": [
+        "community",
+        "ui"
+      ],
+      "title": "Videos page: fresher default order, a live dot on the menu icon, and 'N days ago' dates",
+      "summary": "The Videos page now opens with new uploads and popular picks taking turns \u2014 live streamers first, then the newest video, then the top dev pick, and so on \u2014 instead of the same most-viewed list every time. The Videos icon on the main menu (and pause menu) shows a pulsing green dot whenever a streamer is live with the game right now, and each row says how long ago it was published instead of a bare date.",
+      "highlights": [
+        "Default sort alternates newest with dev picks (then most-viewed once the picks run out); live streamers still lead",
+        "Green live dot on the Videos icon while someone is streaming Dungeon Train",
+        "Rows read Today / 3 days ago / 2 weeks ago / 5 months ago; the date once a video is over a year old",
+        "Views, Recent and Dev picks sorts are unchanged"
+      ],
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.878.0",
+      "released_at": "2026-09-14T09:17:42Z"
+    },
+    {
+      "id": "sheet-blocks-count-with-entities",
+      "version": "0.879.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor sheet keeps its block count when a build holds an armour stand",
+      "summary": "In the editor screen, the Blocks line of a build's data sheet went blank as soon as the build contained an entity such as an armour stand. The count now always shows, with the entity and container tallies beside it when there is room.",
+      "highlights": [
+        "Blocks line reads e.g. '312 \u00b7 1 entities' instead of disappearing",
+        "On a narrow window only the tallies drop off, never the count"
+      ],
+      "pr": 1409,
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
+    },
+    {
+      "id": "stages-tab-real-palette-and-select",
+      "version": "0.880.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Stages tab previews show each stage's real blocks, and \u2713 selects the stage",
+      "summary": "In the Train Editor's Stages tab, every wood stage's preview used to look identical \u2014 the tiles were drawn with the raw stage placeholder blocks instead of that stage's wood. Previews now resolve through each stage's palette, so acacia, birch, cherry, warped and the rest each show their own blocks. The \u2713 button on the preview pane now selects the shown stage: the stage block icons, the placed placeholder textures and the carriage plot previews all follow it, and clicking again deselects. Linking a template to a stage lives on the template's own sheet.",
+      "highlights": [
+        "Stage previews stamp with the stage's real palette instead of placeholder blocks",
+        "\u2713 on the stage preview selects (or deselects) that stage \u2014 icons, textures and plots follow"
+      ],
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
+    },
+    {
+      "id": "editor-world-vanilla-exit-menu",
+      "version": "0.881.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Train Editor pause menu keeps Save and Quit",
+      "summary": "The Train Editor world's pause menu no longer offers Abandon This Run \u2014 there is no run to abandon there, and taking it killed the author. It now shows the normal Save and Quit to Title, with My Builds above it, and Shift still reveals Exit to Title | Quit Game.",
+      "highlights": [
+        "Train Editor: Esc menu shows Save and Quit to Title instead of the red Abandon This Run",
+        "My Builds stays above the exit; Shift still swaps in Exit to Title | Quit Game"
+      ],
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
+    },
+    {
+      "id": "editor-observers-quiet-and-setting",
+      "version": "0.882.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor: observers stay quiet while you build",
+      "summary": "Observers in an editor plot no longer fire on their own while the editor shows you things \u2014 the variant preview cycle, a row click in the variant menu, a plot reset. And there is a new Observers On / Off switch in the editor Settings: switch it Off and every observer inside a plot stays quiet even for blocks you place and break by hand, so you can wire a contraption without setting it off. Trains in play worlds are untouched.",
+      "highlights": [
+        "Variant previews, menu previews, mirror stamps and plot resets never pulse an observer",
+        "Settings \u2192 Observers | On | Off \u2014 Off mutes observers in editor plots, hand edits included; remembered per world",
+        "Wallminer trap: TNT joins the wall-cell variant pool; new 'very_dangerouds_1' trap contents"
+      ],
+      "pr": 1407,
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
+    },
+    {
+      "id": "freeplay-ender-chest-expansion",
+      "version": "0.883.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui"
+      ],
+      "title": "Free Play Ender Chest can expand to 114 slots",
+      "summary": "In Free Play, your Ender Chest now has an Expand button. Press it and the chest grows from 27 to 114 slots: three more rows above the ones you know, plus a five-column wing on each side, like Edible Backpacks' panels. Your existing items stay exactly where they were. The expanded chest travels with you to every Free Play world, and a Shrink button takes it back to normal whenever the extra slots are empty. Ordinary runs are untouched \u2014 the bigger chest only exists for the separate Free Play chest, so nothing from it can ever reach a legit stash.",
+      "highlights": [
+        "Expand button in the Free Play Ender Chest: 27 \u2192 114 slots (3 rows above, 5 columns each side)",
+        "Shrink back any time the extra slots are empty",
+        "Persists across every Free Play world; legit runs keep the vanilla chest"
+      ],
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
+    },
+    {
+      "id": "ender-chest-persistence-0-4-0",
+      "version": "0.884.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Your Ender Chest is now protected against being wiped",
+      "summary": "Ender Chest Persistence is updated to 0.4.0. Your chest now lives outside the modpack instance, so reinstalling the pack or moving launchers keeps it, and the mod keeps an automatic backup of the last non-empty contents \u2014 if the file is ever damaged it is restored from that backup instead of being emptied. Existing chests are carried across automatically on your next login.",
+      "highlights": [
+        "Ender Chest survives pack reinstalls and launcher moves (stored in your system's app-data folder)",
+        "Automatic <uuid>.dat.bak of the last non-empty chest; a damaged file self-heals from it and is never overwritten with an empty one",
+        "Requires Ender Chest Persistence 0.4.0 \u2014 CurseForge/Modrinth apps install it with the pack"
+      ],
+      "pr": 1413,
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
+    },
+    {
+      "id": "head-skins-every-carriage",
+      "version": "0.885.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "train"
+      ],
+      "title": "Player heads remember the dead in every carriage",
+      "summary": "The player heads decorating the train wear the skin and name of a real player whose run ended in that carriage. Until now that only worked in every third carriage \u2014 deaths are recorded per carriage group, and the other two carriages in each group asked for a record nobody could ever match, so they always fell back to a stock face. Every carriage now draws from its group's fallen players.",
+      "highlights": [
+        "Heads in carriages 1, 2, 4, 5\u2026 now show real fallen players, not just carriages 0, 3, 6\u2026",
+        "Three times fewer relay requests: one per carriage group instead of one per carriage"
+      ],
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.885.0",
+      "released_at": "2026-09-14T12:36:22Z"
+    },
+    {
+      "id": "advancement-relay-flags",
+      "version": "0.885.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Advancements can be switched off, or out of the final tally, without an update",
+      "summary": "Individual advancements can now be switched off remotely \u2014 one that is switched off is not shown and cannot be earned, and the advancements beneath it move up to its parent. Separately, an advancement can be kept in the game but dropped from the set a late-game advancement counts. Both take effect the next time you launch.",
+      "highlights": [
+        "Switched-off advancements disappear from the L screen; their children re-attach to the nearest one still on.",
+        "Nothing changes unless the operator flips a switch \u2014 every advancement stays on and counted by default."
+      ],
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermob-0-98-0-door-fix-pin",
+      "version": "0.886.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "Echoes no longer get stuck on doors (PlayerMob 0.98.0)",
+      "summary": "Echoes walking the train could wedge against a carriage door for good. Dungeon Train now requires PlayerMob 0.98.0, where a marching echo judges doors by the train's own direction \u2014 corridor doors open ahead of it and stay open \u2014 and an echo that still gets stuck tries the door both ways before moving on. The launcher installs the new PlayerMob automatically.",
+      "highlights": [
+        "Requires PlayerMob 0.98.0 (auto-installed by the CurseForge and Modrinth apps)",
+        "Corridor doors open ahead of marching echoes and are no longer closed in their faces"
+      ],
+      "pr": 1414,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

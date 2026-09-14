@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -100,7 +101,9 @@ public final class ResetCommand {
      * different flow.
      */
     private static void resetToSaved(ServerLevel overworld, Template model, CarriageDims dims) {
-        model.restampPlot(overworld, dims);
+        // The erase + restamp is DT rewriting the plot, not a gameplay event — held under the
+        // stamp guard so authored observers in the plot do not pulse (ObserverBlockStampMixin).
+        CarriageStampGuard.run(() -> model.restampPlot(overworld, dims));
     }
 
     /**
@@ -156,9 +159,11 @@ public final class ResetCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
-        model.eraseEditorPlot(overworld, origin, dims);
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-        bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
+        CarriageStampGuard.run(() -> {
+            model.eraseEditorPlot(overworld, origin, dims);
+            bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
+        });
         source.sendSuccess(() -> Component.literal(
             "Editor: reset '" + model.id() + "' to bundled default."
         ).withStyle(ChatFormatting.GREEN), true);

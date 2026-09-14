@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -70,7 +71,7 @@ public final class EditorVariantMirror {
             BlockPos tgtWorld = origin.offset(img.local().getX(), img.local().getY(), img.local().getZ());
             if (updatedOrNull == null) {
                 plot.remove(img.local());
-                SilentBlockOps.clearBlockSilent(level, tgtWorld);
+                CarriageStampGuard.run(() -> SilentBlockOps.clearBlockSilent(level, tgtWorld));
             } else {
                 List<VariantState> reflected =
                     EditorMirror.reflectStates(updatedOrNull, img.flipX(), img.flipY(), img.flipZ());
@@ -149,7 +150,9 @@ public final class EditorVariantMirror {
     private static void stampMirrorBase(ServerLevel level, BlockPos tgtWorld,
                                         net.minecraft.world.level.block.state.BlockState state) {
         if (VariantLiquids.isLiquid(state)) return;
-        SilentBlockOps.setBlockSilent(level, tgtWorld, state);
+        // This write cascades (plain setBlockSilent); the guard keeps an observer facing the
+        // reflected cell from pulsing on what is DT's own stamp (ObserverBlockStampMixin).
+        CarriageStampGuard.run(() -> SilentBlockOps.setBlockSilent(level, tgtWorld, state));
     }
 
     private static void trySave(BlockVariantPlot plot) {

@@ -127,7 +127,7 @@ public final class TemplateDataSheet {
         }
         out.add(builderLine(v, key, EditorStatusHudOverlay.isDevModeOn()));
         out.add(sizeLine(summary, roomRows, key, pending));
-        out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS), blocks(summary, pending)));
+        out.add(blocksLine(summary, pending));
         out.add(weightLine(tile, key, pending));
         out.addAll(stageLines(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
@@ -228,16 +228,26 @@ public final class TemplateDataSheet {
         return cells;
     }
 
-    static String blocks(TemplateSummary summary, String pending) {
-        if (summary == null || summary.isEmpty()) return pending;
-        StringBuilder blocks = new StringBuilder(Integer.toString(summary.blocks()));
+    /**
+     * Blocks: the count, then the entity and container tallies each as a cell of its own.
+     *
+     * <p>Separate cells on purpose. {@link #place} drops a cell whole when it runs past the sheet's
+     * right edge, and the pane can be as narrow as {@link InventoryEditorLayout#RIGHT_MIN_W}: as one
+     * string, the first armour stand saved into a template pushed the value past that edge and the
+     * whole count vanished. Split, the count always lands and only the trailing tallies give way.</p>
+     */
+    static Line blocksLine(TemplateSummary summary, String pending) {
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS);
+        if (summary == null || summary.isEmpty()) return Line.of(label, pending);
+        List<Cell> cells = new ArrayList<>(3);
+        cells.add(Cell.plain(Integer.toString(summary.blocks())));
         if (summary.entities() > 0) {
-            blocks.append(" · ").append(EditorScreenLang.text(EditorScreenLang.SHEET_ENTITIES, summary.entities()));
+            cells.add(Cell.plain("· " + EditorScreenLang.text(EditorScreenLang.SHEET_ENTITIES, summary.entities())));
         }
         if (summary.containers() > 0) {
-            blocks.append(" · ").append(EditorScreenLang.text(EditorScreenLang.SHEET_CONTAINERS, summary.containers()));
+            cells.add(Cell.plain("· " + EditorScreenLang.text(EditorScreenLang.SHEET_CONTAINERS, summary.containers())));
         }
-        return blocks.toString();
+        return new Line(label, List.copyOf(cells));
     }
 
     /** Weight: the number steps (cmd-click types), and a pair of nudge buttons sits after it. */

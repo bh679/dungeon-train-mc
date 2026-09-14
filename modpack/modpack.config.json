@@ -39,25 +39,25 @@
       "name": "Interactive Player Mobs",
       "slug": "interactive-player-mobs",
       "project_id": 1559379,
-      "file_id": 8762749,
+      "file_id": 8878899,
       "required": true,
       "dependency_type": "required",
-      "version": "0.97.0",
+      "version": "0.98.0",
       "gradle_property": "playermob_min_version",
       "modrinth_project": "interactive-player-mobs",
-      "modrinth_version": "rOjOs77z"
+      "modrinth_version": "rRdAYBNo"
     },
     {
       "name": "Ender Chest Persistence",
       "slug": "ender-chest-persistence",
       "project_id": 1579341,
-      "file_id": 8283688,
+      "file_id": 8877275,
       "required": true,
       "dependency_type": "required",
-      "version": "0.2.0",
+      "version": "0.4.0",
       "gradle_property": "enderchestpersistence_min_version",
       "modrinth_project": "ender-chest-persistence",
-      "modrinth_version": "2I1HdVBa"
+      "modrinth_version": "bDMmDe6O"
     },
     {
       "name": "Trade Everything",

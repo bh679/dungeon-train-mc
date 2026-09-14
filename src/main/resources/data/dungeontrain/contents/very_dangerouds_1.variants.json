@@ -1,5 +1,6 @@
 {
   "schemaVersion": 10,
   "variants": {
+    "4,2,2": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:creeper", "weight": 3}, {"entity": "minecraft:evoker"}]
   }
 }

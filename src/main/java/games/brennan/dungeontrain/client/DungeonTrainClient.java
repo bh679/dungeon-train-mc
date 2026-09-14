@@ -8,6 +8,8 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import games.brennan.dungeontrain.client.skybox.SkyboxStencil;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import games.brennan.dungeontrain.registry.ModMenuTypes;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 /**
@@ -53,5 +55,10 @@ public final class DungeonTrainClient {
         // event runs on a parallel mod-loading thread while enableStencil() re-creates the
         // framebuffer's attachments — GL work that must happen on the render thread.
         event.enqueueWork(SkyboxStencil::requestStencil);
+    }
+
+    @SubscribeEvent
+    public static void registerScreens(RegisterMenuScreensEvent event) {
+        event.register(ModMenuTypes.FREE_PLAY_ENDER_CHEST.get(), FreePlayEnderChestScreen::new);
     }
 }

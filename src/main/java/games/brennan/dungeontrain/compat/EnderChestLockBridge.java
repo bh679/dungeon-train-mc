@@ -6,12 +6,20 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.DifficultyPartition;
 import games.brennan.dungeontrain.player.EnderChestLabel;
 import games.brennan.enderchestpersistence.EnderChestStore;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
 import org.slf4j.Logger;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Decides which Ender Chest a player is looking at: it locks a Free Play (cheated) run onto the
@@ -93,6 +101,35 @@ public final class EnderChestLockBridge {
     /** Whether a seam-capable ECP is present and the slot provider is registered. */
     public static boolean isActive() {
         return active;
+    }
+
+    /**
+     * Whether the Free Play slot ECP has on disk for {@code uuid} holds an item at or beyond
+     * {@code slot} — i.e. was written by a chest bigger than {@code slot} slots.
+     *
+     * <p>This is how {@code EnderChestExpansion} recognises an expanded chest without trusting its own
+     * flag file: ECP's store lives in the OS app-data folder and outlives a reinstall, DT's flag lives in
+     * the instance and may not. Read straight from the file ECP names, before ECP restores it — a 27-slot
+     * live container would silently drop those items on restore, and the next logout would save the
+     * truncated chest over the full one. Same {@code Slot}-per-entry layout vanilla writes for
+     * {@code EnderItems}. Read-only, best-effort: any fault answers "no".</p>
+     */
+    public static boolean freePlaySlotReachesBeyond(UUID uuid, int slot) {
+        if (!active) return false;
+        try {
+            Path file = EnderChestStore.file(uuid);
+            if (!Files.isRegularFile(file)) return false;
+            CompoundTag root = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
+            if (!root.contains(FREE_PLAY_SLOT, Tag.TAG_LIST)) return false;
+            ListTag items = root.getList(FREE_PLAY_SLOT, Tag.TAG_COMPOUND);
+            for (int i = 0; i < items.size(); i++) {
+                if ((items.getCompound(i).getByte("Slot") & 255) >= slot) return true;
+            }
+            return false;
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] could not inspect the stored Free Play Ender Chest for {}", uuid, t);
+            return false;
+        }
     }
 
     /**
