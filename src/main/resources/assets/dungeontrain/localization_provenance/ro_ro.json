@@ -9,6 +9,8 @@
   },
   "source_changed": {
     "dungeontrain": [
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
       "gui.dungeontrain.death.narr.tip_goal_dev_tools",
       "gui.dungeontrain.abandon_confirm.title",
       "gui.dungeontrain.abandon_confirm.line1",

@@ -62,7 +62,10 @@
     "JigsawStructureAccessor",
     "RuinedPortalStructureAccessor",
     "EntityArgumentSelfSelectorMixin",
-    "EntitySelectorSelfPermissionMixin"
+    "EntitySelectorSelfPermissionMixin",
+    "PlayerEnderChestAccessor",
+    "PlayerEnderChestContainerAccessor",
+    "PlayerEnderChestContainerSizeMixin"
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",

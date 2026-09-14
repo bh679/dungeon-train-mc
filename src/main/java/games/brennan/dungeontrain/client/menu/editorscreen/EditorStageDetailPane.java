@@ -198,10 +198,10 @@ final class EditorStageDetailPane {
 
     /**
      * Lay the pane out for {@code stage} (null when the roster lists none). The page returns to the
-     * overview when the stage changes; {@code applyTo} is the template the Apply button would link.
+     * overview when the stage changes. Select's label reads the server-mirrored focused stage each
+     * layout, so it flips to Deselect as soon as the type-menu snapshot echoes the click.
      */
-    void layout(InventoryEditorLayout layout, EditorRosterPacket.StageEntry stage, EditorRosterIndex index,
-                VariantKey applyTo) {
+    void layout(InventoryEditorLayout layout, EditorRosterPacket.StageEntry stage, EditorRosterIndex index) {
         this.layout = layout;
         this.stage = stage;
         this.templates = EditorStageTemplates.rows(stage, index);
@@ -234,7 +234,8 @@ final class EditorStageDetailPane {
             icons = List.of();
             sheetLines = List.of();
         } else {
-            icons = EditorStageActions.icons(stage, applyTo, carriages.size() > 1, this::reseed, this::stepCarriage);
+            icons = EditorStageActions.icons(stage, games.brennan.dungeontrain.client.menu.ClientStages.isSelected(stage.id()),
+                carriages.size() > 1, this::reseed, this::stepCarriage);
             sheetLines = EditorStageActions.sheetLines(stage, templates.size(),
                 games.brennan.dungeontrain.client.EditorStatusHudOverlay.isDevModeOn());
         }
