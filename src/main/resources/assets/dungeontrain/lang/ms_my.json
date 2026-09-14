@@ -2077,6 +2077,8 @@
   "gui.dungeontrain.videos.sort.recent": "Terkini",
   "gui.dungeontrain.videos.sort.dev_picks": "Pilihan dev",
   "gui.dungeontrain.videos.views": "%s tontonan",
+  "gui.dungeontrain.videos.today": "Hari ini",
+  "gui.dungeontrain.videos.ago": "%s yang lalu",
   "gui.dungeontrain.videos.state.loading": "Memuatkan video…",
   "gui.dungeontrain.videos.state.failed": "Senarai video tidak dapat dimuatkan. Semak sambungan anda dan cuba lagi.",
   "gui.dungeontrain.videos.state.empty": "Tiada video yang sepadan dengan penapis ini.",

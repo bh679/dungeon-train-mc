@@ -2077,6 +2077,8 @@
   "gui.dungeontrain.videos.sort.recent": "최신",
   "gui.dungeontrain.videos.sort.dev_picks": "개발자 추천",
   "gui.dungeontrain.videos.views": "조회수 %s",
+  "gui.dungeontrain.videos.today": "오늘",
+  "gui.dungeontrain.videos.ago": "%s 전",
   "gui.dungeontrain.videos.state.loading": "영상을 불러오는 중…",
   "gui.dungeontrain.videos.state.failed": "영상 목록을 불러올 수 없습니다. 연결을 확인하고 다시 시도하세요.",
   "gui.dungeontrain.videos.state.empty": "이 필터에 맞는 영상이 없습니다.",

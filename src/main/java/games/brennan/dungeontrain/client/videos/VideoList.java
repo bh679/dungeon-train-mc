@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.videos;
 
+import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.client.ui.ListScrollbar;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -12,6 +13,7 @@ import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -62,6 +64,8 @@ public final class VideoList extends AbstractWidget {
     private static final int STREAMER_TINT_ALPHA = 0x22;
     /** The "live now" dot beside the ★: Twitch-ish green, pulsing so it reads as live, not as a bullet. */
     static final int LIVE_COLOUR = 0xFF3DDC84;
+    private LocalDate today = LocalDate.now();
+    private String locale = null;
     private static final int LIVE_DOT = 5;
 
     private final Font font;
@@ -122,6 +126,9 @@ public final class VideoList extends AbstractWidget {
 
     @Override
     protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // One clock read a frame: every row's "N days ago" is measured against the same today.
+        today = LocalDate.now();
+        locale = ClientLanguage.selected();
         g.fill(getX(), getY(), getX() + width, getY() + height, BG);
         int rowH = rowHeight();
         g.enableScissor(getX(), getY(), getX() + width, getY() + height);
@@ -225,7 +232,7 @@ public final class VideoList extends AbstractWidget {
         int textY = thumbY + (THUMB_H - font.lineHeight * 2 - 2) / 2;
         g.drawString(font, font.plainSubstrByWidth(s.name(), titleRight - textX), textX, textY, TITLE_COLOUR);
         Component sub = s.hasLastDay()
-                ? Component.translatable("gui.dungeontrain.videos.streamer.sub", s.streamDays(), s.lastDay())
+                ? Component.translatable("gui.dungeontrain.videos.streamer.sub", s.streamDays(), ageOrDay(s.lastDay()))
                 : Component.translatable("gui.dungeontrain.videos.streamer.sub.undated", s.streamDays());
         String subText = sub.getString();
         int subX = textX;
@@ -259,8 +266,14 @@ public final class VideoList extends AbstractWidget {
         return mouseX >= right - FLAG_HIT && mouseX < right && mouseY >= bottom - FLAG_HIT && mouseY < bottom;
     }
 
-    /** {@code uploader · 1.2K views · 2026-09-11}, dropping any part the relay had no value for. */
-    private static String subLine(VideoEntry v) {
+    /** The day as "3 days ago" ({@link VideoAge}), or the raw day when it will not parse. */
+    private Component ageOrDay(String day) {
+        Component age = VideoAge.label(day, today, locale);
+        return age != null ? age : Component.literal(String.valueOf(day));
+    }
+
+    /** {@code uploader · 1.2K views · 3 days ago}, dropping any part the relay had no value for. */
+    private String subLine(VideoEntry v) {
         StringBuilder sb = new StringBuilder();
         if (v.hasChannel()) {
             sb.append(v.channel());
@@ -272,7 +285,7 @@ public final class VideoList extends AbstractWidget {
         }
         if (v.day() != null) {
             if (!sb.isEmpty()) sb.append(" · ");
-            sb.append(v.day());
+            sb.append(ageOrDay(v.day()).getString());
         }
         if (sb.isEmpty()) {
             sb.append(Component.translatable("gui.dungeontrain.videos.platform." + v.platform().key()).getString());

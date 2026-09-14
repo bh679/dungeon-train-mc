@@ -2077,6 +2077,8 @@
   "gui.dungeontrain.videos.sort.recent": "Mới nhất",
   "gui.dungeontrain.videos.sort.dev_picks": "Dev đề xuất",
   "gui.dungeontrain.videos.views": "%s lượt xem",
+  "gui.dungeontrain.videos.today": "Hôm nay",
+  "gui.dungeontrain.videos.ago": "%s trước",
   "gui.dungeontrain.videos.state.loading": "Đang tải video…",
   "gui.dungeontrain.videos.state.failed": "Không tải được danh sách video. Kiểm tra kết nối và thử lại.",
   "gui.dungeontrain.videos.state.empty": "Không có video nào khớp với bộ lọc này.",

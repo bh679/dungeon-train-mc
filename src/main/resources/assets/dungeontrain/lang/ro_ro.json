@@ -1173,6 +1173,8 @@
   "gui.dungeontrain.videos.sort.recent": "Recente",
   "gui.dungeontrain.videos.sort.dev_picks": "Alegerea dezvoltatorului",
   "gui.dungeontrain.videos.views": "%s vizualizări",
+  "gui.dungeontrain.videos.today": "Astăzi",
+  "gui.dungeontrain.videos.ago": "acum %s",
   "gui.dungeontrain.videos.state.loading": "Se încarcă videoclipurile…",
   "gui.dungeontrain.videos.state.failed": "Lista de videoclipuri nu a putut fi încărcată. Verifică conexiunea și încearcă din nou.",
   "gui.dungeontrain.videos.state.empty": "Niciun videoclip nu se potrivește acestor filtre.",

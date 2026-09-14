@@ -2147,6 +2147,8 @@
   "gui.dungeontrain.videos.sort.recent": "Новые",
   "gui.dungeontrain.videos.sort.dev_picks": "Выбор разработчика",
   "gui.dungeontrain.videos.views": "%s просмотров",
+  "gui.dungeontrain.videos.today": "Сегодня",
+  "gui.dungeontrain.videos.ago": "%s назад",
   "gui.dungeontrain.videos.state.loading": "Загрузка видео…",
   "gui.dungeontrain.videos.state.failed": "Не удалось загрузить список видео. Проверьте подключение и попробуйте ещё раз.",
   "gui.dungeontrain.videos.state.empty": "Ни одно видео не подходит под эти фильтры.",
