@@ -16576,6 +16576,26 @@
       "released": true,
       "released_in": "v0.884.0",
       "released_at": "2026-09-14T11:23:55Z"
+    },
+    {
+      "id": "head-skins-every-carriage",
+      "version": "0.885.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "train"
+      ],
+      "title": "Player heads remember the dead in every carriage",
+      "summary": "The player heads decorating the train wear the skin and name of a real player whose run ended in that carriage. Until now that only worked in every third carriage \u2014 deaths are recorded per carriage group, and the other two carriages in each group asked for a record nobody could ever match, so they always fell back to a stock face. Every carriage now draws from its group's fallen players.",
+      "highlights": [
+        "Heads in carriages 1, 2, 4, 5\u2026 now show real fallen players, not just carriages 0, 3, 6\u2026",
+        "Three times fewer relay requests: one per carriage group instead of one per carriage"
+      ],
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
