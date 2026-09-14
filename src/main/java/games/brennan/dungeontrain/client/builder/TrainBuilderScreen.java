@@ -54,10 +54,7 @@ public final class TrainBuilderScreen extends Screen {
 
     private static final int TITLE_TOP = 20;
     private static final int BODY_TOP_PADDING = 16;
-    private static final int BODY_BOTTOM_PADDING = 8;
-    private static final int BACK_BUTTON_WIDTH = 200;
-    private static final int BACK_BUTTON_HEIGHT = 20;
-    private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
+    private static final int BODY_BOTTOM_MARGIN = 12;
     /** The Nav tab's text metrics, so the two descriptions set the same. */
     private static final int LINE_H = 10;
     private static final int TEXT_PAD = 3;
@@ -120,10 +117,9 @@ public final class TrainBuilderScreen extends Screen {
 
     @Override
     protected void init() {
-        int backY = this.height - BACK_BUTTON_BOTTOM_MARGIN;
         int topY = TITLE_TOP + this.font.lineHeight + BODY_TOP_PADDING;
 
-        layout = BuilderPickerLayout.of(this.width, this.height, topY, backY - BODY_BOTTOM_PADDING);
+        layout = BuilderPickerLayout.of(this.width, this.height, topY, this.height - BODY_BOTTOM_MARGIN);
 
         BuilderMode[] modes = BuilderMode.values();
         List<BuilderPickerLayout.Rect> cells = layout.tiles();
@@ -140,8 +136,10 @@ public final class TrainBuilderScreen extends Screen {
                 .bounds(go.x(), go.y(), go.w(), go.h())
                 .build());
 
+        // Back shares Go here's row, under the tiles: the two ways out, side by side.
+        BuilderPickerLayout.Rect back = layout.back();
         this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> this.onClose())
-                .bounds((this.width - BACK_BUTTON_WIDTH) / 2, backY, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT)
+                .bounds(back.x(), back.y(), back.w(), back.h())
                 .build());
     }
 

@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class BuilderPickerLayoutTest {
 
     private static final int TOP = 46;
-    private static final int BOTTOM_INSET = 36; // Back button + margins
+    private static final int BOTTOM_INSET = 12; // bottom margin; Back sits inside the body now
 
     private static final int[][] SIZES = {{1920, 1080}, {960, 540}, {854, 480}, {640, 360}, {480, 270}, {320, 240}};
 
@@ -51,6 +51,9 @@ final class BuilderPickerLayoutTest {
             BuilderPickerLayout layout = layoutFor(size[0], size[1]);
             int tilesRight = layout.tiles().get(1).right();
             assertTrue(tilesRight <= layout.header().x(), "tiles run into the detail column at " + label(size));
+            assertTrue(layout.tiles().get(3).bottom() <= layout.back().y(), "tiles run into Back at " + label(size));
+            assertEquals(layout.go().y(), layout.back().y(), "Back and Go are not on one row at " + label(size));
+            assertTrue(layout.back().right() <= layout.go().x(), "Back overlaps Go at " + label(size));
             assertTrue(layout.header().bottom() <= layout.preview().y(), "header overlaps preview at " + label(size));
             assertTrue(layout.preview().bottom() <= layout.description().y(), "preview overlaps text at " + label(size));
             assertTrue(layout.description().bottom() <= layout.go().y(), "text overlaps Go at " + label(size));
@@ -60,15 +63,15 @@ final class BuilderPickerLayoutTest {
     }
 
     @Test
-    @DisplayName("The body stays on-screen, above the Back button, and centred")
+    @DisplayName("The body stays on-screen and centred")
     void bodyIsOnScreenAndCentred() {
         for (int[] size : new int[][] {{1920, 1080}, {854, 480}, {480, 270}}) {
             BuilderPickerLayout layout = layoutFor(size[0], size[1]);
-            int left = Math.min(layout.tiles().get(0).x(), layout.header().x());
+            int left = Math.min(layout.back().x(), layout.tiles().get(0).x());
             int right = layout.go().right();
             assertTrue(left >= 0, "body runs off the left at " + label(size));
             assertTrue(right <= size[0], "body runs off the right at " + label(size));
-            assertTrue(layout.go().bottom() <= size[1] - BOTTOM_INSET, "Go runs into Back at " + label(size));
+            assertTrue(layout.go().bottom() <= size[1] - BOTTOM_INSET, "Go runs off the bottom at " + label(size));
             assertTrue(layout.tiles().get(0).y() >= TOP, "tiles run into the title at " + label(size));
             int leftSlack = left;
             int rightSlack = size[0] - right;

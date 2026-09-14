@@ -9,12 +9,13 @@ import java.util.List;
  *
  * <p>The same shape as the editor's Nav tab ({@code EditorNavPane}): a 2×2 grid of 16:9 tiles
  * fills the left column, and the right column stacks the mode's name, its picture, the sentence
- * or two that says what it is for, and a <b>Go here</b> button along the bottom. Split out of the
+ * or two that says what it is for, and a <b>Go here</b> button along the bottom — with <b>Back</b>
+ * on the same row under the tiles, so the two ways out sit side by side. Split out of the
  * screen so the fit can be unit-tested without a Minecraft client — the body has to survive GUI
  * scale 1 (a very wide, short viewport) through scale 4 (a small one) without any two rects
- * overlapping, the title, or the Back button.</p>
+ * overlapping or running into the title.</p>
  */
-record BuilderPickerLayout(List<Rect> tiles, Rect header, Rect preview, Rect description, Rect go) {
+record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect preview, Rect description, Rect go) {
 
     /** A rectangle in GUI pixels; {@code w}/{@code h} are never negative. */
     record Rect(int x, int y, int w, int h) {
@@ -41,10 +42,10 @@ record BuilderPickerLayout(List<Rect> tiles, Rect header, Rect preview, Rect des
      * @param screenWidth  screen width in GUI pixels
      * @param screenHeight screen height in GUI pixels
      * @param topY         first Y the body may occupy (below the title)
-     * @param bottomY      first Y the body may NOT occupy (above the Back button)
+     * @param bottomY      first Y the body may NOT occupy (the bottom margin)
      */
     static BuilderPickerLayout of(int screenWidth, int screenHeight, int topY, int bottomY) {
-        int minBodyH = HEADER_H + ROW_GAP + MIN_TILE_WIDTH * 9 / 16 + ROW_GAP + GO_H;
+        int minBodyH = ROWS * (MIN_TILE_WIDTH * 9 / 16) + TILE_GAP + ROW_GAP + GO_H;
         int bodyW = Math.max(COLUMNS * MIN_TILE_WIDTH + TILE_GAP + COLUMN_GAP + MIN_TILE_WIDTH,
                 Math.min(screenWidth - 2 * SIDE_MARGIN, MAX_BODY_WIDTH));
         int bodyH = Math.max(bottomY - topY, minBodyH);
@@ -54,17 +55,18 @@ record BuilderPickerLayout(List<Rect> tiles, Rect header, Rect preview, Rect des
         int detailW = bodyW - COLUMN_GAP - tileColumnW;
         int detailX = bodyX + tileColumnW + COLUMN_GAP;
 
-        List<Rect> tiles = tiles(new Rect(bodyX, topY, tileColumnW, bodyH));
+        Rect go = new Rect(detailX, topY + bodyH - GO_H, detailW, GO_H);
+        Rect back = new Rect(bodyX, go.y(), tileColumnW, GO_H);
+        List<Rect> tiles = tiles(new Rect(bodyX, topY, tileColumnW, Math.max(0, back.y() - ROW_GAP - topY)));
 
         Rect header = new Rect(detailX, topY, detailW, HEADER_H);
-        Rect go = new Rect(detailX, topY + bodyH - GO_H, detailW, GO_H);
         int between = Math.max(0, go.y() - ROW_GAP - (header.bottom() + ROW_GAP));
         int previewH = Math.min(detailW * 9 / 16, between / 2);
         Rect preview = new Rect(detailX, header.bottom() + ROW_GAP, detailW, previewH);
         int descTop = preview.bottom() + ROW_GAP;
         Rect description = new Rect(detailX, descTop, detailW, Math.max(0, go.y() - ROW_GAP - descTop));
 
-        return new BuilderPickerLayout(tiles, header, preview, description, go);
+        return new BuilderPickerLayout(tiles, back, header, preview, description, go);
     }
 
     /**
