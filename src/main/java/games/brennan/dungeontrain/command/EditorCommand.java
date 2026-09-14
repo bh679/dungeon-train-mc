@@ -717,6 +717,9 @@ public final class EditorCommand {
             .then(Commands.literal("helppanel")
                 .then(Commands.literal("on").executes(ctx -> runHelpPanel(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runHelpPanel(ctx.getSource(), false))))
+            .then(Commands.literal("observers")
+                .then(Commands.literal("on").executes(ctx -> runObservers(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runObservers(ctx.getSource(), false))))
             .then(Commands.literal("carriage-contents")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -4339,6 +4342,28 @@ public final class EditorCommand {
         source.sendSuccess(() -> Component.literal(on
             ? "Welcome panel: ON"
             : "Welcome panel: OFF — press X and pick 'Welcome Panel' to bring it back."
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    /**
+     * Settings → Observers On / Off for this world: while Off, an observer inside an editor plot
+     * never pulses, so an author can place and break around a contraption without firing it
+     * ({@link games.brennan.dungeontrain.editor.EditorObservers}). World state, so every online
+     * player's Settings row is told.
+     */
+    private static int runObservers(CommandSourceStack source, boolean on) {
+        net.minecraft.server.MinecraftServer server = source.getServer();
+        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
+            .setEditorObserversOn(on);
+        games.brennan.dungeontrain.net.EditorObserversPacket packet =
+            new games.brennan.dungeontrain.net.EditorObserversPacket(on);
+        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
+            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
+        }
+        source.sendSuccess(() -> Component.literal(on
+            ? "Observers: ON — observers in editor plots pulse as normal."
+            : "Observers: OFF — observers in editor plots stay quiet while you build."
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }

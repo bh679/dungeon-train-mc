@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.editor.EditorObservers;
 import games.brennan.dungeontrain.train.CarriageStampGuard;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelAccessor;
@@ -17,6 +18,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * a row click in the variant menu, the mirrored-cell stamp, and a plot reset / delete-and-restamp.
  * Only a player or a gameplay cause (a block broken or placed, a piston, a door) should pulse an
  * observer; the mod's construction scaffolding is not a gameplay event.
+ *
+ * <p>The second gate is the editor's <b>Observers Off</b> setting ({@link EditorObservers}): while
+ * it is off, an observer inside an editor plot stays quiet even for a hand-placed block, so an
+ * author can wire a contraption without firing it.</p>
  *
  * <p><b>Why.</b> Vanilla fires an observer from {@code ObserverBlock.updateShape}, which every
  * neighbour-shape cascade reaches: {@code Level.setBlock} runs one for any write without
@@ -43,7 +48,7 @@ public abstract class ObserverBlockStampMixin {
 
     @Inject(method = "startSignal", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$noPulseDuringStamp(LevelAccessor level, BlockPos pos, CallbackInfo ci) {
-        if (CarriageStampGuard.isActive()) {
+        if (CarriageStampGuard.isActive() || EditorObservers.isMuted(level, pos)) {
             ci.cancel();
         }
     }

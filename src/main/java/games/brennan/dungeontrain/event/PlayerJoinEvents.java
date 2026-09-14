@@ -205,6 +205,11 @@ public final class PlayerJoinEvents {
         // rather than keeping whatever the last session left behind.
         DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.EditorMenusModePacket.of(
             games.brennan.dungeontrain.editor.PartPositionMenuController.mode(player)));
+        // And the world's editor Observers setting, for the same reason — it is persisted with the
+        // world, and the client's default is On.
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorObserversPacket(
+            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld())
+                .isEditorObserversOn()));
         // Somebody who quit standing in a test dimensional carriage comes back standing in it, and
         // the client assumes no session until told otherwise — without this the Back row is gone and
         // the only way out of a sealed basement is a manual /tp. The session itself is server-side
