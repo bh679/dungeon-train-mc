@@ -16534,6 +16534,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "freeplay-ender-chest-expansion",
+      "version": "0.883.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui"
+      ],
+      "title": "Free Play Ender Chest can expand to 114 slots",
+      "summary": "In Free Play, your Ender Chest now has an Expand button. Press it and the chest grows from 27 to 114 slots: three more rows above the ones you know, plus a five-column wing on each side, like Edible Backpacks' panels. Your existing items stay exactly where they were. The expanded chest travels with you to every Free Play world, and a Shrink button takes it back to normal whenever the extra slots are empty. Ordinary runs are untouched \u2014 the bigger chest only exists for the separate Free Play chest, so nothing from it can ever reach a legit stash.",
+      "highlights": [
+        "Expand button in the Free Play Ender Chest: 27 \u2192 114 slots (3 rows above, 5 columns each side)",
+        "Shrink back any time the extra slots are empty",
+        "Persists across every Free Play world; legit runs keep the vanilla chest"
+      ],
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
