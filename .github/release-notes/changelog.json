@@ -16615,6 +16615,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playermob-0-98-0-door-fix-pin",
+      "version": "0.886.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "mobs"
+      ],
+      "title": "Echoes no longer get stuck on doors (PlayerMob 0.98.0)",
+      "summary": "Echoes walking the train could wedge against a carriage door for good. Dungeon Train now requires PlayerMob 0.98.0, where a marching echo judges doors by the train's own direction \u2014 corridor doors open ahead of it and stay open \u2014 and an echo that still gets stuck tries the door both ways before moving on. The launcher installs the new PlayerMob automatically.",
+      "highlights": [
+        "Requires PlayerMob 0.98.0 (auto-installed by the CurseForge and Modrinth apps)",
+        "Corridor doors open ahead of marching echoes and are no longer closed in their faces"
+      ],
+      "pr": 1414,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
