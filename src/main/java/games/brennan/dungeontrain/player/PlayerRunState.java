@@ -553,6 +553,15 @@ public final class PlayerRunState {
         return damageDealt > 0.0 ? 0 : Math.abs(travelledCarriageIndex);
     }
 
+    /**
+     * Carriages passed without killing anything — mob, passenger, or echo. Looser than
+     * {@link #pacifistCarriages()} (a slime punched and left alive still counts) and derived the same
+     * way: one kill disqualifies the whole run, so there is no streak to keep.
+     */
+    public int killlessCarriages() {
+        return mobKills > 0 || playerKills > 0 || echoesKilled > 0 ? 0 : Math.abs(travelledCarriageIndex);
+    }
+
     public int incrementBooksRead() {
         return ++booksReadCount;
     }

@@ -37,37 +37,45 @@ import java.util.function.ToLongFunction;
  */
 public enum RunStatSubject {
 
-    // id              key base         format           floor  extractor
+    // id              key base         format           floor  tone   extractor
     /** Net carriages travelled this life. Absolute: going backwards is still getting somewhere. */
-    CARRIAGE("carriage", Format.PLAIN, 1, s -> Math.abs(s.travelledCarriageIndex()), "carriages"),
+    CARRIAGE("carriage", Format.PLAIN, 1, Tone.PLAIN, s -> Math.abs(s.travelledCarriageIndex()), "carriages"),
 
     /**
      * Seconds spent aboard this life — the "Longest Aboard" boards' figure, gated by
      * {@link games.brennan.dungeontrain.event.PlayerActivityTracker} so idle and paused stretches
      * do not count. The fallback subject — see {@link #eligible}.
      */
-    PLAYTIME("playtime", Format.DURATION, 60, s -> s.trainTimeTicks() / Ticks.PER_SECOND, "playtime"),
+    PLAYTIME("playtime", Format.DURATION, 60, Tone.PLAIN, s -> s.trainTimeTicks() / Ticks.PER_SECOND, "playtime"),
 
-    CHESTS("chests", Format.COUNT, 1, PlayerRunState::containersOpened, "chests"),
-    MOB_KILLS("mob_kills", Format.COUNT, 1, PlayerRunState::mobKills),
-    DISTANCE("distance", Format.COUNT, 100, s -> (long) s.distanceBlocks(), "distance"),
-    BOOKS_READ("books_read", Format.COUNT, 1, PlayerRunState::booksReadCount, "books_read"),
-    BOOKS_WRITTEN("books_written", Format.COUNT, 1, PlayerRunState::booksWrittenCount, "books_written"),
-    FRIENDS("friends", Format.COUNT, 1, PlayerRunState::befriendedCount, "friends"),
-    ENCOUNTERS("encounters", Format.COUNT, 1, PlayerRunState::encounteredCount),
-    ECHOES("echoes", Format.COUNT, 1, PlayerRunState::echoesKilled, "echoes_killed"),
-    TAMED("tamed", Format.COUNT, 1, PlayerRunState::tamedCount),
-    DAMAGE_TAKEN("damage_taken", Format.PLAIN, 10, s -> (long) s.damageTaken()),
-    PLAYER_KILLS("player_kills", Format.COUNT, 1, PlayerRunState::playerKills),
-    NO_CHEST("no_chest", Format.COUNT, 3, PlayerRunState::maxCarriagesNoChest, "carriages_no_chest"),
-    BACKWARDS("backwards", Format.COUNT, 1, PlayerRunState::cartsBackwardSinceDeath),
-    PACIFIST("pacifist", Format.COUNT, 3, PlayerRunState::pacifistCarriages, "pacifist_carriages"),
+    CHESTS("chests", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::containersOpened, "chests"),
+    MOB_KILLS("mob_kills", Format.COUNT, 1, Tone.GRIM, PlayerRunState::mobKills),
+    DISTANCE("distance", Format.COUNT, 100, Tone.PLAIN, s -> (long) s.distanceBlocks(), "distance"),
+    BOOKS_READ("books_read", Format.COUNT, 1, Tone.KIND, PlayerRunState::booksReadCount, "books_read"),
+    BOOKS_WRITTEN("books_written", Format.COUNT, 1, Tone.KIND, PlayerRunState::booksWrittenCount, "books_written"),
+    FRIENDS("friends", Format.COUNT, 1, Tone.KIND, PlayerRunState::befriendedCount, "friends"),
+    ENCOUNTERS("encounters", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::encounteredCount),
+    ECHOES("echoes", Format.COUNT, 1, Tone.GRIM, PlayerRunState::echoesKilled, "echoes_killed"),
+    TAMED("tamed", Format.COUNT, 1, Tone.KIND, PlayerRunState::tamedCount),
+    DAMAGE_TAKEN("damage_taken", Format.PLAIN, 10, Tone.PLAIN, s -> (long) s.damageTaken()),
+    PLAYER_KILLS("player_kills", Format.COUNT, 1, Tone.GRIM, PlayerRunState::playerKills),
+    NO_CHEST("no_chest", Format.COUNT, 3, Tone.PLAIN, PlayerRunState::maxCarriagesNoChest, "carriages_no_chest"),
+    BACKWARDS("backwards", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::cartsBackwardSinceDeath),
+    PACIFIST("pacifist", Format.COUNT, 3, Tone.KIND, PlayerRunState::pacifistCarriages, "pacifist_carriages"),
+
+    /**
+     * The zero-kill case, said out loud. A kill counter of zero is not a number worth a sentence
+     * ("You've killed 0 things" is the floor's whole argument) — but three carriages in with nothing
+     * dead behind you is. Derived like {@link #PACIFIST}, and looser: hurting is allowed, killing
+     * is not.
+     */
+    NO_KILLS("no_kills", Format.COUNT, 3, Tone.KIND, PlayerRunState::killlessCarriages),
 
     // The remaining leaderboard subjects that have a per-run twin at all. Every RUN-scoped board
     // above already had one; these two are boards kept as lifetime tallies whose one-life half is
     // nonetheless a real, countable thing — so Faulthurst can remark on it.
-    DEATH_NOTES("death_notes", Format.COUNT, 1, PlayerRunState::deathNotesWritten, "deathnotes_written"),
-    LOVE_NOTES("love_notes", Format.COUNT, 1, PlayerRunState::loveNotesWritten, "lovenotes_written");
+    DEATH_NOTES("death_notes", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::deathNotesWritten, "deathnotes_written"),
+    LOVE_NOTES("love_notes", Format.COUNT, 1, Tone.KIND, PlayerRunState::loveNotesWritten, "lovenotes_written");
 
     /**
      * Vanilla server tick rate — {@link #PLAYTIME} reports seconds, not ticks.
@@ -100,21 +108,37 @@ public enum RunStatSubject {
      */
     public enum Format { COUNT, DURATION, PLAIN }
 
+    /**
+     * How the number sits with Faulthurst — which decides what he is allowed to say after it
+     * ({@code RunStatBookFactory#tailPool}).
+     *
+     * <ul>
+     *   <li>{@link #KIND} — friends made, animals tamed, nothing killed. He may approve.</li>
+     *   <li>{@link #PLAIN} — carriages, chests, distance. He may approve or wonder.</li>
+     *   <li>{@link #GRIM} — things, passengers, echoes killed. He may wonder or disapprove; he
+     *       never says "Keep it up."</li>
+     * </ul>
+     */
+    public enum Tone { KIND, PLAIN, GRIM }
+
     private final String id;
     private final Format format;
     private final long floor;
+    private final Tone tone;
     private final ToLongFunction<PlayerRunState> extractor;
     private final String boardBase;
 
-    RunStatSubject(String id, Format format, long floor, ToLongFunction<PlayerRunState> extractor) {
-        this(id, format, floor, extractor, null);
+    RunStatSubject(String id, Format format, long floor, Tone tone,
+                   ToLongFunction<PlayerRunState> extractor) {
+        this(id, format, floor, tone, extractor, null);
     }
 
-    RunStatSubject(String id, Format format, long floor, ToLongFunction<PlayerRunState> extractor,
-                   String boardBase) {
+    RunStatSubject(String id, Format format, long floor, Tone tone,
+                   ToLongFunction<PlayerRunState> extractor, String boardBase) {
         this.id = id;
         this.format = format;
         this.floor = floor;
+        this.tone = tone;
         this.extractor = extractor;
         this.boardBase = boardBase;
     }
@@ -137,6 +161,9 @@ public enum RunStatSubject {
     public String boardBase() { return boardBase; }
 
     public Format format() { return format; }
+
+    /** Whether this is something to be pleased about, neutral on, or quiet about. */
+    public Tone tone() { return tone; }
 
     /** The value below which this subject is not worth a sentence. */
     public long floor() { return floor; }

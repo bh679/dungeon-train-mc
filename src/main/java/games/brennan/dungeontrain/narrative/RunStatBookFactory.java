@@ -9,6 +9,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,15 +34,25 @@ import java.util.Optional;
  *
  * <p><b>Every opener says the reader's name.</b> It is the difference between a leaflet and a note
  * left for someone: Faulthurst is not narrating the train, he is addressing you, and he knows which
- * one of you he is addressing. The seventh opener is the bare salutation — {@code "Brennan,"} and
+ * one of you he is addressing. {@code open.6} is the bare salutation — {@code "Brennan,"} and
  * nothing else — weighted to be the common case ({@link #OPENER_PLAIN_WEIGHT} against one apiece
- * for the rest), so most books greet the reader and go straight to the number.</p>
+ * for the rest), so half of all books greet the reader and go straight to the number.</p>
  *
  * <h2>What is fixed and what is live</h2>
- * <p>The opener and follow-up come from the stamped roll seed, so a given book's WORDING is decided
- * at the container and never shifts. The SUBJECT is chosen at the first refresh, from what the
- * holder had actually done by then, and is then fixed too. Only the number moves — and only until
- * the book is opened, at which point {@link RunStatBookTag#lock} freezes the page for good.</p>
+ * <p>The opener comes from the stamped roll seed, so it is decided at the container and never
+ * shifts. The SUBJECT is chosen at the first refresh, from what the holder had actually done by
+ * then, and is then fixed too. The follow-up is drawn by the same seed but from a pool the subject's
+ * {@link RunStatSubject.Tone tone} decides — see {@link #tailPool} — so it is settled the moment the
+ * subject is, and a chest book that resolves to a grim subject may swap its closing line once on the
+ * way. Only the number moves after that — and only until the book is opened, at which point
+ * {@link RunStatBookTag#lock} freezes the page for good.</p>
+ *
+ * <h2>He does not congratulate a killing</h2>
+ * <p>Every follow-up carries a {@link TailTone}. Positive lines — the encouragements, the approving
+ * opinions, the warm questions — never follow a {@link RunStatSubject.Tone#GRIM} stat; negative
+ * lines — the disapproving ones, the pointed questions — never follow anything else. Neutral lines
+ * fit anywhere. So "You've killed 3 passengers." is met with "Would you do it again?" or "I counted
+ * every one.", and never "Good. Go further."</p>
  *
  * <p>A book baked at the container has no subject yet: there is no reader there to have done
  * anything. Until the first refresh it is opener + follow-up alone — a terse but honest scrap,
@@ -59,22 +70,117 @@ public final class RunStatBookFactory {
     public static final String TITLE = "A Note From Faulthurst";
 
     /**
-     * Openers, all of which take the reader's name as their {@code %s}. The last
+     * Openers, all of which take the reader's name as their {@code %s}. One of them
      * ({@link #OPENER_PLAIN}) is the bare salutation.
      */
-    public static final int OPENER_COUNT = 7;
-
-    /** Index of the bare salutation — the name and nothing else. */
-    public static final int OPENER_PLAIN = OPENER_COUNT - 1;
+    public static final int OPENER_COUNT = 15;
 
     /**
-     * Weight of the bare salutation against 1 apiece for the six written openers — so most books
+     * Index of the bare salutation — the name and nothing else. Sits in the middle of the list
+     * because it was once the last of seven, and lang keys never move.
+     */
+    public static final int OPENER_PLAIN = 6;
+
+    /**
+     * Weight of the bare salutation against 1 apiece for the written openers — so half of all books
      * greet the reader and go straight to the number, and Faulthurst's asides stay a surprise.
      */
-    private static final int OPENER_PLAIN_WEIGHT = 6;
+    private static final int OPENER_PLAIN_WEIGHT = OPENER_COUNT - 1;
 
-    /** Follow-ups: ten encouragements and ten very short questions. */
-    public static final int TAIL_COUNT = 20;
+    /**
+     * Follow-ups: encouragements, questions, opinions, and a few disapprovals. One entry per key in
+     * {@link #TAIL_TONES}, which is the authoritative list.
+     */
+    public static final int TAIL_COUNT = 61;
+
+    /** Whether a follow-up may sit under a kind stat, a grim one, or either. */
+    public enum TailTone { POSITIVE, NEUTRAL, NEGATIVE }
+
+    /**
+     * The tone of each {@code tail.N}, indexed by N. Kept in the lang file's order with the English
+     * beside it, so the table reads as the list it is. Tones are per line, not per block — the
+     * original ten questions are mixed.
+     */
+    static final TailTone[] TAIL_TONES = {
+        // encouragements
+        TailTone.POSITIVE,  //  0 Keep it up.
+        TailTone.POSITIVE,  //  1 Good. Go further.
+        TailTone.POSITIVE,  //  2 That's more than most.
+        TailTone.POSITIVE,  //  3 I'd have stopped by now.
+        TailTone.POSITIVE,  //  4 Onward, then.
+        TailTone.POSITIVE,  //  5 You're doing better than you think.
+        TailTone.POSITIVE,  //  6 Don't let me interrupt.
+        TailTone.POSITIVE,  //  7 The train has noticed.
+        TailTone.POSITIVE,  //  8 Worth writing down, I thought.
+        TailTone.POSITIVE,  //  9 Carry on.
+        // the original questions
+        TailTone.NEUTRAL,   // 10 Why?
+        TailTone.NEGATIVE,  // 11 Was it worth it?
+        TailTone.NEUTRAL,   // 12 On purpose?
+        TailTone.NEUTRAL,   // 13 And then?
+        TailTone.NEUTRAL,   // 14 Tired yet?
+        TailTone.NEUTRAL,   // 15 Who's counting?
+        TailTone.NEUTRAL,   // 16 Sure about that?
+        TailTone.NEGATIVE,  // 17 Feeling all right?
+        TailTone.NEUTRAL,   // 18 Is that a lot?
+        TailTone.NEGATIVE,  // 19 Still you in there?
+        // more questions
+        TailTone.NEUTRAL,   // 20 Do you remember when it started?
+        TailTone.NEGATIVE,  // 21 Did you mean to?
+        TailTone.NEGATIVE,  // 22 What were you hoping for?
+        TailTone.NEUTRAL,   // 23 Would you do it again?
+        TailTone.NEUTRAL,   // 24 Do you ever look back?
+        TailTone.NEUTRAL,   // 25 Is that enough?
+        TailTone.NEUTRAL,   // 26 How does it feel?
+        TailTone.NEGATIVE,  // 27 What did it cost you?
+        TailTone.NEGATIVE,  // 28 Did it help?
+        TailTone.NEUTRAL,   // 29 Where do you think this ends?
+        TailTone.NEUTRAL,   // 30 Do you know why you keep going?
+        TailTone.POSITIVE,  // 31 Would you have believed that, a few carriages ago?
+        TailTone.NEUTRAL,   // 32 Shall I keep counting?
+        TailTone.NEGATIVE,  // 33 Should I be worried?
+        TailTone.NEUTRAL,   // 34 Are you keeping score too?
+        TailTone.NEGATIVE,  // 35 Do you remember why?
+        TailTone.POSITIVE,  // 36 Do you know how rare that is?
+        TailTone.POSITIVE,  // 37 Did anyone see?
+        TailTone.POSITIVE,  // 38 Will you keep it up?
+        TailTone.POSITIVE,  // 39 Who taught you that?
+        // opinions
+        TailTone.POSITIVE,  // 40 I like your style.
+        TailTone.POSITIVE,  // 41 I approve, for what it's worth.
+        TailTone.POSITIVE,  // 42 The train seems to like you.
+        TailTone.POSITIVE,  // 43 I'd have done the same.
+        TailTone.NEUTRAL,   // 44 That is interesting.
+        TailTone.NEUTRAL,   // 45 I'm surprised.
+        TailTone.NEUTRAL,   // 46 Makes you think.
+        TailTone.NEUTRAL,   // 47 I didn't expect that.
+        TailTone.NEUTRAL,   // 48 Interesting choice.
+        TailTone.NEUTRAL,   // 49 I'll remember that.
+        TailTone.NEUTRAL,   // 50 That says something about you.
+        TailTone.NEUTRAL,   // 51 Noted.
+        TailTone.NEUTRAL,   // 52 Hm.
+        TailTone.NEUTRAL,   // 53 Unusual, for a passenger.
+        TailTone.NEUTRAL,   // 54 I wrote it down twice, to be sure.
+        // disapproval
+        TailTone.NEGATIVE,  // 55 Not what I'd have done.
+        TailTone.NEGATIVE,  // 56 I won't pretend I enjoyed watching.
+        TailTone.NEGATIVE,  // 57 I'd have found another way.
+        TailTone.NEGATIVE,  // 58 You could stop, you know.
+        TailTone.NEGATIVE,  // 59 I counted every one.
+        TailTone.NEGATIVE,  // 60 I'm not here to judge. I'm only here.
+    };
+
+    /** Indices a kind or plain stat may be followed by: everything but the disapproval. */
+    private static final List<Integer> TAILS_AFTER_KIND = tailsOf(TailTone.POSITIVE, TailTone.NEUTRAL);
+
+    /** Indices a grim stat may be followed by: everything but the praise. */
+    private static final List<Integer> TAILS_AFTER_GRIM = tailsOf(TailTone.NEUTRAL, TailTone.NEGATIVE);
+
+    static {
+        if (TAIL_TONES.length != TAIL_COUNT) {
+            throw new IllegalStateException("TAIL_TONES has " + TAIL_TONES.length + " entries for TAIL_COUNT " + TAIL_COUNT);
+        }
+    }
 
     private static final String KEY_OPENER = RunStatSubject.KEY_ROOT + "open.";
     private static final String KEY_TAIL = RunStatSubject.KEY_ROOT + "tail.";
@@ -170,27 +276,56 @@ public final class RunStatBookFactory {
             first = false;
         }
         if (!first) page.append("\n\n");
-        page.append(tail(seed));
+        page.append(tail(seed, subject));
 
         return List.of(page);
     }
 
     /**
-     * The lead-in, which always names {@code playerName}. The six written openers share one slot's
-     * worth of probability between them against {@link #OPENER_PLAIN_WEIGHT} for the bare
-     * salutation, so being addressed by name is constant and being remarked upon is not.
+     * The lead-in, which always names {@code playerName}. The written openers share one slot's
+     * worth of probability apiece against {@link #OPENER_PLAIN_WEIGHT} for the bare salutation, so
+     * being addressed by name is constant and being remarked upon is a coin flip.
      */
     static Component opener(long seed, String playerName) {
         int written = OPENER_COUNT - 1;
         int total = OPENER_PLAIN_WEIGHT + written;
         int roll = (int) Math.floorMod(mix(seed, SALT_OPENER), total);
-        int index = roll < OPENER_PLAIN_WEIGHT ? OPENER_PLAIN : roll - OPENER_PLAIN_WEIGHT;
+        int index;
+        if (roll < OPENER_PLAIN_WEIGHT) {
+            index = OPENER_PLAIN;
+        } else {
+            int nth = roll - OPENER_PLAIN_WEIGHT;          // the nth written opener, 0-based
+            index = nth < OPENER_PLAIN ? nth : nth + 1;    // step over the salutation's slot
+        }
         return Component.translatable(KEY_OPENER + index, playerName);
     }
 
-    /** The closing remark — an encouragement or a very short question. */
-    static Component tail(long seed) {
-        return Component.translatable(KEY_TAIL + Math.floorMod(mix(seed, SALT_TAIL), TAIL_COUNT));
+    /**
+     * The closing remark, drawn by the seed from the pool {@code subject}'s tone allows. The seed
+     * is fixed at the container, so the pick is stable for as long as the pool is — which is from
+     * the first refresh on.
+     */
+    static Component tail(long seed, RunStatSubject subject) {
+        List<Integer> pool = tailPool(subject);
+        int index = pool.get((int) Math.floorMod(mix(seed, SALT_TAIL), pool.size()));
+        return Component.translatable(KEY_TAIL + index);
+    }
+
+    /**
+     * Which follow-ups may close a page about {@code subject}. A book that has no subject yet — one
+     * still in its chest — is treated as plain: nothing has been said, so nothing is off-limits but
+     * the disapproval.
+     */
+    static List<Integer> tailPool(RunStatSubject subject) {
+        return subject != null && subject.tone() == RunStatSubject.Tone.GRIM ? TAILS_AFTER_GRIM : TAILS_AFTER_KIND;
+    }
+
+    private static List<Integer> tailsOf(TailTone a, TailTone b) {
+        List<Integer> out = new ArrayList<>();
+        for (int i = 0; i < TAIL_TONES.length; i++) {
+            if (TAIL_TONES[i] == a || TAIL_TONES[i] == b) out.add(i);
+        }
+        return List.copyOf(out);
     }
 
     /** Splittable-mix — the same family {@link RandomBookFactory} and the roller use. */

@@ -127,11 +127,63 @@ class RunStatBookFactoryTest {
     }
 
     @Test
-    @DisplayName("Every follow-up is reachable")
+    @DisplayName("Every follow-up is reachable from some subject, and each pool covers its tones")
     void everyFollowUpIsReachable() {
+        Set<String> afterPlain = tailsSeen(RunStatSubject.CHESTS);   // PLAIN
+        Set<String> afterKind = tailsSeen(RunStatSubject.FRIENDS);   // KIND
+        Set<String> afterGrim = tailsSeen(RunStatSubject.MOB_KILLS); // GRIM
+        Set<String> beforeReader = tailsSeen(null);                  // still in the chest
+
+        assertEquals(afterPlain, afterKind, "kind and plain stats share one pool");
+        assertEquals(afterPlain, beforeReader, "a book with no subject yet is treated as plain");
+
+        Set<String> all = new HashSet<>(afterPlain);
+        all.addAll(afterGrim);
+        assertEquals(RunStatBookFactory.TAIL_COUNT, all.size(), "unreachable follow-ups; saw " + all);
+
+        for (int i = 0; i < RunStatBookFactory.TAIL_COUNT; i++) {
+            String key = RunStatSubject.KEY_ROOT + "tail." + i;
+            RunStatBookFactory.TailTone tone = RunStatBookFactory.TAIL_TONES[i];
+            assertEquals(tone != RunStatBookFactory.TailTone.NEGATIVE, afterKind.contains(key),
+                key + " (" + tone + ") after a kind stat");
+            assertEquals(tone != RunStatBookFactory.TailTone.POSITIVE, afterGrim.contains(key),
+                key + " (" + tone + ") after a grim stat");
+        }
+    }
+
+    @Test
+    @DisplayName("He never congratulates a killing, and never scolds a kindness")
+    void toneNeverContradictsTheStat() {
+        for (long seed = 0; seed < 3000; seed++) {
+            RunStatBookFactory.TailTone grim = toneOf(RunStatBookFactory.tail(seed, RunStatSubject.PLAYER_KILLS));
+            assertTrue(grim != RunStatBookFactory.TailTone.POSITIVE, "seed " + seed + " praised a passenger kill");
+            RunStatBookFactory.TailTone kind = toneOf(RunStatBookFactory.tail(seed, RunStatSubject.TAMED));
+            assertTrue(kind != RunStatBookFactory.TailTone.NEGATIVE, "seed " + seed + " scolded a taming");
+        }
+    }
+
+    @Test
+    @DisplayName("The follow-up is fixed by the seed once the subject is")
+    void followUpIsStableForASubject() {
+        for (long seed = 0; seed < 200; seed++) {
+            assertEquals(keyOf(RunStatBookFactory.tail(seed, RunStatSubject.CHESTS)),
+                         keyOf(RunStatBookFactory.tail(seed, RunStatSubject.CHESTS)));
+            // Same pool, same pick: swapping one plain subject for another never moves the line.
+            assertEquals(keyOf(RunStatBookFactory.tail(seed, RunStatSubject.CHESTS)),
+                         keyOf(RunStatBookFactory.tail(seed, RunStatSubject.DISTANCE)));
+        }
+    }
+
+    private static Set<String> tailsSeen(RunStatSubject subject) {
         Set<String> seen = new HashSet<>();
-        for (long seed = 0; seed < 6000; seed++) seen.add(RunStatBookFactory.tail(seed).getString());
-        assertEquals(RunStatBookFactory.TAIL_COUNT, seen.size(), "unreachable follow-ups: " + seen);
+        for (long seed = 0; seed < 6000; seed++) seen.add(RunStatBookFactory.tail(seed, subject).getString());
+        return seen;
+    }
+
+    private static RunStatBookFactory.TailTone toneOf(Component tail) {
+        String key = keyOf(tail);
+        int index = Integer.parseInt(key.substring(key.lastIndexOf('.') + 1));
+        return RunStatBookFactory.TAIL_TONES[index];
     }
 
     @Test

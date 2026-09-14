@@ -86,6 +86,24 @@ class RunStatSubjectTest {
     }
 
     @Test
+    @DisplayName("No kills is worth saying only once the run is three carriages in, and one kill ends it")
+    void noKillsIsDerivedAndGated() {
+        PlayerRunState run = new PlayerRunState();
+        run.advanceTravelled(2);
+        assertFalse(RunStatSubject.NO_KILLS.clearsFloor(run), "two carriages of nothing is not yet a feat");
+
+        run.advanceTravelled(3);
+        assertTrue(RunStatSubject.NO_KILLS.clearsFloor(run), "five carriages in with nothing dead");
+        assertEquals(5L, RunStatSubject.NO_KILLS.value(run));
+        assertEquals(RunStatSubject.Tone.KIND, RunStatSubject.NO_KILLS.tone());
+
+        run.incrementMobKills();
+        assertEquals(0L, RunStatSubject.NO_KILLS.value(run), "one kill disqualifies the run");
+        assertFalse(RunStatSubject.NO_KILLS.clearsFloor(run));
+        assertEquals(RunStatSubject.Tone.GRIM, RunStatSubject.MOB_KILLS.tone());
+    }
+
+    @Test
     @DisplayName("Null and negative counters never reach a sentence")
     void valuesAreClamped() {
         PlayerRunState run = new PlayerRunState();

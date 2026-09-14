@@ -134,6 +134,78 @@
       ]
     }
   },
+  "book.dungeontrain.statbook.open.7": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.8": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.9": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.10": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.11": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.12": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.13": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.open.14": {
+    "1": {
+      "label": "the name of the player reading this note",
+      "examples": [
+        "Brennan",
+        "Steve"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.stat.backwards.one": {
     "1": {
       "label": "carriages the reader has walked back through this run",
@@ -365,6 +437,24 @@
       "examples": [
         "3",
         "26"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.no_kills.one": {
+    "1": {
+      "label": "carriages the reader has come without killing anything",
+      "examples": [
+        "4",
+        "12"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.no_kills.other": {
+    "1": {
+      "label": "carriages the reader has come without killing anything",
+      "examples": [
+        "4",
+        "12"
       ]
     }
   },
