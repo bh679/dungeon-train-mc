@@ -57,6 +57,8 @@ public final class PlayerDataPaths {
     public static final String TRANSLATIONS = "translations";
     public static final String OUTBOX = "outbox";
     public static final String BACKUPS = "backups";
+    /** Per-player Ender Chest flags (Free Play expansion). New store — never lived in {@code config/}. */
+    public static final String ENDER_CHEST = "enderchest";
 
     /** Folder name used outside the instance, under the OS's per-user application data dir. */
     public static final String EXTERNAL_DIR = "DungeonTrain";

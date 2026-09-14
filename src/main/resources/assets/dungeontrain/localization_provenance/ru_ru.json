@@ -70,6 +70,10 @@
       "chat.dungeontrain.free_play.cheat_mods",
       "container.dungeontrain.enderchest.profile",
       "container.dungeontrain.enderchest.separator",
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
+      "gui.dungeontrain.enderchest.shrink",
+      "gui.dungeontrain.enderchest.shrink.tooltip",
       "chat.dungeontrain.free_play.ais_changed",
       "command.dungeontrain.fix_ais.backup",
       "command.dungeontrain.report_carriage.player_only",
@@ -1545,6 +1549,8 @@
   },
   "source_changed": {
     "dungeontrain": [
+      "gui.dungeontrain.enderchest.expand",
+      "gui.dungeontrain.enderchest.expand.tooltip",
       "effect.dungeontrain.free_play.desc.1",
       "effect.dungeontrain.free_play.desc.3",
       "chat.dungeontrain.shared_carriage.credit.more",
