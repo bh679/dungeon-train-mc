@@ -16512,6 +16512,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-observers-quiet-and-setting",
+      "version": "0.882.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor: observers stay quiet while you build",
+      "summary": "Observers in an editor plot no longer fire on their own while the editor shows you things \u2014 the variant preview cycle, a row click in the variant menu, a plot reset. And there is a new Observers On / Off switch in the editor Settings: switch it Off and every observer inside a plot stays quiet even for blocks you place and break by hand, so you can wire a contraption without setting it off. Trains in play worlds are untouched.",
+      "highlights": [
+        "Variant previews, menu previews, mirror stamps and plot resets never pulse an observer",
+        "Settings \u2192 Observers | On | Off \u2014 Off mutes observers in editor plots, hand edits included; remembered per world",
+        "Wallminer trap: TNT joins the wall-cell variant pool; new 'very_dangerouds_1' trap contents"
+      ],
+      "pr": 1407,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

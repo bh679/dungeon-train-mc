@@ -57,6 +57,7 @@ public final class DungeonTrainNet {
         registrar.playToServer(EditorPlotActionPacket.TYPE, EditorPlotActionPacket.STREAM_CODEC, EditorPlotActionPacket::handle);
         registrar.playToClient(EditorTypeMenusPacket.TYPE, EditorTypeMenusPacket.STREAM_CODEC, EditorTypeMenusPacket::handle);
         registrar.playToClient(EditorMenusModePacket.TYPE, EditorMenusModePacket.STREAM_CODEC, EditorMenusModePacket::handle);
+        registrar.playToClient(EditorObserversPacket.TYPE, EditorObserversPacket.STREAM_CODEC, EditorObserversPacket::handle);
         registrar.playToClient(CarriageGroupGapPacket.TYPE, CarriageGroupGapPacket.STREAM_CODEC, CarriageGroupGapPacket::handle);
         registrar.playToClient(PortalTwinBoxesPacket.TYPE, PortalTwinBoxesPacket.STREAM_CODEC, PortalTwinBoxesPacket::handle);
         registrar.playToClient(CarriageNextSpawnPacket.TYPE, CarriageNextSpawnPacket.STREAM_CODEC, CarriageNextSpawnPacket::handle);

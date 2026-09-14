@@ -109,7 +109,11 @@ public enum EditorCategory {
      * correct.</p>
      */
     public static Optional<Located> locate(ServerPlayer player, CarriageDims dims) {
-        BlockPos pos = player.blockPosition();
+        return locateAt(player.blockPosition(), dims);
+    }
+
+    /** {@link #locate} for a block position rather than a player — the plot that contains {@code pos}. */
+    public static Optional<Located> locateAt(BlockPos pos, CarriageDims dims) {
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
             return Optional.of(new Located(CARRIAGES, new Template.Carriage(carriage)));
