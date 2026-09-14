@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "mirror": { "x": false, "y": false, "z": false, "v": true },
   "variants": {
     "6,1,6": { "lockId": 1, "states": ["minecraft:bookshelf", {"state": "minecraft:stripped_oak_wood[axis=y]", "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
