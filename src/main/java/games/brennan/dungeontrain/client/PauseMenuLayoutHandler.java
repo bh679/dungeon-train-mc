@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PauseMenuActionButton;
 import games.brennan.dungeontrain.client.version.VersionCheckState;
 import games.brennan.dungeontrain.client.version.VersionStatusButton;
+import games.brennan.dungeontrain.editor.EditorWorldLayout;
 import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
@@ -60,9 +61,11 @@ import org.slf4j.Logger;
  * editor's sky plots live and the only other way in is the worldspace editor menu (which
  * needs you to be standing in a plot).</p>
  *
- * <p>The Abandon-run reshuffle is gated to singleplayer (integrated server present) — multiplayer keeps the
- * vanilla "Disconnect" button, and with it loses the My Builds row, since both hang off
- * the slot this handler takes over. If the Save-and-Quit button can't be located
+ * <p>The Abandon-run reshuffle is gated to singleplayer <em>run</em> worlds (integrated server
+ * present) — multiplayer keeps the vanilla "Disconnect" button, and with it loses the My Builds
+ * row, since both hang off the slot this handler takes over. The Train Builder and Train Editor
+ * worlds keep vanilla Save and Quit too: there is no run in either to abandon (see
+ * {@link #keepVanillaExitWithMyBuilds}). If the Save-and-Quit button can't be located
  * (a third-party mod rewrote the menu) the menu is left untouched, mirroring
  * {@link TitleScreenLayoutHandler}'s defensive stance.</p>
  */
@@ -135,6 +138,15 @@ public final class PauseMenuLayoutHandler {
         int slotH = returnToMenu.getHeight();
         int halfW = (slotW - GAP) / 2;
 
+        // The Train Editor's void world is an authoring sandbox like the builder's: nothing to
+        // abandon, and "abandoning" would kill the author and narrate a death. Unlike the builder
+        // it has no pause menu of its own, so it keeps vanilla's exit here and only borrows the
+        // My Builds row — the one thing the takeover adds that an author actually wants.
+        if (EditorWorldLayout.isEditorWorld(Minecraft.getInstance().level)) {
+            keepVanillaExitWithMyBuilds(event, returnToMenu, slotX, slotY, slotW, slotH);
+            return;
+        }
+
         // Neutralise the vanilla button but leave it in the listener list (harmless).
         returnToMenu.visible = false;
         returnToMenu.active = false;
@@ -173,6 +185,18 @@ public final class PauseMenuLayoutHandler {
         event.addListener(quitGame);
 
         applyShiftVisibility(abandon, exitTitle, quitGame);
+    }
+
+    /**
+     * Editor-world layout: vanilla <b>Save and Quit to Title</b> stays exactly as it is, with the
+     * <b>My Builds</b> row slotted in above it (pushing the vanilla button down one row) when the
+     * player is creative — which in the editor world they always are.
+     */
+    private static void keepVanillaExitWithMyBuilds(ScreenEvent.Init.Post event, Button returnToMenu,
+                                                    int slotX, int slotY, int slotW, int slotH) {
+        if (addMyBuildsRow(event, slotX, slotY, slotW, slotH)) {
+            returnToMenu.setY(slotY + slotH + GAP);
+        }
     }
 
     /**
