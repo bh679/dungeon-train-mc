@@ -51,7 +51,7 @@ public final class EditorIcons {
             case "withdraw" -> WITHDRAW;
             // The stage overview: Refresh re-rolls like Reset re-rolls, Delete is the same bin.
             case EditorStageActions.REFRESH -> RESET;
-            case EditorStageActions.APPLY -> APPLY;
+            case EditorStageActions.SELECT -> APPLY;
             case EditorStageActions.DUPLICATE -> DUPLICATE;
             case EditorStageActions.DELETE -> TRASH;
             case EditorStageActions.PREV -> PREV;
