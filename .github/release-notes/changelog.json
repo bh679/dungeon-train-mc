@@ -16555,6 +16555,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ender-chest-persistence-0-4-0",
+      "version": "0.884.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Your Ender Chest is now protected against being wiped",
+      "summary": "Ender Chest Persistence is updated to 0.4.0. Your chest now lives outside the modpack instance, so reinstalling the pack or moving launchers keeps it, and the mod keeps an automatic backup of the last non-empty contents \u2014 if the file is ever damaged it is restored from that backup instead of being emptied. Existing chests are carried across automatically on your next login.",
+      "highlights": [
+        "Ender Chest survives pack reinstalls and launcher moves (stored in your system's app-data folder)",
+        "Automatic <uuid>.dat.bak of the last non-empty chest; a damaged file self-heals from it and is never overwritten with an empty one",
+        "Requires Ender Chest Persistence 0.4.0 \u2014 CurseForge/Modrinth apps install it with the pack"
+      ],
+      "pr": 1413,
+      "date": "2026-09-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
