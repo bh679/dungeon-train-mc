@@ -74,5 +74,9 @@
     ]
   },
   "vase": 1,
-  "very_dangerouds_1": 1
+  "very_dangerouds_1": 1,
+  "zombieroom3": {
+    "weight": 1,
+    "name": "zombiesplit"
+  }
 }

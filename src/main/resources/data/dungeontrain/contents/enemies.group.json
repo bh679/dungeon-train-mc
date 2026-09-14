@@ -17,11 +17,11 @@
     },
     {
       "id": "zombieroom",
-      "weight": 7
+      "weight": 6
     },
     {
       "id": "skeleton",
-      "weight": 10
+      "weight": 8
     },
     {
       "id": "pillager",
@@ -44,7 +44,7 @@
     },
     {
       "id": "slimes",
-      "weight": 10,
+      "weight": 9,
       "maxLevel": 20
     },
     {
@@ -162,6 +162,14 @@
       "id": "creeperdrop",
       "weight": 1,
       "minLevel": 20
+    },
+    {
+      "id": "zombieroom3",
+      "weight": 4
+    },
+    {
+      "id": "zombie4",
+      "weight": 1
     }
   ]
 }
