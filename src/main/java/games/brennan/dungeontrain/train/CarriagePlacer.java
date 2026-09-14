@@ -173,17 +173,23 @@ public final class CarriagePlacer {
      * explicit {@code seed} — so the Stages tab can show any stage without selecting it, and
      * re-roll the part and shell block variants on demand. Stamped silently (no relight): the
      * scratch footprint is captured and erased within the tick, so no light ever needs to be right.
+     *
+     * <p>Unlike the plot preview ({@link #placeAt(ServerLevel, BlockPos, CarriageVariant, CarriageDims)}),
+     * this stamp runs inside a {@link StagePlacementScope} for {@code stageId}, so stage placeholder
+     * blocks resolve to that stage's real palette — the whole point of the picture. That is safe
+     * here and nowhere else in the editor: the scratch footprint is captured and erased within the
+     * tick and never saved back into a template.</p>
      */
     public static Set<BlockPos> placeStagePreview(ServerLevel level, BlockPos origin, CarriageVariant variant,
                                                   CarriageDims dims, long seed, String stageId) {
-        return CarriageStampGuard.call(() -> {
+        return CarriageStampGuard.call(() -> StagePlacementScope.with(stageId, () -> {
             String base = stampBase(level, origin, variant, dims, seed, 0, false, false,
                 GateContext.WORLDX_FROM_PIDX, /*relight*/ false);
             String overlay = stampPartsOverlay(level, origin, variant, dims, seed, 0, false, false,
                 GateContext.WORLDX_FROM_PIDX, stageId, /*relight*/ false);
             applyVariantBlocks(level, origin, variant, dims, seed, 0);
             return finishPlace(level, origin, variant, dims, base, overlay);
-        });
+        }));
     }
 
     private static Set<BlockPos> placeAtPreviewGuarded(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
