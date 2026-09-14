@@ -16469,9 +16469,9 @@
       ],
       "pr": 1409,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
     },
     {
       "id": "stages-tab-real-palette-and-select",
@@ -16489,9 +16489,9 @@
         "\u2713 on the stage preview selects (or deselects) that stage \u2014 icons, textures and plots follow"
       ],
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
     },
     {
       "id": "editor-world-vanilla-exit-menu",
@@ -16509,9 +16509,9 @@
         "My Builds stays above the exit; Shift still swaps in Exit to Title | Quit Game"
       ],
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
     },
     {
       "id": "editor-observers-quiet-and-setting",
@@ -16531,9 +16531,9 @@
       ],
       "pr": 1407,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
     },
     {
       "id": "freeplay-ender-chest-expansion",
@@ -16552,9 +16552,9 @@
         "Persists across every Free Play world; legit runs keep the vanilla chest"
       ],
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
     },
     {
       "id": "ender-chest-persistence-0-4-0",
@@ -16573,9 +16573,9 @@
       ],
       "pr": 1413,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.884.0",
+      "released_at": "2026-09-14T11:23:55Z"
     }
   ]
 }
