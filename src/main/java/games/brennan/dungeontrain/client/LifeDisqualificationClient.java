@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.client.Minecraft;
@@ -9,6 +10,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Set;
@@ -28,6 +30,8 @@ import java.util.Set;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LifeDisqualificationClient {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private static Set<ResourceLocation> disqualified = Set.of();
     /** Bumped on every apply so per-widget tooltip caches know to re-split. */
     private static int revision;
@@ -46,8 +50,10 @@ public final class LifeDisqualificationClient {
     public static void apply(List<ResourceLocation> all, List<ResourceLocation> newlyLost) {
         disqualified = Set.copyOf(all);
         revision++;
+        LOGGER.info("[DungeonTrain] Life-disqualified advancements: {} (newly lost: {})", all, newlyLost);
         for (ResourceLocation id : newlyLost) {
             if (TrackedAdvancements.isTracked(id)) {
+                LOGGER.info("[DungeonTrain] Tracked advancement {} lost this life — showing toast", id);
                 showToast(id);
             }
         }

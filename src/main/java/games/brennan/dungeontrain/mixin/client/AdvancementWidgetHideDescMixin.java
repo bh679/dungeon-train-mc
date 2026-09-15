@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin.client;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import games.brennan.dungeontrain.client.HoveredAdvancement;
 import games.brennan.dungeontrain.compat.AdvancementHintText;
+import games.brennan.dungeontrain.compat.AdvancementTileDecor;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
@@ -63,26 +64,35 @@ public abstract class AdvancementWidgetHideDescMixin {
     @Unique
     private int dungeontrain$hiddenDescRevision;
 
-    /** Tint for a tile this life has ruled out — frame and icon both dim through the shader colour. */
-    @Unique
-    private static final float DUNGEONTRAIN_GREYED_TINT = 0.4f;
+    @Shadow private int x;
+
+    @Shadow private int y;
 
     /**
-     * Grey out a tile this life has ruled out. {@code draw} blits the frame and renders the icon
-     * under the current shader colour, so dimming it here (and restoring it at the end) dims both.
+     * Fade a tile this life has ruled out. The frame blit and icon render both go through the
+     * current shader colour, so a half-alpha colour set here dims both — see
+     * {@link AdvancementTileDecor} for why it is restored right after the icon and not at RETURN.
      */
     @Inject(method = "draw", at = @At("HEAD"))
-    private void dungeontrain$greyOutStart(GuiGraphics guiGraphics, int x, int y, CallbackInfo ci) {
-        if (dungeontrain$isGreyedOut()) {
-            guiGraphics.setColor(DUNGEONTRAIN_GREYED_TINT, DUNGEONTRAIN_GREYED_TINT, DUNGEONTRAIN_GREYED_TINT, 1.0f);
-        }
+    private void dungeontrain$decorateStart(GuiGraphics guiGraphics, int originX, int originY, CallbackInfo ci) {
+        if (advancementNode == null) return;
+        AdvancementTileDecor.beforeTile(guiGraphics, advancementNode.holder().id(), progress);
+    }
+
+    /** Restore the shader colour and outline a tracked tile, once the icon is down. */
+    @Inject(method = "draw",
+            at = @At(value = "INVOKE",
+                     target = "Lnet/minecraft/client/gui/GuiGraphics;renderFakeItem(Lnet/minecraft/world/item/ItemStack;II)V",
+                     shift = At.Shift.AFTER))
+    private void dungeontrain$decorateAfterIcon(GuiGraphics guiGraphics, int originX, int originY, CallbackInfo ci) {
+        if (advancementNode == null) return;
+        AdvancementTileDecor.afterIcon(guiGraphics, advancementNode.holder().id(), progress, originX, originY, x, y);
     }
 
     @Inject(method = "draw", at = @At("RETURN"))
-    private void dungeontrain$greyOutEnd(GuiGraphics guiGraphics, int x, int y, CallbackInfo ci) {
-        if (dungeontrain$isGreyedOut()) {
-            guiGraphics.setColor(1.0f, 1.0f, 1.0f, 1.0f);
-        }
+    private void dungeontrain$decorateEnd(GuiGraphics guiGraphics, int originX, int originY, CallbackInfo ci) {
+        if (advancementNode == null) return;
+        AdvancementTileDecor.afterDraw(guiGraphics, advancementNode.holder().id(), progress);
     }
 
     /** Remember which tile is under the mouse so a click on the screen can toggle tracking on it. */
@@ -93,11 +103,6 @@ public abstract class AdvancementWidgetHideDescMixin {
         }
     }
 
-    @Unique
-    private boolean dungeontrain$isGreyedOut() {
-        return advancementNode != null
-            && AdvancementHintText.isGreyedOut(advancementNode.holder().id(), progress);
-    }
 
     @ModifyExpressionValue(
         method = "drawHover",
