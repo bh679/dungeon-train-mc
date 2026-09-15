@@ -16910,6 +16910,30 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "enemies-piglin2-mossdoors-caggedzombs2-barrelshigh",
+      "version": "0.897.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Three new enemy carriages and a tall barrel vase",
+      "summary": "The enemies pool grows again: a gold-veined Nether carriage whose zombified piglins ramp up with Diff-Level, a mossy-doored room hiding diamond gear, and a second caged-zombie carriage. The vase pool gains a tall barrel stack. Enemy weights were retuned slightly to make room.",
+      "highlights": [
+        "New: piglin2, mossdoors and caggedzombs2 enemy carriages",
+        "New: barrelshigh vase carriage",
+        "Enemies group weights retuned; piglin2 spawns more zombified piglins at higher Diff-Levels"
+      ],
+      "pr": 1432,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
