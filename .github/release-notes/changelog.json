@@ -16734,9 +16734,12 @@
         "community",
         "train"
       ],
-      "title": "Community carriages show their stage's real blocks",
-      "summary": "A carriage shared from the Train Builder could arrive on your train still wearing the builder's stage placeholder tiles instead of the stone, sandstone or wood of the stage it landed in. Shared builds now take on the real blocks of your current stage, the same as every other carriage.",
-      "highlights": [],
+      "title": "Flatbeds and community carriages show their stage's real blocks",
+      "summary": "The half-flatbed pads at each end of a train group, and any carriage shared from the Train Builder, could arrive still wearing the builder's stage placeholder tiles instead of the stone, sandstone or wood of the stage they landed in. Both now take on the real blocks of your current stage, the same as every other carriage.",
+      "highlights": [
+        "Half-flatbed pads resolve to the stage of the carriage they sit against.",
+        "Shared builds leased from the community pool resolve to the stage of the train they join."
+      ],
       "date": "2026-09-15",
       "released": false,
       "released_in": null,
