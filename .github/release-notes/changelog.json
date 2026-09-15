@@ -16724,6 +16724,23 @@
       "released": true,
       "released_in": "v0.888.0",
       "released_at": "2026-09-15T07:38:37Z"
+    },
+    {
+      "id": "shared-carriage-stage-blocks-resolve",
+      "version": "0.889.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "train"
+      ],
+      "title": "Community carriages show their stage's real blocks",
+      "summary": "A carriage shared from the Train Builder could arrive on your train still wearing the builder's stage placeholder tiles instead of the stone, sandstone or wood of the stage it landed in. Shared builds now take on the real blocks of your current stage, the same as every other carriage.",
+      "highlights": [],
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
