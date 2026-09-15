@@ -7,9 +7,10 @@ import java.util.Optional;
 /**
  * The sibling mods Dungeon Train requires but does not bundle — each is its own download that
  * the launcher updates separately, so each can lag on its own. The ones jarJar'd inside DT
- * (DiscordPresence, EdibleBackpacks) update with DT and are deliberately absent. Keep Trim is an
- * un-bundled sibling too, but joins this enum only once its Modrinth listing is public — until
- * then there is nothing to read a latest version from.
+ * (DiscordPresence, EdibleBackpacks, and the hybrid Dungeon Backup + Sable Fence &amp; Trapdoor
+ * Fix, which are separate downloads on CurseForge only) update with DT and are deliberately
+ * absent. Keep Trim is an un-bundled sibling too, but joins this enum only once its Modrinth
+ * listing is public — until then there is nothing to read a latest version from.
  *
  * <p>Latest versions are read from Modrinth only: the siblings publish to both platforms from one
  * workflow with no review queue, so one listing is the truth and it keeps the page to five

@@ -67,6 +67,10 @@ resolve() {
     # Third-party required deps, keyed by Modrinth VERSION ID (see gradle.properties).
     fp)       cached "maven.modrinth/fast-paintings" "$(prop fastpaintings_version)" ;;
     moon)     cached "maven.modrinth/moonlight"      "$(prop moonlight_version)" ;;
+    # Hybrid siblings — ALSO jarJar'd inside the DT jar. Present as top-level jars they model the
+    # CurseForge-app install (nested copy must be skipped); absent they model Modrinth/manual.
+    db)       cached "bh679/dungeonbackup"           "$(prop dungeonbackup_version)" ;;
+    sff)      cached "bh679/sable_fence_trapdoor_fix" "$(prop sablefencetrapdoorfix_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two
@@ -118,6 +122,10 @@ if grep -qaE "Missing or unsupported mandatory dependencies|Mod Loading has fail
     | sort -u | sed 's/^/    /'
 elif grep -qaE 'Done \([0-9.]+s\)! For help' "$LOG"; then
   echo "  RESULT: SERVER STARTED CLEANLY"
+  # Hybrid siblings (jarJar'd for Modrinth, separate Includes on CurseForge): when a top-level
+  # copy is in mods/ NeoForge's JarSelector must drop the nested one. Surface which ids it did.
+  grep -aoE "Attempted to select a dependency jar for JarJar which was passed in as source: [a-z_]+" "$LOG" \
+    | sed -E 's/.*source: /    JarJar: nested copy skipped, mods\/ copy wins: /' | sort -u
 else
   echo "  RESULT: INCONCLUSIVE — inspect the log"
   tail -5 "$LOG" | cut -c1-160 | sed 's/^/    /'

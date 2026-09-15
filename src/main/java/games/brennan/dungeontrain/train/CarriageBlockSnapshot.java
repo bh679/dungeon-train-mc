@@ -314,7 +314,8 @@ public final class CarriageBlockSnapshot {
 
     /**
      * Stamp a snapshot into {@code level} at {@code worldOrigin}: the footprint is cleared to air, then
-     * every stored cell is written (block state + block-entity NBT). Returns the set of NON-AIR world
+     * every stored cell is written (block state + block-entity NBT), stage placeholders swapped through
+     * {@link StagePlacementScope#resolve} when the caller has a scope open. Returns the set of NON-AIR world
      * positions that the level actually holds afterwards (the carriage's blocks, to hand to Sable's
      * {@code assemble}), or {@code null} on failure. Runs at spawn, before assembly, so host-level
      * writes at world coords are correct.
@@ -345,7 +346,11 @@ public final class CarriageBlockSnapshot {
                 int[] p = cell.getIntArray("p");
                 if (p.length != 3) continue;
                 BlockPos abs = worldOrigin.offset(p[0], p[1], p[2]);
-                BlockState state = NbtUtils.readBlockState(blocks, cell.getCompound("s"));
+                // Stage placeholders resolve for the stage the caller has in scope (the lease site
+                // enters one) — a build uploaded from the editor carries them verbatim, and the
+                // leasing train is the first place that knows which stage they land in.
+                BlockState state = StagePlacementScope.resolve(
+                        NbtUtils.readBlockState(blocks, cell.getCompound("s")));
                 if (state.isAir()) {
                     // An unresolvable state decodes to air — placing it would silently punch a hole.
                     LOGGER.warn("[DungeonTrain] shared-carriage cell at {} decoded to AIR from {} — skipping.",

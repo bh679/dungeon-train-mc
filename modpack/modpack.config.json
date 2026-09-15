@@ -106,6 +106,28 @@
       "modrinth_version": "BnjVBHVl"
     },
     {
+      "name": "Dungeon Backup",
+      "slug": "dungeon-train-backup",
+      "project_id": 1694135,
+      "file_id": 8871323,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.2.0",
+      "gradle_property": "dungeonbackup_min_version",
+      "curseforge_only": true
+    },
+    {
+      "name": "Sable Fence & Trapdoor Fix",
+      "slug": "sable-fence-trapdoor-fix",
+      "project_id": 1694049,
+      "file_id": 8871004,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.1.2",
+      "gradle_property": "sablefencetrapdoorfix_min_version",
+      "curseforge_only": true
+    },
+    {
       "name": "AppleSkin",
       "slug": "appleskin",
       "project_id": 248787,
@@ -455,6 +477,15 @@
       "required": true,
       "modrinth_project": "crash-assistant",
       "modrinth_version": "18SR4EJw"
+    },
+    {
+      "name": "Particle Effects",
+      "slug": "particle-effects",
+      "project_id": 1120746,
+      "file_id": 8325471,
+      "required": true,
+      "modrinth_project": "particle-effects",
+      "modrinth_version": "AH6BZ7jO"
     }
   ],
   "curseforge_relations": [

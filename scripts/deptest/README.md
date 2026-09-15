@@ -20,6 +20,11 @@ TradeEverything, KeepTrim) are
 **not bundled** — they are required external downloads. Every existing player hits the
 missing-dependency path exactly once, on the update that un-bundled them.
 
+Two more siblings — DungeonBackup and SableFenceTrapdoorFix — are **hybrid**: jarJar'd inside
+the DT jar (Modrinth + manual installs) *and* declared required + shipped as Includes on
+CurseForge, where the CF app installs them as their own jars. NeoForge's JarSelector drops the
+nested copy when a top-level one is present; Cases A and G cover both layouts.
+
 ## Running
 
 ```bash
@@ -38,13 +43,14 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all six siblings + Fast Paintings + Moonlight | Server starts cleanly |
+| **A** | DT + Sable + all six siblings + Fast Paintings + Moonlight + top-level DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for both hybrid ids |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
-| **C** | DT + Sable only | Fails — names **all six**, with each declared range |
+| **C** | DT + Sable only | Fails — names **all six**, with each declared range (the hybrid pair is nested, so never missing) |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
 | **E** | PlayerMob **below** the floor | Fails — `Expected range: '[<floor>,)', Actual version: '0.50.0'` |
-| **F** | minus Sable | Fails — `Expected range: '[x,x]'` (exact pin, not a minimum) |
-| **G** | minus Fast Paintings + Moonlight | Fails — names `fastpaintings` and `moonlight` with their `[x,)` floors |
+| **F** | minus Sable | Fails — `Expected range: '[x,x]'` (exact pin, not a minimum); the fence fix's own `[2.0.5,)` Sable floor also fires |
+| **G** | DT + Sable + six siblings, no top-level hybrid jars (Modrinth / manual layout) | Server starts cleanly on the nested copies |
+| **H** | minus Fast Paintings + Moonlight | Fails — names `fastpaintings` and `moonlight` with their `[x,)` floors |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.
@@ -84,12 +90,12 @@ Run through this after the first release that un-bundles a mod:
 1. **Modrinth app** — fresh profile, install Dungeon Train from the platform. All six siblings
    should arrive without being asked for; DT should reach the main menu.
 2. **CurseForge app** — same, from a new instance.
-3. **Both modpacks** — install each and confirm eight mods are present *and all six siblings are
+3. **Both modpacks** — install each and confirm the expected mods are present *and all siblings are
    enabled*. A CurseForge `required:false` entry ships a mod switched **off**; for a hard
    dependency that breaks the pack. See `modpack/README.md` §"Enabled vs disabled by default".
 4. **Manual / vanilla NeoForge** — drop in only the DT jar + Sable. Expect Case C's error,
    rendered as a screen.
-5. **Check the download counters** on all six sibling project pages a day later.
+5. **Check the download counters** on all eight sibling project pages (the hybrid pair only counts CurseForge installs) a day later.
 
 Step 5 is the one that matters. Steps 1–4 verify mechanism; only the counters verify the
 *purpose* — un-bundling exists so those mods get credited for the installs they were always

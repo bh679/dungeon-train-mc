@@ -60,6 +60,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Durability Tooltip | `511040` | **enabled** | Client-side QoL — draws the remaining durability on an item's tooltip instead of making players read the damage bar. No render/physics/chunk hooks, safe with Sable. Requires **SuperMartijn642's Config Lib**. **Pinned** (1.1.6). |
 | SuperMartijn642's Config Lib | `438332` | **enabled** (library) | Durability Tooltip's required dependency — not jarJar'd. Inert config library with no gameplay of its own; enabled so Durability Tooltip loads on a default install. **Pinned** (1.1.8). |
 | Crash Assistant | `1154099` | **enabled** | Post-crash GUI: analyses the crash report / logs / `hs_err` against ~40 known causes and offers a one-click upload of all of them to mclo.gs plus a ready-to-paste report message. Client-only (`server_side=unsupported` — auto-skipped on dedicated servers), no dependencies. Shipped **on**: a crash reporter is useless unless it is already installed when the crash happens. Configured via `overrides/config/crash_assistant/config.toml` to point players at **#bugs-feedback** on the Dungeon Train Discord — left at its default the help button would send them to the *NeoForge* Discord. **Pinned** (1.11.12). |
+| Particle Effects | `1120746` | **enabled** | Replaces the flat coloured swirl of every vanilla status effect with a unique textured particle per effect (Speed, Poison, Regeneration, …), so a glance tells you what a mob or player is under. Client-only render (`side="CLIENT"`, auto-skipped on dedicated servers), no dependencies on NeoForge (its only optional dep is Fabric API; declares `inventory_particles` <2.0.1 incompatible — not in this pack). Two client mixins on the particle engine — verified on the moving train under Sodium + Iris. CC-BY-ND 4.0 (attribution via the platform listing; bundled by reference, unmodified). **Pinned** (1.5.0). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -87,7 +88,11 @@ flag straight into the manifest:
   Item Names**, **Adventure Item Stats**, **Interactive Player Mobs**, **Ender Chest
   Persistence**, **Trade Everything** and **Keep Trim** — plus the third-party **Fast Paintings** and its **Moonlight** library. These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
-  the pack outright.
+  the pack outright. **Dungeon Backup** and **Sable Fence & Trapdoor Fix** ride the same row on
+  CurseForge only (`curseforge_only: true`): they are also jarJar'd inside the DT jar, so the
+  Modrinth pack leaves them out and Modrinth players get them built in, while the CurseForge pack
+  ships them as Includes so the CF app installs them from their own pages (NeoForge drops the
+  nested copy when a top-level one is present).
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
   (rendering perf, works standalone), **Iris** (shader loader, shipped with no shaderpack so it's
   perf-neutral until a player adds one — Iris requires Sodium, which ships enabled above,
@@ -100,6 +105,8 @@ flag straight into the manifest:
   **Bookshelf** + **Prickle** (Enchantment Descriptions) and **SuperMartijn642's Config Lib**
   (Durability Tooltip). **Enchantment Descriptions** and **Durability Tooltip** are on this
   list too — tooltip readability every player benefits from.
+  **Particle Effects** is on too — a purely cosmetic status-effect readability upgrade with no
+  server side and no screens to restyle.
   The libraries ship enabled so their dependent loads on a default install (CreativeCore —
   AmbientSounds is on; Iceberg — AP is on; Balm — TrashSlot is on; Bookshelf + Prickle — ED is
   on; Config Lib — Durability Tooltip is on). **TrashSlot** is on this list
@@ -186,7 +193,7 @@ The declared type is **`optional` by default** — regardless of whether the pac
 enabled (`required:true`) or off (`required:false`), the mod's relationship to a companion is
 "optional" either way, because DT runs fine without it.
 
-The exception is the six sibling mods, which DT genuinely cannot run without. They carry
+The exception is the sibling mods, which DT genuinely cannot run without. They carry
 `"dependency_type": "required"` in `modpack.config.json` and are declared `<slug>(required)` in
 `release.yml`. That `required` declaration is what makes the CurseForge and Modrinth apps
 auto-install them — the whole point of un-bundling.

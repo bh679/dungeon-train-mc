@@ -11,7 +11,8 @@ shipping silently.
 
 The expected relation type is per-entry: ``optional`` by default (a recommended companion),
 or ``required`` for entries carrying ``"dependency_type": "required"`` — the un-bundled
-sibling mods AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything/KeepTrim, which DT hard-depends on. See
+sibling mods AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything/KeepTrim (plus the hybrid
+DungeonBackup/SableFenceTrapdoorFix, jarJar'd for Modrinth but separate CurseForge Includes), which DT hard-depends on. See
 ``expected_dependency_type``.
 
 This is intentionally one-directional: an Include implies a mod optional dependency, but a

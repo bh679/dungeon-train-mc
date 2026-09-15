@@ -16721,6 +16721,67 @@
       ],
       "pr": 1420,
       "date": "2026-09-15",
+      "released": true,
+      "released_in": "v0.888.0",
+      "released_at": "2026-09-15T07:38:37Z"
+    },
+    {
+      "id": "modpack-particle-effects",
+      "version": "0.889.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Status effects get their own particles (Particle Effects joins the modpack)",
+      "summary": "Every potion and status effect now shows a distinct textured particle instead of the flat vanilla colour swirl \u2014 arrows for Speed, skulls for Poison, hearts for Regeneration, and so on \u2014 so you can tell at a glance what you or a mob are under. Particle Effects ships enabled in both the CurseForge and Modrinth modpacks; it is client-only, so servers and existing installs need nothing.",
+      "highlights": [
+        "Particle Effects 1.5.0 bundled on by default in both modpacks",
+        "Unique textured particle per vanilla status effect, on you and on mobs",
+        "Client-only \u2014 nothing changes server-side or in saves"
+      ],
+      "date": "2026-09-15",
+      "released": true,
+      "released_in": "v0.890.0",
+      "released_at": "2026-09-15T09:29:07Z"
+    },
+    {
+      "id": "shared-carriage-stage-blocks-resolve",
+      "version": "0.890.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "train"
+      ],
+      "title": "Flatbeds and community carriages show their stage's real blocks",
+      "summary": "The half-flatbed pads at each end of a train group, and any carriage shared from the Train Builder, could arrive still wearing the builder's stage placeholder tiles instead of the stone, sandstone or wood of the stage they landed in. Both now take on the real blocks of your current stage, the same as every other carriage.",
+      "highlights": [
+        "Half-flatbed pads resolve to the stage of the carriage they sit against.",
+        "Shared builds leased from the community pool resolve to the stage of the train they join."
+      ],
+      "date": "2026-09-15",
+      "released": true,
+      "released_in": "v0.890.0",
+      "released_at": "2026-09-15T09:29:07Z"
+    },
+    {
+      "id": "dungeon-backup-fence-fix-curseforge-mods",
+      "version": "0.891.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "On CurseForge, Dungeon Backup and the Sable fence & trapdoor fix are now their own mods",
+      "summary": "If you play through the CurseForge app or the CurseForge modpack, two pieces that were built into Dungeon Train now arrive as separate required mods that the app installs and updates for you: Dungeon Backup (rolling restore points of your Dungeon Train data, with a recovery prompt if it ever goes missing) and Sable Fence & Trapdoor Fix (no more jittering when you stand on a fence post tucked under a trapdoor or carpet on a moving carriage). Their own CurseForge pages now get the credit. On Modrinth, and for anyone who installs the jar by hand, nothing changes \u2014 both are still built into Dungeon Train. Nothing changes in play either way.",
+      "highlights": [
+        "CurseForge app and CurseForge modpack install Dungeon Backup and Sable Fence & Trapdoor Fix as separate mods",
+        "Modrinth and manual installs keep them built in \u2014 no extra downloads",
+        "No change to backups, /dtbackup, /dtrestore or the fence fix in play"
+      ],
+      "pr": 1421,
+      "date": "2026-09-15",
       "released": false,
       "released_in": null,
       "released_at": null
