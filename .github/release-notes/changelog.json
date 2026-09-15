@@ -16850,6 +16850,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "welcome-back-drop-joined-world",
+      "version": "0.894.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "A secret goal no longer needs company",
+      "summary": "One of the train's hidden goals quietly asked for something only another player's arrival could hand you \u2014 so playing alone, it could never be finished. It can now.",
+      "highlights": [
+        "Everything it asks for can be found on your own."
+      ],
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
