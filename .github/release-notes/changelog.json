@@ -16812,7 +16812,7 @@
     },
     {
       "id": "ecp-crash-checkpoint-pin",
-      "version": "0.892.0",
+      "version": "0.893.0",
       "type": "fix",
       "tags": [
         "fix",
