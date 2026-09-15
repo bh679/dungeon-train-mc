@@ -95,9 +95,9 @@ public final class CustomContentGate {
         CustomContentPreference source = remembered.asks()
             ? ClientDisplayConfig.getLastCustomContentAnswer()
             : remembered;
-        CustomContentChoice choice = !source.asks() && source.keepsContent()
-            ? CustomContentChoice.ALLOW
-            : CustomContentChoice.DISABLE;
+        CustomContentChoice choice = source.asks()
+            ? CustomContentChoice.DISABLE
+            : source.toChoice();
         LOGGER.info("[DungeonTrain] Automatic reboard — reusing the last custom content answer "
             + "without asking: {} (from {})", choice, source);
         PendingCustomContentChoice.set(choice);
@@ -166,9 +166,7 @@ public final class CustomContentGate {
         if (!remembered.asks()) {
             // "Remember decision" was ticked on an earlier world, or the preference was set in
             // Options → Dungeon Train. Answer silently and let the world start uninterrupted.
-            CustomContentChoice choice = remembered.keepsContent()
-                ? CustomContentChoice.ALLOW
-                : CustomContentChoice.DISABLE;
+            CustomContentChoice choice = remembered.toChoice();
             LOGGER.info("[DungeonTrain] Custom content answered from the remembered preference "
                 + "before the world starts: {}", choice);
             PendingCustomContentChoice.set(choice);
@@ -177,10 +175,7 @@ public final class CustomContentGate {
 
         String packages = String.join(", ", EditorContentIntegrity.contentPackageNames());
         LOGGER.info("[DungeonTrain] Asking about custom content ({}) before starting a world.", packages);
-        Minecraft.getInstance().setScreen(new CustomContentPromptScreen(packages, parent, keepContent -> {
-            CustomContentChoice choice = keepContent
-                ? CustomContentChoice.ALLOW
-                : CustomContentChoice.DISABLE;
+        Minecraft.getInstance().setScreen(new CustomContentPromptScreen(packages, parent, choice -> {
             LOGGER.info("[DungeonTrain] Custom content answered before the world starts: {}", choice);
             PendingCustomContentChoice.set(choice);
             launch.run();
