@@ -4,7 +4,7 @@
   "variants": [
     {
       "id": "cagedzombie",
-      "weight": 6
+      "weight": 5
     },
     {
       "id": "piglin",
@@ -54,7 +54,7 @@
     },
     {
       "id": "zombiesrooms",
-      "weight": 5
+      "weight": 4
     },
     {
       "id": "spiders",
@@ -184,6 +184,14 @@
     {
       "id": "piglin2",
       "weight": 3
+    },
+    {
+      "id": "mossdoors",
+      "weight": 2
+    },
+    {
+      "id": "caggedzombs2",
+      "weight": 2
     }
   ]
 }
