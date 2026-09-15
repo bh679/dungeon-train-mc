@@ -5272,5 +5272,25 @@
         "@brennanhatton"
       ]
     }
+  },
+  "chat.dungeontrain.track.enabled": {
+    "1": {
+      "label": "the advancement's title",
+      "examples": [
+        "Pacifist",
+        "The Far Start",
+        "Contained Loop"
+      ]
+    }
+  },
+  "chat.dungeontrain.track.disabled": {
+    "1": {
+      "label": "the advancement's title",
+      "examples": [
+        "Pacifist",
+        "The Far Start",
+        "Contained Loop"
+      ]
+    }
   }
 }

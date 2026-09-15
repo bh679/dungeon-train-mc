@@ -1476,6 +1476,8 @@
   "advancements.dungeontrain.hidden_description": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "a03b221c6c6eae71"},
   "advancements.dungeontrain.disqualified_this_life": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "cf510c31b4eeb192"},
   "advancements.dungeontrain.track.click": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "24c96bde284196f8"},
+  "chat.dungeontrain.track.enabled": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6de885a70cdd2a54"},
+  "chat.dungeontrain.track.disabled": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "4abe0f627996502d"},
   "advancements.dungeontrain.track.tracking": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "10bb9984fc318a1d"},
   "toast.dungeontrain.disqualified.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "9890334184c806e8"},
   "advancements.dungeontrain.dungeon_train.landed_on_tracks.hint": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "7d4c0377dd166427"},

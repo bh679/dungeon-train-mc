@@ -90,14 +90,16 @@ public final class AdvancementHintText {
     }
 
     /**
-     * The full masked tooltip body for an unearned advancement: the hint (or placeholder), then a
-     * red "not this life" line if this life has ruled it out, then a grey track/tracking footer if
-     * it is trackable. Callers have already passed {@link #shouldMask}.
+     * The full masked tooltip body for an unearned advancement: the hint (or placeholder), then
+     * either a red "lost this life" line (when this life has ruled it out) or a grey
+     * track/tracking footer (when it is trackable and still open). Callers have already passed
+     * {@link #shouldMask}.
      */
     public static Component maskedDescription(ResourceLocation id) {
         MutableComponent text = hintOrPlaceholder(id).copy();
         if (LifeDisqualificationClient.isDisqualified(id)) {
-            text.append("\n").append(Component.translatable(DISQUALIFIED_KEY).withStyle(ChatFormatting.RED));
+            // Nothing left to track once it is gone — the red line is the whole footer.
+            return text.append("\n").append(Component.translatable(DISQUALIFIED_KEY).withStyle(ChatFormatting.RED));
         }
         if (isTrackable(id)) {
             String key = TrackedAdvancements.isTracked(id) ? TRACK_TRACKING_KEY : TRACK_CLICK_KEY;
