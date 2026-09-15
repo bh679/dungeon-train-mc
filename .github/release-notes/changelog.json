@@ -16916,18 +16916,18 @@
       "released_at": null
     },
     {
-      "id": "editor-contents-allow-traps-portal-short",
+      "id": "contents-exclude-traps-portal-short",
       "version": "0.899.0",
       "type": "content",
       "tags": [
         "content",
         "train"
       ],
-      "title": "Traps and short portal rooms now show up in more carriages",
-      "summary": "Trap rooms and the short portal-room interiors can now be rolled inside the black, fancy-wood, fire, pen, portal, standard and windowed carriages, so you'll run into them more often and in more places along the train. The short portal carriage can also roll the full portal and trap interiors.",
+      "title": "Trap rooms and short portal rooms stop turning up in the wrong carriages",
+      "summary": "Trap interiors and the short portal-room interiors were being rolled inside several carriage types they weren't built for. They now stay in the carriages designed to hold them, so the train's rooms fit their shells a little better.",
       "highlights": [
-        "Trap interiors (pressure plates, TNT, wall miners and friends) can now appear in seven more carriage types",
-        "Short portal-room interiors added to the same carriages; short portal carriages can roll full portal and trap interiors"
+        "Trap rooms no longer appear in carriages that weren't designed for them",
+        "Short portal-room interiors are no longer mixed into regular carriages"
       ],
       "date": "2026-09-15",
       "released": false,
