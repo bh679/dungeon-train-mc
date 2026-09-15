@@ -10,7 +10,8 @@
     "betteradvancements.BetterAdvancementWidgetCompatMixin",
     "betteradvancements.BetterAdvancementsCriteriaMixin",
     "betteradvancements.BetterAdvancementTabScrollMixin",
-    "betteradvancements.BetterAdvancementsScreenEditorTabMixin"
+    "betteradvancements.BetterAdvancementsScreenEditorTabMixin",
+    "betteradvancements.BetterAdvancementsScreenClickMixin"
   ],
   "server": [],
   "injectors": {

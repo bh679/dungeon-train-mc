@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import games.brennan.dungeontrain.client.HoveredAdvancement;
 import games.brennan.dungeontrain.compat.AdvancementHintText;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.advancements.AdvancementWidget;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -14,6 +16,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
@@ -54,6 +58,46 @@ public abstract class AdvancementWidgetHideDescMixin {
      */
     @Unique
     private List<FormattedCharSequence> dungeontrain$hiddenDesc;
+
+    /** {@link AdvancementHintText#maskedDescriptionRevision()} the cache was split under. */
+    @Unique
+    private int dungeontrain$hiddenDescRevision;
+
+    /** Tint for a tile this life has ruled out — frame and icon both dim through the shader colour. */
+    @Unique
+    private static final float DUNGEONTRAIN_GREYED_TINT = 0.4f;
+
+    /**
+     * Grey out a tile this life has ruled out. {@code draw} blits the frame and renders the icon
+     * under the current shader colour, so dimming it here (and restoring it at the end) dims both.
+     */
+    @Inject(method = "draw", at = @At("HEAD"))
+    private void dungeontrain$greyOutStart(GuiGraphics guiGraphics, int x, int y, CallbackInfo ci) {
+        if (dungeontrain$isGreyedOut()) {
+            guiGraphics.setColor(DUNGEONTRAIN_GREYED_TINT, DUNGEONTRAIN_GREYED_TINT, DUNGEONTRAIN_GREYED_TINT, 1.0f);
+        }
+    }
+
+    @Inject(method = "draw", at = @At("RETURN"))
+    private void dungeontrain$greyOutEnd(GuiGraphics guiGraphics, int x, int y, CallbackInfo ci) {
+        if (dungeontrain$isGreyedOut()) {
+            guiGraphics.setColor(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+    }
+
+    /** Remember which tile is under the mouse so a click on the screen can toggle tracking on it. */
+    @Inject(method = "drawHover", at = @At("HEAD"))
+    private void dungeontrain$recordHover(CallbackInfo ci) {
+        if (advancementNode != null) {
+            HoveredAdvancement.record(advancementNode.holder().id(), progress);
+        }
+    }
+
+    @Unique
+    private boolean dungeontrain$isGreyedOut() {
+        return advancementNode != null
+            && AdvancementHintText.isGreyedOut(advancementNode.holder().id(), progress);
+    }
 
     @ModifyExpressionValue(
         method = "drawHover",
@@ -97,20 +141,22 @@ public abstract class AdvancementWidgetHideDescMixin {
 
     @Unique
     private List<FormattedCharSequence> dungeontrain$getHiddenDesc() {
-        if (dungeontrain$hiddenDesc == null) {
-            dungeontrain$hiddenDesc = minecraft.font.split(dungeontrain$hintOrPlaceholder(), width);
+        int revision = AdvancementHintText.maskedDescriptionRevision();
+        if (dungeontrain$hiddenDesc == null || dungeontrain$hiddenDescRevision != revision) {
+            dungeontrain$hiddenDesc = minecraft.font.split(dungeontrain$maskedDescription(), width);
+            dungeontrain$hiddenDescRevision = revision;
         }
         return dungeontrain$hiddenDesc;
     }
 
     /**
-     * The hint shown in place of the hidden description — see
-     * {@link AdvancementHintText#hintOrPlaceholder(ResourceLocation)}. Callers only reach this once
-     * {@link #dungeontrain$shouldHideDescription()} has confirmed a non-null node, so
-     * {@code advancementNode} is safe to dereference.
+     * The text shown in place of the hidden description — the hint plus any "not this life" and
+     * tracking lines; see {@link AdvancementHintText#maskedDescription(ResourceLocation)}. Callers
+     * only reach this once {@link #dungeontrain$shouldHideDescription()} has confirmed a non-null
+     * node, so {@code advancementNode} is safe to dereference.
      */
     @Unique
-    private Component dungeontrain$hintOrPlaceholder() {
-        return AdvancementHintText.hintOrPlaceholder(advancementNode.holder().id());
+    private Component dungeontrain$maskedDescription() {
+        return AdvancementHintText.maskedDescription(advancementNode.holder().id());
     }
 }

@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.advancement.FarStartAdvancement;
+import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
@@ -582,6 +585,9 @@ public final class StartingBookEvents {
         // player from it. This is the read-then-burn path; the entity hook still covers a book
         // thrown away by hand.
         notifyBurnedSpecialBook(player, stack);
+        if (StartingBookTag.isStartingBook(stack)) {
+            markStartingBookBurned(player);
+        }
 
         ItemEntity dropped = player.drop(stack, /*dropAround*/ false, /*includeThrowerName*/ false);
         if (dropped == null) {
@@ -666,6 +672,21 @@ public final class StartingBookEvents {
 
         notifyIfBurnedUnread(item, stack);
         notifyBurnedSpecialBook(item, stack);
+        // A starting book thrown away by hand: the far start is lost for this life. The
+        // read-then-burn drop is owner-less, so handleStartingBookClosed marks it itself.
+        if (StartingBookTag.isStartingBook(stack) && item.getOwner() instanceof ServerPlayer owner) {
+            markStartingBookBurned(owner);
+        }
+    }
+
+    /**
+     * Flag this life's starting book as burned and, the first time, tell the client
+     * {@code the_far_start} is out of reach until the next life.
+     */
+    private static void markStartingBookBurned(ServerPlayer player) {
+        if (player.getData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get())) return;
+        player.setData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get(), Boolean.TRUE);
+        LifeDisqualification.notify(player, List.of(FarStartAdvancement.ID));
     }
 
     /**

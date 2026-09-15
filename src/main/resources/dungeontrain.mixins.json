@@ -93,6 +93,7 @@
     "client.ProgressScreenThemeMixin",
     "client.WorldOpenFlowsDelayMixin",
     "client.AdvancementsScreenAccessor",
+    "client.AdvancementsScreenClickMixin",
     "client.AdvancementsScreenEditorTabMixin",
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",

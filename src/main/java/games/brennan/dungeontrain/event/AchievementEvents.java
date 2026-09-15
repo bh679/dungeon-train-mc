@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.LeatherOverDiamondAdvancement;
+import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -195,7 +196,11 @@ public final class AchievementEvents {
         // which EnderChestBlock does not match.
         if (block instanceof EnderChestBlock) {
             if (player.isShiftKeyDown() && event.getItemStack().getItem() instanceof BlockItem) return;
+            boolean firstOpenThisLife = !player.getData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get());
             player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.TRUE);
+            if (firstOpenThisLife) {
+                LifeDisqualification.notify(player, List.of(LifeDisqualification.CONTAINED_LOOP));
+            }
             return;
         }
         if (!isLootContainer(block)) return;
@@ -881,6 +886,9 @@ public final class AchievementEvents {
         // defensive reason PlayerRunState is.
         player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), 0);
         player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.FALSE);
+        player.setData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get(), Boolean.FALSE);
+        // A fresh life rules nothing out yet — clear the client's greyed-out mirror.
+        LifeDisqualification.sync(player);
         // Per-life travelled-carriage-index is now 0; push the HUD packet
         // immediately so the overlay reflects the reset without waiting for
         // the next 10-tick BoardingProgressEvents scan.
@@ -969,6 +977,9 @@ public final class AchievementEvents {
         if (StartAgainAdvancement.holdsBankedCapstone(player)) {
             StartAgainAdvancement.refreshCommandTree(player);
         }
+        // After the replay above so an advancement restored from the sidecar is not reported as
+        // disqualified — re-derived from persisted per-life state, so a mid-life relog agrees.
+        LifeDisqualification.sync(player);
     }
 
     /**
