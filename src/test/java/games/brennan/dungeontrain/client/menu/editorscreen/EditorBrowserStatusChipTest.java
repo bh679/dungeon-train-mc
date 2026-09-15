@@ -56,6 +56,6 @@ final class EditorBrowserStatusChipTest {
 
     private static games.brennan.dungeontrain.net.BuilderProfilePacket.Entry entry(String review) {
         return new games.brennan.dungeontrain.net.BuilderProfilePacket.Entry(1, "carriage", "", "cabin",
-                false, "", BuilderReviewState.NONE.equals(review) ? "" : review, "", 0, false, "u", "n");
+                false, "", BuilderReviewState.NONE.equals(review) ? "" : review, "", 0, false, "u", "n", false);
     }
 }

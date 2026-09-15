@@ -200,7 +200,7 @@ final class EditorScreenActionsTest {
 
     private static BuilderProfilePacket.Entry entry(int relayId, boolean published) {
         return new BuilderProfilePacket.Entry(relayId, "carriage", "", "cabin", published, "", "", "",
-            0, false, "me", "Brennan");
+            0, false, "me", "Brennan", false);
     }
 
     @Test

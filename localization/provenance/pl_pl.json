@@ -2294,6 +2294,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "969ddc3b0c0a1cb5"},
   "gui.dungeontrain.builder.profile.unavailable": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "abb9778e49d8a4a1"},
   "gui.dungeontrain.builder.profile.withheld": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "84fc81a8df192c46"},
+  "gui.dungeontrain.builder.profile.template_copy": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "858c418d66ac19ac"},
   "gui.dungeontrain.builder.profile.type.all": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f10988e79e8d9a49"},
   "gui.dungeontrain.builder.profile.type.carriage": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c50d8703d1c580d4"},
   "gui.dungeontrain.builder.profile.type.carriage_group": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "256ec9ad941b27cf"},

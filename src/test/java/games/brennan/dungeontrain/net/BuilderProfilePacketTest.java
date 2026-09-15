@@ -30,10 +30,10 @@ final class BuilderProfilePacketTest {
         BuilderProfilePacket original = new BuilderProfilePacket(BuilderProfilePacket.Status.OK, List.of(
                 new BuilderProfilePacket.Entry(41, "carriage", "", "brick_cabin", true,
                         "approved", BuilderReviewState.SUBMITTED, "stone", 12,
-                        true, MINE, "Brennan"),
+                        true, MINE, "Brennan", false),
                 new BuilderProfilePacket.Entry(42, "portal_room", "", "library", false,
                         "approved", BuilderReviewState.NONE, "", 0,
-                        false, MINE, "Brennan")),
+                        false, MINE, "Brennan", true)),
                 MINE, "Brennan", true);
         assertEquals(original, roundTrip(original));
     }
@@ -54,7 +54,7 @@ final class BuilderProfilePacketTest {
         // string. It must not reach the screen, which looks up lang keys by this value.
         SharedCarriageClient.ProfileBuild row = new SharedCarriageClient.ProfileBuild(
                 7, "carriage", "", "brick_cabin", "published", "builder", "stone", "approved", "",
-                7, 5, 5, 3, 1L, false, MINE, "Brennan");
+                7, 5, 5, 3, 1L, false, MINE, "Brennan", false);
         BuilderProfilePacket packet = BuilderProfilePacket.of(List.of(row), MINE, "Brennan", true);
         assertEquals(BuilderReviewState.NONE, packet.builds().get(0).review());
         assertEquals(packet, roundTrip(packet));
@@ -67,11 +67,22 @@ final class BuilderProfilePacketTest {
         // silently drop them rather than fail — which is what this pins.
         SharedCarriageClient.ProfileBuild starred = new SharedCarriageClient.ProfileBuild(
                 9, "carriage", "", "brick_cabin", "profile", "builder", "stone", "approved", "none",
-                7, 5, 5, 0, 1L, true, "22222222-2222-4222-8222-222222222222", "Someone");
+                7, 5, 5, 0, 1L, true, "22222222-2222-4222-8222-222222222222", "Someone", false);
         BuilderProfilePacket packet = BuilderProfilePacket.of(List.of(starred), MINE, "Brennan", false);
         BuilderProfilePacket.Entry entry = packet.builds().get(0);
         assertTrue(entry.favourite());
         assertEquals("Someone", entry.ownerName());
+        assertEquals(packet, roundTrip(packet));
+    }
+
+    @Test
+    @DisplayName("a stock-template copy is flagged on the wire, and read as a build from an older relay")
+    void templateCopyRoundTrip() {
+        SharedCarriageClient.ProfileBuild copy = new SharedCarriageClient.ProfileBuild(
+                10, "part", "walls", "copper", "profile", "builder", "stone", "approved", "none",
+                7, 5, 5, 0, 1L, false, MINE, "Brennan", true);
+        BuilderProfilePacket packet = BuilderProfilePacket.of(List.of(copy), MINE, "Brennan", true);
+        assertTrue(packet.builds().get(0).templateCopy());
         assertEquals(packet, roundTrip(packet));
     }
 

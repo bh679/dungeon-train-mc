@@ -2256,6 +2256,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Deine Netzwerkeinstellungen werden geprüft…",
   "gui.dungeontrain.builder.profile.unavailable": "Das Relay war nicht erreichbar — deine Bauten sind hier weiterhin gespeichert.",
   "gui.dungeontrain.builder.profile.withheld": "Wird von einem Moderator geprüft.",
+  "gui.dungeontrain.builder.profile.template_copy": "Eine unveränderte Kopie einer eingebauten Vorlage — zählt nicht als einer deiner Bauten.",
   "gui.dungeontrain.builder.profile.type.all": "Alle Arten",
   "gui.dungeontrain.builder.profile.type.carriage": "Waggons",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Waggongruppen",

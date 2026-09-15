@@ -844,6 +844,30 @@ sourceSets.main.resources.srcDir files("${layout.buildDirectory.get()}/generated
 }
 neoForge.ideSyncTask tasks.named('generateModRoster')
 
+// Fingerprint every shipped template the way the relay hashes an upload, so the relay can tell an
+// unmodified copy of a stock template from a build (see tools/BundledFingerprints and the relay's
+// bundled_fingerprints table). release.yml runs this after the build and pushes the JSON with
+// scripts/relay/push-bundled-fingerprints.py. Pass extra trees of the same layout (a git-history
+// backfill) with -PfingerprintExtra=<dir>[,<dir>...]. Runs on the compiled main classes: the two
+// NBT reshapings it calls need no Minecraft bootstrap, only the classes on the runtime classpath.
+tasks.register('bundledFingerprints', JavaExec) {
+    group = 'relay'
+    description = 'Write build/bundled-fingerprints.json — the relay-side hash of every shipped template.'
+    var resourcesDir = file("src/main/resources/data/${mod_id}")
+    var outFile = file("${layout.buildDirectory.get()}/bundled-fingerprints.json")
+    var extraDirs = (project.findProperty('fingerprintExtra') ?: '').toString().split(',').findAll { it }
+
+    dependsOn tasks.named('classes')
+    inputs.dir resourcesDir
+    extraDirs.each { inputs.dir file(it) }
+    outputs.file outFile
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'games.brennan.dungeontrain.tools.BundledFingerprints'
+    args '--resources', resourcesDir.absolutePath, '--out', outFile.absolutePath
+    extraDirs.each { args '--extra', file(it).absolutePath }
+}
+
 tasks.named('jar', Jar).configure {
     manifest {
         attributes([
