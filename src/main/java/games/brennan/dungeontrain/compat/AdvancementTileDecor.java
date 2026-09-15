@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.compat;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import games.brennan.dungeontrain.client.TrackedAdvancements;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
@@ -20,8 +21,12 @@ import net.minecraft.resources.ResourceLocation;
  * {@code (x + widget.x + 3, y + widget.y)}, 26×26, then the icon — and vanilla then recurses into
  * child widgets in the same call, so the colour must be restored right after the icon, not at the
  * end of {@code draw}, or the children inherit the fade. The hover tooltip ({@code drawHover})
- * redraws frame and icon over the top, so {@link #wrapHoverFrame} / {@link #wrapHoverIcon} repeat
- * the treatment there.</p>
+ * redraws the frame over the top at full opacity — deliberately unfaded — and
+ * {@link #wrapHoverFrame} puts the halo back behind it.</p>
+ *
+ * <p>Both paths call {@link #enableBlend()} first: vanilla's sprite blit does not turn blending on
+ * itself, and in the tree it happens to be off — a half-alpha shader colour was simply ignored
+ * there, while the hover tooltip's translucent backdrop had already switched it on.</p>
  */
 public final class AdvancementTileDecor {
 
@@ -52,6 +57,7 @@ public final class AdvancementTileDecor {
             drawHalo(g, node, originX + widgetX + TILE_X_OFFSET, originY + widgetY, alpha);
         }
         if (faded) {
+            enableBlend();
             g.setColor(1.0f, 1.0f, 1.0f, DISQUALIFIED_ALPHA);
         }
     }
@@ -63,6 +69,7 @@ public final class AdvancementTileDecor {
      * a full-strength halo would read as a bright yellow tile, not a faded one.
      */
     private static void drawHalo(GuiGraphics g, AdvancementNode node, int left, int top, float alpha) {
+        enableBlend();
         AdvancementType type = node.advancement().display().map(DisplayInfo::getType).orElse(AdvancementType.TASK);
         ResourceLocation frame = AdvancementWidgetType.UNOBTAINED.frameSprite(type);
         g.setColor(HALO_R, HALO_G, HALO_B, alpha);
@@ -79,34 +86,19 @@ public final class AdvancementTileDecor {
 
     /**
      * Wraps a {@code blitSprite(sprite, x, y, w, h)} call inside {@code drawHover}. The hover
-     * tooltip redraws the tile's frame on top of everything {@code draw} did, so the fade and the
-     * halo have to be applied again here; the call is only touched when the sprite is a tile frame
-     * ({@code advancements/<type>_frame_<state>}) — the tooltip's title box goes through the same
-     * overload and is left alone.
+     * tooltip redraws the tile's frame on top of everything {@code draw} did, so the halo goes
+     * behind it again here — at full strength: a hovered tile is being read, so it is not faded,
+     * and the red line in the tooltip carries the "lost" message. The call is only touched when
+     * the sprite is a tile frame ({@code advancements/<type>_frame_<state>}) — the tooltip's title
+     * box goes through the same overload and is left alone.
      */
     public static void wrapHoverFrame(GuiGraphics g, ResourceLocation sprite, int x, int y,
                                       AdvancementNode node, AdvancementProgress progress, Runnable blit) {
-        if (node == null || !sprite.getPath().contains("_frame_")) {
-            blit.run();
-            return;
+        if (node != null && sprite.getPath().contains("_frame_")
+            && isTrackedAndUnearned(node.holder().id(), progress)) {
+            drawHalo(g, node, x, y, 1.0f);
         }
-        ResourceLocation id = node.holder().id();
-        boolean faded = AdvancementHintText.isGreyedOut(id, progress);
-        float alpha = faded ? DISQUALIFIED_ALPHA : 1.0f;
-        if (isTrackedAndUnearned(id, progress)) {
-            drawHalo(g, node, x, y, alpha);
-        }
-        if (faded) g.setColor(1.0f, 1.0f, 1.0f, DISQUALIFIED_ALPHA);
         blit.run();
-        if (faded) g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
-    }
-
-    /** Wraps the {@code renderFakeItem} call inside {@code drawHover}: fades a ruled-out tile's icon. */
-    public static void wrapHoverIcon(GuiGraphics g, AdvancementNode node, AdvancementProgress progress, Runnable render) {
-        boolean faded = node != null && AdvancementHintText.isGreyedOut(node.holder().id(), progress);
-        if (faded) g.setColor(1.0f, 1.0f, 1.0f, DISQUALIFIED_ALPHA);
-        render.run();
-        if (faded) g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     /**
@@ -118,6 +110,12 @@ public final class AdvancementTileDecor {
         if (AdvancementHintText.isGreyedOut(id, progress)) {
             g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
+    }
+
+    /** Alpha-blend the following draws; left on, as every other translucent GUI draw does. */
+    private static void enableBlend() {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
     }
 
     private static boolean isTrackedAndUnearned(ResourceLocation id, AdvancementProgress progress) {
