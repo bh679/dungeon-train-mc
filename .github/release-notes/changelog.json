@@ -16956,6 +16956,44 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-contents-allow-traps-portal-short",
+      "version": "0.899.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Traps and short portal rooms now show up in more carriages",
+      "summary": "Trap rooms and the short portal-room interiors can now be rolled inside the black, fancy-wood, fire, pen, portal, standard and windowed carriages, so you'll run into them more often and in more places along the train. The short portal carriage can also roll the full portal and trap interiors.",
+      "highlights": [
+        "Trap interiors (pressure plates, TNT, wall miners and friends) can now appear in seven more carriage types",
+        "Short portal-room interiors added to the same carriages; short portal carriages can roll full portal and trap interiors"
+      ],
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "seating-contents-editor-pass",
+      "version": "0.900.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Seating carriage interiors refreshed",
+      "summary": "The booth, extra-seats and new-seating carriage interiors have been reworked in the editor, with updated layouts and a wider spread of block variants so the seating rooms you ride through look less samey.",
+      "highlights": [
+        "Booth, extra-seats and new-seating interiors re-authored",
+        "More block variants per seating room"
+      ],
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
