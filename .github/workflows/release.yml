@@ -266,6 +266,8 @@ jobs:
             keep-trim(required)
             dungeon-train-backup(required)
             sable-fence-trapdoor-fix(required)
+            fast-paintings(required)
+            selene(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)

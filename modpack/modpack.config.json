@@ -84,6 +84,28 @@
       "modrinth_pending_url": "https://github.com/bh679/keeptrim-mc/releases/download/v0.2.0/keeptrim-neoforge-0.2.0.jar"
     },
     {
+      "name": "Fast Paintings",
+      "slug": "fast-paintings",
+      "project_id": 883287,
+      "file_id": 7305762,
+      "required": true,
+      "dependency_type": "required",
+      "version": "1.21-1.3.0",
+      "modrinth_project": "fast-paintings",
+      "modrinth_version": "PQ155hbf"
+    },
+    {
+      "name": "Moonlight Lib",
+      "slug": "selene",
+      "project_id": 499980,
+      "file_id": 8850087,
+      "required": true,
+      "dependency_type": "required",
+      "version": "1.21.1-3.6.4",
+      "modrinth_project": "moonlight",
+      "modrinth_version": "BnjVBHVl"
+    },
+    {
       "name": "Dungeon Backup",
       "slug": "dungeon-train-backup",
       "project_id": 1694135,

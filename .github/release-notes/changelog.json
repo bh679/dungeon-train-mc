@@ -16785,6 +16785,30 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "fast-paintings-required",
+      "version": "0.892.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "compatibility",
+        "train"
+      ],
+      "title": "Paintings now hang properly on the train and in your builds",
+      "summary": "Paintings used to be the one decoration you could not trust on a moving carriage or in a saved build \u2014 they would drift, vanish, or fall off when a carriage was flipped. Dungeon Train now requires Fast Paintings (and its Moonlight library), which turns paintings into solid blocks: they ride the train like any other block, save into templates and shared carriages exactly as you hung them, and when a carriage interior comes out mirrored the painting simply re-hangs on the wall it now stands beside. The CurseForge and Modrinth apps install both mods for you; if you install by hand, grab Fast Paintings and Moonlight for NeoForge 1.21.1.",
+      "highlights": [
+        "Paintings hang solidly on moving carriages and in the builder \u2014 no more drifting or falling off",
+        "Saved builds and shared carriages keep every painting, size and picture included",
+        "Mirrored carriage interiors keep their paintings; they re-hang on the opposite wall instead of dropping",
+        "Two new required mods, Fast Paintings and Moonlight \u2014 auto-installed by the CurseForge and Modrinth apps"
+      ],
+      "pr": 1425,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

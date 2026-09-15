@@ -270,7 +270,10 @@ DT file + Sable + the pinned sibling and companion mods. Core entries are
 **Dungeon Train + Sable** (DT jarJars DiscordPresence + EdibleBackpacks + DungeonBackup +
 SableFenceTrapdoorFix + joml-primitives);
 the sibling mods **AIN/AIS/PMOB/ECP/TE/KT are un-bundled required downloads**, declared `<slug>(required)` so the
-CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit.
+CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit. The third-party
+**Fast Paintings + Moonlight** (`fast-paintings(required)`, `selene(required)`) are hard deps on the same
+contract — paintings are blocks under FP, and templates/shared carriages carry those blocks (see
+`compat/PaintingTransformProcessor` for why flipped stamps still work).
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
 `dependency_type: required` + a `gradle_property` floor) and the companions, each with a
 `required` flag.
