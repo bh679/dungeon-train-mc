@@ -75,24 +75,25 @@ public abstract class BetterAdvancementWidgetCompatMixin {
     @Shadow protected int y;
 
     /**
-     * Fade a tile this life has ruled out. The frame blit and icon render both go through the
-     * current shader colour, so a half-alpha colour set here dims both — see
-     * {@link AdvancementTileDecor} for why it is restored right after the icon and not at RETURN.
+     * Draw the tracked halo behind the tile, then fade a tile this life has ruled out. The frame
+     * blit and icon render both go through the current shader colour, so a half-alpha colour set
+     * here dims both — see {@link AdvancementTileDecor} for why it is restored right after the icon
+     * and not at RETURN.
      */
     @Inject(method = "draw", at = @At("HEAD"))
     private void dungeontrain$decorateStart(GuiGraphics guiGraphics, int originX, int originY, CallbackInfo ci) {
         if (advancementNode == null) return;
-        AdvancementTileDecor.beforeTile(guiGraphics, advancementNode.holder().id(), advancementProgress);
+        AdvancementTileDecor.beforeTile(guiGraphics, advancementNode, advancementProgress, originX, originY, x, y);
     }
 
-    /** Restore the shader colour and outline a tracked tile, once the icon is down. */
+    /** Restore the shader colour once the icon is down. */
     @Inject(method = "draw",
             at = @At(value = "INVOKE",
                      target = "Lnet/minecraft/client/gui/GuiGraphics;renderFakeItem(Lnet/minecraft/world/item/ItemStack;II)V",
                      shift = At.Shift.AFTER))
     private void dungeontrain$decorateAfterIcon(GuiGraphics guiGraphics, int originX, int originY, CallbackInfo ci) {
         if (advancementNode == null) return;
-        AdvancementTileDecor.afterIcon(guiGraphics, advancementNode.holder().id(), advancementProgress, originX, originY, x, y);
+        AdvancementTileDecor.afterIcon(guiGraphics, advancementNode.holder().id(), advancementProgress);
     }
 
     @Inject(method = "draw", at = @At("RETURN"))

@@ -1,17 +1,22 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.dungeontrain.client.TrackedAdvancements;
+import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.advancements.AdvancementType;
+import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.advancements.AdvancementWidgetType;
 import net.minecraft.resources.ResourceLocation;
 
 /**
  * How a Dungeon Train tile is decorated on the advancements screens, shared by the vanilla and
  * Better Advancements widget mixins so the two can't drift apart.
  *
- * <p>Two states, both only while the advancement is unearned: a tile this life has ruled out is
- * drawn at half opacity ({@link #beforeTile} sets the shader colour, {@link #afterIcon} restores
- * it), and a tile the player is tracking gets a yellow outline. Both widgets draw the frame at
+ * <p>Two states, both only while the advancement is unearned: a tile the player is tracking gets
+ * a yellow halo — the tile's own frame sprite, drawn slightly larger and tinted yellow behind it —
+ * and a tile this life has ruled out is drawn at half opacity ({@link #beforeTile} sets the shader
+ * colour, {@link #afterIcon} restores it). Both widgets draw the frame at
  * {@code (x + widget.x + 3, y + widget.y)}, 26×26, then the icon — and vanilla then recurses into
  * child widgets in the same call, so the colour must be restored right after the icon, not at the
  * end of {@code draw}, or the children inherit the fade.</p>
@@ -20,8 +25,10 @@ public final class AdvancementTileDecor {
 
     /** Opacity of a tile this life has ruled out. */
     private static final float DISQUALIFIED_ALPHA = 0.5f;
-    /** Outline colour of a tracked tile — vanilla's "yellow" text colour, opaque. */
-    private static final int TRACKED_OUTLINE = 0xFFFFFF55;
+    /** Tint of the tracked halo — vanilla's "yellow" text colour. */
+    private static final float HALO_R = 1.0f, HALO_G = 1.0f, HALO_B = 0.33f;
+    /** How far the halo frame extends past the tile on each side. */
+    private static final int HALO_PAD = 2;
     /** Frame size both widgets blit. */
     private static final int TILE_SIZE = 26;
     /** Frame x offset from the widget origin, both widgets. */
@@ -29,27 +36,39 @@ public final class AdvancementTileDecor {
 
     private AdvancementTileDecor() {}
 
-    /** Call at the top of the widget's {@code draw}: fades the frame + icon of a ruled-out tile. */
-    public static void beforeTile(GuiGraphics g, ResourceLocation id, AdvancementProgress progress) {
+    /**
+     * Call at the top of the widget's {@code draw}: draws the tracked halo behind the tile, then
+     * fades a ruled-out tile. {@code originX/originY} are the tab origin passed to {@code draw};
+     * {@code widgetX/widgetY} the widget's own position fields.
+     */
+    public static void beforeTile(GuiGraphics g, AdvancementNode node, AdvancementProgress progress,
+                                  int originX, int originY, int widgetX, int widgetY) {
+        ResourceLocation id = node.holder().id();
+        if (isTrackedAndUnearned(id, progress)) {
+            drawHalo(g, node, originX + widgetX + TILE_X_OFFSET, originY + widgetY);
+        }
         if (AdvancementHintText.isGreyedOut(id, progress)) {
             g.setColor(1.0f, 1.0f, 1.0f, DISQUALIFIED_ALPHA);
         }
     }
 
     /**
-     * Call right after the widget renders its icon: restores the shader colour and outlines a
-     * tracked tile. {@code originX/originY} are the tab origin passed to {@code draw};
-     * {@code widgetX/widgetY} the widget's own position fields.
+     * The tile's own unobtained frame (task / goal / challenge shape), {@link #HALO_PAD} bigger on
+     * every side and tinted yellow, so the highlight matches the box it sits behind. The plain
+     * frame's neutral grey takes the tint cleanly.
      */
-    public static void afterIcon(GuiGraphics g, ResourceLocation id, AdvancementProgress progress,
-                                 int originX, int originY, int widgetX, int widgetY) {
+    private static void drawHalo(GuiGraphics g, AdvancementNode node, int left, int top) {
+        AdvancementType type = node.advancement().display().map(DisplayInfo::getType).orElse(AdvancementType.TASK);
+        ResourceLocation frame = AdvancementWidgetType.UNOBTAINED.frameSprite(type);
+        g.setColor(HALO_R, HALO_G, HALO_B, 1.0f);
+        g.blitSprite(frame, left - HALO_PAD, top - HALO_PAD, TILE_SIZE + 2 * HALO_PAD, TILE_SIZE + 2 * HALO_PAD);
+        g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
+    /** Call right after the widget renders its icon: restores the shader colour after a fade. */
+    public static void afterIcon(GuiGraphics g, ResourceLocation id, AdvancementProgress progress) {
         if (AdvancementHintText.isGreyedOut(id, progress)) {
             g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
-        }
-        if (isTrackedAndUnearned(id, progress)) {
-            int left = originX + widgetX + TILE_X_OFFSET;
-            int top = originY + widgetY;
-            g.renderOutline(left - 1, top - 1, TILE_SIZE + 2, TILE_SIZE + 2, TRACKED_OUTLINE);
         }
     }
 
