@@ -16890,6 +16890,28 @@
       "released": true,
       "released_in": "v0.895.0",
       "released_at": "2026-09-15T13:26:29Z"
+    },
+    {
+      "id": "exclude-stock-template-copies",
+      "version": "0.896.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Builder search counts only what you actually built",
+      "summary": "Saving a built-in template without changing it used to count as one of your builds, so Find a Builder listed players with a hundred \"builds\" that were just the stock parts. Untouched copies of shipped templates are no longer counted or shown on other players' profiles \u2014 they stay in your own My Builds, marked as copies.",
+      "highlights": [
+        "Find a Builder counts and lists only builds a player actually changed or made",
+        "Another player's profile no longer shows their untouched copies of stock templates",
+        "Your own My Builds still lists them, with a note explaining why they don't count"
+      ],
+      "pr": 1434,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
