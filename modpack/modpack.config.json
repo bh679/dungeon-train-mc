@@ -433,6 +433,15 @@
       "required": true,
       "modrinth_project": "crash-assistant",
       "modrinth_version": "18SR4EJw"
+    },
+    {
+      "name": "Particle Effects",
+      "slug": "particle-effects",
+      "project_id": 1120746,
+      "file_id": 8325471,
+      "required": true,
+      "modrinth_project": "particle-effects",
+      "modrinth_version": "AH6BZ7jO"
     }
   ],
   "curseforge_relations": [
