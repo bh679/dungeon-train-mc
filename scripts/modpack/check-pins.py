@@ -20,7 +20,8 @@ on that version, or a modpack ships (or the loader accepts) an untested Sable:
     stops the *version* fields from drifting, which is the mistake that ships an old Sable).
 
 SIBLING MODS — a floor, not equality.
-AIN / AIS / PlayerMob / EnderChestPersistence / TradeEverything / KeepTrim are un-bundled required
+AIN / AIS / PlayerMob / EnderChestPersistence / TradeEverything / KeepTrim / DungeonBackup /
+SableFenceTrapdoorFix are un-bundled required
 downloads. DT declares a
 MINIMUM version for each (``<mod>_min_version`` in gradle.properties, rendered into
 neoforge.mods.toml as ``[x,)``), and each modpack pins one specific build of it. The condition

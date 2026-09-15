@@ -15,8 +15,8 @@ This harness installs a real NeoForge server and feeds it real jars in `mods/`. 
 production mod-loading path: the same FML `ModSorter` a player's client runs, with no dev
 classpath. No Minecraft account and no GUI are needed, so it runs unattended.
 
-This matters because the six sibling mods (AIN, AIS, PlayerMob, EnderChestPersistence,
-TradeEverything, KeepTrim) are
+This matters because the eight sibling mods (AIN, AIS, PlayerMob, EnderChestPersistence,
+TradeEverything, KeepTrim, DungeonBackup, SableFenceTrapdoorFix) are
 **not bundled** — they are required external downloads. Every existing player hits the
 missing-dependency path exactly once, on the update that un-bundled them.
 
@@ -38,9 +38,9 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all six siblings | Server starts cleanly |
+| **A** | DT + Sable + all eight siblings | Server starts cleanly |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
-| **C** | DT + Sable only | Fails — names **all six**, with each declared range |
+| **C** | DT + Sable only | Fails — names **all eight**, with each declared range |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
 | **E** | PlayerMob **below** the floor | Fails — `Expected range: '[<floor>,)', Actual version: '0.50.0'` |
 | **F** | minus Sable | Fails — `Expected range: '[x,x]'` (exact pin, not a minimum) |
@@ -80,15 +80,15 @@ be checked afterwards.
 
 Run through this after the first release that un-bundles a mod:
 
-1. **Modrinth app** — fresh profile, install Dungeon Train from the platform. All six siblings
+1. **Modrinth app** — fresh profile, install Dungeon Train from the platform. All eight siblings
    should arrive without being asked for; DT should reach the main menu.
 2. **CurseForge app** — same, from a new instance.
-3. **Both modpacks** — install each and confirm eight mods are present *and all six siblings are
+3. **Both modpacks** — install each and confirm ten mods are present *and all eight siblings are
    enabled*. A CurseForge `required:false` entry ships a mod switched **off**; for a hard
    dependency that breaks the pack. See `modpack/README.md` §"Enabled vs disabled by default".
 4. **Manual / vanilla NeoForge** — drop in only the DT jar + Sable. Expect Case C's error,
    rendered as a screen.
-5. **Check the download counters** on all six sibling project pages a day later.
+5. **Check the download counters** on all eight sibling project pages a day later.
 
 Step 5 is the one that matters. Steps 1–4 verify mechanism; only the counters verify the
 *purpose* — un-bundling exists so those mods get credited for the installs they were always

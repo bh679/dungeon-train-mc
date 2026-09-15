@@ -300,12 +300,20 @@ def test_real_config_every_mod_has_modrinth_pins():
         assert opt.get("modrinth_project"), f"{opt.get('name')} missing modrinth_project"
         assert opt.get("modrinth_version") or opt.get("modrinth_pending_url"), \
             f"{opt.get('name')} missing modrinth_version / modrinth_pending_url"
-    # The pending-URL stopgap is for listings still in review — never both keys at once, and
-    # the only current rider is Keep Trim (CurseForge approved 2026-09-13, Modrinth pending).
+    # The pending-URL stopgap is for listings still in review — never both keys at once. Current
+    # riders: Keep Trim, Dungeon Backup and Sable Fence & Trapdoor Fix (all CurseForge-approved,
+    # Modrinth pending). Drop each from this list as its Modrinth listing goes live.
     pending = bm.pending_entries(cfg)
-    assert [o["slug"] for o in pending] == ["keep-trim"], pending
-    assert "modrinth_version" not in pending[0]
-    assert pending[0]["modrinth_pending_url"].startswith("https://github.com/bh679/keeptrim-mc/releases/download/")
+    assert [o["slug"] for o in pending] == [
+        "keep-trim", "dungeon-train-backup", "sable-fence-trapdoor-fix"], pending
+    expected_hosts = {
+        "keep-trim": "https://github.com/bh679/keeptrim-mc/releases/download/",
+        "dungeon-train-backup": "https://github.com/bh679/dungeonbackup-mc/releases/download/",
+        "sable-fence-trapdoor-fix": "https://github.com/bh679/sable-fence-trapdoor-fix-mc/releases/download/",
+    }
+    for opt in pending:
+        assert "modrinth_version" not in opt, opt
+        assert opt["modrinth_pending_url"].startswith(expected_hosts[opt["slug"]]), opt
     # Hard pins mirrored from the CurseForge pack.
     sable = cfg["sable"]
     assert sable["modrinth_version"] == "U678xqle", sable  # Sable 2.0.5+mc1.21.1

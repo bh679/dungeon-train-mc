@@ -63,6 +63,8 @@ resolve() {
     ecp)      cached "bh679/enderchestpersistence"   "$(prop enderchestpersistence_version)" ;;
     te)       cached "bh679/tradeeverything"         "$(prop tradeeverything_version)" ;;
     kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;
+    db)       cached "bh679/dungeonbackup"           "$(prop dungeonbackup_version)" ;;
+    sff)      cached "bh679/sable_fence_trapdoor_fix" "$(prop sablefencetrapdoorfix_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two

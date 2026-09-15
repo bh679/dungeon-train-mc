@@ -9,7 +9,7 @@ at build time from the *pinned Modrinth version id* of each mod (``modpack.confi
 exactly mirroring the builds the CurseForge pack ships.
 
 Dungeon Train jarJars DiscordPresence + EdibleBackpacks + joml-primitives *inside* its own
-jar; the sibling mods AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything/KeepTrim are
+jar; the sibling mods AIN/AIS/PlayerMob/EnderChestPersistence/TradeEverything/KeepTrim/DungeonBackup/SableFenceTrapdoorFix are
 un-bundled required downloads (so their own project pages get credited), so the pack lists:
 
   * Dungeon Train — Modrinth version id passed in per release (``--dt-version``); the freshly
@@ -20,7 +20,8 @@ un-bundled required downloads (so their own project pages get credited), so the 
   * Each ``optional_mods`` entry — pinned by ``modrinth_version``, OR, for a sibling whose
     Modrinth listing is still in review, by ``modrinth_pending_url``: a direct download URL on
     one of the hosts Modrinth's pack format allows (``PENDING_URL_HOSTS``), hashed at build time.
-    Keep Trim shipped this way first (CurseForge approved, Modrinth pending). Swap the URL for a
+    Keep Trim shipped this way first; Dungeon Backup and Sable Fence & Trapdoor Fix followed
+    (all three CurseForge approved, Modrinth pending). Swap the URL for a
     ``modrinth_version`` the moment the listing goes public — the URL is a stopgap, not a home.
 
 The Minecraft + NeoForge versions are read from ``gradle.properties`` so they never drift from

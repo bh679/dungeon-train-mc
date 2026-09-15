@@ -81,9 +81,9 @@ Each non-core mod is an entry in `modpack.config.json` → `optional_mods[]` car
 `"required"` boolean. [`build-manifest.py`](../scripts/modpack/build-manifest.py) copies that
 flag straight into the manifest:
 
-- **Enabled by default, and mandatory (`required:true`)** — the six sibling mods **Adventure
+- **Enabled by default, and mandatory (`required:true`)** — the eight sibling mods **Adventure
   Item Names**, **Adventure Item Stats**, **Interactive Player Mobs**, **Ender Chest
-  Persistence**, **Trade Everything** and **Keep Trim**. These are not companions: DT declares them as hard dependencies and will not
+  Persistence**, **Trade Everything**, **Keep Trim**, **Dungeon Backup** and **Sable Fence & Trapdoor Fix**. These are not companions: DT declares them as hard dependencies and will not
   load without them, so shipping any of them `required:false` (i.e. switched OFF) would break
   the pack outright.
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
@@ -184,7 +184,7 @@ The declared type is **`optional` by default** — regardless of whether the pac
 enabled (`required:true`) or off (`required:false`), the mod's relationship to a companion is
 "optional" either way, because DT runs fine without it.
 
-The exception is the six sibling mods, which DT genuinely cannot run without. They carry
+The exception is the eight sibling mods, which DT genuinely cannot run without. They carry
 `"dependency_type": "required"` in `modpack.config.json` and are declared `<slug>(required)` in
 `release.yml`. That `required` declaration is what makes the CurseForge and Modrinth apps
 auto-install them — the whole point of un-bundling.

@@ -247,9 +247,10 @@ jobs:
             interactive-player-mobs(required)
             ender-chest-persistence(required)
             trade-everything(required)
-            # keep-trim(required) is deliberately ABSENT here: its Modrinth listing is still in
-            # review and mc-publish cannot resolve a non-public slug. Add it (and swap the
-            # modpack's modrinth_pending_url for a modrinth_version) once Modrinth approves.
+            # keep-trim, dungeon-train-backup and sable-fence-trapdoor-fix (all required) are
+            # deliberately ABSENT here: their Modrinth listings are still in review and
+            # mc-publish cannot resolve a non-public slug. Add each (and swap the modpack's
+            # modrinth_pending_url for a modrinth_version) once Modrinth approves it.
           curseforge-dependencies: |
             sable(required)
             adventure-item-names(required)
@@ -258,6 +259,8 @@ jobs:
             ender-chest-persistence(required)
             trade-everything(required)
             keep-trim(required)
+            dungeon-train-backup(required)
+            sable-fence-trapdoor-fix(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
