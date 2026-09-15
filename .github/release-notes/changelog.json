@@ -16785,6 +16785,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ecp-crash-checkpoint-pin",
+      "version": "0.892.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Your Ender Chest survives a crash",
+      "summary": "If the game crashed, your Ender Chest used to come back as it was at the end of the previous session \u2014 everything you had put in during the crashed one was gone. It now keeps whatever was in it at the last autosave, so a crash costs you at most a few minutes, the same as the rest of your inventory. Ender Chest Persistence 0.5.0 is now required; the CurseForge and Modrinth apps update it for you.",
+      "highlights": [
+        "Ender Chest contents are saved every autosave and whenever you switch game mode, not only when you leave the world",
+        "Requires Ender Chest Persistence 0.5.0 (auto-installed by the CurseForge / Modrinth apps)"
+      ],
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
