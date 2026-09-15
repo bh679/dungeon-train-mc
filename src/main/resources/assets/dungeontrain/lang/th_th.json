@@ -2218,6 +2218,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "กำลังตรวจสอบการตั้งค่าเครือข่ายของคุณ…",
   "gui.dungeontrain.builder.profile.unavailable": "ติดต่อรีเลย์ไม่ได้ — สิ่งก่อสร้างของคุณยังถูกบันทึกไว้ที่นี่",
   "gui.dungeontrain.builder.profile.withheld": "ผู้ดูแลกำลังตรวจสอบอยู่",
+  "gui.dungeontrain.builder.profile.template_copy": "สำเนาที่ไม่ได้แก้ไขของเทมเพลตในตัว — ไม่นับเป็นหนึ่งในสิ่งก่อสร้างของคุณ",
   "gui.dungeontrain.builder.profile.type.all": "ทุกประเภท",
   "gui.dungeontrain.builder.profile.type.carriage": "ตู้",
   "gui.dungeontrain.builder.profile.type.carriage_group": "ชุดตู้",

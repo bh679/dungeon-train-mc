@@ -2218,6 +2218,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Đang kiểm tra cài đặt mạng của bạn…",
   "gui.dungeontrain.builder.profile.unavailable": "Không liên lạc được với bộ tiếp sóng — công trình của bạn vẫn được lưu ở đây.",
   "gui.dungeontrain.builder.profile.withheld": "Đang được người kiểm duyệt xem xét.",
+  "gui.dungeontrain.builder.profile.template_copy": "Bản sao chưa chỉnh sửa của mẫu có sẵn — không được tính là một công trình của bạn.",
   "gui.dungeontrain.builder.profile.type.all": "Mọi loại",
   "gui.dungeontrain.builder.profile.type.carriage": "Toa",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Nhóm toa",

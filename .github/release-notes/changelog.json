@@ -16916,19 +16916,22 @@
       "released_at": null
     },
     {
-      "id": "contents-exclude-traps-portal-short",
+      "id": "exclude-stock-template-copies",
       "version": "0.899.0",
-      "type": "content",
+      "type": "feat",
       "tags": [
-        "content",
-        "train"
+        "feature",
+        "editor",
+        "community"
       ],
-      "title": "Trap rooms and short portal rooms stop turning up in the wrong carriages",
-      "summary": "Trap interiors and the short portal-room interiors were being rolled inside several carriage types they weren't built for. They now stay in the carriages designed to hold them, so the train's rooms fit their shells a little better.",
+      "title": "Builder search counts only what you actually built",
+      "summary": "Saving a built-in template without changing it used to count as one of your builds, so Find a Builder listed players with a hundred \"builds\" that were just the stock parts. Untouched copies of shipped templates are no longer counted or shown on other players' profiles \u2014 they stay in your own My Builds, marked as copies.",
       "highlights": [
-        "Trap rooms no longer appear in carriages that weren't designed for them",
-        "Short portal-room interiors are no longer mixed into regular carriages"
+        "Find a Builder counts and lists only builds a player actually changed or made",
+        "Another player's profile no longer shows their untouched copies of stock templates",
+        "Your own My Builds still lists them, with a note explaining why they don't count"
       ],
+      "pr": 1434,
       "date": "2026-09-15",
       "released": false,
       "released_in": null,

@@ -2294,6 +2294,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Проверяем настройки Интернета...",
   "gui.dungeontrain.builder.profile.unavailable": "Не удалось связаться с сервера — ваши постройки по-прежнему сохранены здесь.",
   "gui.dungeontrain.builder.profile.withheld": "На проверке, модератор всё ещё её проверяет.",
+  "gui.dungeontrain.builder.profile.template_copy": "Неизменённая копия встроенного шаблона — не считается одной из твоих построек.",
   "gui.dungeontrain.builder.profile.type.all": "Все виды",
   "gui.dungeontrain.builder.profile.type.carriage": "Вагоны",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Группы вагонов",
