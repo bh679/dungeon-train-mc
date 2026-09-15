@@ -62,6 +62,6 @@ final class BuilderProfileCapTest {
 
     private static SharedCarriageClient.ProfileBuild build(String visibility) {
         return new SharedCarriageClient.ProfileBuild(1, "carriage", "", "name", visibility, "builder",
-                "", "approved", "none", 9, 7, 7, 0, 0L, false, "uuid", "owner");
+                "", "approved", "none", 9, 7, 7, 0, 0L, false, "uuid", "owner", false);
     }
 }

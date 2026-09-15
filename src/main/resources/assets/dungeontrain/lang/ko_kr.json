@@ -2218,6 +2218,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "네트워크 설정을 확인하는 중…",
   "gui.dungeontrain.builder.profile.unavailable": "릴레이에 닿지 못했습니다 — 건축물은 여기에 그대로 저장되어 있습니다.",
   "gui.dungeontrain.builder.profile.withheld": "모더레이터가 검토 중입니다.",
+  "gui.dungeontrain.builder.profile.template_copy": "내장 템플릿을 그대로 복사한 것입니다 — 내 건축물로 집계되지 않습니다.",
   "gui.dungeontrain.builder.profile.type.all": "모든 종류",
   "gui.dungeontrain.builder.profile.type.carriage": "객차",
   "gui.dungeontrain.builder.profile.type.carriage_group": "객차 묶음",

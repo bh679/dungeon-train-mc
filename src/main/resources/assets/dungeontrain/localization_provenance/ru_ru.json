@@ -1381,6 +1381,7 @@
       "gui.dungeontrain.builder.profile.loading",
       "gui.dungeontrain.builder.profile.empty",
       "gui.dungeontrain.builder.profile.disabled",
+      "gui.dungeontrain.builder.profile.template_copy",
       "gui.dungeontrain.builder.profile.type.all",
       "gui.dungeontrain.builder.profile.type.carriage",
       "gui.dungeontrain.builder.profile.type.carriage_group",

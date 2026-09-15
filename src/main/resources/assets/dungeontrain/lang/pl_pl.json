@@ -2294,6 +2294,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Sprawdzanie twoich ustawień sieci…",
   "gui.dungeontrain.builder.profile.unavailable": "Nie udało się połączyć z przekaźnikiem — twoje budowle nadal są zapisane tutaj.",
   "gui.dungeontrain.builder.profile.withheld": "W trakcie weryfikacji przez moderatora.",
+  "gui.dungeontrain.builder.profile.template_copy": "Niezmieniona kopia wbudowanego szablonu — nie liczy się jako jedna z twoich budowli.",
   "gui.dungeontrain.builder.profile.type.all": "Wszystkie rodzaje",
   "gui.dungeontrain.builder.profile.type.carriage": "Wagony",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Grupy wagonów",

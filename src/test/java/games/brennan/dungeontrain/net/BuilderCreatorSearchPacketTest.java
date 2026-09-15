@@ -90,7 +90,7 @@ final class BuilderCreatorSearchPacketTest {
     void profileReplyRoundTrip() {
         BuilderProfilePacket original = new BuilderProfilePacket(BuilderProfilePacket.Status.OK,
                 List.of(new BuilderProfilePacket.Entry(7, "carriage", "", "brick_cabin", true, "approved",
-                        BuilderReviewState.SUBMITTED, "stone", 3, false, "", "")),
+                        BuilderReviewState.SUBMITTED, "stone", 3, false, "", "", false)),
                 THEIRS, "", false);
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         BuilderProfilePacket.STREAM_CODEC.encode(buf, original);

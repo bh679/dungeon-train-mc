@@ -25,7 +25,7 @@ final class BuilderProfileFiltersTest {
 
     private static BuilderProfilePacket.Entry build(int id, String kind, String review, boolean starred) {
         return new BuilderProfilePacket.Entry(id, kind, "", "b" + id, false, "approved", review, "stone", 0,
-                starred, "", "");
+                starred, "", "", false);
     }
 
     private static final BuilderProfilePacket.Entry WAITING =

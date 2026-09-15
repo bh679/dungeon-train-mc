@@ -2218,6 +2218,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Memeriksa pengaturan jaringanmu…",
   "gui.dungeontrain.builder.profile.unavailable": "Tidak bisa menghubungi relai — bangunanmu tetap tersimpan di sini.",
   "gui.dungeontrain.builder.profile.withheld": "Sedang ditinjau oleh moderator.",
+  "gui.dungeontrain.builder.profile.template_copy": "Salinan template bawaan yang tidak diubah — tidak dihitung sebagai salah satu bangunanmu.",
   "gui.dungeontrain.builder.profile.type.all": "Semua jenis",
   "gui.dungeontrain.builder.profile.type.carriage": "Gerbong",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Grup gerbong",

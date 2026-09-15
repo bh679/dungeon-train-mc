@@ -2256,6 +2256,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Vérification de tes réglages réseau…",
   "gui.dungeontrain.builder.profile.unavailable": "Le relais est injoignable — tes constructions restent enregistrées ici.",
   "gui.dungeontrain.builder.profile.withheld": "En cours d'examen par un modérateur.",
+  "gui.dungeontrain.builder.profile.template_copy": "Une copie inchangée d'un modèle intégré — ne compte pas parmi tes constructions.",
   "gui.dungeontrain.builder.profile.type.all": "Tous les types",
   "gui.dungeontrain.builder.profile.type.carriage": "Wagons",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Groupes de wagons",

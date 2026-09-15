@@ -157,11 +157,17 @@ public final class SharedCarriageClient {
      * @param review     where it stands in the operator's submission queue — a SECOND axis, see
      *                   {@link games.brennan.dungeontrain.builder.relay.BuilderReviewState}. Empty
      *                   from a relay that predates the queue, which reads as never-submitted.
+     * @param templateCopy whether the relay recognises it as an unmodified copy of a template the
+     *                   mod ships — a stock part opened and saved, not something the player made.
+     *                   The relay only ever lists these to their owner (and leaves them out of every
+     *                   count), so the flag exists for the owner's own screen to say why the tile
+     *                   is not a build. False from a relay that predates the fingerprint table.
      */
     public record ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
                                String source, String stage, String flag, String review, int l, int h, int w,
                                int changeCount, long updatedTs,
-                               boolean favourite, String ownerUuid, String ownerName) {}
+                               boolean favourite, String ownerUuid, String ownerName,
+                               boolean templateCopy) {}
 
     /**
      * Upload a Train Builder save. {@code visibility} is {@code profile} for a build that is only in
@@ -287,7 +293,10 @@ public final class SharedCarriageClient {
                 str(r, "flag"), str(r, "review"), intOf(d, "l"), intOf(d, "h"), intOf(d, "w"),
                 intOf(r, "changeCount"), longOf(r, "updatedTs"),
                 r.has("favourite") && r.get("favourite").getAsBoolean(),
-                str(r, "ownerUuid"), str(r, "ownerName"));
+                str(r, "ownerUuid"), str(r, "ownerName"),
+                r.has("templateCopy") && r.get("templateCopy").isJsonPrimitive()
+                        && r.get("templateCopy").getAsJsonPrimitive().isBoolean()
+                        && r.get("templateCopy").getAsBoolean());
     }
 
     /** One builder the relay knows, as a creator search names them. */
@@ -341,9 +350,12 @@ public final class SharedCarriageClient {
      * only, like {@link #searchCreators}, and {@code null} without an admin URL for the same reason:
      * no shipped jar carries the secret that reaches it.</p>
      *
-     * <p>Two narrowings applied here rather than left to the screen. Rows authored in ordinary PLAY
+     * <p>Three narrowings applied here rather than left to the screen. Rows authored in ordinary PLAY
      * are dropped — a shared carriage picked up by a train is not a builder's submission, and a pool
-     * is mostly those. What survives is trimmed to {@code limit}, because the endpoint takes no limit
+     * is mostly those. So are unmodified copies of the templates this mod ships ({@code templateCopy},
+     * which the operator's listing flags rather than omits): a stock part somebody opened and saved
+     * is not a build of theirs, and the relay's own builder search leaves those out for the same
+     * reason. What survives is trimmed to {@code limit}, because the endpoint takes no limit
      * of its own and the packet that carries the answer holds 512 rows: trimming late would mean the
      * newest builds silently falling off the end of the wire.</p>
      *
@@ -367,7 +379,7 @@ public final class SharedCarriageClient {
                 JsonObject r = el.getAsJsonObject();
                 if (!r.has("id")) continue;
                 ProfileBuild build = parseBuild(r);
-                if (SOURCE_PLAY.equals(build.source())) continue;
+                if (SOURCE_PLAY.equals(build.source()) || build.templateCopy()) continue;
                 out.add(build);
             }
             out.sort((a, b) -> Long.compare(b.updatedTs(), a.updatedTs()));

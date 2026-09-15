@@ -2218,6 +2218,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "ネットワーク設定を確認中…",
   "gui.dungeontrain.builder.profile.unavailable": "リレーに接続できませんでした — あなたの建築はここに保存されたままです。",
   "gui.dungeontrain.builder.profile.withheld": "モデレーターが審査中です。",
+  "gui.dungeontrain.builder.profile.template_copy": "組み込みテンプレートの無変更コピーです — あなたの建築としてはカウントされません。",
   "gui.dungeontrain.builder.profile.type.all": "すべての種類",
   "gui.dungeontrain.builder.profile.type.carriage": "車両",
   "gui.dungeontrain.builder.profile.type.carriage_group": "車両グループ",

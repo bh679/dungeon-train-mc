@@ -1328,6 +1328,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Se verifică setările tale de rețea…",
   "gui.dungeontrain.builder.profile.unavailable": "Nu s-a putut contacta relay-ul — construcțiile tale sunt tot salvate aici.",
   "gui.dungeontrain.builder.profile.withheld": "În curs de verificare de către un moderator.",
+  "gui.dungeontrain.builder.profile.template_copy": "O copie nemodificată a unui șablon integrat — nu se numără printre construcțiile tale.",
   "gui.dungeontrain.builder.profile.type.all": "Toate tipurile",
   "gui.dungeontrain.builder.profile.type.carriage": "Vagoane",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Grupuri de vagoane",

@@ -2256,6 +2256,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Comprobando tus ajustes de red…",
   "gui.dungeontrain.builder.profile.unavailable": "No se pudo contactar con el relé: tus construcciones siguen guardadas aquí.",
   "gui.dungeontrain.builder.profile.withheld": "En revisión por un moderador.",
+  "gui.dungeontrain.builder.profile.template_copy": "Una copia sin cambios de una plantilla integrada — no cuenta como una de tus construcciones.",
   "gui.dungeontrain.builder.profile.type.all": "Todos los tipos",
   "gui.dungeontrain.builder.profile.type.carriage": "Vagones",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Grupos de vagones",

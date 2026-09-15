@@ -26,7 +26,7 @@ final class EditorCreatorBuildsTest {
 
     private static BuilderProfilePacket.Entry entry(String kind, String name, String review) {
         return new BuilderProfilePacket.Entry(7, kind, "", name, false, "", review, "", 3,
-            false, "uuid", "Edda");
+            false, "uuid", "Edda", false);
     }
 
     @Test

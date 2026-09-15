@@ -2232,6 +2232,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "正在檢查你的網路設定…",
   "gui.dungeontrain.builder.profile.unavailable": "無法連上中繼——你的建築仍儲存在本機。",
   "gui.dungeontrain.builder.profile.withheld": "審核員正在審核。",
+  "gui.dungeontrain.builder.profile.template_copy": "內建範本的未修改副本 — 不計入你的建築。",
   "gui.dungeontrain.builder.profile.type.all": "所有類型",
   "gui.dungeontrain.builder.profile.type.carriage": "車廂",
   "gui.dungeontrain.builder.profile.type.carriage_group": "車廂組",
