@@ -16936,6 +16936,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "contents-exclude-traps-portal-short",
+      "version": "0.900.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Trap rooms and short portal rooms stop turning up in the wrong carriages",
+      "summary": "Trap interiors and the short portal-room interiors were being rolled inside several carriage types they weren't built for. They now stay in the carriages designed to hold them, so the train's rooms fit their shells a little better.",
+      "highlights": [
+        "Trap rooms no longer appear in carriages that weren't designed for them",
+        "Short portal-room interiors are no longer mixed into regular carriages"
+      ],
+      "pr": 1436,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
