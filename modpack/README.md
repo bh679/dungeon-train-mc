@@ -58,6 +58,7 @@ pack must list them explicitly. Everything else is a manifest file with a `requi
 | Durability Tooltip | `511040` | **enabled** | Client-side QoL — draws the remaining durability on an item's tooltip instead of making players read the damage bar. No render/physics/chunk hooks, safe with Sable. Requires **SuperMartijn642's Config Lib**. **Pinned** (1.1.6). |
 | SuperMartijn642's Config Lib | `438332` | **enabled** (library) | Durability Tooltip's required dependency — not jarJar'd. Inert config library with no gameplay of its own; enabled so Durability Tooltip loads on a default install. **Pinned** (1.1.8). |
 | Crash Assistant | `1154099` | **enabled** | Post-crash GUI: analyses the crash report / logs / `hs_err` against ~40 known causes and offers a one-click upload of all of them to mclo.gs plus a ready-to-paste report message. Client-only (`server_side=unsupported` — auto-skipped on dedicated servers), no dependencies. Shipped **on**: a crash reporter is useless unless it is already installed when the crash happens. Configured via `overrides/config/crash_assistant/config.toml` to point players at **#bugs-feedback** on the Dungeon Train Discord — left at its default the help button would send them to the *NeoForge* Discord. **Pinned** (1.11.12). |
+| Particle Effects | `1120746` | **enabled** | Replaces the flat coloured swirl of every vanilla status effect with a unique textured particle per effect (Speed, Poison, Regeneration, …), so a glance tells you what a mob or player is under. Client-only render (`side="CLIENT"`, auto-skipped on dedicated servers), no dependencies on NeoForge (its only optional dep is Fabric API; declares `inventory_particles` <2.0.1 incompatible — not in this pack). Two client mixins on the particle engine — verified on the moving train under Sodium + Iris. CC-BY-ND 4.0 (attribution via the platform listing; bundled by reference, unmodified). **Pinned** (1.5.0). |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -102,6 +103,8 @@ flag straight into the manifest:
   **Bookshelf** + **Prickle** (Enchantment Descriptions) and **SuperMartijn642's Config Lib**
   (Durability Tooltip). **Enchantment Descriptions** and **Durability Tooltip** are on this
   list too — tooltip readability every player benefits from.
+  **Particle Effects** is on too — a purely cosmetic status-effect readability upgrade with no
+  server side and no screens to restyle.
   The libraries ship enabled so their dependent loads on a default install (CreativeCore —
   AmbientSounds is on; Iceberg — AP is on; Balm — TrashSlot is on; Bookshelf + Prickle — ED is
   on; Config Lib — Durability Tooltip is on). **TrashSlot** is on this list
