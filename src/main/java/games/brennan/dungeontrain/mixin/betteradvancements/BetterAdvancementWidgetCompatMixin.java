@@ -115,6 +115,30 @@ public abstract class BetterAdvancementWidgetCompatMixin {
             () -> original.call(guiGraphics, sprite, x, y, w, h));
     }
 
+    /** Whether {@code drawConnectivity} pushed a scissor for this tile's incoming connector. */
+    @Unique
+    private boolean dungeontrain$connectorClipped;
+
+    /** Stop the connector at a faded tile's frame — see {@link AdvancementTileDecor#beginConnectorClip}. */
+    @Inject(method = "drawConnectivity", at = @At("HEAD"))
+    private void dungeontrain$clipConnectorStart(GuiGraphics guiGraphics, int originX, int originY, boolean dropShadow, CallbackInfo ci) {
+        dungeontrain$connectorClipped = AdvancementTileDecor.beginConnectorClip(guiGraphics, advancementNode, advancementProgress, originX, x);
+    }
+
+    /**
+     * Pop the clip before the first recursion into a child's {@code drawConnectivity} (the
+     * children's own lines must not be clipped), and at RETURN as the fallback for a widget with
+     * no children. The flag makes the pop happen exactly once.
+     */
+    @Inject(method = "drawConnectivity",
+            at = {@At(value = "INVOKE", target = "Lbetteradvancements/common/gui/BetterAdvancementWidget;drawConnectivity(Lnet/minecraft/client/gui/GuiGraphics;IIZ)V"), @At("RETURN")})
+    private void dungeontrain$clipConnectorEnd(GuiGraphics guiGraphics, int originX, int originY, boolean dropShadow, CallbackInfo ci) {
+        if (dungeontrain$connectorClipped) {
+            dungeontrain$connectorClipped = false;
+            AdvancementTileDecor.endConnectorClip(guiGraphics);
+        }
+    }
+
     /** Remember which tile is under the mouse so a click on BA's screen can toggle tracking on it. */
     @Inject(method = "drawHover", at = @At("HEAD"))
     private void dungeontrain$recordHover(CallbackInfo ci) {

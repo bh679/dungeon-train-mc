@@ -9,6 +9,7 @@ import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.advancements.AdvancementWidgetType;
 import net.minecraft.resources.ResourceLocation;
+import org.joml.Vector3f;
 
 /**
  * How a Dungeon Train tile is decorated on the advancements screens, shared by the vanilla and
@@ -22,7 +23,8 @@ import net.minecraft.resources.ResourceLocation;
  * child widgets in the same call, so the colour must be restored right after the icon, not at the
  * end of {@code draw}, or the children inherit the fade. The hover tooltip ({@code drawHover})
  * redraws the frame over the top at full opacity — deliberately unfaded — and
- * {@link #wrapHoverFrame} puts the halo back behind it.</p>
+ * {@link #wrapHoverFrame} puts the halo back behind it. A faded tile's incoming connector is
+ * clipped at its frame ({@link #beginConnectorClip}) so the line doesn't show through it.</p>
  *
  * <p>Both paths call {@link #enableBlend()} first: vanilla's sprite blit does not turn blending on
  * itself, and in the tree it happens to be off — a half-alpha shader colour was simply ignored
@@ -110,6 +112,33 @@ public final class AdvancementTileDecor {
         if (AdvancementHintText.isGreyedOut(id, progress)) {
             g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
+    }
+
+    /** Half the tab's coordinate range on either side — a scissor bound that never clips anything real. */
+    private static final int CLIP_FAR = 1 << 14;
+
+    /**
+     * Call at the top of the widget's {@code drawConnectivity}: when this tile is faded, clip the
+     * connector drawn <em>to</em> it so it stops at the frame's left edge instead of running on
+     * under the half-transparent tile. Both renderers bring the line in from the left (vanilla's
+     * elbow, Better Advancements' elbow or direct line), so one clip — everything left of the frame
+     * — covers them. Returns whether a scissor was pushed; the caller must then
+     * {@link #endConnectorClip} exactly once, before recursing into children.
+     */
+    public static boolean beginConnectorClip(GuiGraphics g, AdvancementNode node, AdvancementProgress progress,
+                                             int originX, int widgetX) {
+        if (node == null || node.parent() == null) return false;
+        if (!AdvancementHintText.isGreyedOut(node.holder().id(), progress)) return false;
+        // Scissor rects are screen-space and the tab draws under a translated (BA: also scaled)
+        // pose, so push the frame's left edge through the current matrix first.
+        Vector3f edge = g.pose().last().pose().transformPosition(
+            new Vector3f(originX + widgetX + TILE_X_OFFSET, 0.0f, 0.0f));
+        g.enableScissor(-CLIP_FAR, -CLIP_FAR, Math.round(edge.x()), CLIP_FAR);
+        return true;
+    }
+
+    public static void endConnectorClip(GuiGraphics g) {
+        g.disableScissor();
     }
 
     /** Alpha-blend the following draws; left on, as every other translucent GUI draw does. */
