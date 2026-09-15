@@ -16868,6 +16868,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "life-disqualified-advancements",
+      "version": "0.895.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "See which advancements this life has already ruled out \u2014 and track the ones you care about",
+      "summary": "Some advancements can only be earned in a single life, and one slip ends the attempt: dealing any damage closes the Pacifist chain, opening an ender chest closes Contained Loop, and burning your starting book closes The Far Start. The advancements screen now shows it \u2014 those tiles fade out and their hint gains a red \"Lost for this life.\" line \u2014 and it clears again when your next life begins. Click a single-life advancement to track it: it gets a yellow halo, and the moment this life rules it out a red-bordered pop-up tells you. The streak advancements (Not My Chest, Look Don't Touch, Chests \u00d7100) can be tracked too; those pop up an amber \"Streak reset\" instead, since the count simply starts over.",
+      "highlights": [
+        "Advancements ruled out for the current life fade in the tree and say \"Lost for this life.\" on hover",
+        "Click a single-life advancement to track it; a red pop-up warns you the moment it's lost, an amber one when a streak resets",
+        "Works on both the vanilla advancements screen and Better Advancements"
+      ],
+      "pr": 1429,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
