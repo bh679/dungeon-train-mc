@@ -533,14 +533,17 @@ public final class TrainAssembler {
             blocks.addAll(carriageBlocks);
         }
 
-        // Place the half-flatbed pads at sub-level boundaries.
+        // Place the half-flatbed pads at sub-level boundaries. Each pad is stamped for the stage of
+        // the carriage it abuts, so the flatbed template's stage placeholder blocks resolve to that
+        // stage's real blocks — this call runs outside CarriagePlacer.placeAt, so the scope has to
+        // be entered here (the same seam the relay lease needs above).
         if (wrapWithPads) {
             BlockPos backPadOrigin = origin;
             BlockPos frontPadOrigin = origin.offset(halfPadLen + groupSize * length, 0, 0);
-            blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
-                level, backPadOrigin, CarriagePlacer.HalfPadSide.BACK, dims));
-            blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
-                level, frontPadOrigin, CarriagePlacer.HalfPadSide.FRONT, dims));
+            StagePlacementScope.run(stageBySlot[0], () -> blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
+                level, backPadOrigin, CarriagePlacer.HalfPadSide.BACK, dims)));
+            StagePlacementScope.run(stageBySlot[groupSize - 1], () -> blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
+                level, frontPadOrigin, CarriagePlacer.HalfPadSide.FRONT, dims)));
         }
         long tAfterPlace = System.nanoTime();
 
