@@ -16764,6 +16764,27 @@
       "released": true,
       "released_in": "v0.890.0",
       "released_at": "2026-09-15T09:29:07Z"
+    },
+    {
+      "id": "dungeon-backup-fence-fix-curseforge-mods",
+      "version": "0.891.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "On CurseForge, Dungeon Backup and the Sable fence & trapdoor fix are now their own mods",
+      "summary": "If you play through the CurseForge app or the CurseForge modpack, two pieces that were built into Dungeon Train now arrive as separate required mods that the app installs and updates for you: Dungeon Backup (rolling restore points of your Dungeon Train data, with a recovery prompt if it ever goes missing) and Sable Fence & Trapdoor Fix (no more jittering when you stand on a fence post tucked under a trapdoor or carpet on a moving carriage). Their own CurseForge pages now get the credit. On Modrinth, and for anyone who installs the jar by hand, nothing changes \u2014 both are still built into Dungeon Train. Nothing changes in play either way.",
+      "highlights": [
+        "CurseForge app and CurseForge modpack install Dungeon Backup and Sable Fence & Trapdoor Fix as separate mods",
+        "Modrinth and manual installs keep them built in \u2014 no extra downloads",
+        "No change to backups, /dtbackup, /dtrestore or the fence fix in play"
+      ],
+      "pr": 1421,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

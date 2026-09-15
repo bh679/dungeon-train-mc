@@ -97,15 +97,25 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Dungeon Backup is jarJar'd INSIDE this jar too (the player-data protection system
-# extracted from DT), so the shipped version is always exactly dungeonbackup_version.
-# AFTER so DT's registration (data.DungeonTrainBackup, in the mod constructor) exists
-# before the library's first server-start event.
+# Dungeon Backup — hybrid sibling: jarJar'd INSIDE this jar (Modrinth / manual installs) AND a
+# required external download on CurseForge, where the CF app's top-level copy replaces the nested
+# one. Range keys off the FLOOR so a CF-installed copy is checked like the other siblings. AFTER
+# so DT's registration (data.DungeonTrainBackup, in the mod constructor) exists before the
+# library's first server-start event.
 [[dependencies.${mod_id}]]
     modId="dungeonbackup"
     type="required"
-    versionRange="[${dungeonbackup_version},)"
+    versionRange="[${dungeonbackup_min_version},)"
     ordering="AFTER"
+    side="BOTH"
+
+# Sable Fence & Trapdoor Fix — same hybrid contract (nested here, external on CurseForge): the
+# Sable collision-shape clip (fence/wall post under a flush trapdoor/carpet/slab no longer jitters
+# riders) that DT shipped itself in 0.862.0–0.887.0. DT carries no copy of that mixin now.
+[[dependencies.${mod_id}]]
+    modId="sable_fence_trapdoor_fix"
+    type="required"
+    versionRange="[${sablefencetrapdoorfix_min_version},)"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
