@@ -16911,9 +16911,9 @@
       ],
       "pr": 1432,
       "date": "2026-09-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.898.0",
+      "released_at": "2026-09-15T15:45:27Z"
     },
     {
       "id": "exclude-stock-template-copies",
