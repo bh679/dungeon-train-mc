@@ -1201,6 +1201,7 @@
       "gui.dungeontrain.builder.profile.consent_pending",
       "gui.dungeontrain.builder.profile.unavailable",
       "gui.dungeontrain.builder.profile.withheld",
+      "gui.dungeontrain.builder.profile.template_copy",
       "gui.dungeontrain.builder.profile.type.all",
       "gui.dungeontrain.builder.profile.type.carriage",
       "gui.dungeontrain.builder.profile.type.carriage_group",

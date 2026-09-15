@@ -2256,6 +2256,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Controllo delle tue impostazioni di rete…",
   "gui.dungeontrain.builder.profile.unavailable": "Non è stato possibile raggiungere il relay: le tue costruzioni restano salvate qui.",
   "gui.dungeontrain.builder.profile.withheld": "In revisione da parte di un moderatore.",
+  "gui.dungeontrain.builder.profile.template_copy": "Una copia invariata di un modello integrato — non conta come una delle tue costruzioni.",
   "gui.dungeontrain.builder.profile.type.all": "Tutti i tipi",
   "gui.dungeontrain.builder.profile.type.carriage": "Vagoni",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Gruppi di vagoni",

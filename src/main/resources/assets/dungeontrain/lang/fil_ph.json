@@ -2218,6 +2218,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Sinusuri ang mga setting mo sa network…",
   "gui.dungeontrain.builder.profile.unavailable": "Hindi maabot ang relay — naka-save pa rin dito ang mga gawa mo.",
   "gui.dungeontrain.builder.profile.withheld": "Nire-review ng moderator.",
+  "gui.dungeontrain.builder.profile.template_copy": "Isang hindi binagong kopya ng built-in na template — hindi binibilang bilang isa sa iyong mga build.",
   "gui.dungeontrain.builder.profile.type.all": "Lahat ng uri",
   "gui.dungeontrain.builder.profile.type.carriage": "Mga bagon",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Mga grupo ng bagon",

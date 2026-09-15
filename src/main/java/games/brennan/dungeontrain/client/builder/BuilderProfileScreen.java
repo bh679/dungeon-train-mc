@@ -945,6 +945,12 @@ public final class BuilderProfileScreen extends Screen {
         if ("flagged".equals(entry.flag()) || "rejected".equals(entry.flag())) {
             return Component.translatable("gui.dungeontrain.builder.profile.withheld");
         }
+        // An unmodified copy of a stock template. The relay lists it to its owner alone and leaves it
+        // out of every count and every other player's view — so this is the only place the owner can
+        // learn why a tile that is plainly here is not one of their "N builds".
+        if (entry.templateCopy()) {
+            return Component.translatable("gui.dungeontrain.builder.profile.template_copy");
+        }
         // A declined build is a decision about this build and outranks everything below: fixing its
         // stage would not put it on the train, and saying "waiting" of it would be untrue.
         if (BuilderReviewState.DECLINED.equals(BuilderReviewState.of(entry.review()))) {

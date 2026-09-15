@@ -100,6 +100,22 @@ jobs:
 
       - run: ./gradlew build --no-daemon
 
+      # Teach the relay which builds are unmodified copies of the templates this release ships, so
+      # the builder search and profile counts leave them out (relay: bundled_fingerprints). The set is
+      # cumulative on the relay, so every release adds only what changed. Never blocks a release:
+      # a relay hiccup here means the next release's push catches up.
+      - name: Push shipped-template fingerprints to the relay
+        continue-on-error: true
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          if [ -z "$DUNGEONTRAIN_RELAY_ADMIN_BASE" ]; then
+            echo "::warning::RELAY_ADMIN_BASE is not set — shipped-template fingerprints not pushed."
+            exit 0
+          fi
+          ./gradlew bundledFingerprints --no-daemon
+          python3 scripts/relay/push-bundled-fingerprints.py
+
       - name: Generate release notes
         env:
           GH_TOKEN: ${{ github.token }}

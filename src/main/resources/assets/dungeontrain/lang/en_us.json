@@ -1295,6 +1295,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Checking your network settings\u2026",
   "gui.dungeontrain.builder.profile.unavailable": "Couldn't reach the relay — your builds are still saved here.",
   "gui.dungeontrain.builder.profile.withheld": "Under review by a moderator.",
+  "gui.dungeontrain.builder.profile.template_copy": "An unchanged copy of a built-in template — not counted as one of your builds.",
   "gui.dungeontrain.builder.profile.type.all": "All types",
   "gui.dungeontrain.builder.profile.type.carriage": "Carriages",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Carriage groups",

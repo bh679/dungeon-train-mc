@@ -2256,6 +2256,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "Je netwerkinstellingen worden gecontroleerd…",
   "gui.dungeontrain.builder.profile.unavailable": "Het relais was niet bereikbaar — je bouwsels staan hier nog steeds opgeslagen.",
   "gui.dungeontrain.builder.profile.withheld": "Wordt beoordeeld door een moderator.",
+  "gui.dungeontrain.builder.profile.template_copy": "Een ongewijzigde kopie van een ingebouwde sjabloon — telt niet als een van je bouwwerken.",
   "gui.dungeontrain.builder.profile.type.all": "Alle soorten",
   "gui.dungeontrain.builder.profile.type.carriage": "Wagons",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Wagongroepen",

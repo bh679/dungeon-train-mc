@@ -2256,6 +2256,7 @@
   "gui.dungeontrain.builder.profile.consent_pending": "A verificar as tuas definições de rede…",
   "gui.dungeontrain.builder.profile.unavailable": "Não foi possível chegar ao relé — as tuas construções continuam guardadas aqui.",
   "gui.dungeontrain.builder.profile.withheld": "Em análise por um moderador.",
+  "gui.dungeontrain.builder.profile.template_copy": "Uma cópia inalterada de um modelo integrado — não conta como uma das tuas construções.",
   "gui.dungeontrain.builder.profile.type.all": "Todos os tipos",
   "gui.dungeontrain.builder.profile.type.carriage": "Carruagens",
   "gui.dungeontrain.builder.profile.type.carriage_group": "Grupos de carruagens",
