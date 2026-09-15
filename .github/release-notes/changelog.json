@@ -16892,20 +16892,24 @@
       "released_at": "2026-09-15T13:26:29Z"
     },
     {
-      "id": "custom-content-dev-ignore",
-      "version": "0.896.0",
-      "type": "feat",
+      "id": "enemies-piglin2-mossdoors-caggedzombs2-barrelshigh",
+      "version": "0.897.0",
+      "type": "content",
       "tags": [
-        "feature",
-        "ui",
-        "internal"
+        "content",
+        "train",
+        "mobs",
+        "loot",
+        "balance"
       ],
-      "title": "Dev builds: a third answer on the custom-content prompt",
-      "summary": "On development builds, the \"Custom train content\" prompt now offers a third way through: keep your own train designs and keep the run counting. It only appears on dev builds \u2014 the release game still asks the same two questions, and a world that carried the dev answer over plays as Custom Train there.",
+      "title": "Three new enemy carriages and a tall barrel vase",
+      "summary": "The enemies pool grows again: a gold-veined Nether carriage whose zombified piglins ramp up with Diff-Level, a mossy-doored room hiding diamond gear, and a second caged-zombie carriage. The vase pool gains a tall barrel stack. Enemy weights were retuned slightly to make room.",
       "highlights": [
-        "New \"I'm a dev \u2014 ignore\" button under the two cards, dev builds only",
-        "Remember it like any other answer; change it later in Options \u2192 Dungeon Train"
+        "New: piglin2, mossdoors and caggedzombs2 enemy carriages",
+        "New: barrelshigh vase carriage",
+        "Enemies group weights retuned; piglin2 spawns more zombified piglins at higher Diff-Levels"
       ],
+      "pr": 1432,
       "date": "2026-09-15",
       "released": false,
       "released_in": null,
@@ -16913,7 +16917,7 @@
     },
     {
       "id": "exclude-stock-template-copies",
-      "version": "0.897.0",
+      "version": "0.899.0",
       "type": "feat",
       "tags": [
         "feature",

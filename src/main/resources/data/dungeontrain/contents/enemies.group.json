@@ -4,11 +4,11 @@
   "variants": [
     {
       "id": "cagedzombie",
-      "weight": 6
+      "weight": 5
     },
     {
       "id": "piglin",
-      "weight": 9
+      "weight": 6
     },
     {
       "id": "brute",
@@ -17,7 +17,7 @@
     },
     {
       "id": "zombieroom",
-      "weight": 6
+      "weight": 5
     },
     {
       "id": "skeleton",
@@ -54,7 +54,7 @@
     },
     {
       "id": "zombiesrooms",
-      "weight": 6
+      "weight": 4
     },
     {
       "id": "spiders",
@@ -179,7 +179,19 @@
     },
     {
       "id": "corner",
-      "weight": 1
+      "weight": 2
+    },
+    {
+      "id": "piglin2",
+      "weight": 3
+    },
+    {
+      "id": "mossdoors",
+      "weight": 2
+    },
+    {
+      "id": "caggedzombs2",
+      "weight": 2
     }
   ]
 }
