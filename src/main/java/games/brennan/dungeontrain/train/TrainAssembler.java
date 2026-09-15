@@ -492,13 +492,16 @@ public final class TrainAssembler {
 
             // Shared-carriage RELAY path: if this shared slot draws a build (the community pool, or one
             // authored by a player here) AND a lease is buffered, stamp it VERBATIM (no parts/variants/
-            // contents/loot overlays — blocks come from the relay). Otherwise fall through to normal
-            // placement (the FRESH path).
+            // contents/loot overlays — blocks come from the relay). The one exception is stage
+            // placeholder blocks: the upload carries them as authored, so this slot's stage is held
+            // in scope for the stamp exactly as CarriagePlacer.placeAt does — a placeholder must
+            // never reach a live train. Otherwise fall through to normal placement (the FRESH path).
             Set<BlockPos> carriageBlocks = null;
             SharedPick pick = tryLeaseShared(level, variant, carriagePIdx, dims, genCfg, stageId, onlineUuids);
             if (pick != null) {
                 SharedCarriageClient.PoolLease lease = pick.lease();
-                RelayPlacement placement = placeRelayLease(level, carriageOrigin, lease, dims);
+                RelayPlacement placement = StagePlacementScope.with(stageId,
+                        () -> placeRelayLease(level, carriageOrigin, lease, dims));
                 if (placement == null) {               // decode/dims/place failure → hand the lease back
                     SharedCarriagePool.returnLease(lease);
                 } else {
