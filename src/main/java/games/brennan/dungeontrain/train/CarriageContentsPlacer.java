@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import games.brennan.dungeontrain.template.FlipOptions;
+import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import games.brennan.dungeontrain.train.ContentsFlip.Flip;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -835,6 +836,9 @@ public final class CarriageContentsPlacer {
                 stamped = ContentsFlip.verticallyFlipped(template,
                     level.registryAccess().lookupOrThrow(Registries.BLOCK));
             }
+            // Fast Paintings' block paintings don't mirror/rotate themselves: re-hang each one on
+            // the wall it now stands beside (facing, run direction, master cell) or it pops.
+            settings.addProcessor(PaintingTransformProcessor.of(flip.y()));
         }
         // Relighting stamp (flag 3): unlike the shell/pads, the contents pass is NOT placed in the source
         // world before a Sable assemble — it runs post-assemble at shipyard coords (train) or on a permanent
