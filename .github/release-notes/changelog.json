@@ -16975,6 +16975,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "seating-contents-editor-pass",
+      "version": "0.900.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Seating carriage interiors refreshed",
+      "summary": "The booth, extra-seats and new-seating carriage interiors have been reworked in the editor, with updated layouts and a wider spread of block variants so the seating rooms you ride through look less samey.",
+      "highlights": [
+        "Booth, extra-seats and new-seating interiors re-authored",
+        "More block variants per seating room"
+      ],
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
