@@ -16865,9 +16865,9 @@
         "Everything it asks for can be found on your own."
       ],
       "date": "2026-09-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.895.0",
+      "released_at": "2026-09-15T13:26:29Z"
     },
     {
       "id": "life-disqualified-advancements",
@@ -16887,9 +16887,9 @@
       ],
       "pr": 1429,
       "date": "2026-09-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.895.0",
+      "released_at": "2026-09-15T13:26:29Z"
     }
   ]
 }
