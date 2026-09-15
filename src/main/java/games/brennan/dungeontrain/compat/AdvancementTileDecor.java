@@ -114,6 +114,18 @@ public final class AdvancementTileDecor {
         }
     }
 
+    /**
+     * Better Advancements sets its own shader colour ({@code RenderUtil.setColor(rgb)}) immediately
+     * before its frame blit and again before its icon, which would discard the fade set at HEAD.
+     * Called right after each of those: keeps BA's RGB, restores the tile's alpha.
+     */
+    public static void reapplyFadeAfterColor(int rgb, AdvancementNode node, AdvancementProgress progress) {
+        if (node == null || !AdvancementHintText.isGreyedOut(node.holder().id(), progress)) return;
+        enableBlend();
+        RenderSystem.setShaderColor(((rgb >> 16) & 0xFF) / 255.0f, ((rgb >> 8) & 0xFF) / 255.0f,
+            (rgb & 0xFF) / 255.0f, DISQUALIFIED_ALPHA);
+    }
+
     /** Half the tab's coordinate range on either side — a scissor bound that never clips anything real. */
     private static final int CLIP_FAR = 1 << 14;
 

@@ -89,6 +89,18 @@ public abstract class BetterAdvancementWidgetCompatMixin {
         AdvancementTileDecor.beforeTile(guiGraphics, advancementNode, advancementProgress, originX, originY, x, y);
     }
 
+    /**
+     * BA re-sets the shader colour from its own config just before the frame blit and the icon
+     * ({@code RenderUtil.setColor(rgb)}); let it, then put the fade alpha back on top of its RGB.
+     */
+    @WrapOperation(method = "draw",
+                   at = @At(value = "INVOKE",
+                            target = "Lbetteradvancements/common/util/RenderUtil;setColor(I)V"))
+    private void dungeontrain$keepFadeUnderBaColor(int rgb, Operation<Void> original) {
+        original.call(rgb);
+        AdvancementTileDecor.reapplyFadeAfterColor(rgb, advancementNode, advancementProgress);
+    }
+
     /** Restore the shader colour once the icon is down. */
     @Inject(method = "draw",
             at = @At(value = "INVOKE",
