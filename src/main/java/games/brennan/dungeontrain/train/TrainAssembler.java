@@ -492,13 +492,16 @@ public final class TrainAssembler {
 
             // Shared-carriage RELAY path: if this shared slot draws a build (the community pool, or one
             // authored by a player here) AND a lease is buffered, stamp it VERBATIM (no parts/variants/
-            // contents/loot overlays — blocks come from the relay). Otherwise fall through to normal
-            // placement (the FRESH path).
+            // contents/loot overlays — blocks come from the relay). The one exception is stage
+            // placeholder blocks: the upload carries them as authored, so this slot's stage is held
+            // in scope for the stamp exactly as CarriagePlacer.placeAt does — a placeholder must
+            // never reach a live train. Otherwise fall through to normal placement (the FRESH path).
             Set<BlockPos> carriageBlocks = null;
             SharedPick pick = tryLeaseShared(level, variant, carriagePIdx, dims, genCfg, stageId, onlineUuids);
             if (pick != null) {
                 SharedCarriageClient.PoolLease lease = pick.lease();
-                RelayPlacement placement = placeRelayLease(level, carriageOrigin, lease, dims);
+                RelayPlacement placement = StagePlacementScope.with(stageId,
+                        () -> placeRelayLease(level, carriageOrigin, lease, dims));
                 if (placement == null) {               // decode/dims/place failure → hand the lease back
                     SharedCarriagePool.returnLease(lease);
                 } else {
@@ -530,14 +533,17 @@ public final class TrainAssembler {
             blocks.addAll(carriageBlocks);
         }
 
-        // Place the half-flatbed pads at sub-level boundaries.
+        // Place the half-flatbed pads at sub-level boundaries. Each pad is stamped for the stage of
+        // the carriage it abuts, so the flatbed template's stage placeholder blocks resolve to that
+        // stage's real blocks — this call runs outside CarriagePlacer.placeAt, so the scope has to
+        // be entered here (the same seam the relay lease needs above).
         if (wrapWithPads) {
             BlockPos backPadOrigin = origin;
             BlockPos frontPadOrigin = origin.offset(halfPadLen + groupSize * length, 0, 0);
-            blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
-                level, backPadOrigin, CarriagePlacer.HalfPadSide.BACK, dims));
-            blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
-                level, frontPadOrigin, CarriagePlacer.HalfPadSide.FRONT, dims));
+            StagePlacementScope.run(stageBySlot[0], () -> blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
+                level, backPadOrigin, CarriagePlacer.HalfPadSide.BACK, dims)));
+            StagePlacementScope.run(stageBySlot[groupSize - 1], () -> blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
+                level, frontPadOrigin, CarriagePlacer.HalfPadSide.FRONT, dims)));
         }
         long tAfterPlace = System.nanoTime();
 
