@@ -162,6 +162,10 @@
       "id": "creeperdrop",
       "weight": 1,
       "minLevel": 20
+    },
+    {
+      "id": "corner",
+      "weight": 1
     }
   ]
 }
