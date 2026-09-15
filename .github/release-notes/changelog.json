@@ -16890,6 +16890,26 @@
       "released": true,
       "released_in": "v0.895.0",
       "released_at": "2026-09-15T13:26:29Z"
+    },
+    {
+      "id": "custom-content-dev-ignore",
+      "version": "0.896.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui",
+        "internal"
+      ],
+      "title": "Dev builds: a third answer on the custom-content prompt",
+      "summary": "On development builds, the \"Custom train content\" prompt now offers a third way through: keep your own train designs and keep the run counting. It only appears on dev builds \u2014 the release game still asks the same two questions, and a world that carried the dev answer over plays as Custom Train there.",
+      "highlights": [
+        "New \"I'm a dev \u2014 ignore\" button under the two cards, dev builds only",
+        "Remember it like any other answer; change it later in Options \u2192 Dungeon Train"
+      ],
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
