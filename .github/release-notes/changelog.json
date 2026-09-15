@@ -16972,9 +16972,9 @@
         "More block variants per seating room"
       ],
       "date": "2026-09-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.902.0",
+      "released_at": "2026-09-15T16:51:28Z"
     },
     {
       "id": "skeleton2-prismarine-barrelshigh-weight",
@@ -16992,9 +16992,9 @@
         "Tall barrel stacks are picked more often among the vase rooms"
       ],
       "date": "2026-09-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.902.0",
+      "released_at": "2026-09-15T16:51:28Z"
     }
   ]
 }
