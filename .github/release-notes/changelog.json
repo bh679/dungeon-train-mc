@@ -16994,6 +16994,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "skeleton2-prismarine-barrelshigh-weight",
+      "version": "0.901.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Sea-stone corners in a skeleton room, and more tall barrel stacks",
+      "summary": "One of the skeleton rooms can now dress its corner pillars in prismarine, giving it a damp, sunken look some of the time. Among the vase-style rooms, the tall barrel stacks now turn up a little more often.",
+      "highlights": [
+        "A skeleton room gains prismarine corner-pillar variants",
+        "Tall barrel stacks are picked more often among the vase rooms"
+      ],
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
