@@ -44,6 +44,8 @@
       "gui.dungeontrain.builder.open.empty",
       "gui.dungeontrain.editor_screen.disabled.builtin",
       "gui.dungeontrain.options.catch_up_burst.tip",
+      "advancements.dungeontrain.disqualified_this_life",
+      "advancements.dungeontrain.track.click",
       "advancements.dungeontrain.dungeon_train.chests_100_unique.description",
       "advancements.dungeontrain.dungeon_train.taking_notes.description",
       "advancements.dungeontrain.dungeon_train.burned_unread.description",

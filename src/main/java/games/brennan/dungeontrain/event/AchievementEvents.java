@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.LeatherOverDiamondAdvancement;
+import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -195,7 +196,11 @@ public final class AchievementEvents {
         // which EnderChestBlock does not match.
         if (block instanceof EnderChestBlock) {
             if (player.isShiftKeyDown() && event.getItemStack().getItem() instanceof BlockItem) return;
+            boolean firstOpenThisLife = !player.getData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get());
             player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.TRUE);
+            if (firstOpenThisLife) {
+                LifeDisqualification.notify(player, List.of(LifeDisqualification.CONTAINED_LOOP));
+            }
             return;
         }
         if (!isLootContainer(block)) return;
@@ -221,8 +226,7 @@ public final class AchievementEvents {
         // Break the "no chest or barrel" streak: the next milestone is measured
         // from this carriage reading onward. Decorated pots never reach here —
         // vases are allowed (their breaks feed containersOpened from RunStatsEvents).
-        player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(),
-            effectiveTravelled(run));
+        resetContainerStreak(player, run);
         boolean added = run.addChestPos(pos);
         if (!added) {
             // Streak broken — duplicate open. Reset and start fresh from this chest.
@@ -230,6 +234,7 @@ public final class AchievementEvents {
             run.addChestPos(pos);
             LOGGER.debug("[DungeonTrain] Chest streak reset by duplicate open at {} (player {})",
                 pos, player.getName().getString());
+            LifeDisqualification.notifyStreakReset(player, LifeDisqualification.CHEST_STREAK);
         }
         ModAdvancementTriggers.UNIQUE_CHESTS_OPENED.get().trigger(player, run.chestStreak());
     }
@@ -260,14 +265,35 @@ public final class AchievementEvents {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getPlayer() instanceof ServerPlayer player)) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        player.setData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get(), effectiveTravelled(run));
+        // A streak worth telling a tracking player about is one that had actually got somewhere —
+        // breaking a second block in the same carriage resets nothing they hadn't already lost.
+        int travelled = effectiveTravelled(run);
+        boolean hadBreakStreak = travelled > player.getData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get());
+        player.setData(ModDataAttachments.CARTS_AT_LAST_BLOCK_BREAK.get(), travelled);
+        if (hadBreakStreak) {
+            LifeDisqualification.notifyStreakReset(player, LifeDisqualification.BREAK_STREAK);
+        }
 
         // Broke a chest or barrel — that is an open. Ends the chest-free streak (advancement AND
         // leaderboard) and feeds the containers-opened tally. The unique-chest streak stays
         // right-click-only: smashing a chest is not "opening a distinct chest".
         if (!isLootContainer(event.getState().getBlock())) return;
         run.openedLootContainer();
-        player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), effectiveTravelled(run));
+        resetContainerStreak(player, run);
+    }
+
+    /**
+     * Restart the chest-free streak at the current carriage reading, telling a tracking player
+     * about it only when there was a streak to lose (the first open in a carriage after any
+     * travel — not the second chest in the same carriage).
+     */
+    private static void resetContainerStreak(ServerPlayer player, PlayerRunState run) {
+        int travelled = effectiveTravelled(run);
+        boolean hadStreak = travelled > player.getData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get());
+        player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), travelled);
+        if (hadStreak) {
+            LifeDisqualification.notifyStreakReset(player, LifeDisqualification.CONTAINER_STREAK);
+        }
     }
 
     // ---------------- Carriages-in-run ----------------
@@ -884,6 +910,9 @@ public final class AchievementEvents {
         // defensive reason PlayerRunState is.
         player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), 0);
         player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.FALSE);
+        player.setData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get(), Boolean.FALSE);
+        // A fresh life rules nothing out yet — clear the client's greyed-out mirror.
+        LifeDisqualification.sync(player);
         // Per-life travelled-carriage-index is now 0; push the HUD packet
         // immediately so the overlay reflects the reset without waiting for
         // the next 10-tick BoardingProgressEvents scan.
@@ -972,6 +1001,9 @@ public final class AchievementEvents {
         if (StartAgainAdvancement.holdsBankedCapstone(player)) {
             StartAgainAdvancement.refreshCommandTree(player);
         }
+        // After the replay above so an advancement restored from the sidecar is not reported as
+        // disqualified — re-derived from persisted per-life state, so a mid-life relog agrees.
+        LifeDisqualification.sync(player);
     }
 
     /**

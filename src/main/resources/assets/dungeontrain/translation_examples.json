@@ -5272,5 +5272,15 @@
         "@brennanhatton"
       ]
     }
+  },
+  "chat.dungeontrain.track.summary": {
+    "1": {
+      "label": "the tracked advancements' titles, comma-separated",
+      "examples": [
+        "Pacifist",
+        "Pacifist, The Far Start",
+        "Not My Chest, Look, Don't Touch, Contained Loop"
+      ]
+    }
   }
 }

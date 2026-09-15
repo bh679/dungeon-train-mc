@@ -200,6 +200,22 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-life flag: has this player's starting book burned during the current life? Once it has,
+     * {@code the_far_start} ("The Far Start" — carry the book past the threshold unread) is out of
+     * reach until the next life hands out a fresh book, so
+     * {@link games.brennan.dungeontrain.advancement.LifeDisqualification} greys it out.
+     *
+     * <p>Serialized so a mid-life logout can't launder the flag away, and <b>no</b> {@code copyOnDeath}
+     * so every new life starts clean — the same shape as {@link #OPENED_ENDER_CHEST_THIS_LIFE}.</p>
+     */
+    public static final Supplier<AttachmentType<Boolean>> STARTING_BOOK_BURNED_THIS_LIFE =
+        TYPES.register("starting_book_burned_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
      * Travelled-carriage reading (the same {@code effectiveTravelled} value the carts tiers use) at
      * the moment this player last broke a block this life. The "no block broken" streak is
      * {@code effectiveTravelled - this}, driving the {@code no_break_100} / {@code no_break_1000}

@@ -16868,6 +16868,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "life-disqualified-advancements",
+      "version": "0.895.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "See when this life has ruled an advancement out \u2014 and track the ones you care about",
+      "summary": "Some advancements can only be earned within a single life, and one wrong move ends the attempt. The advancements screen now shows it: a tile this life has ruled out fades and its hint gains a red \"Lost for this life.\" line, clearing again when your next life begins. Click a single-life advancement to track it \u2014 it gets a yellow halo, and the moment this life rules it out a red-bordered pop-up tells you. Streak-style advancements can be tracked too; those pop up an amber \"Streak reset\" instead, since their count simply starts over.",
+      "highlights": [
+        "Advancements ruled out for the current life fade in the tree and say \"Lost for this life.\" on hover",
+        "Click a single-life advancement to track it; a red pop-up warns you the moment it's lost, an amber one when a streak resets",
+        "Works on both the vanilla advancements screen and Better Advancements"
+      ],
+      "pr": 1429,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

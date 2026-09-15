@@ -1,10 +1,15 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import games.brennan.dungeontrain.client.HoveredAdvancement;
 import games.brennan.dungeontrain.compat.AdvancementHintText;
+import games.brennan.dungeontrain.compat.AdvancementTileDecor;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.advancements.AdvancementWidget;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -14,6 +19,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
@@ -54,6 +61,85 @@ public abstract class AdvancementWidgetHideDescMixin {
      */
     @Unique
     private List<FormattedCharSequence> dungeontrain$hiddenDesc;
+
+    /** {@link AdvancementHintText#maskedDescriptionRevision()} the cache was split under. */
+    @Unique
+    private int dungeontrain$hiddenDescRevision;
+
+    @Shadow private int x;
+
+    @Shadow private int y;
+
+    /**
+     * Draw the tracked halo behind the tile, then fade a tile this life has ruled out. The frame
+     * blit and icon render both go through the current shader colour, so a half-alpha colour set
+     * here dims both — see {@link AdvancementTileDecor} for why it is restored right after the icon
+     * and not at RETURN.
+     */
+    @Inject(method = "draw", at = @At("HEAD"))
+    private void dungeontrain$decorateStart(GuiGraphics guiGraphics, int originX, int originY, CallbackInfo ci) {
+        if (advancementNode == null) return;
+        AdvancementTileDecor.beforeTile(guiGraphics, advancementNode, progress, originX, originY, x, y);
+    }
+
+    /** Restore the shader colour once the icon is down. */
+    @Inject(method = "draw",
+            at = @At(value = "INVOKE",
+                     target = "Lnet/minecraft/client/gui/GuiGraphics;renderFakeItem(Lnet/minecraft/world/item/ItemStack;II)V",
+                     shift = At.Shift.AFTER))
+    private void dungeontrain$decorateAfterIcon(GuiGraphics guiGraphics, int originX, int originY, CallbackInfo ci) {
+        if (advancementNode == null) return;
+        AdvancementTileDecor.afterIcon(guiGraphics, advancementNode.holder().id(), progress);
+    }
+
+    @Inject(method = "draw", at = @At("RETURN"))
+    private void dungeontrain$decorateEnd(GuiGraphics guiGraphics, int originX, int originY, CallbackInfo ci) {
+        if (advancementNode == null) return;
+        AdvancementTileDecor.afterDraw(guiGraphics, advancementNode.holder().id(), progress);
+    }
+
+    /** The hover tooltip redraws the tile's frame — put the tracked halo behind it again (unfaded). */
+    @WrapOperation(method = "drawHover",
+                   at = @At(value = "INVOKE",
+                            target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lnet/minecraft/resources/ResourceLocation;IIII)V"))
+    private void dungeontrain$hoverFrame(GuiGraphics guiGraphics, ResourceLocation sprite, int x, int y, int w, int h,
+                                         Operation<Void> original) {
+        AdvancementTileDecor.wrapHoverFrame(guiGraphics, sprite, x, y, advancementNode, progress,
+            () -> original.call(guiGraphics, sprite, x, y, w, h));
+    }
+
+    /** Whether {@code drawConnectivity} pushed a scissor for this tile's incoming connector. */
+    @Unique
+    private boolean dungeontrain$connectorClipped;
+
+    /** Stop the connector at a faded tile's frame — see {@link AdvancementTileDecor#beginConnectorClip}. */
+    @Inject(method = "drawConnectivity", at = @At("HEAD"))
+    private void dungeontrain$clipConnectorStart(GuiGraphics guiGraphics, int originX, int originY, boolean dropShadow, CallbackInfo ci) {
+        dungeontrain$connectorClipped = AdvancementTileDecor.beginConnectorClip(guiGraphics, advancementNode, progress, originX, x);
+    }
+
+    /**
+     * Pop the clip before the first recursion into a child's {@code drawConnectivity} (the
+     * children's own lines must not be clipped), and at RETURN as the fallback for a widget with
+     * no children. The flag makes the pop happen exactly once.
+     */
+    @Inject(method = "drawConnectivity",
+            at = {@At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/advancements/AdvancementWidget;drawConnectivity(Lnet/minecraft/client/gui/GuiGraphics;IIZ)V"), @At("RETURN")})
+    private void dungeontrain$clipConnectorEnd(GuiGraphics guiGraphics, int originX, int originY, boolean dropShadow, CallbackInfo ci) {
+        if (dungeontrain$connectorClipped) {
+            dungeontrain$connectorClipped = false;
+            AdvancementTileDecor.endConnectorClip(guiGraphics);
+        }
+    }
+
+    /** Remember which tile is under the mouse so a click on the screen can toggle tracking on it. */
+    @Inject(method = "drawHover", at = @At("HEAD"))
+    private void dungeontrain$recordHover(CallbackInfo ci) {
+        if (advancementNode != null) {
+            HoveredAdvancement.record(advancementNode.holder().id(), progress);
+        }
+    }
+
 
     @ModifyExpressionValue(
         method = "drawHover",
@@ -97,20 +183,22 @@ public abstract class AdvancementWidgetHideDescMixin {
 
     @Unique
     private List<FormattedCharSequence> dungeontrain$getHiddenDesc() {
-        if (dungeontrain$hiddenDesc == null) {
-            dungeontrain$hiddenDesc = minecraft.font.split(dungeontrain$hintOrPlaceholder(), width);
+        int revision = AdvancementHintText.maskedDescriptionRevision();
+        if (dungeontrain$hiddenDesc == null || dungeontrain$hiddenDescRevision != revision) {
+            dungeontrain$hiddenDesc = minecraft.font.split(dungeontrain$maskedDescription(), width);
+            dungeontrain$hiddenDescRevision = revision;
         }
         return dungeontrain$hiddenDesc;
     }
 
     /**
-     * The hint shown in place of the hidden description — see
-     * {@link AdvancementHintText#hintOrPlaceholder(ResourceLocation)}. Callers only reach this once
-     * {@link #dungeontrain$shouldHideDescription()} has confirmed a non-null node, so
-     * {@code advancementNode} is safe to dereference.
+     * The text shown in place of the hidden description — the hint plus any "not this life" and
+     * tracking lines; see {@link AdvancementHintText#maskedDescription(ResourceLocation)}. Callers
+     * only reach this once {@link #dungeontrain$shouldHideDescription()} has confirmed a non-null
+     * node, so {@code advancementNode} is safe to dereference.
      */
     @Unique
-    private Component dungeontrain$hintOrPlaceholder() {
-        return AdvancementHintText.hintOrPlaceholder(advancementNode.holder().id());
+    private Component dungeontrain$maskedDescription() {
+        return AdvancementHintText.maskedDescription(advancementNode.holder().id());
     }
 }

@@ -5,6 +5,7 @@ import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -599,7 +600,13 @@ public final class RunStatsEvents {
             hurt.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDamageTaken(amount);
         }
         if (event.getSource().getEntity() instanceof ServerPlayer dealer && dealer != victim) {
-            dealer.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDamageDealt(amount);
+            PlayerRunState dealerRun = dealer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+            boolean firstDamageThisLife = dealerRun.damageDealt() == 0.0;
+            dealerRun.addDamageDealt(amount);
+            // The first point of damage this life closes every pacifist tier until the next one.
+            if (firstDamageThisLife) {
+                LifeDisqualification.notify(dealer, LifeDisqualification.pacifistTiers());
+            }
         }
     }
 
