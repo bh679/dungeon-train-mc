@@ -92,8 +92,7 @@
       "dependency_type": "required",
       "version": "0.2.0",
       "gradle_property": "dungeonbackup_min_version",
-      "modrinth_project": "dungeon-train-backup",
-      "modrinth_pending_url": "https://github.com/bh679/dungeonbackup-mc/releases/download/v0.2.0/dungeonbackup-neoforge-0.2.0.jar"
+      "curseforge_only": true
     },
     {
       "name": "Sable Fence & Trapdoor Fix",
@@ -104,8 +103,7 @@
       "dependency_type": "required",
       "version": "0.1.2",
       "gradle_property": "sablefencetrapdoorfix_min_version",
-      "modrinth_project": "sable-fence-trapdoor-fix",
-      "modrinth_pending_url": "https://github.com/bh679/sable-fence-trapdoor-fix-mc/releases/download/v0.1.2/sable_fence_trapdoor_fix-0.1.2.jar"
+      "curseforge_only": true
     },
     {
       "name": "AppleSkin",

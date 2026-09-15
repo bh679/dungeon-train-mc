@@ -438,19 +438,25 @@ dependencies {
     // Dungeon Backup — sibling mod: the player-data protection system (migration out of
     // config/, rolling zip restore points inside + outside the instance, title-screen recovery)
     // extracted from DT in v0.862.0. DT registers its data root once in
-    // data.DungeonTrainBackup and compiles against its `api.Located`. Same external-required-dep
-    // contract as AIN/AIS/PMOB/ECP/TE/KT — un-bundled from jarJar once the CurseForge listing
-    // was approved (2026-09-15); see gradle.properties for the Modrinth-pending wiring.
+    // data.DungeonTrainBackup and compiles against its `api.Located`.
+    // HYBRID contract (with Sable Fence & Trapdoor Fix below): jarJar'd so Modrinth users (mod
+    // page + modpack) get it built in, AND declared `<slug>(required)` on CurseForge + shipped as
+    // a CurseForge modpack Include so the CF app installs it as its own jar and the CF page gets
+    // the credit. When both copies are present NeoForge's JarSelector drops the nested one in
+    // favour of the top-level mods/ file (logs "passed in as source"), so the two paths coexist.
     // Fetched for compile from https://github.com/bh679/dungeonbackup-mc/releases via the
     // shared Ivy `bh679` repo (asset dungeonbackup-neoforge-<v>.jar — flat, no +mc suffix).
     implementation "bh679:dungeonbackup:${dungeonbackup_version}"
+    jarJar(group: 'bh679', name: 'dungeonbackup', version: dungeonbackup_version)
 
     // Sable Fence & Trapdoor Fix — sibling mod: the ProtrudingShapeClip Sable mixin DT used to
     // ship itself, extracted to bh679/sable-fence-trapdoor-fix-mc. DT does not compile against
-    // it (one Sable mixin, no API); it is on the dev runtime classpath only so
-    // runClient/runServer satisfy mods.toml. Fetched via its own Ivy repo (asset name is
+    // it (one Sable mixin, no API). Same hybrid contract as Dungeon Backup: jarJar'd for Modrinth,
+    // required external download on CurseForge. Our own mod, so bundling is licence-clean (it
+    // declares its own Sable floor). Fetched via its own Ivy repo (asset name is
     // sable_fence_trapdoor_fix-<v>.jar, not the flat <module>-neoforge-<v>.jar pattern).
     implementation "bh679:sable_fence_trapdoor_fix:${sablefencetrapdoorfix_version}"
+    jarJar(group: 'bh679', name: 'sable_fence_trapdoor_fix', version: sablefencetrapdoorfix_version)
 
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is

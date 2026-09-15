@@ -16726,19 +16726,19 @@
       "released_at": null
     },
     {
-      "id": "dungeon-backup-fence-fix-unbundled",
+      "id": "dungeon-backup-fence-fix-curseforge-mods",
       "version": "0.889.0",
       "type": "feat",
       "tags": [
         "feature",
         "compatibility"
       ],
-      "title": "Dungeon Backup and the Sable fence & trapdoor fix are now their own downloads",
-      "summary": "Two pieces that used to ship inside Dungeon Train's jar now install as separate required mods, the same way Adventure Item Names and the other companion mods do: Dungeon Backup (the system that keeps rolling restore points of your Dungeon Train data and offers to recover it if it goes missing) and Sable Fence & Trapdoor Fix (the tweak that stops you jittering when standing on a fence post tucked under a trapdoor or carpet on a moving carriage). Your launcher fetches and updates each on its own and their pages get the credit. Nothing changes in play \u2014 backups, /dtbackup and /dtrestore, and the fence fix all keep working exactly as before. If you install Dungeon Train by hand rather than through the CurseForge app or a modpack, add Dungeon Backup 0.2.0+ and Sable Fence & Trapdoor Fix 0.1.2+ to your mods folder.",
+      "title": "On CurseForge, Dungeon Backup and the Sable fence & trapdoor fix are now their own mods",
+      "summary": "If you play through the CurseForge app or the CurseForge modpack, two pieces that were built into Dungeon Train now arrive as separate required mods that the app installs and updates for you: Dungeon Backup (rolling restore points of your Dungeon Train data, with a recovery prompt if it ever goes missing) and Sable Fence & Trapdoor Fix (no more jittering when you stand on a fence post tucked under a trapdoor or carpet on a moving carriage). Their own CurseForge pages now get the credit. On Modrinth, and for anyone who installs the jar by hand, nothing changes \u2014 both are still built into Dungeon Train. Nothing changes in play either way.",
       "highlights": [
-        "Dungeon Backup moves from inside the Dungeon Train jar to a separate required mod",
-        "Sable Fence & Trapdoor Fix is now a separate required mod instead of code inside Dungeon Train",
-        "CurseForge app and both modpacks install both for you; manual installs need Dungeon Backup 0.2.0+ and Sable Fence & Trapdoor Fix 0.1.2+"
+        "CurseForge app and CurseForge modpack install Dungeon Backup and Sable Fence & Trapdoor Fix as separate mods",
+        "Modrinth and manual installs keep them built in \u2014 no extra downloads",
+        "No change to backups, /dtbackup, /dtrestore or the fence fix in play"
       ],
       "pr": 1421,
       "date": "2026-09-15",

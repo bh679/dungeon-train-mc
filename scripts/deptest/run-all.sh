@@ -12,7 +12,11 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 # Positive control first: if A fails, every later "failed" result is meaningless.
 "$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt db sff
 "$HERE/run-case.sh" "B - missing AIN only"                             dt sable ais pmob ecp te kt db sff
-"$HERE/run-case.sh" "C - missing all eight siblings (upgrade path)"    dt sable
+"$HERE/run-case.sh" "C - missing all six siblings (upgrade path)"      dt sable
 "$HERE/run-case.sh" "D - PlayerMob above floor (cascade tolerance)"    dt sable ain ais pmob-new ecp te kt db sff
 "$HERE/run-case.sh" "E - PlayerMob below floor"                        dt sable ain ais pmob-old ecp te kt db sff
 "$HERE/run-case.sh" "F - missing Sable (exact-pin control)"            dt ain ais pmob ecp te kt db sff
+# Hybrid siblings (Dungeon Backup, Sable Fence & Trapdoor Fix) are jarJar'd AND CurseForge
+# Includes. A above = CurseForge-app layout (top-level copies present, nested ones skipped);
+# G = Modrinth / manual layout (nested copies only).
+"$HERE/run-case.sh" "G - hybrid siblings nested only (Modrinth path)"  dt sable ain ais pmob ecp te kt
