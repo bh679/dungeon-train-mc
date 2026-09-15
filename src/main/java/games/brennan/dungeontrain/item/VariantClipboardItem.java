@@ -67,7 +67,9 @@ import java.util.List;
  *       lock group — the only way for two cells to end up with the same
  *       lock-id.</li>
  *   <li>Consumes one item.</li>
- * </ol></p>
+ * </ol>
+ * Steps 2–4 are {@link #pasteAt}, which is also what Effortless Building's shape modes call once
+ * per cell ({@code compat.EffortlessBuildingVariants}) to paste a whole floor / wall / box.</p>
  */
 public final class VariantClipboardItem extends Item {
 
@@ -168,12 +170,58 @@ public final class VariantClipboardItem extends Item {
             return InteractionResult.FAIL;
         }
         BlockPos localPos = placePos.subtract(plot.origin());
-        if (!plot.inBounds(localPos)) {
-            sendActionBar(player, "Target is outside the plot's footprint", ChatFormatting.YELLOW);
-            return InteractionResult.FAIL;
-        }
 
         ItemStack stack = ctx.getItemInHand();
+        PasteOutcome outcome = pasteAt(serverLevel, player, plot, placePos, stack);
+        if (outcome.error() != null) {
+            sendActionBar(player, outcome.error(), outcome.errorColour());
+            return InteractionResult.FAIL;
+        }
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] VariantClipboard save failed for {}: {}", plot.key(), e.toString());
+            sendActionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            return InteractionResult.FAIL;
+        }
+        boolean poolPasted = savePool(player, plot, outcome);
+
+        String lockSuffix = outcome.lockId() > 0 ? " (lock-id " + outcome.lockId() + ")" : "";
+        String poolSuffix = poolPasted ? " +pool(" + outcome.pool().size() + ")" : "";
+        sendActionBar(player, "Pasted " + outcome.stateCount() + " variants at " + localPos.getX()
+            + "," + localPos.getY() + "," + localPos.getZ() + lockSuffix + poolSuffix,
+            ChatFormatting.GREEN);
+        if (!player.getAbilities().instabuild) {
+            stack.shrink(1);
+        }
+        return InteractionResult.CONSUME;
+    }
+
+    /**
+     * What one {@link #pasteAt} did — or, when {@code error} is set, why it did nothing. The pool
+     * is handed back rather than written because its store is saved separately from the plot
+     * ({@link #savePool}): a bulk paste writes many cells and saves each store once.
+     */
+    public record PasteOutcome(int stateCount, int lockId, @Nullable ContainerContentsPool pool,
+                               @Nullable String error, @Nullable ChatFormatting errorColour) {
+        static PasteOutcome fail(String error, ChatFormatting colour) {
+            return new PasteOutcome(0, 0, null, error, colour);
+        }
+    }
+
+    /**
+     * Paste this clipboard's cell onto {@code placePos} of {@code plot} — the placeholder block
+     * (plus block-entity NBT), the variant pool, the two repeating-room settings, the lock-id
+     * (and its group's roll), the live mirror, and the pool write into the plot's contents store.
+     * Does <b>not</b> save the plot or the contents store, so a caller pasting many cells
+     * ({@link games.brennan.dungeontrain.compat.EffortlessBuildingVariants}) can save once.
+     */
+    public static PasteOutcome pasteAt(ServerLevel serverLevel, ServerPlayer player, BlockVariantPlot plot,
+                                       BlockPos placePos, ItemStack stack) {
+        BlockPos localPos = placePos.subtract(plot.origin());
+        if (!plot.inBounds(localPos)) {
+            return PasteOutcome.fail("Target is outside the plot's footprint", ChatFormatting.YELLOW);
+        }
         CompoundTag tag = readClipboardTag(stack);
         List<VariantState> states = decodeStates(tag);
         int lockId = decodeLockId(tag);
@@ -181,9 +229,8 @@ public final class VariantClipboardItem extends Item {
         VariantCopyRoll copyRoll = decodeCopyRoll(tag);
         VariantCopyScope copyScope = decodeCopyScope(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
-            sendActionBar(player, "Clipboard needs at least "
+            return PasteOutcome.fail("Clipboard needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants", ChatFormatting.YELLOW);
-            return InteractionResult.FAIL;
         }
 
         // Match the source cell's appearance: place the first variant's
@@ -229,13 +276,6 @@ public final class VariantClipboardItem extends Item {
                 if (!sibling.equals(localPos)) plot.setCopyRoll(sibling, copyRoll);
             }
         }
-        try {
-            plot.save();
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] VariantClipboard save failed for {}: {}", plot.key(), e.toString());
-            sendActionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
-            return InteractionResult.FAIL;
-        }
 
         // Mirror the pasted variant pool (+ reflected base block) to the
         // symmetric cells when the plot's "V" toggle is on — parity with the
@@ -249,34 +289,29 @@ public final class VariantClipboardItem extends Item {
             VariantOverlayRenderer.pushLockIdSnapshot(player);
         }
 
-        // Pool write happens after variants so a pool-save IOException doesn't
-        // roll back the (already-persisted) variant write. Failure is degraded
-        // — variants pasted, pool didn't.
-        boolean poolPasted = false;
         if (pool != null) {
-            ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
-            store.putPool(localPos, pool);
-            try {
-                store.save();
-                poolPasted = true;
-            } catch (IOException e) {
-                LOGGER.error("[DungeonTrain] VariantClipboard pool save failed for {}: {}",
-                    plot.key(), e.toString());
-                sendActionBar(player, "Pasted variants but pool save failed: "
-                    + e.getClass().getSimpleName(), ChatFormatting.YELLOW);
-            }
+            ContainerContentsStore.loadFor(plot.key()).putPool(localPos, pool);
         }
+        return new PasteOutcome(states.size(), lockId, pool, null, null);
+    }
 
-        String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
-        String poolSuffix = poolPasted ? " +pool(" + pool.size() + ")" : "";
-        sendActionBar(player, "Pasted " + states.size() + " variants at " + localPos.getX()
-            + "," + localPos.getY() + "," + localPos.getZ() + lockSuffix + poolSuffix,
-            ChatFormatting.GREEN);
-
-        if (!player.getAbilities().instabuild) {
-            stack.shrink(1);
+    /**
+     * Save the plot's contents store after a paste that carried a pool. Runs after the plot save
+     * so a pool-save IOException doesn't roll back the (already-persisted) variant write — failure
+     * is degraded: variants pasted, pool didn't. Returns whether a pool was persisted.
+     */
+    public static boolean savePool(ServerPlayer player, BlockVariantPlot plot, PasteOutcome outcome) {
+        if (outcome.pool() == null) return false;
+        try {
+            ContainerContentsStore.loadFor(plot.key()).save();
+            return true;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] VariantClipboard pool save failed for {}: {}",
+                plot.key(), e.toString());
+            sendActionBar(player, "Pasted variants but pool save failed: "
+                + e.getClass().getSimpleName(), ChatFormatting.YELLOW);
+            return false;
         }
-        return InteractionResult.CONSUME;
     }
 
     /**

@@ -16764,6 +16764,110 @@
       "released": true,
       "released_in": "v0.890.0",
       "released_at": "2026-09-15T09:29:07Z"
+    },
+    {
+      "id": "dungeon-backup-fence-fix-curseforge-mods",
+      "version": "0.891.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "On CurseForge, Dungeon Backup and the Sable fence & trapdoor fix are now their own mods",
+      "summary": "If you play through the CurseForge app or the CurseForge modpack, two pieces that were built into Dungeon Train now arrive as separate required mods that the app installs and updates for you: Dungeon Backup (rolling restore points of your Dungeon Train data, with a recovery prompt if it ever goes missing) and Sable Fence & Trapdoor Fix (no more jittering when you stand on a fence post tucked under a trapdoor or carpet on a moving carriage). Their own CurseForge pages now get the credit. On Modrinth, and for anyone who installs the jar by hand, nothing changes \u2014 both are still built into Dungeon Train. Nothing changes in play either way.",
+      "highlights": [
+        "CurseForge app and CurseForge modpack install Dungeon Backup and Sable Fence & Trapdoor Fix as separate mods",
+        "Modrinth and manual installs keep them built in \u2014 no extra downloads",
+        "No change to backups, /dtbackup, /dtrestore or the fence fix in play"
+      ],
+      "pr": 1421,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fast-paintings-required",
+      "version": "0.892.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "compatibility",
+        "train"
+      ],
+      "title": "Paintings now hang properly on the train and in your builds",
+      "summary": "Paintings used to be the one decoration you could not trust on a moving carriage or in a saved build \u2014 they would drift, vanish, or fall off when a carriage was flipped. Dungeon Train now requires Fast Paintings (and its Moonlight library), which turns paintings into solid blocks: they ride the train like any other block, save into templates and shared carriages exactly as you hung them, and when a carriage interior comes out mirrored the painting simply re-hangs on the wall it now stands beside. The CurseForge and Modrinth apps install both mods for you; if you install by hand, grab Fast Paintings and Moonlight for NeoForge 1.21.1.",
+      "highlights": [
+        "Paintings hang solidly on moving carriages and in the builder \u2014 no more drifting or falling off",
+        "Saved builds and shared carriages keep every painting, size and picture included",
+        "Mirrored carriage interiors keep their paintings; they re-hang on the opposite wall instead of dropping",
+        "Two new required mods, Fast Paintings and Moonlight \u2014 auto-installed by the CurseForge and Modrinth apps"
+      ],
+      "pr": 1425,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ecp-crash-checkpoint-pin",
+      "version": "0.893.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Your Ender Chest survives a crash",
+      "summary": "If the game crashed, your Ender Chest used to come back as it was at the end of the previous session \u2014 everything you had put in during the crashed one was gone. It now keeps whatever was in it at the last autosave, so a crash costs you at most a few minutes, the same as the rest of your inventory. Ender Chest Persistence 0.5.0 is now required; the CurseForge and Modrinth apps update it for you.",
+      "highlights": [
+        "Ender Chest contents are saved every autosave and whenever you switch game mode, not only when you leave the world",
+        "Requires Ender Chest Persistence 0.5.0 (auto-installed by the CurseForge / Modrinth apps)"
+      ],
+      "pr": 1424,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "eb-clipboard-bulk-paste",
+      "version": "0.893.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Paste variant clipboards across a whole floor, wall or box with Effortless Building",
+      "summary": "In the editor, a variant clipboard now works with Effortless Building's shape modes. Pick Floor, Wall or Cube with the clipboard in hand and every cell of the shape gets the copied variant pool in one go \u2014 lock group, copy settings and any container loot included \u2014 instead of one cell per click. One Ctrl+Z undoes the whole paste.",
+      "highlights": [
+        "Floor / Wall / Cube (and the mirror, array and radial modifiers) all work with a variant clipboard",
+        "A plain right-click still pastes a single cell"
+      ],
+      "pr": 1426,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "welcome-back-drop-joined-world",
+      "version": "0.894.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "A secret goal no longer needs company",
+      "summary": "One of the train's hidden goals quietly asked for something only another player's arrival could hand you \u2014 so playing alone, it could never be finished. It can now.",
+      "highlights": [
+        "Everything it asks for can be found on your own."
+      ],
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -44,9 +44,7 @@ import java.util.List;
  * <ul>
  *   <li>Player is holding the variant-place key and inside an editor plot.</li>
  *   <li>They look at a block inside the plot footprint.</li>
- *   <li>They right-click it with a placeable block, a spawn egg, or a filled
- *       bucket in main hand. A bucket contributes the fluid's <b>source</b>
- *       state — see {@link VariantLiquids}.</li>
+ *   <li>They right-click it with a placeable block in main hand.</li>
  * </ul>
  *
  * <p>Instead of the vanilla "place the held block on the neighbouring face"
@@ -98,38 +96,14 @@ public final class VariantBlockInteractions {
         if (held.isEmpty()) return;
 
         VariantState newVariant;
-        BlockState bucketSource = VariantLiquids.sourceStateFrom(held);
         if (held.getItem() instanceof BlockItem blockItem) {
             newVariant = captureVariant(event, level, player, blockItem, held, clicked);
         } else if (held.getItem() instanceof SpawnEggItem egg) {
             newVariant = captureMobVariant(egg, held, player);
-        } else if (bucketSource != null) {
-            // Filled bucket → the fluid's SOURCE state. Liquids have no
-            // directional properties and no block entity, so there is nothing
-            // to orient or carry: NONE rotation, null NBT.
-            newVariant = new VariantState(bucketSource, null, 1, VariantRotation.NONE);
         } else {
-            // Empty / milk bucket and every other non-block item: fall through
-            // to vanilla use rather than swallowing the interaction.
             return;
         }
         if (newVariant == null) return;
-
-        // Snapshot the sidecar before any of the four per-kind branches touches
-        // it, so this add joins the tick's undo step. One call covers all four:
-        // they differ in which sidecar they write, not in whether they write.
-        EditorEditRecorder.notePendingSidecar(player, "Variant add");
-
-        // A Train Builder world has no plot grid, so not one of the four editor branches below can
-        // resolve anything in it — the gesture would arm and then quietly place the block. Its plot
-        // answers from world data instead, which is why it is asked first and by level rather than
-        // by where the player is standing.
-        BlockVariantPlot builderPlot = games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(
-            level, player.blockPosition(), dims);
-        if (builderPlot != null) {
-            handleBuilderShiftClick(event, player, level, clicked, newVariant, builderPlot);
-            return;
-        }
 
         // Part plot takes priority: if the clicked position falls inside a
         // part plot, route the shift-click into the part's own variants
@@ -184,44 +158,6 @@ public final class VariantBlockInteractions {
         try {
             sidecar.put(local, updated);
         } catch (IllegalArgumentException e) {
-            player.displayClientMessage(
-                Component.literal("Variant add failed: " + e.getMessage())
-                    .withStyle(ChatFormatting.RED), true);
-            suppressVanillaPlace(event);
-            return;
-        }
-
-        mirrorVariantAdd(level, player, clicked, updated);
-        sendAddedFeedback(player, clicked, local, newVariant, updated);
-        VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
-        suppressVanillaPlace(event);
-    }
-
-    /**
-     * Train Builder branch: append the held block to the build's own working sidecar.
-     *
-     * <p>Written through immediately, unlike the carriage branch above, which leaves the sidecar
-     * dirty for {@code /dt editor save}. There is no such command down here — the builder's Save
-     * writes a <em>template</em>, and an author who flags a few blocks and then quits without ever
-     * naming the build should still find them there next time.</p>
-     */
-    private static void handleBuilderShiftClick(PlayerInteractEvent.RightClickBlock event,
-                                                ServerPlayer player, ServerLevel level,
-                                                BlockPos clicked, VariantState newVariant,
-                                                BlockVariantPlot plot) {
-        BlockPos local = clicked.subtract(plot.origin());
-        if (!plot.inBounds(local)) return;
-
-        BlockState baseState = level.getBlockState(clicked);
-        VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        List<VariantState> updated = buildUpdatedList(plot.statesAt(local), baseVariant, newVariant,
-            baseState, player, event);
-        if (updated == null) return;
-
-        try {
-            plot.put(local, updated);
-            plot.save();
-        } catch (IllegalArgumentException | IOException e) {
             player.displayClientMessage(
                 Component.literal("Variant add failed: " + e.getMessage())
                     .withStyle(ChatFormatting.RED), true);
@@ -481,13 +417,9 @@ public final class VariantBlockInteractions {
      * sign / banner round-trips into the variant list with its contents.
      * Returns {@code null} for air — the caller surfaces the "place a base
      * block first" toast separately.
-     *
-     * <p>A liquid base is normalised to its source state: a captured {@code level=3} flow has
-     * nothing feeding it once stamped into a carriage and would drain to air.</p>
      */
-    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState rawBaseState) {
-        if (rawBaseState.isAir()) return null;
-        BlockState baseState = VariantLiquids.toSource(rawBaseState);
+    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState baseState) {
+        if (baseState.isAir()) return null;
         CompoundTag beNbt = null;
         if (baseState.hasBlockEntity()) {
             BlockEntity be = level.getBlockEntity(clicked);

@@ -703,11 +703,14 @@ public final class AchievementEvents {
      * (Nether/End presets were dropped from the {@code #minecraft:normal}
      * world-preset tag; see PR #639), so their books can never be delivered
      * to a fresh player. Mirrors the same dimension-routed vs. lifecycle
-     * split {@link #allStartingBooksSeen} already applies.</p>
+     * split {@link #allStartingBooksSeen} already applies. JOINED_WORLD is
+     * excluded too — it only rolls at first login on a world someone else was
+     * already welcomed in, never on respawn, so a solo player can't collect it.
+     * The exact set lives in {@link StartingBookContext#countsTowardWelcomeBack()}.</p>
      */
     private static boolean allStartingBookTitlesSeen(games.brennan.dungeontrain.narrative.NarrativeProgressData data) {
         java.util.List<String> all = games.brennan.dungeontrain.narrative.StartingBookRegistry.basenames(
-            ctx -> ctx.achievementSetId().isEmpty());
+            StartingBookContext::countsTowardWelcomeBack);
         if (all.isEmpty()) return false;
         java.util.Map<String, games.brennan.dungeontrain.narrative.NarrativeProgress> snapshot =
             data.startingBookSeenSnapshot();
