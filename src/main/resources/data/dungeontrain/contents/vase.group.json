@@ -28,7 +28,7 @@
     },
     {
       "id": "vase_room",
-      "weight": 2
+      "weight": 1
     },
     {
       "id": "storage",
@@ -40,7 +40,7 @@
     },
     {
       "id": "barrelsroom",
-      "weight": 2
+      "weight": 1
     },
     {
       "id": "barrelsvert2",
@@ -52,7 +52,7 @@
     },
     {
       "id": "barrelshigh",
-      "weight": 3
+      "weight": 2
     }
   ]
 }
