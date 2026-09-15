@@ -47,11 +47,11 @@ public final class CarriageContentsEditor {
     private static final int PLOT_Y = EditorLayout.PLOT_Y;
     /**
      * Contents row Z-origin — sourced from {@link
-     * EditorLayout#CONTENTS_FIRST_Z}. Sits in its own Z range past the
-     * CARRIAGES view (which extends through the parts grid), so the
-     * contents row never overlaps a parts plot in plan view and the FLOOR
-     * parts editor's air column can't pick up stale contents-interior
-     * blocks from a prior CONTENTS visit.
+     * EditorLayout#CONTENTS_FIRST_Z}: the origin every category shares.
+     * The row overlaps the carriage row and the parts grid in plan view;
+     * that is fine because a category switch erases the previous
+     * category's plots before this one is stamped, and
+     * {@link #plotContaining} answers only while CONTENTS is resident.
      */
     private static final int PLOT_Z = EditorLayout.CONTENTS_FIRST_Z;
     private static final int FIRST_PLOT_X = 0;
@@ -206,10 +206,9 @@ public final class CarriageContentsEditor {
      *       two rows down, etc.</li>
      * </ul>
      *
-     * <p>The CONTENTS view's reserved Z extent
-     * ({@link EditorLayout#CONTENTS_VIEW_MAX_Z}) bounds sub-variant columns
-     * so they don't overflow into the TRACKS view at typical group sizes —
-     * see {@link EditorLayout#MAX_SUB_VARIANTS_PER_PARENT}.</p>
+     * <p>A group's column runs as far along {@code +Z} as it has members —
+     * nothing else is laid out past it while CONTENTS is resident, so there
+     * is no cap to overflow.</p>
      */
     public static BlockPos plotOrigin(CarriageContents contents, CarriageDims dims) {
         String target = contents.id();
@@ -294,6 +293,8 @@ public final class CarriageContentsEditor {
      * {@code EditorCommand} can dispatch on the same {@link CarriageDims}.
      */
     public static CarriageContents plotContaining(BlockPos pos, CarriageDims dims) {
+        // Answers only while CONTENTS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.CONTENTS)) return null;
         for (CarriageContents contents : CarriageContentsRegistry.allContents()) {
             BlockPos o = plotOrigin(contents, dims);
             if (o == null) continue;

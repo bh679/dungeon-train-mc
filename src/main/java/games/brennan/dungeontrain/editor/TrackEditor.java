@@ -80,6 +80,8 @@ public final class TrackEditor {
      * margin used uniformly across the track-side grid.
      */
     public static String resolveName(BlockPos pos, CarriageDims dims) {
+        // Answers only while TRACKS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (String name : TrackVariantRegistry.namesFor(TrackKind.TILE)) {
             BlockPos o = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
             int w = dims.width();

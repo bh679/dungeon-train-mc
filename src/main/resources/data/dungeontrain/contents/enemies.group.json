@@ -176,6 +176,10 @@
       "id": "skeleton2",
       "weight": 3,
       "minLevel": 3
+    },
+    {
+      "id": "corner",
+      "weight": 1
     }
   ]
 }

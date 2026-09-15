@@ -68,6 +68,12 @@ public final class DebugCommand {
             // counts stage placeholder blocks that survived generation (expected: none) plus the
             // top real blocks, so a build's placeholders can be proven resolved without a client.
             .then(Commands.literal("stage-placeholders").executes(ctx -> runStagePlaceholderScan(ctx.getSource())))
+            // /dungeontrain debug editor-locate — the (category, model) the status HUD resolves for
+            // the running player, plus the resident category; editor-layer — blocks standing in the
+            // plot layer inside vs outside the resident category's plots (loaded chunks). Together
+            // they prove a category switch left nothing of the previous one, without a client HUD.
+            .then(Commands.literal("editor-locate").executes(ctx -> runEditorLocate(ctx.getSource())))
+            .then(Commands.literal("editor-layer").executes(ctx -> runEditorLayer(ctx.getSource())))
             // /dungeontrain debug physicsfreeze <on|off|status> — toggles the #646 physics-freeze
             // of untracked carriages. `off` restores every frozen body next tick. Drives the Gate 2
             // matched-toggle A/B (freeze off vs on, same seed/path — chunk-gen noise cancels).
@@ -286,6 +292,28 @@ public final class DebugCommand {
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Physics-freeze " + (on ? "ON" : "OFF — all bodies restored next tick")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int runEditorLocate(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("editor-locate needs a player (execute as <name> run …)."));
+            return 0;
+        }
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        String line = games.brennan.dungeontrain.editor.EditorLayerDebug.locateLine(player, dims);
+        LOGGER.info(line);
+        source.sendSuccess(() -> Component.literal(line), false);
+        return 1;
+    }
+
+    private static int runEditorLayer(CommandSourceStack source) {
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        String line = games.brennan.dungeontrain.editor.EditorLayerDebug.layerLine(overworld, dims);
+        LOGGER.info(line);
+        source.sendSuccess(() -> Component.literal(line), false);
         return 1;
     }
 

@@ -16700,6 +16700,30 @@
       "released": true,
       "released_in": "v0.887.0",
       "released_at": "2026-09-14T14:12:19Z"
+    },
+    {
+      "id": "editor-one-type-resident",
+      "version": "0.888.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "content",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor: only the type you're in is built",
+      "summary": "The Train Editor now builds only the type you have open \u2014 Carriages, Contents, Tracks or Dimensional Carriages \u2014 and lays every type out from the same corner of the sky. Switching type clears the previous one before the next is built, so a long contents group can run as far as it needs without running into another type's plots, and the status HUD never names a plot from a type you don't have open.",
+      "highlights": [
+        "Long contents groups (like enemies) no longer overlap the Dimensions plots, and the HUD reads the right name at their far end.",
+        "Entering one template of another type switches to that type first.",
+        "New corner enemies room; blackstone and diorite wall overrides on the quartz stages.",
+        "Dev checks: /dungeontrain debug editor-locate and editor-layer."
+      ],
+      "pr": 1420,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

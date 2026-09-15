@@ -3241,6 +3241,20 @@ public final class EditorCommand {
     }
 
     /**
+     * Make {@code category} the resident one before a single-model enter — every category lays out
+     * from the same origin, so entering one model of another category on top of the resident one
+     * would stamp it into somebody else's plot. A different resident (or none) means the full
+     * category entry runs first: landing plot now, the rest queued, the old category erased. The
+     * same category is a no-op.
+     *
+     * @return false when the category entry failed and the caller should stop
+     */
+    private static boolean ensureCategory(CommandSourceStack source, EditorCategory category) {
+        if (EditorStampedCategoryState.isActive(category)) return true;
+        return runEnterCategory(source, category) != 0;
+    }
+
+    /**
      * Category-level enter: stamp every plot in {@code category} so the player
      * can walk between all of them, then teleport them to the first model.
      * Architecture has no models yet and returns a "coming soon" message.
@@ -3268,7 +3282,7 @@ public final class EditorCommand {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         // Only the plot the player lands on is stamped here, on this tick. Everything else — the
-        // erase of every other category's plots and the stamp of every other plot in this one — is
+        // erase of the previous category's plots and the stamp of every other plot in this one — is
         // queued on EditorStampQueue and spread across the ticks that follow. Stamping it all inline
         // held the server thread for as long as the whole category took (nine minutes for Portals
         // on a slow laptop, in a player's log), with the client sat in an empty world and every
@@ -3277,11 +3291,29 @@ public final class EditorCommand {
         // The state half of the clear (labels, strays, undo history, the previous queue) happens
         // now; the entering category's own erases are left out because every stamp erases its own
         // footprint first.
-        List<EditorStampQueue.Job> queued = new ArrayList<>(
-            EditorCategory.clearAllPlotJobs(overworld, dims, category));
+        List<EditorStampQueue.Job> erases = EditorCategory.clearAllPlotJobs(overworld, dims, category);
 
         Template head = first.get();
+        // Remember which category is resident so VariantOverlayRenderer can keep the floating plot
+        // labels visible for as long as the structures themselves are present — not just while the
+        // player is standing inside a cage. Set before anything is stamped on purpose: every
+        // category lays out from the same origin, so no plot answers to a position until its
+        // category is the resident one, and the labels are registry-driven, so they appear over
+        // every plot at once and show the fill's progress.
+        EditorStampedCategoryState.set(overworld, category);
+
+        // Every category shares the origin, so the previous category's plot under the landing spot
+        // has to go before the landing plot is stamped — queued behind it, the erase would wipe the
+        // plot out from under the player. Those few run now; the rest wait their turn.
+        net.minecraft.world.level.levelgen.structure.BoundingBox headBox =
+            EditorCategory.plotBoxOf(overworld, head, dims);
+        EditorStampQueue.Partition split = EditorStampQueue.partitionOverlapping(erases, headBox);
+        List<EditorStampQueue.Job> queued = new ArrayList<>(split.rest());
         try {
+            for (EditorStampQueue.Job job : split.overlapping()) {
+                LOGGER.info("[DungeonTrain] Editor: '{}' overlaps the landing plot — erasing it first", job.label());
+                job.work().run();
+            }
             // The landing plot, stamped now so the teleport puts the player on something real.
             stampCategoryModel(overworld, head, dims);
             enterFirstModel(player, head);
@@ -3292,13 +3324,11 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
-
-        // Remember which category is actively stamped so VariantOverlayRenderer
-        // can keep the floating plot labels visible for as long as the
-        // structures themselves are present — not just while the player is
-        // standing inside a cage. Set before the fill completes on purpose: the labels are
-        // registry-driven, so they appear over every plot at once and show the fill's progress.
-        EditorStampedCategoryState.set(category);
+        // Whatever the per-plot erases could not predict, swept once they are done and before the
+        // fill — around the landing plot, which is already standing.
+        if (!erases.isEmpty()) {
+            queued.add(EditorCategory.layerSweepJob(overworld, dims, headBox));
+        }
 
         for (Template model : category.models()) {
             if (model.equals(head) || model instanceof Template.Part) continue;   // parts: below
@@ -3515,6 +3545,7 @@ public final class EditorCommand {
     private static int runEnterCarriage(CommandSourceStack source, CarriageVariant variant) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        if (!ensureCategory(source, EditorCategory.CARRIAGES)) return 0;
         markEnteredEditor(player);
         try {
             CarriageEditor.enter(player, variant);
@@ -3536,6 +3567,7 @@ public final class EditorCommand {
     private static int runEnterTunnel(CommandSourceStack source, TunnelVariant variant) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        if (!ensureCategory(source, EditorCategory.TRACKS)) return 0;
         markEnteredEditor(player);
         try {
             TunnelEditor.enter(player, variant);
@@ -4586,6 +4618,7 @@ public final class EditorCommand {
     private static int runPillarEnter(CommandSourceStack source, PillarSection section) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        if (!ensureCategory(source, EditorCategory.TRACKS)) return 0;
         try {
             PillarEditor.enter(player, section);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
@@ -4772,6 +4805,7 @@ public final class EditorCommand {
     private static int runContentsEnter(CommandSourceStack source, String contentsRaw, String shellRaw) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        if (!ensureCategory(source, EditorCategory.CONTENTS)) return 0;
         CarriageContents contents = parseContents(source, contentsRaw);
         if (contents == null) return 0;
         // NOTE: group parents are now enterable — the parent's own .nbt is the
@@ -5256,6 +5290,7 @@ public final class EditorCommand {
     private static int runPillarEnterAdjunct(CommandSourceStack source, PillarAdjunct adjunct) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        if (!ensureCategory(source, EditorCategory.TRACKS)) return 0;
         try {
             PillarEditor.enter(player, adjunct);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
@@ -5311,6 +5346,7 @@ public final class EditorCommand {
     private static int runTrackEnter(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        if (!ensureCategory(source, EditorCategory.TRACKS)) return 0;
         try {
             TrackEditor.enter(player);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
@@ -5467,6 +5503,7 @@ public final class EditorCommand {
     private static int runPartEnter(CommandSourceStack source, String rawKind, String rawName) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        if (!ensureCategory(source, EditorCategory.CARRIAGES)) return 0;
         CarriagePartKind kind = parsePartKind(source, rawKind);
         if (kind == null) return 0;
         if (!validatePartName(source, rawName)) return 0;
@@ -5995,6 +6032,7 @@ public final class EditorCommand {
     private static int runPortalRoomEnter(CommandSourceStack source, String name) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        if (!ensureCategory(source, EditorCategory.PORTALS)) return 0;
         if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry
                 .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name).isEmpty()) {
             source.sendFailure(Component.literal("Unknown dimensional carriage '" + name + "'."));
