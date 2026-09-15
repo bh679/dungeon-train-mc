@@ -16741,9 +16741,9 @@
         "Client-only \u2014 nothing changes server-side or in saves"
       ],
       "date": "2026-09-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.890.0",
+      "released_at": "2026-09-15T09:29:07Z"
     },
     {
       "id": "shared-carriage-stage-blocks-resolve",
@@ -16761,9 +16761,9 @@
         "Shared builds leased from the community pool resolve to the stage of the train they join."
       ],
       "date": "2026-09-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.890.0",
+      "released_at": "2026-09-15T09:29:07Z"
     }
   ]
 }
