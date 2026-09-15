@@ -16787,8 +16787,52 @@
       "released_at": null
     },
     {
-      "id": "eb-clipboard-bulk-paste",
+      "id": "fast-paintings-required",
       "version": "0.892.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "compatibility",
+        "train"
+      ],
+      "title": "Paintings now hang properly on the train and in your builds",
+      "summary": "Paintings used to be the one decoration you could not trust on a moving carriage or in a saved build \u2014 they would drift, vanish, or fall off when a carriage was flipped. Dungeon Train now requires Fast Paintings (and its Moonlight library), which turns paintings into solid blocks: they ride the train like any other block, save into templates and shared carriages exactly as you hung them, and when a carriage interior comes out mirrored the painting simply re-hangs on the wall it now stands beside. The CurseForge and Modrinth apps install both mods for you; if you install by hand, grab Fast Paintings and Moonlight for NeoForge 1.21.1.",
+      "highlights": [
+        "Paintings hang solidly on moving carriages and in the builder \u2014 no more drifting or falling off",
+        "Saved builds and shared carriages keep every painting, size and picture included",
+        "Mirrored carriage interiors keep their paintings; they re-hang on the opposite wall instead of dropping",
+        "Two new required mods, Fast Paintings and Moonlight \u2014 auto-installed by the CurseForge and Modrinth apps"
+      ],
+      "pr": 1425,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ecp-crash-checkpoint-pin",
+      "version": "0.893.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Your Ender Chest survives a crash",
+      "summary": "If the game crashed, your Ender Chest used to come back as it was at the end of the previous session \u2014 everything you had put in during the crashed one was gone. It now keeps whatever was in it at the last autosave, so a crash costs you at most a few minutes, the same as the rest of your inventory. Ender Chest Persistence 0.5.0 is now required; the CurseForge and Modrinth apps update it for you.",
+      "highlights": [
+        "Ender Chest contents are saved every autosave and whenever you switch game mode, not only when you leave the world",
+        "Requires Ender Chest Persistence 0.5.0 (auto-installed by the CurseForge / Modrinth apps)"
+      ],
+      "pr": 1424,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "eb-clipboard-bulk-paste",
+      "version": "0.893.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -16801,6 +16845,7 @@
         "Floor / Wall / Cube (and the mirror, array and radial modifiers) all work with a variant clipboard",
         "A plain right-click still pastes a single cell"
       ],
+      "pr": 1426,
       "date": "2026-09-15",
       "released": false,
       "released_in": null,

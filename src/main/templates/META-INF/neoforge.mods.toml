@@ -26,6 +26,24 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Fast Paintings (+ its Moonlight library) — third-party, REQUIRED. It replaces painting
+# entities with blocks; templates and shared carriages carry those blocks, which are air
+# without the mod. Floors, not exact pins: the block's three state properties are all DT
+# reads (compat/PaintingTransformProcessor), so newer builds are expected to keep working.
+[[dependencies.${mod_id}]]
+    modId="fastpaintings"
+    type="required"
+    versionRange="[${fastpaintings_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="moonlight"
+    type="required"
+    versionRange="[${moonlight_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Sibling mods (same author). These are NOT bundled — each is a separate required
 # download, so its own Modrinth/CurseForge page gets credited for the install.
 #
