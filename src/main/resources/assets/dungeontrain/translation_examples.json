@@ -5273,23 +5273,13 @@
       ]
     }
   },
-  "chat.dungeontrain.track.enabled": {
+  "chat.dungeontrain.track.summary": {
     "1": {
-      "label": "the advancement's title",
+      "label": "the tracked advancements' titles, comma-separated",
       "examples": [
         "Pacifist",
-        "The Far Start",
-        "Contained Loop"
-      ]
-    }
-  },
-  "chat.dungeontrain.track.disabled": {
-    "1": {
-      "label": "the advancement's title",
-      "examples": [
-        "Pacifist",
-        "The Far Start",
-        "Contained Loop"
+        "Pacifist, The Far Start",
+        "Not My Chest, Look, Don't Touch, Contained Loop"
       ]
     }
   }

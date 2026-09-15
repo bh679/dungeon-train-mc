@@ -35,12 +35,34 @@ import java.util.function.Predicate;
  * {@link #sync} / {@link #notify}.</p>
  *
  * <p>An earned advancement is never reported as disqualified — the rule is moot once it is done.</p>
+ *
+ * <p>A second, softer family lives here too: {@link #STREAK_IDS}, the advancements that count
+ * carriages (or chests) <em>since</em> the last chest opened / block broken / repeat chest. Those
+ * are never lost for a life — the count just restarts — so they are never in {@link #current} and
+ * never faded; the player can track them and is told when the streak resets instead.</p>
  */
 public final class LifeDisqualification {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final ResourceLocation CONTAINED_LOOP = dt("dungeon_train/contained_loop");
+
+    public static final ResourceLocation NO_CONTAINER_100 = dt("dungeon_train/no_container_100");
+    public static final ResourceLocation NO_CONTAINER_1000 = dt("dungeon_train/no_container_1000");
+    public static final ResourceLocation NO_BREAK_100 = dt("dungeon_train/no_break_100");
+    public static final ResourceLocation NO_BREAK_1000 = dt("dungeon_train/no_break_1000");
+    public static final ResourceLocation CHESTS_100_UNIQUE = dt("dungeon_train/chests_100_unique");
+
+    /** The chest-free streak tiers — reset together by opening a chest or barrel. */
+    public static final List<ResourceLocation> CONTAINER_STREAK = List.of(NO_CONTAINER_100, NO_CONTAINER_1000);
+    /** The break-free streak tiers — reset together by breaking any block. */
+    public static final List<ResourceLocation> BREAK_STREAK = List.of(NO_BREAK_100, NO_BREAK_1000);
+    /** The distinct-chests streak — reset by opening the same chest twice. */
+    public static final List<ResourceLocation> CHEST_STREAK = List.of(CHESTS_100_UNIQUE);
+
+    /** Streak advancements: trackable, told about on reset, never ruled out for a life. */
+    private static final List<ResourceLocation> STREAK_IDS = List.of(
+        NO_CONTAINER_100, NO_CONTAINER_1000, NO_BREAK_100, NO_BREAK_1000, CHESTS_100_UNIQUE);
 
     /** Disqualification rules, in tree order. Insertion order is what the client receives. */
     private static final Map<ResourceLocation, Predicate<ServerPlayer>> RULES = buildRules();
@@ -63,6 +85,25 @@ public final class LifeDisqualification {
     /** The ids a single action can rule out for a life — the client's "trackable" set mirrors this. */
     public static List<ResourceLocation> disqualifiableIds() {
         return List.copyOf(RULES.keySet());
+    }
+
+    /** The streak advancements — see {@link #STREAK_IDS}. */
+    public static List<ResourceLocation> streakIds() {
+        return STREAK_IDS;
+    }
+
+    /**
+     * A streak just restarted for {@code player}: tell the client which streak advancements it
+     * affects, so any the player tracks can raise a "streak reset" toast. Earned tiers are
+     * dropped — a reset can't take back what is already done. The disqualified set rides along
+     * unchanged, as on every send.
+     */
+    public static void notifyStreakReset(ServerPlayer player, List<ResourceLocation> streak) {
+        List<ResourceLocation> fresh = streak.stream()
+            .filter(id -> !isEarned(player, id))
+            .toList();
+        if (fresh.isEmpty()) return;
+        PacketDistributor.sendToPlayer(player, new LifeDisqualifiedPacket(current(player), List.of(), fresh));
     }
 
     /** Ids ruled out for {@code player}'s current life that the player has not already earned. */
@@ -102,7 +143,7 @@ public final class LifeDisqualification {
     }
 
     private static void send(ServerPlayer player, List<ResourceLocation> all, List<ResourceLocation> fresh) {
-        PacketDistributor.sendToPlayer(player, new LifeDisqualifiedPacket(all, fresh));
+        PacketDistributor.sendToPlayer(player, new LifeDisqualifiedPacket(all, fresh, List.of()));
     }
 
     private static boolean isEarned(ServerPlayer player, ResourceLocation id) {

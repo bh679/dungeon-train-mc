@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -63,6 +64,11 @@ public final class TrackedAdvancements {
 
     public static int revision() {
         return revision;
+    }
+
+    /** Every tracked id, in the order they were tracked. */
+    public static List<ResourceLocation> all() {
+        return List.copyOf(load());
     }
 
     private static Set<ResourceLocation> load() {

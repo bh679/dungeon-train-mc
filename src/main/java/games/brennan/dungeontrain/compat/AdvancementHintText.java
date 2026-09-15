@@ -40,8 +40,17 @@ public final class AdvancementHintText {
     private static final String TRACK_CLICK_KEY = "advancements.dungeontrain.track.click";
     private static final String TRACK_TRACKING_KEY = "advancements.dungeontrain.track.tracking";
 
-    /** The advancements a single action can rule out for a life — the only ones worth tracking. */
-    private static final Set<ResourceLocation> TRACKABLE = Set.copyOf(LifeDisqualification.disqualifiableIds());
+    /**
+     * The advancements worth tracking: the ones a single action rules out for a life, plus the
+     * streak ones whose count an action restarts.
+     */
+    private static final Set<ResourceLocation> TRACKABLE = trackableIds();
+
+    private static Set<ResourceLocation> trackableIds() {
+        java.util.LinkedHashSet<ResourceLocation> ids = new java.util.LinkedHashSet<>(LifeDisqualification.disqualifiableIds());
+        ids.addAll(LifeDisqualification.streakIds());
+        return Set.copyOf(ids);
+    }
 
     private AdvancementHintText() {
     }
