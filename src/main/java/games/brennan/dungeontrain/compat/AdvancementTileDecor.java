@@ -19,7 +19,9 @@ import net.minecraft.resources.ResourceLocation;
  * colour, {@link #afterIcon} restores it). Both widgets draw the frame at
  * {@code (x + widget.x + 3, y + widget.y)}, 26×26, then the icon — and vanilla then recurses into
  * child widgets in the same call, so the colour must be restored right after the icon, not at the
- * end of {@code draw}, or the children inherit the fade.</p>
+ * end of {@code draw}, or the children inherit the fade. The hover tooltip ({@code drawHover})
+ * redraws frame and icon over the top, so {@link #wrapHoverFrame} / {@link #wrapHoverIcon} repeat
+ * the treatment there.</p>
  */
 public final class AdvancementTileDecor {
 
@@ -73,6 +75,38 @@ public final class AdvancementTileDecor {
         if (AdvancementHintText.isGreyedOut(id, progress)) {
             g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
+    }
+
+    /**
+     * Wraps a {@code blitSprite(sprite, x, y, w, h)} call inside {@code drawHover}. The hover
+     * tooltip redraws the tile's frame on top of everything {@code draw} did, so the fade and the
+     * halo have to be applied again here; the call is only touched when the sprite is a tile frame
+     * ({@code advancements/<type>_frame_<state>}) — the tooltip's title box goes through the same
+     * overload and is left alone.
+     */
+    public static void wrapHoverFrame(GuiGraphics g, ResourceLocation sprite, int x, int y,
+                                      AdvancementNode node, AdvancementProgress progress, Runnable blit) {
+        if (node == null || !sprite.getPath().contains("_frame_")) {
+            blit.run();
+            return;
+        }
+        ResourceLocation id = node.holder().id();
+        boolean faded = AdvancementHintText.isGreyedOut(id, progress);
+        float alpha = faded ? DISQUALIFIED_ALPHA : 1.0f;
+        if (isTrackedAndUnearned(id, progress)) {
+            drawHalo(g, node, x, y, alpha);
+        }
+        if (faded) g.setColor(1.0f, 1.0f, 1.0f, DISQUALIFIED_ALPHA);
+        blit.run();
+        if (faded) g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
+    /** Wraps the {@code renderFakeItem} call inside {@code drawHover}: fades a ruled-out tile's icon. */
+    public static void wrapHoverIcon(GuiGraphics g, AdvancementNode node, AdvancementProgress progress, Runnable render) {
+        boolean faded = node != null && AdvancementHintText.isGreyedOut(node.holder().id(), progress);
+        if (faded) g.setColor(1.0f, 1.0f, 1.0f, DISQUALIFIED_ALPHA);
+        render.run();
+        if (faded) g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     /**

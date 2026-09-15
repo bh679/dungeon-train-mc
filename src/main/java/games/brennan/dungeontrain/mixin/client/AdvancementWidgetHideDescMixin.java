@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import games.brennan.dungeontrain.client.HoveredAdvancement;
 import games.brennan.dungeontrain.compat.AdvancementHintText;
 import games.brennan.dungeontrain.compat.AdvancementTileDecor;
@@ -12,6 +14,7 @@ import net.minecraft.client.gui.screens.advancements.AdvancementWidget;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -94,6 +97,25 @@ public abstract class AdvancementWidgetHideDescMixin {
     private void dungeontrain$decorateEnd(GuiGraphics guiGraphics, int originX, int originY, CallbackInfo ci) {
         if (advancementNode == null) return;
         AdvancementTileDecor.afterDraw(guiGraphics, advancementNode.holder().id(), progress);
+    }
+
+    /** The hover tooltip redraws the tile's frame — fade and halo it like {@code draw} does. */
+    @WrapOperation(method = "drawHover",
+                   at = @At(value = "INVOKE",
+                            target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lnet/minecraft/resources/ResourceLocation;IIII)V"))
+    private void dungeontrain$hoverFrame(GuiGraphics guiGraphics, ResourceLocation sprite, int x, int y, int w, int h,
+                                         Operation<Void> original) {
+        AdvancementTileDecor.wrapHoverFrame(guiGraphics, sprite, x, y, advancementNode, progress,
+            () -> original.call(guiGraphics, sprite, x, y, w, h));
+    }
+
+    /** And the icon it draws on that frame. */
+    @WrapOperation(method = "drawHover",
+                   at = @At(value = "INVOKE",
+                            target = "Lnet/minecraft/client/gui/GuiGraphics;renderFakeItem(Lnet/minecraft/world/item/ItemStack;II)V"))
+    private void dungeontrain$hoverIcon(GuiGraphics guiGraphics, ItemStack icon, int x, int y, Operation<Void> original) {
+        AdvancementTileDecor.wrapHoverIcon(guiGraphics, advancementNode, progress,
+            () -> original.call(guiGraphics, icon, x, y));
     }
 
     /** Remember which tile is under the mouse so a click on the screen can toggle tracking on it. */
