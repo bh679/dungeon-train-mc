@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.track;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.template.GateContext;
@@ -1512,6 +1513,8 @@ public final class TrackGenerator {
                 .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
             // No ShipFilterProcessor — no ships at chunkgen.
             if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
+            // Re-hang Fast Paintings block paintings under the mirror (they don't mirror themselves).
+            if (!flipped) settings.addProcessor(PaintingTransformProcessor.horizontal());
 
             // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
             template.placeInWorld(level, copyOrigin, copyOrigin, settings,
@@ -1968,6 +1971,8 @@ public final class TrackGenerator {
                 // blocks (see TunnelPlacer.stampTemplateWorldgen for the full rationale).
                 .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
             if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
+            // Re-hang Fast Paintings block paintings under the mirror (they don't mirror themselves).
+            if (!flipped) settings.addProcessor(PaintingTransformProcessor.horizontal());
             // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
             template.placeInWorld(level, stampOrigin, stampOrigin, settings,
                 StampRandom.at(level.getSeed(), stampOrigin), Block.UPDATE_CLIENTS);
