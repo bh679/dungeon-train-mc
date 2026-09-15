@@ -16612,9 +16612,9 @@
         "Nothing changes unless the operator flips a switch \u2014 every advancement stays on and counted by default."
       ],
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
     },
     {
       "id": "playermob-0-98-0-door-fix-pin",
@@ -16633,9 +16633,9 @@
       ],
       "pr": 1414,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
     },
     {
       "id": "editor-midlibrary-floor-variants-mild2-phases",
@@ -16654,9 +16654,9 @@
       ],
       "pr": 1406,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
     },
     {
       "id": "faulthurst-toned-follow-ups",
@@ -16675,9 +16675,31 @@
       ],
       "pr": 1417,
       "date": "2026-09-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
+    },
+    {
+      "id": "enemies-zombieroom3-zombie4-skeleton2",
+      "version": "0.887.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs",
+        "balance"
+      ],
+      "title": "Three new enemy carriages",
+      "summary": "The enemies pool grows by three: a split zombie room, a zombie pack, and a skeleton carriage that starts showing up from Diff-Level 3. Existing enemy carriages were reweighted slightly to make room for them.",
+      "highlights": [
+        "New: zombiesplit, zombie4 and skeleton2 enemy carriages",
+        "Enemies group weights retuned; skeleton2 appears from Diff-Level 3"
+      ],
+      "pr": 1419,
+      "date": "2026-09-14",
+      "released": true,
+      "released_in": "v0.887.0",
+      "released_at": "2026-09-14T14:12:19Z"
     }
   ]
 }
