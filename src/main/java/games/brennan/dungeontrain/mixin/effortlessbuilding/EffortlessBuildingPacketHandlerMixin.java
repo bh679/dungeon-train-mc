@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.effortlessbuilding;
 
 import games.brennan.dungeontrain.compat.EffortlessBuildingGate;
 import games.brennan.dungeontrain.compat.EffortlessBuildingHistory;
+import games.brennan.dungeontrain.compat.EffortlessBuildingVariants;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -10,8 +11,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Two jobs on one set of seams: gates Effortless Building's creative features behind the Free Play
- * confirmation, and records what they change into the editor's undo history.
+ * Three jobs on one set of seams: gates Effortless Building's creative features behind the Free
+ * Play confirmation, records what they change into the editor's undo history, and — with a
+ * variant clipboard in hand — turns a shape placement into a bulk clipboard paste
+ * ({@link EffortlessBuildingVariants}).
  *
  * <p>Effortless Building drives every build through its own server-bound packets — it fires no
  * NeoForge block events and registers no commands, so neither {@code CheatDetectionEvents.onCommand}
@@ -52,6 +55,13 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
     private static void dungeontrain$beforePlaceBuildMode(
             @Coerce Object packet, ServerPlayer player, CallbackInfo ci) {
         if (EffortlessBuildingGate.gate(player)) {
+            ci.cancel();
+            return;
+        }
+        // A variant clipboard in hand: the shape is a bulk paste, handled by DT. Cancelled before
+        // begin() — the paste records its own undo step (block + sidecar) through the editor's
+        // pending-sidecar snapshot, so no block-diff capture is needed here.
+        if (EffortlessBuildingVariants.tryClipboardBuild(packet, player)) {
             ci.cancel();
             return;
         }

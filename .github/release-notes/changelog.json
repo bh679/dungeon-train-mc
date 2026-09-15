@@ -16829,6 +16829,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "eb-clipboard-bulk-paste",
+      "version": "0.893.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Paste variant clipboards across a whole floor, wall or box with Effortless Building",
+      "summary": "In the editor, a variant clipboard now works with Effortless Building's shape modes. Pick Floor, Wall or Cube with the clipboard in hand and every cell of the shape gets the copied variant pool in one go \u2014 lock group, copy settings and any container loot included \u2014 instead of one cell per click. One Ctrl+Z undoes the whole paste.",
+      "highlights": [
+        "Floor / Wall / Cube (and the mirror, array and radial modifiers) all work with a variant clipboard",
+        "A plain right-click still pastes a single cell"
+      ],
+      "pr": 1426,
+      "date": "2026-09-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
