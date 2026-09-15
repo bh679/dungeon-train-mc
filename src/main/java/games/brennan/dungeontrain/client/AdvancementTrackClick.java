@@ -8,7 +8,9 @@ import net.minecraft.sounds.SoundEvents;
 
 /**
  * The click rule both advancements screens share: a left click while a trackable, unearned
- * advancement's tooltip is showing toggles tracking on it. Kept out of the two screen mixins
+ * advancement's tooltip is showing toggles tracking on it — even one already lost this life, so a
+ * player can still set it up for the next life; the tooltip and chat summary just don't mention
+ * it while it is gone. Kept out of the two screen mixins
  * (vanilla + Better Advancements) so they can't drift apart. The chat confirmation comes once the
  * screen closes — see {@link TrackedAdvancementsSummary}.
  */
@@ -24,7 +26,6 @@ public final class AdvancementTrackClick {
         ResourceLocation id = HoveredAdvancement.current();
         if (!AdvancementHintText.isTrackable(id)) return false;
         if (HoveredAdvancement.currentIsEarned()) return false; // nothing left to lose
-        if (LifeDisqualificationClient.isDisqualified(id)) return false; // already gone this life
         TrackedAdvancements.toggle(id);
         Minecraft.getInstance().getSoundManager().play(
             SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));

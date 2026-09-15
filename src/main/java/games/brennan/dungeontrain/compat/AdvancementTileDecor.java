@@ -44,10 +44,12 @@ public final class AdvancementTileDecor {
     public static void beforeTile(GuiGraphics g, AdvancementNode node, AdvancementProgress progress,
                                   int originX, int originY, int widgetX, int widgetY) {
         ResourceLocation id = node.holder().id();
+        boolean faded = AdvancementHintText.isGreyedOut(id, progress);
+        float alpha = faded ? DISQUALIFIED_ALPHA : 1.0f;
         if (isTrackedAndUnearned(id, progress)) {
-            drawHalo(g, node, originX + widgetX + TILE_X_OFFSET, originY + widgetY);
+            drawHalo(g, node, originX + widgetX + TILE_X_OFFSET, originY + widgetY, alpha);
         }
-        if (AdvancementHintText.isGreyedOut(id, progress)) {
+        if (faded) {
             g.setColor(1.0f, 1.0f, 1.0f, DISQUALIFIED_ALPHA);
         }
     }
@@ -55,12 +57,13 @@ public final class AdvancementTileDecor {
     /**
      * The tile's own unobtained frame (task / goal / challenge shape), {@link #HALO_PAD} bigger on
      * every side and tinted yellow, so the highlight matches the box it sits behind. The plain
-     * frame's neutral grey takes the tint cleanly.
+     * frame's neutral grey takes the tint cleanly. Drawn at the tile's own alpha: a faded tile over
+     * a full-strength halo would read as a bright yellow tile, not a faded one.
      */
-    private static void drawHalo(GuiGraphics g, AdvancementNode node, int left, int top) {
+    private static void drawHalo(GuiGraphics g, AdvancementNode node, int left, int top, float alpha) {
         AdvancementType type = node.advancement().display().map(DisplayInfo::getType).orElse(AdvancementType.TASK);
         ResourceLocation frame = AdvancementWidgetType.UNOBTAINED.frameSprite(type);
-        g.setColor(HALO_R, HALO_G, HALO_B, 1.0f);
+        g.setColor(HALO_R, HALO_G, HALO_B, alpha);
         g.blitSprite(frame, left - HALO_PAD, top - HALO_PAD, TILE_SIZE + 2 * HALO_PAD, TILE_SIZE + 2 * HALO_PAD);
         g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
     }

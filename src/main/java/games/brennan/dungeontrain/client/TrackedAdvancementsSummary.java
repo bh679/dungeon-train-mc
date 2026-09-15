@@ -20,7 +20,8 @@ import java.util.List;
 /**
  * The chat line that confirms tracking once the advancements screen closes: "Tracking X, Y, Z —
  * you will be told if it gets ruled out." Sent only when the tracked set changed while the screen
- * was open, so merely opening and closing the screen says nothing.
+ * was open, so merely opening and closing the screen says nothing. Advancements already lost this
+ * life are left out of the list.
  *
  * <p>Watches the client's screen transitions rather than hooking either screen's close: both the
  * vanilla {@code AdvancementsScreen} and Better Advancements' replacement are recognised by
@@ -60,10 +61,18 @@ public final class TrackedAdvancementsSummary {
     private static void announce(Minecraft mc) {
         if (mc.player == null) return;
         List<ResourceLocation> tracked = TrackedAdvancements.all();
-        Component msg = tracked.isEmpty()
-            ? Component.translatable(NONE_KEY)
-            : Component.translatable(SUMMARY_KEY, titles(mc, tracked));
-        mc.player.displayClientMessage(msg.copy().withStyle(ChatFormatting.GRAY), false);
+        if (tracked.isEmpty()) {
+            mc.player.displayClientMessage(Component.translatable(NONE_KEY).withStyle(ChatFormatting.GRAY), false);
+            return;
+        }
+        // One already lost this life can still be tracked (for the next life) but there is nothing
+        // to warn about now, so it stays out of the line; all lost → nothing worth saying.
+        List<ResourceLocation> live = tracked.stream()
+            .filter(id -> !LifeDisqualificationClient.isDisqualified(id))
+            .toList();
+        if (live.isEmpty()) return;
+        mc.player.displayClientMessage(
+            Component.translatable(SUMMARY_KEY, titles(mc, live)).withStyle(ChatFormatting.GRAY), false);
     }
 
     /** "A, B, C" — each advancement's display title (its id if the client has no display for it). */
