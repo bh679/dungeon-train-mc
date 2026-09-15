@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
@@ -289,8 +290,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case TRANSLATE -> List.of(Component.translatable("gui.dungeontrain.options.translate"));
             case CUSTOM_CONTENT -> {
                 List<Component> out = new ArrayList<>();
-                for (CustomContentPreference pref : List.of(CustomContentPreference.ASK,
-                        CustomContentPreference.CONTINUE, CustomContentPreference.DISABLE)) {
+                for (CustomContentPreference pref : customContentValues()) {
                     out.add(value("gui.dungeontrain.options.custom_content", customContentLabel(pref)));
                 }
                 yield out;
@@ -446,9 +446,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case CUSTOM_CONTENT -> withTip(
                     CycleButton.<CustomContentPreference>builder(
                                     DungeonTrainClientOptionsScreen::customContentLabel)
-                            .withValues(List.of(CustomContentPreference.ASK, CustomContentPreference.CONTINUE,
-                                    CustomContentPreference.DISABLE))
-                            .withInitialValue(ClientDisplayConfig.getCustomContentPreference())
+                            .withValues(customContentValues())
+                            .withInitialValue(customContentInitial())
                             .create(0, 0, width, ROW_H,
                                     Component.translatable("gui.dungeontrain.options.custom_content"),
                                     (btn, pref) -> ClientDisplayConfig.setCustomContentPreference(pref)),
@@ -594,6 +593,27 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /** ASK / CONTINUE / DISABLE, each with its own translated label. */
+    /**
+     * The standing answers on offer. The dev waiver is listed on dev builds only — a release
+     * build neither shows nor honours it.
+     */
+    private static List<CustomContentPreference> customContentValues() {
+        return DungeonTrain.isDevBuild()
+            ? List.of(CustomContentPreference.ASK, CustomContentPreference.CONTINUE,
+                CustomContentPreference.DISABLE, CustomContentPreference.DEV_IGNORE)
+            : List.of(CustomContentPreference.ASK, CustomContentPreference.CONTINUE,
+                CustomContentPreference.DISABLE);
+    }
+
+    /**
+     * A config written on a dev build can hold DEV_IGNORE on a release build, where the cycle
+     * button has no such value to show; present it as CONTINUE, which is what it plays as.
+     */
+    private static CustomContentPreference customContentInitial() {
+        CustomContentPreference stored = ClientDisplayConfig.getCustomContentPreference();
+        return customContentValues().contains(stored) ? stored : CustomContentPreference.CONTINUE;
+    }
+
     private static Component customContentLabel(CustomContentPreference preference) {
         return Component.translatable("gui.dungeontrain.options.custom_content."
                 + preference.name().toLowerCase(Locale.ROOT));

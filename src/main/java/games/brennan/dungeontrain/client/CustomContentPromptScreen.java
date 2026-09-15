@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.net.CustomContentChoicePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.world.CustomContentChoice;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
@@ -33,6 +35,11 @@ import java.util.function.Consumer;
  * on, so the bundled game runs and stats count. A "Remember decision" checkbox
  * persists the answer to {@link ClientDisplayConfig} and is changeable later in
  * Options → Dungeon Train.</p>
+ *
+ * <p>On a dev build a third, plainer control sits under the cards: <b>I'm a dev — ignore</b>
+ * ({@link CustomContentChoice#DEV_IGNORE}) keeps the content and stays Live. A dev's user tier
+ * is nearly always populated, so without it every new world costs either the in-progress
+ * content or the stats. Release builds never show it and never honour it.</p>
  *
  * <p>Drawn with the same vanilla tooltip frame as {@link FreePlayConfirmScreen}
  * so the two prompts read as one family of UI.</p>
@@ -68,6 +75,9 @@ public final class CustomContentPromptScreen extends Screen {
     private static final int CARD_GAP = 8;
     /** Square "?" button at the right end of the checkbox row. */
     private static final int INFO_SIZE = 20;
+    /** The dev-only button under the cards, and the gap above it. */
+    private static final int DEV_BUTTON_H = 20;
+    private static final int DEV_ROW_GAP = 6;
 
     /**
      * The badge the player actually wears in a Free Play run — so the card shows the consequence
@@ -88,7 +98,7 @@ public final class CustomContentPromptScreen extends Screen {
      * Pre-world mode: where to send the answer, and where to go if the player backs out. Both null
      * in join-time mode, where the answer goes to the server and there is nothing to back out of.
      */
-    private final Consumer<Boolean> onAnswer;
+    private final Consumer<CustomContentChoice> onAnswer;
     private final Screen parent;
     private Checkbox rememberBox;
     private boolean responded = false;
@@ -108,7 +118,7 @@ public final class CustomContentPromptScreen extends Screen {
      * {@code onAnswer} — which records it for the world about to be created and then starts it —
      * and backing out returns to {@code parent} without starting anything.
      */
-    public CustomContentPromptScreen(String packages, Screen parent, Consumer<Boolean> onAnswer) {
+    public CustomContentPromptScreen(String packages, Screen parent, Consumer<CustomContentChoice> onAnswer) {
         super(Component.translatable("gui.dungeontrain.custom_content.title"));
         this.packages = packages;
         this.parent = parent;
@@ -132,7 +142,11 @@ public final class CustomContentPromptScreen extends Screen {
         packagesRelY = y; y += packageLines.size() * (lh + LINE_GAP);
         if (!packageLines.isEmpty()) y += SECTION_GAP;
         int checkboxRelY = y; y += CHECKBOX_H + SECTION_GAP;
-        int cardsRelY = y;    y += cardH + PADDING;
+        int cardsRelY = y;    y += cardH;
+        boolean dev = DungeonTrain.isDevBuild();
+        int devRelY = y + DEV_ROW_GAP;
+        if (dev) y += DEV_ROW_GAP + DEV_BUTTON_H;
+        y += PADDING;
         panelH = y;
 
         panelX = (this.width - panelW) / 2;
@@ -167,35 +181,47 @@ public final class CustomContentPromptScreen extends Screen {
             Component.translatable("gui.dungeontrain.custom_content.card.default.name"),
             Component.translatable("gui.dungeontrain.custom_content.card.default.tag"),
             COLOUR_TAG_LIVE,
-            () -> respond(false)));
+            () -> respond(CustomContentChoice.DISABLE)));
         addRenderableWidget(new ContentChoiceCard(
             panelX + PADDING + cardW + CARD_GAP, cardY, cardW, cardH,
             ICON_CUSTOM,
             Component.translatable("gui.dungeontrain.custom_content.card.custom.name"),
             Component.translatable("gui.dungeontrain.custom_content.card.custom.tag"),
             COLOUR_TAG_FREEPLAY,
-            () -> respond(true)));
+            () -> respond(CustomContentChoice.ALLOW)));
+
+        if (dev) {
+            // A plain button, not a third card: it is the developer's escape hatch, not a peer of
+            // the two answers a player chooses between.
+            Button devIgnore = Button.builder(
+                    Component.translatable("gui.dungeontrain.custom_content.dev_ignore"),
+                    b -> respond(CustomContentChoice.DEV_IGNORE))
+                .bounds(panelX + PADDING, panelY + devRelY, innerW, DEV_BUTTON_H)
+                .build();
+            devIgnore.setTooltip(Tooltip.create(
+                Component.translatable("gui.dungeontrain.custom_content.dev_ignore.tip")));
+            addRenderableWidget(devIgnore);
+        }
     }
 
-    private void respond(boolean keepContent) {
+    private void respond(CustomContentChoice choice) {
         if (responded) return;
         responded = true;
         // Recorded on every answer, not just remembered ones: the automatic reboard has no menu to
         // ask from and reuses this, and a player who decides per-world never ticks the checkbox.
-        ClientDisplayConfig.setLastCustomContentAnswer(
-            keepContent ? CustomContentPreference.CONTINUE : CustomContentPreference.DISABLE);
+        CustomContentPreference answer = CustomContentPreference.fromChoice(choice);
+        ClientDisplayConfig.setLastCustomContentAnswer(answer);
         if (rememberBox != null && rememberBox.selected()) {
-            ClientDisplayConfig.setCustomContentPreference(
-                keepContent ? CustomContentPreference.CONTINUE : CustomContentPreference.DISABLE);
+            ClientDisplayConfig.setCustomContentPreference(answer);
         }
         if (onAnswer != null) {
             // Pre-world: the callback records the answer for the world about to be created and
             // starts it, which replaces this screen. Nothing to send and nothing to close.
-            onAnswer.accept(keepContent);
+            onAnswer.accept(choice);
             return;
         }
         CustomContentPromptClient.answered();
-        DungeonTrainNet.sendToServer(new CustomContentChoicePacket(keepContent));
+        DungeonTrainNet.sendToServer(new CustomContentChoicePacket(choice));
         onClose();
     }
 
@@ -224,7 +250,7 @@ public final class CustomContentPromptScreen extends Screen {
         if (!responded) {
             responded = true;
             CustomContentPromptClient.answered();
-            DungeonTrainNet.sendToServer(new CustomContentChoicePacket(true));
+            DungeonTrainNet.sendToServer(new CustomContentChoicePacket(CustomContentChoice.ALLOW));
         }
         super.onClose();
     }

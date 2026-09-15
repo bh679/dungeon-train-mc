@@ -2649,6 +2649,15 @@
       ]
     }
   },
+  "commands.dungeontrain.customcontent.status.dev_ignored": {
+    "1": {
+      "label": "the custom content packs, comma-separated",
+      "examples": [
+        "Aether Trains",
+        "Aether Trains, Brennan's Extras"
+      ]
+    }
+  },
   "commands.dungeontrain.customcontent.status.on": {
     "1": {
       "label": "the custom content packs, comma-separated",
