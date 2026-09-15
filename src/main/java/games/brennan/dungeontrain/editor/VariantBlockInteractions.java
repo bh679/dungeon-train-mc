@@ -10,20 +10,31 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SpawnEggItem;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,9 +44,7 @@ import java.util.List;
  * <ul>
  *   <li>Player is holding the variant-place key and inside an editor plot.</li>
  *   <li>They look at a block inside the plot footprint.</li>
- *   <li>They right-click it with a placeable block, a spawn egg, or a filled
- *       bucket in main hand. A bucket contributes the fluid's <b>source</b>
- *       state — see {@link VariantLiquids}.</li>
+ *   <li>They right-click it with a placeable block in main hand.</li>
  * </ul>
  *
  * <p>Instead of the vanilla "place the held block on the neighbouring face"
@@ -49,10 +58,12 @@ import java.util.List;
  * {@link games.brennan.dungeontrain.net.VariantHotkeyPacket}. Vanilla sneak
  * no longer triggers variant placement.</p>
  *
- * <p>Capture and the append rule (base-block seed, cap, orientation) live in
- * {@link VariantAppend}, shared with the Effortless Building bulk path
- * ({@code compat.EffortlessBuildingVariants}) so a whole floor of variants
- * is authored by exactly the rules a single right-click follows.</p>
+ * <p>v2 capture: the held item's BlockState is derived from a
+ * {@link BlockPlaceContext} so directional blocks (stairs, logs, doors,
+ * repeaters, …) get the player's intended facing — not the default. When the
+ * resulting block has a {@link BlockEntity}, the BE NBT is captured from the
+ * held item's {@code BlockEntityTag} (vanilla Ctrl+Pick captures this) with a
+ * fallback to the clicked block's existing BE.</p>
  *
  * <p>The entry is cached in memory (the same cache the runtime
  * {@link CarriageVariantBlocks#loadFor} path reads from). Persist via
@@ -63,6 +74,9 @@ import java.util.List;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantBlockInteractions {
+
+    /** Soft cap — commands can write more, but the shift-place path stops here to keep feedback readable. */
+    private static final int MAX_VARIANTS_PER_POSITION = 16;
 
     private VariantBlockInteractions() {}
 
@@ -81,27 +95,15 @@ public final class VariantBlockInteractions {
         ItemStack held = event.getItemStack();
         if (held.isEmpty()) return;
 
-        VariantState newVariant = VariantAppend.captureHeld(
-            level, player, event.getHand(), held, event.getHitVec(), clicked);
-        // Empty / milk bucket and every other non-variant item: fall through to
-        // vanilla use rather than swallowing the interaction.
-        if (newVariant == null) return;
-
-        // Snapshot the sidecar before any of the four per-kind branches touches
-        // it, so this add joins the tick's undo step. One call covers all four:
-        // they differ in which sidecar they write, not in whether they write.
-        EditorEditRecorder.notePendingSidecar(player, "Variant add");
-
-        // A Train Builder world has no plot grid, so not one of the four editor branches below can
-        // resolve anything in it — the gesture would arm and then quietly place the block. Its plot
-        // answers from world data instead, which is why it is asked first and by level rather than
-        // by where the player is standing.
-        BlockVariantPlot builderPlot = games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(
-            level, player.blockPosition(), dims);
-        if (builderPlot != null) {
-            handleBuilderShiftClick(event, player, level, clicked, newVariant, builderPlot);
+        VariantState newVariant;
+        if (held.getItem() instanceof BlockItem blockItem) {
+            newVariant = captureVariant(event, level, player, blockItem, held, clicked);
+        } else if (held.getItem() instanceof SpawnEggItem egg) {
+            newVariant = captureMobVariant(egg, held, player);
+        } else {
             return;
         }
+        if (newVariant == null) return;
 
         // Part plot takes priority: if the clicked position falls inside a
         // part plot, route the shift-click into the part's own variants
@@ -156,44 +158,6 @@ public final class VariantBlockInteractions {
         try {
             sidecar.put(local, updated);
         } catch (IllegalArgumentException e) {
-            player.displayClientMessage(
-                Component.literal("Variant add failed: " + e.getMessage())
-                    .withStyle(ChatFormatting.RED), true);
-            suppressVanillaPlace(event);
-            return;
-        }
-
-        mirrorVariantAdd(level, player, clicked, updated);
-        sendAddedFeedback(player, clicked, local, newVariant, updated);
-        VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
-        suppressVanillaPlace(event);
-    }
-
-    /**
-     * Train Builder branch: append the held block to the build's own working sidecar.
-     *
-     * <p>Written through immediately, unlike the carriage branch above, which leaves the sidecar
-     * dirty for {@code /dt editor save}. There is no such command down here — the builder's Save
-     * writes a <em>template</em>, and an author who flags a few blocks and then quits without ever
-     * naming the build should still find them there next time.</p>
-     */
-    private static void handleBuilderShiftClick(PlayerInteractEvent.RightClickBlock event,
-                                                ServerPlayer player, ServerLevel level,
-                                                BlockPos clicked, VariantState newVariant,
-                                                BlockVariantPlot plot) {
-        BlockPos local = clicked.subtract(plot.origin());
-        if (!plot.inBounds(local)) return;
-
-        BlockState baseState = level.getBlockState(clicked);
-        VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
-        List<VariantState> updated = buildUpdatedList(plot.statesAt(local), baseVariant, newVariant,
-            baseState, player, event);
-        if (updated == null) return;
-
-        try {
-            plot.put(local, updated);
-            plot.save();
-        } catch (IllegalArgumentException | IOException e) {
             player.displayClientMessage(
                 Component.literal("Variant add failed: " + e.getMessage())
                     .withStyle(ChatFormatting.RED), true);
@@ -368,29 +332,160 @@ public final class VariantBlockInteractions {
         suppressVanillaPlace(event);
     }
 
-    /** See {@link VariantAppend#captureBase}. */
-    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState rawBaseState) {
-        return VariantAppend.captureBase(level, clicked, rawBaseState);
+    /**
+     * Derive a {@link VariantState} from the held {@link BlockItem} at the
+     * shift-click target. The {@link BlockState} is computed via
+     * {@link BlockPlaceContext} so directional properties (FACING / AXIS /
+     * HALF / SHAPE) match what vanilla placement would have produced for the
+     * player's look direction. Block-entity NBT is captured from the held
+     * item's {@code BlockEntityTag} first (vanilla Ctrl+Pick stamps this on
+     * the picked stack), with a fallback to the clicked block's existing BE
+     * — useful for the "I edited a chest in-world, now copy it to a variant"
+     * authoring loop.
+     */
+    private static @Nullable VariantState captureVariant(PlayerInteractEvent.RightClickBlock event,
+                                                          ServerLevel level, ServerPlayer player,
+                                                          BlockItem blockItem, ItemStack held, BlockPos clicked) {
+        BlockPlaceContext ctx = new BlockPlaceContext(
+            new UseOnContext(level, player, event.getHand(), held, event.getHitVec()));
+        BlockState newState = blockItem.getBlock().getStateForPlacement(ctx);
+        if (newState == null) newState = blockItem.getBlock().defaultBlockState();
+
+        CompoundTag beNbt = null;
+        if (newState.hasBlockEntity()) {
+            net.minecraft.world.item.component.CustomData heldData = held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
+            beNbt = heldData == null ? null : heldData.copyTag();
+            if (beNbt == null) {
+                BlockState clickedState = level.getBlockState(clicked);
+                if (clickedState.is(newState.getBlock())) {
+                    BlockEntity be = level.getBlockEntity(clicked);
+                    if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
+                }
+            }
+        }
+        return new VariantState(newState, beNbt, 1, RotationApplier.lockToCurrent(newState));
     }
 
     /**
-     * {@link VariantAppend#append} plus this path's rejection handling: the
-     * message goes to the action bar and vanilla placement is suppressed.
-     * Returns the new list, or {@code null} if the caller should early-return.
+     * Build a mob {@link VariantState} from a held vanilla spawn egg. The
+     * resulting entry's {@code state} is auto-stamped to the COMMAND_BLOCK
+     * sentinel by the canonical constructor, so existing applier branches
+     * AIR the cell at spawn; a parallel entity pass spawns the mob (subject
+     * to the existing 48-block player-distance gate). Entity NBT from the
+     * spawn-egg's {@code EntityTag} component (set by anvil-rename / vanilla
+     * NBT-give) is preserved so a tagged egg round-trips into the variant.
      */
-    private static @Nullable List<VariantState> buildUpdatedList(List<VariantState> existing,
-                                                                @Nullable VariantState baseVariant,
-                                                                VariantState newVariant, BlockState baseState,
-                                                                ServerPlayer player,
-                                                                PlayerInteractEvent.RightClickBlock event) {
-        VariantAppend.Result result = VariantAppend.append(existing, baseVariant, newVariant, baseState);
-        if (!result.accepted()) {
+    private static @Nullable VariantState captureMobVariant(SpawnEggItem egg, ItemStack held, ServerPlayer player) {
+        EntityType<?> type = egg.getType(held);
+        if (type == null) {
             player.displayClientMessage(
-                Component.literal(result.rejectMessage()).withStyle(ChatFormatting.YELLOW), true);
-            suppressVanillaPlace(event);
+                Component.literal("Spawn egg has no entity type — cannot add as variant.")
+                    .withStyle(ChatFormatting.YELLOW), true);
             return null;
         }
-        return result.pool();
+        ResourceLocation eid = BuiltInRegistries.ENTITY_TYPE.getKey(type);
+        if (eid == null) {
+            player.displayClientMessage(
+                Component.literal("Cannot resolve entity id for spawn egg.")
+                    .withStyle(ChatFormatting.YELLOW), true);
+            return null;
+        }
+        // Optional entity NBT — preserves anvil-renamed / NBT-tagged eggs.
+        // Vanilla stores the spawn payload in BLOCK_ENTITY_DATA on the egg
+        // (ID:"<entity>" + extra fields like CustomName / Tags / ArmorItems);
+        // we strip the ID since the entity type is the authoritative source
+        // and avoid stamping a redundant id mismatch onto the spawned mob.
+        net.minecraft.nbt.CompoundTag mobNbt = null;
+        net.minecraft.world.item.component.CustomData beData =
+            held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
+        if (beData != null && !beData.isEmpty()) {
+            net.minecraft.nbt.CompoundTag raw = beData.copyTag();
+            if (raw.contains("EntityTag", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                mobNbt = raw.getCompound("EntityTag").copy();
+            } else if (!raw.isEmpty()) {
+                mobNbt = raw;
+            }
+            if (mobNbt != null) mobNbt.remove("id"); // EntityType.create writes its own
+        }
+        return VariantState.ofMob(eid, mobNbt, 1, VariantRotation.NONE);
+    }
+
+    /**
+     * Capture the cell's existing block as a {@link VariantState} so the
+     * first shift-click seeds the candidate list with {@code [base, added]}.
+     * Block-entity payloads are read from the world so an authored chest /
+     * sign / banner round-trips into the variant list with its contents.
+     * Returns {@code null} for air — the caller surfaces the "place a base
+     * block first" toast separately.
+     */
+    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState baseState) {
+        if (baseState.isAir()) return null;
+        CompoundTag beNbt = null;
+        if (baseState.hasBlockEntity()) {
+            BlockEntity be = level.getBlockEntity(clicked);
+            if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
+        }
+        return new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+    }
+
+    /**
+     * Common "append to variants" logic — seeds with the base block on first
+     * edit, enforces the soft cap, and sends user-facing error messages.
+     * Returns the new list, or {@code null} if a validation message was sent
+     * and the caller should early-return.
+     */
+    private static List<VariantState> buildUpdatedList(List<VariantState> existing, @Nullable VariantState baseVariant,
+                                                      VariantState newVariant, BlockState baseState,
+                                                      ServerPlayer player,
+                                                      PlayerInteractEvent.RightClickBlock event) {
+        List<VariantState> updated = new ArrayList<>();
+        if (existing == null) {
+            if (baseVariant == null || baseState.isAir()) {
+                if (newVariant.isMob()) {
+                    // Mob added to air cell — seed with the empty-placeholder
+                    // so the picker can roll between "stay air" (sentinel) and
+                    // "spawn mob" (mob entry). Without this seed the cell
+                    // would have only one candidate and short-circuit any
+                    // weight authoring.
+                    updated.add(VariantState.of(
+                        net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState()));
+                } else {
+                    player.displayClientMessage(
+                        Component.literal("Target block is air — place a base block first.")
+                            .withStyle(ChatFormatting.YELLOW), true);
+                    suppressVanillaPlace(event);
+                    return null;
+                }
+            } else {
+                updated.add(baseVariant);
+            }
+        } else {
+            if (existing.size() >= MAX_VARIANTS_PER_POSITION) {
+                player.displayClientMessage(
+                    Component.literal("Variant list full (" + MAX_VARIANTS_PER_POSITION + ") — clear or reset this position.")
+                        .withStyle(ChatFormatting.YELLOW), true);
+                suppressVanillaPlace(event);
+                return null;
+            }
+            updated.addAll(existing);
+        }
+        // Mob entries skip rotation-orientation: rotation field semantics
+        // differ (Y-rot at spawn rather than block FACING) and the state
+        // field is the AIR-sentinel anyway. Preserve the mob entry as-is so
+        // its entityId / entityNbt round-trip through buildUpdatedList.
+        if (newVariant.isMob()) {
+            updated.add(newVariant);
+            return updated;
+        }
+        // Orient the new entry against the predecessor list so its facing
+        // matches the most recent existing block with a direction. This
+        // matches the world-space block-variant menu's ADD behavior.
+        RotationApplier.OrientedState oriented =
+            RotationApplier.orientToPredecessors(newVariant.state(), updated);
+        updated.add(new VariantState(
+            oriented.state(), newVariant.blockEntityNbt(),
+            newVariant.weight(), oriented.rotation()));
+        return updated;
     }
 
     private static void sendAddedFeedback(ServerPlayer player, BlockPos clicked, BlockPos local,
@@ -399,12 +494,26 @@ public final class VariantBlockInteractions {
         final int lx = local.getX();
         final int ly = local.getY();
         final int lz = local.getZ();
-        ChatFormatting colour = added.isMob() ? ChatFormatting.LIGHT_PURPLE
-            : CarriageVariantBlocks.isEmptyPlaceholder(added.state()) ? ChatFormatting.AQUA
-            : ChatFormatting.GREEN;
+        if (added.isMob()) {
+            String mobLabel = added.entityId().toString() + " (mob)"
+                + (added.hasBlockEntityData() ? " (+nbt)" : "");
+            player.displayClientMessage(
+                Component.literal("+ " + mobLabel + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
+                    .withStyle(ChatFormatting.LIGHT_PURPLE), true);
+            return;
+        }
+        ResourceLocation newName = BuiltInRegistries.BLOCK.getKey(added.state().getBlock());
+        boolean sentinel = CarriageVariantBlocks.isEmptyPlaceholder(added.state());
+        StringBuilder label = new StringBuilder();
+        if (sentinel) {
+            label.append(newName).append(" (empty-space)");
+        } else {
+            label.append(newName);
+            if (added.hasBlockEntityData()) label.append(" (+nbt)");
+        }
         player.displayClientMessage(
-            Component.literal("+ " + VariantAppend.label(added) + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
-                .withStyle(colour), true);
+            Component.literal("+ " + label + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
+                .withStyle(sentinel ? ChatFormatting.AQUA : ChatFormatting.GREEN), true);
     }
 
     /**

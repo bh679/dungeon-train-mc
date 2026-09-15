@@ -12,8 +12,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Three jobs on one set of seams: gates Effortless Building's creative features behind the Free
- * Play confirmation, records what they change into the editor's undo history, and — with the
- * variant key held inside an editor plot — turns a placement into a bulk variant add
+ * Play confirmation, records what they change into the editor's undo history, and — with a
+ * variant clipboard in hand — turns a shape placement into a bulk clipboard paste
  * ({@link EffortlessBuildingVariants}).
  *
  * <p>Effortless Building drives every build through its own server-bound packets — it fires no
@@ -58,10 +58,10 @@ public abstract class EffortlessBuildingPacketHandlerMixin {
             ci.cancel();
             return;
         }
-        // Variant key held inside an editor plot: the build authors variant pools instead of
-        // placing blocks. Cancelled before begin() — the world does not change, so there is no
-        // block diff to capture; the sidecar snapshot inside carries the undo step.
-        if (EffortlessBuildingVariants.tryVariantBuild(packet, player)) {
+        // A variant clipboard in hand: the shape is a bulk paste, handled by DT. Cancelled before
+        // begin() — the paste records its own undo step (block + sidecar) through the editor's
+        // pending-sidecar snapshot, so no block-diff capture is needed here.
+        if (EffortlessBuildingVariants.tryClipboardBuild(packet, player)) {
             ci.cancel();
             return;
         }
