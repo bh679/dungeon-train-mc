@@ -38,12 +38,13 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all six siblings | Server starts cleanly |
+| **A** | DT + Sable + all six siblings + Fast Paintings + Moonlight | Server starts cleanly |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
 | **C** | DT + Sable only | Fails — names **all six**, with each declared range |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
 | **E** | PlayerMob **below** the floor | Fails — `Expected range: '[<floor>,)', Actual version: '0.50.0'` |
 | **F** | minus Sable | Fails — `Expected range: '[x,x]'` (exact pin, not a minimum) |
+| **G** | minus Fast Paintings + Moonlight | Fails — names `fastpaintings` and `moonlight` with their `[x,)` floors |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

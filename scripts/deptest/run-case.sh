@@ -6,7 +6,8 @@
 # Mod keys:
 #   dt         the freshly built Dungeon Train jar (build/libs/)
 #   sable      the pinned Sable build
-#   ain ais pmob ecp te the five un-bundled sibling mods, at their pinned versions
+#   ain ais pmob ecp te kt  the six un-bundled sibling mods, at their pinned versions
+#   fp moon    Fast Paintings + its Moonlight library (third-party required deps)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
 #   pmob-old   PlayerMob BELOW the declared floor (downloaded, see README)
 #
@@ -63,6 +64,9 @@ resolve() {
     ecp)      cached "bh679/enderchestpersistence"   "$(prop enderchestpersistence_version)" ;;
     te)       cached "bh679/tradeeverything"         "$(prop tradeeverything_version)" ;;
     kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;
+    # Third-party required deps, keyed by Modrinth VERSION ID (see gradle.properties).
+    fp)       cached "maven.modrinth/fast-paintings" "$(prop fastpaintings_version)" ;;
+    moon)     cached "maven.modrinth/moonlight"      "$(prop moonlight_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two

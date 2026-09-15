@@ -258,6 +258,8 @@ jobs:
             ender-chest-persistence(required)
             trade-everything(required)
             keep-trim(required)
+            fast-paintings(required)
+            selene(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)

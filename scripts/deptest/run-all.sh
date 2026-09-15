@@ -10,9 +10,10 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # Positive control first: if A fails, every later "failed" result is meaningless.
-"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt
-"$HERE/run-case.sh" "B - missing AIN only"                             dt sable ais pmob ecp te kt
-"$HERE/run-case.sh" "C - missing all six siblings (upgrade path)"      dt sable
-"$HERE/run-case.sh" "D - PlayerMob above floor (cascade tolerance)"    dt sable ain ais pmob-new ecp te kt
-"$HERE/run-case.sh" "E - PlayerMob below floor"                        dt sable ain ais pmob-old ecp te kt
-"$HERE/run-case.sh" "F - missing Sable (exact-pin control)"            dt ain ais pmob ecp te kt
+"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt fp moon
+"$HERE/run-case.sh" "B - missing AIN only"                             dt sable ais pmob ecp te kt fp moon
+"$HERE/run-case.sh" "C - missing all six siblings (upgrade path)"      dt sable fp moon
+"$HERE/run-case.sh" "D - PlayerMob above floor (cascade tolerance)"    dt sable ain ais pmob-new ecp te kt fp moon
+"$HERE/run-case.sh" "E - PlayerMob below floor"                        dt sable ain ais pmob-old ecp te kt fp moon
+"$HERE/run-case.sh" "F - missing Sable (exact-pin control)"            dt ain ais pmob ecp te kt fp moon
+"$HERE/run-case.sh" "G - missing Fast Paintings + Moonlight"           dt sable ain ais pmob ecp te kt

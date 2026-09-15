@@ -451,6 +451,14 @@ dependencies {
     // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}.
     compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
 
+    // Fast Paintings + Moonlight — REQUIRED third-party deps (see gradle.properties). Not bundled:
+    // the launchers install them from the (required) relations like Sable and the siblings. On the
+    // dev classpath so runClient/runServer stamp block paintings; DT references the block only by
+    // registry id + property name (compat/PaintingTransformProcessor), so nothing compiles against
+    // either jar — `runtimeOnly` would do, `implementation` keeps the sibling convention.
+    implementation "maven.modrinth:fast-paintings:${fastpaintings_version}"
+    implementation "maven.modrinth:moonlight:${moonlight_version}"
+
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -713,6 +721,9 @@ tasks.register('generateModMetadata', ProcessResources) {
         playermob_min_version             : playermob_min_version,
         enderchestpersistence_min_version : enderchestpersistence_min_version,
         tradeeverything_min_version       : tradeeverything_min_version,
+        // Third-party required deps (Fast Paintings + its Moonlight library) — floors only.
+        fastpaintings_min_version         : fastpaintings_min_version,
+        moonlight_min_version             : moonlight_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties
