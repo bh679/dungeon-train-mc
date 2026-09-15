@@ -123,4 +123,31 @@ final class EditorStampQueueTest {
         assertFalse(EditorStampQueue.isBusy());
         assertEquals(0, EditorStampQueue.runSome(10));
     }
+
+    @Test
+    @DisplayName("partitionOverlapping pulls out the jobs whose footprint touches the box, keeping order")
+    void partitionOverlapping() {
+        var head = new net.minecraft.world.level.levelgen.structure.BoundingBox(-1, 229, -1, 10, 240, 8);
+        var under = new EditorStampQueue.Job("under", () -> {},
+            new net.minecraft.world.level.levelgen.structure.BoundingBox(5, 229, 5, 30, 240, 30));
+        var far = new EditorStampQueue.Job("far", () -> {},
+            new net.minecraft.world.level.levelgen.structure.BoundingBox(100, 229, 100, 130, 240, 130));
+        var unknown = new EditorStampQueue.Job("unknown", () -> {});
+        var edge = new EditorStampQueue.Job("edge", () -> {},
+            new net.minecraft.world.level.levelgen.structure.BoundingBox(10, 229, 8, 20, 240, 20));
+
+        EditorStampQueue.Partition split = EditorStampQueue.partitionOverlapping(List.of(far, under, unknown, edge), head);
+        assertEquals(List.of("under", "edge"), split.overlapping().stream().map(EditorStampQueue.Job::label).toList());
+        assertEquals(List.of("far", "unknown"), split.rest().stream().map(EditorStampQueue.Job::label).toList());
+    }
+
+    @Test
+    @DisplayName("partitionOverlapping with no box queues everything")
+    void partitionOverlappingNoBox() {
+        var a = new EditorStampQueue.Job("a", () -> {},
+            new net.minecraft.world.level.levelgen.structure.BoundingBox(0, 0, 0, 1, 1, 1));
+        EditorStampQueue.Partition split = EditorStampQueue.partitionOverlapping(List.of(a), null);
+        assertTrue(split.overlapping().isEmpty());
+        assertEquals(1, split.rest().size());
+    }
 }

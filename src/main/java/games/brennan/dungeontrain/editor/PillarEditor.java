@@ -101,6 +101,8 @@ public final class PillarEditor {
      * cage margin.
      */
     public static SectionPlot plotContaining(BlockPos pos, CarriageDims dims) {
+        // Answers only while TRACKS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (PillarSection section : PillarSection.values()) {
             int h = section.height();
             int w = dims.width();
@@ -122,6 +124,8 @@ public final class PillarEditor {
      * if outside every adjunct plot. Includes the 1-block outline margin.
      */
     public static AdjunctPlot plotContainingAdjunct(BlockPos pos, CarriageDims dims) {
+        // Answers only while TRACKS is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) return null;
         for (PillarAdjunct adjunct : PillarAdjunct.values()) {
             for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.adjunctKind(adjunct))) {
                 BlockPos o = TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(adjunct), name, dims);

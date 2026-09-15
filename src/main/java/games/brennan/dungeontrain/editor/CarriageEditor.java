@@ -166,6 +166,8 @@ public final class CarriageEditor {
      * footprint plus 1-block outline margin), or {@code null} if none.
      */
     public static CarriageVariant plotContaining(BlockPos pos, CarriageDims dims) {
+        // Answers only while CARRIAGES is the resident category — every category shares the origin.
+        if (!EditorStampedCategoryState.isActive(EditorCategory.CARRIAGES)) return null;
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
             BlockPos o = plotOrigin(variant, dims);
             if (o == null) continue;

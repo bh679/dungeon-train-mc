@@ -500,7 +500,16 @@
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "birch",
-      "stone": "quartz"
+      "stone": "quartz",
+      "overrides": {
+        "stage_stone_bricks_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_cobbled_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_cracked_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_feature_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_mossy_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_polished_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_wall": "minecraft:polished_blackstone_wall"
+      }
     }
   },
   "quartz": {
@@ -535,7 +544,16 @@
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "birch",
-      "stone": "quartz"
+      "stone": "quartz",
+      "overrides": {
+        "stage_stone_bricks_wall": "minecraft:diorite_wall",
+        "stage_stone_cobbled_wall": "minecraft:diorite_wall",
+        "stage_stone_cracked_wall": "minecraft:diorite_wall",
+        "stage_stone_feature_wall": "minecraft:diorite_wall",
+        "stage_stone_mossy_wall": "minecraft:diorite_wall",
+        "stage_stone_polished_wall": "minecraft:diorite_wall",
+        "stage_stone_wall": "minecraft:diorite_wall"
+      }
     }
   },
   "spruce": {
