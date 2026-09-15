@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.world.CustomContentChoice;
+
 /**
  * This client's remembered answer to the "you have custom Train Editor content"
  * prompt shown when a world starts.
@@ -16,15 +18,35 @@ package games.brennan.dungeontrain.config;
 public enum CustomContentPreference {
     ASK,
     CONTINUE,
-    DISABLE;
+    DISABLE,
+    /** Dev builds only: keep the content and stay Live. See {@link CustomContentChoice#DEV_IGNORE}. */
+    DEV_IGNORE;
 
     /** Should the prompt actually be shown, or can it be answered without the player? */
     public boolean asks() {
         return this == ASK;
     }
 
-    /** The answer to send when {@link #asks()} is false. */
+    /** Does this answer leave the custom content loading? Anything but {@link #DISABLE}. */
     public boolean keepsContent() {
-        return this == CONTINUE;
+        return this != DISABLE;
+    }
+
+    /** The world answer to record when {@link #asks()} is false. */
+    public CustomContentChoice toChoice() {
+        return switch (this) {
+            case DISABLE -> CustomContentChoice.DISABLE;
+            case DEV_IGNORE -> CustomContentChoice.DEV_IGNORE;
+            case ASK, CONTINUE -> CustomContentChoice.ALLOW;
+        };
+    }
+
+    /** The preference that reproduces a given world answer — what "Remember decision" stores. */
+    public static CustomContentPreference fromChoice(CustomContentChoice choice) {
+        return switch (choice) {
+            case DISABLE -> DISABLE;
+            case DEV_IGNORE -> DEV_IGNORE;
+            case ALLOW, UNSET -> CONTINUE;
+        };
     }
 }
