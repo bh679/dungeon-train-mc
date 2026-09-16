@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.ship.sable.NoSyncLoadStats;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -39,6 +40,7 @@ public abstract class FluidInteractionNoSyncLoadMixin {
                                                                         final CallbackInfoReturnable<Boolean> cir) {
         for (final Direction dir : LiquidBlock.POSSIBLE_FLOW_DIRECTIONS) {
             if (!level.hasChunkAt(pos.relative(dir.getOpposite()))) {
+                NoSyncLoadStats.interactionSkipped();
                 cir.setReturnValue(false);
                 return;
             }

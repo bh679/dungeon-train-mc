@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.ryanhcode.sable.util.LevelAccelerator;
 import games.brennan.dungeontrain.ship.sable.NoSyncLoadChunkAccess;
+import games.brennan.dungeontrain.ship.sable.NoSyncLoadStats;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerChunkCache;
@@ -88,6 +89,7 @@ public abstract class LevelAcceleratorNoSyncLoadMixin implements NoSyncLoadChunk
         // Chunk not loaded: treat it as air rather than sync-loading/generating on the
         // server thread. Accepted tradeoff: an item/mob may fall through train geometry
         // whose chunk hasn't loaded yet — that geometry doesn't exist server-side anyway.
+        NoSyncLoadStats.airChunkRead();
         final EmptyLevelChunk cached = this.dungeontrain$emptyChunk;
         if (cached == null || cached.getPos().x != chunkX || cached.getPos().z != chunkZ) {
             final Holder<Biome> plains = level.registryAccess()

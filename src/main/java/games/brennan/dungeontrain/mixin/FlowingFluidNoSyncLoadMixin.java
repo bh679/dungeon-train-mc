@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.ship.sable.NoSyncLoadStats;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -55,6 +56,7 @@ public abstract class FlowingFluidNoSyncLoadMixin {
         if (!(level instanceof ServerLevel server)) return;
         if (dungeontrain$allSpreadTargetsLoaded(server, pos)) return;
         server.scheduleTick(pos, state.getType(), state.getType().getTickDelay(server));
+        NoSyncLoadStats.fluidTickDeferred();
         ci.cancel();
     }
 
