@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.ship.sable.NeighbourChunkGuard;
 import games.brennan.dungeontrain.ship.sable.NoSyncLoadStats;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -27,7 +28,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>Returning {@code false} here is safe: the interaction is re-attempted naturally. When the
  * missing neighbour is promoted to ticking, its own {@code postProcessGeneration} ticks its border
  * fluid → {@code spreadTo} → {@code neighborChanged} on our block → {@code canInteract} runs again
- * with everything loaded. Pairs with {@link FlowingFluidNoSyncLoadMixin}.</p>
+ * with everything loaded.</p>
+ *
+ * <p>Positions inside a Sable sub-level plot count as readable ({@link NeighbourChunkGuard}):
+ * Sable holds plot chunks below vanilla's FULL ticket level, so a plain {@code hasChunkAt} would
+ * veto every lava/water interaction on a carriage forever (found at Gate 2 of #1450).</p>
  *
  * <p>{@code remap = false}: NeoForge class, Mojang-mapped at runtime; {@code canInteract} is its
  * own name. Server-side callers only (fluid interaction is a server-thread block update).</p>
@@ -39,7 +44,7 @@ public abstract class FluidInteractionNoSyncLoadMixin {
     private static void dungeontrain$skipInteractionNextToUnloadedChunk(final Level level, final BlockPos pos,
                                                                         final CallbackInfoReturnable<Boolean> cir) {
         for (final Direction dir : LiquidBlock.POSSIBLE_FLOW_DIRECTIONS) {
-            if (!level.hasChunkAt(pos.relative(dir.getOpposite()))) {
+            if (!NeighbourChunkGuard.isReadable(level, pos.relative(dir.getOpposite()))) {
                 NoSyncLoadStats.interactionSkipped();
                 cir.setReturnValue(false);
                 return;

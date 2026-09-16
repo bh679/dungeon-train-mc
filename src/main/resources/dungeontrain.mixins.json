@@ -50,7 +50,6 @@
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",
     "RapierPipelineNoSyncLoadMixin",
-    "FlowingFluidNoSyncLoadMixin",
     "FluidInteractionNoSyncLoadMixin",
     "SableBlockChangeGuardMixin",
     "MergedMassTrackerPivotFreezeMixin",
