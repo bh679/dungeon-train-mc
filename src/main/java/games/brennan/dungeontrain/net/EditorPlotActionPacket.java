@@ -163,6 +163,7 @@ public record EditorPlotActionPacket(
                     case CONTENTS -> dispatchContents(sender, overworld, dims, packet);
                     case TRACKS -> dispatchTracks(sender, overworld, dims, packet);
                     case PORTALS -> dispatchPortals(sender, overworld, dims, packet);
+                    case PREFABS -> dispatchPrefabs(sender, overworld, dims, packet);
                     case ARCHITECTURE -> {} // no models
                 }
             } catch (Throwable t) {
@@ -338,6 +339,28 @@ public record EditorPlotActionPacket(
             case ENTER_INSIDE -> games.brennan.dungeontrain.editor.PortalRoomEditor.enter(sender, name, false);
         }
         LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} portal room '{}'",
+            sender.getName().getString(), packet.action, name);
+    }
+
+    private static void dispatchPrefabs(ServerPlayer sender, ServerLevel overworld, CarriageDims dims,
+                                        EditorPlotActionPacket packet) throws Exception {
+        if (!games.brennan.dungeontrain.track.variant.TrackKind.PREFAB.id().equals(packet.modelId)) {
+            LOGGER.info("[DungeonTrain] EditorPlotAction: prefabs {} not wired (modelId='{}')",
+                packet.action, packet.modelId);
+            return;
+        }
+        String name = packet.modelName;
+        switch (packet.action) {
+            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Prefab(name));
+            case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Prefab(name));
+            case CLEAR -> {
+                games.brennan.dungeontrain.editor.PrefabEditor.clearToEmpty(overworld, name, dims);
+                sender.sendSystemMessage(Component.literal("Editor: cleared all blocks in prefab '" + name + "'.")
+                    .copy().withStyle(ChatFormatting.GREEN));
+            }
+            case ENTER_INSIDE -> games.brennan.dungeontrain.editor.PrefabEditor.enter(sender, name, false, false);
+        }
+        LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} prefab '{}'",
             sender.getName().getString(), packet.action, name);
     }
 }

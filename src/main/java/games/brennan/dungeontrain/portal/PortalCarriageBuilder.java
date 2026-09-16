@@ -404,6 +404,16 @@ public final class PortalCarriageBuilder {
         }
         applyCorridorVariants(level, origin, dims, kind, pairKey, role);
         if (withContents) stampCorridorContents(level, origin, dims, kind, pairKey, role);
+        // Prefab anchors the shell, its sidecar or the contents left standing. Same frame as the
+        // rolls above, so the carriage and its twin resolve to the same blocks; skipped for the
+        // editor plot (NO_PAIR), where the author is meant to see the anchors.
+        if (pairKey != NO_PAIR) {
+            games.brennan.dungeontrain.train.PrefabResolver.resolveWithin(level,
+                games.brennan.dungeontrain.train.PrefabResolver.boxOf(origin,
+                    PortalCorridorSize.corridorDims(dims, kind)),
+                dims, PortalCarriageSelection.generationSeed(level),
+                PortalCarriageRole.corridorIndexOf(pairKey, role), relight);
+        }
     }
 
     /**
@@ -1647,6 +1657,11 @@ public final class PortalCarriageBuilder {
         applyRoomContents(level, roomOrigin, size, roomName, writeMask, variantIndex, pairKey, contents);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, exactIndex,
             pairKey, tile, liveMobCount);
+        // Prefab anchors the room or its furnishing left standing, kept out of the corridor mask.
+        // Rolled in the pair-and-copy frame like the room's own cells, so every Exact copy agrees.
+        games.brennan.dungeontrain.train.PrefabResolver.resolveWithin(level,
+            games.brennan.dungeontrain.train.PrefabResolver.boxOf(roomOrigin, size), dims,
+            level.getSeed(), variantIndex, relight, writeMask::covers);
         // Last, and only a registration: the shelves are stocked by PortalRoomLibrarian on a later
         // tick, because the relay has not said who has written what by the time a room is stamped.
         PortalRoomLibrarian.register(pairKey, roomOrigin, size, books);

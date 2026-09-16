@@ -28,6 +28,8 @@ public final class NewSourcePickerScreen implements MenuScreen {
          * dispatches through the {@code portals} command prefix.
          */
         PORTALS,
+        /** A new prefab: name only, an empty box. Dispatches {@code editor prefabs new <name>}. */
+        PREFABS,
         /**
          * Sub-variant of a contents group. {@code currentId} carries the <b>parent</b> id — a
          * sub-variant cannot itself be a parent, so the command always targets the group's root —
@@ -81,6 +83,7 @@ public final class NewSourcePickerScreen implements MenuScreen {
             // a single name TypeArg + Back below.
             case TRACKS -> "New " + kind + " — name";
             case PORTALS -> "New dimensional carriage — name";
+            case PREFABS -> "New prefab — name";
             case CONTENTS_SUB_VARIANT, PORTAL_ROOM_SUB_VARIANT -> "New sub-variant of " + currentId + " — name";
         };
     }
@@ -135,6 +138,11 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 // source to choose between.
                 out.add(new CommandMenuEntry.TypeArg(
                     "New", "name", "dungeontrain editor portals new " + kind));
+            }
+            case PREFABS -> {
+                // An empty box the size of the plot the author stands in (or the kind's default).
+                out.add(new CommandMenuEntry.TypeArg(
+                    "New", "name", "dungeontrain editor prefabs new"));
             }
             case CONTENTS_SUB_VARIANT -> {
                 // Same Blank / Current shape as CONTENTS. The parent is baked into the prefix; the

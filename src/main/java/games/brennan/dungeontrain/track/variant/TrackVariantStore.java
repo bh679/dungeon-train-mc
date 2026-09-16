@@ -349,6 +349,8 @@ public final class TrackVariantStore {
      * into it).</p>
      */
     private static boolean boundsMatch(TrackKind kind, Vec3i size, Vec3i bounds) {
+        // A prefab is any size the author saved it at — see TrackKind.freeSize.
+        if (kind.freeSize()) return true;
         if (kind.freeSizeAboveFloor()) {
             return size.getX() >= bounds.getX()
                 && size.getY() >= bounds.getY()

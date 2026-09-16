@@ -224,7 +224,7 @@ public final class EditorScreenActions {
             // phase commands beside this one send.
             case PORTALS -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor portals label " + id + " " + sel.modelName(), "", current);
-            case PARTS, TRACKS, ARCHITECTURE -> null;
+            case PARTS, TRACKS, ARCHITECTURE, PREFABS -> null;
         };
     }
 
@@ -278,6 +278,7 @@ public final class EditorScreenActions {
         return switch (sel.category()) {
             case CONTENTS -> "dungeontrain editor contents reset " + sel.modelId();
             case PORTALS -> "dungeontrain editor portals reset " + sel.modelId() + " " + sel.modelName();
+            case PREFABS -> "dungeontrain editor prefabs delete " + sel.modelName();
             default -> null;
         };
     }

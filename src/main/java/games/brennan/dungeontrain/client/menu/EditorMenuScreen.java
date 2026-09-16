@@ -624,7 +624,7 @@ public final class EditorMenuScreen implements MenuScreen {
             case TRACKS -> named ? "dungeontrain editor tracks weight " + modelId + " " + modelName : null;
             case PORTALS -> named ? "dungeontrain editor portals weight " + modelId + " " + modelName : null;
             case CONTENTS -> "dungeontrain editor contents weight " + modelId;
-            case PARTS, ARCHITECTURE -> null; // no weight pool
+            case PARTS, ARCHITECTURE, PREFABS -> null; // no weight pool
         };
         if (prefix == null) return null;
         String label = currentWeight >= 0 ? "Weight (" + currentWeight + ")" : "Weight";
@@ -671,7 +671,7 @@ public final class EditorMenuScreen implements MenuScreen {
             case TRACKS -> named ? "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName : null;
             case PORTALS -> named ? "dungeontrain editor portals " + sub + " " + modelId + " " + modelName : null;
             case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId;
-            case PARTS, ARCHITECTURE -> null; // no spawn gate
+            case PARTS, ARCHITECTURE, PREFABS -> null; // no spawn gate
         };
         if (prefix == null) return null;
         CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
@@ -712,6 +712,8 @@ public final class EditorMenuScreen implements MenuScreen {
                     "New", "name",
                     "dungeontrain editor portals new " + modelId);
             }
+            // A new prefab is an empty box: name only, sized like the plot the author stands in.
+            case PREFABS -> new CommandMenuEntry.TypeArg("New", "name", "dungeontrain editor prefabs new");
             // Parts are created through their own picker; architecture has no models yet.
             case PARTS, ARCHITECTURE -> null;
         };
@@ -748,6 +750,11 @@ public final class EditorMenuScreen implements MenuScreen {
                 "Remove",
                 new ConfirmScreen("Remove the current variant for '" + model + "'?",
                     "dungeontrain editor portals reset " + modelId));
+            // The generic track-side reset, position-resolved: a prefab is a TrackKind on disk.
+            case PREFABS -> new CommandMenuEntry.DrillIn(
+                "Remove",
+                new ConfirmScreen("Remove the current prefab '" + model + "'?",
+                    "dungeontrain editor tracks reset " + modelId));
             // Parts have their own remove flow; architecture has no models yet.
             case PARTS, ARCHITECTURE -> null;
         };
@@ -762,7 +769,7 @@ public final class EditorMenuScreen implements MenuScreen {
     public static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty() || category == null) return null;
         return switch (category) {
-            case CARRIAGES, CONTENTS, PARTS, PORTALS -> new CommandMenuEntry.DrillIn(
+            case CARRIAGES, CONTENTS, PARTS, PORTALS, PREFABS -> new CommandMenuEntry.DrillIn(
                 "Clear",
                 new ConfirmScreen("Clear all blocks in '" + model + "'?",
                     "dungeontrain editor clear"));
@@ -802,7 +809,7 @@ public final class EditorMenuScreen implements MenuScreen {
                 "dungeontrain editor contents save",
                 "", model);
             // Parts are handled above; the rest have no rename subcommand.
-            case TRACKS, PORTALS, PARTS, ARCHITECTURE -> null;
+            case TRACKS, PORTALS, PARTS, ARCHITECTURE, PREFABS -> null;
         };
     }
 

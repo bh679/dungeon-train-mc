@@ -167,7 +167,7 @@ public final class TemplateDataSheet {
             case CARRIAGES -> "dungeontrain editor builder " + key.modelId();
             case CONTENTS -> "dungeontrain editor contents builder " + key.modelId();
             case PORTALS -> "dungeontrain editor portals builder " + key.modelId() + " " + key.modelName();
-            case PARTS, TRACKS, ARCHITECTURE -> null;
+            case PARTS, TRACKS, ARCHITECTURE, PREFABS -> null;
         };
     }
 

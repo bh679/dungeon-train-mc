@@ -74,6 +74,11 @@ public final class TrackSidePlots {
      * a category switch — but the column keeps the two apart when reading the layout.
      */
     public static final int X_PORTALS = X_PILLARS + 1 + EditorLayout.GAP;        // +1+5 = 33
+    /**
+     * Prefabs share the room column. Their own category too, so the two are never standing at the
+     * same time; a prefab row packs by each prefab's own size the way rooms do.
+     */
+    public static final int X_PREFABS = X_PORTALS;
 
     private TrackSidePlots() {}
 
@@ -141,6 +146,7 @@ public final class TrackSidePlots {
      * rather than the kind — a portal room is whatever size its author made it.</p>
      */
     public static Vec3i footprint(TrackKind kind, String name, CarriageDims dims) {
+        if (kind.freeSize()) return PrefabSizes.sizeOf(name);
         if (!kind.freeSizeAboveFloor()) return kind.dims(dims);
         return PortalRoomSizes.sizeOf(name, dims);
     }
@@ -160,7 +166,7 @@ public final class TrackSidePlots {
         for (TrackKind kind : TrackKind.values()) {
             // Every category shares the origin, so a kind answers only while its category is the
             // resident one — the room column belongs to PORTALS, the rest to TRACKS.
-            EditorCategory owner = kind == TrackKind.PORTAL_ROOM ? EditorCategory.PORTALS : EditorCategory.TRACKS;
+            EditorCategory owner = ownerCategory(kind);
             if (!EditorStampedCategoryState.isActive(owner)) continue;
             List<String> names = TrackVariantRegistry.namesFor(kind);
             for (String name : names) {
@@ -195,7 +201,7 @@ public final class TrackSidePlots {
         int idx = names.indexOf(name);
         if (idx < 0) idx = 0;
 
-        if (kind.freeSizeAboveFloor()) {
+        if (kind.variableSize()) {
             int z = Z_BASELINE;
             for (int i = 0; i < idx; i++) {
                 z += slotZ(kind, names.get(i), dims);
@@ -253,7 +259,7 @@ public final class TrackSidePlots {
      */
     static int deepestZ(TrackKind kind, String name, CarriageDims dims) {
         int deepest = footprint(kind, name, dims).getZ();
-        if (!kind.freeSizeAboveFloor()) return deepest;
+        if (!kind.variableSize()) return deepest;
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
             TrackVariantGroupStore.get(kind, name);
         if (group.isEmpty()) return deepest;
@@ -280,7 +286,7 @@ public final class TrackSidePlots {
             case PILLAR_TOP -> Y_BASELINE
                 + PillarSection.BOTTOM.height() + EditorLayout.GAP
                 + PillarSection.MIDDLE.height() + EditorLayout.GAP;
-            case PORTAL_ROOM -> Y_BASELINE;
+            case PORTAL_ROOM, PREFAB -> Y_BASELINE;
         };
     }
 
@@ -292,6 +298,16 @@ public final class TrackSidePlots {
             case ADJUNCT_STAIRS, ADJUNCT_STAIRS_ENTRANCE -> X_STAIRS;
             case PILLAR_TOP, PILLAR_MIDDLE, PILLAR_BOTTOM -> X_PILLARS;
             case PORTAL_ROOM -> X_PORTALS;
+            case PREFAB -> X_PREFABS;
+        };
+    }
+
+    /** The editor category whose plots a kind stands in — rooms, prefabs and the track-side rest. */
+    public static EditorCategory ownerCategory(TrackKind kind) {
+        return switch (kind) {
+            case PORTAL_ROOM -> EditorCategory.PORTALS;
+            case PREFAB -> EditorCategory.PREFABS;
+            default -> EditorCategory.TRACKS;
         };
     }
 

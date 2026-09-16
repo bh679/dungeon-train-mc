@@ -98,6 +98,7 @@ public final class EditorDirtyCheck {
         scanAdjuncts(overworld, dims, devmode, out);
         scanTunnels(overworld, dims, devmode, out);
         scanPortalRooms(overworld, dims, devmode, out);
+        scanPrefabs(overworld, dims, devmode, out);
 
         return out;
     }
@@ -308,6 +309,27 @@ public final class EditorDirtyCheck {
         }
     }
 
+    private static void scanPrefabs(ServerLevel level, CarriageDims dims, boolean devmode,
+                                    List<DirtyEntry> out) {
+        for (String name : TrackVariantRegistry.namesFor(TrackKind.PREFAB)) {
+            BlockPos origin = PrefabEditor.plotOrigin(name, dims);
+            String key = PrefabEditor.snapshotKey(name);
+            Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+            // Template first, so PrefabSizes answers with the saved size — same order as rooms.
+            Vec3i saved = PrefabTemplateStore.sizeOf(level, name, dims);
+            Vec3i fp = PrefabEditor.plotSize(name);
+            Set<BlockPos> skip = variantCellPositions(
+                TrackVariantBlocks.loadFor(TrackKind.PREFAB, name, fp).entries());
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin, fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
+            // A resize the block compare cannot see — see scanPortalRooms.
+            boolean resized = !fp.equals(saved);
+            if (unsaved || resized) {
+                out.add(new DirtyEntry("prefabs", "prefab." + name, "prefab / " + name, true, false));
+            }
+        }
+    }
+
     /**
      * Position-by-position compare of the live world region against
      * {@code snapshot}. Skips {@code skip} positions (variant cells —
@@ -450,6 +472,16 @@ public final class EditorDirtyCheck {
             collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
                 EditorPlotSnapshots.get(PortalRoomEditor.snapshotKey(name)), skip, out);
         }
+        if ("prefabs".equals(categoryId) && modelId.contains(".")) {
+            String name = modelId.substring(modelId.indexOf('.') + 1);
+            BlockPos origin = PrefabEditor.plotOrigin(name, dims);
+            PrefabTemplateStore.sizeOf(overworld, name, dims);
+            Vec3i fp = PrefabEditor.plotSize(name);
+            Set<BlockPos> skip = variantCellPositions(
+                TrackVariantBlocks.loadFor(TrackKind.PREFAB, name, fp).entries());
+            collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
+                EditorPlotSnapshots.get(PrefabEditor.snapshotKey(name)), skip, out);
+        }
         return out;
     }
 
@@ -523,7 +555,7 @@ public final class EditorDirtyCheck {
         return switch (model.kind()) {
             case CARRIAGE, CONTENTS -> model.id();
             case TRACK -> "track." + model.variantName();
-            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
+            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM, PREFAB ->
                 model.id() + "." + model.variantName();
             case PART, WHOLE_CARRIAGE -> null;
         };
@@ -572,6 +604,7 @@ public final class EditorDirtyCheck {
             case TUNNEL_SECTION -> TunnelEditor.tunnelSnapshotKey(TunnelVariant.SECTION, name);
             case TUNNEL_PORTAL -> TunnelEditor.tunnelSnapshotKey(TunnelVariant.PORTAL, name);
             case PORTAL_ROOM -> PortalRoomEditor.snapshotKey(name);
+            case PREFAB -> PrefabEditor.snapshotKey(name);
         };
     }
 
@@ -622,6 +655,7 @@ public final class EditorDirtyCheck {
             case TUNNEL_SECTION -> "tunnel_" + TunnelVariant.SECTION.id() + "." + id;
             case TUNNEL_PORTAL -> "tunnel_" + TunnelVariant.PORTAL.id() + "." + id;
             case PORTAL_ROOM -> "portal_room." + id;
+            case PREFAB -> "prefab." + id;
         };
     }
 

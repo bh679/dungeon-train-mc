@@ -49,6 +49,8 @@ public enum EditorCategory {
     CONTENTS("Contents"),
     TRACKS("Tracks"),
     PORTALS("Dimensions"),
+    /** Prefabs — designs of any size that other templates place via a prefab anchor. */
+    PREFABS("Prefabs"),
     ARCHITECTURE("Architecture");
 
     private final String displayName;
@@ -77,6 +79,7 @@ public enum EditorCategory {
             case CONTENTS -> contentsModels();
             case TRACKS -> trackModels();
             case PORTALS -> portalModels();
+            case PREFABS -> prefabModels();
             case ARCHITECTURE -> List.of();
         };
     }
@@ -120,6 +123,7 @@ public enum EditorCategory {
             case CONTENTS -> locateContents(pos, dims);
             case TRACKS -> locateTracks(pos, dims);
             case PORTALS -> locatePortals(pos, dims);
+            case PREFABS -> locatePrefabs(pos, dims);
             case ARCHITECTURE -> Optional.empty();
         };
     }
@@ -172,6 +176,14 @@ public enum EditorCategory {
         String roomName = PortalRoomEditor.plotContaining(pos, dims);
         if (roomName != null) {
             return Optional.of(new Located(PORTALS, new Template.PortalRoom(roomName)));
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<Located> locatePrefabs(BlockPos pos, CarriageDims dims) {
+        String name = PrefabEditor.plotContaining(pos, dims);
+        if (name != null) {
+            return Optional.of(new Located(PREFABS, new Template.Prefab(name)));
         }
         return Optional.empty();
     }
@@ -253,6 +265,16 @@ public enum EditorCategory {
         List<Template> out = new ArrayList<>(names.size());
         for (String name : names) {
             out.add(new Template.PortalRoom(name));
+        }
+        return out;
+    }
+
+    /** Every registered prefab, {@code default} first. */
+    private static List<Template> prefabModels() {
+        List<String> names = TrackVariantRegistry.namesFor(TrackKind.PREFAB);
+        List<Template> out = new ArrayList<>(names.size());
+        for (String name : names) {
+            out.add(new Template.Prefab(name));
         }
         return out;
     }

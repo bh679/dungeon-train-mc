@@ -64,7 +64,7 @@ public final class BuilderTrackPlot {
      * that isn't.</p>
      */
     public static boolean isTrackSide(TrackKind kind) {
-        return kind != TrackKind.PORTAL_ROOM;
+        return kind != TrackKind.PORTAL_ROOM && kind != TrackKind.PREFAB;
     }
 
     /** The template's footprint — the same box {@link TrackKind} tells every other caller about. */
@@ -82,6 +82,8 @@ public final class BuilderTrackPlot {
             // track plot at all — Train Dimensions opens it as its own volume, through
             // BuilderWorldSetup.openPortalRoom — so it is not in the corridor and never asks.
             case PORTAL_ROOM -> false;
+            // Prefabs are not authored in the Train Builder at all yet — editor only.
+            case PREFAB -> false;
         };
     }
 
@@ -130,6 +132,8 @@ public final class BuilderTrackPlot {
             // here would be a plausible-looking wrong place, so it answers nothing.
             case PORTAL_ROOM -> throw new IllegalArgumentException(
                     "portal rooms are not authored on a track plot — see BuilderWorldLayout.portalRoomOrigin");
+            case PREFAB -> throw new IllegalArgumentException(
+                    "prefabs are not authored in the Train Builder — use /dt editor prefabs");
             // Beside the column, flush against the corridor, reaching deck height — the generator's
             // own origin for an up-staircase.
             case ADJUNCT_STAIRS -> new BlockPos(

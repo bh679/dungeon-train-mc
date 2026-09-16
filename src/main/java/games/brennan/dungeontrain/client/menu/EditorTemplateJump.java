@@ -98,6 +98,7 @@ public final class EditorTemplateJump {
             case ADJUNCT_STAIRS_ENTRANCE ->
                     "dungeontrain editor pillar enter " + PillarAdjunct.STAIRS_ENTRANCE.id();
             case PORTAL_ROOM -> "dungeontrain editor portals enter " + id;
+            case PREFAB -> "dungeontrain editor prefabs enter " + id;
         };
     }
 }

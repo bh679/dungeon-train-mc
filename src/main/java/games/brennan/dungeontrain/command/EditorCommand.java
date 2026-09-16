@@ -588,6 +588,9 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_NAME_SUGGESTIONS))))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
+            // PREFABS — designs placed into other templates by anchor. Its own small tree; the
+            // generic track-side verbs still reach it as `tracks <verb> prefab <name>`.
+            .then(PrefabCommands.node())
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -3221,7 +3224,7 @@ public final class EditorCommand {
         return sb.toString();
     }
 
-    private static ServerPlayer requirePlayer(CommandSourceStack source) {
+    static ServerPlayer requirePlayer(CommandSourceStack source) {
         try {
             return source.getPlayerOrException();
         } catch (Exception e) {
@@ -3249,7 +3252,7 @@ public final class EditorCommand {
      *
      * @return false when the category entry failed and the caller should stop
      */
-    private static boolean ensureCategory(CommandSourceStack source, EditorCategory category) {
+    static boolean ensureCategory(CommandSourceStack source, EditorCategory category) {
         if (EditorStampedCategoryState.isActive(category)) return true;
         return runEnterCategory(source, category) != 0;
     }
@@ -3259,7 +3262,7 @@ public final class EditorCommand {
      * can walk between all of them, then teleport them to the first model.
      * Architecture has no models yet and returns a "coming soon" message.
      */
-    private static int runEnterCategory(CommandSourceStack source, EditorCategory category) {
+    static int runEnterCategory(CommandSourceStack source, EditorCategory category) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         markEnteredEditor(player);
@@ -3367,6 +3370,8 @@ public final class EditorCommand {
             TrackEditor.enter(player, true, false);
         } else if (head instanceof Template.PortalRoom rm) {
             games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, rm.name(), true, false);
+        } else if (head instanceof Template.Prefab pf) {
+            games.brennan.dungeontrain.editor.PrefabEditor.enter(player, pf.name(), true, false);
         }
     }
 
@@ -3385,6 +3390,8 @@ public final class EditorCommand {
             TrackEditor.stampPlot(overworld, dims);
         } else if (model instanceof Template.PortalRoom rm) {
             games.brennan.dungeontrain.editor.PortalRoomEditor.stampPlot(overworld, rm.name(), dims);
+        } else if (model instanceof Template.Prefab pf) {
+            games.brennan.dungeontrain.editor.PrefabEditor.stampPlot(overworld, pf.name(), dims);
         }
     }
 
@@ -3491,6 +3498,18 @@ public final class EditorCommand {
             }
             origin = games.brennan.dungeontrain.editor.PortalRoomEditor.plotOrigin(name, dims);
             size = games.brennan.dungeontrain.editor.PortalRoomEditor.plotSize(name, dims);
+        } else if (category == EditorCategory.PREFABS) {
+            // Same "kind.name" shape as portals: one kind, prefix always `prefab`.
+            String prefix = id.contains(".") ? id.substring(0, id.indexOf('.')) : id;
+            String name = id.contains(".")
+                ? id.substring(id.indexOf('.') + 1)
+                : games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME;
+            if (!games.brennan.dungeontrain.track.variant.TrackKind.PREFAB.id().equals(prefix)) {
+                source.sendFailure(Component.literal("Unrecognised prefab id '" + id + "'."));
+                return 0;
+            }
+            origin = games.brennan.dungeontrain.editor.PrefabEditor.plotOrigin(name, dims);
+            size = games.brennan.dungeontrain.editor.PrefabEditor.plotSize(name);
         } else {
             // Resolve the model by id within the category and read its plot
             // footprint. The dispatch mirrors stampCategoryModel above —
@@ -3890,6 +3909,7 @@ public final class EditorCommand {
         // Each session restores its OWN entry point, so stacked sessions unwind one press at a
         // time: a user who entered a carriage plot, then a tunnel or room plot, runs exit twice.
         boolean exited = games.brennan.dungeontrain.editor.PortalRoomEditor.exit(player)
+            || games.brennan.dungeontrain.editor.PrefabEditor.exit(player)
             || TunnelEditor.exit(player)
             || CarriageEditor.exit(player);
         if (!exited) {
@@ -4201,6 +4221,24 @@ public final class EditorCommand {
                 return 1;
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] editor clear (portal room) failed", t);
+                source.sendFailure(Component.literal("clear failed: "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                ).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
+        String prefabName = games.brennan.dungeontrain.editor.PrefabEditor.plotContaining(pos, dims);
+        if (prefabName != null) {
+            try {
+                games.brennan.dungeontrain.editor.PrefabEditor.clearToEmpty(overworld, prefabName, dims);
+                final String id = prefabName;
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: cleared all blocks in prefab '" + id + "'. Run '/dungeontrain editor save' to persist."
+                ).withStyle(ChatFormatting.GREEN), true);
+                return 1;
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] editor clear (prefab) failed", t);
                 source.sendFailure(Component.literal("clear failed: "
                     + t.getClass().getSimpleName() + ": " + t.getMessage()
                 ).withStyle(ChatFormatting.RED));
@@ -7890,6 +7928,7 @@ public final class EditorCommand {
                 overworld, PillarAdjunct.STAIRS, dims);
             case PORTAL_ROOM -> games.brennan.dungeontrain.editor.PortalRoomEditor.stampAllPlots(
                 overworld, dims);
+            case PREFAB -> games.brennan.dungeontrain.editor.PrefabEditor.stampAllPlots(overworld, dims);
         }
     }
 
@@ -7918,6 +7957,7 @@ public final class EditorCommand {
                 overworld, PillarAdjunct.STAIRS, name, dims);
             case PORTAL_ROOM -> games.brennan.dungeontrain.editor.PortalRoomEditor.clearPlot(
                 overworld, name, dims);
+            case PREFAB -> games.brennan.dungeontrain.editor.PrefabEditor.clearPlot(overworld, name, dims);
         }
     }
 
@@ -8134,7 +8174,7 @@ public final class EditorCommand {
      * addressed by name, for the editor screen whose Remove acts on the selected row rather than
      * on the plot the player happens to stand in.
      */
-    private static int runTrackResetNamedVariant(CommandSourceStack source, String rawKind, String rawName,
+    static int runTrackResetNamedVariant(CommandSourceStack source, String rawKind, String rawName,
                                                  games.brennan.dungeontrain.editor.ParentDeletes.Mode mode) {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
@@ -8193,8 +8233,11 @@ public final class EditorCommand {
         //
         // For a cumulatively-packed row (portal rooms) removing a name also shifts every plot
         // after it, so the whole row has to go, not just this one.
-        if (kind.freeSizeAboveFloor()) {
+        // A variable-size row moves when a name leaves it, so the whole row is erased, not one plot.
+        if (kind == PORTAL_ROOM_KIND) {
             PortalRoomEditor.clearAllPlots(overworld, dims);
+        } else if (kind == games.brennan.dungeontrain.track.variant.TrackKind.PREFAB) {
+            games.brennan.dungeontrain.editor.PrefabEditor.clearAllPlots(overworld, dims);
         } else {
             clearPlotForVariant(overworld, kind, name, dims);
         }
@@ -8331,7 +8374,7 @@ public final class EditorCommand {
      * No-op for kinds without a single-plot editor (currently nothing — every
      * track-side kind has its plot via {@link games.brennan.dungeontrain.editor.TrackSidePlots}).
      */
-    private static void teleportToPlot(
+    static void teleportToPlot(
         ServerPlayer player, ServerLevel overworld,
         games.brennan.dungeontrain.track.variant.TrackKind kind, String name,
         CarriageDims dims

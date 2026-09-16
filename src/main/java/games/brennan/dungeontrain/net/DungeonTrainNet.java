@@ -40,6 +40,8 @@ public final class DungeonTrainNet {
         registrar.playToClient(EditorStatusPacket.TYPE, EditorStatusPacket.STREAM_CODEC, EditorStatusPacket::handle);
         registrar.playToClient(BookSuspensionSyncPacket.TYPE, BookSuspensionSyncPacket.STREAM_CODEC, BookSuspensionSyncPacket::handle);
         registrar.playToServer(VariantHotkeyPacket.TYPE, VariantHotkeyPacket.STREAM_CODEC, VariantHotkeyPacket::handle);
+        registrar.playToClient(OpenPrefabAnchorPacket.TYPE, OpenPrefabAnchorPacket.STREAM_CODEC, OpenPrefabAnchorPacket::handle);
+        registrar.playToServer(SetPrefabAnchorPacket.TYPE, SetPrefabAnchorPacket.STREAM_CODEC, SetPrefabAnchorPacket::handle);
         registrar.playToClient(PartAssignmentSyncPacket.TYPE, PartAssignmentSyncPacket.STREAM_CODEC, PartAssignmentSyncPacket::handle);
         registrar.playToServer(PartAssignmentEditPacket.TYPE, PartAssignmentEditPacket.STREAM_CODEC, PartAssignmentEditPacket::handle);
         registrar.playToServer(PartMenuTogglePacket.TYPE, PartMenuTogglePacket.STREAM_CODEC, PartMenuTogglePacket::handle);

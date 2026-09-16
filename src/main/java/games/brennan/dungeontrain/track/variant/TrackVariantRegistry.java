@@ -199,6 +199,7 @@ public final class TrackVariantRegistry {
         GROUP_WARNED.clear();
         // Room sizes are read off templates, so they belong to the world that was just closed.
         games.brennan.dungeontrain.portal.PortalRoomSizes.clear();
+        games.brennan.dungeontrain.editor.PrefabSizes.clear();
     }
 
     /**
@@ -460,6 +461,10 @@ public final class TrackVariantRegistry {
 
     public static TemplateRegistry<Template.Track> adapterForTrack() { return TRACK_ADAPTER; }
     public static TemplateRegistry<Template.PortalRoom> adapterForPortalRoom() { return PORTAL_ROOM_ADAPTER; }
+
+    private static final TemplateRegistry<Template.Prefab> PREFAB_ADAPTER =
+        makeAdapter(TrackKind.PREFAB, TemplateKind.PREFAB, Template.Prefab::new);
+    public static TemplateRegistry<Template.Prefab> adapterForPrefab() { return PREFAB_ADAPTER; }
     public static TemplateRegistry<Template.Pillar> adapterForPillar(PillarSection section) {
         return PILLAR_ADAPTERS.get(section);
     }

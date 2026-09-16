@@ -104,9 +104,10 @@ final class PlotCategoryTest {
     void capabilities_pinTheAllowlistsTheyReplaced() {
         // EditorPlotLabelsRenderer.hasActionRow was literally:
         //   "CARRIAGES".equals(c) || "CONTENTS".equals(c) || "TRACKS".equals(c) || "PORTALS".equals(c)
+        // …plus PREFABS, which joined with its own Save / Reset / Clear row.
         assertEquals(
             EnumSet.of(PlotCategory.CARRIAGES, PlotCategory.CONTENTS,
-                PlotCategory.TRACKS, PlotCategory.PORTALS),
+                PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.PREFABS),
             matching(PlotCategory::hasActionRow));
 
         // EditorPlotTeleport.weightCommandFor had arms for those same four, default -> null.
@@ -123,6 +124,10 @@ final class PlotCategoryTest {
 
         // The twelve !"PORTALS".equals(category) guards in EditorPlotTeleport.
         assertEquals(EnumSet.of(PlotCategory.PORTALS), matching(PlotCategory::hasRoomBox));
+
+        // A prefab is never rolled from a pool: which prefab lands is the anchor's business.
+        assertFalse(PlotCategory.PREFABS.hasWeightPool());
+        assertFalse(PlotCategory.PREFABS.hasGate());
 
         // The five "PARTS".equals(variant.category()) tests in EditorTypeMenuRenderer.
         assertEquals(EnumSet.of(PlotCategory.PARTS), matching(PlotCategory::hasVisibilityToggle));

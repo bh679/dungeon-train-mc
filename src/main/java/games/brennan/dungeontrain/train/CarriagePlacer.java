@@ -391,6 +391,8 @@ public final class CarriagePlacer {
             PortalCarriageBuilder.stampMiddle(level, origin, dims,
                 PortalCarriageSelection.corridorKindFor(level, pairKey),
                 /*relight*/ false, carriageIndex);
+            PrefabResolver.resolveWithin(level, PrefabResolver.boxOf(origin, dims), dims,
+                PortalCarriageSelection.generationSeed(level), carriageIndex, /*relight*/ false);
             return finishPlace(level, origin, PortalCarriageBuilder.middleVariant(), dims, "portal_middle", null);
         }
 
@@ -431,6 +433,11 @@ public final class CarriagePlacer {
                 /*placeBlocks*/ true, /*spawnEntities*/ true, groupAnchorWorldX);
         }
 
+        // Prefab anchors last — after the sidecar (which may have rolled them in) and the contents,
+        // before the footprint is collected so the prefabs' blocks lift with the carriage.
+        PrefabResolver.resolveWithin(level, PrefabResolver.boxOf(origin, dims), dims,
+            config.seed(), carriageIndex, /*relight*/ false);
+
         return finishPlace(level, origin, variant, dims, base, overlay);
     }
 
@@ -452,6 +459,9 @@ public final class CarriagePlacer {
         if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return;
         applyContents(level, origin, variant, dims, config, carriageIndex,
             /*placeBlocks*/ true, /*spawnEntities*/ true, GateContext.WORLDX_FROM_PIDX);
+        // Anchors the contents brought with them. Relit: this pass runs where the blocks stay.
+        PrefabResolver.resolveWithin(level, PrefabResolver.boxOf(origin, dims), dims,
+            config.seed(), carriageIndex, /*relight*/ true);
     }
 
     /**
@@ -480,8 +490,16 @@ public final class CarriagePlacer {
         if (PortalCarriageSelection.isPortalPart(level, carriageIndex)) return null;
         // Contents stamp after Sable assembly, outside placeAt's scope — re-enter it for the same stage.
         String stageId = stageIdFor(level, carriageIndex, dims, groupAnchorWorldX);
-        return StagePlacementScope.with(stageId, () -> applyContents(level, origin, variant, dims, config,
-            carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX));
+        return StagePlacementScope.with(stageId, () -> {
+            CarriageContents picked = applyContents(level, origin, variant, dims, config,
+                carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, groupAnchorWorldX);
+            // Anchors the contents brought with them — inside the stage scope so a prefab's stage
+            // placeholders resolve to the same palette as the carriage around them. Relit: this pass
+            // runs at shipyard coords, where the blocks stay put.
+            PrefabResolver.resolveWithin(level, PrefabResolver.boxOf(origin, dims), dims,
+                config.seed(), carriageIndex, /*relight*/ true);
+            return picked;
+        });
     }
 
     /**
@@ -1588,6 +1606,23 @@ public final class CarriagePlacer {
                                        StructureProcessor processor, boolean relight,
                                        BoundingBox decorBox, TemplateDecor.Rule decorRule) {
         stampTemplate(level, origin, template, processor, relight, decorBox, decorRule);
+    }
+
+    /**
+     * {@link #stampTemplateAt} that writes only the cells inside {@code clip} — a template captured
+     * at one size being laid back into a box of another (the prefab editor's resize). Decoration is
+     * cut to the same box.
+     */
+    public static void stampTemplateClippedAt(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                              BoundingBox clip, boolean relight) {
+        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true).setBoundingBox(clip);
+        if (relight) {
+            stampTemplateRelit(level, origin, template, settings);
+            StructurePlaceSettings decorSettings = new StructurePlaceSettings().setBoundingBox(clip);
+            TemplateDecor.replace(level, origin, template, decorSettings, /*mark*/ null, TemplateDecor.Rule.CARRIAGE);
+        } else {
+            stampTemplateSectionLocal(level, origin, template, settings);
+        }
     }
 
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,

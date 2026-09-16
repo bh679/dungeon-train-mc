@@ -12,12 +12,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 final class EditorCategoryFilterTest {
 
     @Test
-    @DisplayName("All leads, then the four categories in the order the old tabs had")
+    @DisplayName("All leads, then the categories in the order the old tabs had, Prefabs last")
     void order() {
         assertArrayEquals(new EditorCategoryFilter[] {
             EditorCategoryFilter.ALL, EditorCategoryFilter.CARRIAGES, EditorCategoryFilter.CONTENTS,
-            EditorCategoryFilter.TRACKS, EditorCategoryFilter.DIMENSIONS,
+            EditorCategoryFilter.TRACKS, EditorCategoryFilter.DIMENSIONS, EditorCategoryFilter.PREFABS,
         }, EditorCategoryFilter.values());
+        assertEquals(PlotCategory.PREFABS, EditorCategoryFilter.PREFABS.category());
+        assertEquals(EditorCategoryFilter.PREFABS, EditorCategoryFilter.forCategory(PlotCategory.PREFABS));
         assertNull(EditorCategoryFilter.ALL.category());
         assertEquals(PlotCategory.PORTALS, EditorCategoryFilter.DIMENSIONS.category());
     }

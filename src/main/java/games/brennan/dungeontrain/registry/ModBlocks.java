@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.block.SkyboxBlock;
+import games.brennan.dungeontrain.block.prefab.PrefabAnchorBlock;
 import games.brennan.dungeontrain.block.SkyboxSky;
 import games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
@@ -135,6 +136,23 @@ public final class ModBlocks {
         SkyboxSky.SUNRISE.blockName(), () -> new BlockItem(SKYBOX_SUNRISE.get(), new Item.Properties()));
 
     /**
+     * The prefab anchor — the marker a template holds where a prefab goes. Unbreakable-in-survival
+     * like the skybox blocks: it never reaches a live world, but if one slipped through it should
+     * not be a free block either. Its binding lives in {@code PrefabAnchorBlockEntity}.
+     */
+    public static final DeferredBlock<PrefabAnchorBlock> PREFAB_ANCHOR = BLOCKS.register(
+        "prefab_anchor",
+        () -> new PrefabAnchorBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_PURPLE)
+            .strength(-1.0F, 3600000.8F)
+            .noLootTable()
+            .sound(SoundType.METAL))
+    );
+
+    public static final DeferredItem<BlockItem> PREFAB_ANCHOR_ITEM = BLOCK_ITEMS.register(
+        "prefab_anchor", () -> new BlockItem(PREFAB_ANCHOR.get(), new Item.Properties()));
+
+    /**
      * The stage placeholder blocks ({@code stage_block_1..10}, stairs/slab slots, button, plate and
      * the wood set) — registered in bulk by {@link StagePlaceholderBlocks}, which owns the catalogue.
      * Static-init ordering: this runs after the fields above, so the deferred registers exist.
@@ -166,6 +184,7 @@ public final class ModBlocks {
             event.accept(SKYBOX_UPSIDE_DOWN_ITEM.get());
             event.accept(SKYBOX_NIGHT_ITEM.get());
             event.accept(SKYBOX_SUNRISE_ITEM.get());
+            event.accept(PREFAB_ANCHOR_ITEM.get());
         }
     }
 }

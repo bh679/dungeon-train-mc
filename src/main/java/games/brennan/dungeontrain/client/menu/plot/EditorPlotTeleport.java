@@ -34,6 +34,7 @@ public final class EditorPlotTeleport {
             // Portals address a specific room by name — there is only one kind, so modelId
             // carries no information the command needs.
             case PORTALS -> "dungeontrain editor portals enter " + modelName;
+            case PREFABS -> "dungeontrain editor prefabs enter " + modelName;
             // Parts: modelId is the kind tag ("floor"/"walls"/"roof"/"doors"),
             // modelName is the variant name. Server command is
             // {@code /dt editor part enter <kind> <name>}.
@@ -56,7 +57,7 @@ public final class EditorPlotTeleport {
             case CONTENTS -> "dungeontrain editor contents weight " + modelId + " " + dir;
             case TRACKS -> "dungeontrain editor tracks weight " + modelId + " " + modelName + " " + dir;
             case PORTALS -> "dungeontrain editor portals weight " + modelId + " " + modelName + " " + dir;
-            case PARTS, ARCHITECTURE -> null; // no weight pool — refused by the guard above
+            case PARTS, ARCHITECTURE, PREFABS -> null; // no weight pool — refused by the guard above
         };
     }
 
@@ -191,7 +192,7 @@ public final class EditorPlotTeleport {
             case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId + " " + dir;
             case TRACKS -> "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName + " " + dir;
             case PORTALS -> "dungeontrain editor portals " + sub + " " + modelId + " " + modelName + " " + dir;
-            case PARTS, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
+            case PARTS, ARCHITECTURE, PREFABS -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -210,7 +211,7 @@ public final class EditorPlotTeleport {
             case CONTENTS -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + action;
             case TRACKS -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
             case PORTALS -> "dungeontrain editor portals phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
-            case PARTS, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
+            case PARTS, ARCHITECTURE, PREFABS -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -309,7 +310,7 @@ public final class EditorPlotTeleport {
             case TRACKS -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
             // Rooms are a TrackKind under the hood, so the stage-apply route is the tracks one.
             case PORTALS -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
-            case PARTS, ARCHITECTURE -> null; // no stage link — refused by the guard above
+            case PARTS, ARCHITECTURE, PREFABS -> null; // no stage link — refused by the guard above
         };
     }
 

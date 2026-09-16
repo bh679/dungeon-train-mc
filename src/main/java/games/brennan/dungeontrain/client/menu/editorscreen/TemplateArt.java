@@ -33,6 +33,8 @@ public record TemplateArt(BuilderPhotoPaths.Kind kind, String id, CarriagePartKi
                 yield tk == null ? null : new TemplateArt(BuilderPhotoPaths.Kind.TRACK, key.modelName(), null, tk);
             }
             case PORTALS -> new TemplateArt(BuilderPhotoPaths.Kind.PORTAL_ROOM, key.modelName(), null, null);
+            // A prefab is a TrackKind on disk, so the track-side art path reads it as one.
+            case PREFABS -> new TemplateArt(BuilderPhotoPaths.Kind.TRACK, key.modelName(), null, TrackKind.PREFAB);
             case ARCHITECTURE -> null;
         };
     }

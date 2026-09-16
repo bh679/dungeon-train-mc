@@ -112,6 +112,10 @@ public final class EditorRelayWrite {
             // what they do at their walls, never by the eight track kinds. See BuilderPhotoPaths.
             case Template.PortalRoom room ->
                     new Naming(BuilderPhotoPaths.Kind.PORTAL_ROOM, "", room.name());
+
+            // Not carried by the relay yet: a prefab is meaningless without the parents that anchor
+            // it, and the relay has no kind for it. Editor-only for now.
+            case Template.Prefab ignored -> null;
         };
     }
 

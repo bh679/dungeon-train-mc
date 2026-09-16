@@ -23,6 +23,7 @@ import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.discord.WorldJoinReport;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.logging.SableAabbLogFilter;
+import games.brennan.dungeontrain.registry.ModBlockEntities;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -257,6 +258,8 @@ public class DungeonTrain {
         // project. NarrativeLecternHooks (mod-bus) attaches it to vanilla
         // BlockEntityType.LECTERN's valid blocks.
         ModBlocks.register(modBus);
+        // prefab_anchor's binding — the project's first block entity of its own.
+        ModBlockEntities.register(modBus);
 
         ModCreativeTabs.register(modBus);
         ModFeatures.register(modBus);

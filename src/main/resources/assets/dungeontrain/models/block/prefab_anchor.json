@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "top": "dungeontrain:block/prefab_anchor_arrow",
+    "bottom": "dungeontrain:block/prefab_anchor_side",
+    "side": "dungeontrain:block/prefab_anchor_side",
+    "front": "dungeontrain:block/prefab_anchor_arrow"
+  }
+}

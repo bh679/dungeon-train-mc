@@ -24,7 +24,7 @@ import java.util.Optional;
  * template in, so a room the author has saved answers with the size they saved it at rather than the
  * one it shipped with.</p>
  */
-final class PortalRoomTemplateSize {
+public final class PortalRoomTemplateSize {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -37,12 +37,22 @@ final class PortalRoomTemplateSize {
     /** The size of room {@code name}, or null when it has no template or the tag is unusable. */
     @Nullable
     static Vec3i read(String name) {
-        Optional<CompoundTag> tag = TrackVariantStore.rawTag(TrackKind.PORTAL_ROOM, name);
+        return read(TrackKind.PORTAL_ROOM, name);
+    }
+
+    /**
+     * The size of {@code kind}'s template {@code name}, or null when it has no template or the tag is
+     * unusable. Public for {@code editor.PrefabSizes}, the other free-sized kind with a level-less
+     * plot layout to feed.
+     */
+    @Nullable
+    public static Vec3i read(TrackKind kind, String name) {
+        Optional<CompoundTag> tag = TrackVariantStore.rawTag(kind, name);
         if (tag.isEmpty()) return null;
         ListTag size = tag.get().getList(TAG_SIZE, Tag.TAG_INT);
         if (size.size() != AXES) {
-            LOGGER.warn("[DungeonTrain] Portal room '{}': template has no usable size field — "
-                + "falling back to the built-in room's box.", name);
+            LOGGER.warn("[DungeonTrain] {} '{}': template has no usable size field — "
+                + "falling back to the kind's default box.", kind.id(), name);
             return null;
         }
         int x = size.getInt(0);

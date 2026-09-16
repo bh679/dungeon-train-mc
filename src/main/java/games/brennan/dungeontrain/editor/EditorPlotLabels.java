@@ -112,6 +112,7 @@ public final class EditorPlotLabels {
             case CONTENTS -> contentsLabels(dims);
             case TRACKS -> trackLabels(dims);
             case PORTALS -> portalLabels(dims);
+            case PREFABS -> prefabLabels(dims);
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -240,6 +241,12 @@ public final class EditorPlotLabels {
                 l.modelId(), l.modelName(), l.inPlot(), l.isUser(), l.isImported(),
                 size.getX(), size.getZ(), size.getY(), mode, copiesFloorBlock, copiesRoofBlock));
         }
+        return out;
+    }
+
+    private static List<Label> prefabLabels(CarriageDims dims) {
+        List<Label> out = new ArrayList<>();
+        addTrackKindLabels(out, TrackKind.PREFAB, dims, EditorCategory.PREFABS);
         return out;
     }
 

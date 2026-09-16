@@ -623,6 +623,8 @@ public final class EditorTypeMenuInputHandler {
             // Kind tag is the variant's modelId (portal_room).
             case PORTALS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.PORTALS, first.modelId(), "");
+            case PREFABS -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.PREFABS, first.modelId(), "");
             // No models to seed a new one from.
             case ARCHITECTURE -> null;
         };

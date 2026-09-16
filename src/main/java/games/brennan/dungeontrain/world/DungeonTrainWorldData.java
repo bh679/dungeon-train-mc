@@ -81,6 +81,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
+    private static final String TAG_EDITOR_PREFAB_PLOT_BOXES = "editorPrefabPlotBoxes";
     private static final String TAG_EDITOR_STAMPED_CATEGORY = "editorStampedCategory";
 
     private int trainY;
@@ -113,6 +114,8 @@ public final class DungeonTrainWorldData extends SavedData {
      * blocks are.</p>
      */
     private final java.util.Map<String, int[]> editorPortalPlotBoxes = new java.util.LinkedHashMap<>();
+    /** Same record for prefab plots — the other free-sized kind whose box the layout cannot predict. */
+    private final java.util.Map<String, int[]> editorPrefabPlotBoxes = new java.util.LinkedHashMap<>();
     private long generationSeed;
     private StartingDimension startingDimension;
     /** Per-world override of the PlayerMob 1-in-N spawn rate; null = use the global COMMON default. */
@@ -495,6 +498,13 @@ public final class DungeonTrainWorldData extends SavedData {
                 if (box.length == 6) data.editorPortalPlotBoxes.put(name, box);
             }
         }
+        if (tag.contains(TAG_EDITOR_PREFAB_PLOT_BOXES, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag boxes = tag.getCompound(TAG_EDITOR_PREFAB_PLOT_BOXES);
+            for (String name : boxes.getAllKeys()) {
+                int[] box = boxes.getIntArray(name);
+                if (box.length == 6) data.editorPrefabPlotBoxes.put(name, box);
+            }
+        }
         // Absent in every non-builder world (and in builder worlds saved before the stamp ran).
         if (tag.contains(TAG_BUILDER_MODE)) {
             data.builderMode = tag.getString(TAG_BUILDER_MODE);
@@ -599,6 +609,13 @@ public final class DungeonTrainWorldData extends SavedData {
                 boxes.putIntArray(e.getKey(), e.getValue());
             }
             tag.put(TAG_EDITOR_PORTAL_PLOT_BOXES, boxes);
+        }
+        if (!editorPrefabPlotBoxes.isEmpty()) {
+            CompoundTag boxes = new CompoundTag();
+            for (java.util.Map.Entry<String, int[]> e : editorPrefabPlotBoxes.entrySet()) {
+                boxes.putIntArray(e.getKey(), e.getValue());
+            }
+            tag.put(TAG_EDITOR_PREFAB_PLOT_BOXES, boxes);
         }
         if (builderMode != null) {
             tag.putString(TAG_BUILDER_MODE, builderMode);
@@ -849,6 +866,34 @@ public final class DungeonTrainWorldData extends SavedData {
     /** {@code name}'s plot has been erased — or was never there. */
     public void forgetPortalPlotBox(String name) {
         if (name != null && editorPortalPlotBoxes.remove(name) != null) setDirty();
+    }
+
+    /** Where {@code name}'s prefab plot was last stamped, or null when nothing records one. */
+    public int[] prefabPlotBox(String name) {
+        int[] box = editorPrefabPlotBoxes.get(name);
+        return box == null ? null : box.clone();
+    }
+
+    /** Every recorded prefab plot box, by name. A copy — write through the methods below. */
+    public java.util.Map<String, int[]> prefabPlotBoxes() {
+        java.util.Map<String, int[]> out = new java.util.LinkedHashMap<>();
+        for (java.util.Map.Entry<String, int[]> e : editorPrefabPlotBoxes.entrySet()) {
+            out.put(e.getKey(), e.getValue().clone());
+        }
+        return out;
+    }
+
+    /** {@code name}'s prefab plot now stands at this box. */
+    public void recordPrefabPlotBox(String name, int x, int y, int z, int sx, int sy, int sz) {
+        if (name == null || name.isEmpty()) return;
+        int[] box = {x, y, z, sx, sy, sz};
+        int[] was = editorPrefabPlotBoxes.put(name, box);
+        if (was == null || !java.util.Arrays.equals(was, box)) setDirty();
+    }
+
+    /** {@code name}'s prefab plot has been erased — or was never there. */
+    public void forgetPrefabPlotBox(String name) {
+        if (name != null && editorPrefabPlotBoxes.remove(name) != null) setDirty();
     }
 
     /** The id of the category whose plots are stamped, or empty — see {@link #setEditorStampedCategory}. */

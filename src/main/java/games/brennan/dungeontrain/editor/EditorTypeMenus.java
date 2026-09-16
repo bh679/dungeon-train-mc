@@ -65,6 +65,7 @@ public final class EditorTypeMenus {
             case CONTENTS -> contentsMenus(dims);
             case TRACKS -> trackMenus(dims);
             case PORTALS -> portalMenus(dims);
+            case PREFABS -> prefabMenus(dims);
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -159,6 +160,27 @@ public final class EditorTypeMenus {
         addTrackKindMenu(out, TrackKind.PORTAL_ROOM, "Dimensional Carriage", dims, activeId,
             categoryBar, typeStrip, EditorCategory.PORTALS);
         return out;
+    }
+
+    private static List<EditorTypeMenusPacket.Menu> prefabMenus(CarriageDims dims) {
+        List<EditorTypeMenusPacket.Menu> out = new ArrayList<>();
+        List<EditorTypeMenusPacket.CategoryButton> categoryBar = buildCategoryBar();
+        List<EditorTypeMenusPacket.TypeTab> typeStrip = buildPrefabsTypeStrip();
+        String activeId = EditorCategory.PREFABS.id();
+
+        addTrackKindMenu(out, TrackKind.PREFAB, "Prefabs", dims, activeId,
+            categoryBar, typeStrip, EditorCategory.PREFABS);
+        return out;
+    }
+
+    /** Type tabs for the PREFABS category — one row, the prefabs themselves. */
+    private static List<EditorTypeMenusPacket.TypeTab> buildPrefabsTypeStrip() {
+        List<EditorTypeMenusPacket.TypeTab> strip = new ArrayList<>();
+        List<String> names = TrackVariantRegistry.namesFor(TrackKind.PREFAB);
+        if (names.isEmpty()) return strip;
+        strip.add(new EditorTypeMenusPacket.TypeTab(
+            "Prefabs", EditorCategory.PREFABS.name(), TrackKind.PREFAB.id(), names.get(0)));
+        return strip;
     }
 
     /**

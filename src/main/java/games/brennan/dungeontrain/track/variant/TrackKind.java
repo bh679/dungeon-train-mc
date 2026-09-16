@@ -51,7 +51,14 @@ public enum TrackKind {
     PILLAR_BOTTOM("pillar_bottom", "pillars/bottom"),
     ADJUNCT_STAIRS("adjunct_stairs", "pillars/adjunct_stairs"),
     ADJUNCT_STAIRS_ENTRANCE("adjunct_stairs_entrance", "pillars/adjunct_stairs_entrance"),
-    PORTAL_ROOM("portal_room", "portals/room");
+    PORTAL_ROOM("portal_room", "portals/room"),
+    /**
+     * A prefab — a design of any size that is placed <i>inside</i> another template wherever that
+     * template holds a {@code PrefabAnchorBlock} bound to its name; see
+     * {@code train.PrefabResolver}. Not {@code "prefabs/"} itself: that folder already holds the
+     * loot prefabs and block-variant prefabs, which are item pools and cell lists, not geometry.
+     */
+    PREFAB("prefab", "prefabs/designs");
 
     /** The default ("built-in") variant name present even when the disk is empty. */
     public static final String DEFAULT_NAME = "default";
@@ -126,7 +133,35 @@ public enum TrackKind {
             case ADJUNCT_STAIRS_ENTRANCE ->
                 new Vec3i(PillarAdjunct.STAIRS_ENTRANCE.xSize(), PillarAdjunct.STAIRS_ENTRANCE.ySize(), PillarAdjunct.STAIRS_ENTRANCE.zSize());
             case PORTAL_ROOM -> PortalRoomLayout.builtInSize(worldDims);
+            case PREFAB -> PREFAB_DEFAULT_SIZE;
         };
+    }
+
+    /**
+     * The footprint a brand-new prefab plot opens at. Nothing else reads it: a prefab's real size is
+     * whatever its template says ({@link #freeSize()}), and the editor lets the author resize.
+     */
+    public static final Vec3i PREFAB_DEFAULT_SIZE = new Vec3i(3, 3, 3);
+
+    /**
+     * True when a template of this kind may be <b>any</b> size — {@link #dims} is neither an exact
+     * size nor a floor, and the store skips its bounds check entirely.
+     *
+     * <p>Only {@link #PREFAB}. A prefab has no slot of its own to fit: it is stamped into whatever
+     * parent holds its anchor and clipped to that parent's box, so a size that would break something
+     * in world does not exist. Distinct from {@link #freeSizeAboveFloor()}, which keeps a floor.</p>
+     */
+    public boolean freeSize() {
+        return this == PREFAB;
+    }
+
+    /**
+     * True when a variant's footprint belongs to the individual template rather than the kind —
+     * either {@link #freeSize()} or {@link #freeSizeAboveFloor()}. What the editor's plot layout
+     * asks: these rows are packed from each variant's own size, not a uniform stride.
+     */
+    public boolean variableSize() {
+        return freeSize() || freeSizeAboveFloor();
     }
 
     /**

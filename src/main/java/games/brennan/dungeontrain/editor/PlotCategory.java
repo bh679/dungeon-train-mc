@@ -36,6 +36,7 @@ public enum PlotCategory {
     CONTENTS(EditorCategory.CONTENTS),
     TRACKS(EditorCategory.TRACKS),
     PORTALS(EditorCategory.PORTALS),
+    PREFABS(EditorCategory.PREFABS),
     ARCHITECTURE(EditorCategory.ARCHITECTURE),
     /** Carriage parts — addressable in its own right, but stamped as part of {@link #CARRIAGES}. */
     PARTS(EditorCategory.CARRIAGES);
@@ -105,12 +106,13 @@ public enum PlotCategory {
 
     /** Whether templates here have a spawn-weight pool to bump. False for parts and architecture. */
     public boolean hasWeightPool() {
-        return this != PARTS && this != ARCHITECTURE;
+        // A prefab is never rolled from a pool — which prefab lands is the anchor's business.
+        return this != PARTS && this != ARCHITECTURE && this != PREFABS;
     }
 
     /** Whether templates here carry a spawn gate — min/max level, dimensions, stage link. */
     public boolean hasGate() {
-        return this != PARTS && this != ARCHITECTURE;
+        return this != PARTS && this != ARCHITECTURE && this != PREFABS;
     }
 
     /**

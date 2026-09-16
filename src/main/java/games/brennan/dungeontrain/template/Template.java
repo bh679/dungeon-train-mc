@@ -11,6 +11,9 @@ import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.PortalRoomEditor;
 import games.brennan.dungeontrain.editor.PortalRoomTemplateStore;
+import games.brennan.dungeontrain.editor.PrefabEditor;
+import games.brennan.dungeontrain.editor.PrefabSizes;
+import games.brennan.dungeontrain.editor.PrefabTemplateStore;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
@@ -89,7 +92,8 @@ public sealed interface Template
             Template.Pillar,
             Template.Adjunct,
             Template.Tunnel,
-            Template.PortalRoom {
+            Template.PortalRoom,
+            Template.Prefab {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -896,6 +900,59 @@ public sealed interface Template
         }
         @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
             PortalCarriageBuilder.stampRoomAt(level, origin, dims, name, plotSize(dims), /*relight*/ true);
+        }
+    }
+
+    /**
+     * A prefab — a design of any size that other templates place by holding a
+     * {@code PrefabAnchorBlock} bound to its name. Authored in its own editor category, stamped at
+     * generation time by {@code train.PrefabResolver} into whatever parent carries the anchor.
+     *
+     * <p>Free-sized on every axis ({@link TrackKind#freeSize()}): a prefab has no slot of its own
+     * to fit, so the size is entirely the author's and {@link #plotSize} reads it back from
+     * {@link PrefabSizes}. Weight, gate and stage are neutral — a prefab is never rolled from a
+     * pool; whether it lands is decided by the anchor (and the block-variant roll that placed the
+     * anchor).</p>
+     */
+    record Prefab(String name) implements Template {
+        public Prefab {
+            Objects.requireNonNull(name, "name");
+        }
+
+        public Prefab() { this(TrackKind.DEFAULT_NAME); }
+
+        @Override public String id() { return "prefab"; }
+
+        @Override public String displayName() { return "prefab / " + name; }
+
+        @Override public TemplateKind kind() { return TemplateKind.PREFAB; }
+
+        @Override public boolean isBuiltin() { return TrackKind.DEFAULT_NAME.equals(name); }
+
+        @Override public boolean canPromote() { return PrefabTemplateStore.sourceTreeAvailable(); }
+
+        @Override public TemplateStore<Prefab> store() { return PrefabTemplateStore.adapter(); }
+        @Override public TemplateRegistry<Prefab> registry() { return TrackVariantRegistry.adapterForPrefab(); }
+
+        @Override public int weight() { return EditorStatusPacket.NO_WEIGHT; }
+        @Override public String variantName() { return name; }
+
+        /** Like a room, a reset has to put the <b>size</b> back too — see {@link PrefabEditor#resetToSaved}. */
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            PrefabEditor.resetToSaved(level, name, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return PrefabTemplateStore.getBundled(level, name, dims);
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return PrefabEditor.plotOrigin(name, dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return PrefabSizes.sizeOf(name);
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            // Editor plot stamp: the design exactly as saved, anchors left visible for the author.
+            PrefabEditor.stampPrefabInto(level, origin, name, dims);
         }
     }
 }
