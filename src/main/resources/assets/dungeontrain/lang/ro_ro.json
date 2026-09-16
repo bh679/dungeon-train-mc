@@ -1778,6 +1778,7 @@
   "gui.dungeontrain.number_input.cancel": "Anulează",
   "subtitles.dungeontrain.train_engine": "Locomotiva pufăie",
   "block.dungeontrain.narrative_lectern": "Pupitru narativ",
+  "block.dungeontrain.variant_placeholder": "Substituent de variantă",
   "block.dungeontrain.skybox_block": "Bloc de cer",
   "block.dungeontrain.skybox_surface": "Bloc de cer de suprafață",
   "block.dungeontrain.skybox_end": "Bloc de cer din End",

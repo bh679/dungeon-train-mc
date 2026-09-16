@@ -99,22 +99,25 @@ public final class VariantEditorPreviewTicker {
             int entryIdx = pickEntryIndex(plot.key(), localPos, states.size(), previewTick);
             VariantState picked = states.get(entryIdx);
             BlockPos worldPos = plot.origin().offset(localPos);
-            // A mob entry's slot shows the mob, not its sentinel: the cell goes to air and the
-            // client stands the mob ghost on it (EditorMobGhostRenderer, fed by the same
-            // previewTick frame from VariantOverlayRenderer.pushMobGhostsSnapshot). Under Live the
-            // ghosts are off, so the cell keeps whatever the neighbouring slots show.
+            // A mob entry's slot shows the mob standing in the ghost-cube placeholder: the client
+            // draws the mob ghost there (EditorMobGhostRenderer, fed by the same previewTick frame
+            // from VariantOverlayRenderer.pushMobGhostsSnapshot) and the translucent placeholder
+            // underneath gives the author a face to build against — plain air would not. Under
+            // Live the ghosts are off, so the cell keeps whatever the neighbouring slots show.
             if (picked.isMob()) {
-                if (FrozenMobs.isBlocksMode(level) && !level.getBlockState(worldPos).isAir()) {
-                    SilentBlockOps.setBlockSilentNoCascade(level, worldPos,
-                        net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), null);
-                }
+                if (FrozenMobs.isBlocksMode(level)) showPlaceholder(level, worldPos);
                 continue;
             }
-            // Skip the empty-placeholder sentinel so the cell's "this is a
-            // variant cell" marker stays visible to the author when the
-            // cycle lands on the empty entry. Showing an air-equivalent
-            // would lose the marker until the next entry slot.
-            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) continue;
+            // The empty-placeholder slot shows the placeholder block itself — the ghost cube IS
+            // the "this is a variant cell, and it can be nothing" marker, so a cell with a block
+            // and an empty entry alternates block <-> ghost the way two blocks do. Legacy
+            // templates stamp a command block there (the sentinel's old form) — swapping it for
+            // the ghost cube here is what migrates those cells, and the author's next save bakes
+            // the swap into the template.
+            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
+                showPlaceholder(level, worldPos);
+                continue;
+            }
 
             BlockState toShow = computePreviewState(picked, previewTick);
             BlockState existing = level.getBlockState(worldPos);
@@ -133,6 +136,16 @@ public final class VariantEditorPreviewTicker {
                 }
             }
         }
+    }
+
+    /**
+     * Stand the ghost-cube placeholder at {@code worldPos} unless it is already there — the same
+     * silent no-cascade write the block slots use, so an observer facing the cell stays quiet.
+     */
+    private static void showPlaceholder(ServerLevel level, BlockPos worldPos) {
+        BlockState placeholder = CarriageVariantBlocks.emptyPlaceholder();
+        if (level.getBlockState(worldPos).equals(placeholder)) return;
+        SilentBlockOps.setBlockSilentNoCascade(level, worldPos, placeholder, null);
     }
 
     /**

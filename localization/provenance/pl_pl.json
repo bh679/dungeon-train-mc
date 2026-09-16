@@ -1371,6 +1371,7 @@
   "gui.dungeontrain.number_input.cancel": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "19766ed6ccb2f4a3"},
   "subtitles.dungeontrain.train_engine": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "1aa3e513ecc7daa0"},
   "block.dungeontrain.narrative_lectern": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "4da87b137b982eb4"},
+  "block.dungeontrain.variant_placeholder": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5e90c31f7ba73bf6"},
   "block.dungeontrain.skybox_block": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "96529f2072063ed3"},
   "block.dungeontrain.skybox_surface": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "4da86f08ec799b20"},
   "block.dungeontrain.skybox_end": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a0980481e3874742"},

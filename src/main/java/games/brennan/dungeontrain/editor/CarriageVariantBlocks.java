@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -178,13 +179,43 @@ public final class CarriageVariantBlocks {
     public static final int MIN_STATES_PER_ENTRY = 2;
 
     /**
-     * Returns true if {@code state} is a command-block sentinel used in variant
-     * lists to mean "leave this position empty / air at spawn time." Covers all
-     * three command-block kinds (impulse, chain, repeating) so any command block
-     * the author places counts. The sentinel is stored verbatim in the JSON; the
-     * translation to {@code Blocks.AIR} happens in the apply path.
+     * The empty-placeholder sentinel — the state a variant entry carries to mean "leave this
+     * position empty / air at spawn time", and the block the editor stands in such a cell:
+     * {@link games.brennan.dungeontrain.block.VariantPlaceholderBlock}. Every site that writes
+     * a sentinel goes through here so the canonical block lives in one place.
+     *
+     * <p>Falls back to a vanilla command block — the sentinel's previous incarnation — when the
+     * mod block is not registered, which is only the case under unit tests that bootstrap vanilla
+     * alone. {@link #isEmptyPlaceholder} accepts both, so the fallback is a sentinel too.</p>
+     */
+    public static BlockState emptyPlaceholder() {
+        if (ModBlocks.VARIANT_PLACEHOLDER.isBound()) {
+            return ModBlocks.VARIANT_PLACEHOLDER.get().defaultBlockState();
+        }
+        return Blocks.COMMAND_BLOCK.defaultBlockState();
+    }
+
+    /**
+     * Returns true if {@code state} is the empty-placeholder sentinel used in variant lists to
+     * mean "leave this position empty / air at spawn time." True for
+     * {@link #emptyPlaceholder()} and for the legacy form, any of the three vanilla
+     * command-block kinds ({@link #isLegacyEmptyPlaceholder}) — bundled sidecars and template
+     * NBTs written before the mod block existed still carry those. The translation to
+     * {@code Blocks.AIR} happens in the apply path.
      */
     public static boolean isEmptyPlaceholder(BlockState state) {
+        if (state == null) return false;
+        return (ModBlocks.VARIANT_PLACEHOLDER.isBound() && state.is(ModBlocks.VARIANT_PLACEHOLDER.get()))
+            || isLegacyEmptyPlaceholder(state);
+    }
+
+    /**
+     * The sentinel as it was before {@code dungeontrain:variant_placeholder}: any vanilla command
+     * block (impulse, chain, repeating). {@link VariantState}'s canonical constructor rewrites
+     * these to {@link #emptyPlaceholder()} on load, so a sidecar migrates the first time it is
+     * re-saved; the editor preview ticker does the same for the world block of a legacy cell.
+     */
+    public static boolean isLegacyEmptyPlaceholder(BlockState state) {
         if (state == null) return false;
         return state.is(Blocks.COMMAND_BLOCK)
             || state.is(Blocks.CHAIN_COMMAND_BLOCK)
@@ -497,7 +528,7 @@ public final class CarriageVariantBlocks {
             JsonObject obj = el.getAsJsonObject();
             // v7 mob entry — has "entity" instead of "state". The picker treats
             // the cell as AIR (the canonical VariantState constructor stamps
-            // the COMMAND_BLOCK sentinel) and a deferred entity pass spawns
+            // the empty-placeholder sentinel) and a deferred entity pass spawns
             // the mob.
             if (obj.has("entity") && obj.get("entity").isJsonPrimitive()
                 && obj.get("entity").getAsJsonPrimitive().isString()) {
@@ -527,7 +558,7 @@ public final class CarriageVariantBlocks {
                 }
                 VariantRotation mobRot = parseRotation(obj.get("rotation"), contextId, contextPos);
                 // Mob entries never have SLAB_TYPE / HALF (the state is the
-                // COMMAND_BLOCK sentinel), but parse the field for round-trip
+                // empty-placeholder sentinel), but parse the field for round-trip
                 // fidelity in case future schema lets mobs carry it.
                 VariantHalf mobHalf = parseHalf(obj.get("half"), contextId, contextPos);
                 if (mobHalf == null) mobHalf = VariantHalf.NONE;
@@ -1188,7 +1219,7 @@ public final class CarriageVariantBlocks {
     public static void appendVariantJson(StringBuilder sb, VariantState s) {
         if (s.isMob()) {
             // v7 mob entry — "entity" instead of "state". The state field is
-            // always the COMMAND_BLOCK sentinel (forced by the canonical
+            // always the empty-placeholder sentinel (forced by the canonical
             // constructor) so omit it from the JSON; the reader knows to
             // infer it.
             sb.append("{\"entity\": \"").append(escapeJson(s.entityId().toString())).append("\"");

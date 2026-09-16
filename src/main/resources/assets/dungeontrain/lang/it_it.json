@@ -1340,6 +1340,7 @@
   "gui.dungeontrain.number_input.cancel": "Annulla",
   "subtitles.dungeontrain.train_engine": "La locomotiva sbuffa",
   "block.dungeontrain.narrative_lectern": "Leggio narrativo",
+  "block.dungeontrain.variant_placeholder": "Segnaposto variante",
   "block.dungeontrain.skybox_block": "Blocco skybox",
   "block.dungeontrain.skybox_surface": "Blocco skybox di superficie",
   "block.dungeontrain.skybox_end": "Blocco skybox dell'End",

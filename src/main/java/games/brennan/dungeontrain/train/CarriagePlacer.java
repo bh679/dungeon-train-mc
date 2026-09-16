@@ -500,7 +500,7 @@ public final class CarriagePlacer {
         // Shell + parts mob-variant entity-pass — runs for every variant
         // including FLATBED. The block pass already AIRed mob-entry cells
         // via the existing empty-placeholder branch (mob entries' state is
-        // forced to the COMMAND_BLOCK sentinel by the canonical
+        // forced to the empty-placeholder sentinel by the canonical
         // VariantState constructor). Subject to the same 48-block player-
         // distance gate that wraps this entity pass.
         // Decoration runs on EVERY exit of this pass, including the portal early-return below. That
@@ -1636,6 +1636,8 @@ public final class CarriagePlacer {
                                           StructureTemplate template, StructurePlaceSettings settings) {
         // Stage placeholders first — the block must be its real self before anything reads it.
         settings.addProcessor(new StagePlaceholderProcessor());
+        // Then any stray variant placeholder goes to air — play-side only (scope-gated).
+        settings.addProcessor(new VariantPlaceholderAirProcessor());
         // Before the capture processor, which returns null for every cell and so ends the chain.
         settings.addProcessor(new BakedItemStatsProcessor(level));
         settings.addProcessor(new SectionLocalStampProcessor(level));
@@ -1662,6 +1664,7 @@ public final class CarriagePlacer {
         // The portal room's own path. Vanilla loads each block entity from the processed tag here, so
         // this is where a template that was saved holding impossible gear gets it rolled again.
         settings.addProcessor(new StagePlaceholderProcessor());
+        settings.addProcessor(new VariantPlaceholderAirProcessor());
         settings.addProcessor(new BakedItemStatsProcessor(level));
         template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_ALL);
     }

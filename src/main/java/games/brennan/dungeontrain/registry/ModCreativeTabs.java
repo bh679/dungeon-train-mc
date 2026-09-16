@@ -39,11 +39,11 @@ public final class ModCreativeTabs {
         "prefab_variants",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("gui.dungeontrain.prefab_tab.variants"))
-            .icon(() -> new ItemStack(Items.COMMAND_BLOCK))
+            .icon(() -> new ItemStack(ModBlocks.VARIANT_PLACEHOLDER_ITEM.get()))
             .displayItems((parameters, output) -> {
                 for (PrefabRegistrySyncPacket.VariantEntry entry : PrefabTabState.variantEntries()) {
                     ItemStack stack = buildPrefabStack(
-                        entry.iconBlockId(), Items.COMMAND_BLOCK,
+                        entry.iconBlockId(), ModBlocks.VARIANT_PLACEHOLDER_ITEM.get(),
                         PrefabUseHandler.NBT_BV_PREFAB_ID, entry.id(), entry.committed());
                     output.accept(stack);
                 }

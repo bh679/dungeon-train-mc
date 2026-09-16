@@ -1376,6 +1376,7 @@
   "gui.dungeontrain.number_input.cancel": "Отмена",
   "subtitles.dungeontrain.train_engine": "Локомотив пыхтит",
   "block.dungeontrain.narrative_lectern": "Кафедра для повествования",
+  "block.dungeontrain.variant_placeholder": "Заполнитель варианта",
   "block.dungeontrain.skybox_block": "Блок скайбокса",
   "block.dungeontrain.skybox_surface": "Наземный блок скайбокса",
   "block.dungeontrain.skybox_end": "Блок скайбокса Края",

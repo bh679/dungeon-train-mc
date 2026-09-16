@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.editor;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import org.jetbrains.annotations.Nullable;
@@ -20,8 +19,8 @@ import org.jetbrains.annotations.Nullable;
  * (cell becomes AIR) and a separate entity pass spawns the mob. The
  * {@code blockEntityNbt} field is reused as the optional <b>entity NBT</b>
  * (custom name, equipment, tags). The constructor force-stamps {@code state}
- * to the COMMAND_BLOCK sentinel so every existing applier site routes the
- * cell through the AIR branch automatically.</p>
+ * to the empty-placeholder sentinel ({@link CarriageVariantBlocks#emptyPlaceholder})
+ * so every existing applier site routes the cell through the AIR branch automatically.</p>
  *
  * <p>Schema history:
  * <ul>
@@ -77,7 +76,13 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         if (entityId != null) {
             // Mob entries always sit in the AIR-via-sentinel lane so existing
             // applier branches clear the cell without any new branch.
-            state = Blocks.COMMAND_BLOCK.defaultBlockState();
+            state = CarriageVariantBlocks.emptyPlaceholder();
+        } else if (CarriageVariantBlocks.isLegacyEmptyPlaceholder(state)) {
+            // Legacy sentinel (a vanilla command block, from a sidecar or clipboard written before
+            // dungeontrain:variant_placeholder existed) — normalised here, the one choke point every
+            // parse path funnels through, so downstream only ever sees the canonical block and the
+            // next save writes it.
+            state = CarriageVariantBlocks.emptyPlaceholder();
         }
         if (state == null) throw new IllegalArgumentException("state");
         if (weight < 1) weight = 1;
@@ -152,7 +157,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
 
     /**
      * Mob-entry factory. The {@code state} field is auto-set to the
-     * COMMAND_BLOCK sentinel by the canonical constructor so existing
+     * empty-placeholder sentinel by the canonical constructor so existing
      * applier branches AIR the cell. {@code entityNbt} carries optional
      * mob NBT (custom name, equipment, tags) — pass {@code null} for a
      * default mob.
@@ -167,7 +172,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     public static VariantState ofMob(ResourceLocation entityId, @Nullable CompoundTag entityNbt,
                                       int weight, VariantRotation rotation) {
         if (entityId == null) throw new IllegalArgumentException("entityId");
-        return new VariantState(Blocks.COMMAND_BLOCK.defaultBlockState(),
+        return new VariantState(CarriageVariantBlocks.emptyPlaceholder(),
             entityNbt, weight, rotation, null, entityId, VariantHalf.NONE);
     }
 
