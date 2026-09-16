@@ -210,6 +210,10 @@ public final class PlayerJoinEvents {
         DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorObserversPacket(
             games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld())
                 .isEditorObserversOn()));
+        // Likewise the editor Mobs setting (Blocks / Live) — world-persisted, client default Blocks.
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorMobsModePacket(
+            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(player.serverLevel().getServer().overworld())
+                .isEditorMobsLive()));
         // Somebody who quit standing in a test dimensional carriage comes back standing in it, and
         // the client assumes no session until told otherwise — without this the Back row is gone and
         // the only way out of a sealed basement is a manual /tp. The session itself is server-side

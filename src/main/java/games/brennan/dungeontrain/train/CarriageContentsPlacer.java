@@ -980,7 +980,11 @@ public final class CarriageContentsPlacer {
                 variantSidecar, contentsLinkStore, level);
 
             try {
-                Optional<Entity> created = EntityType.create(entityNbt, level);
+                // Editor-frozen mobs (Settings → Mobs | Blocks) come alive on a real train.
+                Optional<Entity> created = EntityType.create(
+                    games.brennan.dungeontrain.editor.FrozenMobs.prepareForSpawn(
+                        entityNbt, level, BlockPos.containing(worldX, worldY, worldZ)),
+                    level);
                 if (created.isEmpty()) {
                     LOGGER.warn("[DungeonTrain] Contents: failed to create entity from nbt (id={})",
                         entityNbt.getString("id"));
@@ -1437,7 +1441,7 @@ public final class CarriageContentsPlacer {
         try {
             CompoundTag mobNbt = picked.blockEntityNbt();
             if (mobNbt != null) {
-                CompoundTag spawnNbt = mobNbt.copy();
+                CompoundTag spawnNbt = games.brennan.dungeontrain.editor.FrozenMobs.thaw(mobNbt.copy());
                 spawnNbt.putString("id", picked.entityId().toString());
                 Optional<Entity> created = EntityType.create(spawnNbt, level);
                 if (created.isEmpty()) {

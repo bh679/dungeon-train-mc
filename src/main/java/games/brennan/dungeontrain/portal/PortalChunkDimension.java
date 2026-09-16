@@ -188,7 +188,10 @@ public final class PortalChunkDimension {
             // taller than a shallow world can stand up, and a sheep in the rows that were cut is a
             // sheep in the bedrock.
             if (y < origin.getY() + 1 || y > origin.getY() + size.getY() - 2) continue;
-            Entity entity = EntityType.loadEntityRecursive(occupant.nbt(), level, spawning -> {
+            Entity entity = EntityType.loadEntityRecursive(
+                games.brennan.dungeontrain.editor.FrozenMobs.prepareForSpawn(
+                    occupant.nbt(), level, BlockPos.containing(x, y, z)),
+                level, spawning -> {
                 spawning.moveTo(x, y, z, spawning.getYRot(), spawning.getXRot());
                 return spawning;
             });
