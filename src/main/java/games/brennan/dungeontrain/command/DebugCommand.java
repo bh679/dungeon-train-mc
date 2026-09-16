@@ -68,6 +68,15 @@ public final class DebugCommand {
             // counts stage placeholder blocks that survived generation (expected: none) plus the
             // top real blocks, so a build's placeholders can be proven resolved without a client.
             .then(Commands.literal("stage-placeholders").executes(ctx -> runStagePlaceholderScan(ctx.getSource())))
+            // /dungeontrain debug prefab-anchors [pIdx] — walks every live carriage's footprint for
+            // prefab anchors the resolver should have consumed (PrefabResolver); with a pIdx, also
+            // dumps that carriage's non-air blocks by local offset so a stamped prefab can be read
+            // back where vanilla commands cannot reach (shipyard chunks are not vanilla-loaded).
+            .then(Commands.literal("prefab-anchors")
+                .executes(ctx -> runPrefabAnchorScan(ctx.getSource(), null))
+                .then(Commands.argument("pIdx", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                    .executes(ctx -> runPrefabAnchorScan(ctx.getSource(),
+                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "pIdx")))))
             // /dungeontrain debug editor-locate — the (category, model) the status HUD resolves for
             // the running player, plus the resident category; editor-layer — blocks standing in the
             // plot layer inside vs outside the resident category's plots (loaded chunks). Together
@@ -601,6 +610,62 @@ public final class DebugCommand {
             .withStyle(fLeaked == 0 ? ChatFormatting.GREEN : ChatFormatting.RED), false);
         LOGGER.info("[DungeonTrain] Stage placeholder scan: {} leaked across {} carriage(s); top {}",
             leaked, carriages, fTop);
+        return leaked == 0 ? 1 : 0;
+    }
+
+    private static int runPrefabAnchorScan(CommandSourceStack source, Integer dumpPIdx) {
+        ServerLevel level = source.getLevel();
+        int leaked = 0;
+        int carriages = 0;
+        for (java.util.List<games.brennan.dungeontrain.train.Trains.Carriage> train
+                : games.brennan.dungeontrain.train.Trains.byTrainId(level).values()) {
+            for (games.brennan.dungeontrain.train.Trains.Carriage c : train) {
+              CarriageDims dims = c.provider().dims();
+              // One Trains.Carriage is a whole GROUP's sub-level: the shipyard origin is the group's
+              // corner (front pad included), and each enclosed carriage sits at
+              // enclosedStartOffset + slot * length — the same slot maths TrainAssembler.spawnGroup uses.
+              int groupSize = c.provider().getGroupSize();
+              int startOffset = groupSize > 1 ? games.brennan.dungeontrain.train.CarriagePlacer.halfPadLen(dims) : 0;
+              for (int slot = 0; slot < groupSize; slot++) {
+                BlockPos o = c.provider().getShipyardOrigin().offset(startOffset + slot * dims.length(), 0, 0);
+                int pIdx = c.provider().getPIdx() + slot;
+                boolean dump = dumpPIdx != null && dumpPIdx == pIdx;
+                int here = 0;
+                StringBuilder blocks = new StringBuilder();
+                for (int x = 0; x < dims.length(); x++) {
+                    for (int y = 0; y < dims.height(); y++) {
+                        for (int z = 0; z < dims.width(); z++) {
+                            BlockState s = level.getBlockState(o.offset(x, y, z));
+                            if (s.isAir()) continue;
+                            if (games.brennan.dungeontrain.block.prefab.PrefabAnchorBlock.isAnchor(s)) here++;
+                            if (dump) {
+                                blocks.append(x).append(',').append(y).append(',').append(z).append('=')
+                                    .append(net.minecraft.core.registries.BuiltInRegistries.BLOCK
+                                        .getKey(s.getBlock()).getPath()).append(' ');
+                            }
+                        }
+                    }
+                }
+                if (dump) {
+                    LOGGER.info("[DungeonTrain] Prefab scan pIdx {} blocks: {}", pIdx, blocks.toString().trim());
+                    final String fBlocks = blocks.toString().trim();
+                    source.sendSuccess(() -> Component.literal("pIdx " + pIdx + " blocks: " + fBlocks), false);
+                }
+                if (here > 0) {
+                    final int fHere = here;
+                    source.sendSuccess(() -> Component.literal("pIdx " + pIdx + ": " + fHere
+                        + " prefab anchor(s) LEAKED").withStyle(ChatFormatting.RED), false);
+                }
+                leaked += here;
+                carriages++;
+              }
+            }
+        }
+        final int fLeaked = leaked;
+        final int fCarriages = carriages;
+        source.sendSuccess(() -> Component.literal("Prefab anchors: " + fLeaked + " leaked across "
+            + fCarriages + " carriage(s).").withStyle(fLeaked == 0 ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        LOGGER.info("[DungeonTrain] Prefab anchor scan: {} leaked across {} carriage(s)", leaked, carriages);
         return leaked == 0 ? 1 : 0;
     }
 

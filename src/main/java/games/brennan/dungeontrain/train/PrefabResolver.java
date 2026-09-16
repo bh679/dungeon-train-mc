@@ -191,6 +191,10 @@ public final class PrefabResolver {
 
         BoundingBox placed = t.getBoundingBox(settings, anchor.pos());
         Vec3i size = t.getSize();
+        LOGGER.info("[DungeonTrain] Prefab '{}' stamped at {} facing {} ({}x{}x{}){}",
+            name, anchor.pos().toShortString(), anchor.facing().getSerializedName(),
+            size.getX(), size.getY(), size.getZ(),
+            ancestors.isEmpty() ? "" : " inside " + String.join(" -> ", ancestors));
         // Two anchors to the same prefab in one parent roll their sidecars apart; the twin of a
         // portal corridor, standing on the same local offset, rolls the same.
         int cellIndex = Objects.hash(frame.rollIndex(), anchor.pos().getX() - clip.minX(),

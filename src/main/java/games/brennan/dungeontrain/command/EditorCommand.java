@@ -3371,7 +3371,8 @@ public final class EditorCommand {
         } else if (head instanceof Template.PortalRoom rm) {
             games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, rm.name(), true, false);
         } else if (head instanceof Template.Prefab pf) {
-            games.brennan.dungeontrain.editor.PrefabEditor.enter(player, pf.name(), true, false);
+            // Inside, not on top: a prefab's cage has no roof to stand on, only a floor.
+            games.brennan.dungeontrain.editor.PrefabEditor.enter(player, pf.name(), false, false);
         }
     }
 

@@ -105,9 +105,12 @@ public final class PrefabEditor {
         return null;
     }
 
-    /** Teleport to {@code name}'s plot, stamping every prefab plot first. */
+    /**
+     * Teleport to {@code name}'s plot, stamping every prefab plot first. Inside, on the cage floor:
+     * unlike a room there is no roof to land on, and a new prefab is an empty box.
+     */
     public static void enter(ServerPlayer player, String name) {
-        enter(player, name, true, true);
+        enter(player, name, false, true);
     }
 
     /**
@@ -431,7 +434,12 @@ public final class PrefabEditor {
             origin.getX() + size.getX() - 1, origin.getY() + size.getY() - 1, origin.getZ() + size.getZ() - 1);
     }
 
-    /** Draw the bedrock cage along the 12 edges of the plot. */
+    /**
+     * Draw the bedrock cage along the 12 edges of the plot, with a <b>solid floor</b> one block
+     * under it. A room's cage is edges only because the room has its own floor; a prefab is a
+     * design fragment, empty when new, and an author teleported into an edge-only cage fell
+     * straight through it. The floor sits outside the capture box, so it is never saved.
+     */
     private static void setOutline(ServerLevel level, BlockPos origin, Vec3i size, BlockState state) {
         CarriageStampGuard.run(() -> {
             int x0 = origin.getX() - 1, y0 = origin.getY() - 1, z0 = origin.getZ() - 1;
@@ -441,7 +449,7 @@ public final class PrefabEditor {
                     for (int z = z0; z <= z1; z++) {
                         int extremes = (x == x0 || x == x1 ? 1 : 0) + (y == y0 || y == y1 ? 1 : 0)
                             + (z == z0 || z == z1 ? 1 : 0);
-                        if (extremes < 2) continue;
+                        if (extremes < 2 && y != y0) continue;
                         level.setBlock(new BlockPos(x, y, z), state, 3);
                     }
                 }
