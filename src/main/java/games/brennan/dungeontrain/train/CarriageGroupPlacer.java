@@ -49,7 +49,8 @@ public final class CarriageGroupPlacer {
         CarriageStampGuard.run(() -> {
             eraseAt(level, origin, dims, carriages);
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_ALL);
+            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
+            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
         });
         return true;
     }

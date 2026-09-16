@@ -119,7 +119,8 @@ public final class CarriagePersistenceStore {
             HolderGetter<Block> blocks = level.holderLookup(Registries.BLOCK);
             template.load(blocks, tag);
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(false);
-            CarriageStampGuard.run(() -> template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
+            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
+            CarriageStampGuard.run(() -> template.placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS));
             return true;
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Failed to restore carriage idx={} from {}: {}",
