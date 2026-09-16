@@ -431,6 +431,11 @@ public final class CarriagePartVariantBlocks {
 
     public synchronized void save(CarriagePartKind kind, String name) throws IOException {
         if (source != null) { source.save(kind, name); return; }
+        writeConfig(kind, name);
+    }
+
+    /** The user-tier write behind {@link #save}, shared with {@link #rename}'s carry path. */
+    private void writeConfig(CarriagePartKind kind, String name) throws IOException {
         Path file = configPathFor(kind, name);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
@@ -516,6 +521,35 @@ public final class CarriagePartVariantBlocks {
         StageBlockIndex.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted part variant sidecar {}:{} ({})", kind.id(), name, file);
         return existed;
+    }
+
+    /**
+     * Carry the sidecar from {@code sourceName} to {@code targetName} within {@code kind} so a part
+     * save-as keeps its variants — same contract as
+     * {@link CarriageContentsVariantBlocks#rename}: a user-tier file is moved; a sidecar that only
+     * exists in the session cache, an imported package or the bundled resource is written out under
+     * the new name instead. Returns false when there was nothing to carry.
+     */
+    public static synchronized boolean rename(CarriagePartKind kind, String sourceName, String targetName)
+            throws IOException {
+        Path src = configPathFor(kind, sourceName);
+        Path dst = configPathFor(kind, targetName);
+        if (Files.isRegularFile(src)) {
+            Files.createDirectories(dst.getParent());
+            Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            CarriagePartVariantBlocks cached = CACHE.remove(cacheKey(kind, sourceName));
+            if (cached != null) CACHE.put(cacheKey(kind, targetName), cached);
+            StageBlockIndex.invalidateAll();
+            LOGGER.info("[DungeonTrain] Renamed part variant sidecar {} -> {}", src, dst);
+            return true;
+        }
+        CarriagePartVariantBlocks carried = CACHE.remove(cacheKey(kind, sourceName));
+        if (carried == null) carried = loadFromDisk(kind, sourceName);
+        if (carried.isEmpty() && carried.isDefaultMirror()) return false;
+        carried.writeConfig(kind, targetName);
+        LOGGER.info("[DungeonTrain] Carried {} part variant entries {}:{} -> {}:{} (no user-tier file to move)",
+            carried.entries.size(), kind.id(), sourceName, kind.id(), targetName);
+        return true;
     }
 
     public static synchronized void invalidate(CarriagePartKind kind, String name) {
