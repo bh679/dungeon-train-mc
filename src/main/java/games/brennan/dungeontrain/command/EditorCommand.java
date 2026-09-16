@@ -3091,7 +3091,7 @@ public final class EditorCommand {
 
         java.util.Optional<Template> first = category.firstModel();
         if (first.isEmpty()) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.save.category_has_no_models", category.displayName()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.category_has_no_models", Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
             return 0;
         }
 
@@ -3159,7 +3159,7 @@ public final class EditorCommand {
         EditorStampQueue.start(queued, category.id());
 
         final int pending = queued.size();
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered", category.displayName(), head.displayName(), (pending > 0 ? Component.translatable("chat.dungeontrain.editor.entered_pending") : Component.empty())), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered", Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id()), head.displayName(), (pending > 0 ? Component.translatable("chat.dungeontrain.editor.entered_pending") : Component.empty())), true);
         return 1;
     }
 
@@ -3312,7 +3312,7 @@ public final class EditorCommand {
                 if (m.id().equals(id)) { model = m; break; }
             }
             if (model == null) {
-                source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, category.displayName()));
+                source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
                 return 0;
             }
             if (model instanceof Template.Carriage cm) {
@@ -3340,7 +3340,7 @@ public final class EditorCommand {
         }
 
         if (origin == null) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_plot_origin", id, category.displayName()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_plot_origin", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
             return 0;
         }
 
@@ -3584,7 +3584,7 @@ public final class EditorCommand {
     private static boolean requireStamped(CommandSourceStack source, EditorCategory category) {
         EditorCategory stamped = EditorStampedCategoryState.current().orElse(null);
         if (stamped == category) return true;
-        source.sendFailure(Component.translatable("chat.dungeontrain.editor.switch_first_plots_are", category.displayName(), category.displayName().toLowerCase(Locale.ROOT)));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.switch_first_plots_are", Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id()), Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
         return false;
     }
 

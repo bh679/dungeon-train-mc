@@ -107,7 +107,7 @@ public final class SaveCommand {
 
         Template model = findModel(category, id);
         if (model == null) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, category.displayName()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
             return 0;
         }
 
@@ -267,7 +267,7 @@ public final class SaveCommand {
         EditorCategory category = located.get().category();
         List<Template> models = category.models();
         if (models.isEmpty()) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.save.category_has_no_models", category.displayName()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.category_has_no_models", Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
             return 0;
         }
 
@@ -318,7 +318,7 @@ public final class SaveCommand {
         final String errs = promoteErrors.toString();
         final Component summary = Component.translatable("chat.dungeontrain.save.summary", s, skE, skC,
             promoteDefault ? Component.translatable("chat.dungeontrain.save.summary_promoted", p) : Component.empty(),
-            category.displayName(), errs);
+            Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id()), errs);
         source.sendSuccess(() -> summary.copy()
             .withStyle(errs.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return s > 0 ? 1 : 0;
