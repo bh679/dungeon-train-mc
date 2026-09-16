@@ -77,21 +77,27 @@ public final class EditorCreatorPane {
             y += LINE_H;
         }
 
-        // Why the toolbar is missing, said once rather than as eight disabled buttons — and, under
-        // it, whatever the last press of Load came back with.
+        // Why the toolbar is missing, said once rather than as eight disabled buttons — OR whatever
+        // the last press of Load came back with. One or the other: the strip is a single line tall
+        // at every GUI scale, and the note used to be drawn beneath the boilerplate, where it never
+        // fit — every "Loaded into your editor." and "You already have a build by that name here."
+        // was set and never seen. The boilerplate is the same every frame; the note is the news.
         InventoryEditorLayout.Rect notes = layout.settings();
-        g.drawString(font, font.plainSubstrByWidth(
-                EditorScreenLang.text(EditorScreenLang.CREATOR_READ_ONLY), notes.w() - 4),
-            notes.x() + 2, notes.y(), EditorDetailPane.DIM_TEXT, false);
         if (note != null && !note.isEmpty()) {
             // Wrapped, not clipped: these say what happened and why, and half a sentence
             // ("You already have a build by t") is worse than no sentence.
-            int y2 = notes.y() + LINE_H + 2;
+            int y2 = notes.y();
             for (FormattedCharSequence row : font.split(Component.literal(note), notes.w() - 4)) {
-                if (y2 + LINE_H > notes.bottom()) break;
+                // The first row always goes down, as the boilerplate always did — the strip can be
+                // shorter than a line at the floor size and one clipped row beats nothing.
+                if (y2 > notes.y() && y2 + LINE_H > notes.bottom()) break;
                 g.drawString(font, row, notes.x() + 2, y2, 0xFFFFEEBB, false);
                 y2 += LINE_H;
             }
+        } else {
+            g.drawString(font, font.plainSubstrByWidth(
+                    EditorScreenLang.text(EditorScreenLang.CREATOR_READ_ONLY), notes.w() - 4),
+                notes.x() + 2, notes.y(), EditorDetailPane.DIM_TEXT, false);
         }
 
         drawLoad(g, font, layout.test(), entry, landed, asCopy, loading, mouseX, mouseY);
