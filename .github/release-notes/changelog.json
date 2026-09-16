@@ -16995,6 +16995,26 @@
       "released": true,
       "released_in": "v0.902.0",
       "released_at": "2026-09-15T16:51:28Z"
+    },
+    {
+      "id": "block-variant-group-ref-plain-block",
+      "version": "0.903.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Group references can be added to any block",
+      "summary": "In the block-variant menu you can now add a group reference straight onto a plain block. The block you point at becomes the first choice and the group the second, so you no longer have to add a second block first just to unlock the option.",
+      "highlights": [
+        "Add a locked group's clipboard to any block in one step \u2014 no placeholder second block needed.",
+        "Adding a block that a group reference happens to display as no longer reports it as already in the cell."
+      ],
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
