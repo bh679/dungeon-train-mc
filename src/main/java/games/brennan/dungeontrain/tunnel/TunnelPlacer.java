@@ -426,7 +426,8 @@ public final class TunnelPlacer {
             // blocks (mirrors the worldgen path; see stampTemplateWorldgen).
             .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
-        template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+        // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
+        template.placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
         TemplateDecor.replace(level, origin, template, settings, null);
         anchorAboveFootprint(level, origin);
     }

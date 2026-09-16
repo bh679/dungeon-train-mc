@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
@@ -48,7 +49,7 @@ public final class EditorCreatorPane {
     public void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
                        EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
                        String note, boolean asCopy, EditorCreatorBuilds.Landed landed,
-                       boolean going, int seq, int mouseX, int mouseY) {
+                       boolean going, boolean loading, int seq, int mouseX, int mouseY) {
 
         drawHeader(g, font, layout.header(), theme, entry, landed, going, mouseX, mouseY);
         drawSubmit(g, font, layout.icons(), entry, mouseX, mouseY);
@@ -77,24 +78,30 @@ public final class EditorCreatorPane {
             y += LINE_H;
         }
 
-        // Why the toolbar is missing, said once rather than as eight disabled buttons — and, under
-        // it, whatever the last press of Load came back with.
+        // Why the toolbar is missing, said once rather than as eight disabled buttons — OR whatever
+        // the last press of Load came back with. One or the other: the strip is a single line tall
+        // at every GUI scale, and the note used to be drawn beneath the boilerplate, where it never
+        // fit — every "Loaded into your editor." and "You already have a build by that name here."
+        // was set and never seen. The boilerplate is the same every frame; the note is the news.
         InventoryEditorLayout.Rect notes = layout.settings();
-        g.drawString(font, font.plainSubstrByWidth(
-                EditorScreenLang.text(EditorScreenLang.CREATOR_READ_ONLY), notes.w() - 4),
-            notes.x() + 2, notes.y(), EditorDetailPane.DIM_TEXT, false);
         if (note != null && !note.isEmpty()) {
             // Wrapped, not clipped: these say what happened and why, and half a sentence
             // ("You already have a build by t") is worse than no sentence.
-            int y2 = notes.y() + LINE_H + 2;
+            int y2 = notes.y();
             for (FormattedCharSequence row : font.split(Component.literal(note), notes.w() - 4)) {
-                if (y2 + LINE_H > notes.bottom()) break;
+                // The first row always goes down, as the boilerplate always did — the strip can be
+                // shorter than a line at the floor size and one clipped row beats nothing.
+                if (y2 > notes.y() && y2 + LINE_H > notes.bottom()) break;
                 g.drawString(font, row, notes.x() + 2, y2, 0xFFFFEEBB, false);
                 y2 += LINE_H;
             }
+        } else {
+            g.drawString(font, font.plainSubstrByWidth(
+                    EditorScreenLang.text(EditorScreenLang.CREATOR_READ_ONLY), notes.w() - 4),
+                notes.x() + 2, notes.y(), EditorDetailPane.DIM_TEXT, false);
         }
 
-        drawLoad(g, font, layout.test(), entry, landed, asCopy, mouseX, mouseY);
+        drawLoad(g, font, layout.test(), entry, landed, asCopy, loading, mouseX, mouseY);
     }
 
     /**
@@ -151,23 +158,44 @@ public final class EditorCreatorPane {
      * variant parent the build will land under — <b>User builds</b> until the reviewer picks another.
      * The parent is chosen here and not after the fact because after the fact is a second trip to
      * the roster per build, and a reviewer loads them by the dozen.</p>
+     *
+     * <p>While the press is out, both buttons are greyed and the load one says <b>Loading…</b> —
+     * the same treatment as <b>Going now…</b>, for the same reason: a big build takes seconds to
+     * fetch, install and stamp, and a button that still looks pressable during that invites a
+     * second press that would fetch it all again.</p>
+     *
+     * <p>Once loaded, <b>Shift</b> turns the slot back into <b>Load as a copy</b>: the editor holds
+     * one template per name, so a second copy — or another relay row wearing the same name — can
+     * only come down under a free one, and the server's LOAD_AS_NEW is exactly that.</p>
      */
     private void drawLoad(GuiGraphics g, Font font, InventoryEditorLayout.Rect r,
                           BuilderProfilePacket.Entry entry, EditorCreatorBuilds.Landed landed,
-                          boolean asCopy, int mouseX, int mouseY) {
+                          boolean asCopy, boolean loading, int mouseX, int mouseY) {
         loadRect = null;
         parentRect = null;
-        if (landed != null) {
-            // Done, and not a button: pressing it again would fetch the same build and be told the
-            // name is taken — by the copy it just made.
-            String done = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADED);
+        // Already here, and Shift is not down: not a button. Pressing it again would fetch the same
+        // build and be told the name is taken — by the copy it just made. Shift is the way to ask
+        // for that copy on purpose (the editor's usual "the other thing this control does"), and
+        // the slot says so when the mouse is over it. A copy attempt that was itself refused
+        // (asCopy) keeps the button up so the next free name can be tried; a Load in flight keeps
+        // the greyed "Loading…" whether or not one copy is already down.
+        if (landed != null && !loading && !asCopy && !Screen.hasShiftDown()) {
+            String done = EditorScreenLang.text(r.contains(mouseX, mouseY)
+                ? EditorScreenLang.CREATOR_LOADED_SHIFT_HINT : EditorScreenLang.CREATOR_LOADED);
             g.drawString(font, font.plainSubstrByWidth(done, r.w() - 4),
                 r.x() + (r.w() - font.width(done)) / 2, r.y() + (r.h() - font.lineHeight) / 2 + 1,
                 LOADED_TEXT, false);
             return;
         }
-        boolean enabled = entry != null;
-        boolean underParent = enabled && CreatorLoadParent.supports(entry.kind());
+        drawLoadButtons(g, font, r, entry, asCopy || landed != null, loading, mouseX, mouseY);
+    }
+
+    /** The load button and, for a kind with sub-variants, the parent picker beside it. */
+    private void drawLoadButtons(GuiGraphics g, Font font, InventoryEditorLayout.Rect r,
+                                 BuilderProfilePacket.Entry entry, boolean asCopy, boolean loading,
+                                 int mouseX, int mouseY) {
+        boolean enabled = entry != null && !loading;
+        boolean underParent = entry != null && CreatorLoadParent.supports(entry.kind());
         InventoryEditorLayout.Rect load = r;
         if (underParent) {
             int parentW = (int) (r.w() * PARENT_SHARE);
@@ -175,10 +203,12 @@ public final class EditorCreatorPane {
             parentRect = new InventoryEditorLayout.Rect(r.right() - parentW, r.y(), parentW, r.h());
             PlotCategory category = EditorCreatorBuilds.categoryOf(entry.kind());
             String parent = "\u25B8 " + CreatorLoadParent.labelFor(category, EditorRosterClient.index());
-            button(g, font, parentRect, parent, true, mouseX, mouseY);
+            button(g, font, parentRect, parent, enabled, mouseX, mouseY);
+            if (!enabled) parentRect = null;
         }
         loadRect = enabled ? load : null;
-        String label = EditorScreenLang.text(asCopy ? EditorScreenLang.CREATOR_LOAD_COPY
+        String label = EditorScreenLang.text(loading ? EditorScreenLang.CREATOR_LOAD_PENDING
+            : asCopy ? EditorScreenLang.CREATOR_LOAD_COPY
             : underParent ? EditorScreenLang.CREATOR_LOAD_SUB_VARIANT : EditorScreenLang.CREATOR_LOAD);
         button(g, font, load, label, enabled, mouseX, mouseY);
     }

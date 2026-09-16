@@ -15,6 +15,7 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -370,7 +371,8 @@ public final class CarriagePartEditor {
         CarriagePartPlacer.eraseAt(overworld, targetOrigin, kind, dims);
         if (seed != null) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            CarriageStampGuard.run(() -> seed.placeInWorld(overworld, targetOrigin, targetOrigin, settings, overworld.getRandom(), 3));
+            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
+            CarriageStampGuard.run(() -> seed.placeInWorld(overworld, targetOrigin, targetOrigin, settings, overworld.getRandom(), Block.UPDATE_CLIENTS));
             TemplateDecor.replace(overworld, targetOrigin, seed, settings, null);
         } else {
             stampStarter(overworld, targetOrigin, kind, dims);
@@ -697,7 +699,8 @@ public final class CarriagePartEditor {
         Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(level, kind, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
+            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
+            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS));
             TemplateDecor.replace(level, origin, stored.get(), settings, null);
         }
         if (plotIsEmpty(level, origin, kind, dims)) {

@@ -43,6 +43,7 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -1044,8 +1045,9 @@ public final class BuilderWorldSetup {
         if (stored.isEmpty()) {
             return false;
         }
+        // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
         CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin,
-                new StructurePlaceSettings().setIgnoreEntities(true), level.getRandom(), 3));
+                new StructurePlaceSettings().setIgnoreEntities(true), level.getRandom(), Block.UPDATE_CLIENTS));
         return true;
     }
 
