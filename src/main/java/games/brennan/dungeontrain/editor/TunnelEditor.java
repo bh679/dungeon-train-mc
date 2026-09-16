@@ -136,6 +136,16 @@ public final class TunnelEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop, boolean stamp) {
+        enter(player, variant, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
+    }
+
+    /**
+     * @param inside accepted for symmetry with the door-bearing editors; a tunnel has no doorway of
+     *               its own, so both values land at the centre — stepping to the nearest free
+     *               column if that cell is built up.
+     */
+    public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop, boolean stamp,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -157,16 +167,14 @@ public final class TunnelEditor {
 
         if (stamp) stampPlot(overworld, variant);
 
+        // Tunnel dims are fixed, so any CarriageDims gives the same footprint — the label uses the
+        // same kind lookup, so the roof landing sits in front of the panel it draws.
+        Vec3i footprint = TrackSidePlots.footprint(TunnelTemplateStore.tunnelKind(variant),
+            CarriageDims.clamp(CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
         if (onTop) {
-            // Tunnel dims are fixed, so any CarriageDims gives the same footprint — the label uses
-            // the same kind lookup, so the landing spot sits in front of the panel it draws.
-            Vec3i footprint = TrackSidePlots.footprint(TunnelTemplateStore.tunnelKind(variant),
-                CarriageDims.clamp(CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
             EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
         } else {
-            double tx = origin.getX() + TunnelPlacer.LENGTH / 2.0;
-            double tz = origin.getZ() + TunnelPlacer.WIDTH / 2.0;
-            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
         }
 
         // Edits mirror live across the enabled axes — author one master octant.

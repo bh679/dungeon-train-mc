@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -41,6 +42,20 @@ final class EditorPlotActionPacketTest {
         assertEquals("portal_room", decoded.modelId());
         assertEquals("library", decoded.modelName());
         assertSame(EditorPlotActionPacket.Action.RESET, decoded.action());
+        assertFalse(decoded.centre(), "the four-field form carries no landing modifier");
+    }
+
+    @Test
+    @DisplayName("round-trip preserves the shift-click centre landing on Enter")
+    void roundTrip_preservesCentre() {
+        EditorPlotActionPacket decoded = roundTrip(new EditorPlotActionPacket(
+            "carriages", "standard", "standard", EditorPlotActionPacket.Action.ENTER_INSIDE, true));
+        assertSame(EditorPlotActionPacket.Action.ENTER_INSIDE, decoded.action());
+        assertTrue(decoded.centre());
+        assertSame(games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.CENTRE, decoded.inside());
+        assertSame(games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR,
+            new EditorPlotActionPacket("carriages", "standard", "standard",
+                EditorPlotActionPacket.Action.ENTER_INSIDE).inside());
     }
 
     @Test

@@ -237,6 +237,16 @@ public final class CarriagePartEditor {
     }
 
     public static void enter(ServerPlayer player, CarriagePartKind kind, String name, boolean onTop) {
+        enter(player, kind, name, onTop, EditorPlotArrival.Inside.CENTRE);
+    }
+
+    /**
+     * @param inside accepted for symmetry with the door-bearing editors; a part has no doorway, so
+     *               both values land at the centre — stepping to the nearest free column if that
+     *               cell is built up.
+     */
+    public static void enter(ServerPlayer player, CarriagePartKind kind, String name, boolean onTop,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -278,9 +288,7 @@ public final class CarriagePartEditor {
         if (onTop) {
             EditorPlotArrival.inFrontOfMenu(origin, size).teleport(player, overworld);
         } else {
-            double tx = origin.getX() + size.getX() / 2.0;
-            double tz = origin.getZ() + size.getZ() / 2.0;
-            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+            EditorPlotArrival.atCentre(overworld, origin, size, player).teleport(player, overworld);
         }
 
         LOGGER.info("[DungeonTrain] Part editor enter: {} -> {}:{} plot at {} size={}x{}x{} ({})",

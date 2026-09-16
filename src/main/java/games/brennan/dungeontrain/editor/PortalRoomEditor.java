@@ -90,6 +90,28 @@ public final class PortalRoomEditor {
     }
 
     /**
+     * The lower cell of each of room {@code name}'s two corridor doors — entry ({@code -X}) end
+     * first — clamped to what the room's own box can spend, exactly as the real corridors are cut.
+     *
+     * <p>One place for the clamps so the door ghosts the editor paints and the doorway the Enter
+     * button lands in are always the same cells: a ghost drawn where the teleport does not go, or
+     * the reverse, would be the editor contradicting itself about where its own door is.</p>
+     */
+    public static List<BlockPos> doorBases(String name, BlockPos origin, Vec3i size, CarriageDims dims) {
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        int offset = PortalRoomLayout.clampDoorOffset(dims, size.getZ(), settings.doorOffset().value());
+        int heightOffset = PortalRoomLayout.clampDoorHeightOffset(
+            dims, size.getY(), settings.doorHeightOffset().value());
+        // The exit door on its own clamps, not the entry door's: the two ends may stand apart.
+        int exitOffset = PortalRoomLayout.clampDoorOffset(dims, size.getZ(), settings.exitDoorOffset().value());
+        int exitHeightOffset = PortalRoomLayout.clampDoorHeightOffset(
+            dims, size.getY(), settings.exitDoorHeightOffset().value());
+        return games.brennan.dungeontrain.portal.PortalRoomDoorCells.doorBases(
+            origin, size, offset, heightOffset, exitOffset, exitHeightOffset);
+    }
+
+    /**
      * The room name whose plot contains {@code pos}, or null. Includes the 1-block outline-cage
      * margin and the same +2 Y headroom every other plot uses for a player who landed on the cage.
      */
@@ -119,6 +141,14 @@ public final class PortalRoomEditor {
         enter(player, name, onTop, !standingIn(player, name));
     }
 
+    /**
+     * The panel's Enter button: land inside at {@code inside}, restamping unless the player is
+     * already standing in this room.
+     */
+    public static void enterInside(ServerPlayer player, String name, EditorPlotArrival.Inside inside) {
+        enter(player, name, false, !standingIn(player, name), inside);
+    }
+
     /** Whether {@code player} is already inside room {@code name}'s plot. */
     private static boolean standingIn(ServerPlayer player, String name) {
         MinecraftServer server = player.getServer();
@@ -135,6 +165,17 @@ public final class PortalRoomEditor {
      *              Sizes are still primed either way — the layout needs them before the teleport.
      */
     public static void enter(ServerPlayer player, String name, boolean onTop, boolean stamp) {
+        enter(player, name, onTop, stamp, EditorPlotArrival.Inside.FRONT_DOOR);
+    }
+
+    /**
+     * @param inside where an {@code onTop == false} landing aims: the entry doorway facing in, or
+     *               the centre. Either way it steps to the nearest free column if that cell is
+     *               built up — the doorway itself stands in the bedrock cage, so the door landing
+     *               normally comes to rest one block inside the room.
+     */
+    public static void enter(ServerPlayer player, String name, boolean onTop, boolean stamp,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -165,10 +206,12 @@ public final class PortalRoomEditor {
 
         if (onTop) {
             EditorPlotArrival.inFrontOfMenu(origin, size).teleport(player, overworld);
+        } else if (inside == EditorPlotArrival.Inside.FRONT_DOOR) {
+            List<BlockPos> doors = doorBases(name, origin, size, dims);
+            BlockPos door = doors.isEmpty() ? origin.offset(0, 1, size.getZ() / 2) : doors.get(0);
+            EditorPlotArrival.atFrontDoor(overworld, origin, size, door).teleport(player, overworld);
         } else {
-            double tx = origin.getX() + size.getX() / 2.0;
-            double tz = origin.getZ() + size.getZ() / 2.0;
-            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+            EditorPlotArrival.atCentre(overworld, origin, size, player).teleport(player, overworld);
         }
 
         player.sendSystemMessage(Component.literal(

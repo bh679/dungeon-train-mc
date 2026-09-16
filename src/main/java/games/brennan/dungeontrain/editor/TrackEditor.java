@@ -121,6 +121,15 @@ public final class TrackEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, boolean onTop, boolean stamp) {
+        enter(player, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
+    }
+
+    /**
+     * @param inside accepted for symmetry with the door-bearing editors; a track tile has no
+     *               doorway, so both values land at the centre — stepping to the nearest free
+     *               column if that cell is built up.
+     */
+    public static void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -130,14 +139,12 @@ public final class TrackEditor {
         if (stamp) stampAllPlots(overworld, dims);
 
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
+        // The label's footprint, so the roof landing sits in front of the panel it draws.
+        Vec3i footprint = TrackSidePlots.footprint(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
         if (onTop) {
-            // The label's footprint, so the landing spot sits in front of the panel it draws.
-            Vec3i footprint = TrackSidePlots.footprint(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
             EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
         } else {
-            double tx = origin.getX() + TrackPlacer.TILE_LENGTH / 2.0;
-            double tz = origin.getZ() + dims.width() / 2.0;
-            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
         }
 
         LOGGER.info("[DungeonTrain] Track editor enter: {} -> default plot at {} ({} variants registered, {})",

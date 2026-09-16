@@ -330,6 +330,14 @@ public final class CarriageContentsEditor {
         enter(player, contents, shellVariant, onTop, stamp);
     }
 
+    /**
+     * The panel's Enter button: land inside at {@code inside} under the contents' natural shell,
+     * restamping unless the player is already standing in this plot.
+     */
+    public static void enterInside(ServerPlayer player, CarriageContents contents, EditorPlotArrival.Inside inside) {
+        enter(player, contents, null, false, !standingIn(player, contents), inside);
+    }
+
     /** Whether {@code player} is already inside {@code contents}' plot. */
     private static boolean standingIn(ServerPlayer player, CarriageContents contents) {
         MinecraftServer server = player.getServer();
@@ -345,6 +353,15 @@ public final class CarriageContentsEditor {
      */
     public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant,
                              boolean onTop, boolean stamp) {
+        enter(player, contents, shellVariant, onTop, stamp, EditorPlotArrival.Inside.FRONT_DOOR);
+    }
+
+    /**
+     * @param inside where an {@code onTop == false} landing aims: the -X doorway facing in, or the
+     *               centre. Either way it steps to the nearest free column if that cell is built up.
+     */
+    public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant,
+                             boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -377,14 +394,14 @@ public final class CarriageContentsEditor {
             setOutline(overworld, origin, OUTLINE_BLOCK, box);
         }
 
+        net.minecraft.core.Vec3i footprint = new net.minecraft.core.Vec3i(box.length(), box.height(), box.width());
         if (onTop) {
-            EditorPlotArrival.inFrontOfMenu(origin,
-                new net.minecraft.core.Vec3i(box.length(), box.height(), box.width()))
-                .teleport(player, overworld);
+            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
+        } else if (inside == EditorPlotArrival.Inside.FRONT_DOOR) {
+            BlockPos door = games.brennan.dungeontrain.train.CarriageDoorCells.doorBases(origin, box).get(0);
+            EditorPlotArrival.atFrontDoor(overworld, origin, footprint, door).teleport(player, overworld);
         } else {
-            double tx = origin.getX() + box.length() / 2.0;
-            double tz = origin.getZ() + box.width() / 2.0;
-            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
         }
 
         LOGGER.info("[DungeonTrain] Contents editor enter: {} -> {} (shell={}) plot at {} dims={}x{}x{} ({})",
