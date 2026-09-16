@@ -1801,7 +1801,7 @@ public final class PortalCarriageBuilder {
             VariantState picked = sidecar.resolve(local, worldSeed, cellIndex);
             if (picked == null) continue;
             if (picked.isMob()) {
-                // The cell itself still has to go: a mob entry carries a COMMAND_BLOCK sentinel as
+                // The cell itself still has to go: a mob entry carries an empty-placeholder sentinel as
                 // its state so every block applier blanks it without a special case.
                 //
                 // No-cascade: this cell really does become air, and an UPDATE_ALL air write breaks

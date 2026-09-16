@@ -1340,6 +1340,7 @@
   "gui.dungeontrain.number_input.cancel": "Annuleren",
   "subtitles.dungeontrain.train_engine": "Treinmotor puft",
   "block.dungeontrain.narrative_lectern": "Verhaallessenaar",
+  "block.dungeontrain.variant_placeholder": "Variant-plaatshouder",
   "block.dungeontrain.skybox_block": "Skyboxblok",
   "block.dungeontrain.skybox_surface": "Oppervlakte-skyboxblok",
   "block.dungeontrain.skybox_end": "End-skyboxblok",

@@ -1312,6 +1312,7 @@
       "gui.dungeontrain.number_input.cancel",
       "subtitles.dungeontrain.train_engine",
       "block.dungeontrain.narrative_lectern",
+      "block.dungeontrain.variant_placeholder",
       "block.dungeontrain.skybox_block",
       "block.dungeontrain.skybox_surface",
       "block.dungeontrain.skybox_end",

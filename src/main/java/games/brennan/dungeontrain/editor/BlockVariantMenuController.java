@@ -517,8 +517,7 @@ public final class BlockVariantMenuController {
                         // Mob added to an empty cell — seed with the empty-
                         // placeholder sentinel so the picker can still roll
                         // between "stay air" and "spawn mob".
-                        mutated.add(VariantState.of(
-                            net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState()));
+                        mutated.add(VariantState.of(CarriageVariantBlocks.emptyPlaceholder()));
                     }
                     VariantState mobVariant = VariantState.ofMob(
                         eid, mobNbt, 1, games.brennan.dungeontrain.editor.VariantRotation.NONE);
@@ -562,8 +561,7 @@ public final class BlockVariantMenuController {
                     if (wasEmpty) {
                         // Seed the empty-placeholder sentinel so the picker can
                         // still roll "stay air" vs "spawn stand".
-                        mutated.add(VariantState.of(
-                            net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState()));
+                        mutated.add(VariantState.of(CarriageVariantBlocks.emptyPlaceholder()));
                     }
                     VariantState standVariant = VariantState.ofMob(
                             standId, null, 1, games.brennan.dungeontrain.editor.VariantRotation.NONE)
@@ -592,7 +590,7 @@ public final class BlockVariantMenuController {
                     // CarriageVariantBlocks.isEmptyPlaceholder translates this
                     // back to Blocks.AIR at spawn time, so the variant means
                     // "leave this position empty in the rolled carriage".
-                    capturedState = net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState();
+                    capturedState = CarriageVariantBlocks.emptyPlaceholder();
                     itemBeNbt = null;
                 } else if (bucketSource != null) {
                     // Filled bucket → add the fluid's SOURCE state. A bucket is
@@ -642,7 +640,7 @@ public final class BlockVariantMenuController {
                     // Two rows linked to different loot prefabs are distinct
                     // even if their state + beNbt match — the link makes them
                     // semantically different variants. Mob entries also share
-                    // the COMMAND_BLOCK sentinel state but are distinguished
+                    // the empty-placeholder sentinel state but are distinguished
                     // by entityId, so include it in the dedup key (otherwise
                     // adding the empty-placeholder to a cell already
                     // containing a mob entry false-positives). A group

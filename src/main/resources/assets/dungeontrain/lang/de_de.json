@@ -1340,6 +1340,7 @@
   "gui.dungeontrain.number_input.cancel": "Abbrechen",
   "subtitles.dungeontrain.train_engine": "Zuglok tuckert",
   "block.dungeontrain.narrative_lectern": "Erzähl-Lesepult",
+  "block.dungeontrain.variant_placeholder": "Varianten-Platzhalter",
   "block.dungeontrain.skybox_block": "Skybox-Block",
   "block.dungeontrain.skybox_surface": "Oberflächen-Skybox-Block",
   "block.dungeontrain.skybox_end": "End-Skybox-Block",

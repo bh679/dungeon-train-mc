@@ -35,7 +35,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -157,7 +156,7 @@ public final class PrefabUseHandler {
         VariantState first = states.get(0);
         boolean firstIsSentinel = CarriageVariantBlocks.isEmptyPlaceholder(first.state());
         BlockState placeholderState = firstIsSentinel
-            ? Blocks.COMMAND_BLOCK.defaultBlockState()
+            ? CarriageVariantBlocks.emptyPlaceholder()
             : first.state();
         level.setBlock(placePos, placeholderState, 3);
         if (!firstIsSentinel && first.hasBlockEntityData()) {

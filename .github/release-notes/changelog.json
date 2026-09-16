@@ -17036,6 +17036,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "variant-placeholder-block",
+      "version": "0.903.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Block-variant cells show a ghost cube instead of a command block",
+      "summary": "In the Train Editor, a variant cell that can roll to nothing \u2014 or to a mob \u2014 now stands as a translucent ghost cube rather than a command block. It reads as empty at a glance, and you can place blocks against it with a plain right-click; no more holding shift to get past the command block's screen.",
+      "highlights": [
+        "Empty and mob slots in a variant cell show a see-through placeholder block, not a command block",
+        "Right-click places against a placeholder without shift",
+        "Existing builds pick the new look up automatically the next time you open them"
+      ],
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1443
     }
   ]
 }

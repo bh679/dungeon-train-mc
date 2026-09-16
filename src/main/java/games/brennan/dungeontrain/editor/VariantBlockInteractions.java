@@ -368,7 +368,7 @@ public final class VariantBlockInteractions {
 
     /**
      * Build a mob {@link VariantState} from a held vanilla spawn egg. The
-     * resulting entry's {@code state} is auto-stamped to the COMMAND_BLOCK
+     * resulting entry's {@code state} is auto-stamped to the empty-placeholder
      * sentinel by the canonical constructor, so existing applier branches
      * AIR the cell at spawn; a parallel entity pass spawns the mob (subject
      * to the existing 48-block player-distance gate). Entity NBT from the
@@ -448,7 +448,7 @@ public final class VariantBlockInteractions {
                     // would have only one candidate and short-circuit any
                     // weight authoring.
                     updated.add(VariantState.of(
-                        net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState()));
+                        CarriageVariantBlocks.emptyPlaceholder()));
                 } else {
                     player.displayClientMessage(
                         Component.literal("Target block is air — place a base block first.")

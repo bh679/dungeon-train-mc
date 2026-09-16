@@ -1344,7 +1344,7 @@ public final class CarriageContentsPlacer {
      *
      * <p>The block pass already cleared those cells to AIR through the
      * existing empty-placeholder sentinel branch (the canonical
-     * {@link VariantState} constructor force-stamps the COMMAND_BLOCK
+     * {@link VariantState} constructor force-stamps the empty-placeholder
      * sentinel onto mob entries), so this pass only spawns entities — it
      * never touches blocks.</p>
      *
