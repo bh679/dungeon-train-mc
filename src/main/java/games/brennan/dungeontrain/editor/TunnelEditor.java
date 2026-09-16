@@ -118,7 +118,17 @@ public final class TunnelEditor {
     }
 
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop) {
-        enter(player, variant, onTop, true);
+        // Already inside this variant's default plot: a walk to its menu, not a reload — restamping
+        // would throw away every unsaved edit for the sake of a few blocks' teleport.
+        enter(player, variant, onTop, !standingIn(player, variant));
+    }
+
+    /** Whether {@code player} is already inside {@code variant}'s default-named plot. */
+    private static boolean standingIn(ServerPlayer player, TunnelVariant variant) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        TunnelPlot here = plotContainingNamed(player.blockPosition());
+        return here != null && here.variant() == variant && TrackKind.DEFAULT_NAME.equals(here.name());
     }
 
     /**
@@ -126,6 +136,16 @@ public final class TunnelEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop, boolean stamp) {
+        enter(player, variant, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
+    }
+
+    /**
+     * @param inside accepted for symmetry with the door-bearing editors; a tunnel has no doorway of
+     *               its own, so both values land at the centre — stepping to the nearest free
+     *               column if that cell is built up.
+     */
+    public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop, boolean stamp,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -147,12 +167,15 @@ public final class TunnelEditor {
 
         if (stamp) stampPlot(overworld, variant);
 
-        double tx = origin.getX() + TunnelPlacer.LENGTH / 2.0;
-        double ty = onTop
-            ? origin.getY() + TunnelPlacer.HEIGHT + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + TunnelPlacer.WIDTH / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        // Tunnel dims are fixed, so any CarriageDims gives the same footprint — the label uses the
+        // same kind lookup, so the roof landing sits in front of the panel it draws.
+        Vec3i footprint = TrackSidePlots.footprint(TunnelTemplateStore.tunnelKind(variant),
+            CarriageDims.clamp(CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
+        if (onTop) {
+            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
+        } else {
+            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
+        }
 
         // Edits mirror live across the enabled axes — author one master octant.
         player.sendSystemMessage(Component.literal(

@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.CellKind;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.RowKind;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import net.minecraft.core.BlockPos;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * position in any one of them silently made clicks land on the wrong cell. These tests pin the
  * order and pin that a hit inside row <i>N</i> resolves to the cell row <i>N</i> actually is.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 class EditorPlotLabelsRendererTest {
 
     private static final BlockPos POS = new BlockPos(0, 250, 0);

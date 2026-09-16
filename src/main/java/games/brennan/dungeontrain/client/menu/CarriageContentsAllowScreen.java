@@ -64,7 +64,7 @@ public final class CarriageContentsAllowScreen implements MenuScreen {
 
     @Override
     public String title() {
-        return "Contents";
+        return MenuLang.t("editor.contents");
     }
 
     @Override
@@ -86,7 +86,7 @@ public final class CarriageContentsAllowScreen implements MenuScreen {
                 commandFor(id, false)
             ));
         }
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 

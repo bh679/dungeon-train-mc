@@ -32,7 +32,7 @@ public final class PhaseSelectScreen implements MenuScreen {
 
     @Override
     public String title() {
-        return "Phases";
+        return MenuLang.t("editor.phases");
     }
 
     @Override
@@ -54,7 +54,7 @@ public final class PhaseSelectScreen implements MenuScreen {
                 ));
             }
         }
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 
@@ -78,7 +78,7 @@ public final class PhaseSelectScreen implements MenuScreen {
     }
 
     private static String displayName(TrainPhase p) {
-        return p.displayName();
+        return MenuLang.named("phase", p.token(), p.displayName());
     }
 
     /** Visible-for-test accessor. */

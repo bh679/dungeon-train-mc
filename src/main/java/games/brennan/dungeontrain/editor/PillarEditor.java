@@ -151,7 +151,32 @@ public final class PillarEditor {
     }
 
     public static void enter(ServerPlayer player, PillarSection section, boolean onTop) {
-        enter(player, section, onTop, true);
+        // Already inside this section's default plot: a walk to its menu, not a reload — restamping
+        // would throw away every unsaved edit for the sake of a few blocks' teleport.
+        enter(player, section, onTop, !standingIn(player, section));
+    }
+
+    /** Whether {@code player} is already inside {@code section}'s default-named plot. */
+    private static boolean standingIn(ServerPlayer player, PillarSection section) {
+        CarriageDims dims = overworldDims(player);
+        if (dims == null) return false;
+        SectionPlot here = plotContaining(player.blockPosition(), dims);
+        return here != null && here.section() == section && TrackKind.DEFAULT_NAME.equals(here.name());
+    }
+
+    /** Whether {@code player} is already inside {@code adjunct}'s default-named plot. */
+    private static boolean standingIn(ServerPlayer player, PillarAdjunct adjunct) {
+        CarriageDims dims = overworldDims(player);
+        if (dims == null) return false;
+        AdjunctPlot here = plotContainingAdjunct(player.blockPosition(), dims);
+        return here != null && here.adjunct() == adjunct && TrackKind.DEFAULT_NAME.equals(here.name());
+    }
+
+    /** The world's carriage dims while {@code player} is in the overworld, else null. */
+    private static CarriageDims overworldDims(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return null;
+        return DungeonTrainWorldData.get(server.overworld()).dims();
     }
 
     /**
@@ -159,6 +184,16 @@ public final class PillarEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, PillarSection section, boolean onTop, boolean stamp) {
+        enter(player, section, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
+    }
+
+    /**
+     * @param inside accepted for symmetry with the door-bearing editors; a pillar has no doorway,
+     *               so both values land at the centre — stepping to the nearest free column if that
+     *               cell is built up.
+     */
+    public static void enter(ServerPlayer player, PillarSection section, boolean onTop, boolean stamp,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -168,12 +203,13 @@ public final class PillarEditor {
         CarriageEditor.rememberReturn(player);
         if (stamp) stampAllSectionPlots(overworld, section, dims);
 
-        double tx = origin.getX() + 0.5;
-        double ty = onTop
-            ? origin.getY() + section.height() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + dims.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        Vec3i footprint = TrackSidePlots.footprint(
+            PillarTemplateStore.pillarKind(section), TrackKind.DEFAULT_NAME, dims);
+        if (onTop) {
+            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
+        } else {
+            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
+        }
 
         LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} default plot at {} ({} variants, {})",
             player.getName().getString(), section.id(), origin,
@@ -354,7 +390,7 @@ public final class PillarEditor {
     }
 
     public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
-        enter(player, adjunct, onTop, true);
+        enter(player, adjunct, onTop, !standingIn(player, adjunct));
     }
 
     /**
@@ -362,6 +398,12 @@ public final class PillarEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop, boolean stamp) {
+        enter(player, adjunct, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
+    }
+
+    /** As the section overload: no doorway, so {@code inside} lands at the centre either way. */
+    public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop, boolean stamp,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -371,12 +413,13 @@ public final class PillarEditor {
         CarriageEditor.rememberReturn(player);
         if (stamp) stampAllAdjunctPlots(overworld, adjunct, dims);
 
-        double tx = origin.getX() + adjunct.xSize() / 2.0;
-        double ty = onTop
-            ? origin.getY() + adjunct.ySize() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + adjunct.zSize() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        Vec3i footprint = TrackSidePlots.footprint(
+            PillarTemplateStore.adjunctKind(adjunct), TrackKind.DEFAULT_NAME, dims);
+        if (onTop) {
+            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
+        } else {
+            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
+        }
 
         LOGGER.info("[DungeonTrain] Pillar editor enter adjunct: {} -> {} default plot at {} (size={}x{}x{}, {} variants)",
             player.getName().getString(), adjunct.id(), origin,

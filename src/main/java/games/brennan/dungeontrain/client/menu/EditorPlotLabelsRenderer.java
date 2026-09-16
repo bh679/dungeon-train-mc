@@ -258,10 +258,10 @@ public final class EditorPlotLabelsRenderer {
     public static String lockLabel(String modeTag) {
         String id = lockBlockId(modeTag);
         if (games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK.equals(id)) {
-            return "Lock: nothing";
+            return MenuLang.t("plot.lock", MenuLang.t("plot.nothing"));
         }
         int colon = id.indexOf(':');
-        return "Lock: " + (colon < 0 ? id : id.substring(colon + 1));
+        return MenuLang.t("plot.lock", colon < 0 ? id : id.substring(colon + 1));
     }
 
     /**
@@ -276,8 +276,10 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Copies row reads, e.g. {@code "Copies: Dynamic"}. */
     public static String copiesLabel(String modeTag) {
-        return "Copies: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .copies().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomCopies copies =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).copies();
+        return MenuLang.t("plot.copies",
+            MenuLang.named("portal.copies", copies.kind().id(), copies.displayName()));
     }
 
     /**
@@ -351,7 +353,8 @@ public final class EditorPlotLabelsRenderer {
      * at every width.</p>
      */
     public static String copiesBlockLabel(games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane) {
-        return plane.displayName() + ": + held";
+        return MenuLang.t("plot.plane_held",
+            MenuLang.named("portal.plane", plane.id(), plane.displayName()));
     }
 
     /**
@@ -367,8 +370,10 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Contents row reads, e.g. {@code "Contents: Fit"}. */
     public static String roomContentsLabel(String modeTag) {
-        return "Contents: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .contents().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomContents contents =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).contents();
+        return MenuLang.t("plot.contents",
+            MenuLang.named("portal.contents", contents.id(), contents.displayName()));
     }
 
     /**
@@ -384,8 +389,10 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Books row reads, e.g. {@code "Books: Random Signature"}. */
     public static String roomBooksLabel(String modeTag) {
-        return "Books: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .books().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomBooks books =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).books();
+        return MenuLang.t("plot.books",
+            MenuLang.named("portal.books", books.kind().id(), books.displayName()));
     }
 
     /**
@@ -401,8 +408,9 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Sky row reads, e.g. {@code "Sky: Daylight"}. */
     public static String roomSkyLabel(String modeTag) {
-        return "Sky: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .sky().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomSky sky =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).sky();
+        return MenuLang.t("plot.sky", MenuLang.named("portal.sky", sky.id(), sky.displayName()));
     }
 
     /** Whether the Fog row shows: every portal room, on the same reasoning as Sky. */
@@ -419,9 +427,10 @@ public final class EditorPlotLabelsRenderer {
     public static String roomFogLabel(String modeTag) {
         games.brennan.dungeontrain.portal.PortalRoomSettings settings =
             games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
-        String label = "Fog: " + settings.fog().displayName();
+        String label = MenuLang.t("plot.fog",
+            MenuLang.named("portal.fog", settings.fog().id(), settings.fog().displayName()));
         if (settings.fog() == games.brennan.dungeontrain.portal.PortalRoomFog.AUTO) {
-            label += settings.fogs() ? " (On)" : " (Off)";
+            label += " " + MenuLang.t(settings.fogs() ? "plot.fog_resolved_on" : "plot.fog_resolved_off");
         }
         return label;
     }
@@ -448,8 +457,10 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Room Walls row reads, e.g. {@code "Room Walls: Kept"}. */
     public static String doorWallLabel(String modeTag) {
-        return "Room Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .effectiveDoorWall().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomDoorWall wall =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).effectiveDoorWall();
+        return MenuLang.t("plot.room_walls",
+            MenuLang.named("portal.door_wall", wall.id(), wall.displayName()));
     }
 
     /**
@@ -479,9 +490,11 @@ public final class EditorPlotLabelsRenderer {
             games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag);
         int value = settings.doorOffset().value();
         int height = settings.doorHeightOffset().value();
-        String across = value == 0 ? "Centred" : (value > 0 ? "+" + value : Integer.toString(value));
-        String up = height == 0 ? "at the floor" : height + " block" + (height == 1 ? "" : "s") + " up";
-        return "Door Position: " + across + ", " + up;
+        String across = value == 0 ? MenuLang.t("plot.door_centred")
+            : (value > 0 ? "+" + value : Integer.toString(value));
+        String up = height == 0 ? MenuLang.t("plot.door_at_floor")
+            : MenuLang.plural("plot.door_up", height);
+        return MenuLang.t("plot.door_position", across, up);
     }
 
     /**
@@ -499,8 +512,10 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the Exits row reads, e.g. {@code "Exits: Random"}. */
     public static String exitsLabel(String modeTag) {
-        return "Exits: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .exits().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomExits exits =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).exits();
+        return MenuLang.t("plot.exits",
+            MenuLang.named("portal.exits", exits.kind().id(), exits.displayName()));
     }
 
     /**
@@ -527,8 +542,8 @@ public final class EditorPlotLabelsRenderer {
         games.brennan.dungeontrain.portal.PortalRoomExits exits =
             games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).exits();
         return exits.kind() == games.brennan.dungeontrain.portal.PortalRoomExits.Kind.RANDOM
-            ? "1 in " + exits.every()
-            : "Every " + exits.every();
+            ? MenuLang.t("plot.exit_one_in", exits.every())
+            : MenuLang.t("plot.exit_every", exits.every());
     }
 
     /**
@@ -546,8 +561,8 @@ public final class EditorPlotLabelsRenderer {
 
     /** What the moved-exit stepper reads, e.g. {@code "Moved exit: 7/10"}. */
     public static String exitMoveLabel(String modeTag) {
-        return "Moved exit: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .exits().moveChance() + "/10";
+        return MenuLang.t("plot.moved_exit", games.brennan.dungeontrain.portal.PortalRoomSettings
+            .parse(modeTag).exits().moveChance());
     }
 
     /**
@@ -558,16 +573,17 @@ public final class EditorPlotLabelsRenderer {
      * rather than the misspelling.</p>
      */
     public static String modeLabel(String modeTag) {
-        return "Walls: " + games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag)
-            .mode().displayName();
+        games.brennan.dungeontrain.portal.PortalRoomMode mode =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(modeTag).mode();
+        return MenuLang.t("plot.walls", MenuLang.named("portal.mode", mode.id(), mode.displayName()));
     }
 
     /** Short prefix drawn to the left of a dimension row's number. */
     public static String dimensionLabel(RowKind kind) {
         return switch (kind) {
-            case LENGTH -> "L";
-            case WIDTH -> "W";
-            case HEIGHT -> "H";
+            case LENGTH -> MenuLang.t("common.dim_l");
+            case WIDTH -> MenuLang.t("common.dim_w");
+            case HEIGHT -> MenuLang.t("common.dim_h");
             default -> "";
         };
     }
@@ -758,14 +774,14 @@ public final class EditorPlotLabelsRenderer {
         }
         if (hasLockRow(entry)) {
             // Label and one icon — no Edit button, so it is the Copies plane row minus a third.
-            w = Math.max(w, measure.applyAsInt("Lock:") * TEXT_SCALE + 3 * PAD_X + COPIES_ICON_SLOT);
+            w = Math.max(w, measure.applyAsInt(MenuLang.t("plot.lock_prefix")) * TEXT_SCALE + 3 * PAD_X + COPIES_ICON_SLOT);
         }
         if (hasCopiesRow(entry)) {
             w = Math.max(w, measure.applyAsInt(copiesLabel(entry.roomMode())) * TEXT_SCALE + 2 * PAD_X);
         }
         if (hasCopiesBlockRow(entry)) {
             // Label, one icon, and an Edit button — the same three-part shape the Books row has.
-            w = Math.max(w, (measure.applyAsInt("Block:") + measure.applyAsInt("Edit")) * TEXT_SCALE
+            w = Math.max(w, (measure.applyAsInt(MenuLang.t("plot.block_prefix")) + measure.applyAsInt(MenuLang.t("common.edit"))) * TEXT_SCALE
                 + 4 * PAD_X + COPIES_ICON_SLOT);
         }
         if (hasExitsRow(entry)) {
@@ -1106,12 +1122,12 @@ public final class EditorPlotLabelsRenderer {
                 case LOCK -> {
                     int bg = hovered == CellKind.LOCK_HELD ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
-                    drawLeftText(ps, buffer, font, "Lock:", -halfW + PAD_X, rCY, WEIGHT_COLOR);
+                    drawLeftText(ps, buffer, font, MenuLang.t("plot.lock_prefix"), -halfW + PAD_X, rCY, WEIGHT_COLOR);
                     String lockBlock = lockBlockId(entry.roomMode());
                     if (games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK.equals(lockBlock)) {
                         // No shell at all. Drawing air would be an empty slot the author could not
                         // tell from an unset one, so it says so in the word the Copies rows use.
-                        drawLeftText(ps, buffer, font, "nothing", copiesIconCentre(halfW) - PAD_X,
+                        drawLeftText(ps, buffer, font, MenuLang.t("plot.nothing"), copiesIconCentre(halfW) - PAD_X,
                             rCY, WEIGHT_COLOR);
                     } else {
                         MenuBlockIcons.drawBlockIcon(ps, buffer, lockBlock, copiesIconCentre(halfW),
@@ -1128,10 +1144,10 @@ public final class EditorPlotLabelsRenderer {
                 // what the author is holding (a block, or a variant copied from a cell); its Edit
                 // half opens the Block Variant menu on that plane alone.
                 case COPIES_FLOOR -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
-                    hovered, "Floor:", entry.copiesFloorBlock(),
+                    hovered, MenuLang.t("plot.floor_prefix"), entry.copiesFloorBlock(),
                     CellKind.COPIES_FLOOR_HELD, CellKind.COPIES_FLOOR_EDIT);
                 case COPIES_ROOF -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
-                    hovered, "Roof:", entry.copiesRoofBlock(),
+                    hovered, MenuLang.t("plot.roof_prefix"), entry.copiesRoofBlock(),
                     CellKind.COPIES_ROOF_HELD, CellKind.COPIES_ROOF_EDIT);
                 // Contents — whether this room is furnished from the contents pool, and how a
                 // furnishing smaller than the room is fitted into it. Off by default.
@@ -1151,7 +1167,7 @@ public final class EditorPlotLabelsRenderer {
                         drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005, editBg);
                         drawCenteredText(ps, buffer, font, roomBooksLabel(entry.roomMode()),
                             (-halfW + split) / 2.0, rCY, WEIGHT_COLOR);
-                        drawCenteredText(ps, buffer, font, "Edit",
+                        drawCenteredText(ps, buffer, font, MenuLang.t("common.edit"),
                             (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
                     } else {
                         int bg = hovered == CellKind.ROOM_BOOKS_CYCLE ? HOVER_COLOR : BUTTON_BG;
@@ -1225,14 +1241,14 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
                     int bg = hovered == CellKind.BUTTON_ENTER_INSIDE ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
-                    drawCenteredText(ps, buffer, font, "Enter", 0, rCY, BUTTON_TEXT_COLOR);
+                    drawCenteredText(ps, buffer, font, MenuLang.t("editor.enter"), 0, rCY, BUTTON_TEXT_COLOR);
                 }
                 case ACTION -> drawActionRow(ps, buffer, font, halfW, rTop, rBot, rCY, hovered);
                 case CONTENTS -> {
                     int bg = hovered == CellKind.BUTTON_CONTENTS ? HOVER_COLOR : BUTTON_BG;
                     drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
-                    drawCenteredText(ps, buffer, font, "Contents", 0, rCY, BUTTON_TEXT_COLOR);
+                    drawCenteredText(ps, buffer, font, MenuLang.t("editor.contents"), 0, rCY, BUTTON_TEXT_COLOR);
                 }
             }
         }
@@ -1281,9 +1297,9 @@ public final class EditorPlotLabelsRenderer {
             drawQuad(ps, buffer, saveR + 0.005, aBot + 0.005, resetR - 0.005, aTop - 0.005, resetBg);
             drawQuad(ps, buffer, resetR + 0.005, aBot + 0.005, halfW - 0.01, aTop - 0.005, clearBg);
 
-            drawCenteredText(ps, buffer, font, "Save", saveCX, aCY, BUTTON_TEXT_COLOR);
-            drawCenteredText(ps, buffer, font, "R", resetCX, aCY, BUTTON_TEXT_COLOR);
-            drawCenteredText(ps, buffer, font, "C", clearCX, aCY, BUTTON_TEXT_COLOR);
+            drawCenteredText(ps, buffer, font, MenuLang.t("common.save"), saveCX, aCY, BUTTON_TEXT_COLOR);
+            drawCenteredText(ps, buffer, font, MenuLang.t("plot.reset_short"), resetCX, aCY, BUTTON_TEXT_COLOR);
+            drawCenteredText(ps, buffer, font, MenuLang.t("plot.clear_short"), clearCX, aCY, BUTTON_TEXT_COLOR);
         }
     }
 
@@ -1307,13 +1323,13 @@ public final class EditorPlotLabelsRenderer {
 
         if (block.isEmpty()) {
             // Nothing set yet: say what to do rather than showing an empty slot.
-            drawLeftText(ps, buffer, font, "hold one", copiesIconCentre(halfW) - PAD_X,
+            drawLeftText(ps, buffer, font, MenuLang.t("plot.hold_one"), copiesIconCentre(halfW) - PAD_X,
                 rCY, LABEL_COLOR);
         } else if (isAirSentinelId(block)) {
             // The plane is authored as air. Drawing the sentinel's own icon would put a command
             // block in the author's roof row, which is a block they never chose; the Block Variant
             // menu calls this entry "nothing" and so does this row.
-            drawLeftText(ps, buffer, font, "nothing", copiesIconCentre(halfW) - PAD_X,
+            drawLeftText(ps, buffer, font, MenuLang.t("plot.nothing"), copiesIconCentre(halfW) - PAD_X,
                 rCY, WEIGHT_COLOR);
         } else {
             MenuBlockIcons.drawBlockIcon(ps, buffer, block, copiesIconCentre(halfW),
@@ -1322,7 +1338,7 @@ public final class EditorPlotLabelsRenderer {
 
         int editBg = hovered == editCell ? HOVER_COLOR : BUTTON_BG;
         drawQuad(ps, buffer, split + 0.005, rBot + 0.005, halfW - 0.01, rTop - 0.005, editBg);
-        drawCenteredText(ps, buffer, font, "Edit", (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t("common.edit"), (split + halfW) / 2.0, rCY, BUTTON_TEXT_COLOR);
     }
 
     /** {@link #drawCenteredText} anchored at its left edge — what a row with a strip beside it needs. */

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.editor.PlotCategory;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * through a separate {@code modelId} channel and only uses the friendly
  * {@code model} string for user-facing labels.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorMenuScreenTest {
 
     // ---- DevMode visibility (hidden on main, visible everywhere else) ----

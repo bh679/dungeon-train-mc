@@ -147,28 +147,25 @@ final class EditorBuilderCommands {
 
     private static Component relayLine(TemplateCreditClient.Outcome outcome, boolean cleared) {
         return switch (outcome) {
-            case RECORDED -> Component.literal(cleared
-                ? "Relay: credit cleared from the builder leaderboard."
-                : "Relay: credit recorded for the builder leaderboard.")
+            case RECORDED -> (cleared ? Component.translatable("chat.dungeontrain.editor.relay_credit_cleared_from") : Component.translatable("chat.dungeontrain.editor.relay_credit_recorded_builder"))
                 .withStyle(ChatFormatting.GRAY);
-            case NO_ADMIN -> Component.literal(
-                "Relay: saved locally only — no relay admin URL on this machine, so the leaderboard was not updated.")
+            case NO_ADMIN -> Component.translatable("chat.dungeontrain.editor.relay_saved_locally_only")
                 .withStyle(ChatFormatting.YELLOW);
-            case REJECTED -> Component.literal("Relay: refused the credit (see the log). Saved locally.")
+            case REJECTED -> Component.translatable("chat.dungeontrain.editor.relay_refused_credit_see")
                 .withStyle(ChatFormatting.YELLOW);
-            case UNREACHABLE -> Component.literal("Relay: unreachable — credit saved locally, leaderboard not updated.")
+            case UNREACHABLE -> Component.translatable("chat.dungeontrain.editor.relay_unreachable_credit_saved")
                 .withStyle(ChatFormatting.YELLOW);
         };
     }
 
     private static int unknown(CommandSourceStack source, String what, String raw) {
-        source.sendFailure(Component.literal("Unknown " + what + " '" + raw + "'.").withStyle(ChatFormatting.RED));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown", what, raw).withStyle(ChatFormatting.RED));
         return 0;
     }
 
     private static int failure(CommandSourceStack source, String what, String id, IOException e) {
         LOGGER.error("[DungeonTrain] editor builder {} '{}' failed", what, id, e);
-        source.sendFailure(Component.literal("Builder credit failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.builder_credit_failed", e.getMessage()).withStyle(ChatFormatting.RED));
         return 0;
     }
 }

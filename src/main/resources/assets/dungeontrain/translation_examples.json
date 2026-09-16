@@ -5291,5 +5291,6617 @@
         "Not My Chest, Look, Don't Touch, Contained Loop"
       ]
     }
+  },
+  "gui.dungeontrain.editor_menu.confirm.remove": {
+    "1": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.confirm.remove_variant": {
+    "1": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.confirm.clear_blocks": {
+    "1": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.stage_linked": {
+    "1": {
+      "label": "the id of the Stage this template is linked to",
+      "examples": [
+        "desert",
+        "nether_depths"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.min_level": {
+    "1": {
+      "label": "the template's lowest spawn level",
+      "examples": [
+        "0",
+        "176"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.max_level": {
+    "1": {
+      "label": "the template's highest spawn level, or the word for no limit",
+      "examples": [
+        "205",
+        "all"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.menu_distance": {
+    "1": {
+      "label": "how far the world-space menus keep drawing, in blocks",
+      "examples": [
+        "8",
+        "24"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.plot_lighting": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.weight_n": {
+    "1": {
+      "label": "the template's current spawn weight",
+      "examples": [
+        "42",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.common.value_in_parens": {
+    "1": {
+      "label": "a row label, already translated",
+      "examples": [
+        "Length",
+        "Width"
+      ]
+    },
+    "2": {
+      "label": "the row's current value",
+      "examples": [
+        "11",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.lock": {
+    "1": {
+      "label": "the lock block's name, or the word for none",
+      "examples": [
+        "bedrock",
+        "nothing"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.copies": {
+    "1": {
+      "label": "the Copies setting, already translated",
+      "examples": [
+        "Dynamic",
+        "Single"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.plane_held": {
+    "1": {
+      "label": "Floor or Roof, already translated",
+      "examples": [
+        "Floor",
+        "Roof"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.contents": {
+    "1": {
+      "label": "the Contents setting, already translated",
+      "examples": [
+        "Off",
+        "Fit"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.books": {
+    "1": {
+      "label": "the Books setting, already translated",
+      "examples": [
+        "Off",
+        "Author Mix"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.sky": {
+    "1": {
+      "label": "the Sky setting, already translated",
+      "examples": [
+        "Off",
+        "Daylight"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.fog": {
+    "1": {
+      "label": "the Fog setting, already translated",
+      "examples": [
+        "Auto",
+        "Off"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.room_walls": {
+    "1": {
+      "label": "the Room Walls setting, already translated",
+      "examples": [
+        "Kept",
+        "Merged"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.door_position": {
+    "1": {
+      "label": "the door's sideways offset — Centred, or a signed number",
+      "examples": [
+        "Centred",
+        "+2",
+        "-1"
+      ]
+    },
+    "2": {
+      "label": "the door's height — at the floor, or N blocks up",
+      "examples": [
+        "at the floor",
+        "2 blocks up"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.door_up.one": {
+    "1": {
+      "label": "the door's height above the floor, always 1 here",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.door_up.other": {
+    "1": {
+      "label": "the door's height above the floor in blocks",
+      "examples": [
+        "2",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.exits": {
+    "1": {
+      "label": "the Exits setting, already translated",
+      "examples": [
+        "On",
+        "Random"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.exit_one_in": {
+    "1": {
+      "label": "the odds denominator — one tile in this many has an exit",
+      "examples": [
+        "8",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.exit_every": {
+    "1": {
+      "label": "the lattice spacing — an exit every this many tiles",
+      "examples": [
+        "8",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.moved_exit": {
+    "1": {
+      "label": "the chance out of 10 that an exit is moved",
+      "examples": [
+        "7",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.walls": {
+    "1": {
+      "label": "the Walls mode, already translated",
+      "examples": [
+        "Endless Open",
+        "Bedrock Lock"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage.title": {
+    "1": {
+      "label": "the stage's id",
+      "examples": [
+        "desert",
+        "nether_depths"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage.delete_confirm": {
+    "1": {
+      "label": "the stage's id",
+      "examples": [
+        "desert"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.common.label_with_unit": {
+    "1": {
+      "label": "the stepper's label, already translated",
+      "examples": [
+        "Length",
+        "Exits"
+      ]
+    },
+    "2": {
+      "label": "the unit or range hint",
+      "examples": [
+        "blocks",
+        "tiles",
+        "0-10"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.title_kind_source": {
+    "1": {
+      "label": "the part kind being created",
+      "examples": [
+        "floor",
+        "walls"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.title_kind_name": {
+    "1": {
+      "label": "the track kind being created",
+      "examples": [
+        "track",
+        "pillar_top"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.title_sub_variant": {
+    "1": {
+      "label": "the parent template's name",
+      "examples": [
+        "maze",
+        "house"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.current": {
+    "1": {
+      "label": "the name of the template the author stands in",
+      "examples": [
+        "portal",
+        "maze"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.parent": {
+    "1": {
+      "label": "the parent template's name",
+      "examples": [
+        "portal",
+        "maze"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.common.name_value": {
+    "1": {
+      "label": "a setting's label, already translated",
+      "examples": [
+        "HUD",
+        "X Menu"
+      ]
+    },
+    "2": {
+      "label": "the setting's current value",
+      "examples": [
+        "1.0",
+        "Screen"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.options.snapshot_max_resolution": {
+    "1": {
+      "label": "the cap in pixels with a p suffix, or AUTO",
+      "examples": [
+        "AUTO",
+        "1080p"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.options.snapshot_chat_log": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.options.book_author_chat": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.options.train_volume": {
+    "1": {
+      "label": "the volume as a percentage, or OFF",
+      "examples": [
+        "50%",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.packages.contents_of": {
+    "1": {
+      "label": "the active package's name",
+      "examples": [
+        "my_pack",
+        "summer_build"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.title.one": {
+    "1": {
+      "label": "the number of sub-variants, always 1 here",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.title.other": {
+    "1": {
+      "label": "the number of sub-variants",
+      "examples": [
+        "2",
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.delete_all.one": {
+    "1": {
+      "label": "the number of sub-variants, always 1 here",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.delete_all.other": {
+    "1": {
+      "label": "the number of sub-variants",
+      "examples": [
+        "2",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.promote": {
+    "1": {
+      "label": "the sub-variant that becomes the new parent",
+      "examples": [
+        "maze_2",
+        "house_b"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stages.gate_summary": {
+    "1": {
+      "label": "the stage's lowest level",
+      "examples": [
+        "0",
+        "10"
+      ]
+    },
+    "2": {
+      "label": "the stage's highest level, or the word for no limit",
+      "examples": [
+        "200",
+        "all"
+      ]
+    },
+    "3": {
+      "label": "the dimension letters, or the word for all",
+      "examples": [
+        "VUC",
+        "all"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stages.row": {
+    "1": {
+      "label": "the stage's name",
+      "examples": [
+        "desert",
+        "Nether Depths"
+      ]
+    },
+    "2": {
+      "label": "the stage's gate summary",
+      "examples": [
+        "lvl 10..all · N"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stages.duplicate_title": {
+    "1": {
+      "label": "the stage being duplicated",
+      "examples": [
+        "desert"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.contents.self": {
+    "1": {
+      "label": "the parent contents template's name",
+      "examples": [
+        "maze",
+        "shop"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.main.back_from": {
+    "1": {
+      "label": "the test carriage's quoted name, or the words for the carriage",
+      "examples": [
+        "'house'",
+        "the Carriage"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.changes.title": {
+    "1": {
+      "label": "the template whose changes are listed",
+      "examples": [
+        "maze",
+        "track / track2"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.changes.count.one": {
+    "1": {
+      "label": "the number of changed blocks, always 1 here",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.changes.count.other": {
+    "1": {
+      "label": "the number of changed blocks",
+      "examples": [
+        "2",
+        "140"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.changes.more": {
+    "1": {
+      "label": "how many further changes the list left out",
+      "examples": [
+        "40",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.common.search": {
+    "1": {
+      "label": "what the author has typed so far",
+      "examples": [
+        "",
+        "sto",
+        "oak"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.title_at": {
+    "1": {
+      "label": "the cell's x,y,z inside the plot",
+      "examples": [
+        "3,1,5",
+        "0,0,0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.lock_n": {
+    "1": {
+      "label": "the cell's lock group number",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.group_ref": {
+    "1": {
+      "label": "the referenced group's id",
+      "examples": [
+        "walls",
+        "doors_a"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.title_at": {
+    "1": {
+      "label": "the container's x,y,z inside the plot",
+      "examples": [
+        "3,1,5"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.linked": {
+    "1": {
+      "label": "the linked loot prefab's id",
+      "examples": [
+        "treasure",
+        "kitchen"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.form": {
+    "1": {
+      "label": "the potion form, already translated",
+      "examples": [
+        "Any",
+        "Splash"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.palette.solid": {
+    "1": {
+      "label": "the solid block slot's number, 1 to 10",
+      "examples": [
+        "1",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.palette.title": {
+    "1": {
+      "label": "the stage's id",
+      "examples": [
+        "desert"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage_panel.hide_unused": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage_panel.more": {
+    "1": {
+      "label": "how many further blocks the grid left out",
+      "examples": [
+        "5",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage_panel.parts": {
+    "1": {
+      "label": "how many carriage parts link to the stage",
+      "examples": [
+        "4",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.template_blocks.used": {
+    "1": {
+      "label": "how many distinct blocks the plot uses",
+      "examples": [
+        "12",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parts.add_title": {
+    "1": {
+      "label": "the part kind, already translated",
+      "examples": [
+        "Floor",
+        "Walls"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.linked_autosave": {
+    "1": {
+      "label": "the linked loot prefab's id",
+      "examples": [
+        "treasure"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.carriages.count.one": {
+    "1": {
+      "label": "the number of carriages, always 1 here",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.carriages.count.other": {
+    "1": {
+      "label": "the number of carriages",
+      "examples": [
+        "3",
+        "50"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.unknown_category": {
+    "1": {
+      "label": "the editor category",
+      "examples": [
+        "Carriages",
+        "Contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.unknown_model_category": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the editor category",
+      "examples": [
+        "Carriages",
+        "Contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.save_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.category_has_no_models": {
+    "1": {
+      "label": "the editor category",
+      "examples": [
+        "Carriages",
+        "Contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.promoted_source_tree_will": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.promote_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_pillar_target_valid": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.weight_saved_existing_carriages": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "a file path",
+      "examples": [
+        "config/dungeontrain/user/weights.json"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.weight_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.weight_saved": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "a file path",
+      "examples": [
+        "config/dungeontrain/user/weights.json"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.track_weight_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.mirrored_from_master": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.mirror": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "3": {
+      "label": "an axis letter",
+      "examples": [
+        "X",
+        "Y",
+        "Z"
+      ]
+    },
+    "4": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.track_mirror_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.mirror_2": {
+    "1": {
+      "label": "an axis letter",
+      "examples": [
+        "X",
+        "Y",
+        "Z"
+      ]
+    },
+    "2": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.mirror_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.note_member_contents_group": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_weight_saved_existing": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "a file path",
+      "examples": [
+        "config/dungeontrain/user/weights.json"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_weight_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_flip_field_expected": {
+    "1": {
+      "label": "an axis letter",
+      "examples": [
+        "X",
+        "Y",
+        "Z"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_flip_now_x": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "an axis letter",
+      "examples": [
+        "X",
+        "Y",
+        "Z"
+      ]
+    },
+    "3": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "5": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "6": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "7": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "house",
+        "library"
+      ]
+    },
+    "8": {
+      "label": "a file path",
+      "examples": [
+        "config/dungeontrain/user/weights.json"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_flip_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.gate_level_phases_saved": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "5": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.note_linked_stage_inline": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the stage's id",
+      "examples": [
+        "desert",
+        "nether_depths"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.gate_failed": {
+    "1": {
+      "label": "the kind of thing being edited, already translated",
+      "examples": [
+        "contents",
+        "dimensional carriage"
+      ]
+    },
+    "2": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "3": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.invalid_stage_id": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_stage": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_such_stage": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.deleted_stage_linked_templates": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.renamed_stage": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.stage_s": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.level_phases": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.previewing_carriages_stage_added": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.stage_preview_off": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.duplicated_stage_part_s": {
+    "1": {
+      "label": "the stage's id",
+      "examples": [
+        "desert",
+        "nether_depths"
+      ]
+    },
+    "2": {
+      "label": "the stage's id",
+      "examples": [
+        "desert",
+        "nether_depths"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "5": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    },
+    "6": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "7": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "8": {
+      "label": "the stage's id",
+      "examples": [
+        "desert",
+        "nether_depths"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.baked_placeholder_palettes_stage": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "a file path",
+      "examples": [
+        "config/dungeontrain/user/weights.json"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.baked_stage_palette_solid": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "5": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "6": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "7": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.stage_has_no_linked": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.stage_uses_part_s": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.msg": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "a summary or list, already formatted",
+      "examples": [
+        "maze, shop",
+        "2 saved"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_block": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_occurrences_stage": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.replaced_across_part_s": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "5": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_part_kind": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "an optional follow-on clause, already translated (may be empty)",
+      "examples": [
+        "",
+        " Entered 'maze'."
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_such_stage_use": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.detached_custom": {
+    "1": {
+      "label": "the kind of thing being edited, already translated",
+      "examples": [
+        "contents",
+        "dimensional carriage"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.linked_stage": {
+    "1": {
+      "label": "the kind of thing being edited, already translated",
+      "examples": [
+        "contents",
+        "dimensional carriage"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.built_contents_cannot_be": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cannot_add_as_member": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.itself_contents_group_nested": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.already_member_another_group": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_added_weight_explicit": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "5": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_add_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_contents_group_defined": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.not_member_group": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "2": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_set_weight_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.detached_custom_no_stage": {
+    "1": {
+      "label": "the kind of thing being edited, already translated",
+      "examples": [
+        "contents",
+        "dimensional carriage"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.stage": {
+    "1": {
+      "label": "the kind of thing being edited, already translated",
+      "examples": [
+        "contents",
+        "dimensional carriage"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_has_no_member": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_removed_last_member": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_removed_member_remaining": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_remove_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.top_level_use_group": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "3": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_move_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.moved_from_group_weight": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "3": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "4": {
+      "label": "where the player was taken afterwards",
+      "examples": [
+        "maze"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.not_contents_group_no": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_has_no_members": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_members": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.weight": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.invalid_name_use_lowercase": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.name_reserved_built": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.name_already_taken": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_sub_variant_plot": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "4": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    },
+    "5": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "6": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_new_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_contents_group_parent": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.had_only_bundled_group": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_clear_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.plot_origin_missing": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.target_block_outside_plot": {
+    "1": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_variant_local_run": {
+    "1": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_variant_local_clear": {
+    "1": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.plot_origin_missing_part": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.target_block_outside_part": {
+    "1": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.variant_save_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_variant_local_part": {
+    "1": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    },
+    "2": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_variant_local_clear_2": {
+    "1": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    },
+    "2": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.plot_origin_missing_contents": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.target_block_outside_interior": {
+    "1": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_variant_local_contents": {
+    "1": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_variant_local_clear_3": {
+    "1": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.variants_none": {
+    "1": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.out_plot_ghosts": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.door_labels": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.overlay": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_tunnel_variant_valid": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_variant_valid": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "a summary or list, already formatted",
+      "examples": [
+        "maze, shop",
+        "2 saved"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_built_valid_standard": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.enter_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.entered": {
+    "1": {
+      "label": "the editor category",
+      "examples": [
+        "Carriages",
+        "Contents"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "an optional follow-on clause, already translated (may be empty)",
+      "examples": [
+        "",
+        " Entered 'maze'."
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_pillar_section": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_adjunct": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_tunnel_variant": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unrecognised_track_side_id": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unrecognised_portal_id": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.view_not_supported_model": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_plot_origin": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the editor category",
+      "examples": [
+        "Carriages",
+        "Contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.entered_plot": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.saved_template": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.saved_template_config_dir": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.source_tree_write_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_carriage": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_contents": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.not_number": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.train_out_range": {
+    "1": {
+      "label": "an axis letter",
+      "examples": [
+        "X",
+        "Y",
+        "Z"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.train_already_it_cannot": {
+    "1": {
+      "label": "an axis letter",
+      "examples": [
+        "X",
+        "Y",
+        "Z"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.train_now_every_carriage": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.switch_first_plots_are": {
+    "1": {
+      "label": "the editor category",
+      "examples": [
+        "Carriages",
+        "Contents"
+      ]
+    },
+    "2": {
+      "label": "the editor category",
+      "examples": [
+        "Carriages",
+        "Contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cannot_rename_it_protected": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.saved_and_renamed": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.deleted_template": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_template_delete": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.reset_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_all_blocks": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.clear_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_all_blocks_dimensional": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_from_plot": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.new_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_blank_plot": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.new_blank_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_position_menu": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.menus": {
+    "1": {
+      "label": "the selected mode",
+      "examples": [
+        "all",
+        "promote"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.sub_variant_toggle_parent": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.failed_update_contents_allow": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_dimensional_carriage": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "house",
+        "library"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.failed_save_shared_flag": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.carriage_shared": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    },
+    "3": {
+      "label": "an optional follow-on clause, already translated (may be empty)",
+      "examples": [
+        "",
+        " Entered 'maze'."
+      ]
+    },
+    "4": {
+      "label": "an optional follow-on clause, already translated (may be empty)",
+      "examples": [
+        "",
+        " Entered 'maze'."
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.promoted_template_source_tree": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.promote_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.promote_all_promoted_skipped": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.entered_pillar_plot": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pillar_enter_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.not_pillar_plot_use": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.saved_pillar_template_config": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pillar_source_tree_write": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pillar_save_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.saved_pillar_adjunct_template": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pillar_adjunct_source_tree": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.deleted_pillar_template": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_pillar_template_delete": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pillar_reset_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.promoted_pillar_template_source": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pillar_promote_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_contents_valid": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "a summary or list, already formatted",
+      "examples": [
+        "maze, shop",
+        "2 saved"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_shell_variant_valid": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "a summary or list, already formatted",
+      "examples": [
+        "maze, shop",
+        "2 saved"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.entered_contents_shell_plot": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_enter_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.saved_contents_template_config": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_source_tree_write": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_save_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cannot_rename_it_built": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.saved_and_renamed_contents": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.has_sub_variant_say": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    },
+    "4": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "5": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_reset_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_contents_from_plot": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_new_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_blank_contents_plot": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_new_blank_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pillar_promote_all_promoted": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.entered_pillar_adjunct_plot": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.deleted_pillar_adjunct_template": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_pillar_adjunct_template": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.promoted_pillar_adjunct_template": {
+    "1": {
+      "label": "the track piece's id",
+      "examples": [
+        "top",
+        "stairs"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.entered_track_plot": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.track_enter_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.track_source_tree_write": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.track_save_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.track_reset_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.track_promote_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_part_kind_valid": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.invalid_part_name_use": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.reserved_it_means_skip": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.invalid_part_name_use_2": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_part_author_it": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.entered_part_plot": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_enter_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_already_registered": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_source_valid_blank": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_part_source": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "4": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_new_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.saved_part_config_dir": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_save_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.new_name_same_as": {
+    "1": {
+      "label": "a file path",
+      "examples": [
+        "config/dungeontrain/user/weights.json"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.name_already_taken_2": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "a file path",
+      "examples": [
+        "config/dungeontrain/user/weights.json"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.renamed_part": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "4": {
+      "label": "a file path",
+      "examples": [
+        "config/dungeontrain/user/weights.json"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_rename_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_save_all_saved": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_reset_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.promoted_part_source_tree": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_promote_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_promote_all_promoted": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.parts_current": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "3": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "4": {
+      "label": "a summary or list, already formatted",
+      "examples": [
+        "maze, shop",
+        "2 saved"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_set_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.parts_appended_weight_current": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "5": {
+      "label": "a summary or list, already formatted",
+      "examples": [
+        "maze, shop",
+        "2 saved"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_add_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.parts_not_current": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "3": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.parts_removed_from_current": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "3": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "4": {
+      "label": "a summary or list, already formatted",
+      "examples": [
+        "maze, shop",
+        "2 saved"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_remove_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.has_no_parts_json": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.parts": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a block position",
+      "examples": [
+        "[12, 64, -3]",
+        "3,1,5"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_parts_json_will": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_parts_json_clear": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.part_clear_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_track_kind_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.entered_dimensional_carriage": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_save_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_variant": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_group_defined": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cannot_add_as_sub": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.has_sub_variants_its": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.already_sub_variant": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.itself_sub_variant_making": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.invalid_room_name_allowed": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.dimensional_carriage_already_exists": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.itself_sub_variant_nesting": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.not_part_sub_variant": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.group_new_failed_2": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_dimensional_carriage_sub": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.dimensional_carriage_has_no": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.not_sub_variant": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.top_level_dimensional_carriage": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "3": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.moved_sub_variant_from": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "3": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "4": {
+      "label": "where the player was taken afterwards",
+      "examples": [
+        "maze"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.dimensional_carriage_sub_variants": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_door_wall_option": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_fog_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_exits_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_contents_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_sky_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_copies_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.not_block_world_knows": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.could_not_save_copies": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.dimensional_carriage_copies_now": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "2": {
+      "label": "the kind of thing being edited, already translated",
+      "examples": [
+        "contents",
+        "dimensional carriage"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_books_option_try": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_dimensional_carriage_mode": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.could_not_save_settings": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.dimensional_carriage_walls_portals": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "2": {
+      "label": "the selected mode",
+      "examples": [
+        "all",
+        "promote"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.dimensional_carriage_now_long": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "2": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "3": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "4": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "5": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.dimensional_carriage_now_what": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "2": {
+      "label": "an axis letter",
+      "examples": [
+        "X",
+        "Y",
+        "Z"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.invalid_variant_name_allowed": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.save_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_from_built_room": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cannot_duplicate_no_template": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.variant_sidecar_copy_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.created_from_teleported_new": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.rename_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.invalid_name_allowed_lowercase": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.name_it_already_has": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown": {
+    "1": {
+      "label": "the kind of thing being edited, already translated",
+      "examples": [
+        "contents",
+        "dimensional carriage"
+      ]
+    },
+    "2": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.ships_with_mod_save": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.renamed": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.stand_variant_you_want": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.has_sub_variant_say_2": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    },
+    "4": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "5": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "6": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.delete_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.would_leave_plot_exactly": {
+    "1": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cannot": {
+    "1": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.heads_up_plot_too": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.blocks_moved_but_sidecar": {
+    "1": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.entit_plot_stayed_put": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.builder_credit_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.label_cut_characters": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.label_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.reset_last_saved_template": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.no_bundled_template_nothing": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.missing_plot_origin": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.reset_bundled_default": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.export_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.open": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.exported_file_s": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.msg": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.import_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.invalid_portal": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.upper_copy_would_reach": {
+    "1": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.built_hallway_portal_corridor": {
+    "1": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "2": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "3": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "4": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "5": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.auto_spawning_every_blocks": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.saved_edit_it_with": {
+    "1": {
+      "label": "a file path",
+      "examples": [
+        "config/dungeontrain/user/weights.json"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.failed_save_portal_template": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.entry_corridor_one_cart": {
+    "1": {
+      "label": "an optional follow-on clause, already translated (may be empty)",
+      "examples": [
+        "",
+        " Entered 'maze'."
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.that_denser_than_group": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.survival_never_closer_than": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.portal_carriages_1_carriage": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.everyone_here_creative_so": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.auto_spawning_every_blocks_2": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.x_z_midpoint_x": {
+    "1": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "2": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "3": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "4": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "5": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "6": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "7": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.severed_portal_pair_no": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.pair_carriages": {
+    "1": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "2": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.restored_severed_portal_pair": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.cleared_hallway_portal_blocks": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.no_portal_there_are": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.teleported_hallway_portal": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.xx_plot_but_xx": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "house",
+        "library"
+      ]
+    },
+    "2": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "3": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "4": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "5": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "6": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "7": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.needs_blocks_and_sealed": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "house",
+        "library"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.tall_and_world_can": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "house",
+        "library"
+      ]
+    },
+    "2": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.still_sampling_its_chunk": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "house",
+        "library"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.you_re_doorway_corridor": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "house",
+        "library"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.back_plot_test_has": {
+    "1": {
+      "label": "the dimensional carriage's name",
+      "examples": [
+        "house",
+        "library"
+      ]
+    }
+  },
+  "chat.dungeontrain.package.dtpacks_package": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.package.spawntrain_failed": {
+    "1": {
+      "label": "the Java exception type",
+      "examples": [
+        "IOException",
+        "IllegalStateException"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.package.teleporting_x_spawning_train": {
+    "1": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.train.spawned_fresh_train_track": {
+    "1": {
+      "label": "a coordinate",
+      "examples": [
+        "1024",
+        "-5"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "5": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "6": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.train.train_speed_set_m": {
+    "1": {
+      "label": "what the player typed",
+      "examples": [
+        "north",
+        "x",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.train.default_carriages_set_appender": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.train.train_contact_block_breaking": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "chat.dungeontrain.train.train_contact_block_breaking_2": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    },
+    "2": {
+      "label": "an optional follow-on clause, already translated (may be empty)",
+      "examples": [
+        "",
+        " Entered 'maze'."
+      ]
+    }
+  },
+  "chat.dungeontrain.train.track_generation_now_existing": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "chat.dungeontrain.train.difficulty_level_set_game": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.train.replaying_intro_cinematic": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_and_entries": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_and_entries_save": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.cleared_and_authored": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.portal.one_in_groups_portal": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.common.errors_suffix": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.saved_contents": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.saved": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_written.contents": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_written.pillar": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_written.stairs": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_written.tunnel": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_written.portal_room": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_written.track": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_written.generic": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_failed.contents": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_failed.pillar": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_failed.stairs": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_failed.tunnel": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_failed.portal_room": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_failed.track": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.bundled_failed.generic": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.summary": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "an optional follow-on clause, already translated (may be empty)",
+      "examples": [
+        "",
+        " Entered 'maze'."
+      ]
+    },
+    "5": {
+      "label": "the editor category",
+      "examples": [
+        "Carriages",
+        "Contents"
+      ]
+    },
+    "6": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.summary_promoted": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.progress_moving": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "3": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.progress_deleting": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.progress_deleting_and_subs": {
+    "1": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.progress_parenting": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.progress_unparenting": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.landed_entered": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.deleted_contents_template": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "an optional follow-on clause, already translated (may be empty)",
+      "examples": [
+        "",
+        " Entered 'maze'."
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_contents_template_to_delete": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.sub_variants_deleted": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.now_top_level": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.could_not_list": {
+    "1": {
+      "label": "a summary or list, already formatted",
+      "examples": [
+        "maze, shop",
+        "2 saved"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.now_heads_group": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "3": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.could_not_promote": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.room_added_sub_variant": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "4": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    },
+    "5": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.room_weight_set": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "2": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "1",
+        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.room_removed_sub_variant": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    },
+    "2": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.progress_resetting": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.reset_default_fallback": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.removed_variant": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_template_to_delete": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.deleted_part": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "3": {
+      "label": "an optional follow-on clause, already translated (may be empty)",
+      "examples": [
+        "",
+        " Entered 'maze'."
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.no_part_to_delete": {
+    "1": {
+      "label": "the template kind id",
+      "examples": [
+        "floor",
+        "pillar_top",
+        "track"
+      ]
+    },
+    "2": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.transform_blocks": {
+    "1": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    },
+    "2": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "3": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.transform_variant_entries": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.transform_pools": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the translated noun for that count (singular or plural)",
+      "examples": [
+        "member",
+        "members"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.undo_done": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "the operation's label",
+      "examples": [
+        "Flip X",
+        "Rotate"
+      ]
+    },
+    "3": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.history_out_of_date": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.undo_partly_failed": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.move_not_a_member": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.move_same_parent": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.move_self": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.move_target_is_child": {
+    "1": {
+      "label": "the parent template's id",
+      "examples": [
+        "house",
+        "shop"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.move_child_is_parent": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "the kind of thing being edited, already translated",
+      "examples": [
+        "contents",
+        "dimensional carriage"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.reset_no_tier.contents": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.reset_no_tier.tunnel": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    }
+  },
+  "chat.dungeontrain.save.reset_no_tier.portal_room": {
+    "1": {
+      "label": "the selected mode",
+      "examples": [
+        "all",
+        "promote"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.also_removed": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.could_not_remove": {
+    "1": {
+      "label": "the value the command reports here",
+      "examples": [
+        "maze",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.auto_running": {
+    "1": {
+      "label": "the slash command being run for the player",
+      "examples": [
+        "/dungeontrain editor carriages"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.hud.status": {
+    "1": {
+      "label": "the editor category, already translated",
+      "examples": [
+        "Carriages",
+        "Contents"
+      ]
+    },
+    "2": {
+      "label": "the template being edited",
+      "examples": [
+        "standard",
+        "track / track2"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.hud.weight": {
+    "1": {
+      "label": "the template's spawn weight",
+      "examples": [
+        "20",
+        "0"
+      ]
+    }
   }
 }

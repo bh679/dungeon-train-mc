@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
@@ -150,9 +151,9 @@ public final class EditorPlotPanelInputHandler {
             case WIDTH_INC -> dispatchDimension(entry, "width", "inc");
             case HEIGHT_DEC -> dispatchDimension(entry, "height", "dec");
             case HEIGHT_INC -> dispatchDimension(entry, "height", "inc");
-            case LENGTH_TYPE -> openAxisEntry(entry, "length", "Length", entry.roomLength());
-            case WIDTH_TYPE -> openAxisEntry(entry, "width", "Width", entry.roomWidth());
-            case HEIGHT_TYPE -> openAxisEntry(entry, "height", "Height", entry.roomHeight());
+            case LENGTH_TYPE -> openAxisEntry(entry, "length", MenuLang.t("editor.length"), entry.roomLength());
+            case WIDTH_TYPE -> openAxisEntry(entry, "width", MenuLang.t("editor.width"), entry.roomWidth());
+            case HEIGHT_TYPE -> openAxisEntry(entry, "height", MenuLang.t("editor.height"), entry.roomHeight());
             case MODE_CYCLE -> dispatchModeCycle(entry);
             case LOCK_HELD -> dispatchLockHeld(entry);
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
@@ -330,7 +331,7 @@ public final class EditorPlotPanelInputHandler {
         int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
             .exits().every();
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
-            "exitevery", "Exits", "tiles", current));
+            "exitevery", MenuLang.t("plot.exits_short"), MenuLang.t("common.unit_tiles"), current));
     }
 
     /** Nudge how often the room walls off the base pair's exit. */
@@ -346,7 +347,7 @@ public final class EditorPlotPanelInputHandler {
         int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
             .exits().moveChance();
         CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
-            "exitmove", "Moved exit", "0-10", current));
+            "exitmove", MenuLang.t("plot.moved_exit_short"), "0-10", current));
     }
 
     /** Step one axis of the portal room the player is standing in. */
@@ -392,8 +393,12 @@ public final class EditorPlotPanelInputHandler {
         // the renderer's decision not to draw an action row as the sole thing keeping a
         // category without one from reaching a handler that would drop it.
         if (!PlotCategory.fromId(entry.category()).filter(PlotCategory::hasActionRow).isPresent()) return;
+        // Enter lands in the doorway; shift at the click asks for the centre instead. Read here, at
+        // the click, so the modifier means the one the author was holding when they pressed.
+        boolean centre = action == EditorPlotActionPacket.Action.ENTER_INSIDE
+            && net.minecraft.client.gui.screens.Screen.hasShiftDown();
         DungeonTrainNet.sendToServer(new EditorPlotActionPacket(
-            entry.category(), entry.modelId(), entry.modelName(), action));
+            entry.category(), entry.modelId(), entry.modelName(), action, centre));
     }
 
     /**

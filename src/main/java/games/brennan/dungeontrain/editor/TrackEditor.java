@@ -104,7 +104,17 @@ public final class TrackEditor {
     }
 
     public static void enter(ServerPlayer player, boolean onTop) {
-        enter(player, onTop, true);
+        // Already inside the default tile plot: a walk to its menu, not a reload — restamping would
+        // throw away every unsaved edit for the sake of a few blocks' teleport.
+        enter(player, onTop, !standingInDefault(player));
+    }
+
+    /** Whether {@code player} is already inside the default track tile's plot. */
+    private static boolean standingInDefault(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        return TrackKind.DEFAULT_NAME.equals(resolveName(player.blockPosition(), dims));
     }
 
     /**
@@ -112,6 +122,15 @@ public final class TrackEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, boolean onTop, boolean stamp) {
+        enter(player, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
+    }
+
+    /**
+     * @param inside accepted for symmetry with the door-bearing editors; a track tile has no
+     *               doorway, so both values land at the centre — stepping to the nearest free
+     *               column if that cell is built up.
+     */
+    public static void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -121,12 +140,13 @@ public final class TrackEditor {
         if (stamp) stampAllPlots(overworld, dims);
 
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
-        double tx = origin.getX() + TrackPlacer.TILE_LENGTH / 2.0;
-        double ty = onTop
-            ? origin.getY() + TrackPlacer.HEIGHT + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + dims.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        // The label's footprint, so the roof landing sits in front of the panel it draws.
+        Vec3i footprint = TrackSidePlots.footprint(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
+        if (onTop) {
+            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
+        } else {
+            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
+        }
 
         LOGGER.info("[DungeonTrain] Track editor enter: {} -> default plot at {} ({} variants registered, {})",
             player.getName().getString(), origin,

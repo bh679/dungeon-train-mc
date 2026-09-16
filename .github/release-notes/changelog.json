@@ -17097,6 +17097,69 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bump-playermob-0-99-0",
+      "version": "0.905.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "PlayerMob 0.99.0",
+      "summary": "Dungeon Train now builds against PlayerMob 0.99.0, whose Creative editor can introduce a mob to nearby PlayerMobs and players and mirror a pair's feelings. Update PlayerMob to 0.99.0 to use it; 0.98.0 remains supported.",
+      "highlights": [],
+      "pr": 1446,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-menus-translated",
+      "version": "0.906.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "translations",
+        "ui"
+      ],
+      "title": "The build editor speaks your language",
+      "summary": "Every menu, panel and chat line in the build editor now shows in the language you play in \u2014 the X menu, the block-variant and container panels, the plot labels, the Train Builder picker and everything the editor commands say back. All 20 languages have a first machine translation, and the Translate tool has a new \"Build editor\" filter so translators can polish that body on its own, or skip it.",
+      "highlights": [
+        "Editor menus, plot labels and command feedback translated in all 20 languages",
+        "Translate tool: new \"Build editor\" body \u2014 the game's own text is no longer mixed with editor jargon",
+        "Train Builder picker tiles that were still English in 18 languages are now translated"
+      ],
+      "pr": 1447,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "teleport-in-front-of-menu",
+      "version": "0.907.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor teleports land where you want to be",
+      "summary": "Go here and the template list now put you on the plot roof right in front of its floating menu, facing it \u2014 no more landing in the middle of a long build with the menu behind you. Go here is offered even while you're standing in that template, and hopping back to your own plot no longer reloads it, so unsaved work stays put. The panel's Enter button drops you in the front doorway facing in (hold shift for the centre), and every inside landing finds a free spot instead of putting you in a wall.",
+      "highlights": [
+        "Go here lands you in front of the plot's menu, looking at it",
+        "Go here works from inside the template too, without reloading your unsaved edits",
+        "Enter puts you in the front doorway of carriages, contents and dimensional carriages; shift-click for the centre",
+        "Inside landings step to the nearest free space rather than into a block"
+      ],
+      "pr": 1449,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

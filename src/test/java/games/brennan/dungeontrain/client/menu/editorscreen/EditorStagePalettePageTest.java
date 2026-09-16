@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.StagePaletteEditPacket;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -11,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The Palette and Stone pages' rows, from the panel's own placeholder layout. */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorStagePalettePageTest {
 
     private static final EditorRosterPacket.Palette PALETTE =

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * so the contents toggle round-trip stays in lock-step with
  * {@code /dungeontrain editor carriage-contents <variant> <contents> on|off}.
  */
+@ExtendWith(MenuTestLanguage.class)
 final class CarriageContentsAllowScreenTest {
 
     @BeforeEach

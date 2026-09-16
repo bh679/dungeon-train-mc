@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.parts;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -194,7 +195,7 @@ public final class PartPositionMenuRenderer {
         // Header
         double headerCY = halfH - HEADER_HEIGHT / 2.0;
         drawQuad(ps, buffer, -halfW, halfH - HEADER_HEIGHT, halfW, halfH, 0x40FFEEBB);
-        drawCenteredText(ps, buffer, font, capitalize(kind.id()), 0, headerCY, 0xFFFFEEBB);
+        drawCenteredText(ps, buffer, font, kindLabel(kind), 0, headerCY, 0xFFFFEEBB);
 
         // Toolbar — Add | Remove | Clear | X (close)
         double toolbarTop = halfH - HEADER_HEIGHT;
@@ -222,9 +223,9 @@ public final class PartPositionMenuRenderer {
             drawQuad(ps, buffer, xL + 0.01, toolbarBottom + 0.005,
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
-                case ADD -> "Add";
-                case REMOVE -> removeMode ? "Cancel" : "Remove";
-                case CLEAR -> "Clear";
+                case ADD -> MenuLang.t("common.add");
+                case REMOVE -> MenuLang.t(removeMode ? "common.cancel" : "common.remove");
+                case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
                 default -> "";
             };
@@ -422,12 +423,12 @@ public final class PartPositionMenuRenderer {
         int backTint = backHover ? 0xC0FFCC33 : 0x60FFEEBB;
         drawQuad(ps, buffer, backCellL + 0.01, headerBottom + 0.005,
             backCellR - 0.005, headerTop - 0.005, backTint);
-        drawCenteredText(ps, buffer, font, "< Back",
+        drawCenteredText(ps, buffer, font, MenuLang.t("common.back"),
             (backCellL + backCellR) / 2.0, headerCY,
             backHover ? 0xFF000000 : 0xFFFFFFFF);
         drawQuad(ps, buffer, backCellR + 0.005, headerBottom + 0.005,
             halfW, headerTop - 0.005, 0x40FFEEBB);
-        drawCenteredText(ps, buffer, font, "Add " + capitalize(kind.id()) + " Part",
+        drawCenteredText(ps, buffer, font, MenuLang.t("parts.add_title", kindLabel(kind)),
             (backCellR + halfW) / 2.0, headerCY, 0xFFFFEEBB);
 
         // Search field row (acts like the typing buffer field)
@@ -438,7 +439,7 @@ public final class PartPositionMenuRenderer {
         int searchTint = searchHover ? 0xB033FF99 : 0x60339966;
         drawQuad(ps, buffer, -halfW + 0.02, searchBottom + 0.01,
             halfW - 0.02, searchTop - 0.01, searchTint);
-        String shown = "Search: " + PartPositionMenu.searchBuffer() + "_";
+        String shown = MenuLang.t("common.search", PartPositionMenu.searchBuffer()) + "_";
         drawLeftText(ps, buffer, font, shown, -halfW + 0.06, searchCY, 0xFFFFFFFF);
 
         double colActualW = panelW / colCount;
@@ -458,6 +459,11 @@ public final class PartPositionMenuRenderer {
             int textColour = isHover ? 0xFF000000 : 0xFFFFFFFF;
             drawLeftText(ps, buffer, font, filtered.get(i), colXL + 0.04, rowCY, textColour);
         }
+    }
+
+    /** The part kind's name in the current language — Floor / Walls / Roof / Doors. */
+    private static String kindLabel(CarriagePartKind kind) {
+        return MenuLang.named("parts.kind", kind.id(), capitalize(kind.id()));
     }
 
     private static String capitalize(String s) {

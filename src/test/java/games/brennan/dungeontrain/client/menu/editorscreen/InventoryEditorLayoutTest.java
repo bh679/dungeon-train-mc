@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.client.menu.editorscreen.InventoryEditorLayout.Rect;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -11,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The screen must fit every logical size a player can have, down to GUI scale 3 at 720p. */
+@ExtendWith(MenuTestLanguage.class)
 final class InventoryEditorLayoutTest {
 
     private static final int[][] SIZES = {{427, 240}, {480, 270}, {640, 360}, {854, 480}, {1920, 1080}};

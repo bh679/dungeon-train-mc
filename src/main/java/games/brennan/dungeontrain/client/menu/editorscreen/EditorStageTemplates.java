@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
@@ -41,11 +42,11 @@ public final class EditorStageTemplates {
             for (EditorRosterPacket.Entry e : g.entries()) {
                 EditorTypeMenusPacket.Variant v = e.variant();
                 if (linksTo(v, id)) {
-                    out.add(new Row(g.typeName() + " · " + v.displayName(), VariantKey.of(v, "")));
+                    out.add(new Row(MenuLang.typeName(g.typeName()) + " · " + v.displayName(), VariantKey.of(v, "")));
                 }
                 for (EditorTypeMenusPacket.Variant sv : v.subVariants()) {
                     if (linksTo(sv, id)) {
-                        out.add(new Row(g.typeName() + " · " + v.displayName() + " / " + sv.displayName(),
+                        out.add(new Row(MenuLang.typeName(g.typeName()) + " · " + v.displayName() + " / " + sv.displayName(),
                             VariantKey.of(sv, VariantKey.of(v, "").displayName())));
                     }
                 }
@@ -62,11 +63,12 @@ public final class EditorStageTemplates {
     }
 
     private static String partTypeName(CarriagePartKind kind) {
-        return switch (kind) {
+        String fallback = switch (kind) {
             case FLOOR -> "Floor";
             case WALLS -> "Walls";
             case ROOF -> "Roof";
             case DOORS -> "Doors";
         };
+        return MenuLang.named("parts.kind", kind.id(), fallback);
     }
 }

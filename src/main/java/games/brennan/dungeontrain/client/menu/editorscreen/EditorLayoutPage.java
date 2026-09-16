@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
@@ -181,7 +182,7 @@ public final class EditorLayoutPage {
 
     private static Row header(EditorRosterPacket.Group g, String id, int shown, boolean folded, Consumer<String> toggle) {
         String label = (folded ? FOLDED : OPEN) + " "
-            + EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION, g.typeName(), shown);
+            + EditorScreenLang.text(EditorScreenLang.LAYOUT_SECTION, MenuLang.typeName(g.typeName()), shown);
         return new Row(new CommandMenuEntry.ClientAction(label, () -> toggle.accept(id), false), null, 0, id);
     }
 

@@ -67,6 +67,50 @@ public final class TranslationFilters {
         return isTranslatableLocale(code) ? code : SOURCE_LOCALE;
     }
 
+    /**
+     * The lang-key prefixes that belong to the build editor — the world-space menus, the X menu,
+     * the builder profile, the block-variant / container / prefab tools — so a translator can take
+     * or leave that body on its own. It is creative-only UI, dense with jargon, and roughly a
+     * third of every string the mod ships; a player translating the game they play should not
+     * have to wade through it, and a builder translating the tool they use should not have to
+     * wade through the death screens to find it.
+     */
+    private static final java.util.List<String> EDITOR_KEY_PREFIXES = java.util.List.of(
+        "gui.dungeontrain.editor_menu.",
+        "gui.dungeontrain.editor_screen.",
+        "gui.dungeontrain.editor_settings.",
+        "gui.dungeontrain.editor_help.",
+        "gui.dungeontrain.builder.",
+        "gui.dungeontrain.block_variant.",
+        "gui.dungeontrain.template_blocks.",
+        "gui.dungeontrain.prefab_save.",
+        "gui.dungeontrain.prefab_tab.",
+        "gui.dungeontrain.number_input.",
+        "gui.dungeontrain.scribble.",
+        "gui.dungeontrain.custom_content.");
+
+    /**
+     * Whether {@code key} is one of the build editor's strings — see {@link #EDITOR_KEY_PREFIXES}.
+     * A prefix rule, so a new editor screen keyed under one of those roots is filed without a
+     * release; a screen under a new root needs adding here to be.
+     */
+    public static boolean isEditorKey(String key) {
+        if (key == null) {
+            return false;
+        }
+        for (String prefix : EDITOR_KEY_PREFIXES) {
+            if (key.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether {@code unit} is one of the build editor's lang lines — books never are. */
+    public static boolean isEditor(TranslationUnit unit) {
+        return unit != null && unit.type() == TranslationUnit.Type.LANG && isEditorKey(unit.id());
+    }
+
     /** This layer's override for {@code unit}, or null — the two bodies are keyed separately. */
     public static String overrideOf(TranslationUnit unit, TranslationEdits edits) {
         if (unit == null || edits == null) {

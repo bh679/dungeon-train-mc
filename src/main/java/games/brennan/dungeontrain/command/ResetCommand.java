@@ -70,8 +70,7 @@ public final class ResetCommand {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
         if (located.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "Not in an editor plot. Use '/dt editor <category>' first."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.not_plot_use_dt"));
             return 0;
         }
 
@@ -81,15 +80,11 @@ public final class ResetCommand {
                 return resetToDefault(source, overworld, model, dims);
             }
             resetToSaved(overworld, model, dims);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: reset '" + model.id() + "' to last saved template."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.save.reset_last_saved_template", model.id()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] /dt reset failed for {}", model.id(), t);
-            source.sendFailure(Component.literal("reset failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.reset_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -120,14 +115,12 @@ public final class ResetCommand {
             ServerLevel overworld = player.getServer().overworld();
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
             resetToSaved(overworld, model, dims);
-            player.sendSystemMessage(Component.literal(
-                "Editor: reset '" + model.id() + "' to last saved template.")
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.save.reset_last_saved_template", model.id())
                 .copy().withStyle(ChatFormatting.GREEN));
             return true;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] resetToSavedPlayerVisible {} failed", model.id(), t);
-            player.sendSystemMessage(Component.literal(
-                "reset failed: " + t.getClass().getSimpleName() + ": " + t.getMessage())
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.editor.reset_failed", t.getClass().getSimpleName(), t.getMessage())
                 .copy().withStyle(ChatFormatting.RED));
             return false;
         }
@@ -142,22 +135,17 @@ public final class ResetCommand {
     private static int resetToDefault(CommandSourceStack source, ServerLevel overworld,
                                       Template model, CarriageDims dims) {
         if (!model.hasBundledTier()) {
-            source.sendFailure(Component.literal(noBundledTierMessage(model))
-                .withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(noBundledTierMessage(model).copy().withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         Optional<StructureTemplate> bundled = model.bundled(overworld, dims);
         if (bundled.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "No bundled template for '" + model.id() + "' — nothing to reset to."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.no_bundled_template_nothing", model.id()).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         BlockPos origin = model.editorPlotOrigin(overworld, dims);
         if (origin == null) {
-            source.sendFailure(Component.literal(
-                "Missing plot origin for '" + model.id() + "'."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.missing_plot_origin", model.id()).withStyle(ChatFormatting.RED));
             return 0;
         }
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
@@ -166,9 +154,7 @@ public final class ResetCommand {
             // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
             bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), Block.UPDATE_CLIENTS);
         });
-        source.sendSuccess(() -> Component.literal(
-            "Editor: reset '" + model.id() + "' to bundled default."
-        ).withStyle(ChatFormatting.GREEN), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.save.reset_bundled_default", model.id()).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -178,15 +164,12 @@ public final class ResetCommand {
      * reset-specific wording — kept as a separate helper to preserve the
      * subtle differences between save and reset chat output.
      */
-    private static String noBundledTierMessage(Template model) {
+    private static Component noBundledTierMessage(Template model) {
         return switch (model.kind()) {
-            case CONTENTS -> "Contents templates have no separate bundled tier — '/dt reset default' does not apply to '"
-                + model.id() + "'.";
-            case TUNNEL -> "Tunnel templates have no bundled tier — '/dt reset default' does not apply to '"
-                + model.id() + "'.";
-            case PORTAL_ROOM -> "Dimensional carriages have no bundled tier — the built-in one is code, not an nbt. "
-                + "Use Remove to delete '" + model.variantName() + "' instead.";
-            default -> "'/dt reset default' is not supported for this template kind.";
+            case CONTENTS -> Component.translatable("chat.dungeontrain.save.reset_no_tier.contents", model.id());
+            case TUNNEL -> Component.translatable("chat.dungeontrain.save.reset_no_tier.tunnel", model.id());
+            case PORTAL_ROOM -> Component.translatable("chat.dungeontrain.save.reset_no_tier.portal_room", model.variantName());
+            default -> Component.translatable("chat.dungeontrain.save.reset_no_tier.generic");
         };
     }
 
@@ -194,7 +177,7 @@ public final class ResetCommand {
         try {
             return source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return null;
         }
     }

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.command.ResetCommand;
 import games.brennan.dungeontrain.command.SaveCommand;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.EditorPlotArrival;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.PillarEditor;
@@ -52,8 +53,14 @@ public record EditorPlotActionPacket(
     String category,
     String modelId,
     String modelName,
-    Action action
+    Action action,
+    boolean centre
 ) implements CustomPacketPayload {
+
+    /** The four-field form every action but {@link Action#ENTER_INSIDE} uses: no landing modifier. */
+    public EditorPlotActionPacket(String category, String modelId, String modelName, Action action) {
+        this(category, modelId, modelName, action, false);
+    }
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -65,7 +72,8 @@ public record EditorPlotActionPacket(
      * onTop=false)} method so the player teleports to the floor of the plot
      * (under the cage). The default {@code enter} now lands on top — this
      * action is the explicit "go inside" companion driven by the per-plot
-     * panel's Enter button.
+     * panel's Enter button. Where the plot has a doorway it lands there, facing in;
+     * {@link #centre} (shift held at the click) asks for the footprint centre instead.
      */
     public enum Action { SAVE, RESET, CLEAR, ENTER_INSIDE }
 
@@ -83,6 +91,7 @@ public record EditorPlotActionPacket(
         buf.writeUtf(modelId, 64);
         buf.writeUtf(modelName, 64);
         buf.writeVarInt(action.ordinal());
+        buf.writeBoolean(centre);
     }
 
     public static EditorPlotActionPacket decode(FriendlyByteBuf buf) {
@@ -92,7 +101,13 @@ public record EditorPlotActionPacket(
         int idx = buf.readVarInt();
         Action[] all = Action.values();
         Action action = idx >= 0 && idx < all.length ? all[idx] : Action.SAVE;
-        return new EditorPlotActionPacket(category, modelId, modelName, action);
+        boolean centre = buf.readBoolean();
+        return new EditorPlotActionPacket(category, modelId, modelName, action, centre);
+    }
+
+    /** Where an {@link Action#ENTER_INSIDE} lands, from the click's modifier. */
+    EditorPlotArrival.Inside inside() {
+        return centre ? EditorPlotArrival.Inside.CENTRE : EditorPlotArrival.Inside.FRONT_DOOR;
     }
 
     @Override
@@ -191,7 +206,7 @@ public record EditorPlotActionPacket(
                     "Editor: cleared all blocks in '" + variant.id() + "'.")
                     .copy().withStyle(ChatFormatting.GREEN));
             }
-            case ENTER_INSIDE -> CarriageEditor.enter(sender, variant, false);
+            case ENTER_INSIDE -> CarriageEditor.enterInside(sender, variant, packet.inside());
         }
         LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} carriage '{}'",
             sender.getName().getString(), packet.action, variant.id());
@@ -219,7 +234,7 @@ public record EditorPlotActionPacket(
                     "Editor: cleared all blocks in contents '" + contents.id() + "'.")
                     .copy().withStyle(ChatFormatting.GREEN));
             }
-            case ENTER_INSIDE -> CarriageContentsEditor.enter(sender, contents, null, false);
+            case ENTER_INSIDE -> CarriageContentsEditor.enterInside(sender, contents, packet.inside());
         }
         LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} contents '{}'",
             sender.getName().getString(), packet.action, contents.id());
@@ -335,7 +350,7 @@ public record EditorPlotActionPacket(
                             : "."))
                     .copy().withStyle(ChatFormatting.GREEN));
             }
-            case ENTER_INSIDE -> games.brennan.dungeontrain.editor.PortalRoomEditor.enter(sender, name, false);
+            case ENTER_INSIDE -> games.brennan.dungeontrain.editor.PortalRoomEditor.enterInside(sender, name, packet.inside());
         }
         LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} portal room '{}'",
             sender.getName().getString(), packet.action, name);

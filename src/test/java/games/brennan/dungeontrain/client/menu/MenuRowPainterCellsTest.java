@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** The N-cell row: how it decomposes, where its cells are, and which of them answer a click. */
+@ExtendWith(MenuTestLanguage.class)
 final class MenuRowPainterCellsTest {
 
     private static CommandMenuEntry six() {
