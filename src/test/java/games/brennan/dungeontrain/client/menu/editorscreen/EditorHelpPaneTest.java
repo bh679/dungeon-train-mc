@@ -24,15 +24,16 @@ final class EditorHelpPaneTest {
     }
 
     @Test
-    @DisplayName("the body runs from the top of the preview slot to the foot of the test slot")
+    @DisplayName("the body runs from under the header to the foot of the test slot")
     void bodySpansTheRightColumn() {
         for (int[] size : SIZES) {
             InventoryEditorLayout layout = InventoryEditorLayout.of(size[0], size[1], false);
             Rect body = EditorHelpPane.body(layout);
-            assertEquals(layout.preview().y(), body.y());
+            assertEquals(layout.header().bottom() + 2, body.y());
+            assertTrue(body.y() <= layout.icons().y() + 2);
             assertEquals(layout.test().bottom(), body.bottom());
-            assertEquals(layout.preview().x(), body.x());
-            assertEquals(layout.preview().w(), body.w());
+            assertEquals(layout.header().x(), body.x());
+            assertEquals(layout.header().w(), body.w());
             // Nothing pokes into the left column.
             assertTrue(body.x() >= EditorHelpPane.rect(layout).right());
         }

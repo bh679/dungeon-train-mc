@@ -47,11 +47,15 @@ final class EditorHelpPane {
         return EditorSettingsPane.rect(layout);
     }
 
-    /** The right column from where the model would start to the foot: everything under the header. */
+    /**
+     * The right column from just under the header to the foot: the toolbar's row, the model's, the
+     * sheet's and the test button's, all given to the words — none of those controls apply to a topic.
+     */
     static InventoryEditorLayout.Rect body(InventoryEditorLayout layout) {
-        InventoryEditorLayout.Rect p = layout.preview();
+        InventoryEditorLayout.Rect h = layout.header();
         InventoryEditorLayout.Rect t = layout.test();
-        return new InventoryEditorLayout.Rect(p.x(), p.y(), p.w(), Math.max(0, t.bottom() - p.y()));
+        int top = h.bottom() + 2;
+        return new InventoryEditorLayout.Rect(h.x(), top, h.w(), Math.max(0, t.bottom() - top));
     }
 
     /** The body with its last row given up to the pager. */
@@ -128,7 +132,7 @@ final class EditorHelpPane {
         InventoryEditorLayout.Rect h = layout.header();
         String title = EditorScreenLang.text(selected.titleKey());
         g.drawString(font, font.plainSubstrByWidth(title, h.w() - 4), h.x() + 2,
-            h.y() + (h.h() - font.lineHeight) / 2, theme.panelText(), !theme.isLight());
+            h.y() + (h.h() - font.lineHeight) / 2, MenuRowPainter.TEXT_HEADER, false);
 
         InventoryEditorLayout.Rect full = body(layout);
         int textW = Math.max(0, full.w() - TEXT_PAD * 2);
