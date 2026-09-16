@@ -157,8 +157,10 @@ public final class EditorAutoOpenHandler {
         //     vanilla chat screen uses for typed commands, which produces
         //     normal server-side feedback (success/error messages).
         if (mc.gui != null) {
-            mc.gui.getChat().addMessage(Component.literal("§7[Train Editor] auto-running /" + command));
-            mc.gui.getChat().addMessage(Component.literal("§e[Train Editor] please wait a few seconds…"));
+            mc.gui.getChat().addMessage(Component.translatable("chat.dungeontrain.editor.auto_running", "/" + command)
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
+            mc.gui.getChat().addMessage(Component.translatable("chat.dungeontrain.editor.please_wait")
+                .withStyle(net.minecraft.ChatFormatting.YELLOW));
             mc.gui.getChat().addRecentChat("/" + command);
         }
         mc.player.connection.sendCommand(command);

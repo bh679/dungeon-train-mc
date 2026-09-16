@@ -19,26 +19,26 @@ import java.util.List;
 public final class DebugMenuScreen implements MenuScreen {
 
     // Matches the row label in MainMenuScreen: the breadcrumb reads back what was clicked.
-    @Override public String title() { return "Test Live"; }
+    @Override public String title() { return MenuLang.t("debug.title"); }
 
     @Override public List<CommandMenuEntry> entries() {
         boolean manual = DebugFlagsState.manualSpawnMode();
         boolean lootRolls = DebugFlagsState.logLootRolls();
         return List.of(
-            new CommandMenuEntry.DrillIn("Wireframes", new WireframesMenuScreen()),
-            new CommandMenuEntry.DrillIn("Chat Logs", new ChatLogsMenuScreen()),
+            new CommandMenuEntry.DrillIn(MenuLang.t("wireframes.title"), new WireframesMenuScreen()),
+            new CommandMenuEntry.DrillIn(MenuLang.t("chat_logs.title"), new ChatLogsMenuScreen()),
             new CommandMenuEntry.Toggle(
-                "Manual Spawn (J)", manual,
+                MenuLang.t("debug.manual_spawn"), manual,
                 "dungeontrain debug spawnmode manual",
                 "dungeontrain debug spawnmode auto"
             ),
             new CommandMenuEntry.Toggle(
-                "Log Loot Rolls", lootRolls,
+                MenuLang.t("debug.log_loot_rolls"), lootRolls,
                 "dungeontrain debug loot-rolls on",
                 "dungeontrain debug loot-rolls off"
             ),
-            new CommandMenuEntry.Run("Debug Scan", "dungeontrain debug scan"),
-            new CommandMenuEntry.Back("< Back")
+            new CommandMenuEntry.Run(MenuLang.t("debug.scan"), "dungeontrain debug scan"),
+            new CommandMenuEntry.Back(MenuLang.t("common.back"))
         );
     }
 }

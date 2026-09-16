@@ -80,7 +80,7 @@ final class EditorLabelCommands {
         }
         String name = found.get();
         if (TrackKind.DEFAULT_NAME.equals(name)) {
-            source.sendFailure(Component.literal("'default' is the kind's fallback — it keeps its name."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.default_kind_s_fallback"));
             return 0;
         }
         try {
@@ -99,33 +99,31 @@ final class EditorLabelCommands {
             : "Editor: " + what + " '" + id + "' is now shown as \"" + shown + "\" (id unchanged).";
         source.sendSuccess(() -> Component.literal(line).withStyle(ChatFormatting.GREEN), true);
         if (stored != null && stored.length() >= TemplateMeta.NAME_MAX) {
-            source.sendSuccess(() -> Component.literal(
-                "Label cut to " + TemplateMeta.NAME_MAX + " characters.").withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.label_cut_characters", TemplateMeta.NAME_MAX).withStyle(ChatFormatting.YELLOW), false);
         }
         return 1;
     }
 
     private static int unknown(CommandSourceStack source, String what, String raw) {
-        source.sendFailure(Component.literal("Unknown " + what + " '" + raw + "'.").withStyle(ChatFormatting.RED));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown", what, raw).withStyle(ChatFormatting.RED));
         return 0;
     }
 
     private static int failure(CommandSourceStack source, String what, String id, IOException e) {
         LOGGER.error("[DungeonTrain] editor label {} '{}' failed", what, id, e);
-        source.sendFailure(Component.literal("Label failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.label_failed", e.getMessage()).withStyle(ChatFormatting.RED));
         return 0;
     }
 
     /** One line per {@link VariantGroupMoves.Refusal}, shared by the contents and portal moves. */
-    static String moveRefusal(VariantGroupMoves.Refusal refusal, String child, String oldParent,
-                              String newParent, String what) {
+    static Component moveRefusal(VariantGroupMoves.Refusal refusal, String child, String oldParent,
+                                 String newParent, Component what) {
         return switch (refusal) {
-            case NOT_A_MEMBER -> "'" + child + "' is not a sub-variant of '" + oldParent + "'.";
-            case SAME_PARENT -> "'" + child + "' is already a sub-variant of '" + newParent + "'.";
-            case SELF -> "Cannot make '" + child + "' a sub-variant of itself.";
-            case TARGET_IS_CHILD -> "'" + newParent + "' is itself a sub-variant — nesting is single-hop only.";
-            case CHILD_IS_PARENT -> "'" + child + "' has sub-variants of its own — it cannot sit under another "
-                + what + ".";
+            case NOT_A_MEMBER -> Component.translatable("chat.dungeontrain.editor.move_not_a_member", child, oldParent);
+            case SAME_PARENT -> Component.translatable("chat.dungeontrain.editor.move_same_parent", child, newParent);
+            case SELF -> Component.translatable("chat.dungeontrain.editor.move_self", child);
+            case TARGET_IS_CHILD -> Component.translatable("chat.dungeontrain.editor.move_target_is_child", newParent);
+            case CHILD_IS_PARENT -> Component.translatable("chat.dungeontrain.editor.move_child_is_parent", child, what);
         };
     }
 }

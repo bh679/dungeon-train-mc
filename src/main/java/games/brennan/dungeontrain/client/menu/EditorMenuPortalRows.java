@@ -60,7 +60,7 @@ public final class EditorMenuPortalRows {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!EditorPlotLabelsRenderer.hasLockRowFor(currentMode)) return null;
         return new CommandMenuEntry.Stay(
-            EditorPlotLabelsRenderer.lockLabel(currentMode) + "  (+ held)",
+            EditorPlotLabelsRenderer.lockLabel(currentMode) + "  " + MenuLang.t("portal.plus_held"),
             prefix + " lock held");
     }
 
@@ -93,7 +93,7 @@ public final class EditorMenuPortalRows {
         return new CommandMenuEntry.Split(
             new CommandMenuEntry.Stay(EditorPlotLabelsRenderer.copiesBlockLabel(plane),
                 prefix + " copies " + plane.id() + " held"),
-            new CommandMenuEntry.Stay("Edit",
+            new CommandMenuEntry.Stay(MenuLang.t("common.edit"),
                 prefix + " copies " + plane.id() + " edit"),
             0.72);
     }
@@ -148,7 +148,7 @@ public final class EditorMenuPortalRows {
             return cycle;
         }
         return new CommandMenuEntry.Split(cycle,
-            new CommandMenuEntry.DrillIn("Edit", new PortalRoomBooksScreen(currentMode, prefix)),
+            new CommandMenuEntry.DrillIn(MenuLang.t("common.edit"), new PortalRoomBooksScreen(currentMode, prefix)),
             0.72);
     }
 
@@ -253,7 +253,7 @@ public final class EditorMenuPortalRows {
         String command = prefix + " " + axis;
         CommandMenuEntry minus = new CommandMenuEntry.Stay("-", command + " dec");
         CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            label + " (" + current + ")", "blocks", command);
+            MenuLang.t("common.value_in_parens", label, current), "blocks", command);
         CommandMenuEntry plus = new CommandMenuEntry.Stay("+", command + " inc");
         return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }

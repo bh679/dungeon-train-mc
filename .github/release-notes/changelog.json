@@ -17114,6 +17114,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-menus-translated",
+      "version": "0.906.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "translations",
+        "ui"
+      ],
+      "title": "The build editor speaks your language",
+      "summary": "Every menu, panel and chat line in the build editor now shows in the language you play in \u2014 the X menu, the block-variant and container panels, the plot labels, the Train Builder picker and everything the editor commands say back. All 20 languages have a first machine translation, and the Translate tool has a new \"Build editor\" filter so translators can polish that body on its own, or skip it.",
+      "highlights": [
+        "Editor menus, plot labels and command feedback translated in all 20 languages",
+        "Translate tool: new \"Build editor\" body \u2014 the game's own text is no longer mixed with editor jargon",
+        "Train Builder picker tiles that were still English in 18 languages are now translated"
+      ],
+      "pr": 1447,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

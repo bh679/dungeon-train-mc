@@ -37,7 +37,7 @@ public final class ChangesListScreen implements MenuScreen {
         this.displayName = displayName;
     }
 
-    @Override public String title() { return "Changes: " + displayName; }
+    @Override public String title() { return MenuLang.t("changes.title", displayName); }
 
     @Override public List<CommandMenuEntry> entries() {
         if (!requestSent) {
@@ -46,33 +46,33 @@ public final class ChangesListScreen implements MenuScreen {
             EditorStatusHudOverlay.clearChangesList();
             DungeonTrainNet.sendToServer(new EditorChangesRequestPacket(categoryId, modelId));
             requestSent = true;
-            return List.of(new CommandMenuEntry.Loading("Computing diff..."));
+            return List.of(new CommandMenuEntry.Loading(MenuLang.t("changes.computing")));
         }
 
         List<EditorDirtyCheck.DiffEntry> changes =
             EditorStatusHudOverlay.changesListFor(categoryId, modelId);
         if (changes == null) {
-            return List.of(new CommandMenuEntry.Loading("Computing diff..."));
+            return List.of(new CommandMenuEntry.Loading(MenuLang.t("changes.computing")));
         }
 
         if (changes.isEmpty()) {
             return List.of(
-                new CommandMenuEntry.Label("No differences"),
-                new CommandMenuEntry.Back("< Back")
+                new CommandMenuEntry.Label(MenuLang.t("changes.none")),
+                new CommandMenuEntry.Back(MenuLang.t("common.back"))
             );
         }
 
         List<CommandMenuEntry> out = new ArrayList<>(Math.min(changes.size(), MAX_ROWS) + 2);
-        out.add(new CommandMenuEntry.Label(changes.size() + " change" + (changes.size() == 1 ? "" : "s")));
+        out.add(new CommandMenuEntry.Label(MenuLang.plural("changes.count", changes.size())));
         int shown = Math.min(changes.size(), MAX_ROWS);
         for (int i = 0; i < shown; i++) {
             EditorDirtyCheck.DiffEntry d = changes.get(i);
             out.add(new CommandMenuEntry.Label(formatRow(d)));
         }
         if (changes.size() > MAX_ROWS) {
-            out.add(new CommandMenuEntry.Label("... " + (changes.size() - MAX_ROWS) + " more"));
+            out.add(new CommandMenuEntry.Label(MenuLang.t("changes.more", changes.size() - MAX_ROWS)));
         }
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 

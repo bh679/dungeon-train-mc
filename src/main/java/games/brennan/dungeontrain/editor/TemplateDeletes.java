@@ -70,12 +70,13 @@ public final class TemplateDeletes {
         public static final Report EMPTY = new Report(List.of(), List.of());
 
         /** One chat line, or {@code ""} when nothing beyond the template file was touched. */
-        public String summaryLine() {
-            if (removed.isEmpty() && failures.isEmpty()) return "";
-            StringBuilder sb = new StringBuilder();
-            if (!removed.isEmpty()) sb.append(" Also removed: ").append(String.join(", ", removed)).append('.');
-            if (!failures.isEmpty()) sb.append(" Could not remove: ").append(String.join(", ", failures)).append('.');
-            return sb.toString();
+        public net.minecraft.network.chat.Component summaryLine() {
+            net.minecraft.network.chat.MutableComponent out = net.minecraft.network.chat.Component.empty();
+            if (!removed.isEmpty()) out.append(net.minecraft.network.chat.Component.translatable(
+                "chat.dungeontrain.editor.also_removed", String.join(", ", removed)));
+            if (!failures.isEmpty()) out.append(net.minecraft.network.chat.Component.translatable(
+                "chat.dungeontrain.editor.could_not_remove", String.join(", ", failures)));
+            return out;
         }
     }
 

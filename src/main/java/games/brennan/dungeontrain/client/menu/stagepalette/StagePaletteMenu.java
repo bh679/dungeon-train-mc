@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.stagepalette;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.block.stage.StageStoneFamily.StoneKind;
 import games.brennan.dungeontrain.net.StagePaletteSyncPacket;
 import net.minecraft.core.BlockPos;
@@ -44,33 +45,53 @@ public final class StagePaletteMenu {
 
     /** Table columns — the block <em>types</em>; every cell row maps a subset of these to a placeholder. */
     public enum Column {
-        BLOCK("Block"), STAIRS("Stairs"), SLAB("Slab"), WALL("Wall"), BUTTON("Button"), PLATE("Plate"),
-        FENCE("Fence"), GATE("Gate"), DOOR("Door"), TRAPDOOR("Trapdoor"), LOG("Log"),
-        STRIPPED_LOG("Str. log"), WOOD("Wood"), STRIPPED_WOOD("Str. wood");
+        BLOCK("block"), STAIRS("stairs"), SLAB("slab"), WALL("wall"), BUTTON("button"), PLATE("plate"),
+        FENCE("fence"), GATE("gate"), DOOR("door"), TRAPDOOR("trapdoor"), LOG("log"),
+        STRIPPED_LOG("stripped_log"), WOOD("wood"), STRIPPED_WOOD("stripped_wood");
 
-        private final String label;
+        private final String key;
 
-        Column(String label) {
-            this.label = label;
+        Column(String key) {
+            this.key = key;
         }
 
         public String label() {
-            return label;
+            return MenuLang.t("palette.column." + key);
         }
     }
 
     public enum RowKind { HEADER, TOOLBAR, COLUMNS, CELLS, STATUS }
 
     /**
+     * Which set of cells a {@link RowKind#CELLS} row belongs to. The X menu's palette page groups
+     * rows by this rather than by what the label says, so the label can be translated.
+     */
+    public enum RowGroup { NONE, SOLID, WOOD, STONE, STONE_KIND }
+
+    /**
      * One table row. {@code cells} maps a column to a placeholder name; {@code labelAction} is the
      * hit kind of the row-label column ({@link CellKind#NONE} for plain labels, WOOD_HEADER /
-     * STONE_HEADER for the family rows).
+     * STONE_HEADER for the family rows). {@code labelArg} is the solid index or the stone kind id;
+     * the text a player reads comes from {@link #label()}, resolved when drawn so it follows the
+     * language rather than the class-load.
      */
-    public record Row(RowKind kind, String label, Map<Column, String> cells, CellKind labelAction) {
-        static Row plain(RowKind kind) { return new Row(kind, "", Map.of(), CellKind.NONE); }
-        static Row cells(String label, Map<Column, String> cells) { return new Row(RowKind.CELLS, label, cells, CellKind.NONE); }
-        static Row family(String label, CellKind action, Map<Column, String> cells) { return new Row(RowKind.CELLS, label, cells, action); }
+    public record Row(RowKind kind, RowGroup group, String labelArg, Map<Column, String> cells, CellKind labelAction) {
+        static Row plain(RowKind kind) { return new Row(kind, RowGroup.NONE, "", Map.of(), CellKind.NONE); }
+        static Row solid(int index, Map<Column, String> cells) { return new Row(RowKind.CELLS, RowGroup.SOLID, Integer.toString(index), cells, CellKind.NONE); }
+        static Row stoneKind(String kindId, Map<Column, String> cells) { return new Row(RowKind.CELLS, RowGroup.STONE_KIND, kindId, cells, CellKind.NONE); }
+        static Row family(RowGroup group, CellKind action, Map<Column, String> cells) { return new Row(RowKind.CELLS, group, "", cells, action); }
         public String cell(Column c) { return cells.get(c); }
+
+        /** The row-label column's text in the current language. */
+        public String label() {
+            return switch (group) {
+                case SOLID -> MenuLang.t("palette.solid", labelArg);
+                case WOOD -> MenuLang.t("palette.wood");
+                case STONE -> MenuLang.t("palette.stone");
+                case STONE_KIND -> "  " + MenuLang.named("palette.stone_kind", labelArg, labelArg);
+                case NONE -> "";
+            };
+        }
     }
 
     /** The panel's rows, top to bottom. */
@@ -104,7 +125,7 @@ public final class StagePaletteMenu {
                 cells.put(Column.BUTTON, "stage_button");
                 cells.put(Column.PLATE, "stage_pressure_plate");
             }
-            rows.add(Row.cells("Solid " + i, cells));
+            rows.add(Row.solid(i, cells));
         }
         Map<Column, String> wood = new EnumMap<>(Column.class);
         wood.put(Column.BLOCK, "stage_planks");
@@ -120,8 +141,8 @@ public final class StagePaletteMenu {
         wood.put(Column.STRIPPED_LOG, "stage_stripped_log");
         wood.put(Column.WOOD, "stage_wood");
         wood.put(Column.STRIPPED_WOOD, "stage_stripped_wood");
-        rows.add(Row.family("Wood", CellKind.WOOD_HEADER, wood));
-        rows.add(Row.family("Stone", CellKind.STONE_HEADER, Map.of()));
+        rows.add(Row.family(RowGroup.WOOD, CellKind.WOOD_HEADER, wood));
+        rows.add(Row.family(RowGroup.STONE, CellKind.STONE_HEADER, Map.of()));
         for (StoneKind kind : StoneKind.values()) {
             String base = kind == StoneKind.STONE ? "stage_stone" : "stage_stone_" + kind.id();
             Map<Column, String> cells = new EnumMap<>(Column.class);
@@ -129,7 +150,7 @@ public final class StagePaletteMenu {
             cells.put(Column.STAIRS, base + "_stairs");
             cells.put(Column.SLAB, base + "_slab");
             cells.put(Column.WALL, base + "_wall");
-            rows.add(Row.cells("  " + kind.id(), cells));
+            rows.add(Row.stoneKind(kind.id(), cells));
         }
         rows.add(Row.plain(RowKind.STATUS));
         return List.copyOf(rows);

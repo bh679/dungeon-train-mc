@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -221,10 +222,10 @@ public final class BlockVariantMenuRenderer {
         drawQuad(ps, buffer, -halfW, halfH - HEADER_HEIGHT, halfW, halfH, 0x40FFEEBB);
         net.minecraft.core.BlockPos local = BlockVariantMenu.localPos();
         int cellLockId = BlockVariantMenu.lockId();
-        String lockLabel = cellLockId > 0 ? "  ·  lock " + cellLockId : "";
+        String lockLabel = cellLockId > 0 ? "  ·  " + MenuLang.t("block_variant.lock_n", cellLockId) : "";
         String headerLabel = local == null
-            ? "Block Variants"
-            : "Block Variants @ " + local.getX() + "," + local.getY() + "," + local.getZ() + lockLabel;
+            ? MenuLang.t("block_variant.title")
+            : MenuLang.t("block_variant.title_at", local.getX() + "," + local.getY() + "," + local.getZ()) + lockLabel;
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFFFFEEBB);
 
         // Toolbar — Copy | Save | Add | Lock | (Reroll) | Remove | Clear | X. The Reroll cell is
@@ -275,9 +276,9 @@ public final class BlockVariantMenuRenderer {
             drawQuad(ps, buffer, xL + 0.01, toolbarBottom + 0.005,
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
-                case COPY -> "Copy";
-                case SAVE -> "Save";
-                case ADD -> "Add";
+                case COPY -> MenuLang.t("common.copy");
+                case SAVE -> MenuLang.t("common.save");
+                case ADD -> MenuLang.t("common.add");
                 // Lock label shows current cell lock-id: "-" unlocked, or
                 // the digit (e.g. "2") when locked. Cycles to next free
                 // when 0, back to 0 when set.
@@ -286,8 +287,8 @@ public final class BlockVariantMenuRenderer {
                 // so the cell says whether it is following that or breaking from it.
                 case COPY_ROLL -> copyRoll.displayName();
                 case COPY_SCOPE -> copyScope.displayName();
-                case REMOVE -> removeMode ? "Cancel" : "Remove";
-                case CLEAR -> "Clear";
+                case REMOVE -> MenuLang.t(removeMode ? "common.cancel" : "common.remove");
+                case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
                 default -> "";
             };
@@ -381,7 +382,7 @@ public final class BlockVariantMenuRenderer {
                 // A dead reference (group deleted, or the row was pasted into
                 // a template that has no such group) renders red, the same
                 // warning a dangling loot-prefab link gets.
-                label = "→ Group " + entry.groupRef();
+                label = MenuLang.t("block_variant.group_ref", entry.groupRef());
                 labelColour = entry.groupRefLive()
                     ? (nameHover ? 0xFF000000 : 0xFF7FD4FF)
                     : (nameHover ? 0xFF660000 : 0xFFFF5555);
@@ -395,7 +396,7 @@ public final class BlockVariantMenuRenderer {
                     // Equipped entity (armor stand + loadout) — show
                     // "<entity>: <prefab>" so two loadouts read distinctly. A
                     // dangling link (prefab gone) renders red like block rows.
-                    label = base + ": " + linkedId;
+                    label = MenuLang.t("common.name_value", base, linkedId);
                     boolean dangling = !PrefabTabState.findLootItems(linkedId).isPresent();
                     labelColour = dangling
                         ? (nameHover ? 0xFF660000 : 0xFFFF5555)
@@ -505,9 +506,9 @@ public final class BlockVariantMenuRenderer {
             }
             drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
             String label = switch (seg) {
-                case 0 -> "L";
-                case 1 -> "R";
-                default -> "O";
+                case 0 -> MenuLang.t("block_variant.mode_lock");
+                case 1 -> MenuLang.t("block_variant.mode_random");
+                default -> MenuLang.t("block_variant.mode_options");
             };
             drawCenteredText(ps, buffer, font, label,
                 (sL + sR) / 2.0, rowCY,
@@ -630,9 +631,9 @@ public final class BlockVariantMenuRenderer {
             }
             drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
             String label = switch (seg) {
-                case 0 -> "T";
-                case 1 -> "R";
-                default -> "B";
+                case 0 -> MenuLang.t("block_variant.plane_top");
+                case 1 -> MenuLang.t("block_variant.plane_random");
+                default -> MenuLang.t("block_variant.plane_bottom");
             };
             drawCenteredText(ps, buffer, font, label,
                 (sL + sR) / 2.0, rowCY,
@@ -659,7 +660,7 @@ public final class BlockVariantMenuRenderer {
             minHover ? 0xC0B266FF : 0x40663399);
         drawCenteredText(ps, buffer, font, Integer.toString(entry.minDiff()),
             (minL + minR) / 2.0, rowCY, minHover ? 0xFF000000 : 0xFFE39DFF);
-        String maxLabel = entry.maxDiff() < 0 ? "all" : Integer.toString(entry.maxDiff());
+        String maxLabel = entry.maxDiff() < 0 ? MenuLang.t("stages.all") : Integer.toString(entry.maxDiff());
         drawQuad(ps, buffer, maxL + 0.005, rowBottom + 0.005, maxR - 0.005, rowTop - 0.005,
             maxHover ? 0xC0B266FF : 0x40663399);
         drawCenteredText(ps, buffer, font, maxLabel,
@@ -732,12 +733,12 @@ public final class BlockVariantMenuRenderer {
         int backTint = backHover ? 0xC0FFCC33 : 0x60FFEEBB;
         drawQuad(ps, buffer, backCellL + 0.01, headerBottom + 0.005,
             backCellR - 0.005, headerTop - 0.005, backTint);
-        drawCenteredText(ps, buffer, font, "< Back",
+        drawCenteredText(ps, buffer, font, MenuLang.t("common.back"),
             (backCellL + backCellR) / 2.0, headerCY,
             backHover ? 0xFF000000 : 0xFFFFFFFF);
         drawQuad(ps, buffer, backCellR + 0.005, headerBottom + 0.005,
             halfW, headerTop - 0.005, 0x40FFEEBB);
-        drawCenteredText(ps, buffer, font, "Add Block Variant",
+        drawCenteredText(ps, buffer, font, MenuLang.t("block_variant.add_title"),
             (backCellR + halfW) / 2.0, headerCY, 0xFFFFEEBB);
 
         // Search field row
@@ -748,7 +749,7 @@ public final class BlockVariantMenuRenderer {
         int searchTint = searchHover ? 0xB033FF99 : 0x60339966;
         drawQuad(ps, buffer, -halfW + 0.02, searchBottom + 0.01,
             halfW - 0.02, searchTop - 0.01, searchTint);
-        String shown = "Search: " + BlockVariantMenu.searchBuffer() + "_";
+        String shown = MenuLang.t("common.search", BlockVariantMenu.searchBuffer()) + "_";
         drawLeftText(ps, buffer, font, shown, -halfW + 0.06, searchCY, 0xFFFFFFFF);
 
         double colActualW = panelW / colCount;
@@ -786,14 +787,22 @@ public final class BlockVariantMenuRenderer {
      */
     static String shortenStateLabel(String stateString) {
         if (stateString == null) return "";
+        if (isNothingSentinel(stateString)) {
+            return MenuLang.t("plot.nothing");
+        }
         // Drop properties section "[...]"
         int bracket = stateString.indexOf('[');
         String trimmed = bracket >= 0 ? stateString.substring(0, bracket) : stateString;
-        if (isEmptyPlaceholderId(trimmed)) {
-            return "nothing";
-        }
         int colon = trimmed.indexOf(':');
         return colon >= 0 ? trimmed.substring(colon + 1) : trimmed;
+    }
+
+    /** Whether {@code stateString} is the empty-placeholder sentinel the editor reads as "nothing". */
+    static boolean isNothingSentinel(String stateString) {
+        if (stateString == null) return false;
+        int bracket = stateString.indexOf('[');
+        String trimmed = bracket >= 0 ? stateString.substring(0, bracket) : stateString;
+        return isEmptyPlaceholderId(trimmed);
     }
 
     /** Id-only twin of {@code CarriageVariantBlocks.isEmptyPlaceholder} — the row is sent a state string, not a state. */
@@ -817,7 +826,7 @@ public final class BlockVariantMenuRenderer {
     static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer, String stateString,
                               double cellLeftX, double rowCY, @Nullable PanelIconBatch icons) {
         if (stateString == null || stateString.isEmpty()) return;
-        if ("nothing".equals(shortenStateLabel(stateString))) return;
+        if (isNothingSentinel(stateString)) return;
         BlockState state = BlockVariantMenu.parseState(stateString);
         if (state == null) return;
         Item item = state.getBlock().asItem();
@@ -897,10 +906,10 @@ public final class BlockVariantMenuRenderer {
      * the row reads distinctly from a similarly-named block.
      */
     static String mobLabel(String entityId) {
-        if (entityId == null || entityId.isEmpty()) return "(mob)";
+        if (entityId == null || entityId.isEmpty()) return MenuLang.t("block_variant.mob_suffix");
         int colon = entityId.indexOf(':');
         String path = colon >= 0 ? entityId.substring(colon + 1) : entityId;
-        return path + " (mob)";
+        return path + " " + MenuLang.t("block_variant.mob_suffix");
     }
 
     /**

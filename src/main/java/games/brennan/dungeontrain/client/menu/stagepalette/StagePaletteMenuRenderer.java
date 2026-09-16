@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.stagepalette;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -166,7 +167,7 @@ public final class StagePaletteMenuRenderer {
             switch (row.kind()) {
                 case HEADER -> {
                     drawQuad(ps, buffer, -halfW, rowBottom, halfW, rowTop, HEADER_BG);
-                    drawCenteredText(ps, buffer, font, "Stage palette: " + StagePaletteMenu.stageId(),
+                    drawCenteredText(ps, buffer, font, MenuLang.t("palette.title", StagePaletteMenu.stageId()),
                         0, rowCY, HEADER_COLOR);
                 }
                 case TOOLBAR -> {
@@ -176,7 +177,7 @@ public final class StagePaletteMenuRenderer {
                     } else if (hovered.kind() == CellKind.CLOSE) {
                         drawQuad(ps, buffer, split + 0.005, rowBottom + 0.005, halfW - 0.005, rowTop - 0.005, HOVER_COLOR);
                     }
-                    drawCenteredText(ps, buffer, font, "Re-bake (keeps overrides)", (-halfW + split) / 2.0, rowCY, REBAKE_COLOR);
+                    drawCenteredText(ps, buffer, font, MenuLang.t("palette.rebake"), (-halfW + split) / 2.0, rowCY, REBAKE_COLOR);
                     drawCenteredText(ps, buffer, font, "X", (split + halfW) / 2.0, rowCY, CLOSE_COLOR);
                 }
                 case COLUMNS -> {
@@ -200,7 +201,7 @@ public final class StagePaletteMenuRenderer {
             boolean wood = row.labelAction() == CellKind.WOOD_HEADER;
             boolean locked = wood ? StagePaletteMenu.woodLocked() : StagePaletteMenu.stoneLocked();
             String family = wood ? StagePaletteMenu.wood() : StagePaletteMenu.stone();
-            label = row.label() + ": " + family + (locked ? " *" : "");
+            label = MenuLang.t("common.name_value", row.label(), family) + (locked ? " *" : "");
             if (locked) drawQuad(ps, buffer, -HALF_W + 0.005, rowBottom + 0.005, labelRight - 0.005, rowTop - 0.005, LOCKED_BG);
             if (hovered.kind() == row.labelAction()) {
                 drawQuad(ps, buffer, -HALF_W + 0.005, rowBottom + 0.005, labelRight - 0.005, rowTop - 0.005, HOVER_COLOR);
@@ -229,13 +230,13 @@ public final class StagePaletteMenuRenderer {
     private static String statusText(Hit hovered) {
         String name = StagePaletteMenu.cellName(hovered);
         if (hovered.kind() == CellKind.WOOD_HEADER || hovered.kind() == CellKind.STONE_HEADER) {
-            return "Click with a held block to set the family (empty hand unlocks)";
+            return MenuLang.t("palette.status_family");
         }
-        if (name == null) return "Hover a cell · click with a held block to override · empty hand clears";
+        if (name == null) return MenuLang.t("palette.status_idle");
         StagePaletteSyncPacket.Entry e = StagePaletteMenu.entry(name);
         String label = Component.translatable("block." + DungeonTrain.MOD_ID + "." + name).getString();
         if (e == null) return label;
-        return label + " → " + e.blockId() + (e.overridden() ? "  (override)" : "");
+        return label + " → " + e.blockId() + (e.overridden() ? "  " + MenuLang.t("palette.override") : "");
     }
 
     // ---------- hit testing (shared with StagePaletteMenuRaycast) ----------

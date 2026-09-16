@@ -253,7 +253,7 @@ public final class EditorDoorGhostRenderer {
         float scale = (float) TEXT_SCALE;
         ps.scale(scale, -scale, scale);
 
-        String text = door.entry() ? "Entrance" : "Exit";
+        String text = MenuLang.t(door.entry() ? "door.entrance" : "door.exit");
         Matrix4f mat = ps.last().pose();
         font.drawInBatch(text, -font.width(text) / 2f, -font.lineHeight / 2f,
             door.entry() ? ENTRY_TEXT_COLOR : EXIT_TEXT_COLOR, false, mat, buffer,

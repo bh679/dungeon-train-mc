@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.containercontents;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -225,8 +226,8 @@ public final class ContainerContentsMenuRenderer {
         drawQuad(ps, buffer, -halfW, halfH - HEADER_HEIGHT, halfW, halfH, 0x4099CCFF);
         net.minecraft.core.BlockPos local = ContainerContentsMenu.localPos();
         String headerLabel = local == null
-            ? "Container Contents"
-            : "Container Contents @ " + local.getX() + "," + local.getY() + "," + local.getZ();
+            ? MenuLang.t("container.title")
+            : MenuLang.t("container.title_at", local.getX() + "," + local.getY() + "," + local.getZ());
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFF99CCFF);
 
         // Link sub-row (only when linked) — informational left, [X] unlink right.
@@ -241,7 +242,7 @@ public final class ContainerContentsMenuRenderer {
             drawQuad(ps, buffer, -halfW + 0.01, linkBottom + 0.005,
                 halfW - LINK_UNLINK_WIDTH - 0.005, linkTop - 0.005, rowTint);
             drawLeftText(ps, buffer, font,
-                "Linked: " + linkId,
+                MenuLang.t("container.linked", linkId),
                 -halfW + 0.06, linkCY,
                 0xFFFFE07A);
 
@@ -286,14 +287,14 @@ public final class ContainerContentsMenuRenderer {
             drawQuad(ps, buffer, xL + 0.01, toolbarBottom + 0.005,
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
-                case ADD -> "Add";
-                case SAVE -> "Save";
+                case ADD -> MenuLang.t("common.add");
+                case SAVE -> MenuLang.t("common.save");
                 case FILL_MIN -> Integer.toString(fmin);
                 case FILL_MAX -> {
-                    String shown = fmax < 0 ? "all" : Integer.toString(fmax);
+                    String shown = fmax < 0 ? MenuLang.t("stages.all") : Integer.toString(fmax);
                     yield cs > 0 ? shown + "/" + cs : shown;
                 }
-                case CLEAR -> "Clear";
+                case CLEAR -> MenuLang.t("common.clear");
                 case CLOSE -> "X";
                 default -> "";
             };
@@ -373,10 +374,10 @@ public final class ContainerContentsMenuRenderer {
             int slotTint;
             String slotLabel;
             switch (slotOv) {
-                case 0  -> { slotTint = slotHover ? 0xC066AAFF : 0x6033AACC; slotLabel = "in"; }
-                case 1  -> { slotTint = slotHover ? 0xC0FFAA66 : 0x60CC7733; slotLabel = "fuel"; }
-                case 2  -> { slotTint = slotHover ? 0xC066FF99 : 0x6033CC66; slotLabel = "out"; }
-                default -> { slotTint = slotHover ? 0xC0AAAAAA : 0x40555555; slotLabel = "auto"; }
+                case 0  -> { slotTint = slotHover ? 0xC066AAFF : 0x6033AACC; slotLabel = MenuLang.t("container.slot_in"); }
+                case 1  -> { slotTint = slotHover ? 0xC0FFAA66 : 0x60CC7733; slotLabel = MenuLang.t("container.slot_fuel"); }
+                case 2  -> { slotTint = slotHover ? 0xC066FF99 : 0x6033CC66; slotLabel = MenuLang.t("container.slot_out"); }
+                default -> { slotTint = slotHover ? 0xC0AAAAAA : 0x40555555; slotLabel = MenuLang.t("container.slot_auto"); }
             }
             drawQuad(ps, buffer, slotL + 0.005, rowBottom + 0.005,
                 slotR - 0.005, rowTop - 0.005, slotTint);
@@ -428,7 +429,7 @@ public final class ContainerContentsMenuRenderer {
                     : (scaleOn ? 0x60CC8833 : 0x40555555);
                 drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
                     dur2R - 0.005, subTop - 0.005, scaleTint);
-                drawCenteredText(ps, buffer, font, scaleOn ? "Scale ✓" : "Scale ✗",
+                drawCenteredText(ps, buffer, font, MenuLang.t(scaleOn ? "container.scale_on" : "container.scale_off"),
                     (dur1L + dur2R) / 2.0, subCY,
                     scaleHover ? 0xFF000000 : 0xFFFFFFFF);
 
@@ -438,7 +439,9 @@ public final class ContainerContentsMenuRenderer {
                 drawQuad(ps, buffer, ench1L + 0.005, subBottom + 0.005,
                     ench2R - 0.005, subTop - 0.005, formTint);
                 drawCenteredText(ps, buffer, font,
-                    "Form: " + games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).label(),
+                    MenuLang.t("container.form", MenuLang.named("container.potion_form",
+                        games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).id(),
+                        games.brennan.dungeontrain.editor.PotionForm.byOrdinal(entry.potionForm()).label())),
                     (ench1L + ench2R) / 2.0, subCY,
                     formHover ? 0xFF000000 : 0xFFFFFFFF);
             }
@@ -452,7 +455,7 @@ public final class ContainerContentsMenuRenderer {
                     : (durOn ? 0x6033CC66 : 0x40555555);
                 drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
                     dur1R - 0.005, subTop - 0.005, durTogTint);
-                drawCenteredText(ps, buffer, font, durOn ? "Dur ✓" : "Dur ✗",
+                drawCenteredText(ps, buffer, font, MenuLang.t(durOn ? "container.dur_on" : "container.dur_off"),
                     (dur1L + dur1R) / 2.0, subCY,
                     durTogHover ? 0xFF000000 : 0xFFFFFFFF);
 
@@ -475,7 +478,7 @@ public final class ContainerContentsMenuRenderer {
                     : (enchOn ? 0x6033AACC : 0x40555555);
                 drawQuad(ps, buffer, ench1L + 0.005, subBottom + 0.005,
                     ench1R - 0.005, subTop - 0.005, enchTogTint);
-                drawCenteredText(ps, buffer, font, enchOn ? "Ench ✓" : "Ench ✗",
+                drawCenteredText(ps, buffer, font, MenuLang.t(enchOn ? "container.ench_on" : "container.ench_off"),
                     (ench1L + ench1R) / 2.0, subCY,
                     enchTogHover ? 0xFF000000 : 0xFFFFFFFF);
 
@@ -643,12 +646,12 @@ public final class ContainerContentsMenuRenderer {
         int backTint = backHover ? 0xC0FFCC33 : 0x6099CCFF;
         drawQuad(ps, buffer, backCellL + 0.01, headerBottom + 0.005,
             backCellR - 0.005, headerTop - 0.005, backTint);
-        drawCenteredText(ps, buffer, font, "< Back",
+        drawCenteredText(ps, buffer, font, MenuLang.t("common.back"),
             (backCellL + backCellR) / 2.0, headerCY,
             backHover ? 0xFF000000 : 0xFFFFFFFF);
         drawQuad(ps, buffer, backCellR + 0.005, headerBottom + 0.005,
             halfW, headerTop - 0.005, 0x4099CCFF);
-        drawCenteredText(ps, buffer, font, "Add Item",
+        drawCenteredText(ps, buffer, font, MenuLang.t("container.add_title"),
             (backCellR + halfW) / 2.0, headerCY, 0xFF99CCFF);
 
         double searchTop = halfH - HEADER_HEIGHT;
@@ -658,7 +661,7 @@ public final class ContainerContentsMenuRenderer {
         int searchTint = searchHover ? 0xB033FF99 : 0x60339966;
         drawQuad(ps, buffer, -halfW + 0.02, searchBottom + 0.01,
             halfW - 0.02, searchTop - 0.01, searchTint);
-        String shown = "Search: " + ContainerContentsMenu.searchBuffer() + "_";
+        String shown = MenuLang.t("common.search", ContainerContentsMenu.searchBuffer()) + "_";
         drawLeftText(ps, buffer, font, shown, -halfW + 0.06, searchCY, 0xFFFFFFFF);
 
         double colActualW = panelW / colCount;

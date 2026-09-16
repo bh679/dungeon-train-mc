@@ -113,7 +113,7 @@ public final class PortalTestCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
 
@@ -133,16 +133,14 @@ public final class PortalTestCommand {
                 .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, roomArg)
                 .orElse(null);
             if (roomName == null) {
-                source.sendFailure(Component.literal("Unknown dimensional carriage '" + roomArg + "'.")
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage", roomArg)
                     .withStyle(ChatFormatting.RED));
                 return 0;
             }
         } else {
             roomName = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
             if (roomName == null) {
-                source.sendFailure(Component.literal(
-                    "Name a dimensional carriage to test, or stand in one's plot — "
-                        + "/dungeontrain portal test <room>.").withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.portal.name_dimensional_carriage_test").withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
@@ -172,12 +170,7 @@ public final class PortalTestCommand {
         // than stamping the last save and letting the author read it as their new room.
         Vec3i plot = PortalRoomSizes.sizeOf(roomName, dims);
         if (!plot.equals(authoredSize)) {
-            source.sendSuccess(() -> Component.literal(
-                "'" + roomName + "' is " + plot.getX() + "x" + plot.getY() + "x" + plot.getZ()
-                    + " in the plot but " + authoredSize.getX() + "x" + authoredSize.getY() + "x"
-                    + authoredSize.getZ() + " on disk — testing what was saved. Save it to test the "
-                    + "size you are building."
-            ).withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.xx_plot_but_xx", roomName, plot.getX(), plot.getY(), plot.getZ(), authoredSize.getX(), authoredSize.getY(), authoredSize.getZ()).withStyle(ChatFormatting.YELLOW), false);
         }
         PortalTwinRegion region = PortalTwinSpace.basementOf(overworld);
         Vec3i roomSize = PortalCarriageBuilder.heldInRegion(region, authoredSize);
@@ -189,19 +182,12 @@ public final class PortalTestCommand {
         int structureHeight = Math.max(dims.height(), roomSize.getY());
         int twinY = PortalTwinLanes.floorY(region.base());
         if (!PortalTwinLanes.fitsUnderWorld(region.base(), region.ceiling(), twinY, structureHeight)) {
-            source.sendFailure(Component.literal(
-                "'" + roomName + "' needs " + structureHeight + " blocks and the sealed space under "
-                    + "this world's bedrock only has "
-                    + PortalTwinLanes.maxStructureHeight(region.base(), region.ceiling())
-                    + ". Make it shorter to test it here.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.needs_blocks_and_sealed", roomName, structureHeight, PortalTwinLanes.maxStructureHeight(region.base(), region.ceiling())).withStyle(ChatFormatting.RED));
             return 0;
         }
         if (roomSize.getY() < authoredSize.getY()) {
             int held = roomSize.getY();
-            source.sendSuccess(() -> Component.literal(
-                "'" + roomName + "' is " + authoredSize.getY() + " tall and this world can only stand up "
-                    + held + " — testing it at that height, which is what a player would walk into."
-            ).withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.tall_and_world_can", roomName, authoredSize.getY(), held).withStyle(ChatFormatting.YELLOW), false);
         }
         // A chunk dimension stands its doorways on the ground its sample landed, so there is nothing
         // to stamp until that sample is in hand. In play the pair simply waits a tick; an author who
@@ -213,9 +199,7 @@ public final class PortalTestCommand {
                 games.brennan.dungeontrain.portal.PortalChunkTerrain.slice(
                     overworld, PortalTestSession.PAIR_KEY, roomName);
             if (slice == null) {
-                source.sendFailure(Component.literal(
-                    "'" + roomName + "' is still sampling its chunk of world generation — run this "
-                        + "again in a second.").withStyle(ChatFormatting.YELLOW));
+                source.sendFailure(Component.translatable("chat.dungeontrain.portal.still_sampling_its_chunk", roomName).withStyle(ChatFormatting.YELLOW));
                 return 0;
             }
             settings = games.brennan.dungeontrain.portal.PortalChunkDoors.fit(authored, slice, dims,
@@ -285,9 +269,7 @@ public final class PortalTestCommand {
             roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
             player.getName().getString(), arrival, structure.seedSalt());
 
-        source.sendSuccess(() -> Component.literal(
-            "You're in the doorway of '" + roomName + "' — a corridor each side, no train attached. "
-                + "Back in the menu returns you to the plot.").withStyle(ChatFormatting.AQUA), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.you_re_doorway_corridor", roomName).withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
@@ -317,13 +299,12 @@ public final class PortalTestCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
         PortalTestSession.Session session = PortalTestSession.get(player.getUUID());
         if (session == null) {
-            source.sendFailure(Component.literal(
-                "Not in a test carriage — Test the Carriage first, then Reseed rolls it again.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.not_test_carriage_test")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -355,14 +336,12 @@ public final class PortalTestCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
         DungeonTrainWorldData.get(source.getServer().overworld()).setPortalTestReseed(on);
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.of(player));
-        source.sendSuccess(() -> Component.literal(on
-            ? "Reseed on test: on — each test rolls the room's contents afresh."
-            : "Reseed on test: off — each test stands up the same roll.")
+        source.sendSuccess(() -> (on ? Component.translatable("chat.dungeontrain.portal.reseed_test_each_test") : Component.translatable("chat.dungeontrain.portal.reseed_test_off_each"))
             .withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
@@ -384,13 +363,13 @@ public final class PortalTestCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
 
         PortalTestSession.Session session = PortalTestSession.take(player.getUUID());
         if (session == null) {
-            source.sendFailure(Component.literal("You aren't in a test dimensional carriage."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.you_aren_t_test"));
             return 0;
         }
 
@@ -433,9 +412,7 @@ public final class PortalTestCommand {
         LOGGER.info("[DungeonTrain] portal test back: returned {} to {} and cleared {} block(s) of '{}'",
             player.getName().getString(), fmt(session.pos()), cleared, session.roomName());
 
-        source.sendSuccess(() -> Component.literal(
-            "Back at the plot — the test '" + session.roomName() + "' has been cleared away."
-        ).withStyle(ChatFormatting.GRAY), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has", session.roomName()).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 

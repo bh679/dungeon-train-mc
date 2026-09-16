@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -9,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Typing a value straight into the cell that shows it. */
+@ExtendWith(MenuTestLanguage.class)
 final class InlineEditTest {
 
     private static final InventoryEditorLayout.Rect CELL = new InventoryEditorLayout.Rect(10, 20, 30, 10);

@@ -97,7 +97,7 @@ public final class MenuRowPainter {
     /** The text a cell shows — a Toggle may append its state. */
     public static String labelFor(CommandMenuEntry entry) {
         if (entry instanceof CommandMenuEntry.Toggle t) {
-            return t.showStateText() ? t.label() + (t.state() ? " [ON]" : " [OFF]") : t.label();
+            return t.showStateText() ? t.label() + " [" + MenuLang.t(t.state() ? "common.on_caps" : "common.off_caps") + "]" : t.label();
         }
         return entry.label();
     }
@@ -203,10 +203,24 @@ public final class MenuRowPainter {
         int color = dark ? TEXT_ON_HOVER : TEXT_NORMAL;
         int avail = (x2 - x1) - CELL_PAD_X * 2;
         if (avail > 0 && font.width(label) > avail) {
-            label = font.plainSubstrByWidth(label, avail);
+            label = ellipsize(font, label, avail);
         }
         // Shadow only under light text: a black label's shadow reads as smeared, doubled text.
         drawLabel(gg, font, label, (x1 + x2) / 2, textY, color, !dark);
+    }
+
+    /**
+     * {@code label} cut to {@code avail} pixels with a trailing ellipsis, so a translation that
+     * outgrows its cell reads as cut ("Einstellu…") rather than as a word that happens to end
+     * there. Falls back to a bare cut when even the ellipsis would not fit.
+     */
+    public static String ellipsize(Font font, String label, int avail) {
+        String dots = "\u2026";
+        int room = avail - font.width(dots);
+        if (room <= 0) {
+            return font.plainSubstrByWidth(label, avail);
+        }
+        return font.plainSubstrByWidth(label, room).stripTrailing() + dots;
     }
 
     /** Centred text with explicit shadow control ({@code drawCenteredString} always shadows). */

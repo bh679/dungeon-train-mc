@@ -219,4 +219,26 @@ class TranslationFiltersTest {
         assertEquals("", TranslationFilters.poolLocaleFor(""));
         assertEquals("", TranslationFilters.poolLocaleFor("   "));
     }
+
+    @Test
+    @DisplayName("the build editor's roots are editor keys; the game's screens and books are not")
+    void editorKeysAreTheEditorsRoots() {
+        assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.editor_menu.common.save"));
+        assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.editor_screen.tab.templates"));
+        assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.builder.profile"));
+        assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.block_variant.title"));
+        assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.death.title"));
+        assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.translate.body.editor"));
+        assertFalse(TranslationFilters.isEditorKey("advancements.dungeontrain.pacifist.title"));
+        assertFalse(TranslationFilters.isEditorKey(null));
+    }
+
+    @Test
+    @DisplayName("a book is never an editor unit, whatever its id looks like")
+    void booksAreNeverEditor() {
+        assertTrue(TranslationFilters.isEditor(langUnit("gui.dungeontrain.editor_menu.editor.title", true)));
+        assertFalse(TranslationFilters.isEditor(langUnit("gui.dungeontrain.death.title", true)));
+        assertFalse(TranslationFilters.isEditor(bookUnit("random_books/deathnote#title", true)));
+        assertFalse(TranslationFilters.isEditor(null));
+    }
 }

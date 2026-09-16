@@ -25,7 +25,7 @@ import java.util.List;
  */
 public final class MainMenuScreen implements MenuScreen {
 
-    @Override public String title() { return "Dungeon Train"; }
+    @Override public String title() { return MenuLang.t("main.title"); }
 
     @Override public List<CommandMenuEntry> entries() {
         // The way out of a test dimensional carriage, and only while standing in one. It has to live
@@ -35,7 +35,7 @@ public final class MainMenuScreen implements MenuScreen {
         if (PortalTestSessionState.active()) {
             List<CommandMenuEntry> out = new ArrayList<>(entriesBase());
             out.add(0, new CommandMenuEntry.Run(
-                "< Back from " + labelFor(PortalTestSessionState.roomName()),
+                MenuLang.t("main.back_from", labelFor(PortalTestSessionState.roomName())),
                 "dungeontrain portal test back"));
             return List.copyOf(out);
         }
@@ -44,16 +44,16 @@ public final class MainMenuScreen implements MenuScreen {
 
     /** The room's name for the Back row, or a plain fallback if the client was told nothing. */
     private static String labelFor(String roomName) {
-        return roomName == null || roomName.isEmpty() ? "the Carriage" : "'" + roomName + "'";
+        return roomName == null || roomName.isEmpty() ? MenuLang.t("main.the_carriage") : "'" + roomName + "'";
     }
 
     private static List<CommandMenuEntry> entriesBase() {
         return List.of(
-            new CommandMenuEntry.Run("Editor", "dungeontrain editor"),
+            new CommandMenuEntry.Run(MenuLang.t("editor.title"), "dungeontrain editor"),
             EditorMenuScreen.myBuildsEntry(),
-            new CommandMenuEntry.DrillIn("Train", new TrainMenuScreen()),
-            new CommandMenuEntry.DrillIn("Options", new OptionsMenuScreen()),
-            new CommandMenuEntry.DrillIn("Test Live", new DebugMenuScreen())
+            new CommandMenuEntry.DrillIn(MenuLang.t("main.train"), new TrainMenuScreen()),
+            new CommandMenuEntry.DrillIn(MenuLang.t("options.title"), new OptionsMenuScreen()),
+            new CommandMenuEntry.DrillIn(MenuLang.t("debug.title"), new DebugMenuScreen())
         );
     }
 }

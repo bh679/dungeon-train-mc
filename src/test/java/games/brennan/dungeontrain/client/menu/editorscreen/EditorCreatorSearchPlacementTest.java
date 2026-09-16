@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.client.menu.editorscreen.InventoryEditorLayout.Rect;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -8,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The creator search panel sits over the browser column and never on the right pane's preview. */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorCreatorSearchPlacementTest {
 
     private static final int[][] SIZES = {{427, 240}, {480, 270}, {640, 360}, {854, 480}, {1920, 1080}};

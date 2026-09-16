@@ -419,12 +419,14 @@ public final class EditorStatusHudOverlay {
      * never change what those comparisons see.</p>
      */
     static String categoryLabel(String categoryId) {
-        return PlotCategory.fromId(categoryId).map(PlotCategory::displayName).orElse(categoryId);
+        return PlotCategory.fromId(categoryId)
+            .map(c -> games.brennan.dungeontrain.client.menu.MenuLang.named("hud.category", c.id(), c.displayName()))
+            .orElse(categoryId);
     }
 
     private static void drawBar(GuiGraphics graphics, Font font, String categoryText, String modelText,
                                 boolean devmodeOn, int weightValue, int screenWidth) {
-        Component label = Component.literal("Editor: " + categoryText + " / " + modelText);
+        Component label = Component.translatable("gui.dungeontrain.editor_menu.hud.status", categoryText, modelText);
         int textWidth = HudText.scaledWidth(font, label);
         int lineHeight = HudText.scaledLineHeight(font);
         int x = (screenWidth - textWidth) / 2;
@@ -437,7 +439,7 @@ public final class EditorStatusHudOverlay {
         if (devmodeOn) {
             // Yellow [DEV] badge to the right of the status — visually obvious
             // that saves will also write-through to the source tree.
-            Component devBadge = Component.literal("[DEV]");
+            Component devBadge = Component.translatable("gui.dungeontrain.editor_menu.hud.dev_badge");
             int badgeWidth = HudText.scaledWidth(font, devBadge);
             int bx = x + textWidth + PAD + 4;
             graphics.fill(bx - PAD, y - PAD, bx + badgeWidth + PAD, y + lineHeight + PAD, 0x80000000);
@@ -448,7 +450,7 @@ public final class EditorStatusHudOverlay {
             // Second line below the main bar — shows the variant's random-pick
             // weight (0..100). Updates live as `/dt editor weight <id> <n>`
             // runs and the server pushes a new packet.
-            Component weightLine = Component.literal("weight = " + weightValue);
+            Component weightLine = Component.translatable("gui.dungeontrain.editor_menu.hud.weight", weightValue);
             int ww = HudText.scaledWidth(font, weightLine);
             int wx = (screenWidth - ww) / 2;
             int wy = y + lineHeight + PAD + LINE_GAP;

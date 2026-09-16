@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.containercontents;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -14,7 +15,7 @@ import org.lwjgl.glfw.GLFW;
 public final class ContainerContentsSearchScreen extends Screen {
 
     public ContainerContentsSearchScreen() {
-        super(Component.literal("DT container-contents search"));
+        super(Component.translatable(MenuLang.PREFIX + "container.search_title"));
     }
 
     @Override

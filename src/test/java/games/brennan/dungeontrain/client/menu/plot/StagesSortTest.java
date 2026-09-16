@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.client.menu.plot.StagesSort.Column;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket.Variant;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * at display position {@code r} is {@code order[r]} — every case here asserts the permutation
  * itself, not a re-sorted copy.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 class StagesSortTest {
 
     /** name, min, max, phaseMask — the four fields the sort reads (plus modelId = name). */

@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * one of them: the relay's history is what it was told, and the local template may have moved on
  * since. The arrows walk back into the history and forward out of it again.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class VersionStripTest {
 
     private static final int[] SEQS = {1, 4, 9};

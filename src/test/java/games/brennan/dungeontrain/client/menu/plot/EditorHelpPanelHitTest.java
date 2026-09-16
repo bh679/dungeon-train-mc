@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.client.menu.plot.EditorHelpPanelRenderer.CellKind;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * close box is confined to the header row's right-hand square — a title click must not dismiss the
  * panel, and the wiki row must keep working at every x including under the X.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 class EditorHelpPanelHitTest {
 
     /** Panel-local y inside the header band (row 0). */

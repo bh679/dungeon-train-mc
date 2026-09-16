@@ -9,16 +9,16 @@ import java.util.List;
  */
 public final class SpeedMenuScreen implements MenuScreen {
 
-    @Override public String title() { return "Speed"; }
+    @Override public String title() { return MenuLang.t("speed.title"); }
 
     @Override public List<CommandMenuEntry> entries() {
         return List.of(
-            new CommandMenuEntry.Run("Stop (0)", "dungeontrain speed 0"),
-            new CommandMenuEntry.Run("Slow (2)", "dungeontrain speed 2"),
-            new CommandMenuEntry.Run("Medium (5)", "dungeontrain speed 5"),
-            new CommandMenuEntry.Run("Fast (10)", "dungeontrain speed 10"),
-            new CommandMenuEntry.Run("Max (20)", "dungeontrain speed 20"),
-            new CommandMenuEntry.Back("< Back")
+            new CommandMenuEntry.Run(MenuLang.t("speed.stop"), "dungeontrain speed 0"),
+            new CommandMenuEntry.Run(MenuLang.t("speed.slow"), "dungeontrain speed 2"),
+            new CommandMenuEntry.Run(MenuLang.t("speed.medium"), "dungeontrain speed 5"),
+            new CommandMenuEntry.Run(MenuLang.t("speed.fast"), "dungeontrain speed 10"),
+            new CommandMenuEntry.Run(MenuLang.t("speed.max"), "dungeontrain speed 20"),
+            new CommandMenuEntry.Back(MenuLang.t("common.back"))
         );
     }
 }
