@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.PortalTestSessionState;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
@@ -525,7 +526,7 @@ public final class EditorDetailPane {
         EditorRosterPacket.Group g = index.groupOf(key);
         EditorCategoryFilter cell = EditorCategoryFilter.forCategory(key.category());
         String pageName = cell == null ? key.category().displayName() : EditorScreenLang.text(cell.langKey());
-        String type = g == null ? "" : " › " + g.typeName();
+        String type = g == null ? "" : " › " + MenuLang.typeName(g.typeName());
         String parent = key.isSubVariant() ? " › " + key.parentId() : "";
         return pageName + type + parent;
     }

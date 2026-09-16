@@ -35,8 +35,8 @@ public final class ParentRemoveConfirmScreen implements MenuScreen {
      */
     public ParentRemoveConfirmScreen(String modelLabel, String baseCommand,
                                      int subVariantCount, String firstSubVariantLabel) {
-        this.title = "Remove '" + modelLabel + "'? It has " + subVariantCount
-            + " sub-variant" + (subVariantCount == 1 ? "" : "s");
+        this.title = MenuLang.t(subVariantCount == 1 ? "parent_remove.title.one" : "parent_remove.title.other",
+            modelLabel, subVariantCount);
         this.baseCommand = baseCommand;
         this.subVariantCount = subVariantCount;
         this.firstSubVariantLabel = firstSubVariantLabel;
@@ -46,12 +46,12 @@ public final class ParentRemoveConfirmScreen implements MenuScreen {
 
     @Override public List<CommandMenuEntry> entries() {
         return List.of(
-            new CommandMenuEntry.Run("Delete all (" + subVariantCount + " sub-variant"
-                + (subVariantCount == 1 ? "" : "s") + " too)", command(MODE_ALL)),
-            new CommandMenuEntry.Run("Delete parent & unparent", command(MODE_UNPARENT)),
-            new CommandMenuEntry.Run("Delete parent, parent to '" + firstSubVariantLabel + "'",
+            new CommandMenuEntry.Run(MenuLang.t(subVariantCount == 1
+                ? "parent_remove.delete_all.one" : "parent_remove.delete_all.other", subVariantCount), command(MODE_ALL)),
+            new CommandMenuEntry.Run(MenuLang.t("parent_remove.unparent"), command(MODE_UNPARENT)),
+            new CommandMenuEntry.Run(MenuLang.t("parent_remove.promote", firstSubVariantLabel),
                 command(MODE_PROMOTE)),
-            new CommandMenuEntry.Back("Cancel")
+            new CommandMenuEntry.Back(MenuLang.t("common.cancel"))
         );
     }
 

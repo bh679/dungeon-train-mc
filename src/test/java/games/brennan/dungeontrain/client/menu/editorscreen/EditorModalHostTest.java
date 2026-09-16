@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * looked dead, the keyboard was captured invisibly, and Enter created a template the author never
  * saw themselves name.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorModalHostTest {
 
     private static EditorModalHost host() {

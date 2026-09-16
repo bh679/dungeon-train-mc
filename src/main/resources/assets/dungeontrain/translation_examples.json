@@ -5291,5 +5291,704 @@
         "Not My Chest, Look, Don't Touch, Contained Loop"
       ]
     }
+  },
+  "gui.dungeontrain.editor_menu.confirm.remove": {
+    "1": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.confirm.remove_variant": {
+    "1": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.confirm.clear_blocks": {
+    "1": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.stage_linked": {
+    "1": {
+      "label": "the id of the Stage this template is linked to",
+      "examples": [
+        "desert",
+        "nether_depths"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.min_level": {
+    "1": {
+      "label": "the template's lowest spawn level",
+      "examples": [
+        "0",
+        "176"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.max_level": {
+    "1": {
+      "label": "the template's highest spawn level, or the word for no limit",
+      "examples": [
+        "205",
+        "all"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.menu_distance": {
+    "1": {
+      "label": "how far the world-space menus keep drawing, in blocks",
+      "examples": [
+        "8",
+        "24"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.plot_lighting": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.weight_n": {
+    "1": {
+      "label": "the template's current spawn weight",
+      "examples": [
+        "42",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.common.value_in_parens": {
+    "1": {
+      "label": "a row label, already translated",
+      "examples": [
+        "Length",
+        "Width"
+      ]
+    },
+    "2": {
+      "label": "the row's current value",
+      "examples": [
+        "11",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.lock": {
+    "1": {
+      "label": "the lock block's name, or the word for none",
+      "examples": [
+        "bedrock",
+        "nothing"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.copies": {
+    "1": {
+      "label": "the Copies setting, already translated",
+      "examples": [
+        "Dynamic",
+        "Single"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.plane_held": {
+    "1": {
+      "label": "Floor or Roof, already translated",
+      "examples": [
+        "Floor",
+        "Roof"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.contents": {
+    "1": {
+      "label": "the Contents setting, already translated",
+      "examples": [
+        "Off",
+        "Fit"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.books": {
+    "1": {
+      "label": "the Books setting, already translated",
+      "examples": [
+        "Off",
+        "Author Mix"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.sky": {
+    "1": {
+      "label": "the Sky setting, already translated",
+      "examples": [
+        "Off",
+        "Daylight"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.fog": {
+    "1": {
+      "label": "the Fog setting, already translated",
+      "examples": [
+        "Auto",
+        "Off"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.room_walls": {
+    "1": {
+      "label": "the Room Walls setting, already translated",
+      "examples": [
+        "Kept",
+        "Merged"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.door_position": {
+    "1": {
+      "label": "the door's sideways offset — Centred, or a signed number",
+      "examples": [
+        "Centred",
+        "+2",
+        "-1"
+      ]
+    },
+    "2": {
+      "label": "the door's height — at the floor, or N blocks up",
+      "examples": [
+        "at the floor",
+        "2 blocks up"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.door_up.one": {
+    "1": {
+      "label": "the door's height above the floor, always 1 here",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.door_up.other": {
+    "1": {
+      "label": "the door's height above the floor in blocks",
+      "examples": [
+        "2",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.exits": {
+    "1": {
+      "label": "the Exits setting, already translated",
+      "examples": [
+        "On",
+        "Random"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.exit_one_in": {
+    "1": {
+      "label": "the odds denominator — one tile in this many has an exit",
+      "examples": [
+        "8",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.exit_every": {
+    "1": {
+      "label": "the lattice spacing — an exit every this many tiles",
+      "examples": [
+        "8",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.moved_exit": {
+    "1": {
+      "label": "the chance out of 10 that an exit is moved",
+      "examples": [
+        "7",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.plot.walls": {
+    "1": {
+      "label": "the Walls mode, already translated",
+      "examples": [
+        "Endless Open",
+        "Bedrock Lock"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage.title": {
+    "1": {
+      "label": "the stage's id",
+      "examples": [
+        "desert",
+        "nether_depths"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage.delete_confirm": {
+    "1": {
+      "label": "the stage's id",
+      "examples": [
+        "desert"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.common.label_with_unit": {
+    "1": {
+      "label": "the stepper's label, already translated",
+      "examples": [
+        "Length",
+        "Exits"
+      ]
+    },
+    "2": {
+      "label": "the unit or range hint",
+      "examples": [
+        "blocks",
+        "tiles",
+        "0-10"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.title_kind_source": {
+    "1": {
+      "label": "the part kind being created",
+      "examples": [
+        "floor",
+        "walls"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.title_kind_name": {
+    "1": {
+      "label": "the track kind being created",
+      "examples": [
+        "track",
+        "pillar_top"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.title_sub_variant": {
+    "1": {
+      "label": "the parent template's name",
+      "examples": [
+        "maze",
+        "house"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.current": {
+    "1": {
+      "label": "the name of the template the author stands in",
+      "examples": [
+        "portal",
+        "maze"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.new_source.parent": {
+    "1": {
+      "label": "the parent template's name",
+      "examples": [
+        "portal",
+        "maze"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.common.name_value": {
+    "1": {
+      "label": "a setting's label, already translated",
+      "examples": [
+        "HUD",
+        "X Menu"
+      ]
+    },
+    "2": {
+      "label": "the setting's current value",
+      "examples": [
+        "1.0",
+        "Screen"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.options.snapshot_max_resolution": {
+    "1": {
+      "label": "the cap in pixels with a p suffix, or AUTO",
+      "examples": [
+        "AUTO",
+        "1080p"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.options.snapshot_chat_log": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.options.book_author_chat": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.options.train_volume": {
+    "1": {
+      "label": "the volume as a percentage, or OFF",
+      "examples": [
+        "50%",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.packages.contents_of": {
+    "1": {
+      "label": "the active package's name",
+      "examples": [
+        "my_pack",
+        "summer_build"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.title.one": {
+    "1": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    },
+    "2": {
+      "label": "the number of sub-variants, always 1 here",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.title.other": {
+    "1": {
+      "label": "the template's friendly name or path",
+      "examples": [
+        "track / track2",
+        "maze",
+        "fire"
+      ]
+    },
+    "2": {
+      "label": "the number of sub-variants",
+      "examples": [
+        "2",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.delete_all.one": {
+    "1": {
+      "label": "the number of sub-variants, always 1 here",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.delete_all.other": {
+    "1": {
+      "label": "the number of sub-variants",
+      "examples": [
+        "2",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parent_remove.promote": {
+    "1": {
+      "label": "the sub-variant that becomes the new parent",
+      "examples": [
+        "maze_2",
+        "house_b"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stages.gate_summary": {
+    "1": {
+      "label": "the stage's lowest level",
+      "examples": [
+        "0",
+        "10"
+      ]
+    },
+    "2": {
+      "label": "the stage's highest level, or the word for no limit",
+      "examples": [
+        "200",
+        "all"
+      ]
+    },
+    "3": {
+      "label": "the dimension letters, or the word for all",
+      "examples": [
+        "VUC",
+        "all"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stages.row": {
+    "1": {
+      "label": "the stage's name",
+      "examples": [
+        "desert",
+        "Nether Depths"
+      ]
+    },
+    "2": {
+      "label": "the stage's gate summary",
+      "examples": [
+        "lvl 10..all · N"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stages.duplicate_title": {
+    "1": {
+      "label": "the stage being duplicated",
+      "examples": [
+        "desert"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.contents.self": {
+    "1": {
+      "label": "the parent contents template's name",
+      "examples": [
+        "maze",
+        "shop"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.main.back_from": {
+    "1": {
+      "label": "the test carriage's quoted name, or the words for the carriage",
+      "examples": [
+        "'house'",
+        "the Carriage"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.changes.title": {
+    "1": {
+      "label": "the template whose changes are listed",
+      "examples": [
+        "maze",
+        "track / track2"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.changes.count.one": {
+    "1": {
+      "label": "the number of changed blocks, always 1 here",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.changes.count.other": {
+    "1": {
+      "label": "the number of changed blocks",
+      "examples": [
+        "2",
+        "140"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.changes.more": {
+    "1": {
+      "label": "how many further changes the list left out",
+      "examples": [
+        "40",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.common.search": {
+    "1": {
+      "label": "what the author has typed so far",
+      "examples": [
+        "",
+        "sto",
+        "oak"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.title_at": {
+    "1": {
+      "label": "the cell's x,y,z inside the plot",
+      "examples": [
+        "3,1,5",
+        "0,0,0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.lock_n": {
+    "1": {
+      "label": "the cell's lock group number",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.block_variant.group_ref": {
+    "1": {
+      "label": "the referenced group's id",
+      "examples": [
+        "walls",
+        "doors_a"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.title_at": {
+    "1": {
+      "label": "the container's x,y,z inside the plot",
+      "examples": [
+        "3,1,5"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.linked": {
+    "1": {
+      "label": "the linked loot prefab's id",
+      "examples": [
+        "treasure",
+        "kitchen"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.form": {
+    "1": {
+      "label": "the potion form, already translated",
+      "examples": [
+        "Any",
+        "Splash"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.palette.solid": {
+    "1": {
+      "label": "the solid block slot's number, 1 to 10",
+      "examples": [
+        "1",
+        "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.palette.title": {
+    "1": {
+      "label": "the stage's id",
+      "examples": [
+        "desert"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage_panel.hide_unused": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage_panel.more": {
+    "1": {
+      "label": "how many further blocks the grid left out",
+      "examples": [
+        "5",
+        "20"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.stage_panel.parts": {
+    "1": {
+      "label": "how many carriage parts link to the stage",
+      "examples": [
+        "4",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.template_blocks.used": {
+    "1": {
+      "label": "how many distinct blocks the plot uses",
+      "examples": [
+        "12",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.parts.add_title": {
+    "1": {
+      "label": "the part kind, already translated",
+      "examples": [
+        "Floor",
+        "Walls"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.container.linked_autosave": {
+    "1": {
+      "label": "the linked loot prefab's id",
+      "examples": [
+        "treasure"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.carriages.count.one": {
+    "1": {
+      "label": "the number of carriages, always 1 here",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.carriages.count.other": {
+    "1": {
+      "label": "the number of carriages",
+      "examples": [
+        "3",
+        "50"
+      ]
+    }
   }
 }

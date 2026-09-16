@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -7,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Where the X key lands: the whole truth table. */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorScreenGateTest {
 
     @Test

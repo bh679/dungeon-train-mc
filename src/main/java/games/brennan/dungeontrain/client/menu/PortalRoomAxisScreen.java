@@ -28,7 +28,7 @@ public final class PortalRoomAxisScreen implements MenuScreen {
      * @param current the axis's current value, used to prefill
      */
     public PortalRoomAxisScreen(String axis, String label, int current) {
-        this(axis, label, "blocks", current);
+        this(axis, label, MenuLang.t("common.unit_blocks"), current);
     }
 
     /**
@@ -45,18 +45,18 @@ public final class PortalRoomAxisScreen implements MenuScreen {
     }
 
     @Override public String title() {
-        return label + " — " + unit;
+        return MenuLang.t("common.label_with_unit", label, unit);
     }
 
     @Override public List<CommandMenuEntry> entries() {
         return List.of(
             new CommandMenuEntry.TypeArg(
-                label + " (" + current + ")",
+                MenuLang.t("common.value_in_parens", label, current),
                 unit,
                 "dungeontrain editor portals " + axis,
                 "",
                 Integer.toString(current)),
-            new CommandMenuEntry.Back("< Back")
+            new CommandMenuEntry.Back(MenuLang.t("common.back"))
         );
     }
 }

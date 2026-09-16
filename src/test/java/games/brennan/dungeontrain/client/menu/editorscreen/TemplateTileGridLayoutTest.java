@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -7,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(MenuTestLanguage.class)
 final class TemplateTileGridLayoutTest {
 
     private static final TemplateTileGridLayout GRID = TemplateTileGridLayout.of(10, 20, 300, 100, 52, 3);

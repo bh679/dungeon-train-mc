@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.menu;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.track.variant.TrackKind;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * through a destructive clear-and-restamp to somewhere their build isn't, and a wrong command simply
  * does nothing after they pressed a button that said it would.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorTemplateJumpTest {
 
     @Test

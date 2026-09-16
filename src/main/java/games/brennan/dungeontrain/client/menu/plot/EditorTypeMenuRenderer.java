@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -273,7 +274,8 @@ public final class EditorTypeMenuRenderer {
     /** Slightly dimmed text on inactive category buttons. */
     private static final int CATEGORY_COLOR = 0xFFCCCCCC;
     /** Label rendered in the bottom-row New button. */
-    private static final String NEW_LABEL = "+ New";
+    /** The "+ New" row's text, read each time so it follows the language. */
+    private static String newLabel() { return MenuLang.t("type_menu.new"); }
 
     private static volatile List<EditorTypeMenusPacket.Menu> CACHE = List.of();
     /** Global "focused stage" id for the per-stage carriage preview ("" = none); mirrors the server selection. */
@@ -471,8 +473,8 @@ public final class EditorTypeMenuRenderer {
      * padding.
      */
     private static double companionHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
-        double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
-        double newW = font.width(NEW_LABEL) * TEXT_SCALE + 2 * PAD_X;
+        double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        double newW = font.width(newLabel()) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
         boolean anyGate = false;
@@ -507,8 +509,8 @@ public final class EditorTypeMenuRenderer {
      * column.
      */
     private static double expandedColumnWidth(EditorTypeMenusPacket.Menu menu, Font font) {
-        double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
-        double newW = font.width(NEW_LABEL) * TEXT_SCALE + 2 * PAD_X;
+        double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        double newW = font.width(newLabel()) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
         boolean anyGate = false;
@@ -544,7 +546,7 @@ public final class EditorTypeMenuRenderer {
      * padding, clamped to {@link #COLLAPSED_TAB_MIN_W}.
      */
     private static double collapsedTabWidth(String typeName, Font font) {
-        double w = font.width(typeName) * TEXT_SCALE + 2 * PAD_X;
+        double w = font.width(MenuLang.typeName(typeName)) * TEXT_SCALE + 2 * PAD_X;
         return Math.max(w, COLLAPSED_TAB_MIN_W);
     }
 
@@ -1096,7 +1098,7 @@ public final class EditorTypeMenuRenderer {
             drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005,
                 halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
         }
-        drawCenteredText(ps, buffer, font, menu.typeName(), 0, headerCY, HEADER_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), 0, headerCY, HEADER_COLOR);
 
         String activeModelId = activeModelId();
         String activeModelName = activeModelName();
@@ -1134,7 +1136,7 @@ public final class EditorTypeMenuRenderer {
                 drawQuad(ps, buffer, -halfW + 0.005, newRowBottom + 0.005,
                     halfW - 0.005, newRowTop - 0.005, HOVER_COLOR);
             }
-            drawCenteredText(ps, buffer, font, NEW_LABEL, 0, newRowCY, NEW_COLOR);
+            drawCenteredText(ps, buffer, font, newLabel(), 0, newRowCY, NEW_COLOR);
         }
     }
 
@@ -1214,7 +1216,7 @@ public final class EditorTypeMenuRenderer {
                     tabRight - 0.005, tabTop - 0.005, HOVER_COLOR);
             }
             int color = isExpanded ? HEADER_COLOR : COLLAPSED_TAB_COLOR;
-            drawCenteredText(ps, buffer, font, tab.typeName(),
+            drawCenteredText(ps, buffer, font, MenuLang.typeName(tab.typeName()),
                 (tabLeft + tabRight) / 2.0, tabCY, color);
 
             if (isExpanded) {
@@ -1344,7 +1346,7 @@ public final class EditorTypeMenuRenderer {
                 drawQuad(ps, buffer, expColLeft + 0.005, newRowBottom + 0.005,
                     expColRight - 0.005, newRowTop - 0.005, HOVER_COLOR);
             }
-            drawCenteredText(ps, buffer, font, NEW_LABEL,
+            drawCenteredText(ps, buffer, font, newLabel(),
                 (expColLeft + expColRight) / 2.0, newRowCY, NEW_COLOR);
         }
     }
@@ -1546,8 +1548,8 @@ public final class EditorTypeMenuRenderer {
 
     /** Half-width for the Stages panel — fits the widest stage name + the icons band beside the gate cells. */
     private static double stagesHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
-        double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
-        double toolbarW = font.width("+ Add    – Remove ✓") * TEXT_SCALE + 2 * PAD_X;
+        double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        double toolbarW = font.width(MenuLang.t("type_menu.stage_add") + "    " + MenuLang.t("type_menu.stage_remove_on")) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
             double w = font.width(v.displayName()) * TEXT_SCALE + 2 * PAD_X;
@@ -1592,7 +1594,7 @@ public final class EditorTypeMenuRenderer {
         // Header.
         double headerTop = topY, headerBottom = topY - ROW_H, headerCY = (headerTop + headerBottom) / 2.0;
         drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, HEADER_BG);
-        drawCenteredText(ps, buffer, font, menu.typeName(), 0, headerCY, HEADER_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), 0, headerCY, HEADER_COLOR);
 
         // Toolbar row: [+ Add] | [– Remove].
         double tbTop = headerBottom, tbBottom = tbTop - ROW_H, tbCY = (tbTop + tbBottom) / 2.0;
@@ -1602,8 +1604,8 @@ public final class EditorTypeMenuRenderer {
             drawQuad(ps, buffer, -halfW + 0.005, tbBottom + 0.005, -0.005, tbTop - 0.005, HOVER_COLOR);
         if (hovered.cell == CellKind.STAGE_REMOVE)
             drawQuad(ps, buffer, 0.005, tbBottom + 0.005, halfW - 0.005, tbTop - 0.005, HOVER_COLOR);
-        drawCenteredText(ps, buffer, font, "+ Add", -halfW / 2.0, tbCY, STAGE_ADD_COLOR);
-        drawCenteredText(ps, buffer, font, removeMode ? "– Remove ✓" : "– Remove", halfW / 2.0, tbCY, STAGE_REMOVE_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t("type_menu.stage_add"), -halfW / 2.0, tbCY, STAGE_ADD_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t(removeMode ? "type_menu.stage_remove_on" : "type_menu.stage_remove"), halfW / 2.0, tbCY, STAGE_REMOVE_COLOR);
 
         // Column titles: click one to sort by it, again to flip. Same cell bounds as the rows below.
         drawStageColumnTitles(ps, buffer, font, halfW, tbBottom, hovered);
@@ -1837,7 +1839,7 @@ public final class EditorTypeMenuRenderer {
         double headerBottom = headerTop - ROW_H;
         double headerCY = (headerTop + headerBottom) / 2.0;
         drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, HEADER_BG);
-        drawCenteredText(ps, buffer, font, "Packages", 0, headerCY, HEADER_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t("packages.title"), 0, headerCY, HEADER_COLOR);
 
         // Top split row — Reload | Open Packages.
         double topRowTop = headerBottom;
@@ -1853,9 +1855,9 @@ public final class EditorTypeMenuRenderer {
             drawQuad(ps, buffer, topSplitX + 0.005, topRowBottom + 0.005,
                 halfW - 0.005, topRowTop - 0.005, HOVER_COLOR);
         }
-        drawCenteredText(ps, buffer, font, "Reload",
+        drawCenteredText(ps, buffer, font, MenuLang.t("packages.reload"),
             (-halfW + topSplitX) / 2.0, topRowCY, NAME_COLOR);
-        drawCenteredText(ps, buffer, font, "Open Packages",
+        drawCenteredText(ps, buffer, font, MenuLang.t("packages.open_folder"),
             (topSplitX + halfW) / 2.0, topRowCY, NAME_COLOR);
         drawQuad(ps, buffer, topSplitX - COLUMN_DIVIDER_W / 2.0, topRowBottom,
             topSplitX + COLUMN_DIVIDER_W / 2.0, topRowTop, COLUMN_SEP_COLOR);
@@ -1914,15 +1916,15 @@ public final class EditorTypeMenuRenderer {
             String nameLabel = (entry.isActive() ? "● " : "  ") + entry.name();
             drawCenteredText(ps, buffer, font, nameLabel,
                 (-halfW + cellBound1X) / 2.0, rowCY, NAME_COLOR);
-            drawCenteredText(ps, buffer, font, "Save",
+            drawCenteredText(ps, buffer, font, MenuLang.t("common.save"),
                 (cellBound1X + cellBound2X) / 2.0, rowCY, NAME_COLOR);
-            drawCenteredText(ps, buffer, font, "Open",
+            drawCenteredText(ps, buffer, font, MenuLang.t("packages.open"),
                 (cellBound2X + cellBound3X) / 2.0, rowCY, NAME_COLOR);
             String enableLabel;
             if (isUnsaved) {
                 enableLabel = "—";
             } else {
-                enableLabel = entry.enabled() ? "Disable" : "Enable";
+                enableLabel = MenuLang.t(entry.enabled() ? "packages.disable" : "packages.enable");
             }
             drawCenteredText(ps, buffer, font, enableLabel,
                 (cellBound3X + halfW) / 2.0, rowCY, NAME_COLOR);

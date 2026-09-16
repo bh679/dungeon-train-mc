@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.stagepanel;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -186,7 +187,7 @@ public final class StagePanelMenuRenderer {
         // Header.
         double headerCY = topY - ROW_H / 2.0;
         drawQuad(ps, buffer, -halfW, topY - ROW_H, halfW, topY, HEADER_BG);
-        drawCenteredText(ps, buffer, font, "Stage: " + StagePanelMenu.stageName(), 0, headerCY, HEADER_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t("stage.title", StagePanelMenu.stageName()), 0, headerCY, HEADER_COLOR);
 
         // Toolbar: Duplicate | Hide unused | X.
         double tbTop = topY - ROW_H, tbBottom = tbTop - ROW_H, tbCY = (tbTop + tbBottom) / 2.0;
@@ -202,8 +203,8 @@ public final class StagePanelMenuRenderer {
             case CLOSE -> drawQuad(ps, buffer, hideR + 0.005, tbBottom + 0.005, halfW - 0.005, tbTop - 0.005, HOVER_COLOR);
             default -> { }
         }
-        drawCenteredText(ps, buffer, font, "Duplicate", (-halfW + dupR) / 2.0, tbCY, DUPLICATE_COLOR);
-        drawCenteredText(ps, buffer, font, "Hide unused: " + (StagePanelMenu.hideUnused() ? "ON" : "OFF"),
+        drawCenteredText(ps, buffer, font, MenuLang.t("stage_panel.duplicate"), (-halfW + dupR) / 2.0, tbCY, DUPLICATE_COLOR);
+        drawCenteredText(ps, buffer, font, MenuLang.t("stage_panel.hide_unused", MenuLang.t(StagePanelMenu.hideUnused() ? "common.on_caps" : "common.off_caps")),
             (dupR + hideR) / 2.0, tbCY, NAME_COLOR);
         drawCenteredText(ps, buffer, font, "X", (hideR + halfW) / 2.0, tbCY, CLOSE_COLOR);
 
@@ -214,7 +215,7 @@ public final class StagePanelMenuRenderer {
         double countCX = halfW - COUNT_COL_W / 2.0 - PAD_X;
         double nameMaxW = (countCX - COUNT_COL_W / 2.0) - (-halfW + PAD_X + ICON_SLOT) - PAD_X;
         if (shown == 0) {
-            drawCenteredText(ps, buffer, font, "(no blocks)", 0, topY - (rowBase + 0.5) * ROW_H, DIM_COLOR);
+            drawCenteredText(ps, buffer, font, MenuLang.t("stage_panel.no_blocks"), 0, topY - (rowBase + 0.5) * ROW_H, DIM_COLOR);
         }
         for (int i = 0; i < shown; i++) {
             StageBlocksSyncPacket.BlockCount bc = blocks.get(i);
@@ -233,7 +234,7 @@ public final class StagePanelMenuRenderer {
         // Reserve one row for the empty placeholder so the Parts subheader doesn't overlap it.
         int nextRow = rowBase + blockSectionRows();
         if (hasOverflowRow()) {
-            drawCenteredText(ps, buffer, font, "+" + (StagePanelMenu.totalBlocks() - shown) + " more",
+            drawCenteredText(ps, buffer, font, MenuLang.t("stage_panel.more", StagePanelMenu.totalBlocks() - shown),
                 0, topY - (nextRow + 0.5) * ROW_H, DIM_COLOR);
             nextRow++;
         }
@@ -241,13 +242,13 @@ public final class StagePanelMenuRenderer {
         // Parts subheader + rows.
         double phTop = topY - nextRow * ROW_H;
         drawQuad(ps, buffer, -halfW, phTop - 0.005, halfW, phTop + 0.005, ROW_SEP_COLOR);
-        drawCenteredText(ps, buffer, font, "Parts (" + StagePanelMenu.parts().size() + ")",
+        drawCenteredText(ps, buffer, font, MenuLang.t("stage_panel.parts", StagePanelMenu.parts().size()),
             0, phTop - ROW_H / 2.0, HEADER_COLOR);
         nextRow++;
 
         List<StageBlocksSyncPacket.PartEntry> parts = StagePanelMenu.parts();
         if (parts.isEmpty()) {
-            drawCenteredText(ps, buffer, font, "No parts linked to this stage.",
+            drawCenteredText(ps, buffer, font, MenuLang.t("stage_panel.no_parts"),
                 0, topY - (nextRow + 0.5) * ROW_H, DIM_COLOR);
             return;
         }

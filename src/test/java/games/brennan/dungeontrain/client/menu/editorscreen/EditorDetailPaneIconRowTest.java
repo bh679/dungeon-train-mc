@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The toolbar has to hold all eight buttons at every pane width the mod supports — it ran off the
  * right edge at the narrowest one, which is the size a 720p window at GUI scale 3 actually gets.
  */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorDetailPaneIconRowTest {
 
     private static final int COUNT = 8;

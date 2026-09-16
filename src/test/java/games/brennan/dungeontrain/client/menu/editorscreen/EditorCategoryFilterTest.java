@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -9,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /** The category strip: its order, its All sentinel, and where each category's templates browse. */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorCategoryFilterTest {
 
     @Test

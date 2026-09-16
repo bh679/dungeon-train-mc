@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.net.StageBlocksSyncPacket;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The Stages tab's rows, built from the roster's stage list. */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorStagesPageTest {
 
     private static EditorRosterPacket.StageEntry stage(String id, int min, int max, int mask, int unique) {

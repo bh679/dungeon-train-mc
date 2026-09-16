@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Pins the key shapes and colour rules the header Save icon depends on. */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorSaveStatusTest {
 
     private static EditorDirtyCheck.DirtyEntry row(String cat, String id, boolean unsaved, boolean unpromoted) {

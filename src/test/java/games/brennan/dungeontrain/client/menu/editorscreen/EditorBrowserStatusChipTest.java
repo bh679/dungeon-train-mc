@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.builder.BuilderProfileFilters;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * one would hide a whole slice of the queue with nothing on screen to say so, and a cycle that never
  * returned to {@link BuilderProfileFilters#ALL} would strand the reviewer inside a filter.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorBrowserStatusChipTest {
 
     @Test

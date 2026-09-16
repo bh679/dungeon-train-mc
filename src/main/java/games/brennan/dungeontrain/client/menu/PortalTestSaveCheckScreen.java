@@ -50,7 +50,7 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
         this.roomName = roomName == null ? "" : roomName;
     }
 
-    @Override public String title() { return "Save before test?"; }
+    @Override public String title() { return MenuLang.t("portal_test.title"); }
 
     @Override public List<CommandMenuEntry> entries() {
         if (!requestSent) {
@@ -58,13 +58,13 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
             EditorStatusHudOverlay.clearUnsavedList();
             DungeonTrainNet.sendToServer(new EditorUnsavedRequestPacket());
             requestSent = true;
-            return List.of(new CommandMenuEntry.Loading("Checking..."));
+            return List.of(new CommandMenuEntry.Loading(MenuLang.t("unsaved.checking")));
         }
 
         List<EditorDirtyCheck.DirtyEntry> rows = EditorStatusHudOverlay.unsavedList();
         if (rows == null) {
             // Server hasn't replied yet.
-            return List.of(new CommandMenuEntry.Loading("Checking..."));
+            return List.of(new CommandMenuEntry.Loading(MenuLang.t("unsaved.checking")));
         }
 
         if (!isDirty(rows, roomName)) {
@@ -75,20 +75,20 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
                 CommandRunner.run(testCommand());
                 CommandMenuState.close();
             }
-            return List.of(new CommandMenuEntry.Loading("Testing..."));
+            return List.of(new CommandMenuEntry.Loading(MenuLang.t("portal_test.testing")));
         }
 
         return List.of(
-            new CommandMenuEntry.ClientAction("Save and test", () -> {
+            new CommandMenuEntry.ClientAction(MenuLang.t("portal_test.save_and_test"), () -> {
                 CommandRunner.run(SAVE_COMMAND);
                 CommandRunner.run(testCommand());
                 CommandMenuState.close();
             }, true),
-            new CommandMenuEntry.ClientAction("Test without saving", () -> {
+            new CommandMenuEntry.ClientAction(MenuLang.t("portal_test.test_without_saving"), () -> {
                 CommandRunner.run(testCommand());
                 CommandMenuState.close();
             }),
-            new CommandMenuEntry.Back("< Back"));
+            new CommandMenuEntry.Back(MenuLang.t("common.back")));
     }
 
     /**

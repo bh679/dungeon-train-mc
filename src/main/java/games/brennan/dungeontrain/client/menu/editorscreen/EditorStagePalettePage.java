@@ -61,11 +61,11 @@ public final class EditorStagePalettePage {
         List<String> wood = new ArrayList<>();
         for (StagePaletteMenu.Row r : StagePaletteMenu.LAYOUT) {
             if (r.kind() != StagePaletteMenu.RowKind.CELLS) continue;
-            if (r.label().startsWith("Solid")) {
+            if (r.group() == StagePaletteMenu.RowGroup.SOLID) {
                 for (Map.Entry<StagePaletteMenu.Column, String> c : r.cells().entrySet()) {
                     (c.getKey() == StagePaletteMenu.Column.BLOCK ? solid : shapes).add(c.getValue());
                 }
-            } else if (r.label().equals("Wood")) {
+            } else if (r.group() == StagePaletteMenu.RowGroup.WOOD) {
                 wood.addAll(r.cells().values());
             }
         }
@@ -86,7 +86,7 @@ public final class EditorStagePalettePage {
         out.add(Row.family(familyText(EditorScreenLang.STAGES_PALETTE_STONE, palette.stone(), palette.stoneLocked()),
             StagePaletteEditPacket.Op.SET_STONE));
         for (StagePaletteMenu.Row r : StagePaletteMenu.LAYOUT) {
-            if (r.kind() != StagePaletteMenu.RowKind.CELLS || !r.label().startsWith("  ")) continue;
+            if (r.group() != StagePaletteMenu.RowGroup.STONE_KIND) continue;
             out.add(Row.labelled(r.label().trim(), new ArrayList<>(r.cells().values())));
         }
         return out;

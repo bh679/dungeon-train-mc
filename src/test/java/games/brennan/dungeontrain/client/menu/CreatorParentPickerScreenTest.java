@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.client.menu.editorscreen.EditorRosterIndex;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * What "Load under…" offers, and what picking a row remembers: the category's top-level rows, never
  * a member or the synthetic default room, with <b>User builds (new)</b> on top until it exists.
  */
+@ExtendWith(MenuTestLanguage.class)
 final class CreatorParentPickerScreenTest {
 
     private static EditorTypeMenusPacket.Variant v(String cat, String modelId, String name,
@@ -51,9 +53,9 @@ final class CreatorParentPickerScreenTest {
             "contents", new EditorRosterPacket.TrainSize(9, 7, 7));
     }
 
-    // Untranslated in a unit test: the keys are what the rows carry, and the keys are what is asserted.
-    private static final String NEW = "gui.dungeontrain.editor_screen.creator.parent_new";
-    private static final String BACK = "gui.dungeontrain.editor_screen.move.back";
+    // Translated: MenuTestLanguage installs the shipped en_us, so the rows carry what a player reads.
+    private static final String NEW = "User builds (new)";
+    private static final String BACK = "< Back";
 
     private static List<String> labels(List<CommandMenuEntry> entries) {
         return entries.stream().map(en -> switch (en) {

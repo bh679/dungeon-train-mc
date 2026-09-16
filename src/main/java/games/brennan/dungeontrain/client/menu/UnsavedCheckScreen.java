@@ -76,7 +76,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
         this.followUpCommand = followUpCommand == null ? "" : followUpCommand;
     }
 
-    @Override public String title() { return "Save before switch?"; }
+    @Override public String title() { return MenuLang.t("unsaved.title"); }
 
     @Override public List<CommandMenuEntry> entries() {
         if (!requestSent) {
@@ -85,13 +85,13 @@ public final class UnsavedCheckScreen implements MenuScreen {
             EditorStatusHudOverlay.clearUnsavedList();
             DungeonTrainNet.sendToServer(new EditorUnsavedRequestPacket());
             requestSent = true;
-            return List.of(new CommandMenuEntry.Loading("Checking..."));
+            return List.of(new CommandMenuEntry.Loading(MenuLang.t("unsaved.checking")));
         }
 
         List<EditorDirtyCheck.DirtyEntry> rows = EditorStatusHudOverlay.unsavedList();
         if (rows == null) {
             // Server hasn't replied yet — keep showing Loading.
-            return List.of(new CommandMenuEntry.Loading("Checking..."));
+            return List.of(new CommandMenuEntry.Loading(MenuLang.t("unsaved.checking")));
         }
 
         if (rows.isEmpty()) {
@@ -104,7 +104,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
                 switchAndFollowUp();
                 CommandMenuState.close();
             }
-            return List.of(new CommandMenuEntry.Loading("Entering..."));
+            return List.of(new CommandMenuEntry.Loading(MenuLang.t("unsaved.entering")));
         }
 
         return buildDirtyEntries(rows);
@@ -140,7 +140,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
             // worst outcome is the user clicking Save again — idempotent.
             final String modelId = r.modelId();
             CommandMenuEntry.SaveAction save = new CommandMenuEntry.SaveAction(
-                "Save",
+                MenuLang.t("common.save"),
                 () -> {
                     savedThisSession.add(modelId);
                     if (needsTeleport) {
@@ -160,7 +160,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
             // so the player can audit what's flagged dirty before deciding
             // whether to save or discard.
             CommandMenuEntry.DrillIn view = new CommandMenuEntry.DrillIn(
-                "View",
+                MenuLang.t("unsaved.view"),
                 new ChangesListScreen(r.categoryId(), r.modelId(), r.displayName())
             );
             // Triple layout: name (50%) | Save (25%) | View (25%).
@@ -170,7 +170,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
         // Spacer before Continue per the spec ("extra space above").
         out.add(new CommandMenuEntry.Label(""));
 
-        String continueLabel = anyOutstanding ? "Don't save - continue" : "Continue";
+        String continueLabel = MenuLang.t(anyOutstanding ? "unsaved.continue_without_saving" : "unsaved.continue");
         // With a follow-up there are two commands to send, which no Run row can express — so the
         // row runs them itself and closes the menu, exactly as the clean-state bypass above does.
         out.add(followUpCommand.isEmpty()
@@ -179,7 +179,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
                 switchAndFollowUp();
                 CommandMenuState.close();
             }));
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 
@@ -209,7 +209,7 @@ public final class UnsavedCheckScreen implements MenuScreen {
         if (r.isUnpromoted() && !r.isUnsaved()) {
             // DevMode-only: row is saved-to-config but not promoted to source.
             // Mark it so the user knows the Save button will promote, not just save.
-            sb.append(" (unpromoted)");
+            sb.append(' ').append(MenuLang.t("unsaved.unpromoted"));
         }
         return sb.toString();
     }

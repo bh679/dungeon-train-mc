@@ -97,7 +97,7 @@ public final class MenuRowPainter {
     /** The text a cell shows — a Toggle may append its state. */
     public static String labelFor(CommandMenuEntry entry) {
         if (entry instanceof CommandMenuEntry.Toggle t) {
-            return t.showStateText() ? t.label() + (t.state() ? " [ON]" : " [OFF]") : t.label();
+            return t.showStateText() ? t.label() + " [" + MenuLang.t(t.state() ? "common.on_caps" : "common.off_caps") + "]" : t.label();
         }
         return entry.label();
     }

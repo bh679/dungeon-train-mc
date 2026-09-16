@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.builder.BuilderMode;
 import games.brennan.dungeontrain.client.menu.editorscreen.InventoryEditorLayout.Rect;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The Nav tab's arithmetic and its two decisions — which tile, and whether Go here may be pressed. */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorNavPaneTest {
 
     private static EditorRosterIndex stamped(String categoryId) {

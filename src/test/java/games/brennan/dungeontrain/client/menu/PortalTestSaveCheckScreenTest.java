@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link EditorDirtyCheck}'s portal-room scan silently: a mismatch reads as "clean", so the prompt
  * would never appear and the author would go on testing their last save without knowing.
  */
+@ExtendWith(MenuTestLanguage.class)
 final class PortalTestSaveCheckScreenTest {
 
     private static EditorDirtyCheck.DirtyEntry portalRow(String roomName) {

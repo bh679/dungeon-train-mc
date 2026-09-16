@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.containercontents;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.net.ContainerContentsEditPacket;
@@ -157,8 +158,8 @@ public final class ContainerContentsMenuInputHandler {
                     Minecraft mc = Minecraft.getInstance();
                     if (mc.player != null) {
                         mc.player.displayClientMessage(
-                            net.minecraft.network.chat.Component.literal(
-                                "Linked to '" + linked + "' — edits save automatically")
+                            net.minecraft.network.chat.Component.translatable(
+                                MenuLang.PREFIX + "container.linked_autosave", linked)
                                 .withStyle(net.minecraft.ChatFormatting.AQUA),
                             true);
                     }

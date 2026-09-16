@@ -48,7 +48,7 @@ public final class ContentsSubVariantScreen implements MenuScreen {
         // The parent's own contents (drawn against selfWeight) — kept reachable
         // even though its members are now nested one level down.
         out.add(new CommandMenuEntry.Run(
-            parentId + " (self)",
+            MenuLang.t("contents.self", parentId),
             "dungeontrain editor contents enter " + parentId,
             parentId.equals(activeId)));
         Optional<CarriageContentsGroup> group = CarriageContentsGroupStore.get(parentId);
@@ -60,7 +60,7 @@ public final class ContentsSubVariantScreen implements MenuScreen {
                     m.id().equals(activeId)));
             }
         }
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 

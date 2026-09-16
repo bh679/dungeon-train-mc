@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * itself, minus its current parent, minus the synthetic default room — and never a member, which
  * the roster only ever lists under its parent.
  */
+@ExtendWith(MenuTestLanguage.class)
 final class GroupParentPickerScreenTest {
 
     private static EditorTypeMenusPacket.Variant v(String cat, String modelId, String name,

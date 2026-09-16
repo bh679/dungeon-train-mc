@@ -47,7 +47,7 @@ public final class CategoryTemplatesScreen implements MenuScreen {
 
     @Override
     public String title() {
-        return "Templates";
+        return MenuLang.t("templates.title");
     }
 
     @Override
@@ -106,7 +106,7 @@ public final class CategoryTemplatesScreen implements MenuScreen {
                 // Unknown category — nothing to list, just show Back.
             }
         }
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 

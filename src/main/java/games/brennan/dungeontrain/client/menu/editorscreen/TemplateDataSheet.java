@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.builder.TemplateSummary;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
@@ -349,7 +350,7 @@ public final class TemplateDataSheet {
      */
     static List<Cell> levelCells(int minLevel, Stepper minStepper, int maxLevel, Stepper maxStepper) {
         List<Cell> cells = new ArrayList<>(4);
-        cells.add(Cell.plain("Lv"));
+        cells.add(Cell.plain(MenuLang.t("sheet.level_short")));
         addLevelCell(cells, Integer.toString(minLevel), minStepper, EditorScreenLang.SHEET_MIN_LEVEL);
         cells.add(Cell.plain("—"));
         addLevelCell(cells, maxLevel < 0

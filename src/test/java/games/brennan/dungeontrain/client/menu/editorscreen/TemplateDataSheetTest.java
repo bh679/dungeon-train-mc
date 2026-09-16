@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The data sheet is where a template is edited, so what each cell does is pinned here: the command
  * behind every clickable value, and which values are not clickable at all.
  */
+@ExtendWith(MenuTestLanguage.class)
 final class TemplateDataSheetTest {
 
     private static EditorTypeMenusPacket.Variant variant(String cat, String modelId, String modelName,

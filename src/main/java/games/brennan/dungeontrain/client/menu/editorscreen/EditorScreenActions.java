@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
@@ -125,7 +126,7 @@ public final class EditorScreenActions {
         boolean parts = cat == PlotCategory.PARTS;
 
         out.add(new Icon("save", EditorScreenLang.ICON_SAVE,
-            here ? new CommandMenuEntry.Stay("Save", parts ? EditorMenuScreen.PART_SAVE_COMMAND : EditorMenuScreen.SAVE_COMMAND)
+            here ? new CommandMenuEntry.Stay(MenuLang.t("common.save"), parts ? EditorMenuScreen.PART_SAVE_COMMAND : EditorMenuScreen.SAVE_COMMAND)
                  : packetAction(ctx, EditorPlotActionPacket.Action.SAVE, sendPacket),
             EditorScreenLang.DISABLED_STAND_HERE));
 
@@ -146,7 +147,7 @@ public final class EditorScreenActions {
             EditorHistoryState.redoLabel(), EditorScreenLang.REDO_NOTHING));
 
         out.add(new Icon("reset", EditorScreenLang.ICON_RESET,
-            here && !parts ? new CommandMenuEntry.Stay("Reset", "dungeontrain reset")
+            here && !parts ? new CommandMenuEntry.Stay(MenuLang.t("editor.reset"), "dungeontrain reset")
                  : packetAction(ctx, EditorPlotActionPacket.Action.RESET, sendPacket),
             EditorScreenLang.DISABLED_STAND_HERE));
 
@@ -256,9 +257,9 @@ public final class EditorScreenActions {
         if (!ctx.hasSelection()) return null;
         VariantKey sel = ctx.selection();
         if (sel.category() == PlotCategory.PARTS) {
-            return new CommandMenuEntry.DrillIn("Remove",
+            return new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
                 new games.brennan.dungeontrain.client.menu.ConfirmScreen(
-                    "Remove '" + sel.modelName() + "'?",
+                    MenuLang.t("confirm.remove", sel.modelName()),
                     "dungeontrain editor part reset " + sel.modelId() + " " + sel.modelName()));
         }
         CommandMenuEntry parent = parentRemoveEntry(ctx);
@@ -266,9 +267,9 @@ public final class EditorScreenActions {
         if (sel.category() == PlotCategory.PORTALS) {
             // Addressed by room name: the in-plot menu's `reset <kind>` acts on the plot the player
             // stands in, which is not necessarily the row selected here.
-            return new CommandMenuEntry.DrillIn("Remove",
+            return new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
                 new games.brennan.dungeontrain.client.menu.ConfirmScreen(
-                    "Remove '" + sel.displayName() + "'?", resetCommand(sel)));
+                    MenuLang.t("confirm.remove", sel.displayName()), resetCommand(sel)));
         }
         return EditorMenuScreen.removeEntryFor(sel.category(), sel.modelId(), sel.displayName());
     }
@@ -295,7 +296,7 @@ public final class EditorScreenActions {
         if (subs == null || subs.isEmpty()) return null;
         String base = resetCommand(sel);
         if (base == null) return null;
-        return new CommandMenuEntry.DrillIn("Remove",
+        return new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
             new ParentRemoveConfirmScreen(sel.displayName(), base, subs.size(), subs.get(0).displayName()));
     }
 
@@ -538,7 +539,7 @@ public final class EditorScreenActions {
         String current = standing != null && standing.category() == stripCategory
             ? standing.displayName() : firstName;
         if (stripCategory == PlotCategory.PARTS) {
-            return new CommandMenuEntry.DrillIn("New",
+            return new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.PARTS, stripModelId, current));
         }
         String modelId = switch (stripCategory) {
@@ -554,10 +555,10 @@ public final class EditorScreenActions {
         String source = standing != null && standing.category() == parent.category()
             ? standing.displayName() : parent.displayName();
         return switch (parent.category()) {
-            case CONTENTS -> new CommandMenuEntry.DrillIn("New sub-variant",
+            case CONTENTS -> new CommandMenuEntry.DrillIn(MenuLang.t("editor.new_sub_variant"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.CONTENTS_SUB_VARIANT,
                     null, parent.displayName(), source));
-            case PORTALS -> new CommandMenuEntry.DrillIn("New sub-variant",
+            case PORTALS -> new CommandMenuEntry.DrillIn(MenuLang.t("editor.new_sub_variant"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.PORTAL_ROOM_SUB_VARIANT,
                     null, parent.displayName(), source));
             default -> null;

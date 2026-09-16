@@ -93,7 +93,7 @@ public final class CommandMenuGuiScreen extends Screen {
     private String lastBreadcrumb = "";
 
     public CommandMenuGuiScreen() {
-        super(Component.literal("Dungeon Train"));
+        super(Component.translatable(MenuLang.PREFIX + "main.title"));
     }
 
     /** The world keeps ticking — an author needs the train moving while they edit. */
@@ -268,7 +268,7 @@ public final class CommandMenuGuiScreen extends Screen {
         // The breadcrumb stays centred on the panel; with a button at the right it is clipped
         // symmetrically, to the width between the button and its mirror on the left, so a
         // shrunk panel can never run the text under the icon.
-        String header = (title == null || title.isEmpty()) ? "Dungeon Train" : title;
+        String header = (title == null || title.isEmpty()) ? MenuLang.t("main.title") : title;
         int reserve = CommandMenuLayout.PANEL_PAD + (action == null ? 0 : HEADER_BTN + CELL_PAD_X);
         int headerAvail = pw - reserve * 2;
         if (headerAvail > 0 && this.font.width(header) > headerAvail) {

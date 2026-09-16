@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>The mapping is the load-bearing part: a cell that admits the wrong relay kind shows a portal
  * room under Carriages, and one that admits too little hides work the reviewer came to see.</p>
  */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorCreatorBuildsTest {
 
     private static BuilderProfilePacket.Entry entry(String kind, String name, String review) {
