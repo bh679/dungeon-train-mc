@@ -1216,6 +1216,7 @@
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Pumili ng build",
   "gui.dungeontrain.editor_screen.creator.load_copy": "I-load bilang kopya",
   "gui.dungeontrain.editor_screen.creator.loaded": "Na-load sa editor",
+  "gui.dungeontrain.editor_screen.creator.loaded_shift_hint": "Shift: i-load bilang kopya",
   "gui.dungeontrain.editor_screen.creator.load_sub_variant": "I-load bilang sub-variant",
   "gui.dungeontrain.editor_screen.creator.parent_title": "I-load sa ilalim ng",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (bago)",

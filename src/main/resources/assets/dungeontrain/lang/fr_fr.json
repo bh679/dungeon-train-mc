@@ -1247,6 +1247,7 @@
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Choisir une construction",
   "gui.dungeontrain.editor_screen.creator.load_copy": "Charger en copie",
   "gui.dungeontrain.editor_screen.creator.loaded": "Chargé dans l’éditeur",
+  "gui.dungeontrain.editor_screen.creator.loaded_shift_hint": "Maj : charger en copie",
   "gui.dungeontrain.editor_screen.creator.load_sub_variant": "Charger en sous-variante",
   "gui.dungeontrain.editor_screen.creator.parent_title": "Charger sous",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (nouveau)",

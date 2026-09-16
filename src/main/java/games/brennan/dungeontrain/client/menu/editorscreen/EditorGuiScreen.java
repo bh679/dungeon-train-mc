@@ -455,7 +455,10 @@ public final class EditorGuiScreen extends Screen {
         // sub-variants, at top level (blank) for the rest — carriages have no parents to land under.
         String parent = CreatorLoadParent.supports(entry.kind())
             ? CreatorLoadParent.parentFor(EditorCreatorBuilds.categoryOf(entry.kind())) : "";
-        sendDownload(loadAsCopy
+        // A copy when the last answer said the name is taken — or when this screen can already see
+        // the build is here (Shift on the loaded slot): asking AS_IS would only earn that answer.
+        boolean copy = loadAsCopy || EditorCreatorBuilds.here(EditorRosterClient.index(), entry) != null;
+        sendDownload(copy
             ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
                 BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false,
                 parent)

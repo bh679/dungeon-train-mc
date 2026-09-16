@@ -1642,6 +1642,7 @@
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Pick a build",
   "gui.dungeontrain.editor_screen.creator.load_copy": "Load as a copy",
   "gui.dungeontrain.editor_screen.creator.loaded": "Loaded into editor",
+  "gui.dungeontrain.editor_screen.creator.loaded_shift_hint": "Shift: load as a copy",
   "gui.dungeontrain.editor_screen.creator.load_sub_variant": "Load as sub-variant",
   "gui.dungeontrain.editor_screen.creator.parent_title": "Load under",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (new)",

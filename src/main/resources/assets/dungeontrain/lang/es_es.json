@@ -1247,6 +1247,7 @@
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Elige una construcción",
   "gui.dungeontrain.editor_screen.creator.load_copy": "Cargar como copia",
   "gui.dungeontrain.editor_screen.creator.loaded": "Cargado en el editor",
+  "gui.dungeontrain.editor_screen.creator.loaded_shift_hint": "Mayús: cargar como copia",
   "gui.dungeontrain.editor_screen.creator.load_sub_variant": "Cargar como subvariante",
   "gui.dungeontrain.editor_screen.creator.parent_title": "Cargar bajo",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (nuevo)",

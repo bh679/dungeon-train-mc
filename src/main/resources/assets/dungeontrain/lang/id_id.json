@@ -1216,6 +1216,7 @@
   "gui.dungeontrain.editor_screen.creator.nothing_selected": "Pilih bangunan",
   "gui.dungeontrain.editor_screen.creator.load_copy": "Muat sebagai salinan",
   "gui.dungeontrain.editor_screen.creator.loaded": "Dimuat ke editor",
+  "gui.dungeontrain.editor_screen.creator.loaded_shift_hint": "Shift: muat sebagai salinan",
   "gui.dungeontrain.editor_screen.creator.load_sub_variant": "Muat sebagai sub-varian",
   "gui.dungeontrain.editor_screen.creator.parent_title": "Muat di bawah",
   "gui.dungeontrain.editor_screen.creator.parent_new": "%s (baru)",

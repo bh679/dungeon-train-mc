@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.net.BuilderProfilePacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
@@ -162,21 +163,37 @@ public final class EditorCreatorPane {
      * the same treatment as <b>Going now…</b>, for the same reason: a big build takes seconds to
      * fetch, install and stamp, and a button that still looks pressable during that invites a
      * second press that would fetch it all again.</p>
+     *
+     * <p>Once loaded, <b>Shift</b> turns the slot back into <b>Load as a copy</b>: the editor holds
+     * one template per name, so a second copy — or another relay row wearing the same name — can
+     * only come down under a free one, and the server's LOAD_AS_NEW is exactly that.</p>
      */
     private void drawLoad(GuiGraphics g, Font font, InventoryEditorLayout.Rect r,
                           BuilderProfilePacket.Entry entry, EditorCreatorBuilds.Landed landed,
                           boolean asCopy, boolean loading, int mouseX, int mouseY) {
         loadRect = null;
         parentRect = null;
-        if (landed != null) {
-            // Done, and not a button: pressing it again would fetch the same build and be told the
-            // name is taken — by the copy it just made.
-            String done = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADED);
+        // Already here, and Shift is not down: not a button. Pressing it again would fetch the same
+        // build and be told the name is taken — by the copy it just made. Shift is the way to ask
+        // for that copy on purpose (the editor's usual "the other thing this control does"), and
+        // the slot says so when the mouse is over it. A copy attempt that was itself refused
+        // (asCopy) keeps the button up so the next free name can be tried; a Load in flight keeps
+        // the greyed "Loading…" whether or not one copy is already down.
+        if (landed != null && !loading && !asCopy && !Screen.hasShiftDown()) {
+            String done = EditorScreenLang.text(r.contains(mouseX, mouseY)
+                ? EditorScreenLang.CREATOR_LOADED_SHIFT_HINT : EditorScreenLang.CREATOR_LOADED);
             g.drawString(font, font.plainSubstrByWidth(done, r.w() - 4),
                 r.x() + (r.w() - font.width(done)) / 2, r.y() + (r.h() - font.lineHeight) / 2 + 1,
                 LOADED_TEXT, false);
             return;
         }
+        drawLoadButtons(g, font, r, entry, asCopy || landed != null, loading, mouseX, mouseY);
+    }
+
+    /** The load button and, for a kind with sub-variants, the parent picker beside it. */
+    private void drawLoadButtons(GuiGraphics g, Font font, InventoryEditorLayout.Rect r,
+                                 BuilderProfilePacket.Entry entry, boolean asCopy, boolean loading,
+                                 int mouseX, int mouseY) {
         boolean enabled = entry != null && !loading;
         boolean underParent = entry != null && CreatorLoadParent.supports(entry.kind());
         InventoryEditorLayout.Rect load = r;
