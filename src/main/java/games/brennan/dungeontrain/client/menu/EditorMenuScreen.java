@@ -426,6 +426,10 @@ public final class EditorMenuScreen implements MenuScreen {
         // why it is a server round-trip rather than a client preference like Plot Lighting.
         out.add(observersRow());
 
+        // Mobs — Blocks places a frozen, one-hit mob from a spawn egg and ghosts the mob entries of
+        // variant cells; Live is vanilla eggs. World state like Observers, so a server round-trip.
+        out.add(mobsRow());
+
         // Welcome Panel — the onboarding board floating beside the first nav menu. Its own close
         // (X) button writes the same per-player, per-world flag; this row is the only way back,
         // so it stays in the menu whether the panel is currently up or not.
@@ -564,6 +568,15 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Label("Observers"),
             new CommandMenuEntry.Stay("On", "dungeontrain editor observers on", on),
             new CommandMenuEntry.Stay("Off", "dungeontrain editor observers off", !on),
+            0.46, 0.73);
+    }
+
+    private static CommandMenuEntry mobsRow() {
+        boolean live = games.brennan.dungeontrain.client.EditorMobsModeState.live();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label("Mobs"),
+            new CommandMenuEntry.Stay("Blocks", "dungeontrain editor mobs blocks", !live),
+            new CommandMenuEntry.Stay("Live", "dungeontrain editor mobs live", live),
             0.46, 0.73);
     }
 

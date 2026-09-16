@@ -720,6 +720,9 @@ public final class EditorCommand {
             .then(Commands.literal("observers")
                 .then(Commands.literal("on").executes(ctx -> runObservers(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runObservers(ctx.getSource(), false))))
+            .then(Commands.literal("mobs")
+                .then(Commands.literal("blocks").executes(ctx -> runMobsMode(ctx.getSource(), false)))
+                .then(Commands.literal("live").executes(ctx -> runMobsMode(ctx.getSource(), true))))
             .then(Commands.literal("carriage-contents")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -4397,6 +4400,28 @@ public final class EditorCommand {
             ? "Observers: ON — observers in editor plots pulse as normal."
             : "Observers: OFF — observers in editor plots stay quiet while you build."
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+
+    /**
+     * Settings → Mobs Blocks / Live for this world. Blocks: a spawn egg used in an editor plot places
+     * a frozen, one-hit mob and variant cells with mob entries show a ghost
+     * ({@link games.brennan.dungeontrain.editor.FrozenMobs}); Live is vanilla eggs. World state, so
+     * every online player's Settings row is told.
+     */
+    private static int runMobsMode(CommandSourceStack source, boolean live) {
+        net.minecraft.server.MinecraftServer server = source.getServer();
+        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
+            .setEditorMobsLive(live);
+        games.brennan.dungeontrain.net.EditorMobsModePacket packet =
+            new games.brennan.dungeontrain.net.EditorMobsModePacket(live);
+        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
+            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
+        }
+        source.sendSuccess(() -> Component.literal(live
+            ? "Mobs: LIVE — spawn eggs in editor plots spawn wandering mobs."
+            : "Mobs: BLOCKS — spawn eggs place a frozen mob you can break in one hit; variant cells show mob ghosts."
+        ).withStyle(live ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
         return 1;
     }
 

@@ -312,7 +312,10 @@ public final class CarriageEntitySnapshot {
         pos.add(DoubleTag.valueOf(at.z));
         nbt.put("Pos", pos);
 
-        Entity entity = EntityType.loadEntityRecursive(nbt, level, e -> e);
+        // A build authored in the builder world may carry editor-frozen mobs; a leased copy thaws them.
+        Entity entity = EntityType.loadEntityRecursive(
+            games.brennan.dungeontrain.editor.FrozenMobs.prepareForSpawn(nbt, level, BlockPos.containing(at)),
+            level, e -> e);
         if (entity == null) {
             // An entity type this world does not have (a leased build from a world with more mods) is a
             // gap in the build, not a failure of it — the blocks are already down.

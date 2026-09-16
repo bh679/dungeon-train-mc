@@ -173,6 +173,13 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, String> LAST_DOOR_GHOSTS_KEY = new HashMap<>();
 
+    /**
+     * Per-player dedup key for the variant-cell mob ghosts — plot key plus
+     * {@link StageBlockIndex#generation()}, which every variant edit advances. See
+     * {@link #pushMobGhostsSnapshot}.
+     */
+    private static final Map<UUID, String> LAST_MOB_GHOSTS_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /**
@@ -198,6 +205,7 @@ public final class VariantOverlayRenderer {
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
+        LAST_MOB_GHOSTS_KEY.clear();
         EditorPlotSky.clearAll();
     }
 
@@ -243,6 +251,7 @@ public final class VariantOverlayRenderer {
         clearPartVisibilityIfStale(player);
         clearStraysIfStale(player);
         clearDoorGhostsIfStale(player);
+        clearMobGhostsIfStale(player);
     }
 
     /**
@@ -313,6 +322,7 @@ public final class VariantOverlayRenderer {
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
+            pushMobGhostsSnapshot(player, level, dims);
             // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
             // rather than the dark box it was authored in until now.
             if (EditorPlotSky.update(player, dims) == PortalRoomSky.CYCLE) cycleSeen = true;
@@ -1180,6 +1190,57 @@ public final class VariantOverlayRenderer {
         if (LAST_DOOR_GHOSTS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player,
                 games.brennan.dungeontrain.net.EditorDoorGhostsPacket.empty());
+        }
+    }
+
+    /**
+     * Push the mob ghosts for the plot the player stands in: one per cell whose variant pool holds a
+     * mob entry (the first such entry), while the editor's Mobs setting is Blocks
+     * ({@link FrozenMobs#isBlocksMode}). The client draws each as the mob standing still on the cell,
+     * the same pose a frozen egg-placed mob takes, so an author sees what the cell can roll.
+     *
+     * <p>Keyed on the plot plus {@link StageBlockIndex#generation()} — the index is invalidated by
+     * every sidecar put / remove / save, so an edit re-pushes within a tick and a steady plot sends
+     * nothing. Leaving the plot, switching to Live, or a plot with no mob entries clears.</p>
+     */
+    private static void pushMobGhostsSnapshot(ServerPlayer player, ServerLevel level, CarriageDims dims) {
+        UUID uuid = player.getUUID();
+        if (!FrozenMobs.isBlocksMode(level)) {
+            clearMobGhostsIfStale(player);
+            return;
+        }
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            clearMobGhostsIfStale(player);
+            return;
+        }
+        String key = plot.key() + ":g" + StageBlockIndex.generation();
+        if (key.equals(LAST_MOB_GHOSTS_KEY.get(uuid))) return;
+
+        List<games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost> ghosts = new ArrayList<>();
+        for (BlockPos local : plot.allFlaggedPositions()) {
+            List<VariantState> states = plot.statesAt(local);
+            if (states == null) continue;
+            for (VariantState s : states) {
+                if (!s.isMob() || s.entityId() == null) continue;
+                ghosts.add(new games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost(
+                    plot.origin().offset(local), s.entityId().toString(), s.blockEntityNbt()));
+                break;
+            }
+        }
+        if (ghosts.isEmpty()) {
+            clearMobGhostsIfStale(player);
+            return;
+        }
+        LAST_MOB_GHOSTS_KEY.put(uuid, key);
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorMobGhostsPacket(ghosts));
+    }
+
+    /** Send the empty mob-ghost packet if the player previously had a non-empty snapshot. */
+    private static void clearMobGhostsIfStale(ServerPlayer player) {
+        if (LAST_MOB_GHOSTS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.EditorMobGhostsPacket.empty());
         }
     }
 
