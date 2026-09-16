@@ -1288,6 +1288,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Budowle wszystkich",
   "gui.dungeontrain.editor_screen.creator.submitting": "Wysyłanie do przekaźnika…",
   "gui.dungeontrain.editor_screen.creator.going": "W drodze…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Wczytywanie…",
   "gui.dungeontrain.editor_screen.skybox": "Niebo",
   "gui.dungeontrain.editor_screen.skybox.on": "Wł.",
   "gui.dungeontrain.editor_screen.skybox.off": "Wył.",

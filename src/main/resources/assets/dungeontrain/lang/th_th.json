@@ -1226,6 +1226,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "สิ่งก่อสร้างของทุกคน",
   "gui.dungeontrain.editor_screen.creator.submitting": "กำลังแจ้งรีเลย์…",
   "gui.dungeontrain.editor_screen.creator.going": "กำลังไป…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "กำลังโหลด…",
   "gui.dungeontrain.editor_screen.skybox": "ท้องฟ้า",
   "gui.dungeontrain.editor_screen.skybox.on": "เปิด",
   "gui.dungeontrain.editor_screen.skybox.off": "ปิด",

@@ -1293,6 +1293,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Постройки всех",
   "gui.dungeontrain.editor_screen.creator.submitting": "Отправка на релей…",
   "gui.dungeontrain.editor_screen.creator.going": "Переход…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Загрузка…",
   "gui.dungeontrain.editor_screen.skybox": "Небо",
   "gui.dungeontrain.editor_screen.skybox.on": "Вкл.",
   "gui.dungeontrain.editor_screen.skybox.off": "Выкл.",

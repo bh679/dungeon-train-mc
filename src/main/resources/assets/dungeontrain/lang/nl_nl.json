@@ -1257,6 +1257,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Bouwwerken van iedereen",
   "gui.dungeontrain.editor_screen.creator.submitting": "Doorgeven aan de relay…",
   "gui.dungeontrain.editor_screen.creator.going": "Onderweg…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Laden…",
   "gui.dungeontrain.editor_screen.skybox": "Skybox",
   "gui.dungeontrain.editor_screen.skybox.on": "Aan",
   "gui.dungeontrain.editor_screen.skybox.off": "Uit",

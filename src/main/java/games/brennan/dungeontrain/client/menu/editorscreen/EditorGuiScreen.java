@@ -68,6 +68,14 @@ public final class EditorGuiScreen extends Screen {
     /** Long enough for the server to have asked the relay and been answered. */
     private static final int SUBMIT_REFRESH_TICKS = 20;
     static final int GOING_TIMEOUT_TICKS = 200;
+    /**
+     * How long a Load is given before the button comes back and the note says it did not land.
+     *
+     * <p>A minute: the server's fetch of a big build alone can run to the relay client's own
+     * ten-second limit, and a 40k-block portal room then takes seconds more to install and stamp.
+     * The button is greyed for all of it, because a second press would fetch it all again.</p>
+     */
+    static final int LOAD_TIMEOUT_TICKS = 1200;
 
     private final EditorFilterBar filterBar = new EditorFilterBar();
     private final EditorBrowserPane browser = new EditorBrowserPane();
@@ -100,6 +108,9 @@ public final class EditorGuiScreen extends Screen {
     /** The build being walked to, while the walk is under way. */
     private EditorCreatorBuilds.Landed goingTo;
     private int goingTicks;
+    /** Whether a Load has gone out and not yet been answered — the button is greyed meanwhile. */
+    private boolean loading;
+    private int loadingTicks;
     /**
      * Ticks until the listing is asked for again after a submit or a withdraw.
      *
@@ -206,6 +217,7 @@ public final class EditorGuiScreen extends Screen {
         super.tick();
         search.tick();
         tickWalk();
+        tickLoad();
         if (refreshTicks > 0 && --refreshTicks == 0) {
             EditorSaveStatus.request();
         }
@@ -231,6 +243,21 @@ public final class EditorGuiScreen extends Screen {
             return;
         }
         if (--goingTicks <= 0) goingTo = null;
+    }
+
+    /**
+     * Watch a Load that is under way: hand the button back, and say so, if the server never answers.
+     *
+     * <p>Every server path answers with an outcome — this only fires when that answer was lost (a
+     * disconnect, a server that crashed mid-install). Without it the button would stay greyed for
+     * the life of the screen with nothing to say why.</p>
+     */
+    private void tickLoad() {
+        if (!loading) return;
+        if (--loadingTicks <= 0) {
+            loading = false;
+            creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOAD_FAILED);
+        }
     }
 
     /** A command went out: give the server a moment, then ask what changed. */
@@ -320,7 +347,7 @@ public final class EditorGuiScreen extends Screen {
                 EditorCreatorBuilds.ownerOf(picked));
             creatorPane.render(g, this.font, layout, theme, picked, orbit.yaw(),
                 creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null,
-                previewSeq, mx, my);
+                loading, previewSeq, mx, my);
         } else if (onStages()) {
             stageDetail.layout(layout, EditorScreenState.effectiveStage(index), index);
             stageDetail.render(g, this.font, theme, orbit.yaw(), mx, my);
@@ -412,7 +439,9 @@ public final class EditorGuiScreen extends Screen {
      */
     private void loadSelectedCreatorBuild() {
         BuilderProfilePacket.Entry entry = selectedCreatorBuild();
-        if (entry == null) return;
+        // One fetch at a time: the pane withholds the button while a Load is out, and nothing else
+        // should get to send the same build down twice either.
+        if (entry == null || loading) return;
         boolean live = BuilderProfileState.live();
         // The row's own owner, not the builder being viewed: the pooled listing spans them.
         String owner = EditorCreatorBuilds.ownerOf(entry);
@@ -441,6 +470,8 @@ public final class EditorGuiScreen extends Screen {
         this.lastDownload = packet;
         DungeonTrainNet.sendToServer(packet);
         creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
+        loading = true;
+        loadingTicks = LOAD_TIMEOUT_TICKS;
     }
 
     /**
@@ -464,6 +495,7 @@ public final class EditorGuiScreen extends Screen {
     /** Drop what the last Load said — it was about a build that is no longer the one on screen. */
     private void forgetLastLoad() {
         creatorNote = null;
+        loading = false;
         loadAsCopy = false;
         takenNames = List.of();
     }
@@ -487,6 +519,9 @@ public final class EditorGuiScreen extends Screen {
 
     /** A download finished: say what happened, and pick up what landed. */
     private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
+        // Answered, whatever the answer: the button is back. A prefab question below re-sends and
+        // greys it again.
+        loading = false;
         creatorNote = EditorScreenLang.text(BuilderProfileScreen.noteKeyFor(packet.outcome()));
         // The build brought loot prefabs this install already has, with different contents: put both
         // versions in front of the player, and replay the same press with their choices attached.

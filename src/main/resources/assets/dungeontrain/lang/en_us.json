@@ -1652,6 +1652,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Everybody\u2019s builds",
   "gui.dungeontrain.editor_screen.creator.submitting": "Telling the relay\u2026",
   "gui.dungeontrain.editor_screen.creator.going": "Going now\u2026",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Loading\u2026",
   "gui.dungeontrain.editor_screen.skybox": "Skybox",
   "gui.dungeontrain.editor_screen.skybox.on": "On",
   "gui.dungeontrain.editor_screen.skybox.off": "Off",

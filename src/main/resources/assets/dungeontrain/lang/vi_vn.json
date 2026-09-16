@@ -1226,6 +1226,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Công trình của mọi người",
   "gui.dungeontrain.editor_screen.creator.submitting": "Đang báo cho relay…",
   "gui.dungeontrain.editor_screen.creator.going": "Đang tới…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Đang tải…",
   "gui.dungeontrain.editor_screen.skybox": "Bầu trời",
   "gui.dungeontrain.editor_screen.skybox.on": "Bật",
   "gui.dungeontrain.editor_screen.skybox.off": "Tắt",

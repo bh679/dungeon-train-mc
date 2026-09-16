@@ -154,6 +154,10 @@ public final class EditorScreenLang {
     public static final String VERSION_CURRENT = PREFIX + "version.current";
     public static final String CREATOR_GOING = PREFIX + "creator.going";
     public static final String CREATOR_LOADING_BUILD = "gui.dungeontrain.builder.profile.downloading";
+    /** The Load button's own label while a fetch is out — short, because the slot is. */
+    public static final String CREATOR_LOAD_PENDING = PREFIX + "creator.load_pending";
+    /** What the note says when a Load was never answered. Shares My Builds' wording. */
+    public static final String CREATOR_LOAD_FAILED = "gui.dungeontrain.builder.profile.download_failed";
 
     public static final String SUB_VARIANTS_OF = PREFIX + "sub_variants_of";
     public static final String TILE_NEW = PREFIX + "tile.new";

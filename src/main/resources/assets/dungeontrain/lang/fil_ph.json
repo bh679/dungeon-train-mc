@@ -1226,6 +1226,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Mga gawa ng lahat",
   "gui.dungeontrain.editor_screen.creator.submitting": "Sinasabi sa relay…",
   "gui.dungeontrain.editor_screen.creator.going": "Papunta na…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Naglo-load…",
   "gui.dungeontrain.editor_screen.skybox": "Skybox",
   "gui.dungeontrain.editor_screen.skybox.on": "Bukas",
   "gui.dungeontrain.editor_screen.skybox.off": "Sara",

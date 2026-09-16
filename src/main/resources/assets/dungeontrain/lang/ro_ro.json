@@ -1685,6 +1685,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Construcțiile tuturor",
   "gui.dungeontrain.editor_screen.creator.submitting": "Se anunță releul…",
   "gui.dungeontrain.editor_screen.creator.going": "Se merge…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Se încarcă…",
   "gui.dungeontrain.editor_screen.skybox": "Cer",
   "gui.dungeontrain.editor_screen.skybox.on": "Pornit",
   "gui.dungeontrain.editor_screen.skybox.off": "Oprit",

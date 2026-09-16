@@ -1226,6 +1226,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "모두의 건축물",
   "gui.dungeontrain.editor_screen.creator.submitting": "릴레이에 알리는 중…",
   "gui.dungeontrain.editor_screen.creator.going": "이동 중…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "불러오는 중…",
   "gui.dungeontrain.editor_screen.skybox": "스카이박스",
   "gui.dungeontrain.editor_screen.skybox.on": "켬",
   "gui.dungeontrain.editor_screen.skybox.off": "끔",

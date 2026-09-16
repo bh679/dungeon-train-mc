@@ -1257,6 +1257,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Construcciones de todos",
   "gui.dungeontrain.editor_screen.creator.submitting": "Avisando al relay…",
   "gui.dungeontrain.editor_screen.creator.going": "Yendo…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Cargando…",
   "gui.dungeontrain.editor_screen.skybox": "Cielo",
   "gui.dungeontrain.editor_screen.skybox.on": "Sí",
   "gui.dungeontrain.editor_screen.skybox.off": "No",

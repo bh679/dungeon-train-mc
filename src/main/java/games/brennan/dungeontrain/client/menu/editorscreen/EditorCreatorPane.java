@@ -48,7 +48,7 @@ public final class EditorCreatorPane {
     public void render(GuiGraphics g, Font font, InventoryEditorLayout layout,
                        EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
                        String note, boolean asCopy, EditorCreatorBuilds.Landed landed,
-                       boolean going, int seq, int mouseX, int mouseY) {
+                       boolean going, boolean loading, int seq, int mouseX, int mouseY) {
 
         drawHeader(g, font, layout.header(), theme, entry, landed, going, mouseX, mouseY);
         drawSubmit(g, font, layout.icons(), entry, mouseX, mouseY);
@@ -94,7 +94,7 @@ public final class EditorCreatorPane {
             }
         }
 
-        drawLoad(g, font, layout.test(), entry, landed, asCopy, mouseX, mouseY);
+        drawLoad(g, font, layout.test(), entry, landed, asCopy, loading, mouseX, mouseY);
     }
 
     /**
@@ -151,10 +151,15 @@ public final class EditorCreatorPane {
      * variant parent the build will land under — <b>User builds</b> until the reviewer picks another.
      * The parent is chosen here and not after the fact because after the fact is a second trip to
      * the roster per build, and a reviewer loads them by the dozen.</p>
+     *
+     * <p>While the press is out, both buttons are greyed and the load one says <b>Loading…</b> —
+     * the same treatment as <b>Going now…</b>, for the same reason: a big build takes seconds to
+     * fetch, install and stamp, and a button that still looks pressable during that invites a
+     * second press that would fetch it all again.</p>
      */
     private void drawLoad(GuiGraphics g, Font font, InventoryEditorLayout.Rect r,
                           BuilderProfilePacket.Entry entry, EditorCreatorBuilds.Landed landed,
-                          boolean asCopy, int mouseX, int mouseY) {
+                          boolean asCopy, boolean loading, int mouseX, int mouseY) {
         loadRect = null;
         parentRect = null;
         if (landed != null) {
@@ -166,8 +171,8 @@ public final class EditorCreatorPane {
                 LOADED_TEXT, false);
             return;
         }
-        boolean enabled = entry != null;
-        boolean underParent = enabled && CreatorLoadParent.supports(entry.kind());
+        boolean enabled = entry != null && !loading;
+        boolean underParent = entry != null && CreatorLoadParent.supports(entry.kind());
         InventoryEditorLayout.Rect load = r;
         if (underParent) {
             int parentW = (int) (r.w() * PARENT_SHARE);
@@ -175,10 +180,12 @@ public final class EditorCreatorPane {
             parentRect = new InventoryEditorLayout.Rect(r.right() - parentW, r.y(), parentW, r.h());
             PlotCategory category = EditorCreatorBuilds.categoryOf(entry.kind());
             String parent = "\u25B8 " + CreatorLoadParent.labelFor(category, EditorRosterClient.index());
-            button(g, font, parentRect, parent, true, mouseX, mouseY);
+            button(g, font, parentRect, parent, enabled, mouseX, mouseY);
+            if (!enabled) parentRect = null;
         }
         loadRect = enabled ? load : null;
-        String label = EditorScreenLang.text(asCopy ? EditorScreenLang.CREATOR_LOAD_COPY
+        String label = EditorScreenLang.text(loading ? EditorScreenLang.CREATOR_LOAD_PENDING
+            : asCopy ? EditorScreenLang.CREATOR_LOAD_COPY
             : underParent ? EditorScreenLang.CREATOR_LOAD_SUB_VARIANT : EditorScreenLang.CREATOR_LOAD);
         button(g, font, load, label, enabled, mouseX, mouseY);
     }

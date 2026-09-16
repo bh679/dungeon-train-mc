@@ -1226,6 +1226,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Bangunan semua orang",
   "gui.dungeontrain.editor_screen.creator.submitting": "Memberi tahu relay…",
   "gui.dungeontrain.editor_screen.creator.going": "Menuju ke sana…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Memuat…",
   "gui.dungeontrain.editor_screen.skybox": "Langit",
   "gui.dungeontrain.editor_screen.skybox.on": "Nyala",
   "gui.dungeontrain.editor_screen.skybox.off": "Mati",

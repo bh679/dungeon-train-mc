@@ -1226,6 +1226,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "所有人的建筑",
   "gui.dungeontrain.editor_screen.creator.submitting": "正在通知中继…",
   "gui.dungeontrain.editor_screen.creator.going": "正在前往…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "加载中…",
   "gui.dungeontrain.editor_screen.skybox": "天空盒",
   "gui.dungeontrain.editor_screen.skybox.on": "开",
   "gui.dungeontrain.editor_screen.skybox.off": "关",

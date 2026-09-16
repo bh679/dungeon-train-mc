@@ -1226,6 +1226,7 @@
   "gui.dungeontrain.editor_screen.creator.pool": "Binaan semua orang",
   "gui.dungeontrain.editor_screen.creator.submitting": "Memberitahu relay…",
   "gui.dungeontrain.editor_screen.creator.going": "Menuju ke sana…",
+  "gui.dungeontrain.editor_screen.creator.load_pending": "Memuatkan…",
   "gui.dungeontrain.editor_screen.skybox": "Langit",
   "gui.dungeontrain.editor_screen.skybox.on": "Hidup",
   "gui.dungeontrain.editor_screen.skybox.off": "Mati",
