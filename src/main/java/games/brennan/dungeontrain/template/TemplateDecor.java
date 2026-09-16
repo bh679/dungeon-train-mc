@@ -349,7 +349,10 @@ public final class TemplateDecor {
         BlockPos anchor = anchorOf(entry, mirror, rotation, pivot, origin);
         if (clip != null && !clip.isInside(anchor == null ? BlockPos.containing(at) : anchor)) return false;
 
-        CompoundTag nbt = rebase(entry, at, anchor);
+        // An editor-frozen mob (Settings → Mobs | Blocks) stays a statue when stamped back into a plot
+        // and is thawed into a live mob everywhere else — the flags ride the template's NBT.
+        CompoundTag nbt = games.brennan.dungeontrain.editor.FrozenMobs.prepareForSpawn(
+            rebase(entry, at, anchor), level.getLevel(), BlockPos.containing(at));
         Optional<Entity> created = EntityType.create(nbt, level.getLevel());
         if (created.isEmpty()) {
             LOGGER.debug("[DungeonTrain] template decor: could not create id={}", nbt.getString("id"));

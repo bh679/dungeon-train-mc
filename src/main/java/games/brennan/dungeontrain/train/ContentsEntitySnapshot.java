@@ -203,7 +203,10 @@ public record ContentsEntitySnapshot(
             posTag.add(DoubleTag.valueOf(world.z));
             nbt.put("Pos", posTag);
 
-            Entity entity = EntityType.loadEntityRecursive(nbt, level, e -> e);
+            Entity entity = EntityType.loadEntityRecursive(
+                games.brennan.dungeontrain.editor.FrozenMobs.prepareForSpawn(nbt, level,
+                    net.minecraft.core.BlockPos.containing(world)),
+                level, e -> e);
             if (entity == null) {
                 LOGGER.warn("[DungeonTrain] Contents-despawn restore: could not load entity id={} for pIdx={}",
                     nbt.getString("id"), snapshot.anchorPIdx());

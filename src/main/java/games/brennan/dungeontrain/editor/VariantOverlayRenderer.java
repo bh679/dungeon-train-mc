@@ -173,6 +173,13 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, String> LAST_DOOR_GHOSTS_KEY = new HashMap<>();
 
+    /**
+     * Per-player dedup key for the variant-cell mob ghosts — the plot key plus every ghosted cell and
+     * its entity, so the packet goes out only when the preview frame actually changed. See
+     * {@link #pushMobGhostsSnapshot}.
+     */
+    private static final Map<UUID, String> LAST_MOB_GHOSTS_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /**
@@ -198,6 +205,7 @@ public final class VariantOverlayRenderer {
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
+        LAST_MOB_GHOSTS_KEY.clear();
         EditorPlotSky.clearAll();
     }
 
@@ -243,6 +251,7 @@ public final class VariantOverlayRenderer {
         clearPartVisibilityIfStale(player);
         clearStraysIfStale(player);
         clearDoorGhostsIfStale(player);
+        clearMobGhostsIfStale(player);
     }
 
     /**
@@ -313,6 +322,7 @@ public final class VariantOverlayRenderer {
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
+            pushMobGhostsSnapshot(player, level, dims);
             // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
             // rather than the dark box it was authored in until now.
             if (EditorPlotSky.update(player, dims) == PortalRoomSky.CYCLE) cycleSeen = true;
@@ -1180,6 +1190,63 @@ public final class VariantOverlayRenderer {
         if (LAST_DOOR_GHOSTS_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player,
                 games.brennan.dungeontrain.net.EditorDoorGhostsPacket.empty());
+        }
+    }
+
+    /**
+     * Push the mob ghosts for the plot the player stands in: one per cell whose variant pool's
+     * <b>current preview slot</b> is a mob entry, while the editor's Mobs setting is Blocks
+     * ({@link FrozenMobs#isBlocksMode}). The slot is the same one {@link VariantEditorPreviewTicker}
+     * shows — {@link VariantEditorPreviewTicker#pickEntryIndex} on the same {@code previewTick} — so a
+     * cell with a block and a mob alternates between the block and the ghost every three seconds, the
+     * way a cell of two blocks alternates, and the ticker airs the cell under the ghost.
+     *
+     * <p>Recomputed on the ticker's cadence ({@link VariantEditorPreviewTicker#TICK_PERIOD}) and
+     * deduped on the resulting list, so a plot whose slots did not move sends nothing. Leaving the
+     * plot, switching to Live, or a plot with no mob entries clears.</p>
+     */
+    private static void pushMobGhostsSnapshot(ServerPlayer player, ServerLevel level, CarriageDims dims) {
+        UUID uuid = player.getUUID();
+        if (!FrozenMobs.isBlocksMode(level)) {
+            clearMobGhostsIfStale(player);
+            return;
+        }
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            clearMobGhostsIfStale(player);
+            return;
+        }
+        long gameTime = level.getGameTime();
+        if (gameTime % VariantEditorPreviewTicker.TICK_PERIOD != 0) return;
+        long previewTick = gameTime / VariantEditorPreviewTicker.TICK_PERIOD;
+
+        List<games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost> ghosts = new ArrayList<>();
+        StringBuilder key = new StringBuilder(plot.key());
+        for (BlockPos local : plot.allFlaggedPositions()) {
+            List<VariantState> states = plot.statesAt(local);
+            if (states == null || states.isEmpty()) continue;
+            VariantState shown = states.get(
+                VariantEditorPreviewTicker.pickEntryIndex(plot.key(), local, states.size(), previewTick));
+            if (!shown.isMob() || shown.entityId() == null) continue;
+            ghosts.add(new games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost(
+                plot.origin().offset(local), shown.entityId().toString(), shown.blockEntityNbt()));
+            key.append('|').append(local.asLong()).append('=').append(shown.entityId());
+        }
+        if (ghosts.isEmpty()) {
+            clearMobGhostsIfStale(player);
+            return;
+        }
+        String k = key.toString();
+        if (k.equals(LAST_MOB_GHOSTS_KEY.get(uuid))) return;
+        LAST_MOB_GHOSTS_KEY.put(uuid, k);
+        DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorMobGhostsPacket(ghosts));
+    }
+
+    /** Send the empty mob-ghost packet if the player previously had a non-empty snapshot. */
+    private static void clearMobGhostsIfStale(ServerPlayer player) {
+        if (LAST_MOB_GHOSTS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.EditorMobGhostsPacket.empty());
         }
     }
 

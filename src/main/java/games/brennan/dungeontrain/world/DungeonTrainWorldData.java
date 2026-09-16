@@ -78,6 +78,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_HELP_PANEL_DISMISSED = "editorHelpPanelDismissed";
     private static final String TAG_PORTAL_TEST_RESEED = "portalTestReseed";
     private static final String TAG_EDITOR_OBSERVERS_ON = "editorObserversOn";
+    private static final String TAG_EDITOR_MOBS_LIVE = "editorMobsLive";
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
@@ -274,6 +275,12 @@ public final class DungeonTrainWorldData extends SavedData {
     private boolean portalTestReseed = false;
     /** Editor Settings → Observers. Off mutes every observer inside an editor plot; see {@code EditorObservers}. */
     private boolean editorObserversOn = true;
+    /**
+     * Editor Settings → Mobs. Default Blocks ({@code false}): a spawn egg used in an editor plot places a
+     * frozen, one-hit mob and variant cells with mob entries show a ghost; Live restores vanilla eggs.
+     * See {@code FrozenMobs}.
+     */
+    private boolean editorMobsLive = false;
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -546,6 +553,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_EDITOR_OBSERVERS_ON)) {
             data.editorObserversOn = tag.getBoolean(TAG_EDITOR_OBSERVERS_ON);
         }
+        if (tag.contains(TAG_EDITOR_MOBS_LIVE)) {
+            data.editorMobsLive = tag.getBoolean(TAG_EDITOR_MOBS_LIVE);
+        }
         if (tag.contains(TAG_HELP_PANEL_DISMISSED)) {
             net.minecraft.nbt.ListTag dismissed =
                     tag.getList(TAG_HELP_PANEL_DISMISSED, net.minecraft.nbt.Tag.TAG_STRING);
@@ -642,6 +652,7 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (portalTestReseed) tag.putBoolean(TAG_PORTAL_TEST_RESEED, true);
         if (!editorObserversOn) tag.putBoolean(TAG_EDITOR_OBSERVERS_ON, false);
+        if (editorMobsLive) tag.putBoolean(TAG_EDITOR_MOBS_LIVE, true);
         return tag;
     }
 
@@ -664,6 +675,18 @@ public final class DungeonTrainWorldData extends SavedData {
     public void setEditorObserversOn(boolean on) {
         if (editorObserversOn == on) return;
         editorObserversOn = on;
+        setDirty();
+    }
+
+    /** True when the editor's Mobs setting is Live — eggs spawn wandering mobs, no variant ghosts. */
+    public boolean isEditorMobsLive() {
+        return editorMobsLive;
+    }
+
+    /** Editor Settings → Mobs Blocks ({@code false}) / Live ({@code true}). */
+    public void setEditorMobsLive(boolean live) {
+        if (editorMobsLive == live) return;
+        editorMobsLive = live;
         setDirty();
     }
 
