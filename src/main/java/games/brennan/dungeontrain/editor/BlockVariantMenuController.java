@@ -645,8 +645,11 @@ public final class BlockVariantMenuController {
                     // the COMMAND_BLOCK sentinel state but are distinguished
                     // by entityId, so include it in the dedup key (otherwise
                     // adding the empty-placeholder to a cell already
-                    // containing a mob entry false-positives).
-                    if (existing.state().equals(newVariant.state())
+                    // containing a mob entry false-positives). A group
+                    // reference only *displays* as its placeholder state — it
+                    // is not that block — so it never blocks a concrete add.
+                    if (!existing.isGroupRef()
+                        && existing.state().equals(newVariant.state())
                         && Objects.equals(existing.blockEntityNbt(), newVariant.blockEntityNbt())
                         && Objects.equals(existing.linkedLootPrefabId(), newVariant.linkedLootPrefabId())
                         && Objects.equals(existing.entityId(), newVariant.entityId())) {
