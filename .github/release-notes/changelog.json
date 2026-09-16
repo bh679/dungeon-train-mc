@@ -17097,6 +17097,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bump-playermob-0-99-0",
+      "version": "0.905.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "PlayerMob 0.99.0",
+      "summary": "Dungeon Train now builds against PlayerMob 0.99.0, whose Creative editor can introduce a mob to nearby PlayerMobs and players and mirror a pair's feelings. Update PlayerMob to 0.99.0 to use it; 0.98.0 remains supported.",
+      "highlights": [],
+      "pr": 1446,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
