@@ -340,7 +340,7 @@ public final class EditorPlotLabels {
      * adding {@code footprint.y + 2} clears the top of the cage with a
      * one-block gap.
      */
-    private static BlockPos anchorAbove(BlockPos origin, Vec3i footprint) {
+    public static BlockPos anchorAbove(BlockPos origin, Vec3i footprint) {
         return new BlockPos(
             origin.getX() + footprint.getX() - 1,
             origin.getY() + footprint.getY() + 2,

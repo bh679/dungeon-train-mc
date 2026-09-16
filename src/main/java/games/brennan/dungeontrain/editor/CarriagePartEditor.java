@@ -217,6 +217,14 @@ public final class CarriagePartEditor {
         public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
     }
 
+    /** Whether {@code player} is already inside the plot of {@code (kind, name)}. */
+    private static boolean standingIn(ServerPlayer player, CarriagePartKind kind, String name, CarriageDims dims) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        PlotLocation here = plotContaining(player.blockPosition(), dims);
+        return here != null && here.kind() == kind && here.name().equals(name);
+    }
+
     /**
      * Teleport {@code player} to the plot for {@code (kind, name)}, remembering
      * the return position (shared with {@link CarriageEditor}). Picks
@@ -229,10 +237,24 @@ public final class CarriagePartEditor {
     }
 
     public static void enter(ServerPlayer player, CarriagePartKind kind, String name, boolean onTop) {
+        enter(player, kind, name, onTop, EditorPlotArrival.Inside.CENTRE);
+    }
+
+    /**
+     * @param inside accepted for symmetry with the door-bearing editors; a part has no doorway, so
+     *               both values land at the centre — stepping to the nearest free column if that
+     *               cell is built up.
+     */
+    public static void enter(ServerPlayer player, CarriagePartKind kind, String name, boolean onTop,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        // Read before the un-hide below can shift the layout. Already inside this part's plot is a
+        // walk to its menu, not a reload — restamping would throw away every unsaved edit.
+        boolean alreadyHere = standingIn(player, kind, name, dims);
 
         CarriageEditor.rememberReturn(player);
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
@@ -256,19 +278,18 @@ public final class CarriagePartEditor {
             // Un-hiding re-inserts this part into the middle of the row, shifting its siblings —
             // restamp the whole grid so every plot lands on its final slot.
             stampAllPlots(overworld, dims);
-        } else {
+        } else if (!alreadyHere) {
             CarriagePartPlacer.eraseAt(overworld, origin, kind, dims);
             stampCurrent(overworld, origin, kind, name, dims);
             setOutline(overworld, origin, kind, dims);
         }
 
         Vec3i size = kind.dims(dims);
-        double tx = origin.getX() + size.getX() / 2.0;
-        double ty = onTop
-            ? origin.getY() + size.getY() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + size.getZ() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        if (onTop) {
+            EditorPlotArrival.inFrontOfMenu(origin, size).teleport(player, overworld);
+        } else {
+            EditorPlotArrival.atCentre(overworld, origin, size, player).teleport(player, overworld);
+        }
 
         LOGGER.info("[DungeonTrain] Part editor enter: {} -> {}:{} plot at {} size={}x{}x{} ({})",
             player.getName().getString(), kind.id(), name, origin,

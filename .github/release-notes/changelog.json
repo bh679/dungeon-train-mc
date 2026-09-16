@@ -17137,6 +17137,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "teleport-in-front-of-menu",
+      "version": "0.907.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor teleports land where you want to be",
+      "summary": "Go here and the template list now put you on the plot roof right in front of its floating menu, facing it \u2014 no more landing in the middle of a long build with the menu behind you. Go here is offered even while you're standing in that template, and hopping back to your own plot no longer reloads it, so unsaved work stays put. The panel's Enter button drops you in the front doorway facing in (hold shift for the centre), and every inside landing finds a free spot instead of putting you in a wall.",
+      "highlights": [
+        "Go here lands you in front of the plot's menu, looking at it",
+        "Go here works from inside the template too, without reloading your unsaved edits",
+        "Enter puts you in the front doorway of carriages, contents and dimensional carriages; shift-click for the centre",
+        "Inside landings step to the nearest free space rather than into a block"
+      ],
+      "pr": 1449,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -393,8 +393,12 @@ public final class EditorPlotPanelInputHandler {
         // the renderer's decision not to draw an action row as the sole thing keeping a
         // category without one from reaching a handler that would drop it.
         if (!PlotCategory.fromId(entry.category()).filter(PlotCategory::hasActionRow).isPresent()) return;
+        // Enter lands in the doorway; shift at the click asks for the centre instead. Read here, at
+        // the click, so the modifier means the one the author was holding when they pressed.
+        boolean centre = action == EditorPlotActionPacket.Action.ENTER_INSIDE
+            && net.minecraft.client.gui.screens.Screen.hasShiftDown();
         DungeonTrainNet.sendToServer(new EditorPlotActionPacket(
-            entry.category(), entry.modelId(), entry.modelName(), action));
+            entry.category(), entry.modelId(), entry.modelName(), action, centre));
     }
 
     /**

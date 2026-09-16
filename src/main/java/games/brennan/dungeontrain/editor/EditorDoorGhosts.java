@@ -178,29 +178,13 @@ public final class EditorDoorGhosts {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             if (origin == null) continue;
             Vec3i size = PortalRoomEditor.plotSize(name, dims);
-            // Clamped to what this room's own width and height can actually spend — the same clamps
-            // PortalRoomLayout.roomOrigin applies when the real corridors are stamped, so a ghost
-            // never shows a door further off centre, or higher, than the room really can build.
-            games.brennan.dungeontrain.portal.PortalRoomSettings settings =
-                games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
-            int offset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
-                dims, size.getZ(), settings.doorOffset().value());
-            int heightOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
-                dims, size.getY(), settings.doorHeightOffset().value());
-            // The exit door on its own clamps, not the entry door's: the two ends may stand apart,
-            // and a ghost that drew the far door on the near door's line would be showing the author
-            // a mouth the builder is not going to cut there.
-            int exitOffset = games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorOffset(
-                dims, size.getZ(), settings.exitDoorOffset().value());
-            int exitHeightOffset =
-                games.brennan.dungeontrain.portal.PortalRoomLayout.clampDoorHeightOffset(
-                    dims, size.getY(), settings.exitDoorHeightOffset().value());
-            // doorBases returns the entry end first and the exit end second — its own documented
-            // order, which PortalRoomDoorCellsTest pins. Tagged here rather than left to the
-            // client to infer from the flattened list's parity: a room with a degenerate box
-            // contributes no pair at all, and one missing pair would relabel every door after it.
-            List<BlockPos> bases = PortalRoomDoorCells.doorBases(origin, size, offset, heightOffset,
-                exitOffset, exitHeightOffset);
+            // The same clamped cells the Enter button lands in — PortalRoomEditor.doorBases owns the
+            // clamps so the ghost and the teleport cannot disagree about where the door is.
+            // Entry end first, exit end second — its own documented order, which
+            // PortalRoomDoorCellsTest pins. Tagged here rather than left to the client to infer from
+            // the flattened list's parity: a room with a degenerate box contributes no pair at all,
+            // and one missing pair would relabel every door after it.
+            List<BlockPos> bases = PortalRoomEditor.doorBases(name, origin, size, dims);
             for (int i = 0; i < bases.size(); i++) {
                 out.add(new EditorDoorGhostsPacket.Door(bases.get(i), /*entry*/ i == 0, /*model*/ true));
             }
