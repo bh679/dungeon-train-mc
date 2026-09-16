@@ -74,28 +74,19 @@ jobs:
           fi
 
       # Feeds both mc-publish's `version-type:` and the GitHub Release `prerelease:` flag.
+      # The rule (test → alpha, pre-1.0 → beta, 1.0+ → release) lives in ONE place —
+      # scripts/release/release-type.sh — shared with reupload-curseforge.yml and both modpack
+      # publish scripts, so no publisher can drift onto a different channel.
       - name: Compute release type from tag
         id: release_type
         env:
           IS_TEST: ${{ inputs.test_release }}
         run: |
-          TAG_NUMERIC="${RELEASE_TAG#v}"
-          MAJOR="${TAG_NUMERIC%%.*}"
-          # A test build goes to the alpha channel regardless of version. CurseForge instances
-          # default to the Release channel, so an alpha file isn't offered to ordinary users —
-          # the quietest either platform allows (neither has a private published file).
+          set -euo pipefail
           if [ "$IS_TEST" = "true" ]; then
-            echo "type=alpha" >> "$GITHUB_OUTPUT"
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-            echo "Release type: alpha (test_release=true, tag $RELEASE_TAG)"
-          elif [ "$MAJOR" -gt 0 ] 2>/dev/null; then
-            echo "type=release" >> "$GITHUB_OUTPUT"
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-            echo "Release type: release (tag $RELEASE_TAG, MAJOR=$MAJOR > 0)"
+            scripts/release/release-type.sh "$RELEASE_TAG" --test >> "$GITHUB_OUTPUT"
           else
-            echo "type=beta" >> "$GITHUB_OUTPUT"
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-            echo "Release type: beta (tag $RELEASE_TAG, MAJOR=$MAJOR — pre-1.0)"
+            scripts/release/release-type.sh "$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           fi
 
       - run: ./gradlew build --no-daemon
