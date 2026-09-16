@@ -17013,9 +17013,9 @@
         "Mobs authored frozen wake up when their carriage is stamped onto the train"
       ],
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "block-variant-group-ref-plain-block",
@@ -17033,9 +17033,9 @@
         "Adding a block that a group reference happens to display as no longer reports it as already in the cell."
       ],
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "variant-placeholder-block",
@@ -17053,9 +17053,9 @@
         "Existing builds pick the new look up automatically the next time you open them"
       ],
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z",
       "pr": 1443
     },
     {
@@ -17073,9 +17073,9 @@
       ],
       "pr": 1444,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "release-channel-single-source",
@@ -17094,9 +17094,9 @@
       ],
       "pr": 1445,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "bump-playermob-0-99-0",
@@ -17111,9 +17111,9 @@
       "highlights": [],
       "pr": 1446,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "editor-menus-translated",
@@ -17134,9 +17134,9 @@
       ],
       "pr": 1447,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "teleport-in-front-of-menu",
@@ -17157,9 +17157,9 @@
       ],
       "pr": 1449,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "editor-relay-load-feedback",
@@ -17181,9 +17181,9 @@
       ],
       "pr": 1451,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "editor-stamp-fast-paintings",
@@ -17199,9 +17199,9 @@
       "highlights": [],
       "pr": 1451,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "content-grandisolagenerator",
@@ -17216,9 +17216,9 @@
       "highlights": [],
       "pr": 1451,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     }
   ]
 }
