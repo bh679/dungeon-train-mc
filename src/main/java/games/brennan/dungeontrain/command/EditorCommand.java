@@ -559,6 +559,10 @@ public final class EditorCommand {
             .then(Commands.literal("doorghosts")
                 .then(Commands.literal("on").executes(ctx -> runDoorGhosts(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runDoorGhosts(ctx.getSource(), false))))
+            // The translucent prefab drawn at a bound anchor — see EditorPrefabGhosts.
+            .then(Commands.literal("prefab-ghosts")
+                .then(Commands.literal("on").executes(ctx -> runPrefabGhosts(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runPrefabGhosts(ctx.getSource(), false))))
             // Position-resolved mirror toggle — works in any editor plot. Backs
             // the X-menu Mirror X / Y / Z toggles for every category.
             .then(Commands.literal("mirror")
@@ -3146,6 +3150,16 @@ public final class EditorCommand {
         EditorStrayBlocks.setEnabled(player.getUUID(), on);
         source.sendSuccess(() -> Component.literal(
             "Out-of-plot ghosts: " + (on ? "ON" : "off") + "."
+        ), false);
+        return 1;
+    }
+
+    private static int runPrefabGhosts(CommandSourceStack source, boolean on) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        games.brennan.dungeontrain.editor.PrefabAnchorIndex.setEnabled(player.getUUID(), on);
+        source.sendSuccess(() -> Component.literal(
+            "Prefab ghosts: " + (on ? "ON" : "off") + "."
         ), false);
         return 1;
     }

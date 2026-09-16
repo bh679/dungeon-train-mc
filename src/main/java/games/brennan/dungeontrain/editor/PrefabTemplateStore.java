@@ -54,6 +54,8 @@ public final class PrefabTemplateStore {
     public static synchronized void save(String name, StructureTemplate template) throws IOException {
         TrackVariantStore.save(TrackKind.PREFAB, name, template);
         PrefabSizes.settle(name, template.getSize());
+        // A ghost of this prefab standing in some other plot has to follow the new design.
+        PrefabAnchorIndex.bump();
     }
 
     /** Write {@code template} into the source tree for {@code name} (dev mode). */
@@ -67,6 +69,7 @@ public final class PrefabTemplateStore {
 
     public static synchronized boolean delete(String name) throws IOException {
         PrefabSizes.forget(name);
+        PrefabAnchorIndex.bump();
         return TrackVariantStore.delete(TrackKind.PREFAB, name);
     }
 

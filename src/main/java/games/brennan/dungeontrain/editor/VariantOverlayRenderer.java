@@ -173,6 +173,15 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, String> LAST_DOOR_GHOSTS_KEY = new HashMap<>();
 
+    /**
+     * Per-player dedup key for the prefab ghosts — {@link PrefabAnchorIndex#generation()} plus the
+     * resident category. The index moves the generation whenever an anchor is placed, removed or
+     * rebound and whenever a prefab is saved or deleted; the category rides along because a switch
+     * moves every plot the ghosts are clipped to. Same {@code null}-means-empty convention as the
+     * door key.
+     */
+    private static final Map<UUID, String> LAST_PREFAB_GHOSTS_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /**
@@ -198,6 +207,7 @@ public final class VariantOverlayRenderer {
         LAST_PART_VIS_KEY.clear();
         LAST_STRAYS_KEY.clear();
         LAST_DOOR_GHOSTS_KEY.clear();
+        LAST_PREFAB_GHOSTS_KEY.clear();
         EditorPlotSky.clearAll();
     }
 
@@ -243,6 +253,7 @@ public final class VariantOverlayRenderer {
         clearPartVisibilityIfStale(player);
         clearStraysIfStale(player);
         clearDoorGhostsIfStale(player);
+        clearPrefabGhostsIfStale(player);
     }
 
     /**
@@ -313,6 +324,7 @@ public final class VariantOverlayRenderer {
             pushPartVisibilitySnapshot(player);
             pushStraysSnapshot(player);
             pushDoorGhostsSnapshot(player, dims);
+            pushPrefabGhostsSnapshot(player, level, dims);
             // Light a portal room's plot with the room's own Sky — the lighting it will ship with,
             // rather than the dark box it was authored in until now.
             if (EditorPlotSky.update(player, dims) == PortalRoomSky.CYCLE) cycleSeen = true;
@@ -1173,6 +1185,48 @@ public final class VariantOverlayRenderer {
         LAST_DOOR_GHOSTS_KEY.put(uuid, key);
         DungeonTrainNet.sendTo(player,
             new games.brennan.dungeontrain.net.EditorDoorGhostsPacket(doors));
+    }
+
+    /**
+     * Push the prefab ghosts — every bound anchor's prefab drawn where it will stamp — when anything
+     * they depend on has moved since the last push. See {@link EditorPrefabGhosts}.
+     */
+    private static void pushPrefabGhostsSnapshot(ServerPlayer player, ServerLevel level, CarriageDims dims) {
+        UUID uuid = player.getUUID();
+        if (!PrefabAnchorIndex.isEnabled(uuid)) {
+            clearPrefabGhostsIfStale(player);
+            return;
+        }
+        EditorCategory category = EditorStampedCategoryState.current().orElse(null);
+        if (category == null) {
+            clearPrefabGhostsIfStale(player);
+            return;
+        }
+        String key = "prefabs/" + category.id() + "/g" + PrefabAnchorIndex.generation();
+        if (key.equals(LAST_PREFAB_GHOSTS_KEY.get(uuid))) return;
+
+        List<games.brennan.dungeontrain.net.EditorPrefabGhostsPacket.Ghost> ghosts =
+            EditorPrefabGhosts.snapshot(level, dims);
+        if (ghosts.isEmpty()) {
+            clearPrefabGhostsIfStale(player);
+            // Remember the empty answer too, or an editor with anchors but no bound ones would
+            // rebuild the (empty) snapshot every tick.
+            LAST_PREFAB_GHOSTS_KEY.put(uuid, key);
+            return;
+        }
+        LAST_PREFAB_GHOSTS_KEY.put(uuid, key);
+        LOGGER.info("[DungeonTrain] Prefab ghosts: {} cell(s) -> {} ({})", ghosts.size(),
+            player.getName().getString(), key);
+        DungeonTrainNet.sendTo(player,
+            new games.brennan.dungeontrain.net.EditorPrefabGhostsPacket(ghosts));
+    }
+
+    /** Send the empty prefab-ghost packet if the player previously had a non-empty snapshot. */
+    private static void clearPrefabGhostsIfStale(ServerPlayer player) {
+        if (LAST_PREFAB_GHOSTS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.EditorPrefabGhostsPacket.empty());
+        }
     }
 
     /** Send the empty door-ghost packet if the player previously had a non-empty snapshot. */

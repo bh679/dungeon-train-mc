@@ -72,6 +72,9 @@ public final class DebugCommand {
             // prefab anchors the resolver should have consumed (PrefabResolver); with a pIdx, also
             // dumps that carriage's non-air blocks by local offset so a stamped prefab can be read
             // back where vanilla commands cannot reach (shipyard chunks are not vanilla-loaded).
+            // /dungeontrain debug prefab-ghosts — the prefab ghost snapshot the editor would send:
+            // cell count and the first few cells, for checking the overlay without a client.
+            .then(Commands.literal("prefab-ghosts").executes(ctx -> runPrefabGhosts(ctx.getSource())))
             .then(Commands.literal("prefab-anchors")
                 .executes(ctx -> runPrefabAnchorScan(ctx.getSource(), null))
                 .then(Commands.argument("pIdx", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
@@ -611,6 +614,25 @@ public final class DebugCommand {
         LOGGER.info("[DungeonTrain] Stage placeholder scan: {} leaked across {} carriage(s); top {}",
             leaked, carriages, fTop);
         return leaked == 0 ? 1 : 0;
+    }
+
+    private static int runPrefabGhosts(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        CarriageDims dims = games.brennan.dungeontrain.world.DungeonTrainWorldData.get(level).dims();
+        java.util.List<games.brennan.dungeontrain.net.EditorPrefabGhostsPacket.Ghost> ghosts =
+            games.brennan.dungeontrain.editor.EditorPrefabGhosts.snapshot(level, dims);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(12, ghosts.size()); i++) {
+            var g = ghosts.get(i);
+            sb.append(g.pos().toShortString()).append('=')
+              .append(net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(g.state().getBlock()).getPath())
+              .append(' ');
+        }
+        final String head = sb.toString().trim();
+        source.sendSuccess(() -> Component.literal("Prefab ghosts: " + ghosts.size() + " cell(s), anchors indexed: "
+            + games.brennan.dungeontrain.editor.PrefabAnchorIndex.anchorsIn(level.dimension()).size()
+            + (head.isEmpty() ? "" : " — " + head)), false);
+        return ghosts.isEmpty() ? 0 : 1;
     }
 
     private static int runPrefabAnchorScan(CommandSourceStack source, Integer dumpPIdx) {

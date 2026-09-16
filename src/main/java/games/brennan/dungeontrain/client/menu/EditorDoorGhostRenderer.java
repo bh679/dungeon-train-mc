@@ -184,7 +184,7 @@ public final class EditorDoorGhostRenderer {
         ps.translate(-cam.x, -cam.y, -cam.z);
 
         BlockRenderDispatcher blocks = mc.getBlockRenderer();
-        MultiBufferSource ghost = type -> new GhostBuffer(buffer.getBuffer(RenderType.translucent()));
+        MultiBufferSource ghost = type -> new GhostBuffer(buffer.getBuffer(RenderType.translucent()), GHOST_ALPHA);
         for (EditorDoorGhostsPacket.Door d : snapshot) {
             // Only where the plot has no door of its own — see EditorDoorGhostsPacket.Door#model.
             if (!d.model() || culled(d, cam)) continue;
@@ -289,53 +289,5 @@ public final class EditorDoorGhostRenderer {
             entry ? ENTRY_GREEN : EXIT_GREEN,
             entry ? ENTRY_BLUE : EXIT_BLUE,
             1.0f);
-    }
-
-    /**
-     * A {@link VertexConsumer} that caps the alpha of everything written through it, so an opaque
-     * block model comes out as a ghost.
-     *
-     * <p>{@code min} rather than an outright overwrite so a model that is already more transparent
-     * than {@link #GHOST_ALPHA} stays that way. Every override returns {@code this} rather than the
-     * delegate — the vertex builders chain these calls, and handing back the raw delegate would let
-     * the rest of the chain write past the cap.</p>
-     */
-    private record GhostBuffer(VertexConsumer delegate) implements VertexConsumer {
-
-        @Override
-        public VertexConsumer addVertex(float x, float y, float z) {
-            delegate.addVertex(x, y, z);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setColor(int red, int green, int blue, int alpha) {
-            delegate.setColor(red, green, blue, Math.min(alpha, GHOST_ALPHA));
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setUv(float u, float v) {
-            delegate.setUv(u, v);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setUv1(int u, int v) {
-            delegate.setUv1(u, v);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setUv2(int u, int v) {
-            delegate.setUv2(u, v);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer setNormal(float normalX, float normalY, float normalZ) {
-            delegate.setNormal(normalX, normalY, normalZ);
-            return this;
-        }
     }
 }
