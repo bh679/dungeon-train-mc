@@ -35,8 +35,7 @@ public final class ParentRemoveConfirmScreen implements MenuScreen {
      */
     public ParentRemoveConfirmScreen(String modelLabel, String baseCommand,
                                      int subVariantCount, String firstSubVariantLabel) {
-        this.title = MenuLang.t(subVariantCount == 1 ? "parent_remove.title.one" : "parent_remove.title.other",
-            modelLabel, subVariantCount);
+        this.title = MenuLang.plural("parent_remove.title", subVariantCount, modelLabel);
         this.baseCommand = baseCommand;
         this.subVariantCount = subVariantCount;
         this.firstSubVariantLabel = firstSubVariantLabel;
@@ -46,8 +45,7 @@ public final class ParentRemoveConfirmScreen implements MenuScreen {
 
     @Override public List<CommandMenuEntry> entries() {
         return List.of(
-            new CommandMenuEntry.Run(MenuLang.t(subVariantCount == 1
-                ? "parent_remove.delete_all.one" : "parent_remove.delete_all.other", subVariantCount), command(MODE_ALL)),
+            new CommandMenuEntry.Run(MenuLang.plural("parent_remove.delete_all", subVariantCount), command(MODE_ALL)),
             new CommandMenuEntry.Run(MenuLang.t("parent_remove.unparent"), command(MODE_UNPARENT)),
             new CommandMenuEntry.Run(MenuLang.t("parent_remove.promote", firstSubVariantLabel),
                 command(MODE_PROMOTE)),

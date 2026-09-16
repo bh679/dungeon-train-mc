@@ -36,6 +36,21 @@ public final class MenuLang {
     }
 
     /**
+     * The count-dependent line {@code PREFIX + base} in the plural form the client's language
+     * wants for {@code n} — {@code plural("changes.count", 5)} resolves {@code …changes.count.many}
+     * in Russian and {@code …changes.count.other} in English. {@code n} is passed first, then
+     * {@code extra}, so a line can also name the thing being counted.
+     */
+    public static String plural(String base, long n, Object... extra) {
+        String locale = games.brennan.dungeontrain.client.ClientLanguage.selected();
+        String form = games.brennan.dungeontrain.narrative.PluralRules.category(locale, n);
+        Object[] args = new Object[extra.length + 1];
+        args[0] = n;
+        System.arraycopy(extra, 0, args, 1, extra.length);
+        return t(base + "." + form, args);
+    }
+
+    /**
      * A translated name for a data-driven id — a portal-room setting, a stage palette row — under
      * {@code PREFIX + group + "." + id}, or {@code fallback} (the code's own display name) when
      * no locale has a line for it yet.

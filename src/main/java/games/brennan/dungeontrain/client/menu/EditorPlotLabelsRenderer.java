@@ -492,7 +492,7 @@ public final class EditorPlotLabelsRenderer {
         String across = value == 0 ? MenuLang.t("plot.door_centred")
             : (value > 0 ? "+" + value : Integer.toString(value));
         String up = height == 0 ? MenuLang.t("plot.door_at_floor")
-            : MenuLang.t(height == 1 ? "plot.door_up.one" : "plot.door_up.other", height);
+            : MenuLang.plural("plot.door_up", height);
         return MenuLang.t("plot.door_position", across, up);
     }
 

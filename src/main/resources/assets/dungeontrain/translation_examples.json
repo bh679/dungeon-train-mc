@@ -5685,34 +5685,34 @@
   },
   "gui.dungeontrain.editor_menu.parent_remove.title.one": {
     "1": {
+      "label": "the number of sub-variants, always 1 here",
+      "examples": [
+        "1"
+      ]
+    },
+    "2": {
       "label": "the template's friendly name or path",
       "examples": [
         "track / track2",
         "maze",
         "fire"
-      ]
-    },
-    "2": {
-      "label": "the number of sub-variants, always 1 here",
-      "examples": [
-        "1"
       ]
     }
   },
   "gui.dungeontrain.editor_menu.parent_remove.title.other": {
     "1": {
+      "label": "the number of sub-variants",
+      "examples": [
+        "2",
+        "5"
+      ]
+    },
+    "2": {
       "label": "the template's friendly name or path",
       "examples": [
         "track / track2",
         "maze",
         "fire"
-      ]
-    },
-    "2": {
-      "label": "the number of sub-variants",
-      "examples": [
-        "2",
-        "5"
       ]
     }
   },

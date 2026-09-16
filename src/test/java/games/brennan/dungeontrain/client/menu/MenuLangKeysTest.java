@@ -41,6 +41,8 @@ class MenuLangKeysTest {
     /** {@code MenuLang.t("prefix." + key)} — the enum-suffix form; those keys are checked by name below. */
     private static final Pattern T_DYNAMIC = Pattern.compile("MenuLang\\.t\\(\\s*\"([^\"]+\\.)\"\\s*\\+");
     private static final Pattern NAMED_CALL = Pattern.compile("MenuLang\\.named\\(\\s*\"([^\"]+)\"");
+    /** {@code MenuLang.plural("base", n)} — resolves {@code base.<category>}; en_us carries one + other. */
+    private static final Pattern PLURAL_CALL = Pattern.compile("MenuLang\\.plural\\(\\s*\"([^\"]+)\"");
 
     private static JsonObject english() throws IOException {
         return JsonParser.parseString(Files.readString(RepoPaths.root().resolve(LANG),
@@ -73,6 +75,16 @@ class MenuLangKeysTest {
                     }
                 }
             }
+            Matcher pl = PLURAL_CALL.matcher(src);
+            while (pl.find()) {
+                for (String form : List.of("one", "other")) {
+                    String key = MenuLang.PREFIX + pl.group(1) + "." + form;
+                    checked++;
+                    if (!en.has(key)) {
+                        missing.add(p.getFileName() + ": " + key);
+                    }
+                }
+            }
         }
         assertTrue(checked > 300, "expected the sweep to find the menu labels, found " + checked);
         assertEquals(List.of(), missing);
@@ -101,6 +113,10 @@ class MenuLangKeysTest {
             Matcher n = NAMED_CALL.matcher(src);
             while (n.find()) {
                 dynamicPrefixes.add(MenuLang.PREFIX + n.group(1) + ".");
+            }
+            Matcher pl = PLURAL_CALL.matcher(src);
+            while (pl.find()) {
+                dynamicPrefixes.add(MenuLang.PREFIX + pl.group(1) + ".");
             }
         }
         // MenuLang.typeName builds "type_name.<slug>" from what the server pushed.

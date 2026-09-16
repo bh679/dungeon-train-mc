@@ -63,7 +63,7 @@ public final class ChangesListScreen implements MenuScreen {
         }
 
         List<CommandMenuEntry> out = new ArrayList<>(Math.min(changes.size(), MAX_ROWS) + 2);
-        out.add(new CommandMenuEntry.Label(MenuLang.t(changes.size() == 1 ? "changes.count.one" : "changes.count.other", changes.size())));
+        out.add(new CommandMenuEntry.Label(MenuLang.plural("changes.count", changes.size())));
         int shown = Math.min(changes.size(), MAX_ROWS);
         for (int i = 0; i < shown; i++) {
             EditorDirtyCheck.DiffEntry d = changes.get(i);
