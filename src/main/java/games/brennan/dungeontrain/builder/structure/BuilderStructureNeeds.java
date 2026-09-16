@@ -119,6 +119,8 @@ public final class BuilderStructureNeeds {
             case INSIDE_CARRIAGE -> insideCarriage(out, ctx);
             case TRACKS_TUNNELS -> trackSide(out, ctx);
             case TRAIN_DIMENSIONS -> dimensionalCarriages(out, ctx);
+            // No builder world for prefabs yet — see BuilderMode.inBuilderWorld.
+            case PREFABS -> { }
         }
         return List.copyOf(out);
     }
@@ -203,6 +205,7 @@ public final class BuilderStructureNeeds {
             // A room's copies are RoomTile/RoomBedrock, which read the open build directly and have
             // never gone through a store at all. Nothing here to redirect.
             case TRAIN_DIMENSIONS -> null;
+            case PREFABS -> null;
         };
     }
 

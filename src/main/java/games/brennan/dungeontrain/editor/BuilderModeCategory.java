@@ -27,6 +27,7 @@ public final class BuilderModeCategory {
             case INSIDE_CARRIAGE -> EditorCategory.CONTENTS;
             case TRACKS_TUNNELS -> EditorCategory.TRACKS;
             case TRAIN_DIMENSIONS -> EditorCategory.PORTALS;
+            case PREFABS -> EditorCategory.PREFABS;
         };
     }
 

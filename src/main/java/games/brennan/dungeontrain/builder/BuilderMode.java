@@ -32,7 +32,13 @@ public enum BuilderMode {
     TRAIN_OUTSIDE("train_outside", BuilderWorldLayout.OUTSIDE_CARRIAGES),
     INSIDE_CARRIAGE("inside_carriage", BuilderWorldLayout.INSIDE_CARRIAGES),
     TRACKS_TUNNELS("tracks_tunnels", 0),
-    TRAIN_DIMENSIONS("train_dimensions", 0);
+    TRAIN_DIMENSIONS("train_dimensions", 0),
+    /**
+     * Prefabs — designs of any size placed into other templates by a Prefab Anchor. Editor only:
+     * a prefab has no builder world yet, so {@link #inBuilderWorld()} keeps it off the Train
+     * Builder's picker while the editor's Nav tab and the title-screen editor picker show it.
+     */
+    PREFABS("prefabs", 0);
 
     private final String id;
     private final int carriageCount;
@@ -52,6 +58,20 @@ public enum BuilderMode {
      */
     public int carriageCount() {
         return carriageCount;
+    }
+
+    /** Whether the Train Builder can open a world for this mode. False only for {@link #PREFABS}. */
+    public boolean inBuilderWorld() {
+        return this != PREFABS;
+    }
+
+    /** The modes a picker shows: every mode for the editor, the builder-capable ones for the builder. */
+    public static java.util.List<BuilderMode> forPicker(boolean editor) {
+        java.util.List<BuilderMode> out = new java.util.ArrayList<>();
+        for (BuilderMode m : values()) {
+            if (editor || m.inBuilderWorld()) out.add(m);
+        }
+        return out;
     }
 
     /** Stable lower-case token — used in world names, logs, and (later) commands. */

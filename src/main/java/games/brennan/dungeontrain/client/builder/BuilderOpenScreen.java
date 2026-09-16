@@ -140,11 +140,11 @@ public final class BuilderOpenScreen extends Screen {
         //
         // The mode's own art, not a template preview: the grid below is already showing every
         // template's photo, so a second picture of one of them would just compete with it.
-        BuilderModeStripLayout strip = BuilderModeStripLayout.of(this.width, y, mode.ordinal(),
+        java.util.List<BuilderMode> modes = BuilderMode.forPicker(false);
+        BuilderModeStripLayout strip = BuilderModeStripLayout.of(this.width, y, Math.max(0, modes.indexOf(mode)),
                 CONTROL_WIDTH, BuilderTypeControls.ART_HEIGHT);
-        BuilderMode[] modes = BuilderMode.values();
-        for (int slot = 0; slot < BuilderModeStripLayout.SLOTS; slot++) {
-            BuilderMode tileMode = modes[slot];
+        for (int slot = 0; slot < BuilderModeStripLayout.SLOTS && slot < modes.size(); slot++) {
+            BuilderMode tileMode = modes.get(slot);
             boolean isSelected = strip.isSelected(slot);
             this.addRenderableWidget(new BuilderTileButton(
                     strip.xFor(slot), strip.yFor(slot), strip.widthFor(slot), strip.heightFor(slot),

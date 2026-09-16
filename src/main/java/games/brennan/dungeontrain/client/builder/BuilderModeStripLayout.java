@@ -28,7 +28,8 @@ record BuilderModeStripLayout(int originX, int topY, int selectedSlot,
                               int smallWidth, int smallHeight, int gap) {
 
     /** One slot per mode. Derived so a fifth mode joins the strip rather than falling off it. */
-    static final int SLOTS = BuilderMode.values().length;
+    /** The builder-world modes only — a mode with no builder world has no strip tile. */
+    static final int SLOTS = BuilderMode.forPicker(false).size();
 
     static final int GAP = 4;
 

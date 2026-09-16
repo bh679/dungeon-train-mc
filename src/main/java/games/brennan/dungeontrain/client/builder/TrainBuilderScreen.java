@@ -119,12 +119,14 @@ public final class TrainBuilderScreen extends Screen {
     protected void init() {
         int topY = TITLE_TOP + this.font.lineHeight + BODY_TOP_PADDING;
 
-        layout = BuilderPickerLayout.of(this.width, this.height, topY, this.height - BODY_BOTTOM_MARGIN);
+        // The editor picker shows every mode; the builder picker only those with a builder world.
+        List<BuilderMode> modes = BuilderMode.forPicker(launch == Launch.EDITOR_WORLD);
+        layout = BuilderPickerLayout.of(this.width, this.height, topY, this.height - BODY_BOTTOM_MARGIN,
+                modes.size());
 
-        BuilderMode[] modes = BuilderMode.values();
         List<BuilderPickerLayout.Rect> cells = layout.tiles();
-        for (int i = 0; i < modes.length && i < cells.size(); i++) {
-            BuilderMode mode = modes[i];
+        for (int i = 0; i < modes.size() && i < cells.size(); i++) {
+            BuilderMode mode = modes.get(i);
             BuilderPickerLayout.Rect cell = cells.get(i);
             this.addRenderableWidget(BuilderTileButton.pickerTile(
                     cell.x(), cell.y(), cell.w(), cell.h(), mode, mode == selected, b -> select(mode)));

@@ -27,7 +27,9 @@ final class BuilderModeTest {
             assertTrue(keys.add(mode.labelKey()), "duplicate label key: " + mode.labelKey());
             assertTrue(textures.add(mode.texturePath()), "duplicate texture: " + mode.texturePath());
         }
-        assertEquals(4, ids.size(), "the picker screen lays out exactly four tiles (2x2)");
+        assertEquals(5, ids.size(), "four builder tiles plus the editor-only Prefabs tile");
+        assertEquals(4, BuilderMode.forPicker(false).size(), "the Train Builder picker lays out exactly four tiles (2x2)");
+        assertEquals(5, BuilderMode.forPicker(true).size(), "the editor picker shows every mode");
     }
 
     @Test

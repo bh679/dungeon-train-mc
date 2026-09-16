@@ -60,6 +60,8 @@ public final class BuilderDefaultOpen {
             // side* of the mouth — BuilderOpenOptions.openSourceFor sends it to PORTAL_ROOMS — so
             // opening TUNNEL_PORTAL here put the tunnel mouth on the plot and called it a dimension.
             case TRAIN_DIMENSIONS -> first(portalRooms).map(BuilderOpenRequest::forPortalRoom);
+            // Nothing to open: prefabs are authored in the editor, not a builder world.
+            case PREFABS -> Optional.empty();
         };
     }
 

@@ -21,13 +21,13 @@ final class EditorNavPaneTest {
     }
 
     @Test
-    @DisplayName("four 16:9 tiles, two per row, inside the column at every size that matters")
+    @DisplayName("one 16:9 tile per mode, two per row, inside the column at every size that matters")
     void tilesFit() {
         for (int[] size : new int[][] {{427, 240}, {640, 360}, {1920, 1080}}) {
             InventoryEditorLayout layout = InventoryEditorLayout.of(size[0], size[1], false);
             Rect area = EditorNavPane.rect(layout);
             List<Rect> tiles = EditorNavPane.tiles(area);
-            assertEquals(4, tiles.size());
+            assertEquals(6, tiles.size(), "five modes round up to three rows of two");
             for (Rect t : tiles) {
                 assertTrue(t.x() >= area.x() && t.right() <= area.right(), size[0] + "x" + size[1] + ": " + t + " leaves " + area);
                 assertTrue(t.y() >= area.y() && t.bottom() <= area.bottom(), size[0] + "x" + size[1] + ": " + t + " leaves " + area);

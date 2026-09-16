@@ -64,14 +64,22 @@ final class EditorNavPane {
      * fit can be tested at the sizes that matter without a client.
      */
     static List<InventoryEditorLayout.Rect> tiles(InventoryEditorLayout.Rect area) {
+        return tiles(area, BuilderMode.values().length);
+    }
+
+    /** {@link #tiles(InventoryEditorLayout.Rect)} for {@code count} tiles, two per row. */
+    static List<InventoryEditorLayout.Rect> tiles(InventoryEditorLayout.Rect area, int count) {
         int cols = 2;
-        int rows = 2;
+        int rows = Math.max(1, (count + cols - 1) / cols);
         int tileW = Math.max(1, (area.w() - TILE_GAP * (cols - 1)) / cols);
         int tileH = tileW * 9 / 16;
         int maxTileH = Math.max(1, (area.h() - TILE_GAP * (rows - 1)) / rows);
         if (tileH > maxTileH) {
             tileH = maxTileH;
             tileW = Math.max(1, tileH * 16 / 9);
+            // Back through the same integer maths the width→height path uses, so a height-capped
+            // grid is exactly 16:9 rather than one pixel off when 16/9 does not divide evenly.
+            tileH = Math.max(1, tileW * 9 / 16);
         }
         int gridW = cols * tileW + TILE_GAP * (cols - 1);
         int gridH = rows * tileH + TILE_GAP * (rows - 1);
