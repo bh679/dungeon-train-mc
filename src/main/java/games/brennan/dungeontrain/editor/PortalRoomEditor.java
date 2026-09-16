@@ -114,7 +114,18 @@ public final class PortalRoomEditor {
     }
 
     public static void enter(ServerPlayer player, String name, boolean onTop) {
-        enter(player, name, onTop, true);
+        // Already inside this room: a walk to its menu, not a reload — restamping would throw away
+        // every unsaved edit in every room for the sake of a few blocks' teleport.
+        enter(player, name, onTop, !standingIn(player, name));
+    }
+
+    /** Whether {@code player} is already inside room {@code name}'s plot. */
+    private static boolean standingIn(ServerPlayer player, String name) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        String here = plotContaining(player.blockPosition(), dims);
+        return here != null && here.equalsIgnoreCase(name);
     }
 
     /**

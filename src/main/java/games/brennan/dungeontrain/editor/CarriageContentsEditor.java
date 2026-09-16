@@ -324,7 +324,19 @@ public final class CarriageContentsEditor {
     }
 
     public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant, boolean onTop) {
-        enter(player, contents, shellVariant, onTop, true);
+        // Already inside, and not asking for a different shell: a walk to the menu, not a reload —
+        // restamping would throw away every unsaved edit. An explicit shell is a change to make.
+        boolean stamp = shellVariant != null || !standingIn(player, contents);
+        enter(player, contents, shellVariant, onTop, stamp);
+    }
+
+    /** Whether {@code player} is already inside {@code contents}' plot. */
+    private static boolean standingIn(ServerPlayer player, CarriageContents contents) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        CarriageContents here = plotContaining(player.blockPosition(), dims);
+        return here != null && here.id().equals(contents.id());
     }
 
     /**

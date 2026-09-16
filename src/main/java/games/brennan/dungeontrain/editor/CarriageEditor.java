@@ -202,7 +202,21 @@ public final class CarriageEditor {
     }
 
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop) {
-        enter(player, variant, onTop, true);
+        enter(player, variant, onTop, !standingIn(player, variant));
+    }
+
+    /**
+     * Whether {@code player} is already inside {@code variant}'s plot.
+     *
+     * <p>Entering a plot you are standing in is a walk to its menu, not a reload — restamping
+     * would throw away every unsaved edit for the sake of a few blocks' teleport.</p>
+     */
+    private static boolean standingIn(ServerPlayer player, CarriageVariant variant) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        CarriageVariant here = plotContaining(player.blockPosition(), dims);
+        return here != null && here.id().equals(variant.id());
     }
 
     /**

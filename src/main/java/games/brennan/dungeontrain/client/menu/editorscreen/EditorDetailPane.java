@@ -99,9 +99,10 @@ public final class EditorDetailPane {
             () -> EditorScreenActions.roomModeOf(ctx, EditorStatusHudOverlay::roomMode));
         test = EditorScreenActions.testEntry(ctx);
         // Standing somewhere else is not just a fact to report — it is the one thing in the way of
-        // half these controls, so the header offers the walk rather than only naming it.
-        goHere = ctx.hasSelection() && !ctx.standingInSelection()
-            ? EditorScreenActions.enterEntry(ctx) : null;
+        // half these controls, so the header offers the walk rather than only naming it. Offered
+        // while standing in the plot too: the walk lands in front of the plot's menu, which is
+        // somewhere to want to be from anywhere inside it.
+        goHere = ctx.hasSelection() ? EditorScreenActions.enterEntry(ctx) : null;
         // A new selection starts on its first page; a shorter list clamps the page it was on.
         if (ctx.selection() == null || !ctx.selection().equals(pagedFor)) page = 0;
         pagedFor = ctx.selection();
@@ -317,14 +318,19 @@ public final class EditorDetailPane {
         }
         int saveX = h.right() - 1;
         goHereRect = null;
+        String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
+        int w = font.width(label) + 8;
         if (ctx.standingInSelection()) {
+            // The status keeps its place; the button follows it, so the sentence gives way to the
+            // button rather than the other way round when the header runs short.
             String status = "● " + EditorScreenLang.text(EditorScreenLang.YOU_ARE_HERE);
-            g.drawString(font, font.plainSubstrByWidth(status, Math.max(0, saveX - x - 4)),
-                x, ty, HERE_TEXT, false);
-        } else if (goHere != null) {
+            int room = saveX - x - 4 - (goHere != null ? w + 4 : 0);
+            String shown = font.plainSubstrByWidth(status, Math.max(0, room));
+            g.drawString(font, shown, x, ty, HERE_TEXT, false);
+            x += font.width(shown) + 6;
+        }
+        if (goHere != null) {
             // A button, not a sentence: the answer to "you are not there" is to go.
-            String label = EditorScreenLang.text(EditorScreenLang.GO_HERE);
-            int w = font.width(label) + 8;
             int bx = Math.min(x, Math.max(h.x(), saveX - w - 2));
             goHereRect = new InventoryEditorLayout.Rect(bx, h.y() + 1, w, h.h() - 2);
             boolean hot = hovered.kind() == HitKind.GO_HERE;

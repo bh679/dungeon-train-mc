@@ -103,7 +103,17 @@ public final class TrackEditor {
     }
 
     public static void enter(ServerPlayer player, boolean onTop) {
-        enter(player, onTop, true);
+        // Already inside the default tile plot: a walk to its menu, not a reload — restamping would
+        // throw away every unsaved edit for the sake of a few blocks' teleport.
+        enter(player, onTop, !standingInDefault(player));
+    }
+
+    /** Whether {@code player} is already inside the default track tile's plot. */
+    private static boolean standingInDefault(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        return TrackKind.DEFAULT_NAME.equals(resolveName(player.blockPosition(), dims));
     }
 
     /**

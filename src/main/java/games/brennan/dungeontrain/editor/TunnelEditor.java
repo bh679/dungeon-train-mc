@@ -118,7 +118,17 @@ public final class TunnelEditor {
     }
 
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop) {
-        enter(player, variant, onTop, true);
+        // Already inside this variant's default plot: a walk to its menu, not a reload — restamping
+        // would throw away every unsaved edit for the sake of a few blocks' teleport.
+        enter(player, variant, onTop, !standingIn(player, variant));
+    }
+
+    /** Whether {@code player} is already inside {@code variant}'s default-named plot. */
+    private static boolean standingIn(ServerPlayer player, TunnelVariant variant) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        TunnelPlot here = plotContainingNamed(player.blockPosition());
+        return here != null && here.variant() == variant && TrackKind.DEFAULT_NAME.equals(here.name());
     }
 
     /**
