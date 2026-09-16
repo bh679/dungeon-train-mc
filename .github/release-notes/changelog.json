@@ -17076,6 +17076,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "release-channel-single-source",
+      "version": "0.904.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "internal"
+      ],
+      "title": "Every Dungeon Train build ships as a beta, even re-uploads",
+      "summary": "Dungeon Train is still pre-1.0, so every build is published as a beta on CurseForge, Modrinth and GitHub. One CurseForge re-upload (0.692.0) slipped out marked as a full release, which made the CurseForge app prefer that old file over newer builds for anyone on the default Release filter. The release channel is now decided in one place for every upload path, so that can't happen again.",
+      "highlights": [
+        "Recovery re-uploads to CurseForge use the same beta/release channel as the original release.",
+        "Modpack uploads on CurseForge and Modrinth follow the same rule."
+      ],
+      "pr": 1445,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
