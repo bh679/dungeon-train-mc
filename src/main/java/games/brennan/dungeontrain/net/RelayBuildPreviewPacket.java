@@ -24,14 +24,18 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * handler, where a build too heavy to read is a tile that keeps its name plate and nothing
  * else.</p>
  */
-public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, boolean found, boolean retryable,
-                                      byte[] template)
+public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, int[] parentSeqs, String[] authors,
+                                      boolean found, boolean retryable, byte[] template)
         implements CustomPacketPayload {
 
     /** The build as it is now — no version, no index. */
     public RelayBuildPreviewPacket(int relayId, boolean found, boolean retryable, byte[] template) {
-        this(relayId, 0, new int[0], found, retryable, template);
+        this(relayId, 0, new int[0], new int[0], new String[0], found, retryable, template);
     }
+
+    /** As many versions as cross in one answer, and how long a name may be on the wire. */
+    static final int MAX_VERSIONS = 4096;
+    static final int MAX_AUTHOR = 64;
 
     /** Ceiling on the wire, under NeoForge's own payload limit. The server sends well below it. */
     public static final int MAX_BYTES = 900 * 1024;
@@ -45,11 +49,16 @@ public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, boolean 
                 buf.writeVarInt(packet.relayId);
                 buf.writeVarInt(packet.seq);
                 buf.writeVarIntArray(packet.seqs);
+                buf.writeVarIntArray(packet.parentSeqs);
+                buf.writeCollection(java.util.Arrays.asList(packet.authors), (b, a) -> b.writeUtf(a == null ? "" : a, MAX_AUTHOR));
                 buf.writeBoolean(packet.found);
                 buf.writeBoolean(packet.retryable);
                 buf.writeByteArray(packet.template);
             },
-            buf -> new RelayBuildPreviewPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarIntArray(4096),
+            buf -> new RelayBuildPreviewPacket(buf.readVarInt(), buf.readVarInt(), buf.readVarIntArray(MAX_VERSIONS),
+                buf.readVarIntArray(MAX_VERSIONS),
+                buf.readCollection(size -> new java.util.ArrayList<String>(Math.min(size, MAX_VERSIONS)),
+                    b -> b.readUtf(MAX_AUTHOR)).toArray(new String[0]),
                 buf.readBoolean(), buf.readBoolean(), buf.readByteArray(MAX_BYTES))
         );
 
@@ -71,7 +80,9 @@ public record RelayBuildPreviewPacket(int relayId, int seq, int[] seqs, boolean 
     public static void handle(RelayBuildPreviewPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             CompoundTag tag = packet.found() ? BuilderRelayPreview.decode(packet.template()) : null;
-            RelayBuildPreviews.accept(packet.relayId(), packet.seq(), packet.seqs(), tag, packet.retryable());
+            RelayBuildPreviews.accept(packet.relayId(), packet.seq(),
+                new RelayBuildPreviews.VersionInfo(packet.seqs(), packet.parentSeqs(), packet.authors()),
+                tag, packet.retryable());
         });
     }
 }

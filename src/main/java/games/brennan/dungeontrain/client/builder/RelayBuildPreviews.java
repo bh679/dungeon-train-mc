@@ -72,8 +72,36 @@ public final class RelayBuildPreviews {
     /** Builds whose ask failed for a reason that may pass, and the moment they may be asked again. */
     private static final Map<Key, Long> RETRY_AFTER = new HashMap<>();
 
-    /** Every seq a build's history holds, oldest first, once an ask for a version has answered. */
-    private static final Map<Integer, int[]> VERSIONS = new HashMap<>();
+    /** Every version a build's history holds, oldest first, once an ask for a version has answered. */
+    private static final Map<Integer, VersionInfo> VERSIONS = new HashMap<>();
+
+    /**
+     * A build's saved versions: their seqs oldest first, and per version the seq it was saved from
+     * (0 = the previous one) and who saved it. The three arrays run in step.
+     */
+    public record VersionInfo(int[] seqs, int[] parentSeqs, String[] authors) {
+        public VersionInfo {
+            seqs = seqs == null ? new int[0] : seqs.clone();
+            parentSeqs = parentSeqs == null || parentSeqs.length != seqs.length ? new int[seqs.length] : parentSeqs.clone();
+            authors = authors == null || authors.length != seqs.length ? new String[seqs.length] : authors.clone();
+        }
+
+        public boolean isEmpty() {
+            return seqs.length == 0;
+        }
+
+        /** The version {@code seq} was saved from, or 0 for none / the previous one. */
+        public int parentOf(int seq) {
+            for (int i = 0; i < seqs.length; i++) if (seqs[i] == seq) return parentSeqs[i];
+            return 0;
+        }
+
+        /** Who saved version {@code seq}, or blank when the relay never said. */
+        public String authorOf(int seq) {
+            for (int i = 0; i < seqs.length; i++) if (seqs[i] == seq) return authors[i] == null ? "" : authors[i];
+            return "";
+        }
+    }
 
     /** Answered and waiting for a frame with budget to bake in. */
     private static final Deque<Pending> PENDING = new ArrayDeque<>();
@@ -120,8 +148,30 @@ public final class RelayBuildPreviews {
 
     /** The seqs this build's history holds, oldest first, or null until a version ask has answered. */
     public static int[] versions(int relayId) {
-        int[] v = VERSIONS.get(relayId);
-        return v == null ? null : v.clone();
+        VersionInfo v = VERSIONS.get(relayId);
+        return v == null ? null : v.seqs().clone();
+    }
+
+    /** Everything known of this build's versions, or null until a version ask has answered. */
+    public static VersionInfo versionInfo(int relayId) {
+        return VERSIONS.get(relayId);
+    }
+
+    /**
+     * Forget what is known of a build's versions, and every version picture with them — after a
+     * save or a load has changed what the relay holds (or where the template stands), so the next
+     * look asks again. The current-build picture (seq 0) stays; it is re-asked on its own terms.
+     */
+    public static void forgetVersions(int relayId) {
+        if (relayId <= 0) return;
+        VERSIONS.remove(relayId);
+        IN_FLIGHT.remove(new Key(relayId, -1));
+        CACHE.entrySet().removeIf(e -> {
+            if (e.getKey().relayId() != relayId || e.getKey().seq() == 0) return false;
+            if (e.getValue().mesh() != null) e.getValue().mesh().close();
+            return true;
+        });
+        RETRY_AFTER.keySet().removeIf(k -> k.relayId() == relayId && k.seq() != 0);
     }
 
     /**
@@ -132,13 +182,13 @@ public final class RelayBuildPreviews {
      * because of one bad moment — it is asked again after {@link #RETRY_MILLIS}, which is long
      * enough that a relay having a hard time is not hammered by a grid full of tiles.</p>
      */
-    public static void accept(int relayId, int seq, int[] seqs, CompoundTag template, boolean retryable) {
+    public static void accept(int relayId, int seq, VersionInfo versions, CompoundTag template, boolean retryable) {
         // A version ask was sent as -1 and answered with the seq it resolved to; both keys are
         // released so neither the ask nor its answer stays "in flight" forever.
         IN_FLIGHT.remove(new Key(relayId, -1));
         Key key = new Key(relayId, seq);
-        if (seqs != null && seqs.length > 0) VERSIONS.put(relayId, seqs.clone());
-        else if (seq != 0 && !VERSIONS.containsKey(relayId)) VERSIONS.put(relayId, new int[0]);
+        if (versions != null && !versions.isEmpty()) VERSIONS.put(relayId, versions);
+        else if (seq != 0 && !VERSIONS.containsKey(relayId)) VERSIONS.put(relayId, new VersionInfo(null, null, null));
         if (template == null || template.isEmpty()) {
             IN_FLIGHT.remove(key);
             if (retryable) {

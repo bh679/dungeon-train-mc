@@ -33,6 +33,8 @@ public final class BuilderRelayBuilds {
     private static final String TAG_SECRET = "s";
     private static final String TAG_TOKEN = "t";
     private static final String TAG_PUBLISHED = "p";
+    private static final String TAG_LOADED_SEQ = "v";
+    private static final String TAG_OWNER = "o";
 
     /**
      * One uploaded build.
@@ -44,19 +46,43 @@ public final class BuilderRelayBuilds {
      *                  one, so an empty token means "claim before saving".
      * @param published whether it is on the train, as far as this world last knew. The relay is the
      *                  authority; this is what the builder's own screen shows before a refresh lands.
+     * @param loadedSeq the relay version the local template currently stands at — what the last
+     *                  load brought down or the last save became — which the next save names as the
+     *                  version it was made from. 0 = unknown (a record from before versions), which
+     *                  the relay reads as "from the current one".
+     * @param ownerUuid whose build this is on the relay when it is not this player's: a dev-build
+     *                  world that loaded somebody else's build as-is saves back into THEIR history,
+     *                  credited as itself. Blank for the player's own builds, which is every record
+     *                  a release build holds.
      */
-    public record Entry(int relayId, String secret, String token, boolean published) {
+    public record Entry(int relayId, String secret, String token, boolean published, int loadedSeq,
+                        String ownerUuid) {
         public Entry {
             secret = secret == null ? "" : secret;
             token = token == null ? "" : token;
+            ownerUuid = ownerUuid == null ? "" : ownerUuid;
+        }
+
+        /** A record of one of the player's own builds, at no particular version. */
+        public Entry(int relayId, String secret, String token, boolean published) {
+            this(relayId, secret, token, published, 0, "");
         }
 
         public Entry withToken(String newToken) {
-            return new Entry(relayId, secret, newToken, published);
+            return new Entry(relayId, secret, newToken, published, loadedSeq, ownerUuid);
         }
 
         public Entry withPublished(boolean nowPublished) {
-            return new Entry(relayId, secret, token, nowPublished);
+            return new Entry(relayId, secret, token, nowPublished, loadedSeq, ownerUuid);
+        }
+
+        public Entry withLoadedSeq(int seq) {
+            return new Entry(relayId, secret, token, published, seq, ownerUuid);
+        }
+
+        /** Whether the relay row belongs to somebody other than this player. */
+        public boolean isForeign() {
+            return !ownerUuid.isEmpty();
         }
     }
 
@@ -127,6 +153,12 @@ public final class BuilderRelayBuilds {
         return null;
     }
 
+    /** Whose relay row a recorded build is, when not this player's — blank for the player's own or unknown ids. */
+    public String ownerForRelayId(int relayId) {
+        String key = keyForRelayId(relayId);
+        return key == null ? "" : byKey.get(key).ownerUuid();
+    }
+
     public boolean isEmpty() {
         return byKey.isEmpty();
     }
@@ -142,6 +174,8 @@ public final class BuilderRelayBuilds {
             t.putString(TAG_SECRET, e.getValue().secret());
             t.putString(TAG_TOKEN, e.getValue().token());
             t.putBoolean(TAG_PUBLISHED, e.getValue().published());
+            if (e.getValue().loadedSeq() > 0) t.putInt(TAG_LOADED_SEQ, e.getValue().loadedSeq());
+            if (e.getValue().isForeign()) t.putString(TAG_OWNER, e.getValue().ownerUuid());
             list.add(t);
         }
         return list;
@@ -155,8 +189,11 @@ public final class BuilderRelayBuilds {
             CompoundTag t = list.getCompound(i);
             String key = t.getString(TAG_KEY);
             if (key.isEmpty() || !t.contains(TAG_ID, Tag.TAG_INT)) continue;
+            // Two fields a record from before versions lacks; absent reads as "unknown" / "mine".
             byKey.put(key, new Entry(t.getInt(TAG_ID), t.getString(TAG_SECRET), t.getString(TAG_TOKEN),
-                    t.getBoolean(TAG_PUBLISHED)));
+                    t.getBoolean(TAG_PUBLISHED),
+                    t.contains(TAG_LOADED_SEQ, Tag.TAG_INT) ? t.getInt(TAG_LOADED_SEQ) : 0,
+                    t.getString(TAG_OWNER)));
         }
     }
 

@@ -228,12 +228,20 @@ public final class SharedCarriageClient {
                 return Optional.empty();
             }
             return Optional.of(new BuildUpload(o.get("id").getAsInt(), str(o, "token"), str(o, "secret"),
-                    o.has("deduped") && o.get("deduped").getAsBoolean()));
+                    o.has("deduped") && o.get("deduped").getAsBoolean(), intOf(o, "seq")));
         });
     }
 
-    /** What a build upload got back: the relay's id, the lease token, and the durable owner secret. */
-    public record BuildUpload(int id, String token, String secret, boolean deduped) {}
+    /**
+     * What a build upload got back: the relay's id, the lease token, the durable owner secret, and
+     * the version the upload is (1 on a create, the current one on a dedupe; 0 from a relay that
+     * predates versions — which the next save reads as "from the current one").
+     */
+    public record BuildUpload(int id, String token, String secret, boolean deduped, int seq) {
+        public BuildUpload(int id, String token, String secret, boolean deduped) {
+            this(id, token, secret, deduped, 0);
+        }
+    }
 
     /**
      * Every build the relay holds for {@code ownerUuid} — what the builder's My Builds screen lists.
@@ -389,50 +397,6 @@ public final class SharedCarriageClient {
 
     /** What the relay calls a row uploaded by ordinary play rather than by the Train Builder. */
     private static final String SOURCE_PLAY = "play";
-
-    /** One reconstructable frame of a build's history: a full snapshot and the deltas since it. */
-    public record HistoryFrame(int seq, int baseSeq, String base, List<String> deltas) {}
-
-    /**
-     * The seqs at which a build's change history was recorded, oldest first — the relay's admin
-     * scrubber index, metadata only. Empty when there is none; null when it could not be asked.
-     *
-     * <p>Admin cap only, like {@link #searchCreators}: the history is the operator's view of how a
-     * build came to be, and a release build has no admin URL to ask with.</p>
-     */
-    public static CompletableFuture<List<Integer>> historyIndex(int id, boolean useLive) {
-        String admin = RelayTarget.adminSearchBase();
-        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
-        String url = admin + "/carriages/" + id + "/history?cap=" + (useLive ? "live" : "dev");
-        return get(url).thenApply(resp -> {
-            JsonObject o = okJson(resp);
-            if (o == null || !o.has("history") || !o.get("history").isJsonArray()) return null;
-            List<Integer> out = new java.util.ArrayList<>();
-            for (JsonElement el : o.getAsJsonArray("history")) {
-                if (el.isJsonObject() && el.getAsJsonObject().has("seq")) {
-                    out.add(el.getAsJsonObject().get("seq").getAsInt());
-                }
-            }
-            return List.copyOf(out);
-        });
-    }
-
-    /** The build as it stood at {@code seq}: newest full snapshot at or before it, and the deltas up to it. */
-    public static CompletableFuture<HistoryFrame> historyFrame(int id, int seq, boolean useLive) {
-        String admin = RelayTarget.adminSearchBase();
-        if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
-        String url = admin + "/carriages/" + id + "/history/" + seq + "?cap=" + (useLive ? "live" : "dev");
-        return get(url).thenApply(resp -> {
-            JsonObject o = okJson(resp);
-            if (o == null || !o.has("frame") || !o.get("frame").isJsonObject()) return null;
-            JsonObject f = o.getAsJsonObject("frame");
-            List<String> deltas = new java.util.ArrayList<>();
-            if (f.has("deltas") && f.get("deltas").isJsonArray()) {
-                for (JsonElement el : f.getAsJsonArray("deltas")) deltas.add(el.getAsString());
-            }
-            return new HistoryFrame(intOf(f, "seq"), intOf(f, "baseSeq"), str(f, "base"), List.copyOf(deltas));
-        });
-    }
 
     /** The creator rows in a search answer, or null when there was no usable answer. */
     private static List<Creator> parseCreators(HttpResponse<String> resp) {
@@ -642,10 +606,19 @@ public final class SharedCarriageClient {
     public record BuildFetch(int id, String kind, String subKind, String buildName, String stage,
                              String visibility, String blocks, int l, int h, int w, int baseSeq,
                              List<DeltaRec> deltas, String secret, String sidecars,
-                             Map<String, String> lootPrefabs) {
+                             Map<String, String> lootPrefabs, int seq, int headSeq, int parentSeq) {
 
         public BuildFetch {
             lootPrefabs = lootPrefabs == null ? Map.of() : Map.copyOf(lootPrefabs);
+        }
+
+        /** A fetch from a relay that said nothing about versions. */
+        public BuildFetch(int id, String kind, String subKind, String buildName, String stage,
+                          String visibility, String blocks, int l, int h, int w, int baseSeq,
+                          List<DeltaRec> deltas, String secret, String sidecars,
+                          Map<String, String> lootPrefabs) {
+            this(id, kind, subKind, buildName, stage, visibility, blocks, l, h, w, baseSeq, deltas,
+                    secret, sidecars, lootPrefabs, 0, 0, 0);
         }
 
         /** A fetch from a relay that said nothing about loot prefabs. */
@@ -654,6 +627,11 @@ public final class SharedCarriageClient {
                           List<DeltaRec> deltas, String secret, String sidecars) {
             this(id, kind, subKind, buildName, stage, visibility, blocks, l, h, w, baseSeq, deltas,
                     secret, sidecars, Map.of());
+        }
+
+        /** Whether this is an older version rather than the build as it stands now. */
+        public boolean isOlderVersion() {
+            return seq > 0 && headSeq > 0 && seq != headSeq;
         }
 
         /** Whether the relay has this build out on the train rather than sitting in the profile. */
@@ -688,9 +666,22 @@ public final class SharedCarriageClient {
 
     /** As above against a named relay — a build is always fetched from the pool it was listed from. */
     public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl) {
+        return fetchBuild(id, ownerUuid, baseUrl, 0);
+    }
+
+    /**
+     * As above, at one saved version of the build.
+     *
+     * @param seq the version wanted — a seq from {@link #versionsOf}; 0 (or the current one) is the
+     *            build as it stands now. An older version comes back with no pending deltas, because
+     *            those are edits on top of the current blocks. A seq the relay does not hold is
+     *            {@link CallStatus#UNKNOWN}, the same as a build it no longer has.
+     */
+    public static CompletableFuture<FetchResult> fetchBuild(int id, String ownerUuid, String baseUrl, int seq) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
+        if (seq > 0) body.addProperty("seq", seq);
         return post(baseUrl, "/carriages/fetch", body).thenApply(resp -> {
             if (resp == null) {
                 logFailure("/carriages/fetch", null);
@@ -715,7 +706,40 @@ public final class SharedCarriageClient {
                     parseDeltas(o), str(o, "secret"), str(o, "sidecars"),
                     // Empty from a relay that predates the field — "nothing to install", the same
                     // way blank sidecars read as "leave mine alone".
-                    TemplateLootPrefabs.decode(o.get("lootPrefabs"))));
+                    TemplateLootPrefabs.decode(o.get("lootPrefabs")),
+                    // Zeroes from a relay that predates versions: "no version to speak of".
+                    intOf(o, "seq"), intOf(o, "headSeq"), intOf(o, "parentSeq")));
+        });
+    }
+
+    /** One saved version of a build: its seq, the version it was saved from (0 = the previous), who, when. */
+    public record Version(int seq, int parentSeq, String uuid, String name, long ts) {}
+
+    /**
+     * The saved versions of a build this player owns, oldest first — each save the relay recorded,
+     * with the version it was made from. Empty when the relay holds none (a relay that predates
+     * versions answers 404, which reads the same); null when it could not be asked.
+     *
+     * <p>Owner-authed like {@link #fetchBuild}, and against the same pool the build was listed from.</p>
+     */
+    public static CompletableFuture<List<Version>> versionsOf(int id, String ownerUuid, String baseUrl) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("uuid", ownerUuid == null ? "" : ownerUuid);
+        return post(baseUrl, "/carriages/versions", body).thenApply(resp -> {
+            if (resp == null) return null;
+            if (resp.statusCode() == 404) return List.of();
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("versions") || !o.get("versions").isJsonArray()) return null;
+            List<Version> out = new java.util.ArrayList<>();
+            for (JsonElement el : o.getAsJsonArray("versions")) {
+                if (!el.isJsonObject()) continue;
+                JsonObject v = el.getAsJsonObject();
+                if (!v.has("seq")) continue;
+                out.add(new Version(intOf(v, "seq"), intOf(v, "parentSeq"), str(v, "uuid"), str(v, "name"),
+                        v.has("ts") && v.get("ts").isJsonPrimitive() ? v.get("ts").getAsLong() : 0L));
+            }
+            return List.copyOf(out);
         });
     }
 
@@ -963,6 +987,19 @@ public final class SharedCarriageClient {
     /** As above, with the loot prefabs the build's chests link to — see {@link #submitBuild}. */
     public static CompletableFuture<CallStatus> save(int id, String token, String blocksBase64, String text,
                                                      int baseSeq, String sidecars, String lootPrefabs) {
+        return save(id, token, blocksBase64, text, baseSeq, sidecars, lootPrefabs, 0).thenApply(SaveResult::status);
+    }
+
+    /**
+     * As above, naming the version this save was made from, and answering with the version it became.
+     *
+     * @param parentSeq the version the local template was loaded from ({@link BuildFetch#seq}, or the
+     *                  seq of the last save); 0 says "the current one", which is every save before
+     *                  versions existed
+     */
+    public static CompletableFuture<SaveResult> save(int id, String token, String blocksBase64, String text,
+                                                     int baseSeq, String sidecars, String lootPrefabs,
+                                                     int parentSeq) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("token", token);
@@ -971,8 +1008,12 @@ public final class SharedCarriageClient {
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         addLootPrefabs(body, lootPrefabs);
-        return statusPost("/carriages/save", body);
+        if (parentSeq > 0) body.addProperty("parentSeq", parentSeq);
+        return resultPost("/carriages/save", body);
     }
+
+    /** What a save got back: whether it landed, and the version it became (0 from an older relay). */
+    public record SaveResult(CallStatus status, int seq) {}
 
     /**
      * The {@code lootPrefabs} field: the prefab document is a JSON object of id → file text, sent as
@@ -1027,6 +1068,26 @@ public final class SharedCarriageClient {
     public static CompletableFuture<CallStatus> ownerSave(int id, String secret, String blocksBase64,
                                                           String text, int baseSeq, String sidecars,
                                                           String lootPrefabs) {
+        return ownerSave(id, secret, blocksBase64, text, baseSeq, sidecars, lootPrefabs, 0, "", "")
+                .thenApply(SaveResult::status);
+    }
+
+    /**
+     * As above, naming the version this save was made from and — when it is not the owner saving —
+     * who is. Answers with the version the save became.
+     *
+     * <p>The actor is a dev who loaded the owner's build into their own editor, changed it, and is
+     * saving it back into the owner's history: the relay credits that version (and the edit trail)
+     * to them, while the row stays the owner's. Blank means the owner.</p>
+     *
+     * @param parentSeq the version the local template was loaded from; 0 says "the current one"
+     * @param actorUuid who is saving, when not the owner; blank for the owner
+     * @param actorName their display name, for the version's caption
+     */
+    public static CompletableFuture<SaveResult> ownerSave(int id, String secret, String blocksBase64,
+                                                          String text, int baseSeq, String sidecars,
+                                                          String lootPrefabs, int parentSeq,
+                                                          String actorUuid, String actorName) {
         JsonObject body = new JsonObject();
         body.addProperty("id", id);
         body.addProperty("secret", secret == null ? "" : secret);
@@ -1036,7 +1097,12 @@ public final class SharedCarriageClient {
         if (text != null && !text.isEmpty()) body.addProperty("text", text);
         if (sidecars != null && !sidecars.isEmpty()) body.addProperty("sidecars", sidecars);
         addLootPrefabs(body, lootPrefabs);
-        return statusPost("/carriages/owner-save", body);
+        if (parentSeq > 0) body.addProperty("parentSeq", parentSeq);
+        if (actorUuid != null && !actorUuid.isBlank()) {
+            body.addProperty("actorUuid", actorUuid);
+            if (actorName != null && !actorName.isBlank()) body.addProperty("actorName", actorName);
+        }
+        return resultPost("/carriages/owner-save", body);
     }
 
     public static CompletableFuture<CallStatus> heartbeat(int id, String token, String holderUuid, String holderName) {
@@ -1134,6 +1200,21 @@ public final class SharedCarriageClient {
             LOGGER.debug("[DungeonTrain] carriage {} failed to start: {}", path, t.toString());
             return CompletableFuture.completedFuture(null);
         }
+    }
+
+    /** {@link #statusPost}, keeping the version seq a save answers with (0 when the relay sent none). */
+    private static CompletableFuture<SaveResult> resultPost(String path, JsonObject body) {
+        return post(path, body).thenApply(resp -> {
+            if (resp == null) return new SaveResult(CallStatus.ERROR, 0);
+            int sc = resp.statusCode();
+            if (sc / 100 == 2) {
+                JsonObject o = okJson(resp);
+                return new SaveResult(CallStatus.OK, o == null ? 0 : intOf(o, "seq"));
+            }
+            if (sc == 403) return new SaveResult(CallStatus.FORBIDDEN, 0);
+            if (sc == 404) return new SaveResult(CallStatus.UNKNOWN, 0);
+            return new SaveResult(CallStatus.ERROR, 0);
+        });
     }
 
     /** POST that only cares about success/forbidden/unknown for save/heartbeat/return. */

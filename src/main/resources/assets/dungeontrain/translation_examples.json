@@ -3081,6 +3081,15 @@
       ]
     }
   },
+  "gui.dungeontrain.builder.profile.saved_theirs": {
+    "1": {
+      "label": "the build that was saved, into another player's history",
+      "examples": [
+        "Brick Carriage",
+        "Long Hall"
+      ]
+    }
+  },
   "gui.dungeontrain.builder.profile.too_big": {
     "1": {
       "label": "the build that is too large for the relay to accept",
@@ -3769,6 +3778,33 @@
       "examples": [
         "7",
         "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.version.from": {
+    "1": {
+      "label": "the number of the version this one was saved from, counting from the oldest",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.version.by": {
+    "1": {
+      "label": "the player who saved this version",
+      "examples": [
+        "Steve",
+        "darkfaruks"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.version.load": {
+    "1": {
+      "label": "the number of the version the button loads, counting from the oldest",
+      "examples": [
+        "2",
+        "5"
       ]
     }
   },

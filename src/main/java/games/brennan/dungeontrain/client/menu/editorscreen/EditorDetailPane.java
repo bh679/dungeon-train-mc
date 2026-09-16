@@ -38,7 +38,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, LOAD_VERSION, PAGE_PREV, PAGE_NEXT }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -287,7 +287,8 @@ public final class EditorDetailPane {
         String name = tile == null ? "" : tile.variant().displayName();
         if (onModelPage()) {
             PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
-            versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
+            // A template's own detail has no load slot, so the strip offers the load itself.
+            versions.draw(g, font, layout.preview(), relayId, seq, true, mouseX, mouseY);
             sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
                 tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
                 ctx.selection(), roomRows);
@@ -444,6 +445,7 @@ public final class EditorDetailPane {
             switch (versions.hit(mx, my)) {
                 case OLDER -> { return new Hit(HitKind.OLDER, 0, 0); }
                 case NEWER -> { return new Hit(HitKind.NEWER, 0, 0); }
+                case LOAD -> { return new Hit(HitKind.LOAD_VERSION, 0, 0); }
                 case NONE -> { }
             }
         }

@@ -152,6 +152,11 @@ public final class EditorScreenLang {
     public static final String LOAD_ALL_PROGRESS = PREFIX + "load_all.progress";
     public static final String VERSION = PREFIX + "version";
     public static final String VERSION_CURRENT = PREFIX + "version.current";
+    /** Under the strip, on an older version: which version it was saved from, and by whom. */
+    public static final String VERSION_FROM = PREFIX + "version.from";
+    public static final String VERSION_BY = PREFIX + "version.by";
+    /** The load button while an older version is showing. */
+    public static final String VERSION_LOAD = PREFIX + "version.load";
     public static final String CREATOR_GOING = PREFIX + "creator.going";
     public static final String CREATOR_LOADING_BUILD = "gui.dungeontrain.builder.profile.downloading";
 

@@ -44,6 +44,46 @@ final class BuilderRelayBuildsTest {
     }
 
     @Test
+    @DisplayName("the version a build stands at, and whose build it is, survive the round trip")
+    void versionAndOwnerRoundTrip() {
+        BuilderRelayBuilds builds = new BuilderRelayBuilds();
+        String mine = BuilderRelayBuilds.keyOf("carriage", "", "mine");
+        String theirs = BuilderRelayBuilds.keyOf("carriage", "", "theirs");
+        builds.put(mine, new BuilderRelayBuilds.Entry(7, "sec-7", "", false).withLoadedSeq(4));
+        builds.put(theirs, new BuilderRelayBuilds.Entry(9, "sec-9", "", false, 2, "owner-uuid"));
+
+        BuilderRelayBuilds reloaded = new BuilderRelayBuilds();
+        reloaded.loadFrom(builds.toTag());
+
+        assertEquals(4, reloaded.get(mine).loadedSeq());
+        assertFalse(reloaded.get(mine).isForeign());
+        assertEquals("", reloaded.ownerForRelayId(7));
+        assertEquals(2, reloaded.get(theirs).loadedSeq());
+        assertTrue(reloaded.get(theirs).isForeign());
+        assertEquals("owner-uuid", reloaded.ownerForRelayId(9));
+        assertEquals("", reloaded.ownerForRelayId(42), "an id nobody recorded is nobody's");
+        // The other with-ers keep both fields.
+        assertEquals(2, reloaded.get(theirs).withToken("t").loadedSeq());
+        assertEquals("owner-uuid", reloaded.get(theirs).withPublished(true).ownerUuid());
+    }
+
+    @Test
+    @DisplayName("a record saved before versions loads as unknown version, this player's build")
+    void recordFromBeforeVersionsLoads() {
+        BuilderRelayBuilds builds = new BuilderRelayBuilds();
+        String cart = BuilderRelayBuilds.keyOf("carriage", "", "old");
+        builds.put(cart, new BuilderRelayBuilds.Entry(3, "sec-3", "", false));
+        ListTag tag = builds.toTag();
+        assertFalse(tag.getCompound(0).contains("v"), "no version, no tag");
+        assertFalse(tag.getCompound(0).contains("o"), "own build, no owner tag");
+
+        BuilderRelayBuilds reloaded = new BuilderRelayBuilds();
+        reloaded.loadFrom(tag);
+        assertEquals(0, reloaded.get(cart).loadedSeq());
+        assertEquals("", reloaded.get(cart).ownerUuid());
+    }
+
+    @Test
     @DisplayName("entries survive a save/load round trip, credentials and all")
     void roundTrips() {
         BuilderRelayBuilds builds = new BuilderRelayBuilds();

@@ -31,6 +31,17 @@ final class BuilderRelayReconcileTest {
     }
 
     @Test
+    @DisplayName("somebody else's build, linked by a dev build, is never offered for restore")
+    void skipsForeignLinks() {
+        String key = BuilderRelayBuilds.keyOf("carriage", "", "theirs");
+        List<Map.Entry<String, BuilderRelayBuilds.Entry>> recorded = List.of(
+                Map.entry(key, new BuilderRelayBuilds.Entry(11, "s", "", false, 3, "owner-uuid")));
+        BuilderRelayReconcile.Scan scan = BuilderRelayReconcile.classify(recorded, Set.of(), everywhere());
+
+        assertTrue(scan.isEmpty(), "their row is not in this player's listing, which is not the same as gone");
+    }
+
+    @Test
     @DisplayName("a missing build whose file is on disk is offered by default")
     void sortsOnDiskBuildsIntoTheFirstTier() {
         BuilderRelayReconcile.Scan scan = BuilderRelayReconcile.classify(

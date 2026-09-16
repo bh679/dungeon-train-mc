@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayDownload;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayInstall;
 import games.brennan.dungeontrain.client.builder.BuilderProfileScreen;
+import games.brennan.dungeontrain.client.builder.BuilderProfileUnsavedScreen;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.client.builder.BuilderTilePreviews;
 import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
@@ -237,6 +238,10 @@ public final class EditorGuiScreen extends Screen {
     private void afterCommand() {
         EditorRosterClient.scheduleRefresh(REFRESH_DELAY_TICKS);
         refreshTicks = REFRESH_DELAY_TICKS;
+        // A command may have saved or loaded the selected build, which changes what the relay holds
+        // of it (and where the local template stands): the version strip asks again next frame.
+        RelayBuildPreviews.forgetVersions(previewRelayId);
+        previewSeq = 0;
     }
 
     // ------------------------------------------------------------------
@@ -426,12 +431,28 @@ public final class EditorGuiScreen extends Screen {
         // sub-variants, at top level (blank) for the rest — carriages have no parents to land under.
         String parent = CreatorLoadParent.supports(entry.kind())
             ? CreatorLoadParent.parentFor(EditorCreatorBuilds.categoryOf(entry.kind())) : "";
-        sendDownload(loadAsCopy
+        // An older version showing is loaded AT that version — and over the template it already
+        // landed as, when it has: that is what paging back and pressing Load means.
+        boolean landed = EditorCreatorBuilds.here(EditorRosterClient.index(), entry) != null;
+        BuilderRelayInstall.Resolution asIs = previewSeq != 0 && landed
+            ? BuilderRelayInstall.Resolution.REPLACE : BuilderRelayInstall.Resolution.AS_IS;
+        sendDownload((loadAsCopy
             ? new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.LOAD_AS_NEW,
                 BuilderNewOptions.firstFreeName(entry.buildName(), takenNames), owner, ownerName, live, false,
                 parent)
-            : new BuilderProfileDownloadPacket(entry.relayId(), BuilderRelayInstall.Resolution.AS_IS, "",
-                owner, ownerName, live, false, parent));
+            : new BuilderProfileDownloadPacket(entry.relayId(), asIs, "",
+                owner, ownerName, live, false, parent)).atVersion(previewSeq));
+    }
+
+    /**
+     * Load the selected template's own relay build at the version the strip is showing — over the
+     * template, since it is the template's own row. Blank owner: the server resolves whose row it
+     * is from what the world recorded when the build was linked.
+     */
+    private void loadSelectedTemplateVersion() {
+        if (previewRelayId <= 0 || previewSeq == 0) return;
+        sendDownload(new BuilderProfileDownloadPacket(previewRelayId, BuilderRelayInstall.Resolution.REPLACE,
+            "", "", "", BuilderProfileState.live(), false, "").atVersion(previewSeq));
     }
 
     /** The press most recently sent, so the loot-prefab question can replay it with the answer attached. */
@@ -488,6 +509,15 @@ public final class EditorGuiScreen extends Screen {
     /** A download finished: say what happened, and pick up what landed. */
     private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
         creatorNote = EditorScreenLang.text(BuilderProfileScreen.noteKeyFor(packet.outcome()));
+        // The template this would land on has edits nobody saved. Asked before anything is written;
+        // "replace" replays the same press with the overwrite confirmed, cancelling leaves the file
+        // and the plot exactly as they were.
+        if (packet.outcome() == BuilderRelayDownload.Outcome.UNSAVED_EDITS && lastDownload != null) {
+            BuilderProfileDownloadPacket sent = lastDownload;
+            this.minecraft.setScreen(new BuilderProfileUnsavedScreen(this, packet.id(), sent.resolution(),
+                sent.name(), (resolution, name) -> sendDownload(sent.overwritingUnsaved())));
+            return;
+        }
         // The build brought loot prefabs this install already has, with different contents: put both
         // versions in front of the player, and replay the same press with their choices attached.
         if (packet.outcome() == BuilderRelayDownload.Outcome.PREFAB_CONFLICT && lastDownload != null) {
@@ -1049,6 +1079,10 @@ public final class EditorGuiScreen extends Screen {
             }
             case NEWER -> {
                 pageVersion(false);
+                return true;
+            }
+            case LOAD_VERSION -> {
+                loadSelectedTemplateVersion();
                 return true;
             }
             default -> { return false; }

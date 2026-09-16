@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
@@ -166,22 +167,51 @@ public final class BuilderRelayDownload {
                                                      String newName, String ownerUuid, String ownerName,
                                                      boolean live, boolean overwriteUnsaved, String parentId,
                                                      PrefabAnswer prefabs) {
+        return download(player, level, relayId, resolution, newName, ownerUuid, ownerName, live,
+                overwriteUnsaved, parentId, prefabs, 0);
+    }
+
+    /**
+     * As above, at one saved version of the build.
+     *
+     * <p>Loading a version is loading the build: the same fetch, the same install, over the same
+     * name — which is why it goes through {@link BuilderRelayInstall.Resolution#REPLACE} when the
+     * build is already here, and why the unsaved-edits question is asked of it too. What differs is
+     * what the world then remembers: the template stands at that version, and the next save names
+     * it as the version it was made from. The relay's current version is untouched until then.</p>
+     *
+     * @param seq the version to load ({@link SharedCarriageClient#versionsOf}), 0 for the current one
+     */
+    public static CompletableFuture<Result> download(ServerPlayer player, ServerLevel level, int relayId,
+                                                     BuilderRelayInstall.Resolution resolution,
+                                                     String newName, String ownerUuid, String ownerName,
+                                                     boolean live, boolean overwriteUnsaved, String parentId,
+                                                     PrefabAnswer prefabs, int seq) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
         }
         String own = player.getUUID().toString();
-        String owner = ownerUuid == null || ownerUuid.isBlank() ? own : ownerUuid.trim();
+        String owner = ownerFor(level, own, ownerUuid, relayId);
         boolean mine = owner.equals(own);
-        return SharedCarriageClient.fetchBuild(relayId, owner, RelayTarget.of(live))
+        return SharedCarriageClient.fetchBuild(relayId, owner, RelayTarget.of(live), seq)
                 .thenCompose(result -> switch (result.status()) {
                     case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
                     case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));
                     case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
                     case OK -> onServer(level, () -> install(level, result.build(), resolution, newName,
-                            new BuildCredits.Credit(owner, ownerName, System.currentTimeMillis()), mine,
+                            new BuildCredits.Credit(owner, ownerName, System.currentTimeMillis()), mine, owner,
                             overwriteUnsaved, parentId == null ? "" : parentId,
                             prefabs == null ? PrefabAnswer.UNASKED : prefabs));
                 });
+    }
+
+    /**
+     * Whose row {@code relayId} is: what the client said, else what this world recorded when it
+     * linked the row (a dev build's foreign link), else the player — see {@link BuilderRelayOwners}.
+     */
+    static String ownerFor(ServerLevel level, String own, String requested, int relayId) {
+        String recorded = DungeonTrainWorldData.get(level).builderRelayBuilds().ownerForRelayId(relayId);
+        return BuilderRelayOwners.resolve(own, requested, DungeonTrain.isDevBuild(), recorded);
     }
 
     /**
@@ -194,8 +224,8 @@ public final class BuilderRelayDownload {
      */
     private static Result install(ServerLevel level, SharedCarriageClient.BuildFetch build,
                                   BuilderRelayInstall.Resolution resolution, String newName,
-                                  BuildCredits.Credit credit, boolean mine, boolean overwriteUnsaved,
-                                  String parentId, PrefabAnswer prefabs) {
+                                  BuildCredits.Credit credit, boolean mine, String owner,
+                                  boolean overwriteUnsaved, String parentId, PrefabAnswer prefabs) {
         BuilderPhotoPaths.Kind kind = BuilderRelayKinds.kindOf(build.kind());
         if (kind == null || build.buildName().isEmpty()) {
             // A kind this build of the mod does not know, or a build the relay never named. Neither
@@ -273,11 +303,14 @@ public final class BuilderRelayDownload {
         // name is a new build as far as the relay is concerned — recording the link would point this
         // world's saves of it at a row whose name no longer matches, quietly renaming the original.
         //
-        // Somebody ELSE's build is the same case for a stronger reason: the fetch hands back the
-        // owner's durable secret, and remembering it would let this world save over their row. A
-        // foreign build lands here as a local copy and nothing more.
-        if (resolution != BuilderRelayInstall.Resolution.LOAD_AS_NEW && mine) {
-            remember(level, build, kind);
+        // Somebody ELSE's build is the same case for a stronger reason on a release build: the fetch
+        // hands back the owner's durable secret, and remembering it would let this world save over
+        // their row. There a foreign build lands as a local copy and nothing more. A DEV build links
+        // it on purpose — that is how a dev's changes reach the owner's history as a new version,
+        // credited to the dev (see BuilderRelayUpload.ownerSave) — and the record names the owner so
+        // every later ask goes out under their uuid rather than the dev's.
+        if (resolution != BuilderRelayInstall.Resolution.LOAD_AS_NEW && (mine || DungeonTrain.isDevBuild())) {
+            remember(level, build, kind, mine ? "" : owner);
         }
         credit(kind, build.subKind(), installedAs, credit, mine,
                 TemplateSidecars.hasCredit(build.sidecars()));
@@ -360,7 +393,7 @@ public final class BuilderRelayDownload {
      * {@link BuilderRelayUpload#afterSave} already takes for a build it knows but is not holding.</p>
      */
     private static void remember(ServerLevel level, SharedCarriageClient.BuildFetch build,
-                                 BuilderPhotoPaths.Kind kind) {
+                                 BuilderPhotoPaths.Kind kind, String foreignOwner) {
         if (build.secret().isEmpty()) {
             // An older relay, or a build stored before secrets existed. The template is installed and
             // usable; only the link back to its relay row is missing, and a later save re-establishes
@@ -371,8 +404,11 @@ public final class BuilderRelayDownload {
         }
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         String key = BuilderRelayBuilds.keyOf(BuilderRelayKinds.idOf(kind), build.subKind(), build.buildName());
+        // The version the template now stands at — the one fetched, which the next save names as
+        // what it was made from. 0 from a relay that predates versions: "the current one".
         data.builderRelayBuilds().put(key,
-                new BuilderRelayBuilds.Entry(build.id(), build.secret(), "", build.published()));
+                new BuilderRelayBuilds.Entry(build.id(), build.secret(), "", build.published(),
+                        build.seq(), foreignOwner));
         data.markBuilderRelayBuildsDirty();
     }
 

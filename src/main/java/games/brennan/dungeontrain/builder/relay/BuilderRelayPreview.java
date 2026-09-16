@@ -97,7 +97,7 @@ public final class BuilderRelayPreview {
             return CompletableFuture.completedFuture(Attempt.GONE);
         }
         String own = player.getUUID().toString();
-        String owner = ownerUuid == null || ownerUuid.isBlank() ? own : ownerUuid.trim();
+        String owner = BuilderRelayDownload.ownerFor(level, own, ownerUuid, relayId);
         return SharedCarriageClient.fetchBuild(relayId, owner, RelayTarget.of(live))
                 .thenCompose(result -> {
                     if (result.status() != SharedCarriageClient.CallStatus.OK) {
@@ -115,55 +115,43 @@ public final class BuilderRelayPreview {
     }
 
     /**
-     * The build as it stood at {@code seq} of its relay history, ready to send, with the seqs the
-     * history holds — the previewer's back and forward.
+     * The build as it stood at one of its saved versions, ready to send, with every version the
+     * relay holds — the previewer's back and forward.
      *
-     * <p>Admin cap only, so a release build answers {@link Attempt#GONE} without asking. The frame
-     * is a full snapshot plus the deltas recorded since it, folded exactly as a fetched build's
-     * pending deltas are; a seq the relay does not hold is a build with no picture at that
-     * version, not a retry.</p>
+     * <p>Owner-authed like {@link #fetch}, so a player pages through their own builds' versions
+     * and a dev build through anybody's. A relay that holds no versions (or predates them) answers
+     * {@link Attempt#GONE} with an empty list, which the strip reads as "nothing to page"; a seq the
+     * relay does not hold is a build with no picture at that version, not a retry.</p>
+     *
+     * @param seq the version wanted, or 0 for the newest saved one
      */
     public static CompletableFuture<Versioned> fetchVersion(ServerPlayer player, ServerLevel level,
-                                                            int relayId, boolean live, int seq) {
+                                                            int relayId, String ownerUuid, boolean live, int seq) {
         if (player == null || level == null || level.getServer() == null
                 || !BuilderRelayUpload.canUpload(player)) {
             return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, List.of()));
         }
-        return SharedCarriageClient.historyIndex(relayId, live).thenCompose(seqs -> {
-            if (seqs == null || seqs.isEmpty()) {
+        String own = player.getUUID().toString();
+        String owner = BuilderRelayDownload.ownerFor(level, own, ownerUuid, relayId);
+        String target = RelayTarget.of(live);
+        return SharedCarriageClient.versionsOf(relayId, owner, target).thenCompose(versions -> {
+            if (versions == null || versions.isEmpty()) {
                 return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, List.of()));
             }
-            int want = seq > 0 ? seq : seqs.get(seqs.size() - 1);
-            return SharedCarriageClient.historyFrame(relayId, want, live).thenCompose(frame -> {
-                if (frame == null) {
-                    return CompletableFuture.completedFuture(new Versioned(Attempt.GONE, seqs));
+            int want = seq > 0 ? seq : versions.get(versions.size() - 1).seq();
+            return SharedCarriageClient.fetchBuild(relayId, owner, target, want).thenCompose(result -> {
+                if (result.status() != SharedCarriageClient.CallStatus.OK) {
+                    return CompletableFuture.completedFuture(new Versioned(
+                            result.status() == SharedCarriageClient.CallStatus.ERROR ? Attempt.LATER : Attempt.GONE,
+                            versions));
                 }
-                return level.getServer().submit(() -> new Versioned(convertFrame(level, relayId, frame), seqs));
+                return level.getServer().submit(() -> new Versioned(convert(level, result.build()), versions));
             });
         });
     }
 
-    /** A versioned preview: the attempt at the seq asked for, and every seq the history holds. */
-    public record Versioned(Attempt attempt, List<Integer> seqs) {}
-
-    /** Decode and fold one history frame, then convert and measure it like a live build. */
-    private static Attempt convertFrame(ServerLevel level, int relayId, SharedCarriageClient.HistoryFrame frame) {
-        CompoundTag tag;
-        try {
-            CompoundTag folded = CarriageBlockSnapshot.decode(frame.base());
-            for (String cells : frame.deltas()) {
-                folded = CarriageBlockSnapshot.applyDeltaCells(folded, CarriageBlockSnapshot.decode(cells));
-            }
-            HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-            tag = CarriageSnapshotTemplate.toTemplate(folded, blocks).save(new CompoundTag());
-        } catch (Throwable t) {
-            LOGGER.info("[DungeonTrain] Builder relay preview: id={} seq={} would not convert: {}",
-                relayId, frame.seq(), t.toString());
-            return Attempt.GONE;
-        }
-        byte[] bytes = encode(tag);
-        return bytes == null ? Attempt.GONE : new Attempt(bytes, false);
-    }
+    /** A versioned preview: the attempt at the version asked for, and every version the relay holds. */
+    public record Versioned(Attempt attempt, List<SharedCarriageClient.Version> versions) {}
 
     /** Decode, fold, convert and measure — everything the install path does before it writes. */
     private static Attempt convert(ServerLevel level, SharedCarriageClient.BuildFetch build) {

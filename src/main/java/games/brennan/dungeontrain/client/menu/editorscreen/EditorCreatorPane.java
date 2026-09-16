@@ -38,6 +38,8 @@ public final class EditorCreatorPane {
     static final int BUTTON_GAP = 2;
 
     private final VersionStrip versions = new VersionStrip();
+    /** The version the preview shows, 0 for the build as it is now — set on each render. */
+    private int seq;
 
     private InventoryEditorLayout.Rect loadRect;
     private InventoryEditorLayout.Rect parentRect;
@@ -49,6 +51,7 @@ public final class EditorCreatorPane {
                        EditorScreenTheme theme, BuilderProfilePacket.Entry entry, float yaw,
                        String note, boolean asCopy, EditorCreatorBuilds.Landed landed,
                        boolean going, int seq, int mouseX, int mouseY) {
+        this.seq = seq;
 
         drawHeader(g, font, layout.header(), theme, entry, landed, going, mouseX, mouseY);
         drawSubmit(g, font, layout.icons(), entry, mouseX, mouseY);
@@ -157,9 +160,10 @@ public final class EditorCreatorPane {
                           boolean asCopy, int mouseX, int mouseY) {
         loadRect = null;
         parentRect = null;
-        if (landed != null) {
+        if (landed != null && seq == 0) {
             // Done, and not a button: pressing it again would fetch the same build and be told the
-            // name is taken — by the copy it just made.
+            // name is taken — by the copy it just made. An older version showing is the exception:
+            // that press REPLACES what landed with the version, which is the whole point of paging.
             String done = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADED);
             g.drawString(font, font.plainSubstrByWidth(done, r.w() - 4),
                 r.x() + (r.w() - font.width(done)) / 2, r.y() + (r.h() - font.lineHeight) / 2 + 1,
@@ -178,7 +182,10 @@ public final class EditorCreatorPane {
             button(g, font, parentRect, parent, true, mouseX, mouseY);
         }
         loadRect = enabled ? load : null;
-        String label = EditorScreenLang.text(asCopy ? EditorScreenLang.CREATOR_LOAD_COPY
+        int[] seqs = enabled && seq != 0 ? RelayBuildPreviews.versions(entry.relayId()) : null;
+        String label = seqs != null
+            ? EditorScreenLang.text(EditorScreenLang.VERSION_LOAD, VersionStrip.indexOf(seqs, seq) + 1)
+            : EditorScreenLang.text(asCopy ? EditorScreenLang.CREATOR_LOAD_COPY
             : underParent ? EditorScreenLang.CREATOR_LOAD_SUB_VARIANT : EditorScreenLang.CREATOR_LOAD);
         button(g, font, load, label, enabled, mouseX, mouseY);
     }
@@ -239,6 +246,7 @@ public final class EditorCreatorPane {
         switch (versions.hit(mx, my)) {
             case OLDER -> { return HitKind.OLDER; }
             case NEWER -> { return HitKind.NEWER; }
+            case LOAD -> { return HitKind.LOAD; }
             case NONE -> { }
         }
         if (goHereRect != null && goHereRect.contains(mx, my)) return HitKind.GO_HERE;

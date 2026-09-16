@@ -179,7 +179,7 @@ public final class BuilderRelayUpload {
                     SharedCarriageClient.BuildUpload up = result.get();
                     DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
                     live.builderRelayBuilds().put(key,
-                            new BuilderRelayBuilds.Entry(up.id(), up.secret(), up.token(), false));
+                            new BuilderRelayBuilds.Entry(up.id(), up.secret(), up.token(), false, up.seq(), ""));
                     live.markBuilderRelayBuildsDirty();
                     tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
                 }));
@@ -189,9 +189,12 @@ public final class BuilderRelayUpload {
     private static void saveThrough(ServerPlayer player, ServerLevel level, String key,
                                     BuilderRelayBuilds.Entry entry, String blocks, String text,
                                     Extras extras, BuilderSave.Written written) {
-        SharedCarriageClient.save(entry.relayId(), entry.token(), blocks, text, 0, extras.sidecars(), extras.lootPrefabs())
-                .thenAccept(status -> onServer(level, () -> {
+        SharedCarriageClient.save(entry.relayId(), entry.token(), blocks, text, 0, extras.sidecars(), extras.lootPrefabs(),
+                        entry.loadedSeq())
+                .thenAccept(result -> onServer(level, () -> {
+                    SharedCarriageClient.CallStatus status = result.status();
                     if (status == SharedCarriageClient.CallStatus.OK) {
+                        standAt(level, key, entry, result.seq());
                         tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
                         return;
                     }
@@ -239,10 +242,19 @@ public final class BuilderRelayUpload {
     private static void ownerSave(ServerPlayer player, ServerLevel level, String key,
                                   BuilderRelayBuilds.Entry entry, String blocks, String text,
                                   Extras extras, BuilderSave.Written written) {
-        SharedCarriageClient.ownerSave(entry.relayId(), entry.secret(), blocks, text, 0, extras.sidecars(), extras.lootPrefabs())
-                .thenAccept(status -> onServer(level, () -> {
+        // A foreign row (a dev build's link to somebody else's build) is saved AS this player: the
+        // relay files the version under the owner but credits it to the dev, on the frame and in
+        // the edit trail. For the player's own rows the actor is blank and the relay credits them.
+        String actorUuid = entry.isForeign() ? player.getUUID().toString() : "";
+        String actorName = entry.isForeign() ? player.getGameProfile().getName() : "";
+        SharedCarriageClient.ownerSave(entry.relayId(), entry.secret(), blocks, text, 0, extras.sidecars(), extras.lootPrefabs(),
+                        entry.loadedSeq(), actorUuid, actorName)
+                .thenAccept(result -> onServer(level, () -> {
+                    SharedCarriageClient.CallStatus status = result.status();
                     if (status == SharedCarriageClient.CallStatus.OK) {
-                        tell(player, "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
+                        standAt(level, key, entry, result.seq());
+                        tell(player, entry.isForeign() ? "gui.dungeontrain.builder.profile.saved_theirs"
+                                : "gui.dungeontrain.builder.profile.saved", ChatFormatting.GRAY, written.id());
                         return;
                     }
                     if (status == SharedCarriageClient.CallStatus.UNKNOWN) {
@@ -256,6 +268,19 @@ public final class BuilderRelayUpload {
                             written.id(), status);
                     tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());
                 }));
+    }
+
+    /**
+     * The save became a version: the template now stands at it, and the next save names it as the
+     * version it was made from. A relay that answered no seq (one that predates versions) leaves the
+     * record as it was — 0 still reads as "the current one".
+     */
+    private static void standAt(ServerLevel level, String key, BuilderRelayBuilds.Entry entry, int seq) {
+        if (seq <= 0) return;
+        DungeonTrainWorldData live = DungeonTrainWorldData.get(level);
+        BuilderRelayBuilds.Entry current = live.builderRelayBuilds().get(key);
+        live.builderRelayBuilds().put(key, (current == null ? entry : current).withLoadedSeq(seq));
+        live.markBuilderRelayBuildsDirty();
     }
 
     /**
@@ -318,6 +343,11 @@ public final class BuilderRelayUpload {
         if (entry == null || entry.secret().isEmpty()) {
             // This world has no secret for the build. Recover one rather than refuse — see adopt().
             return adopt(player, level, relayId, publish);
+        }
+        if (entry.isForeign()) {
+            // A dev build's link to somebody else's build carries their secret so that saves reach
+            // their history — not so that this world can put their build on the train for them.
+            return CompletableFuture.completedFuture(msg("gui.dungeontrain.builder.profile.not_yours", ChatFormatting.YELLOW));
         }
         return publishWith(level, key, entry, BuilderRelayBuilds.kindOfKey(key), publish);
     }

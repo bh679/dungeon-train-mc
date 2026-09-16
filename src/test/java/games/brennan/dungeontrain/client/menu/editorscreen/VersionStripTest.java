@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.builder.RelayBuildPreviews;
 import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
@@ -46,6 +47,28 @@ final class VersionStripTest {
         assertEquals(9, VersionStrip.newer(SEQS, 4));
         assertEquals(0, VersionStrip.newer(SEQS, 9), "past the newest frame is the build as it is now");
         assertEquals(0, VersionStrip.newer(SEQS, 0), "Current is already the newest thing there is");
+    }
+
+    @Test
+    @DisplayName("An older version says which version it came from and who saved it")
+    void captionNamesParentAndAuthor() {
+        RelayBuildPreviews.VersionInfo info = new RelayBuildPreviews.VersionInfo(
+                SEQS, new int[] {0, 1, 1}, new String[] {"Ada", "", "Grace"});
+        assertEquals("from v1 \u00B7 by Grace", VersionStrip.caption(info, SEQS, 9),
+                "v3 was saved from v1 — a branch — by Grace");
+        assertEquals("from v1", VersionStrip.caption(info, SEQS, 4), "no author known, so only the parent");
+        assertEquals("by Ada", VersionStrip.caption(info, SEQS, 1), "the first version came from nothing");
+        assertEquals("", VersionStrip.caption(info, SEQS, 0), "Current has no caption");
+        assertEquals("", VersionStrip.caption(null, SEQS, 4), "nothing known, nothing said");
+    }
+
+    @Test
+    @DisplayName("A parent the strip cannot place is not named")
+    void unknownParentIsSilent() {
+        RelayBuildPreviews.VersionInfo info = new RelayBuildPreviews.VersionInfo(
+                SEQS, new int[] {0, 77, 4}, new String[] {"", "", ""});
+        assertEquals("", VersionStrip.caption(info, SEQS, 4), "77 is no version of this build");
+        assertEquals("from v2", VersionStrip.caption(info, SEQS, 9));
     }
 
     @Test

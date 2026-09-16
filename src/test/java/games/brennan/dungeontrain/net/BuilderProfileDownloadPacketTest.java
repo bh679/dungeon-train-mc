@@ -65,6 +65,22 @@ final class BuilderProfileDownloadPacketTest {
     }
 
     @Test
+    @DisplayName("the version to load rides along, and a plain press asks for the current one")
+    void versionRoundTrip() {
+        BuilderProfileDownloadPacket press = new BuilderProfileDownloadPacket(
+                4271, BuilderRelayInstall.Resolution.REPLACE, "", "", "", true, false, "");
+        assertEquals(0, press.seq(), "a press names no version until the strip does");
+        BuilderProfileDownloadPacket at = press.atVersion(7);
+        assertEquals(7, roundTrip(at).seq(), "a lost seq would load the current build over the version asked for");
+        assertEquals(at, roundTrip(at));
+        // The two replays keep the version: the unsaved-edits answer and the prefab answer.
+        assertEquals(7, at.overwritingUnsaved().seq());
+        assertTrue(at.overwritingUnsaved().overwriteUnsaved());
+        assertEquals(7, at.answeringPrefabs(List.of("chest_a")).seq());
+        assertEquals(BuilderRelayInstall.Resolution.REPLACE, at.overwritingUnsaved().resolution());
+    }
+
+    @Test
     @DisplayName("the variant parent a build is filed under rides along, and is blank for a plain load")
     void parentIdRoundTrip() {
         BuilderProfileDownloadPacket original = new BuilderProfileDownloadPacket(

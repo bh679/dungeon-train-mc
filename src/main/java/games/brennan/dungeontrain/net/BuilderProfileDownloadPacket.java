@@ -30,8 +30,14 @@ import java.util.Map;
  * <p>{@code ownerUuid} names whose build it is, and like
  * {@link BuilderProfileRequestPacket#ownerUuid} it is honoured on a dev build only — a release server
  * downloads the caller's own build instead, so nothing a client sends widens what it may fetch.
- * A foreign build installs as a local copy: the link back to its relay row is deliberately not
- * recorded, so a later save here can never overwrite the original.</p>
+ * On a release build a foreign build installs as a local copy: the link back to its relay row is
+ * deliberately not recorded, so a later save there can never overwrite the original. A dev build
+ * links it — its saves become new versions in the owner's history, credited to the dev. Blank
+ * means "whoever's row it is": the world's own record of the row, else the caller.</p>
+ *
+ * <p>{@code seq} is the saved version to load, 0 for the build as it stands now. Loading a version
+ * replaces the local template only — the relay's current version changes when the player next
+ * saves, and that save is filed as made from the version loaded.</p>
  *
  * <p>{@code parentId} names the variant parent to file the build under as a sub-variant once it is
  * installed — blank for a plain top-level load. Honoured for the kinds that have sub-variants
@@ -45,7 +51,7 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
                                            String name, String ownerUuid, String ownerName,
                                            boolean live, boolean overwriteUnsaved, String parentId,
                                            boolean prefabsResolved, List<String> prefabOverwrite,
-                                           Map<String, String> prefabRenames)
+                                           Map<String, String> prefabRenames, int seq)
         implements CustomPacketPayload {
 
     /** As many prefabs as one build may carry — the guard on the wire (TemplateLootPrefabs.MAX_PER_BUILD). */
@@ -58,12 +64,37 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
         prefabRenames = prefabRenames == null ? Map.of() : Map.copyOf(prefabRenames);
     }
 
-    /** As the canonical constructor, before the loot-prefab question has been asked. */
+    /** As the canonical constructor, for the current version, before the loot-prefab question has been asked. */
     public BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Resolution resolution,
                                         String name, String ownerUuid, String ownerName,
                                         boolean live, boolean overwriteUnsaved, String parentId) {
         this(relayId, resolution, name, ownerUuid, ownerName, live, overwriteUnsaved, parentId, false,
-                List.of(), Map.of());
+                List.of(), Map.of(), 0);
+    }
+
+    /** As the canonical constructor, before the loot-prefab question has been asked. */
+    public BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Resolution resolution,
+                                        String name, String ownerUuid, String ownerName,
+                                        boolean live, boolean overwriteUnsaved, String parentId,
+                                        boolean prefabsResolved, List<String> prefabOverwrite,
+                                        Map<String, String> prefabRenames) {
+        this(relayId, resolution, name, ownerUuid, ownerName, live, overwriteUnsaved, parentId,
+                prefabsResolved, prefabOverwrite, prefabRenames, 0);
+    }
+
+    /** This press, at one saved version of the build (0 = as it stands now). */
+    public BuilderProfileDownloadPacket atVersion(int version) {
+        return new BuilderProfileDownloadPacket(relayId, resolution, name, ownerUuid, ownerName, live,
+                overwriteUnsaved, parentId, prefabsResolved, prefabOverwrite, prefabRenames, version);
+    }
+
+    /**
+     * This packet again, answering {@link BuilderRelayDownload.Outcome#UNSAVED_EDITS} with "yes,
+     * write over them" — everything else exactly as the press that raised the question sent it.
+     */
+    public BuilderProfileDownloadPacket overwritingUnsaved() {
+        return new BuilderProfileDownloadPacket(relayId, resolution, name, ownerUuid, ownerName, live,
+                true, parentId, prefabsResolved, prefabOverwrite, prefabRenames, seq);
     }
 
     /**
@@ -80,7 +111,7 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
     public BuilderProfileDownloadPacket answeringPrefabs(java.util.Collection<String> overwrite,
                                                          Map<String, String> renames) {
         return new BuilderProfileDownloadPacket(relayId, resolution, name, ownerUuid, ownerName, live,
-                overwriteUnsaved, parentId, true, List.copyOf(overwrite), Map.copyOf(renames));
+                overwriteUnsaved, parentId, true, List.copyOf(overwrite), Map.copyOf(renames), seq);
     }
 
     /** As the canonical constructor, for a plain top-level load. */
@@ -132,6 +163,7 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
                 buf.writeMap(packet.prefabRenames.size() > MAX_PREFAB_IDS
                                 ? Map.of() : packet.prefabRenames,
                         (b, id) -> b.writeUtf(id, 32), (b, id) -> b.writeUtf(id, 32));
+                buf.writeVarInt(packet.seq);
             },
             buf -> new BuilderProfileDownloadPacket(buf.readVarInt(),
                     buf.readEnum(BuilderRelayInstall.Resolution.class), buf.readUtf(64), buf.readUtf(48),
@@ -140,7 +172,8 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
                     buf.readCollection(size -> new ArrayList<String>(Math.min(size, MAX_PREFAB_IDS)),
                             b -> b.readUtf(32)),
                     buf.readMap(size -> new LinkedHashMap<String, String>(Math.min(size, MAX_PREFAB_IDS)),
-                            b -> b.readUtf(32), b -> b.readUtf(32)))
+                            b -> b.readUtf(32), b -> b.readUtf(32)),
+                    buf.readVarInt())
         );
 
     @Override
@@ -153,13 +186,18 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             if (player.getServer() == null) return;
             ServerLevel level = player.getServer().overworld();
-            String owner = BuilderProfileRequestPacket.viewedOwner(player, packet.ownerUuid);
+            // Blank stays blank: the download resolves it through the world's own record of the row
+            // (a dev build's link to somebody else's build), else to the caller — see
+            // BuilderRelayOwners. A named owner is gated exactly as the profile request is.
+            String owner = packet.ownerUuid == null || packet.ownerUuid.isBlank() ? ""
+                    : BuilderProfileRequestPacket.viewedOwner(player, packet.ownerUuid);
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
             BuilderRelayDownload.PrefabAnswer prefabs = packet.prefabsResolved
                     ? BuilderRelayDownload.PrefabAnswer.resolved(packet.prefabOverwrite, packet.prefabRenames)
                     : BuilderRelayDownload.PrefabAnswer.UNASKED;
             BuilderRelayDownload.download(player, level, packet.relayId, packet.resolution, packet.name,
-                            owner, packet.ownerName, live, packet.overwriteUnsaved, packet.parentId, prefabs)
+                            owner, packet.ownerName, live, packet.overwriteUnsaved, packet.parentId, prefabs,
+                            packet.seq)
                     .thenAccept(result -> player.getServer().execute(() -> {
                         if (player.hasDisconnected()) return;
                         DungeonTrainNet.sendTo(player, BuilderProfileDownloadResultPacket.of(result));

@@ -187,6 +187,10 @@ public final class BuilderRelayReconcile {
         List<Missing> backupOnly = new ArrayList<>();
         for (Map.Entry<String, BuilderRelayBuilds.Entry> e : recorded) {
             if (alive.contains(e.getValue().relayId())) continue;
+            // Somebody else's build, linked by a dev build so saves reach their history: never in
+            // this player's listing, so it always looks missing — and restoring it would upload the
+            // owner's build under the dev's own name.
+            if (e.getValue().isForeign()) continue;
             Missing missing = missingOf(e.getKey(), e.getValue(), locator);
             if (missing == null) continue;
             if (missing.onDisk()) {
