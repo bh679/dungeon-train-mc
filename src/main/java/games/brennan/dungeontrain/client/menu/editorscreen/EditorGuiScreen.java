@@ -562,11 +562,11 @@ public final class EditorGuiScreen extends Screen {
         }
     }
 
-    /** Step the preview one version older or newer, and fetch it if it is not here yet. */
-    private void pageVersion(boolean older) {
+    /** Show one version of the selected build in the preview (0 = as it is now), fetching it if it is not here yet. */
+    private void showVersion(int seq) {
         int[] seqs = RelayBuildPreviews.versions(previewRelayId);
         if (seqs == null || seqs.length == 0) return;
-        int next = older ? VersionStrip.older(seqs, previewSeq) : VersionStrip.newer(seqs, previewSeq);
+        int next = seq == 0 ? 0 : VersionStrip.indexOf(seqs, seq) < seqs.length ? seq : previewSeq;
         if (next == previewSeq) return;
         previewSeq = next;
         if (next != 0) {
@@ -748,14 +748,9 @@ public final class EditorGuiScreen extends Screen {
         }
         if (EditorCreatorBuilds.active()) {
             switch (creatorPane.hitTest(mouseX, mouseY)) {
-                case OLDER -> {
+                case SELECT_VERSION -> {
                     click();
-                    pageVersion(true);
-                    return true;
-                }
-                case NEWER -> {
-                    click();
-                    pageVersion(false);
+                    showVersion(creatorPane.selectedVersion());
                     return true;
                 }
                 case LOAD -> {
@@ -1073,12 +1068,8 @@ public final class EditorGuiScreen extends Screen {
             case PAGE_NEXT -> {
                 return detail.scrollBy(+1);
             }
-            case OLDER -> {
-                pageVersion(true);
-                return true;
-            }
-            case NEWER -> {
-                pageVersion(false);
+            case SELECT_VERSION -> {
+                showVersion(hit.index());
                 return true;
             }
             case LOAD_VERSION -> {

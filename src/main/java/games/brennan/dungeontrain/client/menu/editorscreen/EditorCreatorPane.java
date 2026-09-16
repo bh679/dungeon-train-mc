@@ -31,7 +31,7 @@ public final class EditorCreatorPane {
     static final int LOADED_TEXT = 0xFF88DD88;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, LOAD, PARENT, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT }
+    public enum HitKind { NONE, LOAD, PARENT, GO_HERE, PREVIEW, SELECT_VERSION, SUBMIT }
 
     /** The parent button's share of the load slot; the load button keeps the rest. */
     static final double PARENT_SHARE = 0.42;
@@ -241,11 +241,15 @@ public final class EditorCreatorPane {
         return mc.player.getUUID().toString().equals(entry.ownerUuid());
     }
 
+    /** The version the last {@link HitKind#SELECT_VERSION} landed on (0 = Current). */
+    public int selectedVersion() {
+        return versions.hitSeq();
+    }
+
     /** What a click at this point means. Reads back the geometry of the last frame. */
     public HitKind hitTest(double mx, double my) {
         switch (versions.hit(mx, my)) {
-            case OLDER -> { return HitKind.OLDER; }
-            case NEWER -> { return HitKind.NEWER; }
+            case SELECT -> { return HitKind.SELECT_VERSION; }
             case LOAD -> { return HitKind.LOAD; }
             case NONE -> { }
         }

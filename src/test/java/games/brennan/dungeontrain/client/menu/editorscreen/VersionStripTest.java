@@ -63,6 +63,29 @@ final class VersionStripTest {
     }
 
     @Test
+    @DisplayName("A version saved from something other than the one before it is a branch")
+    void branchesAreTheForks() {
+        RelayBuildPreviews.VersionInfo info = new RelayBuildPreviews.VersionInfo(
+                SEQS, new int[] {0, 1, 1}, new String[] {"", "", ""});
+        assertEquals(false, VersionStrip.isBranch(info, SEQS, 0), "the first version forks from nothing");
+        assertEquals(false, VersionStrip.isBranch(info, SEQS, 1), "v2 follows v1");
+        assertEquals(true, VersionStrip.isBranch(info, SEQS, 2), "v3 was saved from v1, not v2");
+        RelayBuildPreviews.VersionInfo unknown = new RelayBuildPreviews.VersionInfo(
+                SEQS, new int[] {0, 0, 77}, new String[] {"", "", ""});
+        assertEquals(false, VersionStrip.isBranch(unknown, SEQS, 1), "no parent recorded reads as linear");
+        assertEquals(false, VersionStrip.isBranch(unknown, SEQS, 2), "a parent the strip cannot place is not a fork");
+    }
+
+    @Test
+    @DisplayName("A dot's tooltip is its number and then its caption")
+    void tooltipNumbersTheDot() {
+        RelayBuildPreviews.VersionInfo info = new RelayBuildPreviews.VersionInfo(
+                SEQS, new int[] {0, 1, 1}, new String[] {"Ada", "", "Grace"});
+        assertEquals("v3 of 3 \u00B7 from v1 \u00B7 by Grace", VersionStrip.tooltip(info, SEQS, 9));
+        assertEquals("v2 of 3 \u00B7 from v1", VersionStrip.tooltip(info, SEQS, 4));
+    }
+
+    @Test
     @DisplayName("A parent the strip cannot place is not named")
     void unknownParentIsSilent() {
         RelayBuildPreviews.VersionInfo info = new RelayBuildPreviews.VersionInfo(

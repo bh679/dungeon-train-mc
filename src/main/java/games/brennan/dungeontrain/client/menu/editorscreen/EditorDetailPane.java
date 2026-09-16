@@ -38,7 +38,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, LOAD_VERSION, PAGE_PREV, PAGE_NEXT }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, SELECT_VERSION, LOAD_VERSION, PAGE_PREV, PAGE_NEXT }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -443,8 +443,8 @@ public final class EditorDetailPane {
         if (layout == null) return Hit.NONE;
         if (onModelPage()) {
             switch (versions.hit(mx, my)) {
-                case OLDER -> { return new Hit(HitKind.OLDER, 0, 0); }
-                case NEWER -> { return new Hit(HitKind.NEWER, 0, 0); }
+                // A version dot: the seq rides in the hit's index (0 = Current).
+                case SELECT -> { return new Hit(HitKind.SELECT_VERSION, versions.hitSeq(), 0); }
                 case LOAD -> { return new Hit(HitKind.LOAD_VERSION, 0, 0); }
                 case NONE -> { }
             }
