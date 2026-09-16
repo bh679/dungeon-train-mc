@@ -167,12 +167,15 @@ public final class PillarEditor {
         CarriageEditor.rememberReturn(player);
         if (stamp) stampAllSectionPlots(overworld, section, dims);
 
-        double tx = origin.getX() + 0.5;
-        double ty = onTop
-            ? origin.getY() + section.height() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + dims.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        if (onTop) {
+            Vec3i footprint = TrackSidePlots.footprint(
+                PillarTemplateStore.pillarKind(section), TrackKind.DEFAULT_NAME, dims);
+            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
+        } else {
+            double tx = origin.getX() + 0.5;
+            double tz = origin.getZ() + dims.width() / 2.0;
+            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+        }
 
         LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} default plot at {} ({} variants, {})",
             player.getName().getString(), section.id(), origin,
@@ -369,12 +372,15 @@ public final class PillarEditor {
         CarriageEditor.rememberReturn(player);
         if (stamp) stampAllAdjunctPlots(overworld, adjunct, dims);
 
-        double tx = origin.getX() + adjunct.xSize() / 2.0;
-        double ty = onTop
-            ? origin.getY() + adjunct.ySize() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + adjunct.zSize() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        if (onTop) {
+            Vec3i footprint = TrackSidePlots.footprint(
+                PillarTemplateStore.adjunctKind(adjunct), TrackKind.DEFAULT_NAME, dims);
+            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
+        } else {
+            double tx = origin.getX() + adjunct.xSize() / 2.0;
+            double tz = origin.getZ() + adjunct.zSize() / 2.0;
+            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+        }
 
         LOGGER.info("[DungeonTrain] Pillar editor enter adjunct: {} -> {} default plot at {} (size={}x{}x{}, {} variants)",
             player.getName().getString(), adjunct.id(), origin,

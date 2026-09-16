@@ -263,12 +263,13 @@ public final class CarriagePartEditor {
         }
 
         Vec3i size = kind.dims(dims);
-        double tx = origin.getX() + size.getX() / 2.0;
-        double ty = onTop
-            ? origin.getY() + size.getY() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + size.getZ() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        if (onTop) {
+            EditorPlotArrival.inFrontOfMenu(origin, size).teleport(player, overworld);
+        } else {
+            double tx = origin.getX() + size.getX() / 2.0;
+            double tz = origin.getZ() + size.getZ() / 2.0;
+            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+        }
 
         LOGGER.info("[DungeonTrain] Part editor enter: {} -> {}:{} plot at {} size={}x{}x{} ({})",
             player.getName().getString(), kind.id(), name, origin,

@@ -225,12 +225,14 @@ public final class CarriageEditor {
         if (stamp) stampPlot(overworld, variant, dims);
 
         CarriageDims box = plotDims(variant, dims);
-        double tx = origin.getX() + box.length() / 2.0;
-        double ty = onTop
-            ? origin.getY() + box.height() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + box.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        if (onTop) {
+            EditorPlotArrival.inFrontOfMenu(origin, new Vec3i(box.length(), box.height(), box.width()))
+                .teleport(player, overworld);
+        } else {
+            double tx = origin.getX() + box.length() / 2.0;
+            double tz = origin.getZ() + box.width() / 2.0;
+            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+        }
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{} ({})",
             player.getName().getString(), variant.id(), origin,

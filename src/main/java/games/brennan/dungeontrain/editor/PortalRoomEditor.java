@@ -152,10 +152,13 @@ public final class PortalRoomEditor {
 
         if (stamp) stampAllPlots(overworld, dims);
 
-        double tx = origin.getX() + size.getX() / 2.0;
-        double ty = onTop ? origin.getY() + size.getY() + 1.0 : origin.getY() + 1.0;
-        double tz = origin.getZ() + size.getZ() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        if (onTop) {
+            EditorPlotArrival.inFrontOfMenu(origin, size).teleport(player, overworld);
+        } else {
+            double tx = origin.getX() + size.getX() / 2.0;
+            double tz = origin.getZ() + size.getZ() / 2.0;
+            player.teleportTo(overworld, tx, origin.getY() + 1.0, tz, player.getYRot(), player.getXRot());
+        }
 
         player.sendSystemMessage(Component.literal(
             "[DungeonTrain] Dimensional carriage editor: this is the room between a portal's two corridors. "
