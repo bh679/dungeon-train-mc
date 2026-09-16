@@ -100,15 +100,14 @@ public final class SaveCommand {
 
         Optional<EditorCategory> categoryOpt = EditorCategory.fromId(categoryId);
         if (categoryOpt.isEmpty()) {
-            source.sendFailure(Component.literal("Unknown category '" + categoryId + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_category", categoryId));
             return 0;
         }
         EditorCategory category = categoryOpt.get();
 
         Template model = findModel(category, id);
         if (model == null) {
-            source.sendFailure(Component.literal(
-                "Unknown model '" + id + "' in category '" + category.displayName() + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
             return 0;
         }
 
@@ -129,8 +128,7 @@ public final class SaveCommand {
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] /dt save model {}:{} failed", categoryId, id, t);
-            source.sendFailure(Component.literal(
-                "save failed: " + t.getClass().getSimpleName() + ": " + t.getMessage())
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.save_failed", t.getClass().getSimpleName(), t.getMessage())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -219,8 +217,7 @@ public final class SaveCommand {
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
         if (located.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "Not in an editor plot. Use '/dt editor <category>' first."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.not_plot_use_dt"));
             return 0;
         }
 
@@ -231,9 +228,7 @@ public final class SaveCommand {
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] /dt save failed for {}", model.id(), t);
-            source.sendFailure(Component.literal("save failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -265,16 +260,14 @@ public final class SaveCommand {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
         if (located.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "Not in an editor plot. Use '/dt editor <category>' first."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.not_plot_use_dt"));
             return 0;
         }
 
         EditorCategory category = located.get().category();
         List<Template> models = category.models();
         if (models.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "Category '" + category.displayName() + "' has no models."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.category_has_no_models", Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
             return 0;
         }
 
@@ -323,12 +316,10 @@ public final class SaveCommand {
 
         final int s = saved, skE = skippedEmpty, skC = skippedClean, p = promoted;
         final String errs = promoteErrors.toString();
-        final String summary = "Saved " + s
-            + ", skipped " + skE + " empty + " + skC + " unchanged"
-            + (promoteDefault ? (" — promoted " + p) : "")
-            + " (category: " + category.displayName() + ")"
-            + (errs.isEmpty() ? "" : errs);
-        source.sendSuccess(() -> Component.literal(summary)
+        final Component summary = Component.translatable("chat.dungeontrain.save.summary", s, skE, skC,
+            promoteDefault ? Component.translatable("chat.dungeontrain.save.summary_promoted", p) : Component.empty(),
+            Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id()), errs);
+        source.sendSuccess(() -> summary.copy()
             .withStyle(errs.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return s > 0 ? 1 : 0;
     }
@@ -342,17 +333,13 @@ public final class SaveCommand {
     private static void saveOne(CommandSourceStack source, ServerPlayer player, Template model) throws Exception {
         SaveResult result = Stores.save(player, model);
         if (source == null) return;
-        source.sendSuccess(() -> Component.literal(
-            savedMessage(model)), true);
+        source.sendSuccess(() -> savedMessage(model), true);
         if (!result.sourceAttempted()) return;
         if (result.sourceWritten()) {
-            source.sendSuccess(() -> Component.literal(
-                bundledWriteMessage(model)
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> bundledWriteMessage(model).copy().withStyle(ChatFormatting.GREEN), true);
         } else {
-            source.sendFailure(Component.literal(
-                bundledWriteFailMessage(model) + result.sourceError()
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(bundledWriteFailMessage(model, result.sourceError()).copy()
+                .withStyle(ChatFormatting.YELLOW));
         }
     }
 
@@ -369,23 +356,21 @@ public final class SaveCommand {
     public static boolean saveOnePlayerVisible(ServerPlayer player, Template model) {
         try {
             SaveResult result = Stores.save(player, model);
-            player.sendSystemMessage(Component.literal(savedMessage(model))
+            player.sendSystemMessage(savedMessage(model)
                 .copy().withStyle(ChatFormatting.GREEN));
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
-                    player.sendSystemMessage(Component.literal(bundledWriteMessage(model))
+                    player.sendSystemMessage(bundledWriteMessage(model)
                         .copy().withStyle(ChatFormatting.GREEN));
                 } else {
-                    player.sendSystemMessage(Component.literal(
-                        bundledWriteFailMessage(model) + result.sourceError())
+                    player.sendSystemMessage(bundledWriteFailMessage(model, result.sourceError())
                         .copy().withStyle(ChatFormatting.YELLOW));
                 }
             }
             return true;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] saveOnePlayerVisible {} failed", model.id(), t);
-            player.sendSystemMessage(Component.literal(
-                "save failed: " + t.getClass().getSimpleName() + ": " + t.getMessage())
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.save.save_failed", t.getClass().getSimpleName(), t.getMessage())
                 .copy().withStyle(ChatFormatting.RED));
             return false;
         }
@@ -394,26 +379,19 @@ public final class SaveCommand {
     /** Promote {@code model} to source tree. Reports via {@code source}. */
     private static void promoteOne(CommandSourceStack source, Template model) {
         if (!model.canPromote()) {
-            source.sendFailure(Component.literal(
-                promoteUnavailableMessage(model)
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(promoteUnavailableMessage(model).copy().withStyle(ChatFormatting.YELLOW));
             return;
         }
         if (!Stores.canPromote(model)) {
-            source.sendFailure(Component.literal(
-                "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.source_tree_not_writable").withStyle(ChatFormatting.YELLOW));
             return;
         }
         try {
             Stores.promote(model);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: promoted '" + model.id() + "' to source tree (will ship with next build)."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.save.promoted_source_tree_will", model.id()).withStyle(ChatFormatting.GREEN), true);
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] promote {} failed", model.id(), e);
-            source.sendFailure(Component.literal(
-                "Promote failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.promote_failed", e.getMessage()).withStyle(ChatFormatting.RED));
         }
     }
 
@@ -436,11 +414,11 @@ public final class SaveCommand {
      * output is byte-identical to main; the only variation is the noun
      * ("template" / "contents template").
      */
-    private static String savedMessage(Template model) {
+    private static Component savedMessage(Template model) {
         return switch (model.kind()) {
-            case CONTENTS -> "Editor: saved contents '" + model.id() + "' template (config-dir).";
-            case TRACK    -> "Editor: saved 'track' template (config-dir).";
-            default       -> "Editor: saved '" + model.id() + "' template (config-dir).";
+            case CONTENTS -> Component.translatable("chat.dungeontrain.save.saved_contents", model.id());
+            case TRACK    -> Component.translatable("chat.dungeontrain.save.saved_track");
+            default       -> Component.translatable("chat.dungeontrain.save.saved", model.id());
         };
     }
 
@@ -453,36 +431,21 @@ public final class SaveCommand {
      * dimensional carriage went into the mod's own shipped room, and the author had been told, in a
      * sentence that did not sound like it mattered.</p>
      */
-    private static String bundledWriteMessage(Template model) {
-        return bundledNoun(model) + SHIPS_TO_EVERYONE;
+    private static Component bundledWriteMessage(Template model) {
+        return Component.translatable("chat.dungeontrain.save.bundled_written." + kindKey(model),
+            Component.translatable("chat.dungeontrain.save.ships_to_everyone"));
     }
 
-    /** What a source-tree write actually means, appended to every kind's line. */
-    private static final String SHIPS_TO_EVERYONE =
-        " — this is the copy that SHIPS TO EVERY PLAYER, not just your library.";
-
-    private static String bundledNoun(Template model) {
-        return switch (model.kind()) {
-            case CONTENTS -> "Editor: also wrote bundled contents copy to source tree (devmode ON)";
-            case PILLAR   -> "Editor: also wrote bundled pillar copy to source tree (devmode ON)";
-            case STAIRS   -> "Editor: also wrote bundled adjunct copy to source tree (devmode ON)";
-            case TUNNEL   -> "Editor: also wrote bundled tunnel copy to source tree (devmode ON)";
-            case PORTAL_ROOM -> "Editor: also wrote bundled dimensional carriage copy to source tree (devmode ON)";
-            case TRACK    -> "Editor: also wrote bundled track copy to source tree (devmode ON)";
-            default       -> "Editor: also wrote bundled copy to source tree (devmode ON)";
-        };
+    /** Source-tree write failure line, kind-specific noun preserved. */
+    private static Component bundledWriteFailMessage(Template model, String error) {
+        return Component.translatable("chat.dungeontrain.save.bundled_failed." + kindKey(model), error);
     }
 
-    /** Source-tree write failure prefix, kind-specific noun preserved. */
-    private static String bundledWriteFailMessage(Template model) {
+    /** The kinds that have their own wording; everything else reads the generic line. */
+    private static String kindKey(Template model) {
         return switch (model.kind()) {
-            case CONTENTS -> "Editor: contents source-tree write failed: ";
-            case PILLAR   -> "Editor: pillar source-tree write failed: ";
-            case STAIRS   -> "Editor: adjunct source-tree write failed: ";
-            case TUNNEL   -> "Editor: tunnel source-tree write failed: ";
-            case PORTAL_ROOM -> "Editor: dimensional carriage source-tree write failed: ";
-            case TRACK    -> "Editor: track source-tree write failed: ";
-            default       -> "Editor: source-tree write failed: ";
+            case CONTENTS, PILLAR, STAIRS, TUNNEL, PORTAL_ROOM, TRACK -> model.kind().name().toLowerCase(java.util.Locale.ROOT);
+            default -> "generic";
         };
     }
 
@@ -492,14 +455,12 @@ public final class SaveCommand {
      * tier), tunnel (no bundled tier today), custom carriage (only built-ins
      * have a bundled tier).
      */
-    private static String promoteUnavailableMessage(Template model) {
-        return switch (model.kind()) {
-            case CONTENTS -> "Contents templates have no separate bundled tier — '/dt save default' does not apply.";
-            case TUNNEL   -> "Tunnel templates have no bundled tier — '/dt save default' does not apply.";
-            case PORTAL_ROOM -> "Dimensional carriages have no bundled tier — the built-in one is code, not an nbt.";
-            case CARRIAGE -> "Default save not supported for custom variants — only built-ins have a bundled tier.";
-            default       -> "'/dt save default' is not supported for this template kind.";
+    private static Component promoteUnavailableMessage(Template model) {
+        String kind = switch (model.kind()) {
+            case CONTENTS, TUNNEL, PORTAL_ROOM, CARRIAGE -> model.kind().name().toLowerCase(java.util.Locale.ROOT);
+            default -> "generic";
         };
+        return Component.translatable("chat.dungeontrain.save.no_bundled_tier." + kind);
     }
 
     private static boolean isPlotEmpty(ServerLevel level, Template model, CarriageDims dims) {
@@ -534,7 +495,7 @@ public final class SaveCommand {
         try {
             return source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return null;
         }
     }

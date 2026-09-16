@@ -1,12 +1,14 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.worldgen.TrainPhase;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Pure tests for {@link ClientStages#dims(int)} — the compact gate-summary letters. */
+@ExtendWith(MenuTestLanguage.class)
 final class ClientStagesDimsTest {
 
     @Test

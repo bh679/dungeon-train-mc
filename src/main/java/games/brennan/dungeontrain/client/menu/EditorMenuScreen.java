@@ -53,7 +53,7 @@ public final class EditorMenuScreen implements MenuScreen {
     private static final ResourceLocation SAVE_ICON =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/save");
 
-    @Override public String title() { return "Editor"; }
+    @Override public String title() { return MenuLang.t("editor.title"); }
 
     /**
      * The tab strip is row 0 and stays pinned while the rest of the list scrolls — a tall Current
@@ -172,11 +172,11 @@ public final class EditorMenuScreen implements MenuScreen {
             String[] kindName = partsKindName(ctx.model());
             if (kindName != null) {
                 out.add(new CommandMenuEntry.Split(
-                    new CommandMenuEntry.DrillIn("New",
+                    new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
                         new NewSourcePickerScreen(NewSourcePickerScreen.Category.PARTS,
                             kindName[0], kindName[1])),
-                    new CommandMenuEntry.DrillIn("Remove",
-                        new ConfirmScreen("Remove '" + ctx.model() + "'?",
+                    new CommandMenuEntry.DrillIn(MenuLang.t("common.remove"),
+                        new ConfirmScreen(MenuLang.t("confirm.remove", ctx.model()),
                             "dungeontrain editor part reset " + kindName[0] + " " + kindName[1])),
                     0.50));
             }
@@ -197,9 +197,9 @@ public final class EditorMenuScreen implements MenuScreen {
         // Parts have their own Save — `dungeontrain save` dispatches via EditorCategory.locate,
         // which doesn't see part plots.
         out.add(new CommandMenuEntry.Split(
-            new CommandMenuEntry.Run("Save",
+            new CommandMenuEntry.Run(MenuLang.t("common.save"),
                 ctx.isParts() ? PART_SAVE_COMMAND : SAVE_COMMAND),
-            new CommandMenuEntry.Run("All",
+            new CommandMenuEntry.Run(MenuLang.t("editor.save_all"),
                 ctx.isParts() ? "dungeontrain editor part save all" : "dungeontrain save all"),
             0.80));
 
@@ -209,8 +209,8 @@ public final class EditorMenuScreen implements MenuScreen {
         // Undo | Redo — steps the per-plot editor history. Mirrors the Ctrl/Cmd+Z / Ctrl/Cmd+Y
         // keybindings through the same commands, so the two surfaces cannot drift apart.
         out.add(new CommandMenuEntry.Split(
-            new CommandMenuEntry.Run("Undo", "dungeontrain editor undo"),
-            new CommandMenuEntry.Run("Redo", "dungeontrain editor redo"),
+            new CommandMenuEntry.Run(MenuLang.t("editor.undo"), "dungeontrain editor undo"),
+            new CommandMenuEntry.Run(MenuLang.t("editor.redo"), "dungeontrain editor redo"),
             0.50));
 
         // Reset | Clear — paired destructive actions. Reset deletes the on-disk template; Clear
@@ -220,11 +220,11 @@ public final class EditorMenuScreen implements MenuScreen {
         if (ctx.isParts()) {
             if (clear != null) out.add(clear);
         } else {
-            CommandMenuEntry reset = new CommandMenuEntry.Run("Reset", "dungeontrain reset");
+            CommandMenuEntry reset = new CommandMenuEntry.Run(MenuLang.t("editor.reset"), "dungeontrain reset");
             out.add(clear != null ? new CommandMenuEntry.Split(reset, clear, 0.50) : reset);
         }
 
-        out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
+        out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.package"), new PackageListScreen()));
         return out;
     }
 
@@ -247,7 +247,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // the author can exclude specific contents from this carriage's spawn pool. Only shown when
         // a concrete variant id is in scope.
         if (ctx.category() == PlotCategory.CARRIAGES && notEmpty(ctx.modelId())) {
-            out.add(new CommandMenuEntry.DrillIn("Contents",
+            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.contents"),
                 CarriageContentsAllowScreen.forCarriage(ctx.modelId())));
         }
 
@@ -256,7 +256,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // NAME, not modelId: modelId is the kind tag "portal_room", shared by every room.
         if (ctx.isPortals() && notEmpty(ctx.modelName())
             && PortalRoomSettings.parse(EditorStatusHudOverlay.roomMode()).contents().furnishes()) {
-            out.add(new CommandMenuEntry.DrillIn("Contents",
+            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.contents"),
                 CarriageContentsAllowScreen.forPortalRoom(ctx.modelName())));
         }
 
@@ -294,15 +294,15 @@ public final class EditorMenuScreen implements MenuScreen {
     public static List<CommandMenuEntry> flipRows(String modelId, boolean x, boolean y, boolean z, boolean rooms) {
         String prefix = "dungeontrain editor contents flip " + modelId + " ";
         List<CommandMenuEntry> out = new ArrayList<>();
-        out.add(new CommandMenuEntry.Label("Flip"));
+        out.add(new CommandMenuEntry.Label(MenuLang.t("editor.flip")));
         // showStateText=false → state shown by the green (on) / grey (off) tint only, as on Mirror.
-        CommandMenuEntry xCell = new CommandMenuEntry.Toggle("X", x,
+        CommandMenuEntry xCell = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_x"), x,
             prefix + "x on", prefix + "x off", false);
-        CommandMenuEntry yCell = new CommandMenuEntry.Toggle("Y", y,
+        CommandMenuEntry yCell = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_y"), y,
             prefix + "y on", prefix + "y off", false);
-        CommandMenuEntry zCell = new CommandMenuEntry.Toggle("Z", z,
+        CommandMenuEntry zCell = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_z"), z,
             prefix + "z on", prefix + "z off", false);
-        CommandMenuEntry roomsCell = new CommandMenuEntry.Toggle("Rooms", rooms,
+        CommandMenuEntry roomsCell = new CommandMenuEntry.Toggle(MenuLang.t("editor.flip_rooms"), rooms,
             prefix + "rooms on", prefix + "rooms off", false);
         out.add(new CommandMenuEntry.Quad(xCell, yCell, zCell, roomsCell, 0.25, 0.50, 0.75));
         return out;
@@ -331,9 +331,9 @@ public final class EditorMenuScreen implements MenuScreen {
         // Size — a portal room is the one plot whose box the author chooses: length outright (it is
         // the distance walked underneath a portal, not a footprint) and width and height above the
         // floor the corridor mouth sets.
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("length", "Length", length, prefix));
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("width", "Width", width, prefix));
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("height", "Height", height, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("length", MenuLang.t("editor.length"), length, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("width", MenuLang.t("editor.width"), width, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("height", MenuLang.t("editor.height"), height, prefix));
 
         addIfPresent(out, EditorMenuPortalRows.wallsModeRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.lockRowFor(mode, prefix));
@@ -365,7 +365,7 @@ public final class EditorMenuScreen implements MenuScreen {
         String stageId = EditorStatusHudOverlay.stageId();
         if (notEmpty(stageId)) {
             return List.of(new CommandMenuEntry.DrillIn(
-                "Stage: " + stageId + "  ▾",
+                MenuLang.t("editor.stage_linked", stageId),
                 new StagePickerScreen(ctx.category(), ctx.modelId(), ctx.modelName(), stageId)));
         }
 
@@ -373,14 +373,14 @@ public final class EditorMenuScreen implements MenuScreen {
         int minLv = EditorStatusHudOverlay.minLevel();
         int maxLv = EditorStatusHudOverlay.maxLevel();
         addIfPresent(out, levelTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(),
-            "minlevel", "Min Lv (" + minLv + ")", "0-1000"));
+            "minlevel", MenuLang.t("editor.min_level", minLv), "0-1000"));
         addIfPresent(out, levelTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(),
-            "maxlevel", "Max Lv (" + (maxLv < 0 ? "all" : Integer.toString(maxLv)) + ")",
+            "maxlevel", MenuLang.t("editor.max_level", maxLv < 0 ? MenuLang.t("editor.max_level_all") : Integer.toString(maxLv)),
             "-1..1000"));
-        out.add(new CommandMenuEntry.DrillIn("Phases",
+        out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.phases"),
             new PhaseSelectScreen(ctx.category(), ctx.modelId(), ctx.modelName())));
         // Stage / Custom picker — link this template to a Stage preset (or stay Custom).
-        out.add(new CommandMenuEntry.DrillIn("Stage: Custom  ▾",
+        out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.stage_custom"),
             new StagePickerScreen(ctx.category(), ctx.modelId(), ctx.modelName(), "")));
         return out;
     }
@@ -399,7 +399,7 @@ public final class EditorMenuScreen implements MenuScreen {
 
         if (shouldShowDevModeToggle(VersionInfo.BRANCH)) {
             out.add(new CommandMenuEntry.Toggle(
-                "DevMode", EditorStatusHudOverlay.isDevModeOn(),
+                MenuLang.t("editor.dev_mode"), EditorStatusHudOverlay.isDevModeOn(),
                 "dungeontrain editor devmode on",
                 "dungeontrain editor devmode off"));
         }
@@ -434,7 +434,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // (X) button writes the same per-player, per-world flag; this row is the only way back,
         // so it stays in the menu whether the panel is currently up or not.
         out.add(new CommandMenuEntry.Toggle(
-            "Welcome Panel", !EditorTypeMenuRenderer.helpPanelDismissed(),
+            MenuLang.t("editor.welcome_panel"), !EditorTypeMenuRenderer.helpPanelDismissed(),
             "dungeontrain editor helppanel on",
             "dungeontrain editor helppanel off"));
 
@@ -448,7 +448,7 @@ public final class EditorMenuScreen implements MenuScreen {
         }
 
         if (!ctx.isParts()) {
-            out.add(new CommandMenuEntry.DrillIn("Stages", new StagesListScreen()));
+            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.stages"), new StagesListScreen()));
         }
         return out;
     }
@@ -459,7 +459,7 @@ public final class EditorMenuScreen implements MenuScreen {
 
     private static List<CommandMenuEntry> navRows(Ctx ctx) {
         List<CommandMenuEntry> out = new ArrayList<>();
-        out.add(new CommandMenuEntry.DrillIn("Enter", new EnterCategoryMenuScreen()));
+        out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.enter"), new EnterCategoryMenuScreen()));
 
         // Go and stand in one. Portals only, because that is the only category where "the carriage"
         // names something you can walk into. It stamps the room the player is standing in — under
@@ -469,13 +469,13 @@ public final class EditorMenuScreen implements MenuScreen {
         // from what the author walked in to look at. PortalTestSaveCheckScreen asks first when this
         // room is dirty, and dispatches straight through when it isn't.
         if (ctx.isPortals()) {
-            out.add(new CommandMenuEntry.DrillIn("Test the Carriage",
+            out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.test_carriage"),
                 new PortalTestSaveCheckScreen(ctx.modelName())));
         }
 
         // Exit unwinds the active editor session, clears the editor plots, and teleports the player
         // back to where they entered the editor from.
-        out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
+        out.add(new CommandMenuEntry.Run(MenuLang.t("editor.exit"), "dungeontrain editor exit"));
         return out;
     }
 
@@ -510,10 +510,10 @@ public final class EditorMenuScreen implements MenuScreen {
     private static CommandMenuEntry editorMenusRow() {
         EditorMenusMode mode = EditorMenusModeState.mode();
         return new CommandMenuEntry.Quad(
-            new CommandMenuEntry.Label("Editor Menus"),
-            modeCell("Auto", EditorMenusMode.AUTO, mode),
-            modeCell("On", EditorMenusMode.ON, mode),
-            modeCell("Off", EditorMenusMode.OFF, mode),
+            new CommandMenuEntry.Label(MenuLang.t("editor.editor_menus")),
+            modeCell(MenuLang.t("editor.menus_auto"), EditorMenusMode.AUTO, mode),
+            modeCell(MenuLang.t("common.on"), EditorMenusMode.ON, mode),
+            modeCell(MenuLang.t("common.off"), EditorMenusMode.OFF, mode),
             0.46, 0.64, 0.82);
     }
 
@@ -534,7 +534,7 @@ public final class EditorMenuScreen implements MenuScreen {
             () -> ClientDisplayConfig.setMenuRenderDistance(
                 ClientDisplayConfig.stepMenuRenderDistanceDown(
                     ClientDisplayConfig.getMenuRenderDistance())));
-        CommandMenuEntry middle = new CommandMenuEntry.Label("Menu Distance: " + current);
+        CommandMenuEntry middle = new CommandMenuEntry.Label(MenuLang.t("editor.menu_distance", current));
         CommandMenuEntry plus = new CommandMenuEntry.ClientAction("+",
             () -> ClientDisplayConfig.setMenuRenderDistance(
                 ClientDisplayConfig.stepMenuRenderDistanceUp(
@@ -557,7 +557,7 @@ public final class EditorMenuScreen implements MenuScreen {
     private static CommandMenuEntry plotLightingRow() {
         boolean on = ClientDisplayConfig.isEditorPlotLighting();
         return new CommandMenuEntry.ClientAction(
-            "Plot Lighting  [" + (on ? "ON" : "OFF") + "]",
+            MenuLang.t("editor.plot_lighting", MenuLang.t(on ? "common.on_caps" : "common.off_caps")),
             () -> ClientDisplayConfig.setEditorPlotLighting(!ClientDisplayConfig.isEditorPlotLighting()));
     }
 
@@ -565,18 +565,18 @@ public final class EditorMenuScreen implements MenuScreen {
     private static CommandMenuEntry observersRow() {
         boolean on = EditorObserversState.on();
         return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Label("Observers"),
-            new CommandMenuEntry.Stay("On", "dungeontrain editor observers on", on),
-            new CommandMenuEntry.Stay("Off", "dungeontrain editor observers off", !on),
+            new CommandMenuEntry.Label(MenuLang.t("editor.observers")),
+            new CommandMenuEntry.Stay(MenuLang.t("common.on"), "dungeontrain editor observers on", on),
+            new CommandMenuEntry.Stay(MenuLang.t("common.off"), "dungeontrain editor observers off", !on),
             0.46, 0.73);
     }
 
     private static CommandMenuEntry mobsRow() {
         boolean live = games.brennan.dungeontrain.client.EditorMobsModeState.live();
         return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Label("Mobs"),
-            new CommandMenuEntry.Stay("Blocks", "dungeontrain editor mobs blocks", !live),
-            new CommandMenuEntry.Stay("Live", "dungeontrain editor mobs live", live),
+            new CommandMenuEntry.Label(MenuLang.t("editor.mobs")),
+            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_blocks"), "dungeontrain editor mobs blocks", !live),
+            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_live"), "dungeontrain editor mobs live", live),
             0.46, 0.73);
     }
 
@@ -586,20 +586,20 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     private static void addMirrorToggles(List<CommandMenuEntry> out) {
-        out.add(new CommandMenuEntry.Label("Mirror"));
+        out.add(new CommandMenuEntry.Label(MenuLang.t("editor.mirror")));
         // showStateText=false → state shown by the green (on) / grey (off) tint only.
-        CommandMenuEntry x = new CommandMenuEntry.Toggle("X", EditorStatusHudOverlay.mirrorX(),
+        CommandMenuEntry x = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_x"), EditorStatusHudOverlay.mirrorX(),
             "dungeontrain editor mirror x on", "dungeontrain editor mirror x off", false);
-        CommandMenuEntry y = new CommandMenuEntry.Toggle("Y", EditorStatusHudOverlay.mirrorY(),
+        CommandMenuEntry y = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_y"), EditorStatusHudOverlay.mirrorY(),
             "dungeontrain editor mirror y on", "dungeontrain editor mirror y off", false);
-        CommandMenuEntry z = new CommandMenuEntry.Toggle("Z", EditorStatusHudOverlay.mirrorZ(),
+        CommandMenuEntry z = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_z"), EditorStatusHudOverlay.mirrorZ(),
             "dungeontrain editor mirror z on", "dungeontrain editor mirror z off", false);
-        CommandMenuEntry v = new CommandMenuEntry.Toggle("V", EditorStatusHudOverlay.mirrorVariants(),
+        CommandMenuEntry v = new CommandMenuEntry.Toggle(MenuLang.t("editor.mirror_variants"), EditorStatusHudOverlay.mirrorVariants(),
             "dungeontrain editor mirror v on", "dungeontrain editor mirror v off", false);
         out.add(new CommandMenuEntry.Quad(x, y, z, v, 0.25, 0.50, 0.75));
         // Explicit re-mirror. Saving no longer rebuilds the far half from the master octant, so
         // this is the (deliberate) way to force it.
-        out.add(new CommandMenuEntry.Run("Rebuild", "dungeontrain editor mirror rebuild"));
+        out.add(new CommandMenuEntry.Run(MenuLang.t("editor.mirror_rebuild"), "dungeontrain editor mirror rebuild"));
     }
 
     /**
@@ -640,7 +640,7 @@ public final class EditorMenuScreen implements MenuScreen {
             case PARTS, ARCHITECTURE -> null; // no weight pool
         };
         if (prefix == null) return null;
-        String label = currentWeight >= 0 ? "Weight (" + currentWeight + ")" : "Weight";
+        String label = currentWeight >= 0 ? MenuLang.t("editor.weight_n", currentWeight) : MenuLang.t("editor.weight");
         CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
         CommandMenuEntry weight = new CommandMenuEntry.TypeArg(label, "0-100", prefix);
         CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
@@ -663,7 +663,7 @@ public final class EditorMenuScreen implements MenuScreen {
     /** The header Save for a category: parts route through the part-aware subcommand. */
     public static MenuHeaderAction saveHeaderAction(PlotCategory category, boolean dirty, long nowMillis) {
         return new MenuHeaderAction(SAVE_ICON,
-            dirty ? "Save — unsaved changes" : "Save",
+            dirty ? MenuLang.t("editor.save_unsaved") : MenuLang.t("common.save"),
             category == PlotCategory.PARTS ? PART_SAVE_COMMAND : SAVE_COMMAND,
             EditorSaveStatus.tint(dirty, nowMillis));
     }
@@ -706,23 +706,23 @@ public final class EditorMenuScreen implements MenuScreen {
         if (category == null) return null;
         return switch (category) {
             case CARRIAGES -> new CommandMenuEntry.DrillIn(
-                "New",
+                MenuLang.t("common.new"),
                 new NewSourcePickerScreen(
                     NewSourcePickerScreen.Category.CARRIAGES, null, modelId));
             case CONTENTS -> new CommandMenuEntry.DrillIn(
-                "New",
+                MenuLang.t("common.new"),
                 new NewSourcePickerScreen(
                     NewSourcePickerScreen.Category.CONTENTS, null, modelId));
             case TRACKS -> {
                 if (modelId == null || modelId.isEmpty()) yield null;
                 yield new CommandMenuEntry.TypeArg(
-                    "New", "name",
+                    MenuLang.t("common.new"), "name",
                     "dungeontrain editor tracks new " + modelId);
             }
             case PORTALS -> {
                 if (modelId == null || modelId.isEmpty()) yield null;
                 yield new CommandMenuEntry.TypeArg(
-                    "New", "name",
+                    MenuLang.t("common.new"), "name",
                     "dungeontrain editor portals new " + modelId);
             }
             // Parts are created through their own picker; architecture has no models yet.
@@ -746,20 +746,20 @@ public final class EditorMenuScreen implements MenuScreen {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         return switch (category) {
             case CARRIAGES -> new CommandMenuEntry.DrillIn(
-                "Remove",
-                new ConfirmScreen("Remove '" + model + "'?",
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
                     "dungeontrain editor reset " + modelId));
             case CONTENTS -> new CommandMenuEntry.DrillIn(
-                "Remove",
-                new ConfirmScreen("Remove '" + model + "'?",
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
                     "dungeontrain editor contents reset " + modelId));
             case TRACKS -> new CommandMenuEntry.DrillIn(
-                "Remove",
-                new ConfirmScreen("Remove the current variant for '" + model + "'?",
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove_variant", model),
                     "dungeontrain editor tracks reset " + modelId));
             case PORTALS -> new CommandMenuEntry.DrillIn(
-                "Remove",
-                new ConfirmScreen("Remove the current variant for '" + model + "'?",
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove_variant", model),
                     "dungeontrain editor portals reset " + modelId));
             // Parts have their own remove flow; architecture has no models yet.
             case PARTS, ARCHITECTURE -> null;
@@ -776,8 +776,8 @@ public final class EditorMenuScreen implements MenuScreen {
         if (model == null || model.isEmpty() || category == null) return null;
         return switch (category) {
             case CARRIAGES, CONTENTS, PARTS, PORTALS -> new CommandMenuEntry.DrillIn(
-                "Clear",
-                new ConfirmScreen("Clear all blocks in '" + model + "'?",
+                MenuLang.t("common.clear"),
+                new ConfirmScreen(MenuLang.t("confirm.clear_blocks", model),
                     "dungeontrain editor clear"));
             // No single addressable plot to clear.
             case TRACKS, ARCHITECTURE -> null;
@@ -802,16 +802,16 @@ public final class EditorMenuScreen implements MenuScreen {
             String[] kindName = partsKindName(model);
             if (kindName == null) return null;
             return new CommandMenuEntry.TypeArg(
-                "Rename", "new_name", "dungeontrain editor part rename", "", kindName[1]);
+                MenuLang.t("common.rename"), "new_name", "dungeontrain editor part rename", "", kindName[1]);
         }
         if (category == null) return null;
         return switch (category) {
             case CARRIAGES -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
-                "Rename", "new_name",
+                MenuLang.t("common.rename"), "new_name",
                 "dungeontrain editor save",
                 "", model);
             case CONTENTS -> isReservedContentsBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
-                "Rename", "new_name",
+                MenuLang.t("common.rename"), "new_name",
                 "dungeontrain editor contents save",
                 "", model);
             // Parts are handled above; the rest have no rename subcommand.

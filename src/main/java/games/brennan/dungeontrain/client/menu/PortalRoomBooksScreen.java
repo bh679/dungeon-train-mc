@@ -51,24 +51,24 @@ public final class PortalRoomBooksScreen implements MenuScreen {
     }
 
     @Override public String title() {
-        return "Books — mix";
+        return MenuLang.t("books.title");
     }
 
     @Override public List<CommandMenuEntry> entries() {
         PortalRoomBooks books = PortalRoomSettings.parse(modeTag).books();
         List<CommandMenuEntry> out = new ArrayList<>();
         for (PortalRoomBooks.Share share : PortalRoomBooks.Share.values()) {
-            out.add(stepper(share.displayName(), commandFor(share),
+            out.add(stepper(MenuLang.named("portal.share", share.id(), share.displayName()), commandFor(share),
                 books.weightFor(share), "0-" + PortalRoomBooks.MAX_WEIGHT));
         }
-        out.add(stepper("Min books", "booksmin", books.minBooks(),
+        out.add(stepper(MenuLang.t("books.min"), "booksmin", books.minBooks(),
             PortalRoomBooks.MIN_BOOK_BOUND + "-" + PortalRoomBooks.MAX_BOOK_BOUND));
         // Zero reads as "no ceiling", so it is spelled out rather than shown as a bare 0 the author
         // has to guess the meaning of.
-        out.add(stepper(books.maxBooks() == PortalRoomBooks.NO_MAXIMUM ? "Max books (any)" : "Max books",
+        out.add(stepper(MenuLang.t(books.maxBooks() == PortalRoomBooks.NO_MAXIMUM ? "books.max_any" : "books.max"),
             "booksmax", books.maxBooks(),
             PortalRoomBooks.MIN_BOOK_BOUND + "-" + PortalRoomBooks.MAX_BOOK_BOUND));
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 

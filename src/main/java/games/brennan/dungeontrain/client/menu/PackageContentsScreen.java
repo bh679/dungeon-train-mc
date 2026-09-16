@@ -32,14 +32,14 @@ public final class PackageContentsScreen implements MenuScreen {
 
     @Override public String title() {
         return PackageListClient.activeEntry()
-            .map(e -> e.name() + " contents")
-            .orElse("Contents");
+            .map(e -> MenuLang.t("packages.contents_of", e.name()))
+            .orElse(MenuLang.t("editor.contents"));
     }
 
     @Override public List<CommandMenuEntry> entries() {
         PackageListSyncPacket.Entry active = PackageListClient.activeEntry().orElse(null);
         if (active == null) {
-            return List.of(new CommandMenuEntry.Label("No active package."));
+            return List.of(new CommandMenuEntry.Label(MenuLang.t("packages.none_active")));
         }
 
         List<CommandMenuEntry> out = new ArrayList<>();
@@ -52,10 +52,11 @@ public final class PackageContentsScreen implements MenuScreen {
             if (names.isEmpty()) continue;
             anyContent = true;
 
-            out.add(new CommandMenuEntry.Label(section.label() + " (" + names.size() + ")"));
+            out.add(new CommandMenuEntry.Label(MenuLang.t("common.value_in_parens",
+                MenuLang.named("packages.section", section.subdir().replace('/', '_'), section.label()), names.size())));
             for (String name : names) {
                 if (rowsEmitted >= MAX_ROWS) {
-                    out.add(new CommandMenuEntry.Label("... (more truncated)"));
+                    out.add(new CommandMenuEntry.Label(MenuLang.t("packages.truncated")));
                     return out;
                 }
                 out.add(rowFor(section, name));
@@ -64,8 +65,8 @@ public final class PackageContentsScreen implements MenuScreen {
         }
 
         if (!anyContent) {
-            out.add(new CommandMenuEntry.Label("(empty)"));
-            out.add(new CommandMenuEntry.Label("Save in the editor to populate."));
+            out.add(new CommandMenuEntry.Label(MenuLang.t("packages.empty")));
+            out.add(new CommandMenuEntry.Label(MenuLang.t("packages.empty_hint")));
         }
         return out;
     }

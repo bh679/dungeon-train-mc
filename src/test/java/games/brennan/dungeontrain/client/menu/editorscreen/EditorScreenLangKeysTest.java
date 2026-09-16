@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import games.brennan.dungeontrain.RepoPaths;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Every key constant in {@link EditorScreenLang} must exist in {@code en_us.json}. */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorScreenLangKeysTest {
 
     @Test

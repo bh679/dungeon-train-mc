@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.client.VersionInfo;
@@ -411,7 +412,7 @@ final class EditorFilterBar {
         for (int i = 0; i < stripCells.size(); i++) {
             StripCell c = stripCells.get(i);
             boolean hov = hovered.kind() == HitKind.STRIP && hovered.index() == i;
-            cell(g, font, c.x(), c.w(), stripRect, c.strip().typeName() + " " + c.strip().count(),
+            cell(g, font, c.x(), c.w(), stripRect, MenuLang.typeName(c.strip().typeName()) + " " + c.strip().count(),
                 c.strip().typeName().equals(activeType), hov, true);
         }
     }

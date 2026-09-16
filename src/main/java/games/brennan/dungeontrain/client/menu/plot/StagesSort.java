@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
+import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 
 import java.util.Comparator;
@@ -24,16 +25,16 @@ public final class StagesSort {
 
     /** The sortable columns, in the order the titles row draws them. */
     public enum Column {
-        NAME("Name"), BLOCKS("Blocks"), MIN("Min"), MAX("Max"), PHASES("Phases");
+        NAME("name"), BLOCKS("blocks"), MIN("min"), MAX("max"), PHASES("phases");
 
-        private final String title;
+        private final String key;
 
-        Column(String title) {
-            this.title = title;
+        Column(String key) {
+            this.key = key;
         }
 
         public String title() {
-            return title;
+            return MenuLang.t("stages_sort." + key);
         }
     }
 

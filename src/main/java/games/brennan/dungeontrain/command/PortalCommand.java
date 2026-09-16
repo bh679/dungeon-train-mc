@@ -131,7 +131,7 @@ public final class PortalCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
 
@@ -144,7 +144,7 @@ public final class PortalCommand {
         try {
             geo = new PortalGeometry(originX, floorY, originZ, length, DEFAULT_WIDTH, DEFAULT_HEIGHT, deltaY);
         } catch (IllegalArgumentException e) {
-            source.sendFailure(Component.literal("Invalid portal: " + e.getMessage())
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.invalid_portal", e.getMessage())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -152,14 +152,12 @@ public final class PortalCommand {
         // The upper copy has to fit under the build height, and the lower one above the floor —
         // the whole trick depends on both copies living in the same chunk columns.
         if (geo.highestBlockY() > level.getMaxBuildHeight() - CEILING_MARGIN) {
-            source.sendFailure(Component.literal(
-                "Upper copy would reach Y " + geo.highestBlockY() + ", above the build ceiling ("
-                    + level.getMaxBuildHeight() + "). Stand lower or use a smaller deltaY.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.upper_copy_would_reach", geo.highestBlockY(), level.getMaxBuildHeight())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         if (floorY < level.getMinBuildHeight() + 1) {
-            source.sendFailure(Component.literal("Too close to the world floor to stamp a corridor here.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.too_close_world_floor")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -172,12 +170,7 @@ public final class PortalCommand {
 
         teleportToEntrance(player, level, geo);
 
-        source.sendSuccess(() -> Component.literal(
-            "Built hallway portal: corridor X " + geo.originX() + "→" + geo.farDoorX()
-                + ", midpoint X " + geo.midX()
-                + ", near copy Y " + geo.floorYOf(PortalGeometry.COPY_NEAR)
-                + ", far copy Y " + geo.floorYOf(PortalGeometry.COPY_FAR)
-                + ". Walk east through both doors — watch F3's Y."), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.built_hallway_portal_corridor", geo.originX(), geo.farDoorX(), geo.midX(), geo.floorYOf(PortalGeometry.COPY_NEAR), geo.floorYOf(PortalGeometry.COPY_FAR)), true);
         return 1;
     }
 
@@ -185,14 +178,11 @@ public final class PortalCommand {
         PortalRegistry.get(source.getLevel()).setAutoSpacing(spacing);
 
         if (spacing == PortalAnchors.SPACING_OFF) {
-            source.sendSuccess(() -> Component.literal(
-                "Auto-spawning off. Portals already built stay where they are."), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.auto_spawning_off_portals"), true);
             return 1;
         }
 
-        source.sendSuccess(() -> Component.literal(
-            "Auto-spawning every " + spacing + " blocks along +X, beside the track. "
-                + "Ride east and they will appear as chunks load."), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.auto_spawning_every_blocks", spacing), true);
         return 1;
     }
 
@@ -215,7 +205,7 @@ public final class PortalCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
 
@@ -245,15 +235,11 @@ public final class PortalCommand {
             CarriageTemplateStore.save(variant, template);
             CarriageVariantRegistry.reload();
 
-            source.sendSuccess(() -> Component.literal(
-                "Saved " + CarriageTemplateStore.fileFor(variant)
-                    + ". Edit it with /dungeontrain editor carriage " + variant.id()
-                    + " — every portal corridor of that kind, and its twin, stamps from it."), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.saved_edit_it_with", CarriageTemplateStore.fileFor(variant), variant.id()), true);
             return 1;
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] portal savetemplate failed", e);
-            source.sendFailure(Component.literal(
-                "Failed to save portal template: " + e.getClass().getSimpleName() + ": " + e.getMessage())
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.failed_save_portal_template", e.getClass().getSimpleName(), e.getMessage())
                 .withStyle(ChatFormatting.RED));
             return 0;
         } finally {
@@ -266,28 +252,17 @@ public final class PortalCommand {
         PortalTuningIntegrity.markTuned(source.getLevel());
 
         if (every == PortalCarriageSelection.CARRIAGE_EVERY_OFF) {
-            source.sendSuccess(() -> Component.literal(
-                "Portal carriages off. Carriages already stamped keep their corridor until the "
-                    + "rolling window re-places them."), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.portal_carriages_off_carriages"), true);
             return 1;
         }
 
-        source.sendSuccess(() -> Component.literal(
-            (every == 1 ? "Every carriage group is now a portal" : "1 carriage group in " + every
-                + " is now a portal, drawn at random")
-                + ": entry corridor, one cart, exit corridor. "
-                + "Walk the train to find one — the twin is stamped as you approach."), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.entry_corridor_one_cart", (every == 1 ? Component.translatable("chat.dungeontrain.portal.every_group_portal") : Component.translatable("chat.dungeontrain.portal.one_in_groups_portal", every))), true);
 
         if (PortalCarriageSelection.isGapClamped(every)) {
-            source.sendSuccess(() -> Component.literal(
-                "  → that is denser than the " + PortalCarriageSelection.MIN_GROUP_GAP
-                    + "-group minimum spacing allows, so portals will land exactly every "
-                    + PortalCarriageSelection.MIN_GROUP_GAP + "th group in survival.")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.that_denser_than_group", PortalCarriageSelection.MIN_GROUP_GAP, PortalCarriageSelection.MIN_GROUP_GAP)
                 .withStyle(ChatFormatting.YELLOW), false);
         } else if (every > 1) {
-            source.sendSuccess(() -> Component.literal(
-                "  → in survival, never closer than " + PortalCarriageSelection.MIN_GROUP_GAP
-                    + " groups apart. In creative, exactly every " + every + " groups.")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.survival_never_closer_than", PortalCarriageSelection.MIN_GROUP_GAP, every)
                 .withStyle(ChatFormatting.GRAY), false);
         }
         return 1;
@@ -297,9 +272,7 @@ public final class PortalCommand {
         PortalRegistry registry = PortalRegistry.get(source.getLevel());
         int spacing = registry.autoSpacing();
         int every = registry.carriageEvery();
-        source.sendSuccess(() -> Component.literal(every == PortalCarriageSelection.CARRIAGE_EVERY_OFF
-            ? "Portal carriages: off"
-            : "Portal carriages: 1 carriage group in " + every + ", at random"), false);
+        source.sendSuccess(() -> (every == PortalCarriageSelection.CARRIAGE_EVERY_OFF ? Component.translatable("chat.dungeontrain.portal.portal_carriages_off") : Component.translatable("chat.dungeontrain.portal.portal_carriages_1_carriage", every)), false);
         // Says so out loud while it is in force, because otherwise portals arriving on a metronome
         // reads as the "at random" above being broken.
         if (every != PortalCarriageSelection.CARRIAGE_EVERY_OFF
@@ -307,30 +280,21 @@ public final class PortalCommand {
             int creative = PortalCarriageSelection.isDevCreative(source.getLevel())
                     && !registry.isCarriageEverySet()
                 ? PortalCarriageSelection.DEV_CREATIVE_EVERY : every;
-            source.sendSuccess(() -> Component.literal(
-                "  → everyone here is in creative, so it is exactly every " + creative
-                    + " groups rather than a draw. Switch to survival for the lottery.")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.everyone_here_creative_so", creative)
                 .withStyle(ChatFormatting.YELLOW), false);
         }
-        source.sendSuccess(() -> Component.literal(spacing == PortalAnchors.SPACING_OFF
-            ? "Auto-spawning: off"
-            : "Auto-spawning: every " + spacing + " blocks"), false);
+        source.sendSuccess(() -> (spacing == PortalAnchors.SPACING_OFF ? Component.translatable("chat.dungeontrain.portal.auto_spawning_off") : Component.translatable("chat.dungeontrain.portal.auto_spawning_every_blocks_2", spacing)), false);
 
         List<PortalGeometry> portals = registry.all();
         if (portals.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No hallway portals built in this dimension yet."), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.no_hallway_portals_built"), false);
             return 0;
         }
 
         for (int i = 0; i < portals.size(); i++) {
             PortalGeometry geo = portals.get(i);
             final int index = i;
-            source.sendSuccess(() -> Component.literal(
-                "[" + index + "] X " + geo.originX() + "→" + geo.farDoorX()
-                    + " Z " + geo.originZ()
-                    + " | midpoint X " + geo.midX()
-                    + " | near Y " + geo.floorYOf(PortalGeometry.COPY_NEAR)
-                    + " far Y " + geo.floorYOf(PortalGeometry.COPY_FAR)), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.x_z_midpoint_x", index, geo.originX(), geo.farDoorX(), geo.originZ(), geo.midX(), geo.floorYOf(PortalGeometry.COPY_NEAR), geo.floorYOf(PortalGeometry.COPY_FAR)), false);
         }
         return portals.size();
     }
@@ -353,13 +317,12 @@ public final class PortalCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal(
-                "This command must be run by a player — it reports on the portal nearest to you."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.command_must_be_run"));
             return 0;
         }
 
         List<String> report = PortalCarriageEvents.diagnose(source.getLevel(), player);
-        source.sendSuccess(() -> Component.literal("Portal diagnosis:")
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.portal_diagnosis")
             .withStyle(ChatFormatting.AQUA), false);
         for (String line : report) {
             source.sendSuccess(() -> Component.literal(line), false);
@@ -384,18 +347,13 @@ public final class PortalCommand {
     private static int runSeveredList(CommandSourceStack source) {
         List<Integer> severed = PortalRegistry.get(source.getLevel()).severed();
         if (severed.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No severed portal pairs in this dimension."), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.no_severed_portal_pairs"), false);
             return 0;
         }
 
-        source.sendSuccess(() -> Component.literal(
-            severed.size() + " severed portal pair" + (severed.size() == 1 ? "" : "s")
-                + " (no way in at either end; the ways out still work; repaired on the next "
-                + "re-stamp):"), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.severed_portal_pair_no", severed.size(), Component.translatable(severed.size() == 1 ? "chat.dungeontrain.common.noun.pair.singular" : "chat.dungeontrain.common.noun.pair.plural")), false);
         for (int pairKey : severed) {
-            source.sendSuccess(() -> Component.literal("  pair " + pairKey
-                + " (carriages " + pairKey + " + "
-                + PortalCarriageRole.partnerIndex(pairKey, DungeonTrainConfig.getGroupSize()) + ")"),
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.pair_carriages", pairKey, pairKey, PortalCarriageRole.partnerIndex(pairKey, DungeonTrainConfig.getGroupSize())),
                 false);
         }
         return severed.size();
@@ -403,16 +361,13 @@ public final class PortalCommand {
 
     private static int runSeveredClear(CommandSourceStack source) {
         int restored = PortalRegistry.get(source.getLevel()).clearSevered();
-        source.sendSuccess(() -> Component.literal(
-            "Restored " + restored + " severed portal pair" + (restored == 1 ? "" : "s") + "."), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.restored_severed_portal_pair", restored, Component.translatable(restored == 1 ? "chat.dungeontrain.common.noun.pair.singular" : "chat.dungeontrain.common.noun.pair.plural")), true);
         return restored;
     }
 
     private static int runClear(CommandSourceStack source) {
         int removed = PortalRegistry.get(source.getLevel()).clear();
-        source.sendSuccess(() -> Component.literal(
-            "Cleared " + removed + " hallway portal" + (removed == 1 ? "" : "s")
-                + " (blocks left in place; swapping stops)."), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.cleared_hallway_portal_blocks", removed, Component.translatable(removed == 1 ? "chat.dungeontrain.common.noun.portal.singular" : "chat.dungeontrain.common.noun.portal.plural")), true);
         return removed;
     }
 
@@ -421,28 +376,27 @@ public final class PortalCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
 
         ServerLevel level = source.getLevel();
         List<PortalGeometry> portals = PortalRegistry.get(level).all();
         if (portals.isEmpty()) {
-            source.sendFailure(Component.literal("No hallway portals in this dimension.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.no_hallway_portals_dimension")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
 
         int resolved = index < 0 ? portals.size() - 1 : index;
         if (resolved >= portals.size()) {
-            source.sendFailure(Component.literal(
-                "No portal " + resolved + " — there are " + portals.size() + ".")
+            source.sendFailure(Component.translatable("chat.dungeontrain.portal.no_portal_there_are", resolved, portals.size())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
 
         teleportToEntrance(player, level, portals.get(resolved));
-        source.sendSuccess(() -> Component.literal("Teleported to hallway portal " + resolved + "."), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.teleported_hallway_portal", resolved), false);
         return 1;
     }
 

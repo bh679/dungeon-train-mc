@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * only saved, green once it is with the reviewers. Green too early would say a build had been offered
  * when it had not.
  */
+@ExtendWith(MenuTestLanguage.class)
 final class SubmitTintTest {
 
     /** The dimmest the shared pulse goes — EditorSaveStatus.PULSE_MIN, which lives in its package. */

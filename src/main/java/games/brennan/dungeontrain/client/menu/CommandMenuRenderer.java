@@ -479,7 +479,7 @@ public final class CommandMenuRenderer {
     private static String labelFor(CommandMenuEntry entry) {
         if (entry instanceof CommandMenuEntry.Toggle t) {
             // Compact toggles convey state by the green/grey cell tint alone.
-            return t.showStateText() ? t.label() + (t.state() ? " [ON]" : " [OFF]") : t.label();
+            return t.showStateText() ? t.label() + " [" + MenuLang.t(t.state() ? "common.on_caps" : "common.off_caps") + "]" : t.label();
         }
         return entry.label();
     }
@@ -491,7 +491,7 @@ public final class CommandMenuRenderer {
         // draw helpers and to leave room for left/right-aligned headers
         // in the future.
         String header = title;
-        if (header == null || header.isEmpty()) header = "Dungeon Train";
+        if (header == null || header.isEmpty()) header = MenuLang.t("main.title");
         float cy = (float) CommandMenuLayout.headerCenterY(count);
         drawCenteredText(poseStack, buffer, font, header, 0f, cy, 0xFFFFEEBB);
     }

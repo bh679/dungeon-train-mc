@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Pins how each {@link CommandMenuEntry} kind routes through {@link MenuEntryDispatcher} — the
  * table both the panels and the inventory-style editor screen depend on.
  */
+@ExtendWith(MenuTestLanguage.class)
 final class MenuEntryDispatcherTest {
 
     /** Records every host call as a line, so a test asserts the whole sequence. */

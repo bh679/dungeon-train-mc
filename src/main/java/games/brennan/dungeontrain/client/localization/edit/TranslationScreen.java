@@ -124,10 +124,16 @@ public final class TranslationScreen extends Screen {
         }
     }
 
-    /** Which body the list shows. */
+    /**
+     * Which body the list shows. The three named bodies partition the catalog: a lang line is
+     * either the build editor's ({@link TranslationFilters#isEditorKey}) or the game's, and a book
+     * is neither — so "Menus & messages" is the game a player sees, and the editor's jargon is a
+     * body of its own that a translator takes or leaves whole.
+     */
     private enum BodyFilter {
         ALL("all"),
         UI("ui"),
+        EDITOR("editor"),
         BOOKS("books");
 
         final String key;
@@ -788,7 +794,8 @@ public final class TranslationScreen extends Screen {
     private boolean matchesBody(TranslationUnit unit) {
         return switch (bodyFilter) {
             case ALL -> true;
-            case UI -> unit.type() == TranslationUnit.Type.LANG;
+            case UI -> unit.type() == TranslationUnit.Type.LANG && !TranslationFilters.isEditor(unit);
+            case EDITOR -> TranslationFilters.isEditor(unit);
             case BOOKS -> unit.type() == TranslationUnit.Type.BOOK;
         };
     }

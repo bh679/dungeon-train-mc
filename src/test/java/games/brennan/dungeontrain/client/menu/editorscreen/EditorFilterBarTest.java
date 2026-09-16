@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuTestLanguage;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.builder.BuilderProfileFilters;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +12,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** What the collapsed filter row shows: exactly the filters in force, in row order. */
+@ExtendWith(MenuTestLanguage.class)
 final class EditorFilterBarTest {
 
     private static List<EditorFilterBar.ActiveKind> kinds(List<EditorFilterBar.ActiveChip> chips) {

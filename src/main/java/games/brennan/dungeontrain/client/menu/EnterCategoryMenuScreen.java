@@ -34,16 +34,16 @@ import java.util.Locale;
  */
 public final class EnterCategoryMenuScreen implements MenuScreen {
 
-    @Override public String title() { return "Enter"; }
+    @Override public String title() { return MenuLang.t("editor.enter"); }
 
     @Override public List<CommandMenuEntry> entries() {
         String current = EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT);
         return List.of(
-            entryFor("Tracks", "tracks", current),
-            entryFor("Carriages", "carriages", current),
-            entryFor("Contents", "contents", current),
-            entryFor("Dimensions", "portals", current),
-            new CommandMenuEntry.Back("< Back")
+            entryFor(MenuLang.t("category.tracks"), "tracks", current),
+            entryFor(MenuLang.t("category.carriages"), "carriages", current),
+            entryFor(MenuLang.t("category.contents"), "contents", current),
+            entryFor(MenuLang.t("category.dimensions"), "portals", current),
+            new CommandMenuEntry.Back(MenuLang.t("common.back"))
         );
     }
 

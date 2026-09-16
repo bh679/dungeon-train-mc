@@ -72,16 +72,16 @@ public final class NewSourcePickerScreen implements MenuScreen {
 
     @Override public String title() {
         return switch (category) {
-            case PARTS -> "New " + kind + " — source";
-            case CONTENTS -> "New contents — source";
-            case CARRIAGES -> "New carriage — source";
+            case PARTS -> MenuLang.t("new_source.title_kind_source", kind);
+            case CONTENTS -> MenuLang.t("new_source.title_contents");
+            case CARRIAGES -> MenuLang.t("new_source.title_carriage");
             // Tracks have no source picker today — only a name. Title still
             // matches the "New … — source" pattern so the screen reads
             // consistently with its siblings; the entry list collapses to
             // a single name TypeArg + Back below.
-            case TRACKS -> "New " + kind + " — name";
-            case PORTALS -> "New dimensional carriage — name";
-            case CONTENTS_SUB_VARIANT, PORTAL_ROOM_SUB_VARIANT -> "New sub-variant of " + currentId + " — name";
+            case TRACKS -> MenuLang.t("new_source.title_kind_name", kind);
+            case PORTALS -> MenuLang.t("new_source.title_portal");
+            case CONTENTS_SUB_VARIANT, PORTAL_ROOM_SUB_VARIANT -> MenuLang.t("new_source.title_sub_variant", currentId);
         };
     }
 
@@ -93,7 +93,7 @@ public final class NewSourcePickerScreen implements MenuScreen {
                     "Blank", "name", "dungeontrain editor new", "blank"));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
-                        "Current (" + currentId + ")", "name",
+                        MenuLang.t("new_source.current", currentId), "name",
                         "dungeontrain editor new", currentId));
                 }
                 out.add(new CommandMenuEntry.TypeArg(
@@ -104,7 +104,7 @@ public final class NewSourcePickerScreen implements MenuScreen {
                     "Blank", "name", "dungeontrain editor contents new", "blank"));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
-                        "Current (" + currentId + ")", "name",
+                        MenuLang.t("new_source.current", currentId), "name",
                         "dungeontrain editor contents new", currentId));
                 }
                 out.add(new CommandMenuEntry.TypeArg(
@@ -113,13 +113,13 @@ public final class NewSourcePickerScreen implements MenuScreen {
             case PARTS -> {
                 String prefix = "dungeontrain editor part new " + kind;
                 out.add(new CommandMenuEntry.TypeArg(
-                    "Blank", "name", prefix + " blank"));
+                    MenuLang.t("new_source.blank"), "name", prefix + " blank"));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
-                        "Current (" + currentId + ")", "name", prefix + " current"));
+                        MenuLang.t("new_source.current", currentId), "name", prefix + " current"));
                 }
                 out.add(new CommandMenuEntry.TypeArg(
-                    "Standard", "name", prefix + " standard"));
+                    MenuLang.t("new_source.standard"), "name", prefix + " standard"));
             }
             case TRACKS -> {
                 // Tracks clone-from-current — single-row TypeArg matching
@@ -142,10 +142,10 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 // No "Standard" row: for contents that means the `default` built-in, which is not a
                 // meaningful starting point for a variation on this particular parent.
                 String prefix = "dungeontrain editor contents group new " + currentId;
-                out.add(new CommandMenuEntry.TypeArg("Blank", "name", prefix, "blank"));
+                out.add(new CommandMenuEntry.TypeArg(MenuLang.t("new_source.blank"), "name", prefix, "blank"));
                 if (!sourceId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
-                        "Current (" + sourceId + ")", "name", prefix, sourceId));
+                        MenuLang.t("new_source.current", sourceId), "name", prefix, sourceId));
                 }
             }
             case PORTAL_ROOM_SUB_VARIANT -> {
@@ -156,16 +156,16 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 String prefix = "dungeontrain editor portals group new " + currentId;
                 if (!sourceId.isEmpty() && !sourceId.equals(currentId)) {
                     out.add(new CommandMenuEntry.TypeArg(
-                        "Current (" + sourceId + ")", "name", prefix, sourceId));
+                        MenuLang.t("new_source.current", sourceId), "name", prefix, sourceId));
                     out.add(new CommandMenuEntry.TypeArg(
-                        "Parent (" + currentId + ")", "name", prefix, currentId));
+                        MenuLang.t("new_source.parent", currentId), "name", prefix, currentId));
                 } else {
                     // Standing in the parent: the two rows would say the same thing.
-                    out.add(new CommandMenuEntry.TypeArg("New", "name", prefix));
+                    out.add(new CommandMenuEntry.TypeArg(MenuLang.t("common.new"), "name", prefix));
                 }
             }
         }
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
 }
