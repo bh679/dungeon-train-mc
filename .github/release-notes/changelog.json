@@ -16995,6 +16995,27 @@
       "released": true,
       "released_in": "v0.902.0",
       "released_at": "2026-09-15T16:51:28Z"
+    },
+    {
+      "id": "editor-mobs-as-blocks",
+      "version": "0.903.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor: place mobs like blocks",
+      "summary": "A new Settings row, Mobs | Blocks | Live (default Blocks), changes what a spawn egg does in an editor plot. Under Blocks the mob stands frozen on the cell you clicked, facing you, and one hit removes it \u2014 so you can place and clear mobs the way you place blocks, and they stay where you put them until you save. Variant cells that can roll a mob now show that mob standing on the cell, taking its turn in the same preview cycle the block variants use. Live keeps vanilla eggs. On a real train the mobs come to life as normal.",
+      "highlights": [
+        "Settings \u2192 Mobs | Blocks | Live: eggs place a still, one-hit mob in editor plots (Blocks) or a normal wandering one (Live)",
+        "Variant cells with a mob entry show the mob on the cell, cycling with the other entries instead of a command block",
+        "Mobs authored frozen wake up when their carriage is stamped onto the train"
+      ],
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
