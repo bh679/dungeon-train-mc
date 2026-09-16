@@ -2283,6 +2283,7 @@
   "gui.dungeontrain.translate.body.all": "All text",
   "gui.dungeontrain.translate.body.ui": "Menus & messages",
   "gui.dungeontrain.translate.body.books": "Books & stories",
+  "gui.dungeontrain.translate.body.editor": "Build editor",
   "gui.dungeontrain.translate.group": "Group variations",
   "gui.dungeontrain.translate.group.tip": "Collapse strings that are variations of the same thing — the same line written many different ways — into one row each.",
   "gui.dungeontrain.translate.group.close": "Show every variation",
