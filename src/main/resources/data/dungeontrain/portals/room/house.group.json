@@ -139,6 +139,12 @@
       "id": "safehaven",
       "weight": 1,
       "maxLevel": 9
+    },
+    {
+      "id": "grandisolagenerator",
+      "weight": 1,
+      "minLevel": 19,
+      "maxLevel": 35
     }
   ]
 }
