@@ -439,14 +439,6 @@ public final class BlockVariantMenuController {
                             ChatFormatting.YELLOW);
                         return;
                     }
-                    if (wasEmpty) {
-                        // A reference is a second opinion, not a first one:
-                        // the cell needs its own candidate before it can
-                        // sometimes defer. Same rule the Lock button applies.
-                        actionBar(player, "Add at least one variant before adding a group reference",
-                            ChatFormatting.YELLOW);
-                        return;
-                    }
                     int cellLock = plot.lockIdAt(localPos);
                     if (refGroup == cellLock) {
                         actionBar(player, "A cell cannot reference its own group (" + refGroup + ")",
@@ -474,6 +466,14 @@ public final class BlockVariantMenuController {
                     }
                     if (mutated.size() >= MAX_ENTRIES) {
                         actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    // A reference is a second opinion, not a first one: the
+                    // cell needs its own candidate before it can sometimes
+                    // defer. On a plain block that candidate is the block
+                    // already standing there — same seed the block-item Add
+                    // uses — so "block + group" is one gesture, not two.
+                    if (wasEmpty && !seedEmptyCellFromWorld(player, level, plot, localPos, mutated)) {
                         return;
                     }
                     // The placeholder is only ever the editor's icon and the
@@ -623,26 +623,8 @@ public final class BlockVariantMenuController {
                         }
                     }
                 }
-                if (wasEmpty) {
-                    BlockPos worldPos = plot.origin().offset(localPos);
-                    BlockState baseState = level.getBlockState(worldPos);
-                    if (baseState.isAir()) {
-                        // Air cell — but an armor stand may float here as an
-                        // entity (the stand isn't a block). Capture it, with its
-                        // current gear, as the base candidate so "add a block to
-                        // a placed armor stand" yields a stand-or-block variant.
-                        // Truly-empty air (no stand) still needs a base.
-                        VariantState standBase = captureArmorStandBaseVariant(level, worldPos);
-                        if (standBase == null) {
-                            actionBar(player, "Place a base block or armor stand first (target is air)",
-                                ChatFormatting.YELLOW);
-                            return;
-                        }
-                        mutated.add(standBase);
-                    } else {
-                        VariantState baseVariant = captureBaseVariant(level, worldPos, baseState);
-                        mutated.add(baseVariant);
-                    }
+                if (wasEmpty && !seedEmptyCellFromWorld(player, level, plot, localPos, mutated)) {
+                    return;
                 }
                 // Orient newVariant against the (now-final) predecessor list:
                 // lock to the most recent existing entry whose state has a
@@ -663,8 +645,11 @@ public final class BlockVariantMenuController {
                     // the COMMAND_BLOCK sentinel state but are distinguished
                     // by entityId, so include it in the dedup key (otherwise
                     // adding the empty-placeholder to a cell already
-                    // containing a mob entry false-positives).
-                    if (existing.state().equals(newVariant.state())
+                    // containing a mob entry false-positives). A group
+                    // reference only *displays* as its placeholder state — it
+                    // is not that block — so it never blocks a concrete add.
+                    if (!existing.isGroupRef()
+                        && existing.state().equals(newVariant.state())
                         && Objects.equals(existing.blockEntityNbt(), newVariant.blockEntityNbt())
                         && Objects.equals(existing.linkedLootPrefabId(), newVariant.linkedLootPrefabId())
                         && Objects.equals(existing.entityId(), newVariant.entityId())) {
@@ -1269,6 +1254,40 @@ public final class BlockVariantMenuController {
      * <p>A liquid base is normalised to its source state — a captured {@code level=3} flow has
      * nothing feeding it once stamped into a carriage and would drain to air.</p>
      */
+    /**
+     * Seed a cell that has no sidecar entry yet with what the world already
+     * holds at that position: the block standing there (via
+     * {@link #captureBaseVariant}), or an armor stand floating in an air cell
+     * (via {@link #captureArmorStandBaseVariant}). Shared by every Add branch
+     * whose new entry needs a concrete base to fall back on.
+     *
+     * @return {@code true} if a base was appended to {@code mutated};
+     *         {@code false} after telling the player the target is bare air.
+     */
+    private static boolean seedEmptyCellFromWorld(ServerPlayer player, ServerLevel level,
+                                                  BlockVariantPlot plot, BlockPos localPos,
+                                                  List<VariantState> mutated) {
+        BlockPos worldPos = plot.origin().offset(localPos);
+        BlockState baseState = level.getBlockState(worldPos);
+        if (baseState.isAir()) {
+            // Air cell — but an armor stand may float here as an entity (the
+            // stand isn't a block). Capture it, with its current gear, as the
+            // base candidate so "add a block to a placed armor stand" yields a
+            // stand-or-block variant. Truly-empty air (no stand) still needs a
+            // base.
+            VariantState standBase = captureArmorStandBaseVariant(level, worldPos);
+            if (standBase == null) {
+                actionBar(player, "Place a base block or armor stand first (target is air)",
+                    ChatFormatting.YELLOW);
+                return false;
+            }
+            mutated.add(standBase);
+            return true;
+        }
+        mutated.add(captureBaseVariant(level, worldPos, baseState));
+        return true;
+    }
+
     private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState rawBaseState) {
         if (rawBaseState.isAir()) return null;
         BlockState baseState = VariantLiquids.toSource(rawBaseState);
