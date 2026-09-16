@@ -28,21 +28,25 @@ import org.spongepowered.asm.mixin.injection.At;
  * ({@code ServerChunkCache.getChunkFutureMainThread}). Train sub-level plot chunks use DT's
  * expensive worldgen, so {@code SubLevelEntityCollision.collide} sweeping an item entity
  * against an unloaded plot chunk froze the whole server for up to 18s+ (captured by the
- * server stall watchdog). See {@link SubLevelEntityCollisionNoLoadMixin}, which opts the
- * per-sweep accelerator instance into this behaviour.</p>
+ * server stall watchdog). Two read-only instances are opted in: the per-sweep accelerator
+ * ({@link SubLevelEntityCollisionNoLoadMixin}) and the Rapier physics pipeline's long-lived one
+ * ({@link RapierPipelineNoSyncLoadMixin}, #1450 — fluid spread → {@code handleBlockChange} →
+ * {@code VoxelNeighborhoodState} neighbour reads stalled the server 5–129 s).</p>
  *
  * <p>The flag is <b>per-instance and off by default</b>: every other {@code LevelAccelerator}
  * user in Sable — including {@code setBlockFast} block writes — keeps the vanilla loading
  * behaviour, so no block write can be silently dropped into an empty chunk.</p>
  *
- * <p>Missing chunks are represented by a lazily-built {@link EmptyLevelChunk}: the
- * accelerator reads block states directly off {@code chunk.getSection(...)} (empty sections →
- * air) and fluid states via the overridden {@code getFluidState} (→ empty), so all reads are
- * safe and the sweep treats the chunk as pure air.</p>
+ * <p>Missing chunks are represented by a lazily-built {@link EmptyLevelChunk}, rebuilt whenever
+ * the requested position differs from the cached one so a long-lived instance never hands out a
+ * stand-in with a stale {@code getPos()}: the accelerator reads block states directly off
+ * {@code chunk.getSection(...)} (empty sections → air) and fluid states via the overridden
+ * {@code getFluidState} (→ empty), so all reads are safe and callers treat the chunk as pure
+ * air.</p>
  *
  * <p>{@code remap = false}: the target class and {@code grabChunkFast} are Sable's own names.
  * The wrapped {@code Level.getChunk(II)} call is written in Mojang mappings, which is what the
- * Sable NeoForge jar uses at runtime. Bytecode-verified against {@code sable-2.0.2+mc1.21.1}
+ * Sable NeoForge jar uses at runtime. Bytecode-verified against {@code sable-2.0.2+mc1.21.1} and re-verified on {@code 2.0.5}
  * ({@code grabChunkFast(IIJ)} has exactly two {@code Level.getChunk(II)} call sites: the
  * client-side branch and the server fallback — both are wrapped; the client branch passes
  * through untouched via the {@code isClientSide} guard). <b>Re-verify on any
@@ -84,7 +88,8 @@ public abstract class LevelAcceleratorNoSyncLoadMixin implements NoSyncLoadChunk
         // Chunk not loaded: treat it as air rather than sync-loading/generating on the
         // server thread. Accepted tradeoff: an item/mob may fall through train geometry
         // whose chunk hasn't loaded yet — that geometry doesn't exist server-side anyway.
-        if (this.dungeontrain$emptyChunk == null) {
+        final EmptyLevelChunk cached = this.dungeontrain$emptyChunk;
+        if (cached == null || cached.getPos().x != chunkX || cached.getPos().z != chunkZ) {
             final Holder<Biome> plains = level.registryAccess()
                     .registryOrThrow(Registries.BIOME)
                     .getHolderOrThrow(Biomes.PLAINS);
