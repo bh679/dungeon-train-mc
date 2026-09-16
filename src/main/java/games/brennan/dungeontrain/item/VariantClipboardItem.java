@@ -34,7 +34,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
@@ -46,8 +45,8 @@ import java.util.List;
 
 /**
  * Custom mod item produced by the block-variant menu's Copy button.
- * Visually mimics a vanilla command block (model JSON parents
- * {@code minecraft:block/command_block}). Carries a snapshot of a variant
+ * Visually mimics the variant placeholder ghost cube (model JSON parents
+ * {@code dungeontrain:block/variant_placeholder}). Carries a snapshot of a variant
  * cell's candidate list, its cell-level lock-id, and — for a dimensional
  * carriage room — the two settings for how the cell behaves across the room's
  * copies, in ItemStack NBT under {@link #NBT_ROOT_KEY} / {@link #NBT_LOCK_ID} /
@@ -61,7 +60,7 @@ import java.util.List;
  *   <li>Decodes its NBT snapshot to a {@code List<VariantState>} plus
  *       lock-id.</li>
  *   <li>Writes the list to the plot's sidecar at the targeted cell,
- *       persists, and places a vanilla {@link Blocks#COMMAND_BLOCK} as the
+ *       persists, and places {@link CarriageVariantBlocks#emptyPlaceholder()} as the
  *       editor's empty-placeholder sentinel.</li>
  *   <li>Restores the lock-id on the new cell so it joins the original's
  *       lock group — the only way for two cells to end up with the same
@@ -236,14 +235,14 @@ public final class VariantClipboardItem extends Item {
         // Match the source cell's appearance: place the first variant's
         // BlockState (with NBT if present) so the pasted placeholder reads
         // the same as the original. The empty-placeholder sentinel is kept
-        // as a vanilla command block so the "leave empty at spawn" cell
-        // type stays visible. Mirrors the Add-on-empty-cell path that
+        // as the ghost-cube placeholder block so the "leave empty at spawn"
+        // cell type stays visible. Mirrors the Add-on-empty-cell path that
         // captures the player's placed base block as the first variant
         // without replacing the world block.
         VariantState first = states.get(0);
         boolean firstIsSentinel = CarriageVariantBlocks.isEmptyPlaceholder(first.state());
         BlockState placeholderState = firstIsSentinel
-            ? Blocks.COMMAND_BLOCK.defaultBlockState()
+            ? CarriageVariantBlocks.emptyPlaceholder()
             : first.state();
         serverLevel.setBlock(placePos, placeholderState, 3);
         if (!firstIsSentinel && first.hasBlockEntityData()) {
@@ -371,7 +370,7 @@ public final class VariantClipboardItem extends Item {
         for (VariantState s : states) {
             CompoundTag entry = new CompoundTag();
             if (s.isMob()) {
-                // Mob entry: state field is the COMMAND_BLOCK sentinel and
+                // Mob entry: state field is the empty-placeholder sentinel and
                 // adds no information — omit on the wire and let the decoder
                 // route via the eid key.
                 entry.putString(NBT_ENTITY_ID, s.entityId().toString());

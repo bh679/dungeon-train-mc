@@ -310,12 +310,13 @@ public final class EditorPlotLabelsRenderer {
      * True when {@code blockId} is the empty-placeholder sentinel — the author asked for air.
      *
      * <p>Id-only because that is all the row is sent: the label packet carries one block id per
-     * plane for the icon, never a state. Same three command-block kinds
-     * {@code CarriageVariantBlocks.isEmptyPlaceholder} covers, which is where the sentinel is
-     * defined.</p>
+     * plane for the icon, never a state. Same blocks {@code CarriageVariantBlocks.isEmptyPlaceholder}
+     * covers, which is where the sentinel is defined — the mod's {@code variant_placeholder} plus
+     * the three legacy command-block kinds.</p>
      */
     public static boolean isAirSentinelId(String blockId) {
-        return "minecraft:command_block".equals(blockId)
+        return "dungeontrain:variant_placeholder".equals(blockId)
+            || "minecraft:command_block".equals(blockId)
             || "minecraft:chain_command_block".equals(blockId)
             || "minecraft:repeating_command_block".equals(blockId);
     }

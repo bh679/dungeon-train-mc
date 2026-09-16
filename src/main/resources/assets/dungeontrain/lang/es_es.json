@@ -1340,6 +1340,7 @@
   "gui.dungeontrain.number_input.cancel": "Cancelar",
   "subtitles.dungeontrain.train_engine": "La locomotora traquetea",
   "block.dungeontrain.narrative_lectern": "Atril narrativo",
+  "block.dungeontrain.variant_placeholder": "Marcador de variante",
   "block.dungeontrain.skybox_block": "Bloque de cielo",
   "block.dungeontrain.skybox_surface": "Bloque de cielo de superficie",
   "block.dungeontrain.skybox_end": "Bloque de cielo del End",

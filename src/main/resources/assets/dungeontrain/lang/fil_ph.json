@@ -1309,6 +1309,7 @@
   "gui.dungeontrain.number_input.cancel": "Kanselahin",
   "subtitles.dungeontrain.train_engine": "Umuugong ang makina ng tren",
   "block.dungeontrain.narrative_lectern": "Lektern ng Salaysay",
+  "block.dungeontrain.variant_placeholder": "Placeholder ng Variant",
   "block.dungeontrain.skybox_block": "Bloke ng Skybox",
   "block.dungeontrain.skybox_surface": "Bloke ng Skybox sa Ibabaw",
   "block.dungeontrain.skybox_end": "Bloke ng Skybox sa End",

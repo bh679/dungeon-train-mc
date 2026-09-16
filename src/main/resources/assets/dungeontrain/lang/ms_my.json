@@ -1309,6 +1309,7 @@
   "gui.dungeontrain.number_input.cancel": "Batal",
   "subtitles.dungeontrain.train_engine": "Enjin kereta api berdegup",
   "block.dungeontrain.narrative_lectern": "Rihal Naratif",
+  "block.dungeontrain.variant_placeholder": "Pemegang Tempat Varian",
   "block.dungeontrain.skybox_block": "Blok Kotak Langit",
   "block.dungeontrain.skybox_surface": "Blok Kotak Langit Permukaan",
   "block.dungeontrain.skybox_end": "Blok Kotak Langit End",

@@ -1309,6 +1309,7 @@
   "gui.dungeontrain.number_input.cancel": "取消",
   "subtitles.dungeontrain.train_engine": "列車引擎轟隆作響",
   "block.dungeontrain.narrative_lectern": "敘事講台",
+  "block.dungeontrain.variant_placeholder": "變體佔位方塊",
   "block.dungeontrain.skybox_block": "天空盒方塊",
   "block.dungeontrain.skybox_surface": "地表天空盒方塊",
   "block.dungeontrain.skybox_end": "終界天空盒方塊",

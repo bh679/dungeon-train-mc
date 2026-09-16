@@ -7280,7 +7280,7 @@ public final class EditorCommand {
             // rather than merely unset.
             return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
                 new games.brennan.dungeontrain.editor.VariantState(
-                    net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState(), null)));
+                    games.brennan.dungeontrain.editor.CarriageVariantBlocks.emptyPlaceholder(), null)));
         }
 
         if (held.getItem() instanceof games.brennan.dungeontrain.item.VariantClipboardItem) {
@@ -7462,9 +7462,9 @@ public final class EditorCommand {
     /**
      * One plane's palette as text — with the empty-placeholder sentinel read back as {@code air}.
      *
-     * <p>The sentinel is a command block on disk and a gap at stamp time, and the id is what the
-     * author would be shown otherwise. Telling them their roof is now {@code minecraft:command_block}
-     * describes the storage rather than the choice.</p>
+     * <p>The sentinel is a placeholder block on disk and a gap at stamp time, and the id is what the
+     * author would be shown otherwise. Telling them their roof is now
+     * {@code dungeontrain:variant_placeholder} describes the storage rather than the choice.</p>
      */
     private static String copiesPaletteText(
         games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant,

@@ -323,9 +323,9 @@ public final class BlockVariantMenuRenderer {
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
             BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
             // Mob entries have no rotation property in the block sense — the
-            // state is the COMMAND_BLOCK sentinel which IS rotatable, so
-            // suppress the rotation cells explicitly to avoid an irrelevant
-            // FACING editor on a mob row.
+            // state is the empty-placeholder sentinel (rotatable in its legacy
+            // command-block form), so suppress the rotation cells explicitly
+            // to avoid an irrelevant FACING editor on a mob row.
             // A group-reference row owns none of these: rotation, half and
             // difficulty all come from whatever entry the referenced group
             // resolves to, so the cells collapse (matching the raycaster).
@@ -778,10 +778,10 @@ public final class BlockVariantMenuRenderer {
      * full state is preserved in the underlying entry; tooltip / search
      * still uses it.
      *
-     * <p>Special-case: any vanilla command-block kind is the
-     * empty-placeholder sentinel (see
-     * {@code CarriageVariantBlocks.isEmptyPlaceholder}) and renders as
-     * {@code "nothing"} so authors immediately read it as the
+     * <p>Special-case: the empty-placeholder sentinel — the mod's
+     * {@code variant_placeholder} block, or its legacy form, any vanilla
+     * command-block kind (see {@code CarriageVariantBlocks.isEmptyPlaceholder})
+     * — renders as {@code "nothing"} so authors immediately read it as the
      * "leave this position empty / air at spawn time" entry.</p>
      */
     static String shortenStateLabel(String stateString) {
@@ -789,13 +789,19 @@ public final class BlockVariantMenuRenderer {
         // Drop properties section "[...]"
         int bracket = stateString.indexOf('[');
         String trimmed = bracket >= 0 ? stateString.substring(0, bracket) : stateString;
-        if (trimmed.equals("minecraft:command_block")
-            || trimmed.equals("minecraft:chain_command_block")
-            || trimmed.equals("minecraft:repeating_command_block")) {
+        if (isEmptyPlaceholderId(trimmed)) {
             return "nothing";
         }
         int colon = trimmed.indexOf(':');
         return colon >= 0 ? trimmed.substring(colon + 1) : trimmed;
+    }
+
+    /** Id-only twin of {@code CarriageVariantBlocks.isEmptyPlaceholder} — the row is sent a state string, not a state. */
+    static boolean isEmptyPlaceholderId(String blockId) {
+        return blockId.equals("dungeontrain:variant_placeholder")
+            || blockId.equals("minecraft:command_block")
+            || blockId.equals("minecraft:chain_command_block")
+            || blockId.equals("minecraft:repeating_command_block");
     }
 
     /**
