@@ -17160,6 +17160,65 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-relay-load-feedback",
+      "version": "0.908.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Loading a relay build into the editor tells you what happened",
+      "summary": "In the editor's Templates menu, loading somebody's relay build used to look like nothing happened \u2014 big builds take a while and the result line was hidden. The button now shows Loading\u2026 until the build is in, the result is shown above it, and a build you already have says so instead of offering itself again.",
+      "highlights": [
+        "Load, Load as sub-variant and Load as a copy grey out and read Loading\u2026 while the build comes down",
+        "The outcome (loaded, name already in use, couldn't load) is shown where you can see it",
+        "A build already loaded as a sub-variant is recognised as loaded across restarts",
+        "Hold Shift on a loaded build to load it again as a copy under a free name"
+      ],
+      "pr": 1451,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-stamp-fast-paintings",
+      "version": "0.908.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Pictures stay on the wall when a build is stamped into the editor",
+      "summary": "Fast Paintings pictures wider than two blocks fell off the wall as items whenever a template was stamped into an editor or builder plot \u2014 loading a relay build, entering a plot, Reset. They now stay hung.",
+      "highlights": [],
+      "pr": 1451,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "content-grandisolagenerator",
+      "version": "0.908.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New dimensional carriage: Grandisola Generator by CorporalJackShep",
+      "summary": "A 64-block generator hall with 31 pictures, added to the house set of dimensional carriages (levels 376\u2013415).",
+      "highlights": [],
+      "pr": 1451,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
