@@ -83,15 +83,14 @@ public final class DtpCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
 
         MinecraftServer server = source.getServer();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
         if (!data.startsWithTrain()) {
-            source.sendFailure(Component.literal(
-                "This world doesn't use the auto-train system (startsWithTrain is off)."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.world_doesn_t_use"));
             return 0;
         }
 
@@ -149,17 +148,12 @@ public final class DtpCommand {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] /dtp spawnTrain failed", t);
             player.setInvulnerable(false);
-            source.sendFailure(Component.literal(
-                "spawnTrain failed: " + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.spawntrain_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
 
         DtpPlacementService.enqueue(player, trainLevel, x);
-        source.sendSuccess(() -> Component.literal(
-            "Teleporting to X=" + x + " — spawning a train there now; you'll land on the flatbed once it settles."
-                + " Difficulty set to tier " + requestedTier + " to match."
-        ), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.package.teleporting_x_spawning_train", x, requestedTier), true);
         return 1;
     }
 }

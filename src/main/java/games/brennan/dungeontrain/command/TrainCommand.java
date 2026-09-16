@@ -143,7 +143,7 @@ public final class TrainCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
 
@@ -207,21 +207,12 @@ public final class TrainCommand {
             // settle (canonicalPos is null the tick it's assembled) and clears the
             // invulnerability set above.
             DtpPlacementService.enqueue(player, level, spawnX);
-            source.sendSuccess(() -> Component.literal(
-                "Spawned a fresh train on the track at X=" + origin.getX() + " (ship id " + ship.id()
-                    + ", seeded with " + count + " carriages / " + lengthBlocks + " blocks, velocity +X "
-                    + speed + " m/s) — you'll land on the flatbed once it settles."
-                    + " The previous train was deleted; difficulty is back on automatic scaling and "
-                    + forgotten + " remembered community carriage(s) can appear again."
-                    + " Use '/dungeontrain carriages <count>' to change the carriage window."
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.spawned_fresh_train_track", origin.getX(), ship.id(), count, lengthBlocks, speed, forgotten), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] spawnTrain failed", t);
             player.setInvulnerable(false); // else they're left invincible in the holding spot
-            source.sendFailure(Component.literal(
-                "spawnTrain failed: " + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.package.spawntrain_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -266,10 +257,7 @@ public final class TrainCommand {
 
         final int trainCount = updatedTrainIds.size();
         LOGGER.info("[DungeonTrain] /dungeontrain speed {} — updated {} active train(s)", value, trainCount);
-        source.sendSuccess(() -> Component.literal(
-            "Train speed set to " + value + " m/s (" + trainCount + " active train"
-                + (trainCount == 1 ? "" : "s") + " updated)"
-        ), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.train_speed_set_m", value, trainCount, Component.translatable(trainCount == 1 ? "chat.dungeontrain.common.noun.train.singular" : "chat.dungeontrain.common.noun.train.plural")), true);
         return 1;
     }
 
@@ -281,11 +269,7 @@ public final class TrainCommand {
         DungeonTrainConfig.setNumCarriages(count);
 
         LOGGER.info("[DungeonTrain] /dungeontrain carriages {} — updated config; appender will respect new window on next tick", count);
-        source.sendSuccess(() -> Component.literal(
-            "Default carriages set to " + count
-                + ". The appender will extend or trim its needed window on the next tick "
-                + "as the player crosses pIdx boundaries."
-        ), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.default_carriages_set_appender", count), true);
         return 1;
     }
 
@@ -307,11 +291,7 @@ public final class TrainCommand {
         TrainTickEvents.resetSweepPerfWindow();
         LOGGER.info("[DungeonTrain] /dungeontrain breakblocks {} — per-world override set, [sweep.perf] window reset",
             enabled ? "on" : "off");
-        source.sendSuccess(() -> Component.literal(
-            "Train contact block-breaking is now " + (enabled ? "ON" : "OFF")
-                + " for this world (takes effect next tick). [sweep.perf] window reset — compare avgMs"
-                + " between an ON and an OFF window to attribute the cost."
-        ), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.train_contact_block_breaking", Component.translatable(enabled ? "chat.dungeontrain.common.on_caps" : "chat.dungeontrain.common.off_caps")), true);
         return 1;
     }
 
@@ -320,20 +300,14 @@ public final class TrainCommand {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(source.getLevel());
         Boolean override = data.getBreakBlocksOnContactOverride();
         boolean effective = data.getEffectiveBreakBlocksOnContact();
-        source.sendSuccess(() -> Component.literal(
-            "Train contact block-breaking: " + (effective ? "ON" : "OFF")
-                + (override == null ? " (following the global config default)" : " (per-world override)")
-        ), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.train_contact_block_breaking_2", Component.translatable(effective ? "chat.dungeontrain.common.on_caps" : "chat.dungeontrain.common.off_caps"), Component.translatable(override == null ? "chat.dungeontrain.train.following_global_default" : "chat.dungeontrain.train.per_world_override")), false);
         return 1;
     }
 
     private static int runTracks(CommandSourceStack source, boolean enabled) {
         DungeonTrainConfig.setGenerateTracks(enabled);
         LOGGER.info("[DungeonTrain] /dungeontrain tracks {} — generation flag flipped", enabled ? "on" : "off");
-        source.sendSuccess(() -> Component.literal(
-            "Track generation is now " + (enabled ? "ON" : "OFF")
-                + ". Existing tracks are preserved; this only affects future chunk loads and per-tick scans."
-        ), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.track_generation_now_existing", Component.translatable(enabled ? "chat.dungeontrain.common.on_caps" : "chat.dungeontrain.common.off_caps")), true);
         return 1;
     }
 
@@ -347,13 +321,7 @@ public final class TrainCommand {
 
         LOGGER.info("[DungeonTrain] /dungeontrain difficulty {} — travelled-offset set to {} (raw progress {} carriages); treating players as difficulty {}",
             requestedTier, offset, rawTravelled, requestedTier);
-        source.sendSuccess(() -> Component.literal(
-            "Difficulty level set to " + requestedTier + " — the game now treats everyone as if they'd travelled "
-                + formatSigned(offset) + " carriages, so the HUD, mob spawns, onboarding stages, loot, and villager"
-                + " trades all shift to match. The offset stays fixed as you travel, so the effective level drifts"
-                + " with real progress — run this again to re-anchor it, or 'difficulty auto' to clear it."
-                + " Already-spawned mobs keep their existing gear."
-        ), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.difficulty_level_set_game", requestedTier, formatSigned(offset)), true);
         return 1;
     }
 
@@ -361,9 +329,7 @@ public final class TrainCommand {
         DifficultyOffset.clear(source.getServer());
 
         LOGGER.info("[DungeonTrain] /dungeontrain difficulty auto — travelled-offset cleared; resuming fully automatic scaling");
-        source.sendSuccess(() -> Component.literal(
-            "Difficulty offset cleared. Everything now follows your real travelled distance again."
-        ), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.difficulty_offset_cleared_everything"), true);
         return 1;
     }
 
@@ -390,7 +356,7 @@ public final class TrainCommand {
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
 
@@ -403,7 +369,7 @@ public final class TrainCommand {
         };
         LOGGER.info("[DungeonTrain] /dungeontrain cinematic replay by {} (requested={}, used={})",
             player.getName().getString(), requested, used);
-        source.sendSuccess(() -> Component.literal("Replaying intro cinematic — " + detail + "."), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.replaying_intro_cinematic", detail), true);
         return 1;
     }
 }

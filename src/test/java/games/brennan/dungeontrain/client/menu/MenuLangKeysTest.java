@@ -119,8 +119,10 @@ class MenuLangKeysTest {
                 dynamicPrefixes.add(MenuLang.PREFIX + pl.group(1) + ".");
             }
         }
-        // MenuLang.typeName builds "type_name.<slug>" from what the server pushed.
+        // MenuLang.typeName builds "type_name.<slug>" from what the server pushed; the status HUD
+        // (client/EditorStatusHudOverlay, outside this package) reads the hud.* keys.
         dynamicPrefixes.add(MenuLang.PREFIX + "type_name.");
+        dynamicPrefixes.add(MenuLang.PREFIX + "hud.");
         List<String> unreachable = new ArrayList<>();
         for (String key : en.keySet()) {
             if (!key.startsWith(MenuLang.PREFIX) || literal.contains(key)) {

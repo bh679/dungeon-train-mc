@@ -951,10 +951,7 @@ public final class EditorCommand {
                             if (s != null) return runPillarEnter(ctx.getSource(), s);
                             PillarAdjunct a = tryParseAdjunct(raw);
                             if (a != null) return runPillarEnterAdjunct(ctx.getSource(), a);
-                            ctx.getSource().sendFailure(Component.literal(
-                                "Unknown pillar target '" + raw + "'. Valid: "
-                                    + pillarTargetList()
-                            ));
+                            ctx.getSource().sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_pillar_target_valid", raw, pillarTargetList()));
                             return 0;
                         })))
                 .then(Commands.literal("save").executes(ctx -> runPillarSave(ctx.getSource())))
@@ -968,10 +965,7 @@ public final class EditorCommand {
                             if (s != null) return runPillarReset(ctx.getSource(), s);
                             PillarAdjunct a = tryParseAdjunct(raw);
                             if (a != null) return runPillarResetAdjunct(ctx.getSource(), a);
-                            ctx.getSource().sendFailure(Component.literal(
-                                "Unknown pillar target '" + raw + "'. Valid: "
-                                    + pillarTargetList()
-                            ));
+                            ctx.getSource().sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_pillar_target_valid", raw, pillarTargetList()));
                             return 0;
                         })))
                 .then(Commands.literal("promote")
@@ -984,10 +978,7 @@ public final class EditorCommand {
                             if (s != null) return runPillarPromote(ctx.getSource(), s);
                             PillarAdjunct a = tryParseAdjunct(raw);
                             if (a != null) return runPillarPromoteAdjunct(ctx.getSource(), a);
-                            ctx.getSource().sendFailure(Component.literal(
-                                "Unknown pillar target '" + raw + "'. Valid: "
-                                    + pillarTargetList()
-                            ));
+                            ctx.getSource().sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_pillar_target_valid", raw, pillarTargetList()));
                             return 0;
                         }))))
             .then(Commands.literal("track")
@@ -1160,17 +1151,11 @@ public final class EditorCommand {
         if (variant == null) return 0;
         try {
             int stored = CarriageWeights.set(variant.id(), value);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: weight " + variant.id() + "=" + stored
-                    + " (saved to " + CarriageWeights.configPath() + "). "
-                    + "Existing carriages keep their variant until they scroll out."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved_existing_carriages", variant.id(), stored, CarriageWeights.configPath()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor weight set failed for {}", variant.id(), t);
-            source.sendFailure(Component.literal("weight failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.weight_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -1198,21 +1183,16 @@ public final class EditorCommand {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
         if (name == null || name.isEmpty()) {
-            source.sendFailure(Component.literal("Variant name is required."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_name_required"));
             return 0;
         }
         try {
             int stored = TrackVariantWeights.set(kind, name, value);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: weight " + kind.id() + ":" + name + "=" + stored
-                    + " (saved to " + TrackVariantWeights.configPath(kind) + ")."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved", kind.id(), name, stored, TrackVariantWeights.configPath(kind)).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor tracks weight set failed for {}:{}", kind.id(), name, t);
-            source.sendFailure(Component.literal("track weight failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.track_weight_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -1234,14 +1214,14 @@ public final class EditorCommand {
     private static int runMirrorRebuild(CommandSourceStack source) {
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
         CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel()).dims();
         games.brennan.dungeontrain.editor.BlockVariantPlot plot =
             games.brennan.dungeontrain.editor.BlockVariantPlot.resolveAt(player, dims);
         if (plot == null) {
-            source.sendFailure(Component.literal("Stand inside an editor plot to rebuild its mirror.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.stand_inside_plot_rebuild")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -1252,12 +1232,11 @@ public final class EditorCommand {
             () -> rebuilt[0] = games.brennan.dungeontrain.editor.EditorMirrorRebuild.run(
                 player.serverLevel(), plot));
         if (!rebuilt[0]) {
-            source.sendFailure(Component.literal(
-                "Editor: no mirror axis is on for this plot — turn on X, Y or Z first.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_mirror_axis_plot")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        source.sendSuccess(() -> Component.literal("Editor: mirrored " + plot.key() + " from master")
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.mirrored_from_master", plot.key())
             .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -1307,7 +1286,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
         if (name == null || name.isEmpty()) {
-            source.sendFailure(Component.literal("Variant name is required."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_name_required"));
             return 0;
         }
         CarriageDims dims = DungeonTrainWorldData.get(source.getLevel()).dims();
@@ -1326,13 +1305,11 @@ public final class EditorCommand {
         try {
             cfg.save(kind, name);
             if (EditorDevMode.isEnabled()) cfg.saveToSource(kind, name);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: " + kind.id() + ":" + name + " mirror " + axis.toUpperCase(Locale.ROOT) + " "
-                    + (on ? "on" : "off")).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.mirror", kind.id(), name, axis.toUpperCase(Locale.ROOT), Component.translatable(on ? "chat.dungeontrain.common.on" : "chat.dungeontrain.common.off")).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor tracks mirror failed for {}:{}", kind.id(), name, e);
-            source.sendFailure(Component.literal("track mirror failed: " + e.getMessage())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.track_mirror_failed", e.getMessage())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -1347,14 +1324,14 @@ public final class EditorCommand {
     private static int runMirrorAtPosition(CommandSourceStack source, String axis, boolean on) {
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return 0;
         }
         CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel()).dims();
         games.brennan.dungeontrain.editor.BlockVariantPlot plot =
             games.brennan.dungeontrain.editor.BlockVariantPlot.resolveAt(player, dims);
         if (plot == null) {
-            source.sendFailure(Component.literal("Stand inside an editor plot to toggle mirror.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.stand_inside_plot_toggle")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -1376,13 +1353,12 @@ public final class EditorCommand {
             // fresh one — otherwise the cell you just toggled keeps showing the old state until
             // something else happens to resend it.
             games.brennan.dungeontrain.net.BuilderBoundsPacket.sendTo(player, player.serverLevel());
-            source.sendSuccess(() -> Component.literal(
-                "Editor: mirror " + axis.toUpperCase(Locale.ROOT) + " " + (on ? "on" : "off"))
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.mirror_2", axis.toUpperCase(Locale.ROOT), Component.translatable(on ? "chat.dungeontrain.common.on" : "chat.dungeontrain.common.off"))
                 .withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor mirror failed", e);
-            source.sendFailure(Component.literal("mirror failed: " + e.getMessage())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.mirror_failed", e.getMessage())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -1393,7 +1369,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
         if (name == null || name.isEmpty()) {
-            source.sendFailure(Component.literal("Variant name is required."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_name_required"));
             return 0;
         }
         int current = TrackVariantWeights.weightFor(kind, name);
@@ -1413,25 +1389,15 @@ public final class EditorCommand {
         // proceed so the value is still persisted (useful if the user later
         // removes the id from the group).
         if (CarriageContentsGroupStore.allChildIds().contains(contents.id())) {
-            source.sendSuccess(() -> Component.literal(
-                "Note: '" + contents.id() + "' is a member of a contents group — top-level weight "
-                    + "is IGNORED at spawn time (group resolution uses per-member weights). "
-                    + "Value will still be saved in case you ungroup later."
-            ).withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.note_member_contents_group", contents.id()).withStyle(ChatFormatting.YELLOW), false);
         }
         try {
             int stored = CarriageContentsWeights.set(contents.id(), value);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: contents weight " + contents.id() + "=" + stored
-                    + " (saved to " + CarriageContentsWeights.configPath() + "). "
-                    + "Existing carriages keep their contents until they scroll out."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_weight_saved_existing", contents.id(), stored, CarriageContentsWeights.configPath()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents weight set failed for {}", contents.id(), t);
-            source.sendFailure(Component.literal("contents weight failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_weight_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -1449,27 +1415,18 @@ public final class EditorCommand {
         CarriageContents contents = parseContents(source, rawContents);
         if (contents == null) return 0;
         if (!FlipOptions.isField(field)) {
-            source.sendFailure(Component.literal(
-                "Unknown flip field '" + field + "' — expected x, y, z or rooms.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_flip_field_expected", field)
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         try {
             FlipOptions next = CarriageContentsWeights.setFlip(contents.id(),
                 CarriageContentsWeights.current().flipFor(contents.id()).with(field, value));
-            source.sendSuccess(() -> Component.literal(
-                "Editor: contents flip " + contents.id() + " " + field.toLowerCase(java.util.Locale.ROOT)
-                    + axisHint(field) + "=" + (value ? "on" : "off")
-                    + " (now x=" + onOff(next.x()) + " y=" + onOff(next.y()) + " z=" + onOff(next.z())
-                    + " rooms=" + onOff(next.rooms()) + ", saved to " + CarriageContentsWeights.configPath()
-                    + "). Existing carriages keep the orientation they were stamped with."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_flip_now_x", contents.id(), field.toLowerCase(java.util.Locale.ROOT) + axisHint(field), Component.translatable(value ? "chat.dungeontrain.common.on" : "chat.dungeontrain.common.off"), onOff(next.x()), onOff(next.y()), onOff(next.z()), onOff(next.rooms()), CarriageContentsWeights.configPath()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents flip set failed for {}", contents.id(), t);
-            source.sendFailure(Component.literal("contents flip failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_flip_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -1544,7 +1501,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
         if (name == null || name.isEmpty()) {
-            source.sendFailure(Component.literal("Variant name is required."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_name_required"));
             return 0;
         }
         try {
@@ -1577,23 +1534,15 @@ public final class EditorCommand {
             }
         }
         String phaseStr = phases.toString();
-        source.sendSuccess(() -> Component.literal(
-            "Editor: gate " + id + " — level " + g.minLevel() + ".." + maxStr
-                + ", phases [" + phaseStr + "] (saved to " + path + ")."
-        ).withStyle(ChatFormatting.GREEN), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.gate_level_phases_saved", id, g.minLevel(), maxStr, phaseStr, path).withStyle(ChatFormatting.GREEN), true);
         if (linkedStage != null) {
-            source.sendSuccess(() -> Component.literal(
-                "  Note: '" + id + "' is linked to Stage '" + linkedStage + "' — this inline gate is"
-                    + " stored as its detach snapshot and won't take effect until you detach it to"
-                    + " Custom (/dungeontrain editor stage …)."
-            ).withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.note_linked_stage_inline", id, linkedStage).withStyle(ChatFormatting.YELLOW), false);
         }
     }
 
     private static int gateFail(CommandSourceStack source, String what, String id, Throwable t) {
         LOGGER.error("[DungeonTrain] editor {} gate set failed for {}", what, id, t);
-        source.sendFailure(Component.literal(what + " gate failed: "
-            + t.getClass().getSimpleName() + ": " + t.getMessage()).withStyle(ChatFormatting.RED));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.gate_failed", what, t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
         return 0;
     }
 
@@ -1778,7 +1727,7 @@ public final class EditorCommand {
                                       java.util.function.UnaryOperator<TemplateGate> op) {
         String id = stageId == null ? "" : stageId.toLowerCase(java.util.Locale.ROOT);
         if (id.isEmpty()) {
-            source.sendFailure(Component.literal("Stage id is required.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.stage_id_required").withStyle(ChatFormatting.RED));
             return 0;
         }
         try {
@@ -1801,11 +1750,11 @@ public final class EditorCommand {
             games.brennan.dungeontrain.template.Stage created =
                 games.brennan.dungeontrain.editor.StageStore.add(rawId);
             if (created == null) {
-                source.sendFailure(Component.literal("Invalid stage id: " + rawId).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_stage_id", rawId).withStyle(ChatFormatting.RED));
                 return 0;
             }
             games.brennan.dungeontrain.editor.StagePaletteBaker.bake(source.getServer().overworld(), created.id());
-            source.sendSuccess(() -> Component.literal("Editor: created stage '" + created.id() + "'.")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_stage", created.id())
                 .withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
@@ -1817,7 +1766,7 @@ public final class EditorCommand {
         try {
             boolean removed = games.brennan.dungeontrain.editor.StageStore.delete(rawId);
             if (!removed) {
-                source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_such_stage", rawId).withStyle(ChatFormatting.RED));
                 return 0;
             }
             // If the deleted stage was the focused preview, drop the selection and restore normal preview.
@@ -1828,8 +1777,7 @@ public final class EditorCommand {
             // Close any Stage Blocks panels showing the deleted stage.
             games.brennan.dungeontrain.editor.StagePanelController.closeForStage(
                 source.getServer(), rawId);
-            source.sendSuccess(() -> Component.literal("Editor: deleted stage '"
-                + rawId.toLowerCase(java.util.Locale.ROOT) + "'. Linked templates fall back to their inline gate.")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.deleted_stage_linked_templates", rawId.toLowerCase(java.util.Locale.ROOT))
                 .withStyle(ChatFormatting.YELLOW), true);
             return 1;
         } catch (Throwable t) {
@@ -1842,12 +1790,11 @@ public final class EditorCommand {
             games.brennan.dungeontrain.template.Stage renamed =
                 games.brennan.dungeontrain.editor.StageStore.rename(rawId, name);
             if (renamed == null) {
-                source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_such_stage", rawId).withStyle(ChatFormatting.RED));
                 return 0;
             }
             games.brennan.dungeontrain.editor.StagePaletteBaker.bake(source.getServer().overworld(), renamed.id());
-            source.sendSuccess(() -> Component.literal("Editor: renamed stage '" + renamed.id()
-                + "' → \"" + renamed.name() + "\".").withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.renamed_stage", renamed.id(), renamed.name()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "stage rename", rawId, t);
@@ -1858,18 +1805,16 @@ public final class EditorCommand {
         java.util.List<games.brennan.dungeontrain.template.Stage> stages =
             games.brennan.dungeontrain.editor.StageStore.allStages();
         if (stages.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("Editor: no stages defined. Create one with "
-                + "/dt editor stage new <id>.").withStyle(ChatFormatting.GRAY), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.no_stages_defined_create").withStyle(ChatFormatting.GRAY), false);
             return 0;
         }
-        source.sendSuccess(() -> Component.literal("Editor: " + stages.size() + " stage(s):")
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.stage_s", stages.size())
             .withStyle(ChatFormatting.AQUA), false);
         for (games.brennan.dungeontrain.template.Stage s : stages) {
             TemplateGate g = s.gate();
             String maxStr = g.maxLevel() == TemplateGate.ALL ? "all" : Integer.toString(g.maxLevel());
             String phaseStr = g.phases().size() == TrainPhase.values().length ? "all" : phaseTokens(g);
-            source.sendSuccess(() -> Component.literal("  • " + s.id() + " — level " + g.minLevel()
-                + ".." + maxStr + ", phases [" + phaseStr + "]").withStyle(ChatFormatting.GRAY), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.level_phases", s.id(), g.minLevel(), maxStr, phaseStr).withStyle(ChatFormatting.GRAY), false);
         }
         return stages.size();
     }
@@ -1883,7 +1828,7 @@ public final class EditorCommand {
     private static int runStageSelect(CommandSourceStack source, String rawId) {
         String id = rawId == null ? "" : rawId.toLowerCase(java.util.Locale.ROOT);
         if (!games.brennan.dungeontrain.editor.StageStore.exists(id)) {
-            source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_such_stage", rawId).withStyle(ChatFormatting.RED));
             return 0;
         }
         boolean nowSelected = !games.brennan.dungeontrain.editor.EditorStageSelection.isSelected(id);
@@ -1895,10 +1840,9 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.StagePanelController.closeFor(source.getPlayer());
         }
         if (nowSelected) {
-            source.sendSuccess(() -> Component.literal("Editor: previewing carriages for stage '" + id
-                + "'. Added parts default to this stage.").withStyle(ChatFormatting.GREEN), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.previewing_carriages_stage_added", id).withStyle(ChatFormatting.GREEN), false);
         } else {
-            source.sendSuccess(() -> Component.literal("Editor: stage preview off ('" + id + "').")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.stage_preview_off", id)
                 .withStyle(ChatFormatting.YELLOW), false);
         }
         return 1;
@@ -1922,7 +1866,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.editor.EditorStageSelection.clear();
         restampCarriagePlotsForStage(source);
         games.brennan.dungeontrain.editor.StagePanelController.closeFor(source.getPlayer());
-        source.sendSuccess(() -> Component.literal("Editor: stage preview off.")
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.stage_preview_off_2")
             .withStyle(ChatFormatting.YELLOW), false);
         return 1;
     }
@@ -1942,11 +1886,7 @@ public final class EditorCommand {
             focusStage(source, r.newStageId());
             String skippedNote = r.skippedParts().isEmpty() ? ""
                 : ", " + r.skippedParts().size() + " part(s) skipped (missing template)";
-            source.sendSuccess(() -> Component.literal("Editor: duplicated stage '" + r.sourceStageId()
-                + "' → '" + r.newStageId() + "' — " + r.partCopies().size() + " part(s) copied, "
-                + r.entriesAdded() + " assignment entr" + (r.entriesAdded() == 1 ? "y" : "ies")
-                + " added across " + r.touchedVariantIds().size() + " template(s)" + skippedNote
-                + ". Now previewing '" + r.newStageId() + "'.")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.duplicated_stage_part_s", r.sourceStageId(), r.newStageId(), r.partCopies().size(), r.entriesAdded(), Component.translatable(r.entriesAdded() == 1 ? "chat.dungeontrain.common.noun.entry.singular" : "chat.dungeontrain.common.noun.entry.plural"), r.touchedVariantIds().size(), skippedNote, r.newStageId())
                 .withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
@@ -1961,21 +1901,18 @@ public final class EditorCommand {
         try {
             if (id.equals("all")) {
                 int n = games.brennan.dungeontrain.editor.StagePaletteBaker.bakeAll(source.getServer().overworld());
-                source.sendSuccess(() -> Component.literal("Editor: baked placeholder palettes for " + n
-                    + " stage(s) → " + games.brennan.dungeontrain.editor.StageStore.configPath())
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.baked_placeholder_palettes_stage", n, games.brennan.dungeontrain.editor.StageStore.configPath())
                     .withStyle(ChatFormatting.GREEN), true);
                 return n;
             }
             java.util.Optional<games.brennan.dungeontrain.template.StagePalette> baked =
                 games.brennan.dungeontrain.editor.StagePaletteBaker.bake(source.getServer().overworld(), id);
             if (baked.isEmpty()) {
-                source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_such_stage", rawId).withStyle(ChatFormatting.RED));
                 return 0;
             }
             games.brennan.dungeontrain.template.StagePalette p = baked.get();
-            source.sendSuccess(() -> Component.literal("Editor: baked stage '" + id + "' palette — solid "
-                + p.solid() + ", stairs " + p.stairs() + ", slabs " + p.slabs() + ", button " + p.button()
-                + ", plate " + p.pressurePlate() + ", wood " + p.wood()).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.baked_stage_palette_solid", id, p.solid(), p.stairs(), p.slabs(), p.button(), p.pressurePlate(), p.wood()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "stage bake", rawId, t);
@@ -1985,23 +1922,19 @@ public final class EditorCommand {
     private static int runStageBlocks(CommandSourceStack source, String rawId) {
         String id = rawId == null ? "" : rawId.toLowerCase(java.util.Locale.ROOT);
         if (!games.brennan.dungeontrain.editor.StageStore.exists(id)) {
-            source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_such_stage", rawId).withStyle(ChatFormatting.RED));
             return 0;
         }
         games.brennan.dungeontrain.editor.StageBlockIndex.StageBlocks blocks =
             games.brennan.dungeontrain.editor.StageBlockIndex.blocksForStage(
                 source.getServer().overworld(), id);
         if (blocks.parts().isEmpty()) {
-            source.sendSuccess(() -> Component.literal("Editor: stage '" + id
-                + "' has no linked parts.").withStyle(ChatFormatting.GRAY), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.stage_has_no_linked", id).withStyle(ChatFormatting.GRAY), false);
             return 0;
         }
-        source.sendSuccess(() -> Component.literal("Editor: stage '" + id + "' uses "
-            + blocks.parts().size() + " part(s), " + blocks.aggregatedBlockIds().size()
-            + " unique block(s):").withStyle(ChatFormatting.AQUA), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.stage_uses_part_s", id, blocks.parts().size(), blocks.aggregatedBlockIds().size()).withStyle(ChatFormatting.AQUA), false);
         for (games.brennan.dungeontrain.editor.StageBlockIndex.PartBlocks pb : blocks.parts()) {
-            source.sendSuccess(() -> Component.literal("  • " + pb.part().kind().id() + ":"
-                + pb.part().name() + " — " + String.join(", ", pb.blockIds()))
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.msg", pb.part().kind().id(), pb.part().name(), String.join(", ", pb.blockIds()))
                 .withStyle(ChatFormatting.GRAY), false);
         }
         return blocks.parts().size();
@@ -2017,8 +1950,7 @@ public final class EditorCommand {
             java.util.Optional<net.minecraft.world.level.block.Block> to =
                 net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(toId);
             if (from.isEmpty() || to.isEmpty()) {
-                source.sendFailure(Component.literal("Unknown block: "
-                    + (from.isEmpty() ? fromId : toId)).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_block", (from.isEmpty() ? fromId : toId)).withStyle(ChatFormatting.RED));
                 return 0;
             }
             // Command path supplies an explicit <to> and no held item → no block-entity payload.
@@ -2027,14 +1959,10 @@ public final class EditorCommand {
                     source.getServer().overworld(), rawId.toLowerCase(java.util.Locale.ROOT),
                     from.get(), to.get(), null);
             if (r.isEmpty()) {
-                source.sendSuccess(() -> Component.literal("Editor: no occurrences of " + fromId
-                    + " in stage '" + rawId + "'.").withStyle(ChatFormatting.YELLOW), false);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.no_occurrences_stage", fromId, rawId).withStyle(ChatFormatting.YELLOW), false);
                 return 0;
             }
-            source.sendSuccess(() -> Component.literal("Editor: replaced " + fromId + " → " + toId
-                + " across " + r.partsTouched().size() + " part(s) ("
-                + r.paletteStatesRewritten() + " structural, " + r.sidecarStatesRewritten()
-                + " variant state(s)). Plots re-stamped — unsaved plot edits were reset.")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.replaced_across_part_s", fromId, toId, r.partsTouched().size(), r.paletteStatesRewritten(), r.sidecarStatesRewritten())
                 .withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
@@ -2056,11 +1984,10 @@ public final class EditorCommand {
         // on any open Stage Blocks panels explicitly (mirrors the panel-op path).
         games.brennan.dungeontrain.editor.StagePanelController.resyncAllOpen(source.getServer());
         if (active) {
-            source.sendSuccess(() -> Component.literal(
-                "Editor: parts grid showing only the focused stage's parts.")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.parts_grid_showing_only")
                 .withStyle(ChatFormatting.GREEN), false);
         } else {
-            source.sendSuccess(() -> Component.literal("Editor: parts grid showing all parts.")
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.parts_grid_showing_all")
                 .withStyle(ChatFormatting.YELLOW), false);
         }
         return 1;
@@ -2070,7 +1997,7 @@ public final class EditorCommand {
     private static int runPartDisplay(CommandSourceStack source, String rawKind, String name, String mode) {
         CarriagePartKind kind = CarriagePartKind.fromId(rawKind);
         if (kind == null) {
-            source.sendFailure(Component.literal("Unknown part kind: " + rawKind).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_part_kind", rawKind).withStyle(ChatFormatting.RED));
             return 0;
         }
         String n = name.toLowerCase(java.util.Locale.ROOT);
@@ -2080,8 +2007,7 @@ public final class EditorCommand {
             default -> games.brennan.dungeontrain.editor.EditorPartVisibility.toggle(kind, n);
         };
         restampPartsGridForStage(source);
-        source.sendSuccess(() -> Component.literal("Editor: part " + kind.id() + ":" + n
-            + (displayed ? " shown." : " hidden.")).withStyle(ChatFormatting.GRAY), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.part", kind.id(), n, Component.translatable(displayed ? "chat.dungeontrain.editor.part_shown" : "chat.dungeontrain.editor.part_hidden")).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 
@@ -2156,7 +2082,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
         if (name == null || name.isEmpty()) {
-            source.sendFailure(Component.literal("Variant name is required.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_name_required").withStyle(ChatFormatting.RED));
             return 0;
         }
         String link = resolveStageLink(source, stageToken);
@@ -2181,8 +2107,7 @@ public final class EditorCommand {
         if (token == null || token.isBlank() || token.equalsIgnoreCase(STAGE_CUSTOM_TOKEN)) return null;
         String id = token.toLowerCase(java.util.Locale.ROOT);
         if (!games.brennan.dungeontrain.editor.StageStore.exists(id)) {
-            source.sendFailure(Component.literal("No such stage: " + id
-                + " (use 'custom' to detach).").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_such_stage_use", id).withStyle(ChatFormatting.RED));
             return INVALID_STAGE;
         }
         return id;
@@ -2190,11 +2115,9 @@ public final class EditorCommand {
 
     private static void stageApplySuccess(CommandSourceStack source, String what, String id, String link) {
         if (link == null) {
-            source.sendSuccess(() -> Component.literal("Editor: detached " + what + " " + id
-                + " to Custom.").withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.detached_custom", what, id).withStyle(ChatFormatting.GREEN), true);
         } else {
-            source.sendSuccess(() -> Component.literal("Editor: linked " + what + " " + id
-                + " to stage '" + link + "'.").withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.linked_stage", what, id, link).withStyle(ChatFormatting.GREEN), true);
         }
     }
 
@@ -2263,28 +2186,20 @@ public final class EditorCommand {
         CarriageContents child = parseContents(source, childRaw);
         if (child == null) return 0;
         if (parent.isBuiltin()) {
-            source.sendFailure(Component.literal(
-                "Built-in contents '" + parent.id() + "' cannot be a group parent — built-ins have hardcoded fallback behaviour."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.built_contents_cannot_be", parent.id()).withStyle(ChatFormatting.RED));
             return 0;
         }
         if (parent.id().equals(child.id())) {
-            source.sendFailure(Component.literal(
-                "Cannot add '" + parent.id() + "' as a member of itself."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.cannot_add_as_member", parent.id()).withStyle(ChatFormatting.RED));
             return 0;
         }
         if (CarriageContentsGroupStore.exists(child.id())) {
-            source.sendFailure(Component.literal(
-                "'" + child.id() + "' is itself a contents group — nested groups are not supported (single-hop only)."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.itself_contents_group_nested", child.id()).withStyle(ChatFormatting.RED));
             return 0;
         }
         // Cycle guard: parent must not already be a member of another group.
         if (CarriageContentsGroupStore.allChildIds().contains(parent.id())) {
-            source.sendFailure(Component.literal(
-                "'" + parent.id() + "' is already a member of another group — making it a parent would create a cycle."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.already_member_another_group", parent.id()).withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -2297,15 +2212,11 @@ public final class EditorCommand {
         CarriageContentsGroup updated = existing.withMember(member);
         try {
             CarriageContentsGroupStore.save(parent.id(), updated);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: group '" + parent.id() + "' → added '" + child.id() + "' (weight=" + weight + ", "
-                    + updated.members().size() + " explicit member" + (updated.members().size() == 1 ? "" : "s")
-                    + " + parent self as default)."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.group_added_weight_explicit", parent.id(), child.id(), weight, updated.members().size(), Component.translatable(updated.members().size() == 1 ? "chat.dungeontrain.common.noun.member.singular" : "chat.dungeontrain.common.noun.member.plural")).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor contents group add failed", e);
-            source.sendFailure(Component.literal("group add failed: " + e.toString())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_add_failed", e.toString())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -2328,16 +2239,12 @@ public final class EditorCommand {
         if (child == null) return 0;
         java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parent.id());
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "No contents group defined for '" + parent.id() + "'."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_contents_group_defined", parent.id()).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         boolean isSelf = parent.id().equals(child.id());
         if (!isSelf && existing.get().members().stream().noneMatch(m -> m.id().equals(child.id()))) {
-            source.sendFailure(Component.literal(
-                "'" + child.id() + "' is not a member of group '" + parent.id() + "'."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_member_group", child.id(), parent.id()).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         CarriageContentsGroup updated;
@@ -2358,13 +2265,11 @@ public final class EditorCommand {
         try {
             CarriageContentsGroupStore.save(parent.id(), updated);
             final String label = isSelf ? "selfWeight" : "'" + child.id() + "' weight";
-            source.sendSuccess(() -> Component.literal(
-                "Editor: group '" + parent.id() + "' → " + label + "=" + stored + "."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.group", parent.id(), label, stored).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor contents group set-weight failed", e);
-            source.sendFailure(Component.literal("group set-weight failed: " + e.toString())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_set_weight_failed", e.toString())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -2378,9 +2283,7 @@ public final class EditorCommand {
         if (child == null) return 0;
         java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parent.id());
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "No contents group defined for '" + parent.id() + "'."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_contents_group_defined", parent.id()).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         int current;
@@ -2393,9 +2296,7 @@ public final class EditorCommand {
                 .findFirst()
                 .orElse(-1);
             if (current < 0) {
-                source.sendFailure(Component.literal(
-                    "'" + child.id() + "' is not a member of group '" + parent.id() + "'."
-                ).withStyle(ChatFormatting.YELLOW));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_member_group", child.id(), parent.id()).withStyle(ChatFormatting.YELLOW));
                 return 0;
             }
         }
@@ -2416,14 +2317,13 @@ public final class EditorCommand {
         if (member == null) return 0;
         java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parent.id());
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal("No contents group defined for '" + parent.id() + "'.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_contents_group_defined", parent.id())
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         java.util.Optional<CarriageContentsGroup.Member> mOpt = existing.get().member(member.id());
         if (mOpt.isEmpty()) {
-            source.sendFailure(Component.literal("'" + member.id() + "' is not a member of group '"
-                + parent.id() + "'.").withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_member_group", member.id(), parent.id()).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         try {
@@ -2462,14 +2362,13 @@ public final class EditorCommand {
         if (member == null) return 0;
         java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parent.id());
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal("No contents group defined for '" + parent.id() + "'.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_contents_group_defined", parent.id())
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         java.util.Optional<CarriageContentsGroup.Member> mOpt = existing.get().member(member.id());
         if (mOpt.isEmpty()) {
-            source.sendFailure(Component.literal("'" + member.id() + "' is not a member of group '"
-                + parent.id() + "'.").withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_member_group", member.id(), parent.id()).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         String link = resolveStageLink(source, stageToken);  // null = custom/clear, id = toggle, INVALID = reported
@@ -2503,12 +2402,9 @@ public final class EditorCommand {
     private static void groupMemberStageApplySuccess(CommandSourceStack source, String what, String id,
                                                      java.util.List<String> stageIds) {
         if (stageIds.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("Editor: detached " + what + " " + id
-                + " to Custom (no Stage links).").withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.detached_custom_no_stage", what, id).withStyle(ChatFormatting.GREEN), true);
         } else {
-            source.sendSuccess(() -> Component.literal("Editor: " + what + " " + id + " → Stage"
-                + (stageIds.size() == 1 ? " '" + stageIds.get(0) + "'"
-                    : "s [" + String.join(", ", stageIds) + "]") + ".").withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.stage", what, id, (stageIds.size() == 1 ? " '" + stageIds.get(0) + "'" : "s [" + String.join(", ", stageIds) + "]")).withStyle(ChatFormatting.GREEN), true);
         }
     }
 
@@ -2572,35 +2468,26 @@ public final class EditorCommand {
         String childId = childRaw.toLowerCase(Locale.ROOT);
         java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parentId);
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "No contents group defined for '" + parentId + "'."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_contents_group_defined", parentId).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         CarriageContentsGroup updated = existing.get().withoutMember(childId);
         if (updated.members().size() == existing.get().members().size()) {
-            source.sendFailure(Component.literal(
-                "Group '" + parentId + "' has no member '" + childId + "'."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_has_no_member", parentId, childId).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         try {
             if (updated.members().isEmpty()) {
                 CarriageContentsGroupStore.delete(parentId);
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: group '" + parentId + "' → removed '" + childId + "' (last member; group file deleted, parent reverts to leaf)."
-                ).withStyle(ChatFormatting.GREEN), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.group_removed_last_member", parentId, childId).withStyle(ChatFormatting.GREEN), true);
             } else {
                 CarriageContentsGroupStore.save(parentId, updated);
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: group '" + parentId + "' → removed '" + childId + "' (" + updated.members().size() + " member"
-                        + (updated.members().size() == 1 ? "" : "s") + " remaining)."
-                ).withStyle(ChatFormatting.GREEN), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.group_removed_member_remaining", parentId, childId, updated.members().size(), Component.translatable(updated.members().size() == 1 ? "chat.dungeontrain.common.noun.member.singular" : "chat.dungeontrain.common.noun.member.plural")).withStyle(ChatFormatting.GREEN), true);
             }
             return 1;
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor contents group remove failed", e);
-            source.sendFailure(Component.literal("group remove failed: " + e.toString())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_remove_failed", e.toString())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -2617,15 +2504,12 @@ public final class EditorCommand {
         CarriageContents newParent = parseContents(source, newParentRaw);
         if (newParent == null) return 0;
         if (newParent.isBuiltin()) {
-            source.sendFailure(Component.literal(
-                "Built-in contents '" + newParent.id() + "' cannot be a group parent — built-ins have hardcoded fallback behaviour."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.built_contents_cannot_be", newParent.id()).withStyle(ChatFormatting.RED));
             return 0;
         }
         java.util.Optional<String> currentParent = CarriageContentsGroupStore.findParentOf(child.id());
         if (currentParent.isEmpty()) {
-            source.sendFailure(Component.literal("'" + child.id() + "' is top-level — use 'group add "
-                + newParent.id() + " " + child.id() + "' to make it a sub-variant.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.top_level_use_group", child.id(), newParent.id(), child.id())
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
@@ -2638,12 +2522,12 @@ public final class EditorCommand {
                 CarriageContentsGroupStore.allChildIds().contains(newParent.id()),
                 CarriageContentsGroupStore.exists(child.id()));
         if (!move.ok()) {
-            source.sendFailure(Component.literal(EditorLabelCommands.moveRefusal(
-                move.refusal(), child.id(), oldParent, newParent.id(), "contents"))
-                .withStyle(ChatFormatting.RED));
+            source.sendFailure(EditorLabelCommands.moveRefusal(
+                move.refusal(), child.id(), oldParent, newParent.id(), Component.translatable("chat.dungeontrain.editor.what_contents"))
+                .copy().withStyle(ChatFormatting.RED));
             return 0;
         }
-        progress(source, "Moving '" + child.id() + "' from '" + oldParent + "' to '" + newParent.id() + "'\u2026");
+        progress(source, Component.translatable("chat.dungeontrain.editor.progress_moving", child.id(), oldParent, newParent.id()));
         try {
             if (move.from().members().isEmpty()) {
                 CarriageContentsGroupStore.delete(oldParent);
@@ -2653,15 +2537,12 @@ public final class EditorCommand {
             CarriageContentsGroupStore.save(newParent.id(), move.to());
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor contents group move failed", e);
-            source.sendFailure(Component.literal("group move failed: " + e.toString())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_move_failed", e.toString())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        String landed = landInContents(source, child.id());
-        source.sendSuccess(() -> Component.literal(
-            "Editor: moved '" + child.id() + "' from group '" + oldParent + "' to '" + newParent.id()
-                + "' (weight, gate and Stage links kept)." + landed
-        ).withStyle(ChatFormatting.GREEN), true);
+        Component landed = landInContents(source, child.id());
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.moved_from_group_weight", child.id(), oldParent, newParent.id(), landed).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -2670,27 +2551,19 @@ public final class EditorCommand {
         String parentId = parentRaw.toLowerCase(Locale.ROOT);
         java.util.Optional<CarriageContentsGroup> opt = CarriageContentsGroupStore.get(parentId);
         if (opt.isEmpty()) {
-            source.sendSuccess(() -> Component.literal(
-                "'" + parentId + "' is not a contents group (no .group.json sidecar)."
-            ), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.not_contents_group_no", parentId), false);
             return 1;
         }
         CarriageContentsGroup group = opt.get();
         if (group.isEmpty()) {
-            source.sendSuccess(() -> Component.literal(
-                "Group '" + parentId + "' has no members."
-            ).withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.group_has_no_members", parentId).withStyle(ChatFormatting.YELLOW), false);
             return 1;
         }
-        source.sendSuccess(() -> Component.literal(
-            "Group '" + parentId + "' members (" + group.members().size() + "):"
-        ), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.group_members", parentId, group.members().size()), false);
         for (CarriageContentsGroup.Member m : group.members()) {
             boolean resolved = CarriageContentsRegistry.find(m.id()).isPresent();
             String suffix = resolved ? "" : " (UNKNOWN — will be skipped)";
-            source.sendSuccess(() -> Component.literal(
-                "  " + m.id() + " weight=" + m.weight() + suffix
-            ).withStyle(resolved ? ChatFormatting.GRAY : ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight", m.id(), m.weight() + suffix).withStyle(resolved ? ChatFormatting.GRAY : ChatFormatting.YELLOW), false);
         }
         return 1;
     }
@@ -2715,36 +2588,26 @@ public final class EditorCommand {
         CarriageContents parent = parseContents(source, parentRaw);
         if (parent == null) return 0;
         if (parent.isBuiltin()) {
-            source.sendFailure(Component.literal(
-                "Built-in contents '" + parent.id() + "' cannot be a group parent — built-ins have hardcoded fallback behaviour."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.built_contents_cannot_be", parent.id()).withStyle(ChatFormatting.RED));
             return 0;
         }
         if (CarriageContentsGroupStore.allChildIds().contains(parent.id())) {
-            source.sendFailure(Component.literal(
-                "'" + parent.id() + "' is already a member of another group — making it a parent would create a cycle."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.already_member_another_group", parent.id()).withStyle(ChatFormatting.RED));
             return 0;
         }
 
         // 2. Validate name.
         String name = rawName.toLowerCase(Locale.ROOT);
         if (!CarriageContents.NAME_PATTERN.matcher(name).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid name '" + rawName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_name_use_lowercase", rawName));
             return 0;
         }
         if (CarriageContents.isReservedBuiltinName(name)) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is reserved for a built-in."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_reserved_built", name));
             return 0;
         }
         if (CarriageContentsRegistry.find(name).isPresent()) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is already taken."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken", name));
             return 0;
         }
 
@@ -2778,17 +2641,11 @@ public final class EditorCommand {
             CarriageContentsEditor.enter(player, target, null);
 
             String from = blank ? "blank" : "cloned from '" + cloneFrom.id() + "'";
-            source.sendSuccess(() -> Component.literal(
-                "Editor: created sub-variant '" + target.id() + "' of '" + parent.id()
-                    + "' (" + from + ") at plot " + origin + " (" + updated.members().size()
-                    + " member" + (updated.members().size() == 1 ? "" : "s") + " in group)."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_sub_variant_plot", target.id(), parent.id(), from, origin, updated.members().size(), Component.translatable(updated.members().size() == 1 ? "chat.dungeontrain.common.noun.member.singular" : "chat.dungeontrain.common.noun.member.plural")).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents group new failed", t);
-            source.sendFailure(Component.literal("group new failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_new_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -2797,26 +2654,20 @@ public final class EditorCommand {
     private static int runContentsGroupClear(CommandSourceStack source, String parentRaw) {
         String parentId = parentRaw.toLowerCase(Locale.ROOT);
         if (!CarriageContentsGroupStore.exists(parentId)) {
-            source.sendFailure(Component.literal(
-                "No contents group defined for '" + parentId + "'."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_contents_group_defined", parentId).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         try {
             boolean removed = CarriageContentsGroupStore.delete(parentId);
             if (removed) {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared contents group '" + parentId + "' (parent reverts to leaf)."
-                ).withStyle(ChatFormatting.GREEN), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_contents_group_parent", parentId).withStyle(ChatFormatting.GREEN), true);
             } else {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: '" + parentId + "' had only a bundled group definition (no per-install override deleted)."
-                ).withStyle(ChatFormatting.YELLOW), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.had_only_bundled_group", parentId).withStyle(ChatFormatting.YELLOW), true);
             }
             return 1;
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor contents group clear failed", e);
-            source.sendFailure(Component.literal("group clear failed: " + e.toString())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_clear_failed", e.toString())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -2907,19 +2758,17 @@ public final class EditorCommand {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (plotVariant == null) {
-            source.sendFailure(Component.literal(
-                "Not in an editor plot. Use '/dungeontrain editor enter <variant>' first."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_plot_use_dungeontrain"));
             return null;
         }
         HitResult hit = player.pick(8.0, 1.0f, false);
         if (!(hit instanceof BlockHitResult bhr) || bhr.getType() == HitResult.Type.MISS) {
-            source.sendFailure(Component.literal(
-                "Look directly at a block inside the plot first (8-block reach)."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.look_directly_block_inside"));
             return null;
         }
         BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
         if (plotOrigin == null) {
-            source.sendFailure(Component.literal("Plot origin missing for '" + plotVariant.id() + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.plot_origin_missing", plotVariant.id()));
             return null;
         }
         // Bounds-checked against this variant's own plot box — the portal corridor's is longer than
@@ -2929,9 +2778,7 @@ public final class EditorCommand {
         if (local.getX() < 0 || local.getX() >= box.length()
             || local.getY() < 0 || local.getY() >= box.height()
             || local.getZ() < 0 || local.getZ() >= box.width()) {
-            source.sendFailure(Component.literal(
-                "Target block is outside the plot footprint (local " + local + " vs dims "
-                    + box.length() + "x" + box.height() + "x" + box.width() + ")."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_plot", local, box.length(), box.height(), box.width()));
             return null;
         }
         return new VariantTarget(plotVariant, local, box);
@@ -2962,14 +2809,9 @@ public final class EditorCommand {
         boolean removed = sidecar.remove(target.localPos());
         final String pos = target.localPos().getX() + "," + target.localPos().getY() + "," + target.localPos().getZ();
         if (removed) {
-            source.sendSuccess(() -> Component.literal(
-                "Editor: cleared variant at local " + pos + " on '" + target.variant().id()
-                    + "'. Run '/dungeontrain editor save' to persist."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_variant_local_run", pos, target.variant().id()).withStyle(ChatFormatting.GREEN), true);
         } else {
-            source.sendSuccess(() -> Component.literal(
-                "Editor: no variant at local " + pos + " to clear."
-            ), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.no_variant_local_clear", pos), false);
         }
         return removed ? 1 : 0;
     }
@@ -2981,15 +2823,13 @@ public final class EditorCommand {
         BlockPos plotOrigin = CarriagePartEditor.plotOrigin(
             new games.brennan.dungeontrain.template.CarriagePartTemplateId(partLoc.kind(), partLoc.name()), dims);
         if (plotOrigin == null) {
-            source.sendFailure(Component.literal("Plot origin missing for part '"
-                + partLoc.kind().id() + ":" + partLoc.name() + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.plot_origin_missing_part", partLoc.kind().id(), partLoc.name()));
             return 0;
         }
         Vec3i partSize = partLoc.kind().dims(dims);
         BlockPos local = hit.subtract(plotOrigin);
         if (!inBounds(local, partSize)) {
-            source.sendFailure(Component.literal(
-                "Target block is outside the part footprint (local " + local + ")."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_part", local));
             return 0;
         }
         CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(
@@ -2999,20 +2839,16 @@ public final class EditorCommand {
             try {
                 sidecar.save(partLoc.kind(), partLoc.name());
             } catch (IOException e) {
-                source.sendFailure(Component.literal("Variant save failed: " + e.getMessage()));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()));
                 return 0;
             }
         }
         final String pos = local.getX() + "," + local.getY() + "," + local.getZ();
         final String label = partLoc.kind().id() + ":" + partLoc.name();
         if (removed) {
-            source.sendSuccess(() -> Component.literal(
-                "Editor: cleared variant at local " + pos + " on part '" + label + "'."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_variant_local_part", pos, label).withStyle(ChatFormatting.GREEN), true);
         } else {
-            source.sendSuccess(() -> Component.literal(
-                "Editor: no variant at local " + pos + " to clear on part '" + label + "'."
-            ), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.no_variant_local_clear_2", pos, label), false);
         }
         return removed ? 1 : 0;
     }
@@ -3023,15 +2859,14 @@ public final class EditorCommand {
         if (hit == null) return 0;
         BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot, dims);
         if (carriageOrigin == null) {
-            source.sendFailure(Component.literal("Plot origin missing for contents '" + contentsPlot.id() + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.plot_origin_missing_contents", contentsPlot.id()));
             return 0;
         }
         BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
         Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
         BlockPos local = hit.subtract(interiorOrigin);
         if (!inBounds(local, interiorSize)) {
-            source.sendFailure(Component.literal(
-                "Target block is outside the interior footprint (local " + local + ")."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_interior", local));
             return 0;
         }
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
@@ -3040,19 +2875,15 @@ public final class EditorCommand {
             try {
                 sidecar.save(contentsPlot);
             } catch (IOException e) {
-                source.sendFailure(Component.literal("Variant save failed: " + e.getMessage()));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()));
                 return 0;
             }
         }
         final String pos = local.getX() + "," + local.getY() + "," + local.getZ();
         if (removed) {
-            source.sendSuccess(() -> Component.literal(
-                "Editor: cleared variant at local " + pos + " on contents '" + contentsPlot.id() + "'."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_variant_local_contents", pos, contentsPlot.id()).withStyle(ChatFormatting.GREEN), true);
         } else {
-            source.sendSuccess(() -> Component.literal(
-                "Editor: no variant at local " + pos + " to clear on contents '" + contentsPlot.id() + "'."
-            ), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.no_variant_local_clear_3", pos, contentsPlot.id()), false);
         }
         return removed ? 1 : 0;
     }
@@ -3086,8 +2917,7 @@ public final class EditorCommand {
 
         CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (plotVariant == null) {
-            source.sendFailure(Component.literal(
-                "Not in an editor plot. Use '/dungeontrain editor enter <variant>' first."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_plot_use_dungeontrain"));
             return 0;
         }
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(
@@ -3102,7 +2932,7 @@ public final class EditorCommand {
                                              List<CarriageVariantBlocks.Entry> entries,
                                              boolean isEmpty, int size) {
         if (isEmpty) {
-            source.sendSuccess(() -> Component.literal("Variants for " + label + ": (none)"), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.variants_none", label), false);
             return;
         }
         StringBuilder sb = new StringBuilder("Variants for ").append(label).append(" (")
@@ -3127,8 +2957,7 @@ public final class EditorCommand {
     private static BlockPos lookedAtBlock(CommandSourceStack source, ServerPlayer player) {
         HitResult hit = player.pick(8.0, 1.0f, false);
         if (!(hit instanceof BlockHitResult bhr) || bhr.getType() == HitResult.Type.MISS) {
-            source.sendFailure(Component.literal(
-                "Look directly at a block inside the plot first (8-block reach)."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.look_directly_block_inside"));
             return null;
         }
         return bhr.getBlockPos();
@@ -3144,9 +2973,7 @@ public final class EditorCommand {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         EditorStrayBlocks.setEnabled(player.getUUID(), on);
-        source.sendSuccess(() -> Component.literal(
-            "Out-of-plot ghosts: " + (on ? "ON" : "off") + "."
-        ), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.out_plot_ghosts", Component.translatable(on ? "chat.dungeontrain.common.on_caps" : "chat.dungeontrain.common.off")), false);
         return 1;
     }
 
@@ -3154,9 +2981,7 @@ public final class EditorCommand {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         EditorDoorGhosts.setEnabled(player.getUUID(), on);
-        source.sendSuccess(() -> Component.literal(
-            "Door labels: " + (on ? "ON" : "off") + "."
-        ), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.door_labels", Component.translatable(on ? "chat.dungeontrain.common.on_caps" : "chat.dungeontrain.common.off")), false);
         return 1;
     }
 
@@ -3164,9 +2989,7 @@ public final class EditorCommand {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         VariantOverlayRenderer.setEnabled(player, on);
-        source.sendSuccess(() -> Component.literal(
-            "Editor overlay: " + (on ? "ON" : "off") + "."
-        ), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.overlay", Component.translatable(on ? "chat.dungeontrain.common.on_caps" : "chat.dungeontrain.common.off")), false);
         return 1;
     }
 
@@ -3181,9 +3004,7 @@ public final class EditorCommand {
         try {
             return TunnelVariant.valueOf(body.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            source.sendFailure(Component.literal(
-                "Unknown tunnel variant '" + raw + "'. Valid: tunnel_section, tunnel_portal"
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_tunnel_variant_valid", raw));
             return null;
         }
     }
@@ -3191,9 +3012,7 @@ public final class EditorCommand {
     private static CarriageVariant parseVariant(CommandSourceStack source, String raw) {
         String id = raw.toLowerCase(Locale.ROOT);
         return CarriageVariantRegistry.find(id).orElseGet(() -> {
-            source.sendFailure(Component.literal(
-                "Unknown variant '" + raw + "'. Valid: " + listIds()
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_variant_valid", raw, listIds()));
             return null;
         });
     }
@@ -3203,9 +3022,7 @@ public final class EditorCommand {
         try {
             return CarriageType.valueOf(raw.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            source.sendFailure(Component.literal(
-                "Unknown built-in '" + raw + "'. Valid: standard, windowed, flatbed"
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_built_valid_standard", raw));
             return null;
         }
     }
@@ -3228,7 +3045,7 @@ public final class EditorCommand {
         try {
             return source.getPlayerOrException();
         } catch (Exception e) {
-            source.sendFailure(Component.literal("This command must be run by a player."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.command_must_be_run"));
             return null;
         }
     }
@@ -3268,16 +3085,13 @@ public final class EditorCommand {
         markEnteredEditor(player);
 
         if (category == EditorCategory.ARCHITECTURE) {
-            source.sendSuccess(() -> Component.literal(
-                "Architecture editor: coming soon. Walls, floor, and roof templates aren't implemented yet."
-            ).withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.architecture_coming_soon_walls").withStyle(ChatFormatting.YELLOW), false);
             return 1;
         }
 
         java.util.Optional<Template> first = category.firstModel();
         if (first.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "Category '" + category.displayName() + "' has no models."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.category_has_no_models", category.displayName()));
             return 0;
         }
 
@@ -3322,9 +3136,7 @@ public final class EditorCommand {
             enterFirstModel(player, head);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor enter-category failed", t);
-            source.sendFailure(Component.literal("enter failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
         // Whatever the per-plot erases could not predict, swept once they are done and before the
@@ -3347,10 +3159,7 @@ public final class EditorCommand {
         EditorStampQueue.start(queued, category.id());
 
         final int pending = queued.size();
-        source.sendSuccess(() -> Component.literal(
-            "Editor: entered '" + category.displayName() + "' at '" + head.displayName() + "'."
-            + (pending > 0 ? " Setting up the other plots in the background…" : "")
-        ), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered", category.displayName(), head.displayName(), (pending > 0 ? Component.translatable("chat.dungeontrain.editor.entered_pending") : Component.empty())), true);
         return 1;
     }
 
@@ -3421,7 +3230,7 @@ public final class EditorCommand {
 
         java.util.Optional<EditorCategory> categoryOpt = EditorCategory.fromId(categoryId);
         if (categoryOpt.isEmpty()) {
-            source.sendFailure(Component.literal("Unknown category '" + categoryId + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_category", categoryId));
             return 0;
         }
         EditorCategory category = categoryOpt.get();
@@ -3451,7 +3260,7 @@ public final class EditorCommand {
             } else if (prefix.startsWith("pillar_")) {
                 games.brennan.dungeontrain.track.PillarSection sec = tryParseSection(prefix.substring("pillar_".length()));
                 if (sec == null) {
-                    source.sendFailure(Component.literal("Unknown pillar section in '" + id + "'."));
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_pillar_section", id));
                     return 0;
                 }
                 origin = PillarEditor.plotOrigin(new games.brennan.dungeontrain.template.PillarTemplateId(sec, name), dims);
@@ -3459,7 +3268,7 @@ public final class EditorCommand {
             } else if (prefix.startsWith("adjunct_")) {
                 games.brennan.dungeontrain.track.PillarAdjunct adj = tryParseAdjunct(prefix.substring("adjunct_".length()));
                 if (adj == null) {
-                    source.sendFailure(Component.literal("Unknown adjunct in '" + id + "'."));
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_adjunct", id));
                     return 0;
                 }
                 origin = PillarEditor.plotOriginAdjunct(new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adj, name), dims);
@@ -3469,7 +3278,7 @@ public final class EditorCommand {
                 try {
                     tv = TunnelVariant.valueOf(prefix.substring("tunnel_".length()).toUpperCase(Locale.ROOT));
                 } catch (IllegalArgumentException e) {
-                    source.sendFailure(Component.literal("Unknown tunnel variant in '" + id + "'."));
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_tunnel_variant", id));
                     return 0;
                 }
                 origin = TunnelEditor.plotOrigin(new games.brennan.dungeontrain.template.TunnelTemplateId(tv, name));
@@ -3478,7 +3287,7 @@ public final class EditorCommand {
                     games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
                     games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
             } else {
-                source.sendFailure(Component.literal("Unrecognised track-side id '" + id + "'."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unrecognised_track_side_id", id));
                 return 0;
             }
         } else if (category == EditorCategory.PORTALS) {
@@ -3489,7 +3298,7 @@ public final class EditorCommand {
                 ? id.substring(id.indexOf('.') + 1)
                 : games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME;
             if (!games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM.id().equals(prefix)) {
-                source.sendFailure(Component.literal("Unrecognised portal id '" + id + "'."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unrecognised_portal_id", id));
                 return 0;
             }
             origin = games.brennan.dungeontrain.editor.PortalRoomEditor.plotOrigin(name, dims);
@@ -3503,8 +3312,7 @@ public final class EditorCommand {
                 if (m.id().equals(id)) { model = m; break; }
             }
             if (model == null) {
-                source.sendFailure(Component.literal(
-                    "Unknown model '" + id + "' in category '" + category.displayName() + "'."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.save.unknown_model_category", id, category.displayName()));
                 return 0;
             }
             if (model instanceof Template.Carriage cm) {
@@ -3526,15 +3334,13 @@ public final class EditorCommand {
                     games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
                     dims.width());
             } else {
-                source.sendFailure(Component.literal(
-                    "View not supported for model '" + id + "'."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.view_not_supported_model", id));
                 return 0;
             }
         }
 
         if (origin == null) {
-            source.sendFailure(Component.literal(
-                "No plot origin for '" + id + "' in '" + category.displayName() + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_plot_origin", id, category.displayName()));
             return 0;
         }
 
@@ -3553,16 +3359,11 @@ public final class EditorCommand {
         try {
             CarriageEditor.enter(player, variant);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            source.sendSuccess(() -> Component.literal(
-                "Editor: entered '" + variant.id()
-                    + "' plot at " + CarriageEditor.plotOrigin(variant, dims)
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_plot", variant.id(), CarriageEditor.plotOrigin(variant, dims)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor enter failed", t);
-            source.sendFailure(Component.literal("enter failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -3574,16 +3375,11 @@ public final class EditorCommand {
         markEnteredEditor(player);
         try {
             TunnelEditor.enter(player, variant);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: entered '" + TUNNEL_PREFIX + variant.name().toLowerCase(Locale.ROOT)
-                    + "' plot at " + TunnelEditor.plotOrigin(variant)
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_plot", TUNNEL_PREFIX + variant.name().toLowerCase(Locale.ROOT), TunnelEditor.plotOrigin(variant)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor enter (tunnel) failed", t);
-            source.sendFailure(Component.literal("enter failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -3606,23 +3402,17 @@ public final class EditorCommand {
         TunnelVariant tunnel = TunnelEditor.plotContaining(player.blockPosition());
         if (tunnel != null) {
             if (newName != null) {
-                source.sendFailure(Component.literal(
-                    "Tunnel templates don't support rename; run '/dungeontrain editor save' without arguments."
-                ));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.tunnel_templates_don_t"));
                 return 0;
             }
             try {
                 TunnelEditor.save(player, tunnel);
                 final TunnelVariant t = tunnel;
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: saved '" + TUNNEL_PREFIX + t.name().toLowerCase(Locale.ROOT) + "' template."
-                ), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_template", TUNNEL_PREFIX + t.name().toLowerCase(Locale.ROOT)), true);
                 return 1;
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] editor save (tunnel) failed", t);
-                source.sendFailure(Component.literal("save failed: "
-                    + t.getClass().getSimpleName() + ": " + t.getMessage()
-                ).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.save.save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
@@ -3647,35 +3437,25 @@ public final class EditorCommand {
             if (CarriagePartEditor.currentSession(player).isPresent()) {
                 return runPartSave(source, newName);
             }
-            source.sendFailure(Component.literal(
-                "Not in an editor plot. Stand in a carriage plot, a part plot, or run '/dungeontrain editor enter <variant>' first."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_plot_stand_carriage"));
             return 0;
         }
 
         if (newName == null) {
             try {
                 SaveResult result = CarriageEditor.save(player, current);
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: saved '" + current.id() + "' template (config-dir)."
-                ), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_template_config_dir", current.id()), true);
                 if (result.sourceAttempted()) {
                     if (result.sourceWritten()) {
-                        source.sendSuccess(() -> Component.literal(
-                            "Editor: also wrote bundled copy to source tree (will ship with next build)."
-                        ).withStyle(ChatFormatting.GREEN), true);
+                        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.also_wrote_bundled_copy").withStyle(ChatFormatting.GREEN), true);
                     } else {
-                        source.sendFailure(Component.literal(
-                            "Editor: source-tree write failed: " + result.sourceError()
-                        ).withStyle(ChatFormatting.YELLOW));
+                        source.sendFailure(Component.translatable("chat.dungeontrain.editor.source_tree_write_failed", result.sourceError()).withStyle(ChatFormatting.YELLOW));
                     }
                 }
                 return 1;
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] editor save failed", t);
-                source.sendFailure(Component.literal("save failed: "
-                    + t.getClass().getSimpleName() + ": " + t.getMessage()
-                ).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.save.save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
@@ -3699,7 +3479,7 @@ public final class EditorCommand {
         if (!requireStamped(source, EditorCategory.CARRIAGES)) return 0;
         CarriageVariant current = CarriageVariantRegistry.find(id).orElse(null);
         if (current == null) {
-            source.sendFailure(Component.literal("Unknown carriage '" + id + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_carriage", id));
             return 0;
         }
         return renameCarriageTo(source, player, current, newName);
@@ -3712,7 +3492,7 @@ public final class EditorCommand {
         if (!requireStamped(source, EditorCategory.CONTENTS)) return 0;
         CarriageContents current = CarriageContentsRegistry.find(id).orElse(null);
         if (current == null) {
-            source.sendFailure(Component.literal("Unknown contents '" + id + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_contents", id));
             return 0;
         }
         return renameContentsTo(source, player, current, newName);
@@ -3769,7 +3549,7 @@ public final class EditorCommand {
             try {
                 next = Integer.parseInt(arg.trim());
             } catch (NumberFormatException e) {
-                source.sendFailure(Component.literal("'" + arg + "' is not a number."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_number", arg));
                 return 0;
             }
         }
@@ -3782,24 +3562,18 @@ public final class EditorCommand {
                 default -> CarriageDims.clamp(dims.length(), dims.width(), next);
             };
         } catch (RuntimeException e) {
-            source.sendFailure(Component.literal(
-                "Train " + axis + " " + next + " is out of range."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.train_out_range", axis, next));
             return 0;
         }
         if (updated.length() == dims.length() && updated.width() == dims.width()
             && updated.height() == dims.height()) {
-            source.sendFailure(Component.literal(
-                "Train " + axis + " is already " + current + " — it cannot go further that way."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.train_already_it_cannot", axis, current));
             return 0;
         }
 
         data.apply(data.getTrainY(), data.startsWithTrain(), updated);
-        source.sendSuccess(() -> Component.literal(
-            "Train is now " + updated.length() + " × " + updated.width() + " × " + updated.height()
-                + " — every carriage, part and track in this world."), true);
-        source.sendSuccess(() -> Component.literal(
-            "Templates authored at the old size will not load until it is set back."
-        ).withStyle(ChatFormatting.YELLOW), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.train_now_every_carriage", updated.length(), updated.width(), updated.height()), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.templates_authored_old_size").withStyle(ChatFormatting.YELLOW), false);
 
         // The cages are still the old size until they are stamped again, and nothing else
         // re-measures them — so re-enter whichever category the author is in.
@@ -3810,11 +3584,7 @@ public final class EditorCommand {
     private static boolean requireStamped(CommandSourceStack source, EditorCategory category) {
         EditorCategory stamped = EditorStampedCategoryState.current().orElse(null);
         if (stamped == category) return true;
-        source.sendFailure(Component.literal(
-            "Switch to the " + category.displayName() + " editor first — "
-                + category.displayName().toLowerCase(Locale.ROOT)
-                + " plots are not built into the world right now."
-        ));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.switch_first_plots_are", category.displayName(), category.displayName().toLowerCase(Locale.ROOT)));
         return false;
     }
 
@@ -3828,42 +3598,30 @@ public final class EditorCommand {
     private static int renameCarriageTo(CommandSourceStack source, ServerPlayer player,
                                         CarriageVariant current, String newName) {
         if (PROTECTED_BUILTINS.contains(current.id())) {
-            source.sendFailure(Component.literal(
-                "Cannot rename '" + current.id() + "' — it is a protected built-in."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.cannot_rename_it_protected", current.id()));
             return 0;
         }
         String newId = newName.toLowerCase(Locale.ROOT);
         if (!CarriageVariant.NAME_PATTERN.matcher(newId).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid name '" + newName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_name_use_lowercase", newName));
             return 0;
         }
         if (CarriageVariant.isReservedBuiltinName(newId)) {
-            source.sendFailure(Component.literal(
-                "Name '" + newId + "' is reserved for a built-in."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_reserved_built", newId));
             return 0;
         }
         if (CarriageVariantRegistry.find(newId).isPresent()) {
-            source.sendFailure(Component.literal(
-                "Name '" + newId + "' is already taken."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken", newId));
             return 0;
         }
         try {
             CarriageVariant.Custom renamed = (CarriageVariant.Custom) CarriageVariant.custom(newId);
             CarriageEditor.saveAs(player, current, renamed);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: saved and renamed '" + current.id() + "' → '" + renamed.id() + "'."
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_and_renamed", current.id(), renamed.id()), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor save-rename failed", t);
-            source.sendFailure(Component.literal("save failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.save.save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -3896,18 +3654,14 @@ public final class EditorCommand {
             || TunnelEditor.exit(player)
             || CarriageEditor.exit(player);
         if (!exited) {
-            source.sendFailure(Component.literal(
-                "No saved editor session — nothing to exit to."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_saved_session_nothing"));
             return 0;
         }
         // Clear every plot so the sky stays tidy for the next session.
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         EditorCategory.clearAllPlots(overworld, dims);
-        source.sendSuccess(() -> Component.literal(
-            "Editor: exited, returned to previous location."
-        ), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.exited_returned_previous_location"), true);
         return 1;
     }
 
@@ -3922,7 +3676,7 @@ public final class EditorCommand {
         List<games.brennan.dungeontrain.editor.EditorDirtyCheck.DirtyEntry> rows =
             games.brennan.dungeontrain.editor.EditorDirtyCheck.findDirty(overworld, dims);
         if (rows.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No unsaved editor changes."), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.no_unsaved_changes"), false);
             return 1;
         }
         StringBuilder sb = new StringBuilder("Unsaved editor changes:");
@@ -3991,17 +3745,11 @@ public final class EditorCommand {
             try {
                 boolean deleted = TunnelTemplateStore.delete(v);
                 final TunnelVariant tv = v;
-                source.sendSuccess(() -> Component.literal(
-                    deleted
-                        ? "Editor: deleted '" + TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT) + "' template."
-                        : "Editor: no '" + TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT) + "' template to delete."
-                ), true);
+                source.sendSuccess(() -> (deleted ? Component.translatable("chat.dungeontrain.editor.deleted_template", TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT)) : Component.translatable("chat.dungeontrain.editor.no_template_delete", TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT))), true);
                 return 1;
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] editor reset (tunnel) failed", t);
-                source.sendFailure(Component.literal("reset failed: "
-                    + t.getClass().getSimpleName() + ": " + t.getMessage()
-                ).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.reset_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
@@ -4038,19 +3786,15 @@ public final class EditorCommand {
                         CarriageEditor.restampRowAfterDeletion(overworld, idx, oldCount, dims));
                 }
             }
-            source.sendSuccess(() -> Component.literal(
-                (deleted
-                    ? ("Editor: deleted '" + variant.id() + "' template"
-                        + (wasCustom ? " and removed from registry." : "."))
-                    : ("Editor: no '" + variant.id() + "' template to delete."))
-                + cleanup.summaryLine()
-            ), true);
+            source.sendSuccess(() -> (deleted
+                    ? Component.translatable("chat.dungeontrain.editor.deleted_template", variant.id(),
+                        Component.translatable(wasCustom ? "chat.dungeontrain.editor.and_removed_from_registry" : "chat.dungeontrain.common.full_stop"))
+                    : Component.translatable("chat.dungeontrain.editor.no_template_to_delete", variant.id()))
+                .append(cleanup.summaryLine()), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor reset failed", t);
-            source.sendFailure(Component.literal("reset failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.reset_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4103,24 +3847,17 @@ public final class EditorCommand {
                     try {
                         partSidecar.save(partLoc.kind(), partLoc.name());
                     } catch (IOException e) {
-                        source.sendFailure(Component.literal(
-                            "Variant save failed: " + e.getMessage()
-                        ).withStyle(ChatFormatting.RED));
+                        source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()).withStyle(ChatFormatting.RED));
                         return 0;
                     }
                 }
                 final String id = partLoc.kind().id() + ":" + partLoc.name();
                 final int n = cleared;
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared all blocks in '" + id + "'"
-                        + (n > 0 ? " (and " + n + " variant entr" + (n == 1 ? "y" : "ies") + ")." : ".")
-                ).withStyle(ChatFormatting.GREEN), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_all_blocks", id, (n > 0 ? Component.translatable("chat.dungeontrain.editor.cleared_and_entries", n, Component.translatable(n == 1 ? "chat.dungeontrain.common.noun.entry.singular" : "chat.dungeontrain.common.noun.entry.plural")) : Component.literal("."))).withStyle(ChatFormatting.GREEN), true);
                 return 1;
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] editor clear (part) failed", t);
-                source.sendFailure(Component.literal("clear failed: "
-                    + t.getClass().getSimpleName() + ": " + t.getMessage()
-                ).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.clear_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
@@ -4142,24 +3879,17 @@ public final class EditorCommand {
                     try {
                         contentsSidecar.save(contents);
                     } catch (IOException e) {
-                        source.sendFailure(Component.literal(
-                            "Variant save failed: " + e.getMessage()
-                        ).withStyle(ChatFormatting.RED));
+                        source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_save_failed", e.getMessage()).withStyle(ChatFormatting.RED));
                         return 0;
                     }
                 }
                 final String id = contents.id();
                 final int n = cleared;
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared all blocks in '" + id + "'"
-                        + (n > 0 ? " (and " + n + " variant entr" + (n == 1 ? "y" : "ies") + ")." : ".")
-                ).withStyle(ChatFormatting.GREEN), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_all_blocks", id, (n > 0 ? Component.translatable("chat.dungeontrain.editor.cleared_and_entries", n, Component.translatable(n == 1 ? "chat.dungeontrain.common.noun.entry.singular" : "chat.dungeontrain.common.noun.entry.plural")) : Component.literal("."))).withStyle(ChatFormatting.GREEN), true);
                 return 1;
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] editor clear (contents) failed", t);
-                source.sendFailure(Component.literal("clear failed: "
-                    + t.getClass().getSimpleName() + ": " + t.getMessage()
-                ).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.clear_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
@@ -4174,19 +3904,11 @@ public final class EditorCommand {
                 int cleared = carriageSidecar.clearAll();
                 final String id = carriage.id();
                 final int n = cleared;
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared all blocks in '" + id + "'"
-                        + (n > 0
-                            ? " (and " + n + " variant entr" + (n == 1 ? "y" : "ies")
-                                + "). Run '/dungeontrain editor save' to persist."
-                            : ".")
-                ).withStyle(ChatFormatting.GREEN), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_all_blocks", id, (n > 0 ? Component.translatable("chat.dungeontrain.editor.cleared_and_entries_save", n, Component.translatable(n == 1 ? "chat.dungeontrain.common.noun.entry.singular" : "chat.dungeontrain.common.noun.entry.plural")) : Component.literal("."))).withStyle(ChatFormatting.GREEN), true);
                 return 1;
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] editor clear (carriage) failed", t);
-                source.sendFailure(Component.literal("clear failed: "
-                    + t.getClass().getSimpleName() + ": " + t.getMessage()
-                ).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.clear_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
@@ -4197,23 +3919,16 @@ public final class EditorCommand {
                 int cleared = PortalRoomEditor.clearEverything(overworld, roomName, dims);
                 final String id = roomName;
                 final int n = cleared;
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared all blocks in dimensional carriage '" + id + "'"
-                        + (n > 0 ? " (and " + n + " authored entr" + (n == 1 ? "y" : "ies") + ")." : ".")
-                ).withStyle(ChatFormatting.GREEN), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.cleared_all_blocks_dimensional", id, (n > 0 ? Component.translatable("chat.dungeontrain.editor.cleared_and_authored", n, Component.translatable(n == 1 ? "chat.dungeontrain.common.noun.entry.singular" : "chat.dungeontrain.common.noun.entry.plural")) : Component.literal("."))).withStyle(ChatFormatting.GREEN), true);
                 return 1;
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] editor clear (portal room) failed", t);
-                source.sendFailure(Component.literal("clear failed: "
-                    + t.getClass().getSimpleName() + ": " + t.getMessage()
-                ).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.clear_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
 
-        source.sendFailure(Component.literal(
-            "editor clear: stand inside a carriage / contents / parts / dimensional carriage plot first."
-        ));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.clear_stand_inside_carriage"));
         return 0;
     }
 
@@ -4224,21 +3939,15 @@ public final class EditorCommand {
 
         String name = rawName.toLowerCase(Locale.ROOT);
         if (!CarriageVariant.NAME_PATTERN.matcher(name).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid name '" + rawName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_name_use_lowercase", rawName));
             return 0;
         }
         if (CarriageVariant.isReservedBuiltinName(name)) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is reserved for a built-in."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_reserved_built", name));
             return 0;
         }
         if (CarriageVariantRegistry.find(name).isPresent()) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is already taken."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken", name));
             return 0;
         }
 
@@ -4246,16 +3955,11 @@ public final class EditorCommand {
             CarriageVariant.Custom target = (CarriageVariant.Custom) CarriageVariant.custom(name);
             var origin = CarriageEditor.duplicate(player, sourceVariant, target);
             CarriageEditor.enter(player, target);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: created '" + target.id() + "' from '" + sourceVariant.id()
-                    + "' at plot " + origin
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_from_plot", target.id(), sourceVariant.id(), origin), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor new failed", t);
-            source.sendFailure(Component.literal("new failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.new_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4271,21 +3975,15 @@ public final class EditorCommand {
 
         String name = rawName.toLowerCase(Locale.ROOT);
         if (!CarriageVariant.NAME_PATTERN.matcher(name).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid name '" + rawName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_name_use_lowercase", rawName));
             return 0;
         }
         if (CarriageVariant.isReservedBuiltinName(name)) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is reserved for a built-in."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_reserved_built", name));
             return 0;
         }
         if (CarriageVariantRegistry.find(name).isPresent()) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is already taken."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken", name));
             return 0;
         }
 
@@ -4293,15 +3991,11 @@ public final class EditorCommand {
             CarriageVariant.Custom target = (CarriageVariant.Custom) CarriageVariant.custom(name);
             var origin = CarriageEditor.createBlank(player, target);
             CarriageEditor.enter(player, target);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: created blank '" + target.id() + "' at plot " + origin
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_blank_plot", target.id(), origin), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor new blank failed", t);
-            source.sendFailure(Component.literal("new blank failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.new_blank_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4309,13 +4003,11 @@ public final class EditorCommand {
     private static int runPartMenu(CommandSourceStack source, boolean on) {
         net.minecraft.server.level.ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Component.literal("Editor partmenu: only players can toggle the menu."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.partmenu_only_players_can"));
             return 0;
         }
         games.brennan.dungeontrain.editor.PartPositionMenuController.setMenuEnabled(player, on);
-        source.sendSuccess(() -> Component.literal(
-            "Editor part-position menu: " + (on ? "ON" : "OFF")
-        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.part_position_menu", Component.translatable(on ? "chat.dungeontrain.common.on_caps" : "chat.dungeontrain.common.off_caps")).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return 1;
     }
 
@@ -4334,7 +4026,7 @@ public final class EditorCommand {
                                       games.brennan.dungeontrain.editor.EditorMenusMode mode) {
         net.minecraft.server.level.ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Component.literal("Editor menus: only players can toggle the menu."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.menus_only_players_can"));
             return 0;
         }
         boolean on = mode != games.brennan.dungeontrain.editor.EditorMenusMode.OFF;
@@ -4345,9 +4037,7 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.BlockVariantMenuController.toggle(player, false);
             games.brennan.dungeontrain.editor.ContainerContentsMenuController.toggle(player, false);
         }
-        source.sendSuccess(() -> Component.literal(
-            "Editor menus: " + mode.name()
-        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.menus", mode.name()).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return 1;
     }
 
@@ -4364,20 +4054,17 @@ public final class EditorCommand {
     private static int runHelpPanel(CommandSourceStack source, boolean on) {
         net.minecraft.server.level.ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Component.literal("Welcome panel: only players can toggle the panel."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.welcome_panel_only_players"));
             return 0;
         }
         net.minecraft.server.MinecraftServer server = player.getServer();
         if (server == null) {
-            source.sendFailure(Component.literal("Welcome panel: no server to store the setting on."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.welcome_panel_no_server"));
             return 0;
         }
         games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
             .setHelpPanelDismissed(player.getUUID(), !on);
-        source.sendSuccess(() -> Component.literal(on
-            ? "Welcome panel: ON"
-            : "Welcome panel: OFF — press X and pick 'Welcome Panel' to bring it back."
-        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        source.sendSuccess(() -> (on ? Component.translatable("chat.dungeontrain.editor.welcome_panel") : Component.translatable("chat.dungeontrain.editor.welcome_panel_off_press")).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }
 
@@ -4396,10 +4083,7 @@ public final class EditorCommand {
         for (ServerPlayer online : server.getPlayerList().getPlayers()) {
             games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
         }
-        source.sendSuccess(() -> Component.literal(on
-            ? "Observers: ON — observers in editor plots pulse as normal."
-            : "Observers: OFF — observers in editor plots stay quiet while you build."
-        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        source.sendSuccess(() -> (on ? Component.translatable("chat.dungeontrain.editor.observers_observers_plots_pulse") : Component.translatable("chat.dungeontrain.editor.observers_off_observers_plots")).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }
 
@@ -4418,10 +4102,7 @@ public final class EditorCommand {
         for (ServerPlayer online : server.getPlayerList().getPlayers()) {
             games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
         }
-        source.sendSuccess(() -> Component.literal(live
-            ? "Mobs: LIVE — spawn eggs in editor plots spawn wandering mobs."
-            : "Mobs: BLOCKS — spawn eggs place a frozen mob you can break in one hit; variant cells show mob ghosts."
-        ).withStyle(live ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> (live ? Component.translatable("chat.dungeontrain.editor.mobs_live_spawn_eggs") : Component.translatable("chat.dungeontrain.editor.mobs_blocks_spawn_eggs")).withStyle(live ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
         return 1;
     }
 
@@ -4444,11 +4125,7 @@ public final class EditorCommand {
         // no-op at spawn time, so reject with a clear message.
         if (CarriageContentsGroupStore.allChildIds().contains(contents.id())) {
             java.util.Optional<String> parentId = CarriageContentsGroupStore.findParentOf(contents.id());
-            source.sendFailure(Component.literal(
-                "'" + contents.id() + "' is a sub-variant"
-                    + parentId.map(p -> " of '" + p + "'").orElse("")
-                    + " — toggle the parent in the allow-list instead. Sub-variants follow their parent's allowance."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.sub_variant_toggle_parent", contents.id(), parentId.map(p -> " of '" + p + "'").orElse("")).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         try {
@@ -4466,9 +4143,7 @@ public final class EditorCommand {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor carriage-contents save failed for {}/{}",
                 variant.id(), contents.id(), e);
-            source.sendFailure(Component.literal(
-                "Failed to update contents allow-list: " + e.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.failed_update_contents_allow", e.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4486,13 +4161,13 @@ public final class EditorCommand {
                                                   String rawContents, boolean on) {
         String room = rawRoom == null ? "" : rawRoom.trim();
         if (room.isEmpty()) {
-            source.sendFailure(Component.literal("Name a dimensional carriage."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_dimensional_carriage"));
             return 0;
         }
         if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry
                 .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)
                 .contains(room)) {
-            source.sendFailure(Component.literal("Unknown dimensional carriage '" + room + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage", room));
             return 0;
         }
         CarriageContents contents = parseContents(source, rawContents);
@@ -4501,11 +4176,7 @@ public final class EditorCommand {
         // parent's resolution and is never consulted against the allow-list directly.
         if (CarriageContentsGroupStore.allChildIds().contains(contents.id())) {
             java.util.Optional<String> parentId = CarriageContentsGroupStore.findParentOf(contents.id());
-            source.sendFailure(Component.literal(
-                "'" + contents.id() + "' is a sub-variant"
-                    + parentId.map(p -> " of '" + p + "'").orElse("")
-                    + " — toggle the parent in the allow-list instead. Sub-variants follow their parent's allowance."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.sub_variant_toggle_parent", contents.id(), parentId.map(p -> " of '" + p + "'").orElse("")).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         try {
@@ -4523,9 +4194,7 @@ public final class EditorCommand {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor portal-room-contents save failed for {}/{}",
                 room, contents.id(), e);
-            source.sendFailure(Component.literal(
-                "Failed to update contents allow-list: " + e.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.failed_update_contents_allow", e.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4535,18 +4204,12 @@ public final class EditorCommand {
         boolean writable = CarriageTemplateStore.sourceTreeAvailable();
         if (on) {
             if (writable) {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor dev mode: ON — '/editor save' will also write to source tree."
-                ).withStyle(ChatFormatting.GREEN), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dev_mode_save_will").withStyle(ChatFormatting.GREEN), true);
             } else {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor dev mode: ON — but source tree is NOT writable. Are you running ./gradlew runClient?"
-                ).withStyle(ChatFormatting.YELLOW), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dev_mode_but_source").withStyle(ChatFormatting.YELLOW), true);
             }
         } else {
-            source.sendSuccess(() -> Component.literal(
-                "Editor dev mode: off — '/editor save' writes to config-dir only."
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dev_mode_off_save"), true);
         }
         return 1;
     }
@@ -4562,9 +4225,7 @@ public final class EditorCommand {
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         CarriageVariant current = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (current == null) {
-            source.sendFailure(Component.literal(
-                "Not in a carriage editor plot — stand in the carriage whose shared flag you want to toggle."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_carriage_plot_stand").withStyle(ChatFormatting.RED));
             return 0;
         }
         boolean target = on != null ? on
@@ -4572,7 +4233,7 @@ public final class EditorCommand {
         try {
             games.brennan.dungeontrain.train.SharedCarriageFlags.set(current.id(), target);
         } catch (Exception e) {
-            source.sendFailure(Component.literal("Failed to save shared flag: " + e.getMessage())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.failed_save_shared_flag", e.getMessage())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -4580,36 +4241,25 @@ public final class EditorCommand {
         // Leasing is the half that PLACES community builds, and it ships off — say so here, or a
         // builder flags a variant shared, never sees a pooled carriage, and reads that as a bug.
         boolean leasing = games.brennan.dungeontrain.event.SharedCarriageGate.canLease();
-        source.sendSuccess(() -> Component.literal(
-            "Carriage '" + current.id() + "' shared: " + (target ? "ON" : "off")
-            + (enabled ? "" : " — note: sharedCarriagesEnabled is OFF in dungeontrain-server.toml, so the feature is inactive")
-            + (!enabled || leasing ? "" : " — note: sharedCarriageLeasingEnabled is OFF, so builds upload but none are placed")
-        ).withStyle(target ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.carriage_shared", current.id(), Component.translatable(target ? "chat.dungeontrain.common.on_caps" : "chat.dungeontrain.common.off"), (enabled ? Component.empty() : Component.translatable("chat.dungeontrain.editor.carriage_shared_note_disabled")), (!enabled || leasing ? Component.empty() : Component.translatable("chat.dungeontrain.editor.carriage_shared_note_leasing"))).withStyle(target ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }
 
     private static int runPromote(CommandSourceStack source, CarriageType type) {
         try {
             CarriageTemplateStore.promote(type);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: promoted '" + type.name().toLowerCase(Locale.ROOT)
-                    + "' template to source tree (will ship with next build)."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.promoted_template_source_tree", type.name().toLowerCase(Locale.ROOT)).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor promote failed for {}", type, t);
-            source.sendFailure(Component.literal("promote failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.promote_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
 
     private static int runPromoteAll(CommandSourceStack source) {
         if (!CarriageTemplateStore.sourceTreeAvailable()) {
-            source.sendFailure(Component.literal(
-                "promote all failed: source tree not writable. Are you running ./gradlew runClient?"
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.promote_all_failed_source").withStyle(ChatFormatting.RED));
             return 0;
         }
         int promoted = 0;
@@ -4633,10 +4283,7 @@ public final class EditorCommand {
         final int p = promoted;
         final int s = skipped;
         final String errStr = errors.toString();
-        source.sendSuccess(() -> Component.literal(
-            "Editor: promote all — " + p + " promoted, " + s + " skipped (no config copy)."
-                + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
-        ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.promote_all_promoted_skipped", p, s, (errStr.isEmpty() ? Component.empty() : Component.translatable("chat.dungeontrain.common.errors_suffix", errStr))).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return p > 0 ? 1 : 0;
     }
 
@@ -4647,16 +4294,11 @@ public final class EditorCommand {
         try {
             PillarEditor.enter(player, section);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            source.sendSuccess(() -> Component.literal(
-                "Editor: entered pillar '" + section.id()
-                    + "' plot at " + PillarEditor.plotOrigin(section, dims)
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_pillar_plot", section.id(), PillarEditor.plotOrigin(section, dims)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar enter failed", t);
-            source.sendFailure(Component.literal("pillar enter failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4673,36 +4315,25 @@ public final class EditorCommand {
         if (adjunctLoc != null) {
             return runPillarSaveAdjunct(source, player, adjunctLoc.adjunct());
         }
-        source.sendFailure(Component.literal(
-            "Not in a pillar editor plot. Use '/dungeontrain editor pillar enter <"
-                + pillarTargetList() + ">' first."
-        ));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_pillar_plot_use", pillarTargetList()));
         return 0;
     }
 
     private static int runPillarSaveSection(CommandSourceStack source, ServerPlayer player, PillarSection section) {
         try {
             PillarEditor.SaveResult result = PillarEditor.save(player, section);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: saved pillar '" + section.id() + "' template (config-dir)."
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_pillar_template_config", section.id()), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
-                    source.sendSuccess(() -> Component.literal(
-                        "Editor: also wrote bundled pillar copy to source tree (will ship with next build)."
-                    ).withStyle(ChatFormatting.GREEN), true);
+                    source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.also_wrote_bundled_pillar").withStyle(ChatFormatting.GREEN), true);
                 } else {
-                    source.sendFailure(Component.literal(
-                        "Editor: pillar source-tree write failed: " + result.sourceError()
-                    ).withStyle(ChatFormatting.YELLOW));
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_source_tree_write", result.sourceError()).withStyle(ChatFormatting.YELLOW));
                 }
             }
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar save failed", t);
-            source.sendFailure(Component.literal("pillar save failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4710,26 +4341,18 @@ public final class EditorCommand {
     private static int runPillarSaveAdjunct(CommandSourceStack source, ServerPlayer player, PillarAdjunct adjunct) {
         try {
             PillarEditor.SaveResult result = PillarEditor.save(player, adjunct);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: saved pillar adjunct '" + adjunct.id() + "' template (config-dir)."
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_pillar_adjunct_template", adjunct.id()), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
-                    source.sendSuccess(() -> Component.literal(
-                        "Editor: also wrote bundled adjunct copy to source tree (will ship with next build)."
-                    ).withStyle(ChatFormatting.GREEN), true);
+                    source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.also_wrote_bundled_adjunct").withStyle(ChatFormatting.GREEN), true);
                 } else {
-                    source.sendFailure(Component.literal(
-                        "Editor: pillar adjunct source-tree write failed: " + result.sourceError()
-                    ).withStyle(ChatFormatting.YELLOW));
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_adjunct_source_tree", result.sourceError()).withStyle(ChatFormatting.YELLOW));
                 }
             }
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar save adjunct failed", t);
-            source.sendFailure(Component.literal("pillar save failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4774,17 +4397,11 @@ public final class EditorCommand {
     private static int runPillarReset(CommandSourceStack source, PillarSection section) {
         try {
             boolean deleted = PillarTemplateStore.delete(section);
-            source.sendSuccess(() -> Component.literal(
-                deleted
-                    ? "Editor: deleted pillar '" + section.id() + "' template."
-                    : "Editor: no pillar '" + section.id() + "' template to delete."
-            ), true);
+            source.sendSuccess(() -> (deleted ? Component.translatable("chat.dungeontrain.editor.deleted_pillar_template", section.id()) : Component.translatable("chat.dungeontrain.editor.no_pillar_template_delete", section.id())), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar reset failed", t);
-            source.sendFailure(Component.literal("pillar reset failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_reset_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4792,16 +4409,11 @@ public final class EditorCommand {
     private static int runPillarPromote(CommandSourceStack source, PillarSection section) {
         try {
             PillarTemplateStore.promote(section);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: promoted pillar '" + section.id()
-                    + "' template to source tree (will ship with next build)."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.promoted_pillar_template_source", section.id()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar promote failed for {}", section, t);
-            source.sendFailure(Component.literal("pillar promote failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_promote_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4809,9 +4421,7 @@ public final class EditorCommand {
     private static CarriageContents parseContents(CommandSourceStack source, String raw) {
         String id = raw.toLowerCase(Locale.ROOT);
         return CarriageContentsRegistry.find(id).orElseGet(() -> {
-            source.sendFailure(Component.literal(
-                "Unknown contents '" + raw + "'. Valid: " + listContentsIds()
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_contents_valid", raw, listContentsIds()));
             return null;
         });
     }
@@ -4841,9 +4451,7 @@ public final class EditorCommand {
             ? null
             : CarriageVariantRegistry.find(shellRaw.toLowerCase(Locale.ROOT)).orElse(null);
         if (shellRaw != null && shell == null) {
-            source.sendFailure(Component.literal(
-                "Unknown shell variant '" + shellRaw + "'. Valid: " + listIds()
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_shell_variant_valid", shellRaw, listIds()));
             return 0;
         }
         try {
@@ -4855,17 +4463,11 @@ public final class EditorCommand {
             final String shown = label.equals(contents.id())
                 ? "'" + contents.id() + "'"
                 : "'" + label + "' (id " + contents.id() + ")";
-            source.sendSuccess(() -> Component.literal(
-                "Editor: entered contents " + shown
-                    + " (shell=" + shellUsed.id() + ") plot at "
-                    + CarriageContentsEditor.plotOrigin(contents, dims)
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_contents_shell_plot", shown, shellUsed.id(), CarriageContentsEditor.plotOrigin(contents, dims)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents enter failed", t);
-            source.sendFailure(Component.literal("contents enter failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4876,35 +4478,25 @@ public final class EditorCommand {
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         CarriageContents current = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (current == null) {
-            source.sendFailure(Component.literal(
-                "Not in a contents editor plot. Use '/dungeontrain editor contents enter <name>' first."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_contents_plot_use"));
             return 0;
         }
 
         if (newName == null) {
             try {
                 CarriageContentsEditor.SaveResult result = CarriageContentsEditor.save(player, current);
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: saved contents '" + current.id() + "' template (config-dir)."
-                ), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_contents_template_config", current.id()), true);
                 if (result.sourceAttempted()) {
                     if (result.sourceWritten()) {
-                        source.sendSuccess(() -> Component.literal(
-                            "Editor: also wrote bundled contents copy to source tree (will ship with next build)."
-                        ).withStyle(ChatFormatting.GREEN), true);
+                        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.also_wrote_bundled_contents").withStyle(ChatFormatting.GREEN), true);
                     } else {
-                        source.sendFailure(Component.literal(
-                            "Editor: contents source-tree write failed: " + result.sourceError()
-                        ).withStyle(ChatFormatting.YELLOW));
+                        source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_source_tree_write", result.sourceError()).withStyle(ChatFormatting.YELLOW));
                     }
                 }
                 return 1;
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] editor contents save failed", t);
-                source.sendFailure(Component.literal("contents save failed: "
-                    + t.getClass().getSimpleName() + ": " + t.getMessage()
-                ).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
@@ -4917,42 +4509,30 @@ public final class EditorCommand {
     private static int renameContentsTo(CommandSourceStack source, ServerPlayer player,
                                         CarriageContents current, String newName) {
         if (current.isBuiltin()) {
-            source.sendFailure(Component.literal(
-                "Cannot rename '" + current.id() + "' — it is a built-in contents variant."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.cannot_rename_it_built", current.id()));
             return 0;
         }
         String newId = newName.toLowerCase(Locale.ROOT);
         if (!CarriageContents.NAME_PATTERN.matcher(newId).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid name '" + newName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_name_use_lowercase", newName));
             return 0;
         }
         if (CarriageContents.isReservedBuiltinName(newId)) {
-            source.sendFailure(Component.literal(
-                "Name '" + newId + "' is reserved for a built-in."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_reserved_built", newId));
             return 0;
         }
         if (CarriageContentsRegistry.find(newId).isPresent()) {
-            source.sendFailure(Component.literal(
-                "Name '" + newId + "' is already taken."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken", newId));
             return 0;
         }
         try {
             CarriageContents.Custom renamed = (CarriageContents.Custom) CarriageContents.custom(newId);
             CarriageContentsEditor.saveAs(player, current, renamed);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: saved and renamed contents '" + current.id() + "' → '" + renamed.id() + "'."
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_and_renamed_contents", current.id(), renamed.id()), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents save-rename failed", t);
-            source.sendFailure(Component.literal("contents save failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -4998,28 +4578,20 @@ public final class EditorCommand {
             .filter(g -> !g.members().isEmpty());
         if (group.isPresent() && mode == null) {
             int n = group.get().members().size();
-            source.sendFailure(Component.literal(
-                "'" + contents.id() + "' has " + n + " sub-variant" + (n == 1 ? "" : "s")
-                    + " — say what happens to them: contents reset " + contents.id() + " <"
-                    + games.brennan.dungeontrain.editor.ParentDeletes.Mode.literals() + ">."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.has_sub_variant_say", contents.id(), n, Component.translatable(n == 1 ? "chat.dungeontrain.common.noun.sub_variant.singular" : "chat.dungeontrain.common.noun.sub_variant.plural"), contents.id(), games.brennan.dungeontrain.editor.ParentDeletes.Mode.literals()).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        progress(source, "Deleting '" + contents.id() + "'"
-            + (group.isPresent() && mode == games.brennan.dungeontrain.editor.ParentDeletes.Mode.ALL
-                ? " and its " + group.get().members().size() + " sub-variants" : "") + "\u2026");
+        progress(source, Component.translatable("chat.dungeontrain.editor.progress_deleting", contents.id(), (group.isPresent() && mode == games.brennan.dungeontrain.editor.ParentDeletes.Mode.ALL ? Component.translatable("chat.dungeontrain.editor.progress_deleting_and_subs", group.get().members().size()) : Component.empty())));
         try {
             ParentModeOutcome outcome = group.isPresent()
                 ? applyContentsParentMode(source, contents, group.get(), mode) : ParentModeOutcome.NONE;
-            String line = deleteContents(source, contents);
-            String landed = landInContents(source, outcome.landing());
-            source.sendSuccess(() -> Component.literal(line + outcome.line() + landed), true);
+            Component line = deleteContents(source, contents);
+            Component landed = landInContents(source, outcome.landing());
+            source.sendSuccess(() -> line.copy().append(outcome.line()).append(landed), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents reset failed", t);
-            source.sendFailure(Component.literal("contents reset failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_reset_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5029,16 +4601,16 @@ public final class EditorCommand {
      * member that just became top-level — so the author lands where the work continued rather than
      * in a hole. No-op without a player or a landing. Returns the reply fragment.
      */
-    private static String landInContents(CommandSourceStack source, String id) {
-        if (id == null || !(source.getEntity() instanceof ServerPlayer player)) return "";
+    private static Component landInContents(CommandSourceStack source, String id) {
+        if (id == null || !(source.getEntity() instanceof ServerPlayer player)) return Component.empty();
         java.util.Optional<CarriageContents> target = CarriageContentsRegistry.find(id);
-        if (target.isEmpty()) return "";
+        if (target.isEmpty()) return Component.empty();
         try {
             CarriageContentsEditor.enter(player, target.get(), null);
-            return " Entered '" + id + "'.";
+            return Component.translatable("chat.dungeontrain.editor.landed_entered", id);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] contents reset: could not enter {} afterwards: {}", id, e.toString());
-            return "";
+            return Component.empty();
         }
     }
 
@@ -5047,7 +4619,7 @@ public final class EditorCommand {
      * {@link TemplateDeletes#contents} takes with it, deregister a custom and close the plot row's
      * gap. Returns the reply line; the caller sends it.
      */
-    private static String deleteContents(CommandSourceStack source, CarriageContents contents) throws java.io.IOException {
+    private static Component deleteContents(CommandSourceStack source, CarriageContents contents) throws java.io.IOException {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
@@ -5072,10 +4644,10 @@ public final class EditorCommand {
             }
         }
         return (deleted
-                ? ("Editor: deleted contents '" + contents.id() + "' template"
-                    + (wasCustom ? " and removed from registry." : "."))
-                : ("Editor: no contents '" + contents.id() + "' template to delete."))
-            + cleanup.summaryLine();
+                ? Component.translatable("chat.dungeontrain.editor.deleted_contents_template", contents.id(),
+                    Component.translatable(wasCustom ? "chat.dungeontrain.editor.and_removed_from_registry" : "chat.dungeontrain.common.full_stop"))
+                : Component.translatable("chat.dungeontrain.editor.no_contents_template_to_delete", contents.id()))
+            .copy().append(cleanup.summaryLine());
     }
 
     /**
@@ -5106,7 +4678,7 @@ public final class EditorCommand {
                         failed.add(m.id());
                     }
                 }
-                return new ParentModeOutcome(summarise(" Sub-variants deleted: ", done, failed), null);
+                return new ParentModeOutcome(summarise("chat.dungeontrain.editor.sub_variants_deleted", done, failed), null);
             }
             case UNPARENT -> {
                 String first = null;
@@ -5124,7 +4696,7 @@ public final class EditorCommand {
                         failed.add(t.id());
                     }
                 }
-                return new ParentModeOutcome(summarise(" Now top-level: ", done, failed), first);
+                return new ParentModeOutcome(summarise("chat.dungeontrain.editor.now_top_level", done, failed), first);
             }
             case PROMOTE_FIRST -> {
                 games.brennan.dungeontrain.editor.ParentDeletes.ContentsPromotion p =
@@ -5138,11 +4710,11 @@ public final class EditorCommand {
                     CarriageContentsWeights.setStage(heir, w.stageIdFor(parent.id()));
                     if (p.group().isPresent()) CarriageContentsGroupStore.save(heir, p.group().get());
                     int n = p.group().map(g -> g.members().size()).orElse(0);
-                    return new ParentModeOutcome(" '" + heir + "' now heads the group (" + n + " sub-variant"
-                        + (n == 1 ? "" : "s") + ").", heir);
+                    return new ParentModeOutcome(Component.translatable("chat.dungeontrain.editor.now_heads_group", heir, n,
+                        Component.translatable(n == 1 ? "chat.dungeontrain.common.noun.sub_variant.singular" : "chat.dungeontrain.common.noun.sub_variant.plural")), heir);
                 } catch (Exception e) {
                     LOGGER.warn("[DungeonTrain] contents reset promote: could not promote {}: {}", heir, e.toString());
-                    return new ParentModeOutcome(" Could not promote '" + heir + "': " + e.getMessage(), null);
+                    return new ParentModeOutcome(Component.translatable("chat.dungeontrain.editor.could_not_promote", heir, e.getMessage()), null);
                 }
             }
         }
@@ -5154,8 +4726,8 @@ public final class EditorCommand {
      * after a promote, the first newly top-level member after an unparent, nowhere in particular
      * otherwise (null). The landing is a template id the caller enters once the delete has restamped.
      */
-    private record ParentModeOutcome(String line, String landing) {
-        static final ParentModeOutcome NONE = new ParentModeOutcome("", null);
+    private record ParentModeOutcome(Component line, String landing) {
+        static final ParentModeOutcome NONE = new ParentModeOutcome(Component.empty(), null);
     }
 
     /**
@@ -5164,16 +4736,16 @@ public final class EditorCommand {
      * nothing telling them the click took. Handed to the network thread at once, so it shows while
      * the server thread is still working.
      */
-    private static void progress(CommandSourceStack source, String message) {
-        source.sendSuccess(() -> Component.literal(message).withStyle(ChatFormatting.GRAY), false);
+    private static void progress(CommandSourceStack source, Component message) {
+        source.sendSuccess(() -> message.copy().withStyle(ChatFormatting.GRAY), false);
     }
 
     /** One reply fragment for a per-member pass: what went through and what did not. */
-    private static String summarise(String label, List<String> done, List<String> failed) {
-        StringBuilder sb = new StringBuilder();
-        if (!done.isEmpty()) sb.append(label).append(String.join(", ", done)).append('.');
-        if (!failed.isEmpty()) sb.append(" Could not: ").append(String.join(", ", failed)).append('.');
-        return sb.toString();
+    private static Component summarise(String labelKey, List<String> done, List<String> failed) {
+        net.minecraft.network.chat.MutableComponent out = Component.empty();
+        if (!done.isEmpty()) out.append(Component.translatable(labelKey, String.join(", ", done)));
+        if (!failed.isEmpty()) out.append(Component.translatable("chat.dungeontrain.editor.could_not_list", String.join(", ", failed)));
+        return out;
     }
 
     private static int runContentsNew(CommandSourceStack source, String rawName, CarriageContents sourceContents) {
@@ -5182,21 +4754,15 @@ public final class EditorCommand {
 
         String name = rawName.toLowerCase(Locale.ROOT);
         if (!CarriageContents.NAME_PATTERN.matcher(name).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid name '" + rawName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_name_use_lowercase", rawName));
             return 0;
         }
         if (CarriageContents.isReservedBuiltinName(name)) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is reserved for a built-in."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_reserved_built", name));
             return 0;
         }
         if (CarriageContentsRegistry.find(name).isPresent()) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is already taken."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken", name));
             return 0;
         }
 
@@ -5204,16 +4770,11 @@ public final class EditorCommand {
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
             var origin = CarriageContentsEditor.duplicate(player, sourceContents, target);
             CarriageContentsEditor.enter(player, target, null);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: created contents '" + target.id() + "' from '" + sourceContents.id()
-                    + "' at plot " + origin
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_contents_from_plot", target.id(), sourceContents.id(), origin), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents new failed", t);
-            source.sendFailure(Component.literal("contents new failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_new_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5229,21 +4790,15 @@ public final class EditorCommand {
 
         String name = rawName.toLowerCase(Locale.ROOT);
         if (!CarriageContents.NAME_PATTERN.matcher(name).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid name '" + rawName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_name_use_lowercase", rawName));
             return 0;
         }
         if (CarriageContents.isReservedBuiltinName(name)) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is reserved for a built-in."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_reserved_built", name));
             return 0;
         }
         if (CarriageContentsRegistry.find(name).isPresent()) {
-            source.sendFailure(Component.literal(
-                "Name '" + name + "' is already taken."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken", name));
             return 0;
         }
 
@@ -5251,24 +4806,18 @@ public final class EditorCommand {
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
             var origin = CarriageContentsEditor.createBlank(player, target);
             CarriageContentsEditor.enter(player, target, null);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: created blank contents '" + target.id() + "' at plot " + origin
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_blank_contents_plot", target.id(), origin), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents new blank failed", t);
-            source.sendFailure(Component.literal("contents new blank failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_new_blank_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
 
     private static int runPillarPromoteAll(CommandSourceStack source) {
         if (!PillarTemplateStore.sourceTreeAvailable()) {
-            source.sendFailure(Component.literal(
-                "pillar promote all failed: source tree not writable. Are you running ./gradlew runClient?"
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_promote_all_failed").withStyle(ChatFormatting.RED));
             return 0;
         }
         int promoted = 0;
@@ -5305,10 +4854,7 @@ public final class EditorCommand {
         final int p = promoted;
         final int s = skipped;
         final String errStr = errors.toString();
-        source.sendSuccess(() -> Component.literal(
-            "Editor: pillar promote all — " + p + " promoted, " + s + " skipped (no config copy)."
-                + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
-        ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.pillar_promote_all_promoted", p, s, (errStr.isEmpty() ? Component.empty() : Component.translatable("chat.dungeontrain.common.errors_suffix", errStr))).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return p > 0 ? 1 : 0;
     }
 
@@ -5319,16 +4865,11 @@ public final class EditorCommand {
         try {
             PillarEditor.enter(player, adjunct);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            source.sendSuccess(() -> Component.literal(
-                "Editor: entered pillar adjunct '" + adjunct.id()
-                    + "' plot at " + PillarEditor.plotOriginAdjunct(adjunct, dims)
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_pillar_adjunct_plot", adjunct.id(), PillarEditor.plotOriginAdjunct(adjunct, dims)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar enter adjunct failed", t);
-            source.sendFailure(Component.literal("pillar enter failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5336,17 +4877,11 @@ public final class EditorCommand {
     private static int runPillarResetAdjunct(CommandSourceStack source, PillarAdjunct adjunct) {
         try {
             boolean deleted = PillarTemplateStore.deleteAdjunct(adjunct);
-            source.sendSuccess(() -> Component.literal(
-                deleted
-                    ? "Editor: deleted pillar adjunct '" + adjunct.id() + "' template."
-                    : "Editor: no pillar adjunct '" + adjunct.id() + "' template to delete."
-            ), true);
+            source.sendSuccess(() -> (deleted ? Component.translatable("chat.dungeontrain.editor.deleted_pillar_adjunct_template", adjunct.id()) : Component.translatable("chat.dungeontrain.editor.no_pillar_adjunct_template", adjunct.id())), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar reset adjunct failed", t);
-            source.sendFailure(Component.literal("pillar reset failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_reset_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5354,16 +4889,11 @@ public final class EditorCommand {
     private static int runPillarPromoteAdjunct(CommandSourceStack source, PillarAdjunct adjunct) {
         try {
             PillarTemplateStore.promoteAdjunct(adjunct);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: promoted pillar adjunct '" + adjunct.id()
-                    + "' template to source tree (will ship with next build)."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.promoted_pillar_adjunct_template", adjunct.id()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar promote adjunct failed for {}", adjunct, t);
-            source.sendFailure(Component.literal("pillar promote failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.pillar_promote_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5375,15 +4905,11 @@ public final class EditorCommand {
         try {
             TrackEditor.enter(player);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            source.sendSuccess(() -> Component.literal(
-                "Editor: entered track plot at " + TrackEditor.plotOrigin(dims)
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_track_plot", TrackEditor.plotOrigin(dims)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor track enter failed", t);
-            source.sendFailure(Component.literal("track enter failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.track_enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5393,33 +4919,23 @@ public final class EditorCommand {
         if (player == null) return 0;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         if (!TrackEditor.plotContaining(player.blockPosition(), dims)) {
-            source.sendFailure(Component.literal(
-                "Not in the track editor plot. Use '/dungeontrain editor track enter' first."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_track_plot_use"));
             return 0;
         }
         try {
             TrackEditor.SaveResult result = TrackEditor.save(player);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: saved track template (config-dir)."
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_track_template_config"), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
-                    source.sendSuccess(() -> Component.literal(
-                        "Editor: also wrote bundled track copy to source tree (will ship with next build)."
-                    ).withStyle(ChatFormatting.GREEN), true);
+                    source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.also_wrote_bundled_track").withStyle(ChatFormatting.GREEN), true);
                 } else {
-                    source.sendFailure(Component.literal(
-                        "Editor: track source-tree write failed: " + result.sourceError()
-                    ).withStyle(ChatFormatting.YELLOW));
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.track_source_tree_write", result.sourceError()).withStyle(ChatFormatting.YELLOW));
                 }
             }
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor track save failed", t);
-            source.sendFailure(Component.literal("track save failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.track_save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5445,17 +4961,11 @@ public final class EditorCommand {
     private static int runTrackReset(CommandSourceStack source) {
         try {
             boolean deleted = TrackTemplateStore.delete();
-            source.sendSuccess(() -> Component.literal(
-                deleted
-                    ? "Editor: deleted track template."
-                    : "Editor: no track template to delete."
-            ), true);
+            source.sendSuccess(() -> (deleted ? Component.translatable("chat.dungeontrain.editor.deleted_track_template") : Component.translatable("chat.dungeontrain.editor.no_track_template_delete")), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor track reset failed", t);
-            source.sendFailure(Component.literal("track reset failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.track_reset_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5463,15 +4973,11 @@ public final class EditorCommand {
     private static int runTrackPromote(CommandSourceStack source) {
         try {
             TrackTemplateStore.promote();
-            source.sendSuccess(() -> Component.literal(
-                "Editor: promoted track template to source tree (will ship with next build)."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.promoted_track_template_source").withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor track promote failed", t);
-            source.sendFailure(Component.literal("track promote failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.track_promote_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5481,9 +4987,7 @@ public final class EditorCommand {
     private static CarriagePartKind parsePartKind(CommandSourceStack source, String raw) {
         CarriagePartKind kind = CarriagePartKind.fromId(raw);
         if (kind == null) {
-            source.sendFailure(Component.literal(
-                "Unknown part kind '" + raw + "'. Valid: floor, walls, roof, doors"
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_part_kind_valid", raw));
         }
         return kind;
     }
@@ -5491,15 +4995,11 @@ public final class EditorCommand {
     private static boolean validatePartName(CommandSourceStack source, String raw) {
         String norm = raw.toLowerCase(Locale.ROOT);
         if (!CarriagePartRegistry.NAME_PATTERN.matcher(norm).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid part name '" + raw + "'. Use lowercase letters, digits or underscore (1-32 chars)."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_part_name_use", raw));
             return false;
         }
         if (CarriagePartKind.NONE.equals(norm)) {
-            source.sendFailure(Component.literal(
-                "'" + CarriagePartKind.NONE + "' is reserved — it means 'skip this part'."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.reserved_it_means_skip", CarriagePartKind.NONE));
             return false;
         }
         return true;
@@ -5510,16 +5010,11 @@ public final class EditorCommand {
         String norm = raw.toLowerCase(Locale.ROOT);
         if (CarriagePartKind.NONE.equals(norm)) return true;
         if (!CarriagePartRegistry.NAME_PATTERN.matcher(norm).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid part name '" + raw + "'. Use lowercase letters, digits or underscore (1-32 chars), or 'none'."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_part_name_use_2", raw));
             return false;
         }
         if (!CarriagePartRegistry.isKnown(kind, norm)) {
-            source.sendFailure(Component.literal(
-                "Unknown part '" + kind.id() + ":" + norm
-                    + "'. Author it via '/dungeontrain editor part enter " + kind.id() + " " + norm + "' and save first."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_part_author_it", kind.id(), norm, kind.id(), norm).withStyle(ChatFormatting.YELLOW));
             return false;
         }
         return true;
@@ -5540,16 +5035,11 @@ public final class EditorCommand {
                 new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, name), dims);
             if (plot == null) plot = CarriagePartEditor.nextFreePlotOrigin(kind, dims);
             final BlockPos plotFinal = plot;
-            source.sendSuccess(() -> Component.literal(
-                "Editor: entered part '" + kind.id() + ":" + name
-                    + "' plot at " + plotFinal
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_part_plot", kind.id(), name, plotFinal), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part enter failed", t);
-            source.sendFailure(Component.literal("part enter failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5562,32 +5052,23 @@ public final class EditorCommand {
         if (!validatePartName(source, rawName)) return 0;
         String name = rawName.toLowerCase(Locale.ROOT);
         if (CarriagePartRegistry.isKnown(kind, name)) {
-            source.sendFailure(Component.literal(
-                "Part '" + kind.id() + ":" + name + "' is already registered."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_already_registered", kind.id(), name));
             return 0;
         }
         CarriagePartEditor.NewSource srcEnum;
         try {
             srcEnum = CarriagePartEditor.NewSource.valueOf(rawSource.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            source.sendFailure(Component.literal(
-                "Unknown source '" + rawSource + "'. Valid: blank, current, standard"
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_source_valid_blank", rawSource));
             return 0;
         }
         try {
             BlockPos origin = CarriagePartEditor.createFrom(player, kind, srcEnum, name);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: created part '" + kind.id() + ":" + name
-                    + "' (source=" + rawSource.toLowerCase(Locale.ROOT) + ") at " + origin
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_part_source", kind.id(), name, rawSource.toLowerCase(Locale.ROOT), origin), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part new failed", t);
-            source.sendFailure(Component.literal("part new failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_new_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5611,9 +5092,7 @@ public final class EditorCommand {
         } else {
             var session = CarriagePartEditor.currentSession(player);
             if (session.isEmpty()) {
-                source.sendFailure(Component.literal(
-                    "No active part editor session. Stand in a part plot or run '/dungeontrain editor part enter <kind> <name>' first."
-                ));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_active_part_session"));
                 return 0;
             }
             kind = session.get().kind();
@@ -5629,26 +5108,18 @@ public final class EditorCommand {
         try {
             CarriagePartEditor.SaveResult result = CarriagePartEditor.save(player, new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, targetName));
             final String name = targetName;
-            source.sendSuccess(() -> Component.literal(
-                "Editor: saved part '" + kind.id() + ":" + name + "' (config-dir)."
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.saved_part_config_dir", kind.id(), name), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
-                    source.sendSuccess(() -> Component.literal(
-                        "Editor: also wrote bundled copy to source tree (will ship with next build)."
-                    ).withStyle(ChatFormatting.GREEN), true);
+                    source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.also_wrote_bundled_copy").withStyle(ChatFormatting.GREEN), true);
                 } else {
-                    source.sendFailure(Component.literal(
-                        "Editor: source-tree write failed: " + result.sourceError()
-                    ).withStyle(ChatFormatting.YELLOW));
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.source_tree_write_failed", result.sourceError()).withStyle(ChatFormatting.YELLOW));
                 }
             }
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part save failed", t);
-            source.sendFailure(Component.literal("part save failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_save_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5667,9 +5138,7 @@ public final class EditorCommand {
         } else {
             var session = CarriagePartEditor.currentSession(player);
             if (session.isEmpty()) {
-                source.sendFailure(Component.literal(
-                    "Not in a part editor plot. Stand in a part plot or run '/dungeontrain editor part enter <kind> <name>' first."
-                ));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_part_plot_stand"));
                 return 0;
             }
             kind = session.get().kind();
@@ -5679,15 +5148,11 @@ public final class EditorCommand {
         if (!validatePartName(source, newName)) return 0;
         String target = newName.toLowerCase(Locale.ROOT);
         if (target.equals(oldName)) {
-            source.sendFailure(Component.literal(
-                "New name '" + target + "' is the same as the current name."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.new_name_same_as", target));
             return 0;
         }
         if (CarriagePartRegistry.isKnown(kind, target)) {
-            source.sendFailure(Component.literal(
-                "Name '" + kind.id() + ":" + target + "' is already taken."
-            ));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken_2", kind.id(), target));
             return 0;
         }
 
@@ -5696,27 +5161,18 @@ public final class EditorCommand {
                 new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, oldName),
                 new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, target));
             final String oldRef = oldName;
-            source.sendSuccess(() -> Component.literal(
-                "Editor: renamed part '" + kind.id() + ":" + oldRef
-                    + "' -> '" + kind.id() + ":" + target + "'."
-            ), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.renamed_part", kind.id(), oldRef, kind.id(), target), true);
             if (result.sourceAttempted()) {
                 if (result.sourceWritten()) {
-                    source.sendSuccess(() -> Component.literal(
-                        "Editor: also wrote bundled copy to source tree (will ship with next build)."
-                    ).withStyle(ChatFormatting.GREEN), true);
+                    source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.also_wrote_bundled_copy").withStyle(ChatFormatting.GREEN), true);
                 } else {
-                    source.sendFailure(Component.literal(
-                        "Editor: source-tree write failed: " + result.sourceError()
-                    ).withStyle(ChatFormatting.YELLOW));
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.source_tree_write_failed", result.sourceError()).withStyle(ChatFormatting.YELLOW));
                 }
             }
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part rename failed", t);
-            source.sendFailure(Component.literal("part rename failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_rename_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5746,10 +5202,7 @@ public final class EditorCommand {
         }
         final int s = saved;
         final String errStr = errors.toString();
-        source.sendSuccess(() -> Component.literal(
-            "Editor: part save all — " + s + " saved"
-                + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
-        ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.part_save_all_saved", s, (errStr.isEmpty() ? Component.empty() : Component.translatable("chat.dungeontrain.common.errors_suffix", errStr))).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return s > 0 ? 1 : 0;
     }
 
@@ -5812,20 +5265,18 @@ public final class EditorCommand {
                         CarriagePartEditor.restampRowAfterDeletion(overworld, kind, oldIdx, oldCount, dims));
                 }
             }
-            final String msg = (deleted
-                ? ("Editor: deleted part '" + kind.id() + ":" + name + "' (config-dir copy)"
-                    + (srcRemoved ? " — bundled copy removed from src too (gone after the next build)."
-                        : stillBundled ? " — bundled default remains."
-                        : " — no bundled fallback, registry entry removed."))
-                : ("Editor: no config-dir part '" + kind.id() + ":" + name + "' to delete."))
-                + cleanup.summaryLine();
-            source.sendSuccess(() -> Component.literal(msg), true);
+            final Component msg = (deleted
+                ? Component.translatable("chat.dungeontrain.editor.deleted_part", kind.id(), name,
+                    Component.translatable(srcRemoved ? "chat.dungeontrain.editor.deleted_part_src_removed"
+                        : stillBundled ? "chat.dungeontrain.editor.deleted_part_bundled_remains"
+                        : "chat.dungeontrain.editor.deleted_part_no_fallback"))
+                : Component.translatable("chat.dungeontrain.editor.no_part_to_delete", kind.id(), name))
+                .append(cleanup.summaryLine());
+            source.sendSuccess(() -> msg, true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part reset failed", t);
-            source.sendFailure(Component.literal("part reset failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_reset_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5836,25 +5287,18 @@ public final class EditorCommand {
         String name = rawName.toLowerCase(Locale.ROOT);
         try {
             CarriagePartTemplateStore.promote(kind, name);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: promoted part '" + kind.id() + ":" + name
-                    + "' to source tree (will ship with next build)."
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.promoted_part_source_tree", kind.id(), name).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part promote failed for {}:{}", kind.id(), name, t);
-            source.sendFailure(Component.literal("part promote failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_promote_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
 
     private static int runPartPromoteAll(CommandSourceStack source) {
         if (!CarriagePartTemplateStore.sourceTreeAvailable()) {
-            source.sendFailure(Component.literal(
-                "part promote all failed: source tree not writable. Are you running ./gradlew runClient?"
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_promote_all_failed").withStyle(ChatFormatting.RED));
             return 0;
         }
         int promoted = 0;
@@ -5879,10 +5323,7 @@ public final class EditorCommand {
         final int p = promoted;
         final int s = skipped;
         final String errStr = errors.toString();
-        source.sendSuccess(() -> Component.literal(
-            "Editor: part promote all — " + p + " promoted, " + s + " skipped (no config copy)."
-                + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
-        ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.part_promote_all_promoted", p, s, (errStr.isEmpty() ? Component.empty() : Component.translatable("chat.dungeontrain.common.errors_suffix", errStr))).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return p > 0 ? 1 : 0;
     }
 
@@ -5897,16 +5338,11 @@ public final class EditorCommand {
             CarriagePartAssignment existing = CarriageVariantPartsStore.get(variant).orElse(CarriagePartAssignment.EMPTY);
             CarriagePartAssignment updated = existing.withNames(kind, List.of(name));
             CarriageVariantPartsStore.save(variant, updated);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: '" + variant.id() + "' parts — " + kind.id() + " = [" + name + "]"
-                    + " (current: " + formatAssignment(updated) + ")"
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.parts_current", variant.id(), kind.id(), name, formatAssignment(updated)).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part set failed", t);
-            source.sendFailure(Component.literal("part set failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_set_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5922,16 +5358,11 @@ public final class EditorCommand {
             CarriagePartAssignment existing = CarriageVariantPartsStore.get(variant).orElse(CarriagePartAssignment.EMPTY);
             CarriagePartAssignment updated = existing.withAppended(kind, name, weight);
             CarriageVariantPartsStore.save(variant, updated);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: '" + variant.id() + "' parts — appended '" + name + "' (weight=" + weight + ") to " + kind.id()
-                    + " (current: " + formatAssignment(updated) + ")"
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.parts_appended_weight_current", variant.id(), name, weight, kind.id(), formatAssignment(updated)).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part add failed", t);
-            source.sendFailure(Component.literal("part add failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_add_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5945,24 +5376,16 @@ public final class EditorCommand {
         try {
             CarriagePartAssignment existing = CarriageVariantPartsStore.get(variant).orElse(CarriagePartAssignment.EMPTY);
             if (!existing.names(kind).contains(name)) {
-                source.sendFailure(Component.literal(
-                    "'" + variant.id() + "' parts: '" + name + "' is not in " + kind.id()
-                        + " (current: " + formatSlot(existing.names(kind)) + ")"
-                ));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.parts_not_current", variant.id(), name, kind.id(), formatSlot(existing.names(kind))));
                 return 0;
             }
             CarriagePartAssignment updated = existing.withRemoved(kind, name);
             CarriageVariantPartsStore.save(variant, updated);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: '" + variant.id() + "' parts — removed '" + name + "' from " + kind.id()
-                    + " (current: " + formatAssignment(updated) + ")"
-            ).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.parts_removed_from_current", variant.id(), name, kind.id(), formatAssignment(updated)).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part remove failed", t);
-            source.sendFailure(Component.literal("part remove failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_remove_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -5972,18 +5395,14 @@ public final class EditorCommand {
         if (variant == null) return 0;
         var assignment = CarriageVariantPartsStore.get(variant);
         if (assignment.isEmpty()) {
-            source.sendSuccess(() -> Component.literal(
-                "'" + variant.id() + "' has no parts.json — renders as monolithic NBT."
-            ), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.has_no_parts_json", variant.id()), false);
             return 1;
         }
         String desc = formatAssignment(assignment.get());
         boolean config = CarriageVariantPartsStore.exists(variant);
         boolean bundled = CarriageVariantPartsStore.bundled(variant);
         String origin = config ? "config override" : (bundled ? "bundled default" : "memory only");
-        source.sendSuccess(() -> Component.literal(
-            "'" + variant.id() + "' parts (" + origin + "): " + desc
-        ), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.parts", variant.id(), origin, desc), false);
         return 1;
     }
 
@@ -5992,17 +5411,11 @@ public final class EditorCommand {
         if (variant == null) return 0;
         try {
             boolean deleted = CarriageVariantPartsStore.delete(variant);
-            source.sendSuccess(() -> Component.literal(
-                deleted
-                    ? "Editor: cleared parts.json for '" + variant.id() + "' — will render monolithic NBT."
-                    : "Editor: no parts.json for '" + variant.id() + "' to clear."
-            ), true);
+            source.sendSuccess(() -> (deleted ? Component.translatable("chat.dungeontrain.editor.cleared_parts_json_will", variant.id()) : Component.translatable("chat.dungeontrain.editor.no_parts_json_clear", variant.id())), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part clear failed", t);
-            source.sendFailure(Component.literal("part clear failed: "
-                + t.getClass().getSimpleName() + ": " + t.getMessage()
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.part_clear_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }
@@ -6047,9 +5460,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.track.variant.TrackKind k =
             games.brennan.dungeontrain.track.variant.TrackKind.fromId(lc);
         if (k != null) return k;
-        source.sendFailure(Component.literal(
-            "Unknown track kind '" + raw + "'. Try track, pillar_top/middle/bottom, "
-            + "tunnel_section/portal, or adjunct_stairs."));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_track_kind_try", raw));
         return null;
     }
 
@@ -6060,11 +5471,11 @@ public final class EditorCommand {
         if (!ensureCategory(source, EditorCategory.PORTALS)) return 0;
         if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry
                 .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name).isEmpty()) {
-            source.sendFailure(Component.literal("Unknown dimensional carriage '" + name + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage", name));
             return 0;
         }
         games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, name);
-        source.sendSuccess(() -> Component.literal("Editor: entered dimensional carriage '" + name + "'."), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_dimensional_carriage", name), true);
         return 1;
     }
 
@@ -6174,7 +5585,7 @@ public final class EditorCommand {
         java.util.Optional<String> found = games.brennan.dungeontrain.track.variant.TrackVariantRegistry
             .find(PORTAL_ROOM_KIND, raw);
         if (found.isEmpty()) {
-            source.sendFailure(Component.literal("Unknown dimensional carriage '" + raw + "'.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage", raw)
                 .withStyle(ChatFormatting.RED));
             return null;
         }
@@ -6190,7 +5601,7 @@ public final class EditorCommand {
      */
     private static int savePortalRoomGroup(CommandSourceStack source, String parent,
                                            games.brennan.dungeontrain.track.variant.TrackVariantGroup updated,
-                                           String message) {
+                                           Component message) {
         return savePortalRoomGroup(source, parent, updated, message, null);
     }
 
@@ -6199,22 +5610,22 @@ public final class EditorCommand {
      * the row is re-laid out, so wherever they stood is no longer that room. No-op without a
      * player or a name. Returns the reply fragment.
      */
-    private static String landInPortalRoom(CommandSourceStack source, String name) {
-        if (name == null || !(source.getEntity() instanceof ServerPlayer player)) return "";
-        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(PORTAL_ROOM_KIND, name).isEmpty()) return "";
+    private static Component landInPortalRoom(CommandSourceStack source, String name) {
+        if (name == null || !(source.getEntity() instanceof ServerPlayer player)) return Component.empty();
+        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(PORTAL_ROOM_KIND, name).isEmpty()) return Component.empty();
         try {
             PortalRoomEditor.enter(player, name);
-            return " Entered '" + name + "'.";
+            return Component.translatable("chat.dungeontrain.editor.landed_entered", name);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] portals group: could not enter {} afterwards: {}", name, e.toString());
-            return "";
+            return Component.empty();
         }
     }
 
     /** As above; {@code landIn} names the room to enter once the row is re-laid out (null = stay). */
     private static int savePortalRoomGroup(CommandSourceStack source, String parent,
                                            games.brennan.dungeontrain.track.variant.TrackVariantGroup updated,
-                                           String message, String landIn) {
+                                           Component message, String landIn) {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         IOException[] failure = new IOException[1];
@@ -6227,12 +5638,12 @@ public final class EditorCommand {
         });
         if (failure[0] != null) {
             LOGGER.error("[DungeonTrain] editor portals group save failed", failure[0]);
-            source.sendFailure(Component.literal("group save failed: " + failure[0].toString())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_save_failed", failure[0].toString())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        String landed = landInPortalRoom(source, landIn);
-        source.sendSuccess(() -> Component.literal(message + landed).withStyle(ChatFormatting.GREEN), true);
+        Component landed = landInPortalRoom(source, landIn);
+        source.sendSuccess(() -> message.copy().append(landed).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -6300,7 +5711,7 @@ public final class EditorCommand {
                                                 games.brennan.dungeontrain.track.variant.TrackKind kind, String raw) {
         java.util.Optional<String> found = TrackVariantRegistry.find(kind, raw);
         if (found.isEmpty()) {
-            source.sendFailure(Component.literal("Unknown " + kind.id() + " variant '" + raw + "'.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_variant", kind.id(), raw)
                 .withStyle(ChatFormatting.RED));
             return null;
         }
@@ -6318,15 +5729,14 @@ public final class EditorCommand {
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> group =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, parent);
         if (group.isEmpty()) {
-            source.sendFailure(Component.literal("No " + kind.id() + " group defined for '" + parent + "'.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.no_group_defined", kind.id(), parent)
                 .withStyle(ChatFormatting.YELLOW));
             return null;
         }
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member> m =
             group.get().member(member);
         if (m.isEmpty()) {
-            source.sendFailure(Component.literal("'" + member + "' is not a member of group '"
-                + parent + "'.").withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_member_group", member, parent).withStyle(ChatFormatting.YELLOW));
             return null;
         }
         return m.get();
@@ -6428,34 +5838,30 @@ public final class EditorCommand {
         String child = parsePortalRoom(source, childRaw);
         if (child == null) return 0;
         if (parent.equals(child)) {
-            source.sendFailure(Component.literal("Cannot add '" + parent + "' as a sub-variant of itself.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.cannot_add_as_sub", parent)
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(child)) {
-            source.sendFailure(Component.literal(
-                "'default' cannot be a sub-variant — it is the fallback every dimensional carriage falls back to.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.default_cannot_be_sub")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         if (games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(PORTAL_ROOM_KIND, child)) {
-            source.sendFailure(Component.literal(
-                "'" + child + "' has sub-variants of its own — nesting is single-hop only.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.has_sub_variants_its", child)
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         java.util.Optional<String> existingParent = games.brennan.dungeontrain.editor.TrackVariantGroupStore
             .findParentOf(PORTAL_ROOM_KIND, child);
         if (existingParent.isPresent() && !existingParent.get().equals(parent)) {
-            source.sendFailure(Component.literal(
-                "'" + child + "' is already a sub-variant of '" + existingParent.get() + "'.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.already_sub_variant", child, existingParent.get())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         if (games.brennan.dungeontrain.editor.TrackVariantGroupStore
                 .allChildIds(PORTAL_ROOM_KIND).contains(parent)) {
-            source.sendFailure(Component.literal(
-                "'" + parent + "' is itself a sub-variant — making it a parent would create a cycle.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.itself_sub_variant_making", parent)
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -6464,11 +5870,10 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent)
                 .orElse(games.brennan.dungeontrain.track.variant.TrackVariantGroup.EMPTY)
                 .withMember(new games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member(child, weight));
-        progress(source, "Parenting '" + child + "' under '" + parent + "'\u2026");
+        progress(source, Component.translatable("chat.dungeontrain.editor.progress_parenting", child, parent));
         return savePortalRoomGroup(source, parent, updated,
-            "Editor: dimensional carriage '" + parent + "' → added sub-variant '" + child + "' (weight=" + weight
-                + ", " + updated.members().size() + " sub-variant"
-                + (updated.members().size() == 1 ? "" : "s") + " + the parent itself).", child);
+            Component.translatable("chat.dungeontrain.editor.room_added_sub_variant", parent, child, weight, updated.members().size(),
+                Component.translatable(updated.members().size() == 1 ? "chat.dungeontrain.common.noun.sub_variant.singular" : "chat.dungeontrain.common.noun.sub_variant.plural")), child);
     }
 
     /**
@@ -6491,25 +5896,23 @@ public final class EditorCommand {
 
         String key = nameRaw == null ? "" : nameRaw.toLowerCase(Locale.ROOT);
         if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry.NAME_PATTERN.matcher(key).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid room name '" + nameRaw + "'. Allowed: lowercase letters, digits, underscore (1..32 chars).")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_room_name_allowed", nameRaw)
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(key)) {
-            source.sendFailure(Component.literal("'default' is reserved — pick another name.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.default_reserved_pick_another")
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.contains(PORTAL_ROOM_KIND, key)) {
-            source.sendFailure(Component.literal("Dimensional carriage '" + key + "' already exists.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.dimensional_carriage_already_exists", key)
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
         if (games.brennan.dungeontrain.editor.TrackVariantGroupStore
                 .allChildIds(PORTAL_ROOM_KIND).contains(parent)) {
-            source.sendFailure(Component.literal(
-                "'" + parent + "' is itself a sub-variant — nesting is single-hop only.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.itself_sub_variant_nesting", parent)
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -6537,9 +5940,7 @@ public final class EditorCommand {
         // whose size and variant blocks have nothing to do with this pool.
         if (!seed.equals(parent) && existing.member(seed).isEmpty()) {
             String rejected = seed;
-            source.sendFailure(Component.literal(
-                "'" + rejected + "' is not part of '" + parent + "' — a sub-variant can only be seeded"
-                    + " from its parent or a sibling.").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_part_sub_variant", rejected, parent).withStyle(ChatFormatting.RED));
             return 0;
         }
         final String seedRoom = seed;
@@ -6553,7 +5954,7 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(PORTAL_ROOM_KIND, parent, updated);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor portals group new failed", e);
-            source.sendFailure(Component.literal("group new failed: " + e.toString())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_new_failed_2", e.toString())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -6589,15 +5990,13 @@ public final class EditorCommand {
                 LOGGER.error("[DungeonTrain] editor portals group new: rollback failed", rollback);
             }
             LOGGER.error("[DungeonTrain] editor portals group new failed", e);
-            source.sendFailure(Component.literal("group new failed: " + e.getMessage())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_new_failed_2", e.getMessage())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
 
         games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, key);
-        source.sendSuccess(() -> Component.literal(
-            "Editor: created dimensional carriage sub-variant '" + key + "' under '" + parent
-                + "' (copied from '" + seedRoom + "') — teleported to its plot.")
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_dimensional_carriage_sub", key, parent, seedRoom)
             .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -6616,14 +6015,13 @@ public final class EditorCommand {
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal("Dimensional carriage '" + parent + "' has no sub-variants.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.dimensional_carriage_has_no", parent)
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         boolean isSelf = parent.equals(child);
         if (!isSelf && existing.get().member(child).isEmpty()) {
-            source.sendFailure(Component.literal(
-                "'" + child + "' is not a sub-variant of '" + parent + "'.").withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_sub_variant", child, parent).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         games.brennan.dungeontrain.track.variant.TrackVariantGroup updated;
@@ -6639,7 +6037,7 @@ public final class EditorCommand {
         }
         String label = isSelf ? "the parent's own share" : "'" + child + "'";
         return savePortalRoomGroup(source, parent, updated,
-            "Editor: dimensional carriage '" + parent + "' → " + label + " weight=" + stored + ".");
+            Component.translatable("chat.dungeontrain.editor.room_weight_set", parent, label, stored));
     }
 
     /** Read-modify-write nudge for a sub-variant's weight (or the parent's own share). */
@@ -6652,7 +6050,7 @@ public final class EditorCommand {
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
         if (existing.isEmpty()) {
-            source.sendFailure(Component.literal("Dimensional carriage '" + parent + "' has no sub-variants.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.dimensional_carriage_has_no", parent)
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
@@ -6663,8 +6061,7 @@ public final class EditorCommand {
             java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup.Member> m =
                 existing.get().member(child);
             if (m.isEmpty()) {
-                source.sendFailure(Component.literal(
-                    "'" + child + "' is not a sub-variant of '" + parent + "'.").withStyle(ChatFormatting.YELLOW));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_sub_variant", child, parent).withStyle(ChatFormatting.YELLOW));
                 return 0;
             }
             current = m.get().weight();
@@ -6684,14 +6081,12 @@ public final class EditorCommand {
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
         if (existing.isEmpty() || existing.get().member(child).isEmpty()) {
-            source.sendFailure(Component.literal(
-                "'" + child + "' is not a sub-variant of '" + parent + "'.").withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_sub_variant", child, parent).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        progress(source, "Unparenting '" + child + "' from '" + parent + "'\u2026");
+        progress(source, Component.translatable("chat.dungeontrain.editor.progress_unparenting", child, parent));
         return savePortalRoomGroup(source, parent, existing.get().withoutMember(child),
-            "Editor: dimensional carriage '" + parent + "' → removed sub-variant '" + child
-                + "' (it is a top-level room again).", child);
+            Component.translatable("chat.dungeontrain.editor.room_removed_sub_variant", parent, child), child);
     }
 
     /**
@@ -6707,8 +6102,7 @@ public final class EditorCommand {
         java.util.Optional<String> currentParent = games.brennan.dungeontrain.editor.TrackVariantGroupStore
             .findParentOf(PORTAL_ROOM_KIND, child);
         if (currentParent.isEmpty()) {
-            source.sendFailure(Component.literal("'" + child + "' is a top-level dimensional carriage — use "
-                + "'group add " + newParent + " " + child + "' to make it a sub-variant.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.top_level_dimensional_carriage", child, newParent, child)
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
@@ -6723,12 +6117,12 @@ public final class EditorCommand {
                 games.brennan.dungeontrain.editor.TrackVariantGroupStore.allChildIds(PORTAL_ROOM_KIND).contains(newParent),
                 games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(PORTAL_ROOM_KIND, child));
         if (!move.ok()) {
-            source.sendFailure(Component.literal(EditorLabelCommands.moveRefusal(
-                move.refusal(), child, oldParent, newParent, "dimensional carriage"))
-                .withStyle(ChatFormatting.RED));
+            source.sendFailure(EditorLabelCommands.moveRefusal(
+                move.refusal(), child, oldParent, newParent, Component.translatable("chat.dungeontrain.editor.what_dimensional_carriage"))
+                .copy().withStyle(ChatFormatting.RED));
             return 0;
         }
-        progress(source, "Moving '" + child + "' from '" + oldParent + "' to '" + newParent + "'\u2026");
+        progress(source, Component.translatable("chat.dungeontrain.editor.progress_moving", child, oldParent, newParent));
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         IOException[] failure = new IOException[1];
@@ -6746,15 +6140,12 @@ public final class EditorCommand {
         });
         if (failure[0] != null) {
             LOGGER.error("[DungeonTrain] editor portals group move failed", failure[0]);
-            source.sendFailure(Component.literal("group move failed: " + failure[0].toString())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_move_failed", failure[0].toString())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        String landed = landInPortalRoom(source, child);
-        source.sendSuccess(() -> Component.literal(
-            "Editor: moved sub-variant '" + child + "' from '" + oldParent + "' to '" + newParent
-                + "' (weight, gate and Stage links kept)." + landed
-        ).withStyle(ChatFormatting.GREEN), true);
+        Component landed = landInPortalRoom(source, child);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.moved_sub_variant_from", child, oldParent, newParent, landed).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -6765,8 +6156,7 @@ public final class EditorCommand {
         java.util.Optional<games.brennan.dungeontrain.track.variant.TrackVariantGroup> existing =
             games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(PORTAL_ROOM_KIND, parent);
         if (existing.isEmpty() || existing.get().isEmpty()) {
-            source.sendSuccess(() -> Component.literal(
-                "Dimensional carriage '" + parent + "' has no sub-variants."), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_has_no", parent), false);
             return 1;
         }
         games.brennan.dungeontrain.track.variant.TrackVariantGroup group = existing.get();
@@ -6785,7 +6175,7 @@ public final class EditorCommand {
         String parent = parsePortalRoom(source, parentRaw);
         if (parent == null) return 0;
         if (!games.brennan.dungeontrain.editor.TrackVariantGroupStore.exists(PORTAL_ROOM_KIND, parent)) {
-            source.sendFailure(Component.literal("Dimensional carriage '" + parent + "' has no sub-variants.")
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.dimensional_carriage_has_no", parent)
                 .withStyle(ChatFormatting.YELLOW));
             return 0;
         }
@@ -6801,12 +6191,11 @@ public final class EditorCommand {
         });
         if (failure[0] != null) {
             LOGGER.error("[DungeonTrain] editor portals group clear failed", failure[0]);
-            source.sendFailure(Component.literal("group clear failed: " + failure[0].toString())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.group_clear_failed", failure[0].toString())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        source.sendSuccess(() -> Component.literal(
-            "Editor: dimensional carriage '" + parent + "' → sub-variants cleared (the carriages themselves are kept).")
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_sub_variants", parent)
             .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -6871,8 +6260,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomDoorWall wanted =
             games.brennan.dungeontrain.portal.PortalRoomDoorWall.parse(raw);
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
-            source.sendFailure(Component.literal(
-                "Unknown door wall option '" + raw + "'. Try sealed or repeated."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_door_wall_option", raw));
             return 0;
         }
         return applyPortalRoomSettings(source, name,
@@ -6907,8 +6295,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomFog wanted =
             games.brennan.dungeontrain.portal.PortalRoomFog.parse(raw);
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
-            source.sendFailure(Component.literal(
-                "Unknown fog option '" + raw + "'. Try auto, on or off."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_fog_option_try", raw));
             return 0;
         }
         return applyPortalRoomSettings(source, name,
@@ -6934,8 +6321,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomExits.Kind wanted =
             games.brennan.dungeontrain.portal.PortalRoomExits.Kind.parse(raw);
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
-            source.sendFailure(Component.literal(
-                "Unknown exits option '" + raw + "'. Try on, random or off."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_exits_option_try", raw));
             return 0;
         }
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
@@ -7005,8 +6391,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomContents wanted =
             games.brennan.dungeontrain.portal.PortalRoomContents.parse(raw);
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
-            source.sendFailure(Component.literal(
-                "Unknown contents option '" + raw + "'. Try off, fit, exact or tile."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_contents_option_try", raw));
             return 0;
         }
         return applyPortalRoomSettings(source, name,
@@ -7028,8 +6413,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomSky wanted =
             games.brennan.dungeontrain.portal.PortalRoomSky.parse(raw);
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
-            source.sendFailure(Component.literal(
-                "Unknown sky option '" + raw + "'. Try none, day, cycle, nether or end."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_sky_option_try", raw));
             return 0;
         }
         return applyPortalRoomSettings(source, name,
@@ -7051,8 +6435,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomCopies.Kind wanted =
             games.brennan.dungeontrain.portal.PortalRoomCopies.Kind.parse(raw);
         if (!wanted.id().equalsIgnoreCase(kindOf(raw))) {
-            source.sendFailure(Component.literal(
-                "Unknown copies option '" + raw + "'. Try exact, dynamic or single."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_copies_option_try", raw));
             return 0;
         }
         games.brennan.dungeontrain.portal.PortalRoomSettings current =
@@ -7267,7 +6650,7 @@ public final class EditorCommand {
 
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can pick a block from their hand."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.only_player_can_pick"));
             return 0;
         }
         ItemStack held = player.getMainHandItem();
@@ -7288,7 +6671,7 @@ public final class EditorCommand {
                 games.brennan.dungeontrain.item.VariantClipboardItem.decodeStates(
                     games.brennan.dungeontrain.item.VariantClipboardItem.readClipboardTag(held));
             if (states.isEmpty()) {
-                source.sendFailure(Component.literal("That clipboard is empty."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.that_clipboard_empty"));
                 return 0;
             }
             return savePortalRoomCopiesVariant(source, name, plane, states);
@@ -7298,9 +6681,7 @@ public final class EditorCommand {
                 new games.brennan.dungeontrain.editor.VariantState(
                     blockItem.getBlock().defaultBlockState(), null)));
         }
-        source.sendFailure(Component.literal(
-            "Hold a block, or a variant copied from a cell — or nothing at all for air — "
-                + "then press this again."));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.hold_block_or_variant"));
         return 0;
     }
 
@@ -7323,7 +6704,7 @@ public final class EditorCommand {
 
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can pick a block from their hand."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.only_player_can_pick"));
             return 0;
         }
         ItemStack held = player.getMainHandItem();
@@ -7336,8 +6717,7 @@ public final class EditorCommand {
                 net.minecraft.core.registries.BuiltInRegistries.BLOCK
                     .getKey(blockItem.getBlock()).toString());
         }
-        source.sendFailure(Component.literal(
-            "Hold a block — or nothing at all for no shell — then press this again."));
+        source.sendFailure(Component.translatable("chat.dungeontrain.editor.hold_block_or_nothing"));
         return 0;
     }
 
@@ -7353,8 +6733,7 @@ public final class EditorCommand {
         if (!games.brennan.dungeontrain.portal.PortalRoomLock.AIR_BLOCK.equalsIgnoreCase(id)
                 && !"air".equalsIgnoreCase(id)
                 && games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.stateFor(id).isEmpty()) {
-            source.sendFailure(Component.literal(
-                "'" + raw + "' is not a block this world knows about."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_block_world_knows", raw));
             return 0;
         }
         return applyPortalRoomLock(source, name,
@@ -7381,8 +6760,7 @@ public final class EditorCommand {
         java.util.Optional<net.minecraft.world.level.block.state.BlockState> state =
             games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.stateFor(raw);
         if (state.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "'" + raw + "' is not a block this world knows about."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_block_world_knows", raw));
             return 0;
         }
         return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
@@ -7406,7 +6784,7 @@ public final class EditorCommand {
         if (name == null) return 0;
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can open the variant menu."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.only_player_can_open"));
             return 0;
         }
         // Both-planes has no menu of its own — one panel authors one cell, so `block edit` opens
@@ -7445,16 +6823,12 @@ public final class EditorCommand {
             variant.save(name);
             if (EditorDevMode.isEnabled()) variant.saveToSource(name);
         } catch (IOException e) {
-            source.sendFailure(Component.literal(
-                "Could not save the copies blocks for dimensional carriage '" + name + "': " + e.getMessage()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.could_not_save_copies", name, e.getMessage()));
             return 0;
         }
         games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.invalidate(name);
         String what = plane == null ? "floor and roof" : plane.displayName().toLowerCase(java.util.Locale.ROOT);
-        source.sendSuccess(() -> Component.literal(
-            "Editor: dimensional carriage '" + name + "' copies " + what + " is now "
-                + copiesPaletteText(variant,
-                    plane == null ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR : plane))
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_copies_now", name, what, copiesPaletteText(variant, plane == null ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR : plane))
             .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -7526,9 +6900,7 @@ public final class EditorCommand {
         // id() collapses back to the bare `random`, and rejecting it would be rejecting what the
         // weight steppers themselves send.
         if (!wanted.kind().id().equalsIgnoreCase(kindOf(raw))) {
-            source.sendFailure(Component.literal(
-                "Unknown books option '" + raw + "'. Try off, mix, "
-                + "mix:<self>:<player>:<signature>, or mix:<self>:<player>:<signature>:<min>:<max>."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_books_option_try", raw));
             return 0;
         }
         return applyPortalRoomSettings(source, name,
@@ -7574,8 +6946,7 @@ public final class EditorCommand {
         // parse is total by design, so a typo would silently set the default rather than complain.
         // Worth complaining about here: the player typed something and meant it.
         if (!wanted.id().equalsIgnoreCase(raw.trim())) {
-            source.sendFailure(Component.literal(
-                "Unknown dimensional carriage mode '" + raw + "'. Try bedrock_lock, endless_repetition or endless_open."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage_mode", raw));
             return 0;
         }
         return applyPortalRoomSettings(source, name,
@@ -7591,8 +6962,7 @@ public final class EditorCommand {
                 games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name,
                 settings.toTag());
         } catch (IOException e) {
-            source.sendFailure(Component.literal(
-                "Could not save the settings for dimensional carriage '" + name + "': " + e.getMessage()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.could_not_save_settings", name, e.getMessage()));
             return 0;
         }
         // The Copies and Exits halves are only worth reporting when they mean anything.
@@ -7636,12 +7006,7 @@ public final class EditorCommand {
             && !games.brennan.dungeontrain.portal.PortalRoomLock.DEFAULT.equals(settings.lock())
             ? ", sealed in: " + (settings.lock().isAir() ? "nothing" : settings.lock().blockId())
             : "";
-        source.sendSuccess(() -> Component.literal(
-            "Dimensional carriage '" + name + "' walls: " + settings.mode().displayName() + copies + contents
-            + exits + books + sky + doorOffset + lock
-            + ". Portals already standing keep the settings they were built with — this takes effect "
-            + "on the next one the train reaches." + subVariantNote(name)
-        ).withStyle(ChatFormatting.GREEN), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_walls_portals", name, settings.mode().displayName() + copies + contents + exits + books + sky + doorOffset + lock, subVariantNote(name)).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -7686,7 +7051,7 @@ public final class EditorCommand {
         if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry
                 .namesFor(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM)
                 .contains(room)) {
-            ctx.getSource().sendFailure(Component.literal("Unknown dimensional carriage '" + room + "'."));
+            ctx.getSource().sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage", room));
             return null;
         }
         return room;
@@ -7698,8 +7063,7 @@ public final class EditorCommand {
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
         if (name == null) {
-            source.sendFailure(Component.literal(
-                "Stand in a dimensional carriage plot first — /dt editor portals."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.stand_dimensional_carriage_plot"));
         }
         return name;
     }
@@ -7814,11 +7178,7 @@ public final class EditorCommand {
             ? " (clamped from " + length + " " + width + " " + height
                 + " — the room must still seal the corridor mouth, and fit under the sky)"
             : "";
-        source.sendSuccess(() -> Component.literal(
-            "Dimensional carriage '" + name + "' is now " + applied.getX() + " long, " + applied.getZ()
-            + " wide, " + applied.getY() + " tall" + note
-            + ". What you built is still there — /dt save to keep the new size."
-        ).withStyle(ChatFormatting.GREEN), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_now_long", name, applied.getX(), applied.getZ(), applied.getY(), note).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -7885,10 +7245,7 @@ public final class EditorCommand {
         String note = value == blocks ? ""
             : " (clamped from " + blocks + " — the room must still seal the corridor mouth, and fit under the sky)";
         String faces = describeFaces(dims, axis, before, value);
-        source.sendSuccess(() -> Component.literal(
-            "Dimensional carriage '" + name + "' " + axisName + " is now " + value + note + "." + faces
-            + " What you built is still there — /dt save to keep the new size."
-        ).withStyle(ChatFormatting.GREEN), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.dimensional_carriage_now_what", name, axisName, value + note, faces).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -7978,17 +7335,16 @@ public final class EditorCommand {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
         if (name == null || name.isEmpty()) {
-            source.sendFailure(Component.literal("Variant name is required."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_name_required"));
             return 0;
         }
         String key = name.toLowerCase(Locale.ROOT);
         if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry.NAME_PATTERN.matcher(key).matches()) {
-            source.sendFailure(Component.literal(
-                "Invalid variant name '" + name + "'. Allowed: lowercase letters, digits, underscore (1..32 chars)."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_variant_name_allowed", name));
             return 0;
         }
         if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(key)) {
-            source.sendFailure(Component.literal("'default' is reserved — pick another name."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.default_reserved_pick_another"));
             return 0;
         }
 
@@ -8018,34 +7374,29 @@ public final class EditorCommand {
                     games.brennan.dungeontrain.editor.PortalRoomEditor.createFromBuiltIn(
                         overworld, sourceName, key, dims);
                 } catch (java.io.IOException e) {
-                    source.sendFailure(Component.literal("Save failed: " + e.getMessage()));
+                    source.sendFailure(Component.translatable("chat.dungeontrain.editor.save_failed", e.getMessage()));
                     return 0;
                 }
                 restampPlotForKind(overworld, kind, dims);
                 teleportToPlot(player, overworld, kind, key, dims);
-                source.sendSuccess(() -> Component.literal(
-                    "Created " + kind.id() + ":" + key + " from the built-in room"
-                    + " — teleported to the new plot."
-                ).withStyle(ChatFormatting.GREEN), true);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_from_built_room", kind.id(), key).withStyle(ChatFormatting.GREEN), true);
                 return 1;
             }
-            source.sendFailure(Component.literal(
-                "Cannot duplicate " + kind.id() + ":" + sourceName + " — no template found at expected size."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.cannot_duplicate_no_template", kind.id(), sourceName));
             return 0;
         }
 
         try {
             games.brennan.dungeontrain.track.variant.TrackVariantStore.save(kind, key, sourceTemplate.get());
         } catch (java.io.IOException e) {
-            source.sendFailure(Component.literal("Save failed: " + e.getMessage()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.save_failed", e.getMessage()));
             return 0;
         }
 
         try {
             copyTrackVariantSidecar(kind, sourceName, key);
         } catch (java.io.IOException e) {
-            source.sendFailure(Component.literal(
-                "Variant sidecar copy failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.variant_sidecar_copy_failed", e.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -8053,9 +7404,7 @@ public final class EditorCommand {
         restampPlotForKind(overworld, kind, dims);
         teleportToPlot(player, overworld, kind, key, dims);
 
-        source.sendSuccess(() -> Component.literal(
-            "Created " + kind.id() + ":" + key + " from " + sourceName + " — teleported to the new plot."
-        ).withStyle(ChatFormatting.GREEN), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_from_teleported_new", kind.id(), key, sourceName).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -8080,7 +7429,7 @@ public final class EditorCommand {
             result = games.brennan.dungeontrain.editor.TrackVariantRename.rename(kind, name, newName);
         } catch (java.io.IOException e) {
             LOGGER.error("[DungeonTrain] editor rename {}:{} -> {} failed", kind.id(), name, newName, e);
-            source.sendFailure(Component.literal("Rename failed: " + e.getMessage())
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.rename_failed", e.getMessage())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -8089,41 +7438,36 @@ public final class EditorCommand {
         String to = newName.toLowerCase(Locale.ROOT);
         switch (result) {
             case BAD_NAME -> {
-                source.sendFailure(Component.literal("Invalid name '" + newName
-                    + "'. Allowed: lowercase letters, digits, underscore (1..32 chars)."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.invalid_name_allowed_lowercase", newName));
                 return 0;
             }
             case SAME_NAME -> {
-                source.sendFailure(Component.literal("'" + to + "' is the name it already has."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_it_already_has", to));
                 return 0;
             }
             case RESERVED -> {
-                source.sendFailure(Component.literal("'default' is reserved — it cannot be renamed, "
-                    + "and nothing can be renamed to it."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.default_reserved_it_cannot"));
                 return 0;
             }
             case UNKNOWN -> {
-                source.sendFailure(Component.literal("Unknown " + kind.id() + " '" + from + "'."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown", kind.id(), from));
                 return 0;
             }
             case TAKEN -> {
-                source.sendFailure(Component.literal("Name '" + to + "' is already taken."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.name_already_taken", to));
                 return 0;
             }
             case NO_CONFIG_COPY -> {
                 // A bundled template is shadowed by a saved copy, never moved — there is nothing on
                 // disk to move, and the bundled original would keep answering to the old name.
-                source.sendFailure(Component.literal("'" + from + "' ships with the mod — save your own "
-                    + "copy of it first, then rename that."));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.ships_with_mod_save", from));
                 return 0;
             }
             case OK -> { }
         }
 
         restampPlotForKind(overworld, kind, dims);
-        source.sendSuccess(() -> Component.literal(
-            "Editor: renamed " + kind.id() + ":" + from + " → " + to + "."
-        ).withStyle(ChatFormatting.GREEN), true);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.renamed", kind.id(), from, to).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -8147,8 +7491,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo loc =
             games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
         if (loc == null || loc.kind() != kind) {
-            source.sendFailure(Component.literal(
-                "Stand on the " + kind.id() + " variant you want to remove first."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.stand_variant_you_want", kind.id()));
             return 0;
         }
         return resetTrackVariant(source, kind, loc.name(), mode);
@@ -8166,7 +7509,7 @@ public final class EditorCommand {
         String name = rawName.toLowerCase(Locale.ROOT);
         if (!games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(name)
                 && games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(kind, name).isEmpty()) {
-            source.sendFailure(Component.literal("Unknown " + kind.id() + " variant '" + name + "'."));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_variant", kind.id(), name));
             return 0;
         }
         return resetTrackVariant(source, kind, name, mode);
@@ -8196,20 +7539,16 @@ public final class EditorCommand {
                 .filter(g -> !g.members().isEmpty());
         if (group.isPresent() && mode == null) {
             int n = group.get().members().size();
-            source.sendFailure(Component.literal(
-                "'" + name + "' has " + n + " sub-variant" + (n == 1 ? "" : "s")
-                    + " — say what happens to them: " + kind.id() + " reset " + name + " <"
-                    + games.brennan.dungeontrain.editor.ParentDeletes.Mode.literals() + ">."
-            ).withStyle(ChatFormatting.YELLOW));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.has_sub_variant_say_2", name, n, Component.translatable(n == 1 ? "chat.dungeontrain.common.noun.sub_variant.singular" : "chat.dungeontrain.common.noun.sub_variant.plural"), kind.id(), name, games.brennan.dungeontrain.editor.ParentDeletes.Mode.literals()).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
         ServerPlayer player = source.getEntity() instanceof ServerPlayer sp ? sp : null;
         games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo loc = player == null ? null
             : games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
         boolean sendHome = loc != null && loc.kind() == kind;
-        progress(source, (isDefault ? "Resetting '" : "Deleting '") + name + "'"
-            + (group.isPresent() && mode == games.brennan.dungeontrain.editor.ParentDeletes.Mode.ALL
-                ? " and its " + group.get().members().size() + " sub-variants" : "") + "\u2026");
+        progress(source, Component.translatable(isDefault ? "chat.dungeontrain.editor.progress_resetting" : "chat.dungeontrain.editor.progress_deleting", name,
+            (group.isPresent() && mode == games.brennan.dungeontrain.editor.ParentDeletes.Mode.ALL
+                ? Component.translatable("chat.dungeontrain.editor.progress_deleting_and_subs", group.get().members().size()) : Component.empty())));
 
         // Wipe the variant's plot blocks BEFORE deregistering so the orphaned
         // plot doesn't sit in the world after teleport. restampPlotForKind
@@ -8231,7 +7570,7 @@ public final class EditorCommand {
         try {
             cleanup = deleteTrackVariant(kind, name);
         } catch (java.io.IOException e) {
-            source.sendFailure(Component.literal("Delete failed: " + e.getMessage()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.delete_failed", e.getMessage()));
             return 0;
         }
         restampPlotForKind(overworld, kind, dims);
@@ -8248,16 +7587,17 @@ public final class EditorCommand {
             teleportToPlot(player, overworld, kind,
                 games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
         }
-        final String where = landed ? " Entered '" + landing + "'."
-            : (sendHome && !isDefault ? " — teleported back to default." : "");
+        final Component where = landed ? Component.translatable("chat.dungeontrain.editor.landed_entered", landing)
+            : (sendHome && !isDefault ? Component.translatable("chat.dungeontrain.editor.teleported_back_default") : Component.empty());
+        final boolean dashed = sendHome && !isDefault && !landed;
 
-        source.sendSuccess(() -> Component.literal(
-            (isDefault
-                ? "Reset " + kind.id() + ":default to its built-in fallback"
-                : "Removed " + kind.id() + ":" + name)
-                + (where.startsWith(" —") ? where : "." + where)
-                + cleanup.summaryLine() + outcome.line()
-        ).withStyle(ChatFormatting.GREEN), true);
+        source.sendSuccess(() -> (isDefault
+                ? Component.translatable("chat.dungeontrain.editor.reset_default_fallback", kind.id())
+                : Component.translatable("chat.dungeontrain.editor.removed_variant", kind.id(), name))
+                .append(dashed ? Component.empty() : Component.literal("."))
+                .append(where)
+                .append(cleanup.summaryLine()).append(outcome.line())
+            .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -8307,7 +7647,7 @@ public final class EditorCommand {
                         failed.add(m.id());
                     }
                 }
-                return new ParentModeOutcome(summarise(" Sub-variants deleted: ", done, failed), null);
+                return new ParentModeOutcome(summarise("chat.dungeontrain.editor.sub_variants_deleted", done, failed), null);
             }
             case UNPARENT -> {
                 String first = null;
@@ -8325,7 +7665,7 @@ public final class EditorCommand {
                         failed.add(t.id());
                     }
                 }
-                return new ParentModeOutcome(summarise(" Now top-level: ", done, failed), first);
+                return new ParentModeOutcome(summarise("chat.dungeontrain.editor.now_top_level", done, failed), first);
             }
             case PROMOTE_FIRST -> {
                 games.brennan.dungeontrain.editor.ParentDeletes.TrackPromotion p =
@@ -8340,11 +7680,11 @@ public final class EditorCommand {
                         games.brennan.dungeontrain.editor.TrackVariantGroupStore.save(kind, heir, p.group().get());
                     }
                     int n = p.group().map(g -> g.members().size()).orElse(0);
-                    return new ParentModeOutcome(" '" + heir + "' now heads the group (" + n + " sub-variant"
-                        + (n == 1 ? "" : "s") + ").", heir);
+                    return new ParentModeOutcome(Component.translatable("chat.dungeontrain.editor.now_heads_group", heir, n,
+                        Component.translatable(n == 1 ? "chat.dungeontrain.common.noun.sub_variant.singular" : "chat.dungeontrain.common.noun.sub_variant.plural")), heir);
                 } catch (Exception e) {
                     LOGGER.warn("[DungeonTrain] {} reset promote: could not promote {}: {}", kind.id(), heir, e.toString());
-                    return new ParentModeOutcome(" Could not promote '" + heir + "': " + e.getMessage(), null);
+                    return new ParentModeOutcome(Component.translatable("chat.dungeontrain.editor.could_not_promote", heir, e.getMessage()), null);
                 }
             }
         }
@@ -8399,22 +7739,16 @@ public final class EditorCommand {
         EditorPlotTransformer.Region region =
             EditorPlotTransformer.resolve(player, level).orElse(null);
         if (region == null) {
-            source.sendFailure(Component.literal(
-                "Not in an editor plot — stand inside the template you want to move."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.not_plot_stand_inside").withStyle(ChatFormatting.RED));
             return 0;
         }
         if (transform.isIdentity()) {
-            source.sendFailure(Component.literal(
-                transform.label() + " would leave the plot exactly as it is."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.would_leave_plot_exactly", transform.label()).withStyle(ChatFormatting.RED));
             return 0;
         }
         String rejection = transform.rejection(region.size());
         if (rejection != null) {
-            source.sendFailure(Component.literal(
-                "Cannot " + transform.label().toLowerCase(Locale.ROOT) + ": " + rejection + "."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.cannot", transform.label().toLowerCase(Locale.ROOT), rejection).withStyle(ChatFormatting.RED));
             return 0;
         }
 
@@ -8422,10 +7756,7 @@ public final class EditorCommand {
         // plot bigger than the history's per-step cell cap runs unrecorded, and
         // EditorRegionDiff drops that plot's history when it happens.
         if (region.volume() > EditorEditHistory.MAX_CELLS_PER_STEP) {
-            source.sendSuccess(() -> Component.literal(
-                "Heads up: this plot is too big to record (" + region.volume()
-                    + " cells) — this cannot be undone."
-            ).withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.heads_up_plot_too", region.volume()).withStyle(ChatFormatting.YELLOW), false);
         }
 
         return EditorRegionDiff.recording(source, transform.label(),
@@ -8445,40 +7776,29 @@ public final class EditorCommand {
             // history step to put both back.
             LOGGER.error("[DungeonTrain] editor transform ({}) failed to save a sidecar",
                 transform.label(), e);
-            source.sendFailure(Component.literal(
-                transform.label() + ": blocks moved but a sidecar could not be saved — "
-                    + e.getMessage() + ". Undo with Ctrl+Z."
-            ).withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.blocks_moved_but_sidecar", transform.label(), e.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
 
-        StringBuilder message = new StringBuilder("Editor: ")
-            .append(transform.label()).append(" — ").append(result.cells())
-            .append(result.cells() == 1 ? " block" : " blocks");
+        net.minecraft.network.chat.MutableComponent message = Component.translatable("chat.dungeontrain.editor.transform_blocks",
+            transform.label(), result.cells(),
+            Component.translatable(result.cells() == 1 ? "chat.dungeontrain.common.noun.block.singular" : "chat.dungeontrain.common.noun.block.plural"));
         if (result.variantEntries() > 0) {
-            message.append(", ").append(result.variantEntries()).append(" variant ")
-                .append(result.variantEntries() == 1 ? "entry" : "entries");
+            message.append(Component.translatable("chat.dungeontrain.editor.transform_variant_entries", result.variantEntries(),
+                Component.translatable(result.variantEntries() == 1 ? "chat.dungeontrain.common.noun.entry.singular" : "chat.dungeontrain.common.noun.entry.plural")));
         }
         if (result.pools() > 0) {
-            message.append(", ").append(result.pools()).append(" container ")
-                .append(result.pools() == 1 ? "pool" : "pools");
+            message.append(Component.translatable("chat.dungeontrain.editor.transform_pools", result.pools(),
+                Component.translatable(result.pools() == 1 ? "chat.dungeontrain.common.noun.pool.singular" : "chat.dungeontrain.common.noun.pool.plural")));
         }
-        message.append('.');
-        source.sendSuccess(() -> Component.literal(message.toString())
-            .withStyle(ChatFormatting.GREEN), true);
+        message.append(".");
+        source.sendSuccess(() -> message.withStyle(ChatFormatting.GREEN), true);
 
         if (result.entities() > 0) {
-            source.sendSuccess(() -> Component.literal(
-                "  " + result.entities() + " entit" + (result.entities() == 1 ? "y" : "ies")
-                    + " in the plot stayed put — undo has no record of entities, so moving them "
-                    + "would strand them on a Ctrl+Z."
-            ).withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entit_plot_stayed_put", result.entities(), Component.translatable(result.entities() == 1 ? "chat.dungeontrain.common.noun.entity.singular" : "chat.dungeontrain.common.noun.entity.plural")).withStyle(ChatFormatting.YELLOW), false);
         }
         if (region.mirrored()) {
-            source.sendSuccess(() -> Component.literal(
-                "  This plot has a mirror axis on — the two halves may no longer agree. "
-                    + "Run /dt editor mirror rebuild if you want them re-derived."
-            ).withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.plot_has_mirror_axis").withStyle(ChatFormatting.YELLOW), false);
         }
         return 1;
     }
@@ -8490,30 +7810,30 @@ public final class EditorCommand {
         EditorEditApplier.Result result = redoing
             ? EditorEditApplier.redo(player)
             : EditorEditApplier.undo(player);
-        String verb = redoing ? "Redo" : "Undo";
+        Component verb = Component.translatable(redoing ? "chat.dungeontrain.editor.redo" : "chat.dungeontrain.editor.undo");
 
         switch (result.outcome()) {
             case DONE -> {
                 // Name the plot: the author may be nowhere near it, so "Undo: Place"
                 // alone would not say what just changed.
-                actionBar(player, verb + ": " + result.label() + " — " + result.plotKey(),
+                actionBar(player, Component.translatable("chat.dungeontrain.editor.undo_done", verb, result.label(), result.plotKey()),
                     ChatFormatting.GREEN);
                 return 1;
             }
-            case NOTHING -> actionBar(player, "Nothing to " + verb.toLowerCase(Locale.ROOT),
+            case NOTHING -> actionBar(player, Component.translatable(redoing ? "chat.dungeontrain.editor.nothing_to_redo" : "chat.dungeontrain.editor.nothing_to_undo"),
                 ChatFormatting.GRAY);
             case STALE -> actionBar(player,
-                "Editor history is out of date — " + result.plotKey() + " was rebuilt",
+                Component.translatable("chat.dungeontrain.editor.history_out_of_date", result.plotKey()),
                 ChatFormatting.YELLOW);
-            case FAILED -> actionBar(player, verb + " partly failed — see the log",
+            case FAILED -> actionBar(player, Component.translatable("chat.dungeontrain.editor.undo_partly_failed", verb),
                 ChatFormatting.RED);
         }
         return 0;
     }
 
     /** Overlay text above the hotbar — the editor's usual channel for transient feedback. */
-    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 
 }
