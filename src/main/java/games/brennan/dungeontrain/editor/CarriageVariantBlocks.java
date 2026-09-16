@@ -304,12 +304,20 @@ public final class CarriageVariantBlocks {
 
     /** On-disk path for the config-dir sidecar matching {@code variant}. */
     public static Path configPathFor(CarriageVariant variant) {
-        return UserContentPaths.dir(SUBDIR).resolve(variant.id() + EXT);
+        return configPathForId(variant.id());
+    }
+
+    private static Path configPathForId(String id) {
+        return UserContentPaths.dir(SUBDIR).resolve(id + EXT);
     }
 
     /** Classpath resource for the bundled sidecar matching {@code variant} (only exists for shipped variants). */
     public static String bundledResourceFor(CarriageVariant variant) {
-        return RESOURCE_PREFIX + variant.id() + EXT;
+        return bundledResourceForId(variant.id());
+    }
+
+    private static String bundledResourceForId(String id) {
+        return RESOURCE_PREFIX + id + EXT;
     }
 
     /** Source-tree path for the bundled sidecar — only writable in a {@code ./gradlew runClient} dev checkout. */
@@ -375,19 +383,24 @@ public final class CarriageVariantBlocks {
 
 
     private static CarriageVariantBlocks loadFromDisk(CarriageVariant variant) {
-        Path cfg = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
+        return loadFromDisk(variant.id());
+    }
+
+    /** Id-keyed {@link #loadFromDisk(CarriageVariant)} — the loader only ever needs the id. */
+    private static CarriageVariantBlocks loadFromDisk(String id) {
+        Path cfg = UserContentPaths.findFile(SUBDIR, id + EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
-                return parse(r, variant.id(), "config " + cfg);
+                return parse(r, id, "config " + cfg);
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Failed to read variant sidecar {}: {}", cfg, e.toString());
             }
         }
-        String resource = bundledResourceFor(variant);
+        String resource = bundledResourceForId(id);
         try (InputStream in = CarriageVariantBlocks.class.getResourceAsStream(resource)) {
             if (in == null) return empty();
             try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                return parse(r, variant.id(), "bundled " + resource);
+                return parse(r, id, "bundled " + resource);
             }
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled variant sidecar {}: {}", resource, e.toString());
@@ -952,15 +965,32 @@ public final class CarriageVariantBlocks {
         return existed;
     }
 
-    /** Rename the config-dir sidecar from {@code sourceId} to {@code targetId}. No-op if source missing. */
+    /**
+     * Carry the sidecar from {@code sourceId} to {@code targetId} so a save-as / rename keeps its
+     * variants. A config-dir file is moved; a sidecar that only exists in the session cache, an
+     * imported package or the bundled resource is written out under the new id instead — a save-as
+     * of a bundled variant used to lose every entry here, because there was no file to move.
+     * Returns false when there was nothing to carry.
+     */
     public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
-        Path src = UserContentPaths.dir(SUBDIR).resolve(sourceId + EXT);
-        Path dst = UserContentPaths.dir(SUBDIR).resolve(targetId + EXT);
-        if (!Files.isRegularFile(src)) return false;
-        Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        CarriageVariantBlocks cached = CACHE.remove(sourceId);
-        if (cached != null) CACHE.put(targetId, cached);
-        LOGGER.info("[DungeonTrain] Renamed variant sidecar {} -> {}", src, dst);
+        Path src = configPathForId(sourceId);
+        Path dst = configPathForId(targetId);
+        if (Files.isRegularFile(src)) {
+            Files.createDirectories(dst.getParent());
+            Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            CarriageVariantBlocks cached = CACHE.remove(sourceId);
+            if (cached != null) CACHE.put(targetId, cached);
+            LOGGER.info("[DungeonTrain] Renamed variant sidecar {} -> {}", src, dst);
+            return true;
+        }
+        CarriageVariantBlocks carried = CACHE.remove(sourceId);
+        if (carried == null) carried = loadFromDisk(sourceId);
+        if (carried.entries.isEmpty() && carried.isDefaultMirror()) return false;
+        Files.createDirectories(dst.getParent());
+        Files.writeString(dst, carried.toJson(), StandardCharsets.UTF_8);
+        CACHE.put(targetId, carried);
+        LOGGER.info("[DungeonTrain] Carried {} variant entries {} -> {} (no config-dir file to move)",
+            carried.entries.size(), sourceId, targetId);
         return true;
     }
 
