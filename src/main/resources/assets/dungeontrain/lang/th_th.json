@@ -1309,6 +1309,7 @@
   "gui.dungeontrain.number_input.cancel": "ยกเลิก",
   "subtitles.dungeontrain.train_engine": "เครื่องยนต์รถไฟส่งเสียงฉึกฉัก",
   "block.dungeontrain.narrative_lectern": "แท่นวางหนังสือเรื่องเล่า",
+  "block.dungeontrain.variant_placeholder": "ตัวยึดตำแหน่งตัวแปร",
   "block.dungeontrain.skybox_block": "บล็อกท้องฟ้า",
   "block.dungeontrain.skybox_surface": "บล็อกท้องฟ้าพื้นผิว",
   "block.dungeontrain.skybox_end": "บล็อกท้องฟ้าดิเอนด์",

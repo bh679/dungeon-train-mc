@@ -1309,6 +1309,7 @@
   "gui.dungeontrain.number_input.cancel": "キャンセル",
   "subtitles.dungeontrain.train_engine": "汽車がガタゴトと進む",
   "block.dungeontrain.narrative_lectern": "物語の書見台",
+  "block.dungeontrain.variant_placeholder": "バリアントプレースホルダー",
   "block.dungeontrain.skybox_block": "スカイボックスブロック",
   "block.dungeontrain.skybox_surface": "地上のスカイボックスブロック",
   "block.dungeontrain.skybox_end": "エンドのスカイボックスブロック",

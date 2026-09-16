@@ -508,10 +508,14 @@ public final class CarriagePartEditor {
         StructureTemplate template = captureTemplate(overworld, oldOrigin, kind, dims);
 
         CarriagePartTemplateStore.save(kind, newName, template);
+        // Variants sidecar travels with the template — without this the old name's sidecar was
+        // orphaned and the new name loaded empty (then dev-promoted empty).
+        CarriagePartVariantBlocks.rename(kind, oldName, newName);
         CarriagePartRegistry.register(kind, newName);
 
         clearPlot(overworld, kind, oldName, dims);
         CarriagePartTemplateStore.delete(kind, oldName);
+        CarriagePartVariantBlocks.invalidate(kind, oldName);
         CarriagePartRegistry.unregister(kind, oldName);
 
         BlockPos newOrigin = plotOrigin(kind, newName, dims);

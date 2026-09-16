@@ -162,7 +162,11 @@ public final class CarriageContentsVariantBlocks {
     }
 
     public static String bundledResourceFor(CarriageContents contents) {
-        return RESOURCE_PREFIX + contents.id() + EXT;
+        return bundledResourceForId(contents.id());
+    }
+
+    private static String bundledResourceForId(String id) {
+        return RESOURCE_PREFIX + id + EXT;
     }
 
     /**
@@ -213,19 +217,24 @@ public final class CarriageContentsVariantBlocks {
 
 
     private static CarriageContentsVariantBlocks loadFromDisk(CarriageContents contents) {
-        Path cfg = UserContentPaths.findFile(SUBDIR, contents.id() + EXT);
+        return loadFromDisk(contents.id());
+    }
+
+    /** Id-keyed {@link #loadFromDisk(CarriageContents)} — the loader only ever needs the id. */
+    private static CarriageContentsVariantBlocks loadFromDisk(String id) {
+        Path cfg = UserContentPaths.findFile(SUBDIR, id + EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
-                return parse(r, contents, "config " + cfg);
+                return parse(r, id, "config " + cfg);
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Failed to read contents variant sidecar {}: {}", cfg, e.toString());
             }
         }
-        String resource = bundledResourceFor(contents);
+        String resource = bundledResourceForId(id);
         try (InputStream in = CarriageContentsVariantBlocks.class.getResourceAsStream(resource)) {
             if (in == null) return empty();
             try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                return parse(r, contents, "bundled " + resource);
+                return parse(r, id, "bundled " + resource);
             }
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled contents variant sidecar {}: {}", resource, e.toString());
@@ -237,12 +246,12 @@ public final class CarriageContentsVariantBlocks {
      * Parse the whole sidecar, keeping every cell however far outside any interior — bounding is
      * {@link #croppedTo}'s job.
      */
-    private static CarriageContentsVariantBlocks parse(Reader reader, CarriageContents contents,
+    private static CarriageContentsVariantBlocks parse(Reader reader, String contextId,
                                                         String origin) {
         JsonElement root = JsonParser.parseReader(reader);
         if (!root.isJsonObject()) {
             LOGGER.warn("[DungeonTrain] Contents variant sidecar {} ({}) is not a JSON object — ignoring.",
-                contents.id(), origin);
+                contextId, origin);
             return empty();
         }
         JsonObject obj = root.getAsJsonObject();
@@ -250,7 +259,7 @@ public final class CarriageContentsVariantBlocks {
             int v = obj.get("schemaVersion").getAsInt();
             if (v > CURRENT_SCHEMA_VERSION) {
                 LOGGER.warn("[DungeonTrain] Contents variant sidecar {} ({}) schemaVersion {} (newer than {}) — best-effort parse.",
-                    contents.id(), origin, v, CURRENT_SCHEMA_VERSION);
+                    contextId, origin, v, CURRENT_SCHEMA_VERSION);
             }
         }
         // Optional top-level editor mirror axes — all default false (interiors are opt-in).
@@ -273,7 +282,6 @@ public final class CarriageContentsVariantBlocks {
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
-        String contextId = contents.id();
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = parsePos(field.getKey());
             if (pos == null) {
@@ -470,14 +478,19 @@ public final class CarriageContentsVariantBlocks {
 
     public synchronized void save(CarriageContents contents) throws IOException {
         if (source != null) { source.save(contents); return; }
-        Path file = configPathFor(contents);
+        writeConfig(contents.id());
+    }
+
+    /** The user-tier write behind {@link #save}, keyed by id so {@link #rename} can carry a sidecar. */
+    private void writeConfig(String id) throws IOException {
+        Path file = configPathForId(id);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             w.write(toJsonText());
         }
-        CACHE.put(contents.id(), this);
+        CACHE.put(id, this);
         LOGGER.info("[DungeonTrain] Saved contents variant sidecar for {} ({} entries) to {}",
-            contents.id(), entries.size(), file);
+            id, entries.size(), file);
     }
 
     /**
@@ -534,22 +547,29 @@ public final class CarriageContentsVariantBlocks {
     }
 
     /**
-     * Move the sidecar file from {@code sourceId} to {@code targetId} so a
-     * contents save-as / rename keeps its variants. Returns false if no file
-     * existed at the source.
+     * Carry the sidecar from {@code sourceId} to {@code targetId} so a contents save-as / rename
+     * keeps its variants. A user-tier file is moved; a sidecar that only exists in the session
+     * cache, an imported package or the bundled resource is written out under the new id instead
+     * — a save-as of a bundled template used to lose every entry here, because there was no file
+     * to move and the cache entry was dropped. Returns false when there was nothing to carry.
      */
     public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
         Path src = configPathForId(sourceId);
         Path dst = configPathForId(targetId);
-        if (!Files.isRegularFile(src)) {
-            CACHE.remove(sourceId.toLowerCase(java.util.Locale.ROOT));
-            return false;
+        if (Files.isRegularFile(src)) {
+            Files.createDirectories(dst.getParent());
+            Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+            CarriageContentsVariantBlocks cached = CACHE.remove(sourceId);
+            if (cached != null) CACHE.put(targetId, cached);
+            LOGGER.info("[DungeonTrain] Renamed contents variant sidecar {} -> {}", src, dst);
+            return true;
         }
-        Files.createDirectories(dst.getParent());
-        Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        CarriageContentsVariantBlocks cached = CACHE.remove(sourceId);
-        if (cached != null) CACHE.put(targetId, cached);
-        LOGGER.info("[DungeonTrain] Renamed contents variant sidecar {} -> {}", src, dst);
+        CarriageContentsVariantBlocks carried = CACHE.remove(sourceId);
+        if (carried == null) carried = loadFromDisk(sourceId);
+        if (carried.isEmpty() && carried.isDefaultMirror()) return false;
+        carried.writeConfig(targetId);
+        LOGGER.info("[DungeonTrain] Carried {} contents variant entries {} -> {} (no user-tier file to move)",
+            carried.entries.size(), sourceId, targetId);
         return true;
     }
 

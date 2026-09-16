@@ -1309,6 +1309,7 @@
   "gui.dungeontrain.number_input.cancel": "취소",
   "subtitles.dungeontrain.train_engine": "기차 엔진이 칙칙거림",
   "block.dungeontrain.narrative_lectern": "서사 독서대",
+  "block.dungeontrain.variant_placeholder": "변형 자리표시자",
   "block.dungeontrain.skybox_block": "스카이박스 블록",
   "block.dungeontrain.skybox_surface": "지표 스카이박스 블록",
   "block.dungeontrain.skybox_end": "엔드 스카이박스 블록",

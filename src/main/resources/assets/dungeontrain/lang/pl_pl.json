@@ -1371,6 +1371,7 @@
   "gui.dungeontrain.number_input.cancel": "Anuluj",
   "subtitles.dungeontrain.train_engine": "Lokomotywa sapie",
   "block.dungeontrain.narrative_lectern": "Mównica narracyjna",
+  "block.dungeontrain.variant_placeholder": "Symbol zastępczy wariantu",
   "block.dungeontrain.skybox_block": "Blok nieboskłonu",
   "block.dungeontrain.skybox_surface": "Blok nieboskłonu powierzchni",
   "block.dungeontrain.skybox_end": "Blok nieboskłonu Kresu",

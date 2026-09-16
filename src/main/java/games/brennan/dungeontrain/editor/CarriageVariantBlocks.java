@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -178,13 +179,43 @@ public final class CarriageVariantBlocks {
     public static final int MIN_STATES_PER_ENTRY = 2;
 
     /**
-     * Returns true if {@code state} is a command-block sentinel used in variant
-     * lists to mean "leave this position empty / air at spawn time." Covers all
-     * three command-block kinds (impulse, chain, repeating) so any command block
-     * the author places counts. The sentinel is stored verbatim in the JSON; the
-     * translation to {@code Blocks.AIR} happens in the apply path.
+     * The empty-placeholder sentinel — the state a variant entry carries to mean "leave this
+     * position empty / air at spawn time", and the block the editor stands in such a cell:
+     * {@link games.brennan.dungeontrain.block.VariantPlaceholderBlock}. Every site that writes
+     * a sentinel goes through here so the canonical block lives in one place.
+     *
+     * <p>Falls back to a vanilla command block — the sentinel's previous incarnation — when the
+     * mod block is not registered, which is only the case under unit tests that bootstrap vanilla
+     * alone. {@link #isEmptyPlaceholder} accepts both, so the fallback is a sentinel too.</p>
+     */
+    public static BlockState emptyPlaceholder() {
+        if (ModBlocks.VARIANT_PLACEHOLDER.isBound()) {
+            return ModBlocks.VARIANT_PLACEHOLDER.get().defaultBlockState();
+        }
+        return Blocks.COMMAND_BLOCK.defaultBlockState();
+    }
+
+    /**
+     * Returns true if {@code state} is the empty-placeholder sentinel used in variant lists to
+     * mean "leave this position empty / air at spawn time." True for
+     * {@link #emptyPlaceholder()} and for the legacy form, any of the three vanilla
+     * command-block kinds ({@link #isLegacyEmptyPlaceholder}) — bundled sidecars and template
+     * NBTs written before the mod block existed still carry those. The translation to
+     * {@code Blocks.AIR} happens in the apply path.
      */
     public static boolean isEmptyPlaceholder(BlockState state) {
+        if (state == null) return false;
+        return (ModBlocks.VARIANT_PLACEHOLDER.isBound() && state.is(ModBlocks.VARIANT_PLACEHOLDER.get()))
+            || isLegacyEmptyPlaceholder(state);
+    }
+
+    /**
+     * The sentinel as it was before {@code dungeontrain:variant_placeholder}: any vanilla command
+     * block (impulse, chain, repeating). {@link VariantState}'s canonical constructor rewrites
+     * these to {@link #emptyPlaceholder()} on load, so a sidecar migrates the first time it is
+     * re-saved; the editor preview ticker does the same for the world block of a legacy cell.
+     */
+    public static boolean isLegacyEmptyPlaceholder(BlockState state) {
         if (state == null) return false;
         return state.is(Blocks.COMMAND_BLOCK)
             || state.is(Blocks.CHAIN_COMMAND_BLOCK)
@@ -304,12 +335,20 @@ public final class CarriageVariantBlocks {
 
     /** On-disk path for the config-dir sidecar matching {@code variant}. */
     public static Path configPathFor(CarriageVariant variant) {
-        return UserContentPaths.dir(SUBDIR).resolve(variant.id() + EXT);
+        return configPathForId(variant.id());
+    }
+
+    private static Path configPathForId(String id) {
+        return UserContentPaths.dir(SUBDIR).resolve(id + EXT);
     }
 
     /** Classpath resource for the bundled sidecar matching {@code variant} (only exists for shipped variants). */
     public static String bundledResourceFor(CarriageVariant variant) {
-        return RESOURCE_PREFIX + variant.id() + EXT;
+        return bundledResourceForId(variant.id());
+    }
+
+    private static String bundledResourceForId(String id) {
+        return RESOURCE_PREFIX + id + EXT;
     }
 
     /** Source-tree path for the bundled sidecar — only writable in a {@code ./gradlew runClient} dev checkout. */
@@ -375,19 +414,24 @@ public final class CarriageVariantBlocks {
 
 
     private static CarriageVariantBlocks loadFromDisk(CarriageVariant variant) {
-        Path cfg = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
+        return loadFromDisk(variant.id());
+    }
+
+    /** Id-keyed {@link #loadFromDisk(CarriageVariant)} — the loader only ever needs the id. */
+    private static CarriageVariantBlocks loadFromDisk(String id) {
+        Path cfg = UserContentPaths.findFile(SUBDIR, id + EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
-                return parse(r, variant.id(), "config " + cfg);
+                return parse(r, id, "config " + cfg);
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Failed to read variant sidecar {}: {}", cfg, e.toString());
             }
         }
-        String resource = bundledResourceFor(variant);
+        String resource = bundledResourceForId(id);
         try (InputStream in = CarriageVariantBlocks.class.getResourceAsStream(resource)) {
             if (in == null) return empty();
             try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-                return parse(r, variant.id(), "bundled " + resource);
+                return parse(r, id, "bundled " + resource);
             }
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled variant sidecar {}: {}", resource, e.toString());
@@ -497,7 +541,7 @@ public final class CarriageVariantBlocks {
             JsonObject obj = el.getAsJsonObject();
             // v7 mob entry — has "entity" instead of "state". The picker treats
             // the cell as AIR (the canonical VariantState constructor stamps
-            // the COMMAND_BLOCK sentinel) and a deferred entity pass spawns
+            // the empty-placeholder sentinel) and a deferred entity pass spawns
             // the mob.
             if (obj.has("entity") && obj.get("entity").isJsonPrimitive()
                 && obj.get("entity").getAsJsonPrimitive().isString()) {
@@ -527,7 +571,7 @@ public final class CarriageVariantBlocks {
                 }
                 VariantRotation mobRot = parseRotation(obj.get("rotation"), contextId, contextPos);
                 // Mob entries never have SLAB_TYPE / HALF (the state is the
-                // COMMAND_BLOCK sentinel), but parse the field for round-trip
+                // empty-placeholder sentinel), but parse the field for round-trip
                 // fidelity in case future schema lets mobs carry it.
                 VariantHalf mobHalf = parseHalf(obj.get("half"), contextId, contextPos);
                 if (mobHalf == null) mobHalf = VariantHalf.NONE;
@@ -952,15 +996,32 @@ public final class CarriageVariantBlocks {
         return existed;
     }
 
-    /** Rename the config-dir sidecar from {@code sourceId} to {@code targetId}. No-op if source missing. */
+    /**
+     * Carry the sidecar from {@code sourceId} to {@code targetId} so a save-as / rename keeps its
+     * variants. A config-dir file is moved; a sidecar that only exists in the session cache, an
+     * imported package or the bundled resource is written out under the new id instead — a save-as
+     * of a bundled variant used to lose every entry here, because there was no file to move.
+     * Returns false when there was nothing to carry.
+     */
     public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
-        Path src = UserContentPaths.dir(SUBDIR).resolve(sourceId + EXT);
-        Path dst = UserContentPaths.dir(SUBDIR).resolve(targetId + EXT);
-        if (!Files.isRegularFile(src)) return false;
-        Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        CarriageVariantBlocks cached = CACHE.remove(sourceId);
-        if (cached != null) CACHE.put(targetId, cached);
-        LOGGER.info("[DungeonTrain] Renamed variant sidecar {} -> {}", src, dst);
+        Path src = configPathForId(sourceId);
+        Path dst = configPathForId(targetId);
+        if (Files.isRegularFile(src)) {
+            Files.createDirectories(dst.getParent());
+            Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            CarriageVariantBlocks cached = CACHE.remove(sourceId);
+            if (cached != null) CACHE.put(targetId, cached);
+            LOGGER.info("[DungeonTrain] Renamed variant sidecar {} -> {}", src, dst);
+            return true;
+        }
+        CarriageVariantBlocks carried = CACHE.remove(sourceId);
+        if (carried == null) carried = loadFromDisk(sourceId);
+        if (carried.entries.isEmpty() && carried.isDefaultMirror()) return false;
+        Files.createDirectories(dst.getParent());
+        Files.writeString(dst, carried.toJson(), StandardCharsets.UTF_8);
+        CACHE.put(targetId, carried);
+        LOGGER.info("[DungeonTrain] Carried {} variant entries {} -> {} (no config-dir file to move)",
+            carried.entries.size(), sourceId, targetId);
         return true;
     }
 
@@ -1188,7 +1249,7 @@ public final class CarriageVariantBlocks {
     public static void appendVariantJson(StringBuilder sb, VariantState s) {
         if (s.isMob()) {
             // v7 mob entry — "entity" instead of "state". The state field is
-            // always the COMMAND_BLOCK sentinel (forced by the canonical
+            // always the empty-placeholder sentinel (forced by the canonical
             // constructor) so omit it from the JSON; the reader knows to
             // infer it.
             sb.append("{\"entity\": \"").append(escapeJson(s.entityId().toString())).append("\"");

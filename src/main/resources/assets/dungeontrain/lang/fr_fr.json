@@ -1340,6 +1340,7 @@
   "gui.dungeontrain.number_input.cancel": "Annuler",
   "subtitles.dungeontrain.train_engine": "La locomotive ahane",
   "block.dungeontrain.narrative_lectern": "Pupitre narratif",
+  "block.dungeontrain.variant_placeholder": "Espace réservé de variante",
   "block.dungeontrain.skybox_block": "Bloc de ciel",
   "block.dungeontrain.skybox_surface": "Bloc de ciel de surface",
   "block.dungeontrain.skybox_end": "Bloc de ciel de l'End",

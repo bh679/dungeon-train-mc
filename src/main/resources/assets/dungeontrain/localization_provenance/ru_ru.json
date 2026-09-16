@@ -877,6 +877,7 @@
       "gui.dungeontrain.number_input.ok",
       "gui.dungeontrain.number_input.cancel",
       "subtitles.dungeontrain.train_engine",
+      "block.dungeontrain.variant_placeholder",
       "block.dungeontrain.stage_block_1",
       "block.dungeontrain.stage_block_2",
       "block.dungeontrain.stage_block_3",

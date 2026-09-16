@@ -1745,6 +1745,7 @@
   "gui.dungeontrain.number_input.cancel": "Cancel",
   "subtitles.dungeontrain.train_engine": "Train engine chugs",
   "block.dungeontrain.narrative_lectern": "Narrative Lectern",
+  "block.dungeontrain.variant_placeholder": "Variant Placeholder",
   "block.dungeontrain.skybox_block": "Skybox Block",
   "block.dungeontrain.skybox_surface": "Surface Skybox Block",
   "block.dungeontrain.skybox_end": "End Skybox Block",

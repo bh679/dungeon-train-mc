@@ -1309,6 +1309,7 @@
   "gui.dungeontrain.number_input.cancel": "Batal",
   "subtitles.dungeontrain.train_engine": "Mesin kereta mendengus",
   "block.dungeontrain.narrative_lectern": "Mimbar Narasi",
+  "block.dungeontrain.variant_placeholder": "Placeholder Varian",
   "block.dungeontrain.skybox_block": "Blok Skybox",
   "block.dungeontrain.skybox_surface": "Blok Skybox Permukaan",
   "block.dungeontrain.skybox_end": "Blok Skybox End",

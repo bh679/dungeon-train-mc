@@ -1309,6 +1309,7 @@
   "gui.dungeontrain.number_input.cancel": "Hủy",
   "subtitles.dungeontrain.train_engine": "Đầu máy tàu phì phò",
   "block.dungeontrain.narrative_lectern": "Bục Giảng Cốt Truyện",
+  "block.dungeontrain.variant_placeholder": "Khối giữ chỗ biến thể",
   "block.dungeontrain.skybox_block": "Khối Nền Trời",
   "block.dungeontrain.skybox_surface": "Khối Nền Trời Mặt Đất",
   "block.dungeontrain.skybox_end": "Khối Nền Trời Bờ Vực",

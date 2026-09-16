@@ -56,13 +56,10 @@ done
 [ -f "$INDEX" ] || { echo "::error::index not found: $INDEX"; exit 1; }
 
 VERSION="${TAG#v}"
-MAJOR="${VERSION%%.*}"
-# Match release.yml: pre-1.0 (MAJOR==0) ships as a beta, 1.0+ as a full release.
-if [ "$MAJOR" -gt 0 ] 2>/dev/null; then
-  VERSION_TYPE="release"
-else
-  VERSION_TYPE="beta"
-fi
+# Same channel as the DT mod file for this tag — the rule is single-sourced in
+# scripts/release/release-type.sh (shared with release.yml + reupload-curseforge.yml).
+VERSION_TYPE=$("$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../release/release-type.sh" "$TAG" | sed -n 's/^type=//p')
+[ -n "$VERSION_TYPE" ] || { echo "::error::could not derive version type for tag $TAG"; exit 1; }
 
 MC_VERSION=$(jq -r '.dependencies.minecraft // empty' "$INDEX")
 [ -n "$MC_VERSION" ] || { echo "::error::index is missing .dependencies.minecraft"; exit 1; }

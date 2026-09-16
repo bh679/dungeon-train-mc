@@ -17036,6 +17036,84 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "variant-placeholder-block",
+      "version": "0.903.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Block-variant cells show a ghost cube instead of a command block",
+      "summary": "In the Train Editor, a variant cell that can roll to nothing \u2014 or to a mob \u2014 now stands as a translucent ghost cube rather than a command block. It reads as empty at a glance, and you can place blocks against it with a plain right-click; no more holding shift to get past the command block's screen.",
+      "highlights": [
+        "Empty and mob slots in a variant cell show a see-through placeholder block, not a command block",
+        "Right-click places against a placeholder without shift",
+        "Existing builds pick the new look up automatically the next time you open them"
+      ],
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1443
+    },
+    {
+      "id": "saveas-keeps-variant-sidecar",
+      "version": "0.903.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Save-as keeps a template's block variants",
+      "summary": "Saving a bundled carriage, interior or part under a new name in the editor no longer drops its block variants \u2014 the new copy keeps every variant cell the original had.",
+      "highlights": [
+        "Contents, carriage and part editors all carry variants across a save-as"
+      ],
+      "pr": 1444,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "release-channel-single-source",
+      "version": "0.904.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "internal"
+      ],
+      "title": "Every Dungeon Train build ships as a beta, even re-uploads",
+      "summary": "Dungeon Train is still pre-1.0, so every build is published as a beta on CurseForge, Modrinth and GitHub. One CurseForge re-upload (0.692.0) slipped out marked as a full release, which made the CurseForge app prefer that old file over newer builds for anyone on the default Release filter. The release channel is now decided in one place for every upload path, so that can't happen again.",
+      "highlights": [
+        "Recovery re-uploads to CurseForge use the same beta/release channel as the original release.",
+        "Modpack uploads on CurseForge and Modrinth follow the same rule."
+      ],
+      "pr": 1445,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bump-playermob-0-99-0",
+      "version": "0.905.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "PlayerMob 0.99.0",
+      "summary": "Dungeon Train now builds against PlayerMob 0.99.0, whose Creative editor can introduce a mob to nearby PlayerMobs and players and mirror a pair's feelings. Update PlayerMob to 0.99.0 to use it; 0.98.0 remains supported.",
+      "highlights": [],
+      "pr": 1446,
+      "date": "2026-09-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
