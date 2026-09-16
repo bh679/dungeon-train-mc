@@ -14,6 +14,7 @@ public final class EditorScreenLang {
     public static final String TAB_LAYOUT = PREFIX + "tab.layout";
     public static final String TAB_STAGES = PREFIX + "tab.stages";
     public static final String TAB_NAV = PREFIX + "tab.nav";
+    public static final String TAB_HELP = PREFIX + "tab.help";
     public static final String TAB_SETTINGS = PREFIX + "tab.settings";
     public static final String TAB_EXIT = PREFIX + "tab.exit";
 
@@ -32,6 +33,13 @@ public final class EditorScreenLang {
     public static final String NAV_HERE = PREFIX + "nav.here";
     public static final String NAV_GO_HERE_TIP = PREFIX + "nav.go_here_tip";
     public static final String NAV_CONFIRM = PREFIX + "nav.confirm";
+
+    /**
+     * The Help tab's topics hang their title and paragraph keys off this — see {@link EditorHelpTopic}.
+     * Package-private on purpose: it is a prefix, not a key, and {@code EditorScreenLangKeysTest} scans
+     * the public constants as keys.
+     */
+    static final String HELP_PREFIX = PREFIX + "help.";
 
     /** The filter bar's toggle and its tooltips, and what clicking an active chip does. */
     public static final String FILTERS = PREFIX + "filters";

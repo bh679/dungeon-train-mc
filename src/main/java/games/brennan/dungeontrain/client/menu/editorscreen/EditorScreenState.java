@@ -44,6 +44,10 @@ public final class EditorScreenState {
      */
     private static BuilderMode navMode;
 
+    /** The Help tab's picked topic and the page of it being read; the page resets when the topic changes. */
+    private static EditorHelpTopic helpTopic = EditorHelpTopic.values()[0];
+    private static int helpPage;
+
     /**
      * The two narrowings creator mode adds: where a build stands with a reviewer, and whether it is
      * starred. Kept beside the roster's own filters and for the same reason — closing the screen mid
@@ -69,6 +73,8 @@ public final class EditorScreenState {
 
     public static EditorScreenPage page() { return page; }
     public static BuilderMode navMode() { return navMode; }
+    public static EditorHelpTopic helpTopic() { return helpTopic; }
+    public static int helpPage() { return helpPage; }
     public static String selectedStageId() { return selectedStageId; }
     public static EditorStagesPage.Sort stageSort() { return stageSort; }
     public static boolean stageGridView() { return stageGridView; }
@@ -117,6 +123,16 @@ public final class EditorScreenState {
 
     public static void setNavMode(BuilderMode next) {
         navMode = next;
+    }
+
+    public static void setHelpTopic(EditorHelpTopic next) {
+        if (next == null || next == helpTopic) return;
+        helpTopic = next;
+        helpPage = 0;
+    }
+
+    public static void setHelpPage(int next) {
+        helpPage = Math.max(0, next);
     }
 
     /** Change tab. The type strip is left alone: it belongs to the category, not the page. */

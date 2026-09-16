@@ -77,6 +77,7 @@ public final class EditorGuiScreen extends Screen {
     private final EditorLayoutPane layoutPane = new EditorLayoutPane(this::selectOrEnter);
     private final EditorStagesPane stagesPane = new EditorStagesPane();
     private final EditorNavPane navPane = new EditorNavPane();
+    private final EditorHelpPane helpPane = new EditorHelpPane();
     private final EditorStageDetailPane stageDetail = new EditorStageDetailPane();
     private final OrbitState orbit = new OrbitState();
     private final InlineEdit inlineEdit = new InlineEdit();
@@ -170,15 +171,21 @@ public final class EditorGuiScreen extends Screen {
         BuilderProfileState.listenForDownloads(null);
     }
 
-    /** The two tabs that browse the roster and so carry the filter bar; Stages, Nav and Settings do not. */
+    /** The two tabs that browse the roster and so carry the filter bar; Stages, Nav, Help and Settings do not. */
     private static boolean hasFilterBar() {
         EditorScreenPage page = EditorScreenState.page();
-        return page != EditorScreenPage.SETTINGS && page != EditorScreenPage.STAGES && page != EditorScreenPage.NAV;
+        return page != EditorScreenPage.SETTINGS && page != EditorScreenPage.STAGES
+            && page != EditorScreenPage.NAV && page != EditorScreenPage.HELP;
     }
 
     /** Whether the Nav tab owns the screen — both columns, no template or stage detail. */
     private static boolean onNav() {
         return EditorScreenState.page() == EditorScreenPage.NAV;
+    }
+
+    /** Whether the Help tab owns the screen — both columns, like Nav. */
+    private static boolean onHelp() {
+        return EditorScreenState.page() == EditorScreenPage.HELP;
     }
 
     /** Whether the right pane is the stage detail rather than the template detail. */
@@ -312,6 +319,10 @@ public final class EditorGuiScreen extends Screen {
             // Nav owns the right column too: the picked area's picture and words stand where a
             // template's model and sheet would, and none of the template controls apply to an area.
             navPane.render(g, this.font, theme, layout, index, mx, my);
+        } else if (onHelp()) {
+            // Help owns both columns too: the topic list where the tiles would be, its words where
+            // a template's model and sheet would.
+            helpPane.render(g, this.font, theme, layout, mx, my);
         } else if (EditorCreatorBuilds.active()) {
             // A relay row is not a template: none of the detail pane's controls apply to one, so
             // the pane that has no controls stands in for it rather than eight disabled buttons.
@@ -605,7 +616,7 @@ public final class EditorGuiScreen extends Screen {
         }
         // The template pane's hover is only refreshed while it renders, so on the Stages tab its
         // last frame must not answer for the stage pane that replaced it.
-        List<String> lines = onNav() ? List.<String>of()
+        List<String> lines = onNav() || onHelp() ? List.<String>of()
             : onStages() ? stageDetail.tooltipAt(stageDetail.hovered())
             : detail.tooltipAt(detail.hovered());
         if (!lines.isEmpty()) {
@@ -711,6 +722,15 @@ public final class EditorGuiScreen extends Screen {
             if (hit.kind() != EditorNavPane.Kind.NONE) {
                 click();
                 onNavHit(hit);
+                return true;
+            }
+            setFocused(null);
+            return super.mouseClicked(mouseX, mouseY, button);
+        } else if (onHelp()) {
+            EditorHelpPane.Hit hit = helpPane.hitTest(mouseX, mouseY);
+            if (hit.kind() != EditorHelpPane.Kind.NONE) {
+                click();
+                onHelpHit(hit);
                 return true;
             }
             setFocused(null);
@@ -828,6 +848,15 @@ public final class EditorGuiScreen extends Screen {
      * edited ones, which is why Enter stopped using it. Yes runs the command and closes the screen;
      * Cancel pops back to Nav with the tile still picked.</p>
      */
+    private void onHelpHit(EditorHelpPane.Hit hit) {
+        switch (hit.kind()) {
+            case TOPIC -> EditorScreenState.setHelpTopic(hit.topic());
+            case PAGE_PREV -> helpPane.scrollBy(-1);
+            case PAGE_NEXT -> helpPane.scrollBy(1);
+            default -> { }
+        }
+    }
+
     private void onNavHit(EditorNavPane.Hit hit) {
         switch (hit.kind()) {
             case TILE -> EditorScreenState.setNavMode(hit.mode());
@@ -1161,6 +1190,8 @@ public final class EditorGuiScreen extends Screen {
         if (onStages()) {
             if (stagesPane.over(layout, mouseX, mouseY)) return stagesPane.scrollBy(dir);
             if (stageDetail.over(mouseX, mouseY) && stageDetail.scrollBy(dir)) return true;
+        } else if (onHelp()) {
+            if (helpPane.overBody(mouseX, mouseY) && helpPane.scrollBy(dir)) return true;
         } else if (!onNav() && detail.overSettings(mouseX, mouseY) && detail.scrollBy(dir)) {
             return true;
         }
