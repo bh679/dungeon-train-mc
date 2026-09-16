@@ -174,8 +174,8 @@ public final class VariantOverlayRenderer {
     private static final Map<UUID, String> LAST_DOOR_GHOSTS_KEY = new HashMap<>();
 
     /**
-     * Per-player dedup key for the variant-cell mob ghosts — plot key plus
-     * {@link StageBlockIndex#generation()}, which every variant edit advances. See
+     * Per-player dedup key for the variant-cell mob ghosts — the plot key plus every ghosted cell and
+     * its entity, so the packet goes out only when the preview frame actually changed. See
      * {@link #pushMobGhostsSnapshot}.
      */
     private static final Map<UUID, String> LAST_MOB_GHOSTS_KEY = new HashMap<>();
@@ -1194,14 +1194,16 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Push the mob ghosts for the plot the player stands in: one per cell whose variant pool holds a
-     * mob entry (the first such entry), while the editor's Mobs setting is Blocks
-     * ({@link FrozenMobs#isBlocksMode}). The client draws each as the mob standing still on the cell,
-     * the same pose a frozen egg-placed mob takes, so an author sees what the cell can roll.
+     * Push the mob ghosts for the plot the player stands in: one per cell whose variant pool's
+     * <b>current preview slot</b> is a mob entry, while the editor's Mobs setting is Blocks
+     * ({@link FrozenMobs#isBlocksMode}). The slot is the same one {@link VariantEditorPreviewTicker}
+     * shows — {@link VariantEditorPreviewTicker#pickEntryIndex} on the same {@code previewTick} — so a
+     * cell with a block and a mob alternates between the block and the ghost every three seconds, the
+     * way a cell of two blocks alternates, and the ticker airs the cell under the ghost.
      *
-     * <p>Keyed on the plot plus {@link StageBlockIndex#generation()} — the index is invalidated by
-     * every sidecar put / remove / save, so an edit re-pushes within a tick and a steady plot sends
-     * nothing. Leaving the plot, switching to Live, or a plot with no mob entries clears.</p>
+     * <p>Recomputed on the ticker's cadence ({@link VariantEditorPreviewTicker#TICK_PERIOD}) and
+     * deduped on the resulting list, so a plot whose slots did not move sends nothing. Leaving the
+     * plot, switching to Live, or a plot with no mob entries clears.</p>
      */
     private static void pushMobGhostsSnapshot(ServerPlayer player, ServerLevel level, CarriageDims dims) {
         UUID uuid = player.getUUID();
@@ -1214,25 +1216,29 @@ public final class VariantOverlayRenderer {
             clearMobGhostsIfStale(player);
             return;
         }
-        String key = plot.key() + ":g" + StageBlockIndex.generation();
-        if (key.equals(LAST_MOB_GHOSTS_KEY.get(uuid))) return;
+        long gameTime = level.getGameTime();
+        if (gameTime % VariantEditorPreviewTicker.TICK_PERIOD != 0) return;
+        long previewTick = gameTime / VariantEditorPreviewTicker.TICK_PERIOD;
 
         List<games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost> ghosts = new ArrayList<>();
+        StringBuilder key = new StringBuilder(plot.key());
         for (BlockPos local : plot.allFlaggedPositions()) {
             List<VariantState> states = plot.statesAt(local);
-            if (states == null) continue;
-            for (VariantState s : states) {
-                if (!s.isMob() || s.entityId() == null) continue;
-                ghosts.add(new games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost(
-                    plot.origin().offset(local), s.entityId().toString(), s.blockEntityNbt()));
-                break;
-            }
+            if (states == null || states.isEmpty()) continue;
+            VariantState shown = states.get(
+                VariantEditorPreviewTicker.pickEntryIndex(plot.key(), local, states.size(), previewTick));
+            if (!shown.isMob() || shown.entityId() == null) continue;
+            ghosts.add(new games.brennan.dungeontrain.net.EditorMobGhostsPacket.Ghost(
+                plot.origin().offset(local), shown.entityId().toString(), shown.blockEntityNbt()));
+            key.append('|').append(local.asLong()).append('=').append(shown.entityId());
         }
         if (ghosts.isEmpty()) {
             clearMobGhostsIfStale(player);
             return;
         }
-        LAST_MOB_GHOSTS_KEY.put(uuid, key);
+        String k = key.toString();
+        if (k.equals(LAST_MOB_GHOSTS_KEY.get(uuid))) return;
+        LAST_MOB_GHOSTS_KEY.put(uuid, k);
         DungeonTrainNet.sendTo(player, new games.brennan.dungeontrain.net.EditorMobGhostsPacket(ghosts));
     }
 

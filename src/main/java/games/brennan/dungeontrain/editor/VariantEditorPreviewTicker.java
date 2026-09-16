@@ -52,8 +52,8 @@ import java.util.List;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantEditorPreviewTicker {
 
-    /** Cycle rate — one tick of preview work per second. */
-    private static final int TICK_PERIOD = 20;
+    /** Cycle rate — one tick of preview work per second. Shared with the mob-ghost snapshot so both frames agree. */
+    static final int TICK_PERIOD = 20;
 
     /** Entry cycle slot length in 1Hz ticks (3 seconds at 1Hz). */
     private static final int ENTRY_SLOT_TICKS = 3;
@@ -98,6 +98,18 @@ public final class VariantEditorPreviewTicker {
 
             int entryIdx = pickEntryIndex(plot.key(), localPos, states.size(), previewTick);
             VariantState picked = states.get(entryIdx);
+            BlockPos worldPos = plot.origin().offset(localPos);
+            // A mob entry's slot shows the mob, not its sentinel: the cell goes to air and the
+            // client stands the mob ghost on it (EditorMobGhostRenderer, fed by the same
+            // previewTick frame from VariantOverlayRenderer.pushMobGhostsSnapshot). Under Live the
+            // ghosts are off, so the cell keeps whatever the neighbouring slots show.
+            if (picked.isMob()) {
+                if (FrozenMobs.isBlocksMode(level) && !level.getBlockState(worldPos).isAir()) {
+                    SilentBlockOps.setBlockSilentNoCascade(level, worldPos,
+                        net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), null);
+                }
+                continue;
+            }
             // Skip the empty-placeholder sentinel so the cell's "this is a
             // variant cell" marker stays visible to the author when the
             // cycle lands on the empty entry. Showing an air-equivalent
@@ -105,7 +117,6 @@ public final class VariantEditorPreviewTicker {
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) continue;
 
             BlockState toShow = computePreviewState(picked, previewTick);
-            BlockPos worldPos = plot.origin().offset(localPos);
             BlockState existing = level.getBlockState(worldPos);
             if (!existing.equals(toShow)) {
                 if (VariantLiquids.isLiquid(toShow)) {
