@@ -254,12 +254,11 @@ jobs:
             interactive-player-mobs(required)
             ender-chest-persistence(required)
             trade-everything(required)
-            # keep-trim(required) is deliberately ABSENT here: its Modrinth listing is still in
-            # review and mc-publish cannot resolve a non-public slug. Add it (and swap the
-            # modpack's modrinth_pending_url for a modrinth_version) once Modrinth approves.
-            # dungeon-train-backup + sable-fence-trapdoor-fix are ABSENT by design: on Modrinth
-            # they stay jarJar'd inside the DT jar; only CurseForge treats them as separate mods.
-          # dungeon-train-backup + sable-fence-trapdoor-fix are hybrid siblings: also jarJar'd in
+            # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix are ABSENT by design:
+            # on Modrinth they stay jarJar'd inside the DT jar; only CurseForge treats them as
+            # separate mods. (keep-trim's Modrinth listing is also still in review — mc-publish
+            # cannot resolve a non-public slug — which is why it was re-bundled in 0.909.x.)
+          # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix are hybrid siblings: also jarJar'd in
           # the DT jar (Modrinth/manual installs), but declared required here so the CurseForge
           # app installs them from their own pages. NeoForge drops the nested copy when the
           # top-level one is present. (No comments inside the list — check-relations.py parses it.)
