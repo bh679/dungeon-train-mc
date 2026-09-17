@@ -16,8 +16,8 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "D - PlayerMob above floor (cascade tolerance)"    dt sable ain ais pmob-new ecp te kt db sff fp moon
 "$HERE/run-case.sh" "E - PlayerMob below floor"                        dt sable ain ais pmob-old ecp te kt db sff fp moon
 "$HERE/run-case.sh" "F - missing Sable (exact-pin control)"            dt ain ais pmob ecp te kt db sff fp moon
-# Hybrid siblings (Dungeon Backup, Sable Fence & Trapdoor Fix) are jarJar'd AND CurseForge
+# Hybrid siblings (Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix) are jarJar'd AND CurseForge
 # Includes. A above = CurseForge-app layout (top-level copies present, nested ones skipped);
 # G = Modrinth / manual layout (nested copies only).
-"$HERE/run-case.sh" "G - hybrid siblings nested only (Modrinth path)"  dt sable ain ais pmob ecp te kt fp moon
+"$HERE/run-case.sh" "G - hybrid siblings nested only (Modrinth path)"  dt sable ain ais pmob ecp te fp moon
 "$HERE/run-case.sh" "H - missing Fast Paintings + Moonlight"           dt sable ain ais pmob ecp te kt db sff
