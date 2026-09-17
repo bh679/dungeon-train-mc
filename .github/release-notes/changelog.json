@@ -17239,6 +17239,22 @@
       "released": true,
       "released_in": "v0.909.0",
       "released_at": "2026-09-17T13:07:19Z"
+    },
+    {
+      "id": "backrooms-variant-placeholder-resave",
+      "version": "0.910.0",
+      "type": "chore",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Backrooms carriage re-saved in current editor format",
+      "summary": "The Backrooms dimensional carriage's variant data was re-saved from the editor in the current format. Nothing changes in-game.",
+      "highlights": [],
+      "date": "2026-09-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
