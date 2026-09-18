@@ -5,6 +5,7 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import javax.annotation.Nullable;
 import java.util.function.Predicate;
 
 /**
@@ -21,6 +22,10 @@ import java.util.function.Predicate;
  * asked — but only if a player fits there. Custom templates wall up doorways and fill centres, and a
  * teleport into a block is a teleport into darkness, so the landing steps to the nearest free
  * two-block column instead.</p>
+ *
+ * <p>{@link #land} is the one entry point the editors use: it picks between the two from the
+ * caller's {@code onTop}/{@link Inside} request, so no editor carries its own copy of that
+ * dispatch.</p>
  */
 public record EditorPlotArrival(double x, double y, double z, float yaw, float pitch) {
 
@@ -76,9 +81,43 @@ public record EditorPlotArrival(double x, double y, double z, float yaw, float p
     /** The footprint centre on the floor, heading kept — the landing every inside teleport used to make. */
     public static EditorPlotArrival atCentre(ServerLevel level, BlockPos origin, Vec3i footprint,
                                              ServerPlayer player) {
-        BlockPos centre = new BlockPos(origin.getX() + footprint.getX() / 2, origin.getY() + 1,
+        return inside(level, origin, footprint, centreOf(origin, footprint), player.getYRot(), player.getXRot());
+    }
+
+    /** The floor cell at the middle of the footprint. */
+    private static BlockPos centreOf(BlockPos origin, Vec3i footprint) {
+        return new BlockPos(origin.getX() + footprint.getX() / 2, origin.getY() + 1,
             origin.getZ() + footprint.getZ() / 2);
-        return inside(level, origin, footprint, centre, player.getYRot(), player.getXRot());
+    }
+
+    /**
+     * Put {@code player} in the plot at {@code origin}/{@code footprint}: on the roof in front of
+     * the menu when {@code onTop}, else at {@code doorBase} facing in when {@code inside} asks for
+     * the door and the plot has one, else at the centre with the player's own heading.
+     *
+     * @param doorBase the lower cell of the plot's -X doorway, or {@code null} for a plot without
+     *                 one — parts, pillars, track tiles, tunnels — which lands at the centre
+     *                 whatever {@code inside} says.
+     */
+    public static void land(ServerPlayer player, ServerLevel level, BlockPos origin, Vec3i footprint,
+                            boolean onTop, Inside inside, @Nullable BlockPos doorBase) {
+        landing(origin, footprint, onTop, inside, doorBase, player.getYRot(), player.getXRot(),
+            p -> passable(level, p)).teleport(player, level);
+    }
+
+    /**
+     * The dispatch behind {@link #land}, with the player's heading and the world's block test
+     * passed in so it can be checked without either.
+     */
+    static EditorPlotArrival landing(BlockPos origin, Vec3i footprint, boolean onTop, Inside inside,
+                                     @Nullable BlockPos doorBase, float yaw, float pitch,
+                                     Predicate<BlockPos> fits) {
+        if (onTop) return inFrontOfMenu(origin, footprint);
+        boolean door = inside == Inside.FRONT_DOOR && doorBase != null;
+        BlockPos preferred = door ? doorBase : centreOf(origin, footprint);
+        BlockPos cell = freeCell(origin, footprint, preferred, fits);
+        return new EditorPlotArrival(cell.getX() + 0.5, cell.getY(), cell.getZ() + 0.5,
+            door ? FACING_POSITIVE_X : yaw, door ? 0f : pitch);
     }
 
     /**
