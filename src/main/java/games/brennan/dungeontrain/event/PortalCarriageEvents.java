@@ -1597,11 +1597,23 @@ public final class PortalCarriageEvents {
         }
         // A player who left the world entirely never gets the message, which is exactly why the
         // client holds a region rather than a flag — it stops applying the moment they are not in it.
-        LAST_FOG.keySet().removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
+        //
+        // A `portal test` occupant is NOT gone: the live pass hands this a list with the testers
+        // taken out (withoutPortalTesters), and pruning them here dropped the tester's dedup entry
+        // every tick, so PortalTestTicker re-sent the same fog every tick for the whole test.
+        List<UUID> present = new ArrayList<>(players.size() + 1);
+        for (ServerPlayer p : players) present.add(p.getUUID());
+        LAST_FOG.keySet().removeIf(id -> !present.contains(id)
+            && !games.brennan.dungeontrain.portal.PortalTestSession.has(id));
         // Where each player left a room is pruned on the same pass and for the same reason: a
         // crash-disconnected player would otherwise leave a binding behind for the life of the
-        // server, and a rejoining one starts from the corridor that is definitely there.
-        PortalExitBindings.pruneTo(players.stream().map(ServerPlayer::getUUID).toList());
+        // server, and a rejoining one starts from the corridor that is definitely there. The
+        // tester keeps theirs too — they are coming back to the plot, not leaving the world.
+        for (UUID id : games.brennan.dungeontrain.portal.PortalTestSession.entries().stream()
+                .map(Map.Entry::getKey).toList()) {
+            if (!present.contains(id)) present.add(id);
+        }
+        PortalExitBindings.pruneTo(present);
     }
 
     /**
