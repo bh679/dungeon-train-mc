@@ -80,6 +80,9 @@ public final class TitleScreenCreditsButton {
     private static final int GAP = 4;
     private static final int MARGIN = 4;
 
+    /** Set once the streaming-software probe has been handed to the IO pool. */
+    private static boolean streamingProbeStarted = false;
+
     private TitleScreenCreditsButton() {}
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -110,8 +113,12 @@ public final class TitleScreenCreditsButton {
 
         // Videos sits one slot above Credits: the community's videos about the game, one page.
         // Added from this handler for the same reason as Discord below — one anchor, no race.
+        // If OBS is open the icon grows a "Streaming? Share link!" tag once the probe lands — the
+        // probe runs off-thread the first time the title screen is up, and the button reads the
+        // cached answer per frame, so the tag slides out whenever it arrives.
+        startStreamingProbe();
         VideosIconButton videos = new VideosIconButton(x, y - SIZE - GAP, SIZE, VIDEOS_NARRATION,
-                b -> openVideos(titleScreen));
+                b -> openVideos(titleScreen), StreamingSoftwareDetector::isRunningNow);
         videos.setTooltip(Tooltip.create(VIDEOS_NARRATION));
         event.addListener(videos);
 
@@ -133,6 +140,13 @@ public final class TitleScreenCreditsButton {
 
         // No separate Bilibili icon any more, even on a Chinese-language client: for them the
         // Videos icon above wears the Bilibili mark, and the Videos page carries the channel link.
+    }
+
+    /** Hand the streaming-software probe to the IO pool, exactly once per session. */
+    private static void startStreamingProbe() {
+        if (streamingProbeStarted || StreamingSoftwareDetector.hasResult()) return;
+        streamingProbeStarted = true;
+        Util.ioPool().execute(StreamingSoftwareDetector::detectNow);
     }
 
     /** Open the Videos page — in-game, no link to confirm. */
