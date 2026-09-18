@@ -17430,8 +17430,28 @@
       "released_at": null
     },
     {
-      "id": "carriage-bed-after-nether",
+      "id": "one-standing-in-helper",
       "version": "0.919.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Entering the plot you are already in keeps your edits \u2014 from the track roof too",
+      "summary": "Stepping back into the plot you are standing in is a walk to its menu, not a reload. Every plot now agrees on that, and the track tile is no exception: Go here or Enter from its roof no longer wipes what you built.",
+      "highlights": [
+        "Go here / Enter from inside any plot keeps unsaved edits, track tile roof included.",
+        "Dimensional carriage names typed in any case land in the right room."
+      ],
+      "pr": 1464,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-bed-after-nether",
+      "version": "0.920.0",
       "type": "fix",
       "tags": [
         "fix",
@@ -17441,6 +17461,7 @@
       "title": "Beds aboard the train stop exploding after the Nether",
       "summary": "A bed placed inside a carriage that had rolled through the Nether could still blow up long after the train was back in the overworld. Beds on board now behave like the world outside the window: safe in the overworld, still deadly while the train is inside the Nether or the End.",
       "highlights": [],
+      "pr": 1467,
       "date": "2026-09-18",
       "released": false,
       "released_in": null,

@@ -5469,13 +5469,15 @@ public final class EditorCommand {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         if (!ensureCategory(source, EditorCategory.PORTALS)) return 0;
-        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry
-                .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name).isEmpty()) {
+        // The registry's spelling, not the argument's: the editor compares plot keys exactly.
+        java.util.Optional<String> canonical = games.brennan.dungeontrain.track.variant.TrackVariantRegistry
+                .find(games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name);
+        if (canonical.isEmpty()) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_dimensional_carriage", name));
             return 0;
         }
-        games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, name);
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_dimensional_carriage", name), true);
+        games.brennan.dungeontrain.editor.PortalRoomEditor.enter(player, canonical.get());
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_dimensional_carriage", canonical.get()), true);
         return 1;
     }
 
@@ -5612,10 +5614,12 @@ public final class EditorCommand {
      */
     private static Component landInPortalRoom(CommandSourceStack source, String name) {
         if (name == null || !(source.getEntity() instanceof ServerPlayer player)) return Component.empty();
-        if (games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(PORTAL_ROOM_KIND, name).isEmpty()) return Component.empty();
+        // The registry's spelling, not the caller's: the editor compares plot keys exactly.
+        String canonical = games.brennan.dungeontrain.track.variant.TrackVariantRegistry.find(PORTAL_ROOM_KIND, name).orElse(null);
+        if (canonical == null) return Component.empty();
         try {
-            PortalRoomEditor.enter(player, name);
-            return Component.translatable("chat.dungeontrain.editor.landed_entered", name);
+            PortalRoomEditor.enter(player, canonical);
+            return Component.translatable("chat.dungeontrain.editor.landed_entered", canonical);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] portals group: could not enter {} afterwards: {}", name, e.toString());
             return Component.empty();
