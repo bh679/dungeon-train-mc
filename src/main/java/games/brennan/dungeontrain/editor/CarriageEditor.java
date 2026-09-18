@@ -229,7 +229,8 @@ public final class CarriageEditor {
     }
 
     /**
-     * Whether {@code player} is already inside {@code variant}'s plot.
+     * Whether {@code player} is already inside {@code variant}'s plot — see
+     * {@link EditorPlotScope#standingIn}, the one test every editor shares.
      *
      * <p>Entering a plot you are standing in is a walk to its menu, not a reload — restamping
      * would throw away every unsaved edit for the sake of a few blocks' teleport. Only the
@@ -237,11 +238,7 @@ public final class CarriageEditor {
      * stamps.</p>
      */
     private static boolean standingIn(ServerPlayer player, CarriageVariant variant) {
-        MinecraftServer server = player.getServer();
-        if (server == null || player.level() != server.overworld()) return false;
-        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
-        CarriageVariant here = plotContaining(player.blockPosition(), dims);
-        return here != null && here.id().equals(variant.id());
+        return EditorPlotScope.standingIn(player, new Template.Carriage(variant));
     }
 
     /**

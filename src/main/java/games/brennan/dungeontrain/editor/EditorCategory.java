@@ -261,6 +261,26 @@ public enum EditorCategory {
     public record Located(EditorCategory category, Template model) {}
 
     /**
+     * The category {@link #locate} would report {@code model} under — the plot set it is stamped
+     * as part of. Parts are {@link #CARRIAGES} (they share its plot rows; see
+     * {@link PlotCategory#PARTS}), and every track-side kind is {@link #TRACKS} except the room
+     * column, which is {@link #PORTALS}.
+     */
+    public static EditorCategory of(Template model) {
+        return switch (model) {
+            case Template.Carriage c -> CARRIAGES;
+            case Template.Part p -> CARRIAGES;
+            case Template.WholeCarriage w -> CARRIAGES;
+            case Template.Contents c -> CONTENTS;
+            case Template.Track t -> TRACKS;
+            case Template.Pillar p -> TRACKS;
+            case Template.Adjunct a -> TRACKS;
+            case Template.Tunnel t -> TRACKS;
+            case Template.PortalRoom r -> PORTALS;
+        };
+    }
+
+    /**
      * Erase every editor plot standing in the world — footprints + barrier cages all go back to
      * air. Called when the player exits the editor and when switching categories so stale models
      * don't pile up at the plot floor.
