@@ -424,16 +424,19 @@ dependencies {
     implementation "bh679:ediblebackpacks:${ediblebackpacks_version}"
     jarJar(group: 'bh679', name: 'ediblebackpacks', version: ediblebackpacks_version)
 
-    // Keep Trim — crafting-grid repair keeps the left-most item's armor trim. Same
-    // external-required-dep contract as AIN/AIS/PMOB/ECP/TE above; fetched via the shared
-    // bh679 Ivy repo (flat asset keeptrim-neoforge-<v>.jar). Un-bundled from jarJar once the
-    // CurseForge listing (1691315) went live so the launcher auto-installs it and Keep Trim's
-    // own page gets the download credit. (Modrinth listing still in review at the time —
-    // the Modrinth modpack references the GitHub release asset until then, see
-    // modpack.config.json `modrinth_pending_url`.)
-    // DT does not compile against it — the mod is a single vanilla mixin, no API; it is on
-    // the dev runtime classpath only so runClient/runServer satisfy mods.toml.
+    // Keep Trim — crafting-grid repair keeps the left-most item's armor trim. Fetched via the
+    // shared bh679 Ivy repo (flat asset keeptrim-neoforge-<v>.jar). DT does not compile against
+    // it — the mod is a single vanilla mixin, no API.
+    // HYBRID contract (same as Dungeon Backup / Sable Fence & Trapdoor Fix below): jarJar'd so
+    // Modrinth + manual installs get it built in, AND declared `keep-trim(required)` on
+    // CurseForge (project 1691315, live) so the CF app installs it as its own jar and Keep
+    // Trim's page gets the credit. NeoForge's JarSelector drops the nested copy when a
+    // top-level mods/ copy is present. TEMPORARY: it was fully external in 0.863.0–0.908.0,
+    // but the Modrinth listing (keep-trim / HE6l2LC9) is still in review, which left every
+    // Modrinth/manual installer with an un-findable "requires keeptrim" failure. Re-bundled in
+    // 0.909.x; revisit (drop the jarJar line) once the Modrinth listing is public.
     implementation "bh679:keeptrim:${keeptrim_version}"
+    jarJar(group: 'bh679', name: 'keeptrim', version: keeptrim_version)
 
     // Dungeon Backup — sibling mod: the player-data protection system (migration out of
     // config/, rolling zip restore points inside + outside the instance, title-screen recovery)

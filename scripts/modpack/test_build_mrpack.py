@@ -337,17 +337,15 @@ def test_real_config_every_mod_has_modrinth_pins():
         assert opt.get("modrinth_project"), f"{opt.get('name')} missing modrinth_project"
         assert opt.get("modrinth_version") or opt.get("modrinth_pending_url"), \
             f"{opt.get('name')} missing modrinth_version / modrinth_pending_url"
-    # The pending-URL stopgap is for listings still in review — never both keys at once, and
-    # the only current rider is Keep Trim (CurseForge approved 2026-09-13, Modrinth pending).
+    # The pending-URL stopgap is for listings still in review — never both keys at once. No
+    # current rider: Keep Trim used it 0.863.0–0.908.x, then became a hybrid sibling instead.
     pending = bm.pending_entries(cfg)
-    assert [o["slug"] for o in pending] == ["keep-trim"], pending
-    assert "modrinth_version" not in pending[0]
-    assert pending[0]["modrinth_pending_url"].startswith("https://github.com/bh679/keeptrim-mc/releases/download/")
+    assert pending == [], pending
     # The hybrid siblings: jarJar'd inside the DT jar for Modrinth, separate Includes on
     # CurseForge only. They must stay out of the Modrinth pack (no double copy) and need no
-    # Modrinth keys.
+    # Modrinth keys. Keep Trim rides here while its Modrinth listing is in review.
     cf_only = bm.curseforge_only_entries(cfg)
-    assert sorted(o["slug"] for o in cf_only) == ["dungeon-train-backup", "sable-fence-trapdoor-fix"], cf_only
+    assert sorted(o["slug"] for o in cf_only) == ["dungeon-train-backup", "keep-trim", "sable-fence-trapdoor-fix"], cf_only
     for opt in cf_only:
         assert opt.get("dependency_type") == "required" and opt.get("gradle_property"), opt
         assert not {"modrinth_version", "modrinth_pending_url"} & opt.keys(), opt
