@@ -17294,6 +17294,27 @@
       "released_at": null
     },
     {
+      "id": "net-protocol-version-guard",
+      "version": "0.912.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer",
+        "internal"
+      ],
+      "title": "Outdated clients are turned away at login instead of being kicked mid-session",
+      "summary": "Joining a server with a Dungeon Train build older than the server's could work at first and then drop you the moment you used a plot panel in the editor, because the two builds disagreed about what that message looked like. The network version now says so up front: a mismatched client sees the usual mod-mismatch screen at login, with both versions listed, and a matching one joins as before. A check in the build pipeline keeps this from slipping again.",
+      "highlights": [
+        "Client and server builds that disagree are refused at login, not dropped mid-game",
+        "The mismatch screen names both versions so you know which side to update"
+      ],
+      "pr": 1456,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "editor-load-while-standing-in-plot",
       "version": "0.912.0",
       "type": "fix",
