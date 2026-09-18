@@ -17527,20 +17527,21 @@
       "released_at": "2026-09-18T12:05:02Z"
     },
     {
-      "id": "end-exit-portal-returns-to-train",
+      "id": "obs-share-link-nudge",
       "version": "0.924.0",
-      "type": "fix",
+      "type": "feat",
       "tags": [
-        "fix",
-        "train"
+        "feature",
+        "community",
+        "ui"
       ],
-      "title": "The End portal brings you home",
-      "summary": "Beat the dragon and step through the portal \u2014 you land back on the train, right where you belong, with everything you carried.",
+      "title": "Streaming? The menu nudges you to share your link",
+      "summary": "If OBS or Streamlabs is open when you reach the main menu, the red Videos icon stretches out a \"Streaming? Share link!\" tag, and the Submit button on the Videos page pulses red. A small \u00d7 above the tag hides it for the session. Nothing about it leaves your machine \u2014 it only looks at whether the app is running.",
       "highlights": [
-        "No more waking up in an empty world after the End.",
-        "Works every time you come back through, not just the first."
+        "Videos icon on the title screen grows a \"Streaming? Share link!\" tag while OBS/Streamlabs is running",
+        "Submit-a-video button on the Videos page pulses red at the same time",
+        "Click the \u00d7 above the tag to hide it until next launch"
       ],
-      "pr": 1473,
       "date": "2026-09-18",
       "released": false,
       "released_in": null,

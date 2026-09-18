@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.client.videos;
 
+import games.brennan.dungeontrain.client.StreamingSoftwareDetector;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.BilibiliIconButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.DiscordIconButton;
 import games.brennan.dungeontrain.client.menu.InstagramIconButton;
+import games.brennan.dungeontrain.client.menu.PulseBorder;
 import games.brennan.dungeontrain.client.menu.YouTubeIconButton;
 import games.brennan.dungeontrain.client.videotools.VideoToolsScreen;
 import net.minecraft.Util;
@@ -49,6 +51,9 @@ import java.util.List;
  */
 @OnlyIn(Dist.CLIENT)
 public final class VideosScreen extends Screen {
+
+    /** Red of the submit button's pulse while streaming software is open (24-bit; alpha pulsed). */
+    private static final int STREAMING_PULSE_RGB = 0xFF_40_40;
 
     private static final int MARGIN = 16;
     private static final int GAP = 4;
@@ -193,11 +198,21 @@ public final class VideosScreen extends Screen {
                     Minecraft.getInstance().setScreen(new VideoToolsScreen(this));
                 }));
         tools.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.videos.tools.tooltip")));
+        // Pulses red while OBS is running — the same nudge the title-screen icon's share tab gives,
+        // carried through to the button that actually does the sharing.
         Button submit = addRenderableWidget(new DarkTintedButton(bx + thirdW + GAP, bottomY, thirdW, BOTTOM_ROW_H,
                 Component.translatable("gui.dungeontrain.videos.submit.button"), b -> {
                     UiAnalytics.click(UiAnalytics.SURFACE_VIDEOS, UiAnalytics.TARGET_VIDEO_SUBMIT);
                     Minecraft.getInstance().setScreen(new VideoSubmitScreen(this));
-                }));
+                }) {
+            @Override
+            protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+                super.renderWidget(g, mouseX, mouseY, partialTick);
+                if (StreamingSoftwareDetector.isRunningNow()) {
+                    PulseBorder.render(g, getX(), getY(), getWidth(), getHeight(), STREAMING_PULSE_RGB, this.alpha);
+                }
+            }
+        });
         submit.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.videos.submit.tooltip")));
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(bx + 2 * (thirdW + GAP), bottomY, bottomW - 2 * (thirdW + GAP), BOTTOM_ROW_H)
