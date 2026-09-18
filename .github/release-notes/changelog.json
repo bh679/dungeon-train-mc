@@ -17543,9 +17543,9 @@
         "Click the \u00d7 above the tag to hide it until next launch"
       ],
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.925.0",
+      "released_at": "2026-09-18T14:33:29Z"
     },
     {
       "id": "end-exit-portal-returns-to-train",
@@ -17563,9 +17563,9 @@
       ],
       "pr": 1473,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.925.0",
+      "released_at": "2026-09-18T14:33:29Z"
     },
     {
       "id": "corners-ice-contents-trap-rework",
@@ -17581,9 +17581,9 @@
       "highlights": [],
       "pr": 1475,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.925.0",
+      "released_at": "2026-09-18T14:33:29Z"
     }
   ]
 }
