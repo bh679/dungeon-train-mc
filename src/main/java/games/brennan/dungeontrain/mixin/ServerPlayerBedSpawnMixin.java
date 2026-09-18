@@ -12,11 +12,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Rewords vanilla's "Respawn point set" ({@code block.minecraft.set_spawn}) when a player sleeps
- * in a bed, so it makes clear the respawn rides with the train rather than reading like a fixed
- * overworld spawn. The respawn itself is left untouched — on the train, Sable's {@code respawn_point}
- * mixin anchors it to the moving sub-level (a working "wake aboard the train" point); off the train,
- * vanilla sets it normally. Both paths emit the message through
+ * Replaces vanilla's "Respawn point set" ({@code block.minecraft.set_spawn}) when a player sleeps
+ * in a bed with a flavour line telling them the bed did <em>not</em> set a respawn point — the
+ * train is the only respawn, and it is wherever the line has carried it. Every line in the pool
+ * must keep that meaning (a bed is never a respawn anchor in a train world). The respawn mechanics
+ * themselves are left untouched here; both the vanilla and Sable bed paths emit the message through
  * {@link ServerPlayer#sendSystemMessage(Component)}, so we intercept there.
  *
  * <p>We inject at HEAD of {@code sendSystemMessage(Component)} and, only for the
