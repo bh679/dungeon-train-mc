@@ -17373,6 +17373,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stamp-flags-single-owner",
+      "version": "0.916.0",
+      "type": "refactor",
+      "tags": [
+        "internal"
+      ],
+      "title": "Pictures stay on the wall for good",
+      "summary": "The fix that stopped Fast Paintings pictures dropping off the wall whenever a build, plot or carriage was loaded now lives in one place instead of twelve, and a build-time check makes sure no future loader can bring the bug back.",
+      "highlights": [
+        "One named setting owns how every template is stamped into the world, with the reason written down once.",
+        "A test fails the build if any loader ever reaches for the old setting that popped pictures."
+      ],
+      "pr": 1461,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
