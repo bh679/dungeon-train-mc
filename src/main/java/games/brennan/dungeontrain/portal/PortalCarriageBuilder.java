@@ -12,6 +12,8 @@ import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
+import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.StageResolver;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
@@ -956,6 +958,23 @@ public final class PortalCarriageBuilder {
             bedrockSkinCorridor(level, structure.exitOrigin(dims), dims, layout,
                 PortalCarriageRole.EXIT, roomOrigin, roomSize, lock);
         }
+    }
+
+    /**
+     * The stage every stamp of pair {@code pairKey} resolves its stage placeholder blocks through —
+     * the base pair, each room tile copy and each extra exit corridor alike — so a copy is
+     * block-identical to the original it stands in for. {@code pairKey} is the entry carriage index,
+     * and the stage is read off that carriage's gate ({@link GateContext#forCarriage}), which is the
+     * same whichever tick lays the copy: a structure never changes stage between its base stamp and
+     * a copy laid a visit later.
+     *
+     * <p>{@code null} (the default palette) for the test rig, matching what its base stamp uses:
+     * {@code PortalTestSession#PAIR_KEY} is a legal carriage index, and resolving copies through
+     * carriage 0's real stage would put different blocks in a copy than in the room it copies.</p>
+     */
+    public static String stageIdFor(ServerLevel level, int pairKey, CarriageDims dims) {
+        if (PortalTestSession.isTestStamp(pairKey)) return null;
+        return StageResolver.stageIdFor(GateContext.forCarriage(level, pairKey, dims.length()));
     }
 
     /**

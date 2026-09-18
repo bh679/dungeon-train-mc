@@ -250,8 +250,11 @@ public final class PortalTestCommand {
             player.level().dimension(), player.position(), player.getYRot(), player.getXRot(),
             previous, structure, roomName, arrival));
 
-        // Test rig: no stage ⇒ placeholders resolve through the default palette.
-        games.brennan.dungeontrain.train.StagePlacementScope.run(null,
+        // Test rig: no stage ⇒ placeholders resolve through the default palette. Via the shared
+        // lookup (the session is registered above, so it reads as a test stamp) so the tiler's
+        // copies resolve through the same palette as this base room.
+        games.brennan.dungeontrain.train.StagePlacementScope.run(
+            PortalCarriageBuilder.stageIdFor(overworld, PortalTestSession.PAIR_KEY, dims),
             () -> PortalCarriageBuilder.stampPairStructure(overworld, structure, dims, PortalTestSession.PAIR_KEY));
 
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);

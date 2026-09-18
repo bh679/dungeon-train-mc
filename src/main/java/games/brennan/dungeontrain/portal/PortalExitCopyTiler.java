@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalExitSites.Site;
 import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.StagePlacementScope;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.slf4j.Logger;
@@ -204,7 +205,11 @@ public final class PortalExitCopyTiler {
 
     private static PortalStructure stamp(ServerLevel level, CarriageDims dims,
                                          PortalStructure structure, Site site, int pairKey) {
-        PortalCarriageBuilder.stampExitCopy(level, structure, dims, pairKey, site);
+        // The pair's stage for the stage placeholders, as the base corridors and the room tiles
+        // are: the copy is stamped from the same `portal` template, and outside a scope the
+        // placeholders are left as authored, so an unscoped copy stood beside a resolved original.
+        StagePlacementScope.run(PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
+            () -> PortalCarriageBuilder.stampExitCopy(level, structure, dims, pairKey, site));
         LOGGER.debug("[DungeonTrain] Portal exit copy laid at {} ({})", site.tile(), site.role());
         return structure.withExitCopies(structure.exitCopies().with(site));
     }

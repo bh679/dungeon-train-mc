@@ -2406,9 +2406,9 @@ public final class PortalCarriageEvents {
         }
 
         // The room resolves its stage placeholders for the entry corridor's stage (pairKey is the
-        // entry carriage index) — the pIdx-frame gate, since the room stands off the track.
-        String stageId = games.brennan.dungeontrain.template.StageResolver.stageIdFor(
-            games.brennan.dungeontrain.template.GateContext.forCarriage(level, pairKey, dims.length()));
+        // entry carriage index) — the pIdx-frame gate, since the room stands off the track. The
+        // same lookup the tiler uses for every copy, so a copy cannot resolve differently.
+        String stageId = PortalCarriageBuilder.stageIdFor(level, pairKey, dims);
         final PortalStructure toStamp = planned;
         games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));
