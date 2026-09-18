@@ -122,7 +122,9 @@ public final class EditorTypeMenuRenderer {
         /** Top-row Reload cell — runs {@code dungeontrain editor import}. */
         PKG_RELOAD,
         /** Top-row Open Packages cell — opens the dtpacks root. */
-        PKG_OPEN_FOLDER
+        PKG_OPEN_FOLDER,
+        /** The WHOLE category's "whole group every N" settings row — click +1, shift-click -1, cmd-click types. */
+        WHOLE_EVERY
     }
 
     /**
@@ -199,10 +201,10 @@ public final class EditorTypeMenuRenderer {
     private static final double SUB_VARIANT_GAP = 0.10;
 
     private static final int BACKDROP_COLOR = 0xC8000000;
-    private static final int HOVER_COLOR = 0x60FFCC33;
+    static final int HOVER_COLOR = 0x60FFCC33;
     private static final int ROW_SEP_COLOR = 0x40FFFFFF;
     private static final int COLUMN_SEP_COLOR = 0x30FFFFFF;
-    private static final int HEADER_BG = 0x60FFEEBB;
+    static final int HEADER_BG = 0x60FFEEBB;
     /** Stronger green band behind the active category button — distinct from active-row tint. */
     private static final int ACTIVE_CATEGORY_BG = 0x8055FF55;
     /** Dim band behind every collapsed tab so they read as inactive columns. */
@@ -220,7 +222,7 @@ public final class EditorTypeMenuRenderer {
     /** Faint green band behind the bottom "+ New" row. Lower alpha than {@link #ACTIVE_ROW_COLOR} so the two never read as the same row. */
     private static final int NEW_ROW_BG = 0x4055FF55;
 
-    private static final int HEADER_COLOR = 0xFFFFEEBB;
+    static final int HEADER_COLOR = 0xFFFFEEBB;
     private static final int NAME_COLOR = 0xFFFFFFFF;
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
     /** Light-blue text for the min/max spawn-level cells, distinct from the warm weight colour. */
@@ -287,6 +289,8 @@ public final class EditorTypeMenuRenderer {
      * defaulted flag there would pop a dismissed panel back up.
      */
     private static volatile boolean HELP_PANEL_DISMISSED = false;
+    /** The WHOLE category's "every N", or {@link EditorTypeMenusPacket#NO_WHOLE_GROUP_EVERY}. */
+    private static volatile int WHOLE_GROUP_EVERY = EditorTypeMenusPacket.NO_WHOLE_GROUP_EVERY;
     private static volatile Hovered HOVERED = Hovered.NONE;
 
     /**
@@ -341,6 +345,7 @@ public final class EditorTypeMenuRenderer {
             CACHE = List.of();
             SELECTED_STAGE = "";
             HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
+            WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
             HOVERED = Hovered.NONE;
             PACKAGE_BASIS = null;
             stagesRemoveMode = false;
@@ -357,6 +362,7 @@ public final class EditorTypeMenuRenderer {
         CACHE = menus;
         SELECTED_STAGE = packet.selectedStageId();
         HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
+        WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
         // Keep PACKAGE_BASIS sticky across snapshots that still carry a
         // package menu (so category switches don't reorient the panel); drop
         // it if the new snapshot has no package menu, so the next appearance
@@ -383,6 +389,16 @@ public final class EditorTypeMenuRenderer {
     /** True when this player has closed the editor's world-space Welcome panel in this world. */
     public static boolean helpPanelDismissed() {
         return HELP_PANEL_DISMISSED;
+    }
+
+    /** The WHOLE category's "whole group every N" as last pushed, or {@code NO_WHOLE_GROUP_EVERY}. */
+    public static int wholeGroupEvery() {
+        return WHOLE_GROUP_EVERY;
+    }
+
+    /** Category bar + tab strip, plus the settings row when the menu carries one. */
+    static int navChromeRows(EditorTypeMenusPacket.Menu menu) {
+        return 2 + EditorTypeMenuSettingsRow.rows(menu);
     }
 
     public static Hovered hovered() {
@@ -759,7 +775,7 @@ public final class EditorTypeMenuRenderer {
         // Nav: category bar + tab strip + total variant rows (1 per variant
         // plus extra rows for wrapped sub-variants) + "+ New" footer.
         if (menu.isNavMenu()) {
-            int total = 2;
+            int total = navChromeRows(menu);
             double availableSubW = availableSubVariantWidth(menu, font);
             for (EditorTypeMenusPacket.Variant v : menu.variants()) {
                 total += variantRowSpan(v, availableSubW, font);
@@ -939,7 +955,12 @@ public final class EditorTypeMenuRenderer {
             return Hovered.NONE;
         }
 
-        // Rows 2..end — variant rows + wrapped sub-variant lines + +New.
+        // Row 2 — the settings row, on the menus that carry one (WHOLE's Group menu).
+        if (rowFromTop == 2 && EditorTypeMenuSettingsRow.present(menu)) {
+            return EditorTypeMenuSettingsRow.hit(menuIdx, menu, halfW, hitX);
+        }
+
+        // Rows after the chrome — variant rows + wrapped sub-variant lines + +New.
         // Each variant occupies {@link #variantRowSpan} consecutive rows;
         // walk through variants accumulating spans until rowFromTop lands
         // inside one (or past the last one = +New footer).
@@ -947,7 +968,7 @@ public final class EditorTypeMenuRenderer {
         double colRight = -halfW + expandedColumnWidth(menu, font);
         double availableSubW = availableSubVariantWidth(menu, font);
 
-        int rowAfterChrome = rowFromTop - 2;
+        int rowAfterChrome = rowFromTop - navChromeRows(menu);
         int variantIdx = -1;
         int spanOffset = 0;
         int cursor = 0;
@@ -1233,13 +1254,20 @@ public final class EditorTypeMenuRenderer {
         // Row separator below the tab strip.
         drawQuad(ps, buffer, -halfW, tabBottom - 0.005, halfW, tabBottom + 0.005, ROW_SEP_COLOR);
 
+        // The settings row, on the menus that carry one — the variant body starts below it.
+        if (EditorTypeMenuSettingsRow.present(menu)) {
+            EditorTypeMenuSettingsRow.draw(ps, buffer, font, menu, hovered, halfW, tabBottom);
+            tabBottom -= ROW_H;
+            drawQuad(ps, buffer, -halfW, tabBottom - 0.005, halfW, tabBottom + 0.005, ROW_SEP_COLOR);
+        }
+
         // Faint tint behind the entire right-of-expanded area so the
         // reserved sub-variant region reads as part of the menu instead of
         // an unused gap. Drawn under the variant rows so it doesn't
         // obscure the row separators / sub-variant cells. Height includes
         // every wrapped sub-variant line — derived from the total row
         // count below the tab strip.
-        int variantBodyRows = rowCount(menu, font) - 2;
+        int variantBodyRows = rowCount(menu, font) - navChromeRows(menu);
         double rightAreaLeft = expColRight;
         double rightAreaRight = halfW;
         double varBodyTop = tabBottom;
@@ -1984,7 +2012,7 @@ public final class EditorTypeMenuRenderer {
         return new Hovered(menuIdx, pkgIdx, CellKind.PKG_ENABLE);
     }
 
-    private static void drawCenteredText(
+    static void drawCenteredText(
         PoseStack ps, MultiBufferSource buffer, Font font,
         String text, double worldX, double worldY, int colour
     ) {
@@ -2001,7 +2029,7 @@ public final class EditorTypeMenuRenderer {
         ps.popPose();
     }
 
-    private static void drawQuad(
+    static void drawQuad(
         PoseStack ps, MultiBufferSource buffer,
         double x1, double y1, double x2, double y2, int argb
     ) {

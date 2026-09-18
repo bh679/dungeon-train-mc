@@ -198,6 +198,18 @@ public final class TrainAssembler {
      */
     private record RelayPlacement(Set<BlockPos> blocks, net.minecraft.nbt.ListTag ents) {}
 
+    /** {@code group=<id>} or {@code rooms=[a,-,b]} for the spawn log — what a re-spawn must reproduce. */
+    private static String summariseWhole(WholeGroupSelection.GroupPick groupPick,
+                                         WholeCarriageSelection.RoomPick[] roomBySlot) {
+        if (groupPick != null) return "group=" + groupPick.group().id();
+        StringBuilder sb = new StringBuilder("rooms=[");
+        for (int i = 0; i < roomBySlot.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(roomBySlot[i] == null ? "-" : roomBySlot[i].room().id());
+        }
+        return sb.append(']').toString();
+    }
+
     private static RelayPlacement placeRelayLease(ServerLevel level, BlockPos carriageOrigin,
                                                   SharedCarriageClient.PoolLease lease, CarriageDims dims) {
         try {
@@ -466,6 +478,21 @@ public final class TrainAssembler {
         net.minecraft.nbt.ListTag[] relayEntsBySlot = new net.minecraft.nbt.ListTag[groupSize];
         // Whose builds count as "own" for this group — resolved once, since it can't change mid-spawn.
         List<String> onlineUuids = onlinePlayerUuids(level);
+        // Whole-room slots and the whole-group verdict — see WholeCarriageSelection / WholeGroupSelection.
+        WholeCarriageSelection.RoomPick[] roomBySlot = new WholeCarriageSelection.RoomPick[groupSize];
+        GateContext anchorGate = GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, anchorPIdx, length);
+        WholeGroupSelection.GroupPick groupPick =
+            WholeGroupSelection.isWholeGroup(level, anchorPIdx, groupSize, genCfg.seed())
+                ? WholeGroupSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
+        final boolean wholeGroup = groupPick != null;
+        if (wholeGroup) {
+            // One template over the whole run, stamped at the first enclosed slot's shell anchor and
+            // resolved in the anchor's stage — one build, one stage, as the editor authored it.
+            BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
+            String anchorStage = games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate);
+            blocks.addAll(StagePlacementScope.with(anchorStage,
+                () -> WholeGroupSelection.place(level, runOrigin, groupPick, dims, groupSize)));
+        }
 
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
@@ -478,6 +505,12 @@ public final class TrainAssembler {
             enclosedBySlot[slot] = variant;
             String stageId = games.brennan.dungeontrain.template.StageResolver.stageIdFor(gateCtx);
             stageBySlot[slot] = stageId;
+            if (wholeGroup) {
+                // The run is already standing; this slot's shell, lease and room passes are all skipped.
+                PortalRegistry.get(level).noteStamped(carriagePIdx, false);
+                PlacedCarriageFacts.recordWholeGroup(carriagePIdx, variant, groupPick.group().id());
+                continue;
+            }
 
             // Within a spawnGroup call, the enclosed run is wrapped by
             // half-flatbed pads when groupSize > 1. Slot 0's BACK door
@@ -517,6 +550,20 @@ public final class TrainAssembler {
                     // Stamped verbatim — no contents pick happens for this slot, so the debug
                     // panel is told that rather than being left to guess.
                     PlacedCarriageFacts.recordRelayBuild(carriagePIdx, variant);
+                }
+            }
+            // Whole-room path: the shell roll landed on `whole`, so draw a room from the pool and stamp
+            // it verbatim (no parts/variants/contents overlays), under this slot's stage like a lease.
+            // Nothing fitting → carriageBlocks stays null and `whole.nbt` places as a plain carriage.
+            if (carriageBlocks == null) {
+                WholeCarriageSelection.RoomPick room = WholeCarriageSelection.pickRoom(
+                    level, variant, carriagePIdx, dims, genCfg.seed(), gateCtx);
+                if (room != null) {
+                    carriageBlocks = StagePlacementScope.with(stageId,
+                        () -> WholeCarriageSelection.place(level, carriageOrigin, room, dims));
+                    roomBySlot[slot] = room;
+                    PortalRegistry.get(level).noteStamped(carriagePIdx, false);
+                    PlacedCarriageFacts.recordWholeRoom(carriagePIdx, variant, room.room().id());
                 }
             }
             if (carriageBlocks == null) {
@@ -604,6 +651,11 @@ public final class TrainAssembler {
                 inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
                 continue;
             }
+            if (wholeGroup || roomBySlot[slot] != null) {
+                // Stamped verbatim from the Whole pool — no contents pass, no generated entities.
+                pendingEntities[slot] = null;
+                continue;
+            }
             CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx, groupAnchorWorldX);
             // Stash for the appender's tick handler to fire once the
             // placement-collision tracker confirms this group has settled.
@@ -666,9 +718,9 @@ public final class TrainAssembler {
         // A second spawn of the same anchorPIdx must show the SAME stages and the SAME enclosed
         // variants as the first — that equality is what Trains.gateWorldXOrRecord buys, and how the
         // "different stage at render distance" regression would announce itself again.
-        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] stages=[{}] gateX={} placedX={} pads={} trainId={} ship id={} shipyardOrigin={} blocks={} timing(ms): clear={} place={} assemble={} contents={} total={}",
+        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] stages=[{}] whole={} gateX={} placedX={} pads={} trainId={} ship id={} shipyardOrigin={} blocks={} timing(ms): clear={} place={} assemble={} contents={} total={}",
             anchorPIdx, groupSize, summariseVariants(enclosedBySlot),
-            summariseStages(stageBySlot), groupAnchorWorldX, placedAnchorWorldX,
+            summariseStages(stageBySlot), summariseWhole(groupPick, roomBySlot), groupAnchorWorldX, placedAnchorWorldX,
             wrapWithPads ? "back+front" : "none",
             trainId, ship.id(), shipyardOrigin, blocks.size(),
             (tAfterClear - tStart) / 1_000_000,

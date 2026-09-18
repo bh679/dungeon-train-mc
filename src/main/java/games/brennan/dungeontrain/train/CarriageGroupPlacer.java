@@ -54,6 +54,24 @@ public final class CarriageGroupPlacer {
     }
 
     /**
+     * The train path: stamp {@code template} over a {@code carriages}-long run, section-local with no
+     * relight, and return the footprint the shipyard assembles. No erase — the caller has already
+     * cleared the sub-level volume. The caller holds the stage scope.
+     */
+    public static java.util.Set<BlockPos> placeForTrain(ServerLevel level, BlockPos origin,
+                                                        StructureTemplate template, CarriageDims dims,
+                                                        int carriages) {
+        return CarriageStampGuard.call(() -> {
+            CarriagePlacer.stampTemplateAt(level, origin, template, /*relight*/ false);
+            java.util.Set<BlockPos> placed = new java.util.HashSet<>();
+            for (int i = 0; i < Math.max(1, carriages); i++) {
+                placed.addAll(CarriagePlacer.collectFootprint(level, origin.offset(i * dims.length(), 0, 0), dims));
+            }
+            return placed;
+        });
+    }
+
+    /**
      * Capture the whole run at {@code origin}.
      *
      * <p>{@code fillFromWorld} against AIR over the group's box, which is what every carriage-side

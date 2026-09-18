@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "excluded": [
+    "chest",
+    "cows",
+    "craft",
+    "default",
+    "ender",
+    "features",
+    "fire",
+    "nature",
+    "pigs",
+    "portal",
+    "portal_short",
+    "sheep",
+    "shop"
+  ]
+}

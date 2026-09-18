@@ -13,6 +13,7 @@
   "portal_middle": 0,
   "portal_short": 1,
   "shared": 1,
+  "whole": 1,
   "standard": {
     "weight": 20,
     "minLevel": 51,

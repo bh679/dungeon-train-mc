@@ -163,6 +163,18 @@ public final class EditorTypeMenuInputHandler {
             return;
         }
 
+        // WHOLE's "whole group every N" settings row — click +1, shift-click -1, cmd-click types.
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.WHOLE_EVERY) {
+            if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) {
+                openWholeEveryEntry();
+                return;
+            }
+            String cmd = "dungeontrain editor whole every " + (shift ? "dec" : "inc");
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu whole-every: {}", cmd);
+            CommandRunner.run(cmd);
+            return;
+        }
+
         // Package menu top-row cells — independent of any variant index.
         if (hit.cell() == EditorTypeMenuRenderer.CellKind.PKG_RELOAD) {
             LOGGER.debug("[DungeonTrain] EditorTypeMenu pkg Reload click");
@@ -533,6 +545,20 @@ public final class EditorTypeMenuInputHandler {
      * Open the typed-weight pad for one row. The world-space panel is a HUD overlay drawn behind
      * the modal, so closing returns to the world with the menu still up.
      */
+    /** Type N for "whole group every N" — 0 is off. */
+    private static void openWholeEveryEntry() {
+        int current = Math.max(0, EditorTypeMenuRenderer.wholeGroupEvery());
+        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
+            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.whole_every"),
+            current, 0, games.brennan.dungeontrain.train.WholeGroupSettings.MAX_EVERY,
+            value -> {
+                String cmd = "dungeontrain editor whole every " + value;
+                LOGGER.debug("[DungeonTrain] EditorTypeMenu whole-every (typed): {}", cmd);
+                CommandRunner.run(cmd);
+            },
+            null));
+    }
+
     private static void openWeightEntry(EditorTypeMenusPacket.Menu menu,
                                         EditorTypeMenusPacket.Variant variant) {
         Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(

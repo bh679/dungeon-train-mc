@@ -66,6 +66,20 @@ public final class WholeCarriagePlacer {
     }
 
     /**
+     * The train path: stamp {@code template} section-local with no relight — the lift into the
+     * Sable sub-level relights — and return the footprint the shipyard assembles. Erases first for
+     * the reason {@link #placeAt} gives. The caller holds the stage scope.
+     */
+    public static java.util.Set<BlockPos> placeForTrain(ServerLevel level, BlockPos origin,
+                                                        StructureTemplate template, CarriageDims dims) {
+        return CarriageStampGuard.call(() -> {
+            CarriagePlacer.eraseAt(level, origin, dims);
+            CarriagePlacer.stampTemplateAt(level, origin, template, /*relight*/ false);
+            return CarriagePlacer.collectFootprint(level, origin, dims);
+        });
+    }
+
+    /**
      * Capture the full carriage volume at {@code origin}.
      *
      * <p>Delegates to {@link CarriageEditor#captureTemplate}, which already fills from the whole

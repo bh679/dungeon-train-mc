@@ -143,6 +143,9 @@ public final class EditorScreenLang {
     public static final String CREATOR_LOAD_SUB_VARIANT = PREFIX + "creator.load_sub_variant";
     public static final String CREATOR_PARENT_TITLE = PREFIX + "creator.parent_title";
     public static final String CREATOR_PARENT_NEW = PREFIX + "creator.parent_new";
+    /** The Whole-pool destination in the "Load under" picker, and the top-level row a carriage gets. */
+    public static final String CREATOR_PARENT_WHOLE_ROOM = PREFIX + "creator.parent_whole_room";
+    public static final String CREATOR_PARENT_TOP_LEVEL = PREFIX + "creator.parent_top_level";
     public static final String CREATOR_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
     public static final String CREATOR_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
     public static final String CREATOR_NOT_YOURS = "gui.dungeontrain.builder.profile.not_yours_short";

@@ -126,7 +126,8 @@ public final class TrainCommand {
             .then(NarrativeCommand.build())
             .then(SharedBookCommand.build())
             .then(CinematographerCommand.build())
-            .then(PortalCommand.build());
+            .then(PortalCommand.build())
+            .then(WholeCarriageCommand.build());
 
         LiteralCommandNode<CommandSourceStack> registered = dispatcher.register(root);
 

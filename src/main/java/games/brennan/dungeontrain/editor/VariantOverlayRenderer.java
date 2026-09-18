@@ -920,6 +920,11 @@ public final class VariantOverlayRenderer {
         // In the key as well as the packet, or closing / reopening the Welcome panel would be
         // deduped away and the panel would not react until something else changed the snapshot.
         keyBuf.append("help:").append(helpPanelDismissed).append('|');
+        // The WHOLE category's type-level setting rides with the menus; in the key so an edit re-pushes.
+        int wholeGroupEvery = category == EditorCategory.WHOLE
+            ? games.brennan.dungeontrain.train.WholeGroupSettings.every()
+            : EditorTypeMenusPacket.NO_WHOLE_GROUP_EVERY;
+        keyBuf.append("every:").append(wholeGroupEvery).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
@@ -951,7 +956,7 @@ public final class VariantOverlayRenderer {
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
         DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
-            menus, EditorStageSelection.effective(), helpPanelDismissed));
+            menus, EditorStageSelection.effective(), helpPanelDismissed, wholeGroupEvery));
     }
 
     /**
