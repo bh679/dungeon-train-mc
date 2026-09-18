@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -33,13 +34,21 @@ import org.slf4j.Logger;
  *   <li>Cross-dim teleports the player via {@code player.teleportTo}.</li>
  * </ol>
  *
- * <p>Also handles the <b>End exit portal</b>
- * ({@link PlayerEvent.PlayerRespawnEvent#isEndConquered()}): after killing the
- * dragon and dropping into the portal, vanilla "respawns" the player (inventory
- * kept) at their bed / world spawn — in a Dungeon Train world that is an empty
- * vanilla Overworld with no train anywhere near. Instead, the player is placed
- * back on the train in the world's starting dimension, exactly like login and
- * the cross-dim respawn above. No dimension roll on this path.</p>
+ * <p>Also handles the <b>End exit portal</b>: after killing the dragon and
+ * dropping into the portal, vanilla puts the player (inventory kept) at their
+ * bed / world spawn — in a Dungeon Train world that is an empty vanilla
+ * Overworld with no train anywhere near. Instead, the player is placed back on
+ * the train in the world's starting dimension, exactly like login and the
+ * cross-dim respawn above. No dimension roll on this path. Vanilla reaches the
+ * Overworld two different ways, so both are hooked:</p>
+ * <ul>
+ *   <li><b>First time</b> ({@code seenCredits} false) — the credits roll and the
+ *       client's "respawn" afterwards goes through {@code PlayerList.respawn},
+ *       i.e. {@link PlayerEvent.PlayerRespawnEvent#isEndConquered()}.</li>
+ *   <li><b>Every later time</b> — {@code EndPortalBlock} is a plain dimension
+ *       change to the respawn position, so only
+ *       {@link PlayerEvent.PlayerChangedDimensionEvent} (End → Overworld) fires.</li>
+ * </ul>
  *
  * <p>Skip-rules:</p>
  * <ul>
@@ -65,6 +74,24 @@ public final class RespawnDimensionEvents {
     private RespawnDimensionEvents() {}
 
     @SubscribeEvent
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        // End exit portal, credits already seen — no respawn event on this path.
+        if (event.getFrom() != Level.END || event.getTo() != Level.OVERWORLD) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // Only a real portal transit: Entity#handlePortal arms the cooldown right
+        // before changeDimension. DT's own End → Overworld teleports (login
+        // placement of a player saved in the End, the rolled respawn above,
+        // /dtp) never do, and must not bounce the player back to the End train.
+        if (player.portalProcess == null || !player.isOnPortalCooldown()) return;
+        MinecraftServer server = player.getServer();
+        if (server == null || server.isHardcore()) return;
+
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
+        if (!data.startsWithTrain()) return;
+        returnToTrainAfterEnd(player, server, data);
+    }
+
+    @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         MinecraftServer server = player.getServer();
@@ -75,6 +102,7 @@ public final class RespawnDimensionEvents {
         if (!data.startsWithTrain()) return;
 
         if (event.isEndConquered()) {
+            // End exit portal, first time (credits path).
             returnToTrainAfterEnd(player, server, data);
             return;
         }
