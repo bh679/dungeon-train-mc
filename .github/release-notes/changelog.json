@@ -17219,6 +17219,42 @@
       "released": true,
       "released_in": "v0.908.0",
       "released_at": "2026-09-16T13:07:32Z"
+    },
+    {
+      "id": "keeptrim-bundled-modrinth",
+      "version": "0.909.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Keep Trim is built in again for Modrinth and manual installs",
+      "summary": "Installing Dungeon Train from Modrinth or by hand no longer fails with \"requires keeptrim \u2014 not installed\". Keep Trim's Modrinth page is still awaiting review, so it now ships inside the Dungeon Train jar; CurseForge keeps installing it as its own mod.",
+      "highlights": [
+        "Modrinth and manual installs load without a separate Keep Trim download",
+        "CurseForge app users are unaffected \u2014 the separately installed copy still takes precedence"
+      ],
+      "pr": 1452,
+      "date": "2026-09-17",
+      "released": true,
+      "released_in": "v0.909.0",
+      "released_at": "2026-09-17T13:07:19Z"
+    },
+    {
+      "id": "backrooms-variant-placeholder-resave",
+      "version": "0.910.0",
+      "type": "chore",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Backrooms carriage re-saved in current editor format",
+      "summary": "The Backrooms dimensional carriage's variant data was re-saved from the editor in the current format. Nothing changes in-game.",
+      "highlights": [],
+      "date": "2026-09-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

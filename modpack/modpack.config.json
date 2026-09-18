@@ -80,8 +80,7 @@
       "dependency_type": "required",
       "version": "0.2.0",
       "gradle_property": "keeptrim_min_version",
-      "modrinth_project": "keep-trim",
-      "modrinth_pending_url": "https://github.com/bh679/keeptrim-mc/releases/download/v0.2.0/keeptrim-neoforge-0.2.0.jar"
+      "curseforge_only": true
     },
     {
       "name": "Fast Paintings",
