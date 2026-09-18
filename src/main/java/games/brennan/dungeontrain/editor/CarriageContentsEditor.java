@@ -338,13 +338,9 @@ public final class CarriageContentsEditor {
         enter(player, contents, null, false, !standingIn(player, contents), inside);
     }
 
-    /** Whether {@code player} is already inside {@code contents}' plot. */
+    /** Already inside this plot: a walk to its menu, not a reload — see {@link EditorPlotScope#standingIn}. */
     private static boolean standingIn(ServerPlayer player, CarriageContents contents) {
-        MinecraftServer server = player.getServer();
-        if (server == null || player.level() != server.overworld()) return false;
-        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
-        CarriageContents here = plotContaining(player.blockPosition(), dims);
-        return here != null && here.id().equals(contents.id());
+        return EditorPlotScope.standingIn(player, new Template.Contents(contents));
     }
 
     /**

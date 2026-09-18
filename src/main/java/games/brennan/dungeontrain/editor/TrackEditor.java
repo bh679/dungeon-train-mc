@@ -86,8 +86,11 @@ public final class TrackEditor {
         for (String name : TrackVariantRegistry.namesFor(TrackKind.TILE)) {
             BlockPos o = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
             int w = dims.width();
+            // +2 Y headroom — see CarriageEditor.plotContaining. Without it the roof landing was
+            // "outside" here while TrackSidePlots.containsWithMargin (the HUD) said inside, so a
+            // Go here from the roof restamped and discarded edits.
             if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TrackPlacer.TILE_LENGTH
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TrackPlacer.HEIGHT
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TrackPlacer.HEIGHT + 2
                 && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
                 return name;
             }
@@ -109,12 +112,9 @@ public final class TrackEditor {
         enter(player, onTop, !standingInDefault(player));
     }
 
-    /** Whether {@code player} is already inside the default track tile's plot. */
+    /** Already inside the default track tile's plot — see {@link EditorPlotScope#standingIn}. */
     private static boolean standingInDefault(ServerPlayer player) {
-        MinecraftServer server = player.getServer();
-        if (server == null || player.level() != server.overworld()) return false;
-        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
-        return TrackKind.DEFAULT_NAME.equals(resolveName(player.blockPosition(), dims));
+        return EditorPlotScope.standingIn(player, new Template.Track());
     }
 
     /**

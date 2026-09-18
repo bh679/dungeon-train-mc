@@ -149,13 +149,12 @@ public final class PortalRoomEditor {
         enter(player, name, false, !standingIn(player, name), inside);
     }
 
-    /** Whether {@code player} is already inside room {@code name}'s plot. */
+    /**
+     * Already inside room {@code name}'s plot — see {@link EditorPlotScope#standingIn}. Exact
+     * compare: {@code name} is expected canonical (registry-cased), as every caller's is.
+     */
     private static boolean standingIn(ServerPlayer player, String name) {
-        MinecraftServer server = player.getServer();
-        if (server == null || player.level() != server.overworld()) return false;
-        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
-        String here = plotContaining(player.blockPosition(), dims);
-        return here != null && here.equalsIgnoreCase(name);
+        return EditorPlotScope.standingIn(player, new Template.PortalRoom(name));
     }
 
     /**

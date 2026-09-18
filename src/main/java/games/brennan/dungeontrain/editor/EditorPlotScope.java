@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -59,10 +60,39 @@ public record EditorPlotScope(String key, BlockPos origin, Vec3i size) {
      * other way round. Two plots resolved at different moments in the same plot
      * produce the same key, which is the whole contract.</p>
      */
-    private static String keyFor(EditorCategory.Located located) {
-        Template model = located.model();
-        return located.category().name() + ":" + model.kind().name()
+    public static String keyFor(EditorCategory.Located located) {
+        return keyFor(located.category(), located.model());
+    }
+
+    /** {@link #keyFor(EditorCategory.Located)} for a model that has not been located — the plot a caller is about to enter. */
+    public static String keyFor(EditorCategory category, Template model) {
+        return category.name() + ":" + model.kind().name()
             + ":" + model.id() + ":" + model.variantName();
+    }
+
+    /**
+     * True when {@code player} is standing inside {@code model}'s plot.
+     *
+     * <p>The one test behind "entering a plot you are already in is a walk to its menu, not a
+     * reload" — restamping would throw away every unsaved edit for the sake of a few blocks'
+     * teleport. Every editor's {@code enter} asks this rather than its own {@code plotContaining}
+     * so that all of them agree on what "inside" means: the same {@link EditorCategory#locate}
+     * cascade the HUD, save and reset read, compared on the same four-segment {@link #keyFor}
+     * key. Names are compared exactly — the registries hand out canonical (lower-case) names, so
+     * a caller holding a raw command argument should resolve it through the registry first.</p>
+     *
+     * <p>False off the overworld (plots only stand there) and below {@link EditorLayout#PLOT_Y}.</p>
+     */
+    public static boolean standingIn(ServerPlayer player, Template model) {
+        if (player == null || model == null) return false;
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        if (player.blockPosition().getY() < EditorLayout.PLOT_Y) return false;
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        Optional<EditorCategory.Located> here = EditorCategory.locate(player, dims);
+        return here.isPresent()
+            && keyFor(here.get()).equals(keyFor(EditorCategory.of(model), model));
     }
 
     /** True when {@code worldPos} falls inside this plot's box. */

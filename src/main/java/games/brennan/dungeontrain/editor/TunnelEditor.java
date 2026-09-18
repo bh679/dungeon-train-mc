@@ -123,12 +123,9 @@ public final class TunnelEditor {
         enter(player, variant, onTop, !standingIn(player, variant));
     }
 
-    /** Whether {@code player} is already inside {@code variant}'s default-named plot. */
+    /** Already inside {@code variant}'s default-named plot — see {@link EditorPlotScope#standingIn}. */
     private static boolean standingIn(ServerPlayer player, TunnelVariant variant) {
-        MinecraftServer server = player.getServer();
-        if (server == null || player.level() != server.overworld()) return false;
-        TunnelPlot here = plotContainingNamed(player.blockPosition());
-        return here != null && here.variant() == variant && TrackKind.DEFAULT_NAME.equals(here.name());
+        return EditorPlotScope.standingIn(player, new Template.Tunnel(variant));
     }
 
     /**
