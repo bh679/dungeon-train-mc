@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
@@ -132,9 +133,9 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriageEditor.plotOrigin(v, dims);
             if (origin == null) continue;
             // The plot's own box, not the world's: the portal corridor is longer than a carriage,
-            // and {@code CarriageEditor.enter} lands the player from this same box — so the label
+            // and {@code CarriageEditor.enter} lands the player from this same call — so the label
             // sits over the corridor's real +X end, straight ahead of them.
-            Vec3i footprint = footprintOf(CarriageEditor.plotDims(v, dims));
+            Vec3i footprint = new Template.Carriage(v).plotSize(dims);
             int w = weights.weightFor(v.id());
             Provenance p = provenanceOf(CarriageTemplateStore.fileForId(v.id()));
             // `name` is the sign's text and nothing else reads it as an id (parts already put
@@ -181,8 +182,8 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriageContentsEditor.plotOrigin(c, dims);
             if (origin == null) continue;
             // Per plot, as for carriages: a portal corridor's contents are authored in the
-            // corridor's longer box, and the roof landing is derived from that box.
-            Vec3i footprint = footprintOf(CarriageContentsEditor.plotDims(c, dims));
+            // corridor's longer box, and the roof landing is derived from this same call.
+            Vec3i footprint = new Template.Contents(c).plotSize(dims);
             int w = weights.weightFor(c.id());
             Provenance p = provenanceOf(CarriageContentsStore.fileForId(c.id()));
             out.add(new Label(anchorAbove(origin, footprint),
@@ -337,17 +338,6 @@ public final class EditorPlotLabels {
 
     /** Lightweight pair returned by {@link #provenanceOf(java.nio.file.Path)}. Lives here so the call sites stay one line each. */
     record Provenance(boolean isUser, boolean isImported) {}
-
-    /**
-     * A plot box in the {@code (length, height, width)} order every footprint uses.
-     *
-     * <p>The one conversion the label anchor and the roof landing
-     * ({@link EditorPlotArrival#inFrontOfMenu}) both go through, so the two are built from the
-     * same box in the same order and cannot drift apart.</p>
-     */
-    public static Vec3i footprintOf(CarriageDims box) {
-        return new Vec3i(box.length(), box.height(), box.width());
-    }
 
     /**
      * Anchor above the footprint top, sitting over the +X back-most block of

@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -49,8 +51,13 @@ final class EditorPlotArrivalTest {
      * front of the menu with their back to it.
      */
     private static Vec3i corridorFootprint() {
-        return EditorPlotLabels.footprintOf(
-            PortalCorridorSize.corridorDims(CarriageDims.DEFAULT, PortalCorridorKind.LONG));
+        // The production call both the label and the landing size the plot with.
+        Vec3i size = new Template.Carriage(PortalCarriageBuilder.portalVariant(PortalCorridorKind.LONG))
+            .plotSize(CarriageDims.DEFAULT);
+        CarriageDims box = PortalCorridorSize.corridorDims(CarriageDims.DEFAULT, PortalCorridorKind.LONG);
+        assertEquals(new Vec3i(box.length(), box.height(), box.width()), size,
+            "test premise: the portal variant's plot is the LONG corridor's box");
+        return size;
     }
 
     @Test
@@ -78,7 +85,7 @@ final class EditorPlotArrivalTest {
 
         // The bug in one line: the same plot measured with the world's dims anchors the label
         // behind a player who is facing +X.
-        BlockPos worldDimsAnchor = EditorPlotLabels.anchorAbove(ORIGIN, EditorPlotLabels.footprintOf(CarriageDims.DEFAULT));
+        BlockPos worldDimsAnchor = EditorPlotLabels.anchorAbove(ORIGIN, FOOTPRINT);
         assertNotEquals(labelAnchor, worldDimsAnchor);
         assertTrue(worldDimsAnchor.getX() + 0.5 < landing.x(),
             "world-dims anchor x=" + worldDimsAnchor.getX() + " is behind landing x=" + landing.x());
@@ -216,5 +223,52 @@ final class EditorPlotArrivalTest {
             }
         }
         return best == null ? preferred : best;
+    }
+
+    // --- land() dispatch: which landing a request picks ---
+
+    /** The centre cell of the default box: x=4, floor+1, z=3. */
+    private static final BlockPos CENTRE = new BlockPos(4, 231, 3);
+    private static final float YAW = 37f, PITCH = -12f;
+
+    private static EditorPlotArrival landing(boolean onTop, EditorPlotArrival.Inside inside, BlockPos door,
+                                             Predicate<BlockPos> fits) {
+        return EditorPlotArrival.landing(ORIGIN, FOOTPRINT, onTop, inside, door, YAW, PITCH, fits);
+    }
+
+    @Test
+    @DisplayName("land: onTop wins — the roof landing, whatever inside/door say")
+    void landing_onTopIsRoof() {
+        EditorPlotArrival roof = EditorPlotArrival.inFrontOfMenu(ORIGIN, FOOTPRINT);
+        assertEquals(roof, landing(true, EditorPlotArrival.Inside.FRONT_DOOR, DOOR, blocked()));
+        assertEquals(roof, landing(true, EditorPlotArrival.Inside.CENTRE, null, blocked()));
+    }
+
+    @Test
+    @DisplayName("land: FRONT_DOOR with a door lands in the doorway facing +X")
+    void landing_frontDoor() {
+        EditorPlotArrival a = landing(false, EditorPlotArrival.Inside.FRONT_DOOR, DOOR, blocked());
+        assertEquals(new EditorPlotArrival(0.5, 231, 3.5, EditorPlotArrival.FACING_POSITIVE_X, 0f), a);
+    }
+
+    @Test
+    @DisplayName("land: FRONT_DOOR with no door (doorless plot) lands at the centre, heading kept")
+    void landing_frontDoorWithoutDoorIsCentre() {
+        EditorPlotArrival a = landing(false, EditorPlotArrival.Inside.FRONT_DOOR, null, blocked());
+        assertEquals(new EditorPlotArrival(4.5, 231, 3.5, YAW, PITCH), a);
+    }
+
+    @Test
+    @DisplayName("land: CENTRE ignores the door and keeps the heading")
+    void landing_centreIgnoresDoor() {
+        EditorPlotArrival a = landing(false, EditorPlotArrival.Inside.CENTRE, DOOR, blocked());
+        assertEquals(new EditorPlotArrival(4.5, 231, 3.5, YAW, PITCH), a);
+    }
+
+    @Test
+    @DisplayName("land: a blocked doorway steps inside along the row — the fit test is honoured")
+    void landing_blockedDoorStepsInside() {
+        EditorPlotArrival a = landing(false, EditorPlotArrival.Inside.FRONT_DOOR, DOOR, blocked(DOOR));
+        assertEquals(new EditorPlotArrival(1.5, 231, 3.5, EditorPlotArrival.FACING_POSITIVE_X, 0f), a);
     }
 }

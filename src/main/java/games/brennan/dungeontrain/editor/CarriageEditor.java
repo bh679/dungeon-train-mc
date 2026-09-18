@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageDoorCells;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -271,16 +272,9 @@ public final class CarriageEditor {
         rememberReturn(player);
         if (stamp) stampPlot(overworld, variant, dims);
 
-        CarriageDims box = plotDims(variant, dims);
-        Vec3i footprint = EditorPlotLabels.footprintOf(box);
-        if (onTop) {
-            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
-        } else if (inside == EditorPlotArrival.Inside.FRONT_DOOR) {
-            BlockPos door = games.brennan.dungeontrain.train.CarriageDoorCells.doorBases(origin, box).get(0);
-            EditorPlotArrival.atFrontDoor(overworld, origin, footprint, door).teleport(player, overworld);
-        } else {
-            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
-        }
+        Vec3i footprint = new Template.Carriage(variant).plotSize(dims);
+        BlockPos door = CarriageDoorCells.doorBases(origin, plotDims(variant, dims)).get(0);
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{} ({})",
             player.getName().getString(), variant.id(), origin,

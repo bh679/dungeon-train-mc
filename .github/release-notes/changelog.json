@@ -17394,8 +17394,44 @@
       "released_at": null
     },
     {
+      "id": "editor-plot-arrival-land",
+      "version": "0.917.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Every editor lands you the same way",
+      "summary": "Where you arrive when you enter a plot \u2014 on the roof facing its menu, in its front doorway, or at its centre \u2014 used to be worked out separately by each of the seven editors. It is now decided in one place, so carriages, dimensional carriages, parts, pillars, tracks and tunnels can never drift apart. Nothing moves for you: every landing is exactly where it was.",
+      "highlights": [
+        "One landing rule shared by all seven editors, covered by tests for each way in.",
+        "A plot with no doorway simply lands you at its centre \u2014 no special cases per editor."
+      ],
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bed-no-respawn-lines",
+      "version": "0.918.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Beds no longer claim to set a respawn point",
+      "summary": "Sleeping in a bed on the train used to answer with 'Respawn point set \u2014 aboard the train' and similar lines, which read as if the bed worked like a normal spawn. Every bed message now says plainly that no respawn point was set \u2014 the train is your only way back, wherever it has rolled. All 20 languages carry the corrected wording.",
+      "highlights": [],
+      "pr": 1466,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "portal-plot-menu-in-front",
-      "version": "0.916.0",
+      "version": "0.918.0",
       "type": "fix",
       "tags": [
         "fix",
