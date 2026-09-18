@@ -17525,6 +17525,27 @@
       "released": true,
       "released_in": "v0.923.0",
       "released_at": "2026-09-18T12:05:02Z"
+    },
+    {
+      "id": "obs-share-link-nudge",
+      "version": "0.924.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Streaming? The menu nudges you to share your link",
+      "summary": "If OBS or Streamlabs is open when you reach the main menu, the red Videos icon stretches out a \"Streaming? Share link!\" tag, and the Submit button on the Videos page pulses red. A small \u00d7 above the tag hides it for the session. Nothing about it leaves your machine \u2014 it only looks at whether the app is running.",
+      "highlights": [
+        "Videos icon on the title screen grows a \"Streaming? Share link!\" tag while OBS/Streamlabs is running",
+        "Submit-a-video button on the Videos page pulses red at the same time",
+        "Click the \u00d7 above the tag to hide it until next launch"
+      ],
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

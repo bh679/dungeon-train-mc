@@ -196,6 +196,12 @@ neoForge {
             if (project.hasProperty('dpiBypassTest')) {
                 systemProperty 'dungeontrain.dpi_bypass_test', project.property('dpiBypassTest').toString()
             }
+            // Same seam for the streaming-software probe: ./gradlew runClient -PstreamingTest=obs64.exe
+            // makes StreamingSoftwareDetector report OBS, so the Videos icon's share tab can be seen
+            // on a machine that isn't streaming.
+            if (project.hasProperty('streamingTest')) {
+                systemProperty 'dungeontrain.streaming_test', project.property('streamingTest').toString()
+            }
             // Shader-compat sweep: ./gradlew runClient -PshaderSweep="<world folder name>" opens that
             // world and drives itself round the five atmosphere sites, writing one screenshot each to
             // run/screenshots/ with the F3+5 panel up, then logs SHADER SWEEP COMPLETE and stops. Lets
