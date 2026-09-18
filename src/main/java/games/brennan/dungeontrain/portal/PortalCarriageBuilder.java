@@ -963,17 +963,26 @@ public final class PortalCarriageBuilder {
     /**
      * The stage every stamp of pair {@code pairKey} resolves its stage placeholder blocks through —
      * the base pair, each room tile copy and each extra exit corridor alike — so a copy is
-     * block-identical to the original it stands in for. {@code pairKey} is the entry carriage index,
-     * and the stage is read off that carriage's gate ({@link GateContext#forCarriage}), which is the
-     * same whichever tick lays the copy: a structure never changes stage between its base stamp and
-     * a copy laid a visit later.
+     * block-identical to the original it stands in for.
      *
-     * <p>{@code null} (the default palette) for the test rig, matching what its base stamp uses:
-     * {@code PortalTestSession#PAIR_KEY} is a legal carriage index, and resolving copies through
-     * carriage 0's real stage would put different blocks in a copy than in the room it copies.</p>
+     * <p><b>The carriage's own recorded stage, not a re-derived one.</b> {@code pairKey} is the entry
+     * carriage index, and {@link PortalRegistry#stampedStageOf} holds the stage that carriage's
+     * placeholders actually resolved through when it was placed. Re-deriving it here from
+     * {@link GateContext#forCarriage} gave a different answer: the carriage was gated on the group's
+     * real placed world-X, the formula on a static {@code pIdx × length} one, and the two drift
+     * apart along the run — a warped-wood corridor in the Nether stretch got an oak twin. All three
+     * carriages of a portal group share a stage, so the entry's record answers for the pair.</p>
+     *
+     * <p>Falls back to the formula only where nothing was recorded — worlds saved before the record
+     * existed, and groups that proved themselves from their own blocks. {@code null} (the default
+     * palette) for the test rig, matching what its base stamp uses: {@code PortalTestSession#PAIR_KEY}
+     * is a legal carriage index, and resolving copies through carriage 0's real stage would put
+     * different blocks in a copy than in the room it copies.</p>
      */
     public static String stageIdFor(ServerLevel level, int pairKey, CarriageDims dims) {
         if (PortalTestSession.isTestStamp(pairKey)) return null;
+        Optional<String> recorded = PortalRegistry.get(level).stampedStageOf(pairKey);
+        if (recorded.isPresent()) return recorded.get().isEmpty() ? null : recorded.get();
         return StageResolver.stageIdFor(GateContext.forCarriage(level, pairKey, dims.length()));
     }
 

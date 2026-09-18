@@ -11,8 +11,11 @@ import net.minecraft.world.level.saveddata.SavedData;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -45,6 +48,7 @@ public final class PortalRegistry extends SavedData {
     private static final String TAG_DELTA_Y = "deltaY";
     private static final String TAG_SEVERED = "severed";
     private static final String TAG_STAMPED_PORTAL_PARTS = "stampedPortalParts";
+    private static final String TAG_STAMPED_STAGES = "stampedStages";
 
     private final List<PortalGeometry> portals = new ArrayList<>();
 
@@ -93,6 +97,28 @@ public final class PortalRegistry extends SavedData {
      * always describes what is standing there now, not what once was.</p>
      */
     private final Set<Integer> stampedPortalParts = new HashSet<>();
+
+    /**
+     * The worldgen stage each stamped portal part's placeholder blocks resolved through, keyed as
+     * {@link #stampedPortalParts} is. {@code ""} for a carriage that resolved through the default
+     * palette (no stage claimed its level/phase) — recorded, and distinct from an index nothing was
+     * ever recorded for.
+     *
+     * <p><b>Why the stage has to be recorded rather than re-derived.</b> A carriage picks its stage
+     * from the gate context it was placed with — the group's <i>real</i> world-X at that moment
+     * ({@code GateContext.forCarriageAtWorldX}). That X is gone once the train rolls on, and the
+     * static {@code pIdx → X} formula the twin stamps used instead drifts behind the real
+     * placement the further along the run a group sits — so a corridor built from warped wood in
+     * the Nether stretch got a twin built from oak, resolved for the overworld band the formula
+     * still believed it was in. The stage is fixed at stamp time; the record is what lets every
+     * copy of the corridor — twin, room tile, extra exit — resolve through the same one.</p>
+     *
+     * <p>Kept in step with {@link #stampedPortalParts}: forgotten for an index the rolling window
+     * re-stamps as an ordinary carriage. Absent for worlds saved before it existed and for groups
+     * that proved themselves from their own blocks ({@code PortalStampRecord#confirmGroup}) — those
+     * fall back to the formula, which is exactly what they did before.</p>
+     */
+    private final Map<Integer, String> stampedStages = new HashMap<>();
 
     /**
      * Anchor-grid spacing for auto-spawning, or {@link PortalAnchors#SPACING_OFF}. Persisted so the
@@ -261,10 +287,33 @@ public final class PortalRegistry extends SavedData {
      * round as an ordinary carriage must stop answering yes.</p>
      */
     public synchronized void noteStamped(int carriageIndex, boolean portalPart) {
-        boolean changed = portalPart
-            ? stampedPortalParts.add(carriageIndex)
-            : stampedPortalParts.remove(carriageIndex);
+        noteStamped(carriageIndex, portalPart, null);
+    }
+
+    /**
+     * As {@link #noteStamped(int, boolean)}, also recording the stage a portal part's placeholder
+     * blocks resolved through — {@code null} for the default palette. Ignored (and any earlier
+     * record forgotten) when {@code portalPart} is false. See {@link #stampedStages}.
+     */
+    public synchronized void noteStamped(int carriageIndex, boolean portalPart, String stageId) {
+        boolean changed;
+        if (portalPart) {
+            changed = stampedPortalParts.add(carriageIndex);
+            String stored = stageId == null ? "" : stageId;
+            changed |= !stored.equals(stampedStages.put(carriageIndex, stored));
+        } else {
+            changed = stampedPortalParts.remove(carriageIndex);
+            changed |= stampedStages.remove(carriageIndex) != null;
+        }
         if (changed) setDirty();
+    }
+
+    /**
+     * The stage carriage {@code carriageIndex} was stamped for: empty when nothing was recorded,
+     * {@code Optional.of("")} when it resolved through the default palette, else the stage id.
+     */
+    public synchronized Optional<String> stampedStageOf(int carriageIndex) {
+        return Optional.ofNullable(stampedStages.get(carriageIndex));
     }
 
     /** Forget every portal, returning how many were dropped. Blocks already stamped are left alone. */
@@ -313,6 +362,18 @@ public final class PortalRegistry extends SavedData {
         for (int carriageIndex : tag.getIntArray(TAG_STAMPED_PORTAL_PARTS)) {
             data.stampedPortalParts.add(carriageIndex);
         }
+        // Absent in worlds saved before the stage was recorded — those twins fall back to the
+        // pIdx formula, as they always did. A key that is not an int is skipped, not fatal.
+        if (tag.contains(TAG_STAMPED_STAGES, Tag.TAG_COMPOUND)) {
+            CompoundTag stages = tag.getCompound(TAG_STAMPED_STAGES);
+            for (String key : stages.getAllKeys()) {
+                try {
+                    data.stampedStages.put(Integer.parseInt(key), stages.getString(key));
+                } catch (NumberFormatException ex) {
+                    LOGGER.warn("[DungeonTrain] Skipping stamped-stage entry with non-index key '{}'.", key);
+                }
+            }
+        }
         if (!tag.contains(TAG_PORTALS)) return data;
 
         ListTag list = tag.getList(TAG_PORTALS, Tag.TAG_COMPOUND);
@@ -346,6 +407,11 @@ public final class PortalRegistry extends SavedData {
         tag.putIntArray(TAG_SEVERED, severedPairs.stream().mapToInt(Integer::intValue).toArray());
         tag.putIntArray(TAG_STAMPED_PORTAL_PARTS,
             stampedPortalParts.stream().mapToInt(Integer::intValue).toArray());
+        CompoundTag stages = new CompoundTag();
+        for (Map.Entry<Integer, String> e : stampedStages.entrySet()) {
+            stages.putString(Integer.toString(e.getKey()), e.getValue());
+        }
+        tag.put(TAG_STAMPED_STAGES, stages);
 
         ListTag list = new ListTag();
         for (PortalGeometry geo : portals) {
