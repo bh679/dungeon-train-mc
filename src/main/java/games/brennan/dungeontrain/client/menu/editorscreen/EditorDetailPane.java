@@ -103,7 +103,7 @@ public final class EditorDetailPane {
         // half these controls, so the header offers the walk rather than only naming it. Offered
         // while standing in the plot too: the walk lands in front of the plot's menu, which is
         // somewhere to want to be from anywhere inside it.
-        goHere = ctx.hasSelection() ? EditorScreenActions.enterEntry(ctx) : null;
+        goHere = ctx.hasSelection() ? EditorScreenActions.enterEntry(ctx, DungeonTrainNet::sendToServer) : null;
         // A new selection starts on its first page; a shorter list clamps the page it was on.
         if (ctx.selection() == null || !ctx.selection().equals(pagedFor)) page = 0;
         pagedFor = ctx.selection();

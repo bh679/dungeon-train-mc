@@ -19,11 +19,16 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  * past its end (PR #1449 shipped that way) — so CI
  * ({@code scripts/net/check-protocol-version.py}) fails a PR that changes a packet's
  * encode/decode body without touching this constant.</p>
+ *
+ * <p>Bump it for a new <em>meaning</em> too, not only a new field: an ordinal-encoded enum
+ * that gains a constant decodes on an older peer as that decoder's fallback — a new client's
+ * {@code EditorPlotActionPacket.Action.GO_HERE} would read as {@code SAVE} on a v73 server.
+ * The layout check cannot see that, so the author has to.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "73";
+    public static final String PROTOCOL_VERSION = "74";
 
     private DungeonTrainNet() {}
 
