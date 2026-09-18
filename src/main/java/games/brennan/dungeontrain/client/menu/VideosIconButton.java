@@ -50,8 +50,6 @@ public final class VideosIconButton extends Button {
     private static final Component SHARE_TAB_TEXT = Component.translatable("gui.dungeontrain.videos.share_tab");
     /** Horizontal padding inside the tag, either side of the text. */
     private static final int TAB_PAD = 4;
-    /** The tag is one pixel shorter than the tile top and bottom so it reads as hanging off it. */
-    private static final int TAB_INSET_Y = 1;
     /** Breathing room the tag must leave to the screen's right edge, else it stays folded. */
     private static final int TAB_SCREEN_MARGIN = 4;
     /** Full extend (or retract) takes this long. Wall-clock, like the Discord pulse. */
@@ -104,7 +102,7 @@ public final class VideosIconButton extends Button {
     }
 
     /**
-     * The tag, drawn under the tile so the tile's nipped corner sits over its root. The text is
+     * The tag, tile-height, drawn under the tile so the nipped corner sits over its root. The text is
      * scissored to the tag's current extent so it emerges from behind the icon rather than fading.
      */
     private void renderShareTab(GuiGraphics g, int x, int y, int s, int inset, int body) {
@@ -112,8 +110,9 @@ public final class VideosIconButton extends Button {
         if (out <= 0) return;
         int left = x + s - inset;
         int right = x + getWidth();
-        int top = y + TAB_INSET_Y;
-        int bottom = y + s - TAB_INSET_Y;
+        // Full tile height — the tag reads as the tile itself stretching, not a tag hung off it.
+        int top = y;
+        int bottom = y + s;
         g.fill(left, top, right, bottom, body);
 
         Font font = Minecraft.getInstance().font;
