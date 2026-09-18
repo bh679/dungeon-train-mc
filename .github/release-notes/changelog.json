@@ -17316,7 +17316,7 @@
     },
     {
       "id": "editor-load-while-standing-in-plot",
-      "version": "0.912.0",
+      "version": "0.913.0",
       "type": "fix",
       "tags": [
         "fix",
