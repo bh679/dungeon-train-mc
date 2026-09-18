@@ -11903,5 +11903,135 @@
         "0"
       ]
     }
+  },
+  "gui.dungeontrain.editor_menu.type_menu.whole_every": {
+    "1": {
+      "label": "how many carriage groups pass between whole groups",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.whole_weight_saved": {
+    "1": {
+      "label": "the whole kind — room or group",
+      "examples": [
+        "room",
+        "group"
+      ]
+    },
+    "2": {
+      "label": "the template's id",
+      "examples": [
+        "fancyhall",
+        "triple_market"
+      ]
+    },
+    "3": {
+      "label": "the stored weight, 0–100",
+      "examples": [
+        "1",
+        "40"
+      ]
+    },
+    "4": {
+      "label": "the weights file the value was saved to",
+      "examples": [
+        "config/dungeontrain/user/wholecarriages/weights.json"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.whole_label_saved": {
+    "1": {
+      "label": "the whole kind — room or group",
+      "examples": [
+        "room",
+        "group"
+      ]
+    },
+    "2": {
+      "label": "the template's id",
+      "examples": [
+        "fancyhall"
+      ]
+    },
+    "3": {
+      "label": "the label it now shows",
+      "examples": [
+        "Fancy Hall"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.whole_builder_saved": {
+    "1": {
+      "label": "the whole kind — room or group",
+      "examples": [
+        "room",
+        "group"
+      ]
+    },
+    "2": {
+      "label": "the template's id",
+      "examples": [
+        "fancyhall"
+      ]
+    },
+    "3": {
+      "label": "the credited builder, or - when cleared",
+      "examples": [
+        "Steve",
+        "-"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.whole_entered": {
+    "1": {
+      "label": "the template's display name",
+      "examples": [
+        "whole room / fancyhall",
+        "whole group / triple_market"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.whole_every_set": {
+    "1": {
+      "label": "how many carriage groups pass between whole groups",
+      "examples": [
+        "12",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.whole_failed": {
+    "1": {
+      "label": "the template id, or the setting name",
+      "examples": [
+        "fancyhall",
+        "every"
+      ]
+    },
+    "2": {
+      "label": "the error message",
+      "examples": [
+        "Source tree not writable"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_whole": {
+    "1": {
+      "label": "the room id the player typed",
+      "examples": [
+        "fancyhal"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_whole_group": {
+    "1": {
+      "label": "the group id the player typed",
+      "examples": [
+        "triple_markt"
+      ]
+    }
   }
 }

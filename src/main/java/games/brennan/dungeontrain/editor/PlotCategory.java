@@ -125,9 +125,12 @@ public enum PlotCategory {
         return this != PARTS && this != ARCHITECTURE;
     }
 
-    /** Whether templates here carry a spawn gate — min/max level, dimensions, stage link. */
+    /**
+     * Whether templates here carry a spawn gate — min/max level, dimensions, stage link. Whole rows
+     * are weight-only for now: their pool is picked by weight, gated by the slot's shell roll.
+     */
     public boolean hasGate() {
-        return this != PARTS && this != ARCHITECTURE;
+        return this != PARTS && this != ARCHITECTURE && this != WHOLE && this != WHOLE_GROUP;
     }
 
     /**

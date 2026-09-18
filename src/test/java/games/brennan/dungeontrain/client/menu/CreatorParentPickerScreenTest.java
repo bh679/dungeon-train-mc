@@ -56,6 +56,8 @@ final class CreatorParentPickerScreenTest {
     // Translated: MenuTestLanguage installs the shipped en_us, so the rows carry what a player reads.
     private static final String NEW = "User builds (new)";
     private static final String BACK = "< Back";
+    private static final String WHOLE_ROOM = "Whole carriage room";
+    private static final String TOP_LEVEL = "Carriage shell (top level)";
 
     private static List<String> labels(List<CommandMenuEntry> entries) {
         return entries.stream().map(en -> switch (en) {
@@ -76,8 +78,9 @@ final class CreatorParentPickerScreenTest {
     void offersNewDefaultFirst() {
         CreatorParentPickerScreen picker = new CreatorParentPickerScreen(PlotCategory.CONTENTS, null);
         List<CommandMenuEntry> rows = picker.entries(roster(false));
-        assertEquals(List.of(NEW, "maze", "shop", BACK), labels(rows),
-            "members (copper) are never parents; the default leads because the load will create it");
+        assertEquals(List.of(NEW, "maze", "shop", WHOLE_ROOM, BACK), labels(rows),
+            "members (copper) are never parents; the default leads because the load will create it; "
+                + "the Whole pool is the last destination");
         assertTrue(((CommandMenuEntry.ClientAction) rows.get(0)).highlighted(),
             "the default is the choice until another is made, and reads as such");
     }
@@ -87,7 +90,7 @@ final class CreatorParentPickerScreenTest {
     void existingDefaultIsNotOfferedTwice() {
         CreatorParentPickerScreen picker = new CreatorParentPickerScreen(PlotCategory.CONTENTS, null);
         List<String> rows = labels(picker.entries(roster(true)));
-        assertEquals(List.of("maze", "shop", "User builds  ·  user_builds", BACK), rows);
+        assertEquals(List.of("maze", "shop", "User builds  ·  user_builds", WHOLE_ROOM, BACK), rows);
     }
 
     @Test
@@ -130,11 +133,30 @@ final class CreatorParentPickerScreenTest {
     }
 
     @Test
-    @DisplayName("only the kinds with sub-variants load under a parent")
+    @DisplayName("carriages choose between the shell pool and the Whole pool; contents add the Whole pool")
+    void carriagesPickShellOrWhole() {
+        CreatorParentPickerScreen picker = new CreatorParentPickerScreen(PlotCategory.CARRIAGES, null);
+        List<CommandMenuEntry> rows = picker.entries(roster(false));
+        assertEquals(List.of(TOP_LEVEL, WHOLE_ROOM, BACK), labels(rows));
+        assertTrue(((CommandMenuEntry.ClientAction) rows.get(0)).highlighted(), "top level is the default");
+        assertEquals("", CreatorLoadParent.parentFor(PlotCategory.CARRIAGES));
+        ((CommandMenuEntry.ClientAction) rows.get(1)).action().run();
+        assertEquals(CreatorLoadParent.WHOLE_ROOM, CreatorLoadParent.parentFor(PlotCategory.CARRIAGES));
+        assertEquals(WHOLE_ROOM, CreatorLoadParent.labelFor(PlotCategory.CARRIAGES, roster(false)));
+        assertEquals(BuilderRelaySubVariant.DEFAULT_PARENT_ID, CreatorLoadParent.parentFor(PlotCategory.CONTENTS),
+            "a carriage choice must not move where the next contents land");
+        CreatorLoadParent.set(PlotCategory.CARRIAGES, "");
+        assertEquals(TOP_LEVEL, CreatorLoadParent.labelFor(PlotCategory.CARRIAGES, null));
+        assertTrue(CreatorLoadParent.offersWholeRoom(PlotCategory.CONTENTS));
+        assertFalse(CreatorLoadParent.offersWholeRoom(PlotCategory.PORTALS), "rooms have no shell to bake onto");
+    }
+
+    @Test
+    @DisplayName("the kinds with a destination to choose: parents, or the Whole pool")
     void supportedKinds() {
         assertTrue(CreatorLoadParent.supports("contents"));
         assertTrue(CreatorLoadParent.supports("portal_room"));
-        assertFalse(CreatorLoadParent.supports("carriage"), "carriages have no group system yet");
+        assertTrue(CreatorLoadParent.supports("carriage"), "a carriage can land in the Whole pool");
         assertFalse(CreatorLoadParent.supports("part"));
         assertFalse(CreatorLoadParent.supports("track"));
         assertFalse(CreatorLoadParent.supports("carriage_group"));

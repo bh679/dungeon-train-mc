@@ -68,26 +68,32 @@ final class PlotCategoryTest {
     }
 
     @Test
-    @DisplayName("owner: parts are stamped as carriages, everything else is itself")
+    @DisplayName("owner: parts are stamped as carriages, groups as whole, everything else is itself")
     void owner_partsBelongToCarriages() {
-        // Matches EditorCategory.locate(), which reports CARRIAGES for a part plot.
+        // Matches EditorCategory.locate(), which reports CARRIAGES for a part plot and WHOLE for a group.
         assertSame(EditorCategory.CARRIAGES, PlotCategory.PARTS.owner());
+        assertSame(EditorCategory.WHOLE, PlotCategory.WHOLE_GROUP.owner());
+        assertTrue(PlotCategory.WHOLE_GROUP.browsesUnder(PlotCategory.WHOLE));
+        assertTrue(PlotCategory.PARTS.browsesUnder(PlotCategory.CARRIAGES));
+        assertFalse(PlotCategory.PARTS.browsesUnder(PlotCategory.WHOLE));
+        assertFalse(PlotCategory.CONTENTS.browsesUnder(null));
         for (PlotCategory c : PlotCategory.values()) {
-            if (c == PlotCategory.PARTS) continue;
+            if (c == PlotCategory.PARTS || c == PlotCategory.WHOLE_GROUP) continue;
             assertEquals(c.name(), c.owner().name(), c + " should own itself");
         }
     }
 
     @Test
-    @DisplayName("of: every stamping category widens, and never lands on PARTS")
+    @DisplayName("of: every stamping category widens, and never lands on PARTS or WHOLE_GROUP")
     void of_isTotalOverEditorCategory() {
         for (EditorCategory e : EditorCategory.values()) {
             PlotCategory widened = PlotCategory.of(e);
             assertSame(e, widened.owner());
             assertFalse(widened == PlotCategory.PARTS);
+            assertFalse(widened == PlotCategory.WHOLE_GROUP);
         }
-        // PARTS is exactly the one addressable value with no stamping counterpart.
-        assertEquals(EditorCategory.values().length + 1, PlotCategory.values().length);
+        // PARTS and WHOLE_GROUP are exactly the two addressable values with no stamping counterpart.
+        assertEquals(EditorCategory.values().length + 2, PlotCategory.values().length);
     }
 
     @Test
@@ -97,6 +103,7 @@ final class PlotCategoryTest {
             assertEquals(e.displayName(), PlotCategory.of(e).displayName());
         }
         assertEquals("Parts", PlotCategory.PARTS.displayName());
+        assertEquals("Group", PlotCategory.WHOLE_GROUP.displayName());
     }
 
     @Test
@@ -104,18 +111,20 @@ final class PlotCategoryTest {
     void capabilities_pinTheAllowlistsTheyReplaced() {
         // EditorPlotLabelsRenderer.hasActionRow was literally:
         //   "CARRIAGES".equals(c) || "CONTENTS".equals(c) || "TRACKS".equals(c) || "PORTALS".equals(c)
+        // — plus the two Whole kinds, which have plots to save and a pool to weight.
         assertEquals(
-            EnumSet.of(PlotCategory.CARRIAGES, PlotCategory.CONTENTS,
-                PlotCategory.TRACKS, PlotCategory.PORTALS),
+            EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
             matching(PlotCategory::hasActionRow));
 
         // EditorPlotTeleport.weightCommandFor had arms for those same four, default -> null.
         assertEquals(
-            EnumSet.of(PlotCategory.CARRIAGES, PlotCategory.CONTENTS,
-                PlotCategory.TRACKS, PlotCategory.PORTALS),
+            EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
             matching(PlotCategory::hasWeightPool));
 
-        // levelCommandFor / phaseCommandFor / stageApplyCommandFor: same four arms.
+        // levelCommandFor / phaseCommandFor / stageApplyCommandFor: same four arms. Whole rows are
+        // weight-only in v1 — no gate cells.
         assertEquals(
             EnumSet.of(PlotCategory.CARRIAGES, PlotCategory.CONTENTS,
                 PlotCategory.TRACKS, PlotCategory.PORTALS),
