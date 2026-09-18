@@ -17294,21 +17294,60 @@
       "released_at": null
     },
     {
-      "id": "editor-command-chat-confirmations-restored",
+      "id": "net-protocol-version-guard",
       "version": "0.912.0",
       "type": "fix",
       "tags": [
         "fix",
-        "editor",
-        "translations"
+        "multiplayer",
+        "internal"
       ],
-      "title": "Editor commands confirm in chat again",
-      "summary": "Since 0.908.0 a number of editor commands did their job silently \u2014 entering a plot, setting a carriage or track weight, replacing a block across a stage, baking a stage palette \u2014 with the confirmation line never reaching chat and an error landing in the log instead. Every one of those messages is back, and plot positions now read as plain coordinates (\"plot at 0, 230, 0\").",
+      "title": "Outdated clients are turned away at login instead of being kicked mid-session",
+      "summary": "Joining a server with a Dungeon Train build older than the server's could work at first and then drop you the moment you used a plot panel in the editor, because the two builds disagreed about what that message looked like. The network version now says so up front: a mismatched client sees the usual mod-mismatch screen at login, with both versions listed, and a matching one joins as before. A check in the build pipeline keeps this from slipping again.",
       "highlights": [
-        "/dungeontrain editor enter (carriages, tunnels, pillars, tracks, contents, parts, adjuncts) confirms which plot you landed in and where",
-        "Weight, stage replaceblock, stage bake and portal save commands report their result and the file they wrote"
+        "Client and server builds that disagree are refused at login, not dropped mid-game",
+        "The mismatch screen names both versions so you know which side to update"
       ],
-      "pr": 1458,
+      "pr": 1456,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-enter-chat-blockpos-error",
+      "version": "0.912.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor plots enter cleanly again",
+      "summary": "Entering any editor plot \u2014 a carriage, tunnel, pillar, contents or track plot \u2014 or creating a new one printed a red \"enter failed\" error in chat even though you had arrived. The green \"entered \u2026 plot at x, y, z\" line is back and the error is gone.",
+      "highlights": [
+        "Affects every editor enter and new/clone command since v0.907."
+      ],
+      "pr": 1459,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-load-while-standing-in-plot",
+      "version": "0.914.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Loading a build shows it, even from inside the plot",
+      "summary": "Loading a build from the relay while standing in its plot now brings the new blocks in with you. Before, the plot kept showing what was there already, and saving would quietly write that back over the build you had just loaded.",
+      "highlights": [
+        "Load and Replace refresh the plot you are standing in.",
+        "Go here and the panel's Enter still keep your unsaved edits."
+      ],
+      "pr": 1457,
       "date": "2026-09-18",
       "released": false,
       "released_in": null,

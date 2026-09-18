@@ -74,8 +74,14 @@ public record EditorPlotActionPacket(
      * action is the explicit "go inside" companion driven by the per-plot
      * panel's Enter button. Where the plot has a doorway it lands there, facing in;
      * {@link #centre} (shift held at the click) asks for the footprint centre instead.
+     *
+     * <p>{@link #GO_HERE} is the X menu's Go here while the player already stands in the plot: a
+     * walk to the front of its menu, not a reload. Both entering actions restamp only when the
+     * player is not already inside — the slash-command enters always restamp, which is what a
+     * post-download jump needs, so the two walks that must keep unsaved edits are sent this way
+     * where the intent is explicit.</p>
      */
-    public enum Action { SAVE, RESET, CLEAR, ENTER_INSIDE }
+    public enum Action { SAVE, RESET, CLEAR, ENTER_INSIDE, GO_HERE }
 
     public static final Type<EditorPlotActionPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_plot_action"));
@@ -207,6 +213,7 @@ public record EditorPlotActionPacket(
                     .copy().withStyle(ChatFormatting.GREEN));
             }
             case ENTER_INSIDE -> CarriageEditor.enterInside(sender, variant, packet.inside());
+            case GO_HERE -> CarriageEditor.walkTo(sender, variant, true);
         }
         LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} carriage '{}'",
             sender.getName().getString(), packet.action, variant.id());
@@ -235,6 +242,7 @@ public record EditorPlotActionPacket(
                     .copy().withStyle(ChatFormatting.GREEN));
             }
             case ENTER_INSIDE -> CarriageContentsEditor.enterInside(sender, contents, packet.inside());
+            case GO_HERE -> CarriageContentsEditor.walkTo(sender, contents, true);
         }
         LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} contents '{}'",
             sender.getName().getString(), packet.action, contents.id());
@@ -247,8 +255,10 @@ public record EditorPlotActionPacket(
         String modelId = packet.modelId;
         // Track tile.
         if ("tile".equals(modelId) || "track".equals(modelId)) {
-            if (packet.action == Action.ENTER_INSIDE) {
-                games.brennan.dungeontrain.editor.TrackEditor.enter(sender, false);
+            switch (packet.action) {
+                case ENTER_INSIDE -> games.brennan.dungeontrain.editor.TrackEditor.walkTo(sender, false);
+                case GO_HERE -> games.brennan.dungeontrain.editor.TrackEditor.walkTo(sender, true);
+                default -> {}
             }
             LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} track tile '{}'",
                 sender.getName().getString(), packet.action, packet.modelName);
@@ -267,7 +277,8 @@ public record EditorPlotActionPacket(
                             "Editor: cleared all blocks in " + label + ".")
                             .copy().withStyle(ChatFormatting.GREEN));
                     }
-                    case ENTER_INSIDE -> PillarEditor.enter(sender, s, false);
+                    case ENTER_INSIDE -> PillarEditor.walkTo(sender, s, false);
+                    case GO_HERE -> PillarEditor.walkTo(sender, s, true);
                 }
                 LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} pillar '{}/{}'",
                     sender.getName().getString(), packet.action, s.id(), packet.modelName);
@@ -287,7 +298,8 @@ public record EditorPlotActionPacket(
                             "Editor: cleared all blocks in " + label + ".")
                             .copy().withStyle(ChatFormatting.GREEN));
                     }
-                    case ENTER_INSIDE -> PillarEditor.enter(sender, a, false);
+                    case ENTER_INSIDE -> PillarEditor.walkTo(sender, a, false);
+                    case GO_HERE -> PillarEditor.walkTo(sender, a, true);
                 }
                 LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} adjunct '{}/{}'",
                     sender.getName().getString(), packet.action, a.id(), packet.modelName);
@@ -310,7 +322,8 @@ public record EditorPlotActionPacket(
                             "Editor: cleared all blocks in " + label + ".")
                             .copy().withStyle(ChatFormatting.GREEN));
                     }
-                    case ENTER_INSIDE -> TunnelEditor.enter(sender, tv, false);
+                    case ENTER_INSIDE -> TunnelEditor.walkTo(sender, tv, false);
+                    case GO_HERE -> TunnelEditor.walkTo(sender, tv, true);
                 }
                 LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} tunnel '{}/{}'",
                     sender.getName().getString(), packet.action, tv.name(), packet.modelName);
@@ -351,6 +364,7 @@ public record EditorPlotActionPacket(
                     .copy().withStyle(ChatFormatting.GREEN));
             }
             case ENTER_INSIDE -> games.brennan.dungeontrain.editor.PortalRoomEditor.enterInside(sender, name, packet.inside());
+            case GO_HERE -> games.brennan.dungeontrain.editor.PortalRoomEditor.walkTo(sender, name, true);
         }
         LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} portal room '{}'",
             sender.getName().getString(), packet.action, name);
