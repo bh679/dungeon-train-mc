@@ -1040,7 +1040,7 @@ public final class EditorGuiScreen extends Screen {
         lastClickMillis = now;
         EditorScreenState.select(key);
         if (doubleClick) {
-            dispatch(EditorScreenActions.enterEntry(context(EditorRosterClient.index())));
+            dispatch(EditorScreenActions.enterEntry(context(EditorRosterClient.index()), DungeonTrainNet::sendToServer));
         }
     }
 
