@@ -140,6 +140,14 @@
     {
       "id": "raveroom",
       "weight": 1
+    },
+    {
+      "id": "wda",
+      "weight": 1
+    },
+    {
+      "id": "wardenfeat",
+      "weight": 1
     }
   ]
 }
