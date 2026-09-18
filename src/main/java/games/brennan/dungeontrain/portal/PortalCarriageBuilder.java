@@ -12,6 +12,8 @@ import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
+import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.StageResolver;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
@@ -956,6 +958,57 @@ public final class PortalCarriageBuilder {
             bedrockSkinCorridor(level, structure.exitOrigin(dims), dims, layout,
                 PortalCarriageRole.EXIT, roomOrigin, roomSize, lock);
         }
+    }
+
+    /**
+     * The stage every stamp of pair {@code pairKey} resolves its stage placeholder blocks through —
+     * the base pair, each room tile copy and each extra exit corridor alike — so a copy is
+     * block-identical to the original it stands in for.
+     *
+     * <p><b>The carriage's own recorded stage, not a re-derived one.</b> {@code pairKey} is the entry
+     * carriage index, and {@link PortalRegistry#stampedStageOf} holds the stage that carriage's
+     * placeholders actually resolved through when it was placed. Re-deriving it here from
+     * {@link GateContext#forCarriage} gave a different answer: the carriage was gated on the group's
+     * real placed world-X, the formula on a static {@code pIdx × length} one, and the two drift
+     * apart along the run — a warped-wood corridor in the Nether stretch got an oak twin. All three
+     * carriages of a portal group share a stage, so the entry's record answers for the pair.</p>
+     *
+     * <p>Falls back to the formula only where nothing was recorded — worlds saved before the record
+     * existed, and groups that proved themselves from their own blocks. {@code null} (the default
+     * palette) for the test rig, matching what its base stamp uses: {@code PortalTestSession#PAIR_KEY}
+     * is a legal carriage index, and resolving copies through carriage 0's real stage would put
+     * different blocks in a copy than in the room it copies.</p>
+     */
+    public static String stageIdFor(ServerLevel level, int pairKey, CarriageDims dims) {
+        if (PortalTestSession.isTestStamp(pairKey)) return null;
+        Optional<String> recorded = PortalRegistry.get(level).stampedStageOf(pairKey);
+        if (recorded.isPresent()) return recorded.get().isEmpty() ? null : recorded.get();
+        return StageResolver.stageIdFor(GateContext.forCarriage(level, pairKey, dims.length()));
+    }
+
+    /**
+     * Give a pair with no recorded stage one, from where its entry carriage stands <b>now</b> —
+     * before its base pair is stamped, so the tiles and exit copies laid afterwards read the same
+     * answer the base did rather than each re-deriving one.
+     *
+     * <p>Only the carriages stamped before the stage was recorded get here (a world saved under an
+     * older build, or a group that proved itself from its own blocks). Their placement-time world-X
+     * is unknowable, and the live X is the nearest thing to it — the carriage was placed a short way
+     * ahead of where it is, in the same band far more often than not — where the static
+     * {@code pIdx} formula is wrong by whole bands. A no-op for the test rig and for any pair that
+     * already has a record.</p>
+     */
+    public static void recordStageIfUnknown(ServerLevel level, int pairKey, CarriageDims dims,
+                                            int entryCarriageWorldX) {
+        if (PortalTestSession.isTestStamp(pairKey)) return;
+        PortalRegistry registry = PortalRegistry.get(level);
+        if (registry.stampedStageOf(pairKey).isPresent()) return;
+        String stageId = StageResolver.stageIdFor(
+            GateContext.forCarriageAtWorldX(level, entryCarriageWorldX, pairKey, dims.length()));
+        registry.noteStamped(pairKey, true, stageId);
+        LOGGER.info("[DungeonTrain] Portal pair {} had no recorded stage — recorded '{}' from its "
+            + "entry carriage's current X {} (stamped before the stage was recorded).",
+            pairKey, stageId == null ? "<default>" : stageId, entryCarriageWorldX);
     }
 
     /**

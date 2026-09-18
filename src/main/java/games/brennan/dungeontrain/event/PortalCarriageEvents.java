@@ -2405,10 +2405,13 @@ public final class PortalCarriageEvents {
                 stampedAt == null ? -1 : level.getGameTime() - stampedAt);
         }
 
-        // The room resolves its stage placeholders for the entry corridor's stage (pairKey is the
-        // entry carriage index) — the pIdx-frame gate, since the room stands off the track.
-        String stageId = games.brennan.dungeontrain.template.StageResolver.stageIdFor(
-            games.brennan.dungeontrain.template.GateContext.forCarriage(level, pairKey, dims.length()));
+        // The room resolves its stage placeholders for the entry corridor's OWN stage (pairKey is
+        // the entry carriage index) — the one recorded when that carriage was stamped, so the twin
+        // matches it block for block. The same lookup the tiler uses for every copy, so a copy
+        // cannot resolve differently. A pair stamped before the stage was recorded gets one from
+        // where its carriage stands now, first.
+        PortalCarriageBuilder.recordStageIfUnknown(level, pairKey, dims, Mth.floor(originX));
+        String stageId = PortalCarriageBuilder.stageIdFor(level, pairKey, dims);
         final PortalStructure toStamp = planned;
         games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));

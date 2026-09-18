@@ -331,7 +331,12 @@ public final class CarriagePlacer {
         // Recorded for every carriage, not only the portal ones: an index the rolling window brings
         // back round as an ordinary carriage has to stop answering yes, or the swap plane outlives
         // the corridor it was built for.
-        PortalRegistry.get(level).noteStamped(carriageIndex, portalCorridor || portalMiddle);
+        // With the stage in scope — the one this carriage's stage placeholders resolve through —
+        // so every copy of a portal corridor (twin, room tile, extra exit) can resolve through the
+        // same stage later, when the world-X this stage was picked from is long gone. See
+        // PortalRegistry#stampedStages.
+        PortalRegistry.get(level).noteStamped(carriageIndex, portalCorridor || portalMiddle,
+            StagePlacementScope.current());
 
         // Portal carriages replace the whole carriage with a hallway-portal corridor
         // (games.brennan.dungeontrain.portal). Returning here deliberately skips the parts overlay,

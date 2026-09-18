@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.portal;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.portal.PortalRoomTiling.Tile;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.StagePlacementScope;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
@@ -153,10 +154,8 @@ public final class PortalRoomTiler {
         Tile next = tiling.nextToAdd(standingIn, radius, budget,
             candidate -> canStamp(level, dims, structure, candidate, neighbours));
         if (next != null) {
-            // Same stage as the base room (pairKey = entry carriage index) for the stage placeholders.
-            String stageId = games.brennan.dungeontrain.template.StageResolver.stageIdFor(
-                games.brennan.dungeontrain.template.GateContext.forCarriage(level, pairKey, dims.length()));
-            return games.brennan.dungeontrain.train.StagePlacementScope.with(stageId,
+            // Same stage as the base room for the stage placeholders — PortalCarriageBuilder#stageIdFor.
+            return StagePlacementScope.with(PortalCarriageBuilder.stageIdFor(level, pairKey, dims),
                 () -> stampTile(level, dims, structure, next, pairKey));
         }
 

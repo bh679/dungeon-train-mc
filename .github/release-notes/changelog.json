@@ -17505,6 +17505,26 @@
       "released": true,
       "released_in": "v0.922.0",
       "released_at": "2026-09-18T11:07:31Z"
+    },
+    {
+      "id": "portal-copies-match-carriage-stage",
+      "version": "0.923.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages are built from the right blocks all the way through",
+      "summary": "A dimensional carriage in the Nether stretch could come out in the wrong wood \u2014 warped on the way in, oak further along \u2014 and the extra ways out of an endless room could show the editor's stage blocks instead of real ones. Every part of a dimensional carriage now uses the blocks the carriage itself was built with.",
+      "highlights": [
+        "Dimensional carriages keep their stage's blocks throughout \u2014 warped stays warped, stone stays stone",
+        "Extra exit corridors in endless rooms no longer show placeholder stage blocks"
+      ],
+      "pr": 1471,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
