@@ -17352,6 +17352,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-feedback-path-and-outside-plot-args",
+      "version": "0.915.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Remaining editor messages that were still failing with 'IllegalArgumentException'",
+      "summary": "Follows up the v0.912 editor enter fix: the weight, stage-bake and portal-save confirmations, the 'target block is outside the plot' warnings and the part-plot enter line were still tripping over a position or file-path argument and either printing a red error or nothing at all. They now print normally, with the plot position as x, y, z and the saved file's path.",
+      "highlights": [
+        "Weight, stage-bake and portal-save messages show the saved file path again",
+        "'Outside the plot' warnings and the part-plot enter line show the position again"
+      ],
+      "pr": 1460,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
