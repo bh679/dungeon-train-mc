@@ -17566,6 +17566,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "corners-ice-contents-trap-rework",
+      "version": "0.925.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "New carriage builds and weight tweaks",
+      "summary": "A couple of new carriage builds can now appear on the train, and some spawn weights were adjusted.",
+      "highlights": [],
+      "pr": 1475,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
