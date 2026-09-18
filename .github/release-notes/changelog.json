@@ -17313,6 +17313,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-feedback-blockpos-args",
+      "version": "0.913.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor commands report success again instead of a spurious 'enter failed'",
+      "summary": "Entering or creating a plot in the editor no longer answers with a red 'enter failed: IllegalArgumentException' line \u2014 the command had actually worked, but the chat feedback tripped over its own position argument. The success message now shows the plot location as x, y, z, and the weight/stage/portal save messages show their file path as before.",
+      "highlights": [
+        "Editor enter/new/duplicate messages show the plot location again",
+        "Weight, stage-bake and portal-save messages show the saved file path again"
+      ],
+      "pr": 1460,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
