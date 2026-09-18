@@ -192,6 +192,10 @@
     {
       "id": "caggedzombs2",
       "weight": 2
+    },
+    {
+      "id": "new",
+      "weight": 1
     }
   ]
 }

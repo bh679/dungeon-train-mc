@@ -16,7 +16,7 @@
   "dirt2": 2,
   "enchant": 2,
   "ender": 1,
-  "enemies": 7,
+  "enemies": 8,
   "fire": 4,
   "maze": 4,
   "mild_1": {
@@ -52,6 +52,10 @@
     }
   },
   "narrative": 3,
+  "new": {
+    "weight": 1,
+    "name": "corners"
+  },
   "portal": 0,
   "portal_short": 0,
   "sand": 0,
