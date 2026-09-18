@@ -216,15 +216,8 @@ public final class PortalRoomEditor {
 
         if (stamp) stampAllPlots(overworld, dims);
 
-        if (onTop) {
-            EditorPlotArrival.inFrontOfMenu(origin, size).teleport(player, overworld);
-        } else if (inside == EditorPlotArrival.Inside.FRONT_DOOR) {
-            List<BlockPos> doors = doorBases(name, origin, size, dims);
-            BlockPos door = doors.isEmpty() ? origin.offset(0, 1, size.getZ() / 2) : doors.get(0);
-            EditorPlotArrival.atFrontDoor(overworld, origin, size, door).teleport(player, overworld);
-        } else {
-            EditorPlotArrival.atCentre(overworld, origin, size, player).teleport(player, overworld);
-        }
+        List<BlockPos> doors = doorBases(name, origin, size, dims);
+        EditorPlotArrival.land(player, overworld, origin, size, onTop, inside, doors.isEmpty() ? null : doors.get(0));
 
         player.sendSystemMessage(Component.literal(
             "[DungeonTrain] Dimensional carriage editor: this is the room between a portal's two corridors. "

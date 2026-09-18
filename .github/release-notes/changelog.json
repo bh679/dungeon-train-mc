@@ -17392,6 +17392,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-plot-arrival-land",
+      "version": "0.917.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Every editor lands you the same way",
+      "summary": "Where you arrive when you enter a plot \u2014 on the roof facing its menu, in its front doorway, or at its centre \u2014 used to be worked out separately by each of the seven editors. It is now decided in one place, so carriages, dimensional carriages, parts, pillars, tracks and tunnels can never drift apart. Nothing moves for you: every landing is exactly where it was.",
+      "highlights": [
+        "One landing rule shared by all seven editors, covered by tests for each way in.",
+        "A plot with no doorway simply lands you at its centre \u2014 no special cases per editor."
+      ],
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

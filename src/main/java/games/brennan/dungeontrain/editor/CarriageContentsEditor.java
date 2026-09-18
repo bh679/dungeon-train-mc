@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageDoorCells;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -16,6 +17,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -141,7 +143,7 @@ public final class CarriageContentsEditor {
         // interior to a snapshot of just the interior keeps shell blocks
         // (which the contents save deliberately excludes) out of the diff.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interior = CarriageContentsPlacer.interiorSize(box);
+        Vec3i interior = CarriageContentsPlacer.interiorSize(box);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin, interior.getX(), interior.getY(), interior.getZ()
@@ -405,15 +407,9 @@ public final class CarriageContentsEditor {
             setOutline(overworld, origin, OUTLINE_BLOCK, box);
         }
 
-        net.minecraft.core.Vec3i footprint = new net.minecraft.core.Vec3i(box.length(), box.height(), box.width());
-        if (onTop) {
-            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
-        } else if (inside == EditorPlotArrival.Inside.FRONT_DOOR) {
-            BlockPos door = games.brennan.dungeontrain.train.CarriageDoorCells.doorBases(origin, box).get(0);
-            EditorPlotArrival.atFrontDoor(overworld, origin, footprint, door).teleport(player, overworld);
-        } else {
-            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
-        }
+        Vec3i footprint = new Template.Contents(contents).plotSize(dims);
+        BlockPos door = CarriageDoorCells.doorBases(origin, box).get(0);
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
 
         LOGGER.info("[DungeonTrain] Contents editor enter: {} -> {} (shell={}) plot at {} dims={}x{}x{} ({})",
             player.getName().getString(), contents.id(), shell.id(), origin,
@@ -455,7 +451,7 @@ public final class CarriageContentsEditor {
         // Refresh the dirty-check baseline so the just-saved state reads as
         // clean on the next /dt editor unsaved-list query.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interiorSnapshotSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
+        Vec3i interiorSnapshotSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin,
@@ -477,7 +473,7 @@ public final class CarriageContentsEditor {
             // Promote the variants sidecar too — without this, shift-right-click
             // variant authoring stayed in run/config and was lost on worktree
             // delete (the bug PR #79's vase update silently shipped without).
-            net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
+            Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
             CarriageContentsVariantBlocks sidecar =
                 CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
             sidecar.saveToSource(contents);
@@ -645,7 +641,7 @@ public final class CarriageContentsEditor {
         if (EditorDevMode.isEnabled()) {
             try {
                 CarriageContentsStore.saveToSource(renamed, template);
-                net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(current, dims);
+                Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(current, dims);
                 CarriageContentsVariantBlocks newSidecar =
                     CarriageContentsVariantBlocks.loadFor(renamed, interiorSize);
                 newSidecar.saveToSource(renamed);
