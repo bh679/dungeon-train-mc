@@ -17514,10 +17514,10 @@
         "fix",
         "train"
       ],
-      "title": "Dimensional carriages match their carriage's blocks on the far side",
-      "summary": "Walking through a dimensional carriage, the corridor on the other side is meant to be the one you just left \u2014 same walls, same wood. It wasn't always: a carriage built from warped wood in the Nether stretch could open onto a copy built from oak, and the extra ways out through an endless room could show the editor's stage blocks instead of real ones. Every copy of the corridor now uses exactly the blocks the carriage itself was built with.",
+      "title": "Dimensional carriages are built from the right blocks all the way through",
+      "summary": "A dimensional carriage in the Nether stretch could come out in the wrong wood \u2014 warped on the way in, oak further along \u2014 and the extra ways out of an endless room could show the editor's stage blocks instead of real ones. Every part of a dimensional carriage now uses the blocks the carriage itself was built with.",
       "highlights": [
-        "The corridor beyond a dimensional carriage is built from the same stage blocks as the carriage \u2014 warped stays warped, stone stays stone",
+        "Dimensional carriages keep their stage's blocks throughout \u2014 warped stays warped, stone stays stone",
         "Extra exit corridors in endless rooms no longer show placeholder stage blocks"
       ],
       "pr": 1471,
