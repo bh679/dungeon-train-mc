@@ -17466,6 +17466,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-test-no-renderer-reload",
+      "version": "0.921.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "editor"
+      ],
+      "title": "Test the Carriage no longer freezes low-end PCs on the way in or out",
+      "summary": "Entering or leaving Test the Carriage with Skybox Blocks switched off used to rebuild every chunk in view at once \u2014 on a low-end PC that was a long stall going in and a hard freeze coming back. Now only the chunks that actually hold a Skybox Block are redrawn, so the test starts and ends as quickly as the teleport itself. The room's fog and daylight also stopped flickering on and off during a test.",
+      "highlights": [
+        "Only Skybox Block chunks are redrawn when a test starts or ends, not the whole view",
+        "Dimensional-carriage fog and sky no longer switch on and off every tick while you test"
+      ],
+      "pr": 1468,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

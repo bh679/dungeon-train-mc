@@ -57,6 +57,16 @@ public final class PlayerSkyRegions {
         return LAST.containsKey(id);
     }
 
+    /**
+     * Whether what this player holds came from their editor plot ({@code editor == true}), rather
+     * than from a live room or a {@code portal test} session. The plot sender asks before taking
+     * light back, so it only ever takes back what it sent.
+     */
+    public static boolean holdsEditor(UUID id) {
+        PortalRoomSkyPacket region = LAST.get(id);
+        return region != null && region.editor();
+    }
+
     /** True when nobody is lit — the early-out a per-tick sweep takes. */
     public static boolean isEmpty() {
         return LAST.isEmpty();
