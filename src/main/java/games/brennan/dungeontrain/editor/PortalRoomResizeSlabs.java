@@ -12,7 +12,6 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -142,8 +141,7 @@ final class PortalRoomResizeSlabs {
                 origin.getX() + sizeAfter.getX() - 1,
                 origin.getY() + sizeAfter.getY() - 1,
                 origin.getZ() + sizeAfter.getZ() - 1));
-        // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-        CarriageStampGuard.run(() -> blocks.placeInWorld(overworld, at, at, settings, overworld.getRandom(), Block.UPDATE_CLIENTS));
+        CarriageStampGuard.run(() -> blocks.placeInWorld(overworld, at, at, settings, overworld.getRandom(), CarriageStampGuard.STAMP_FLAGS));
         // The row's own decoration comes back with it — a picture the author hung on the wall a
         // shrink took away is part of the row, not of the box it was cut from.
         TemplateDecor.replace(overworld, at, blocks, settings, null, TemplateDecor.Rule.ROOM);

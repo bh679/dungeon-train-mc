@@ -21,6 +21,10 @@ import java.util.List;
  * something to the player, and — when a build actually landed — it can offer to open the thing that
  * was just written. A pre-rendered chat line could do the first and never the second.</p>
  *
+ * <p>{@code relayId} is the request's, echoed back: which press this answers. A screen keeps one
+ * press in flight and drops any answer that is not to it — a slow install answered after the player
+ * has moved on to another row must not be credited to that row.</p>
+ *
  * <p>{@code kind}/{@code id}/{@code subKind} name what was installed and are empty on every outcome
  * where nothing was.</p>
  *
@@ -29,8 +33,8 @@ import java.util.List;
  * refuse a used one on the spot instead of spending a round trip to be told. Empty otherwise, and
  * never the authority: the server asks again on the press that follows.</p>
  */
-public record BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome outcome, String kindId,
-                                                 String id, String subKind,
+public record BuilderProfileDownloadResultPacket(int relayId, BuilderRelayDownload.Outcome outcome,
+                                                 String kindId, String id, String subKind,
                                                  List<String> takenNames,
                                                  List<TemplateLootPrefabs.Conflict> conflicts)
         implements CustomPacketPayload {
@@ -51,15 +55,16 @@ public record BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome ou
     }
 
     /** An answer that asks for no name, and so carries none. */
-    public BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome outcome, String kindId,
-                                              String id, String subKind) {
-        this(outcome, kindId, id, subKind, List.of(), List.of());
+    public BuilderProfileDownloadResultPacket(int relayId, BuilderRelayDownload.Outcome outcome,
+                                              String kindId, String id, String subKind) {
+        this(relayId, outcome, kindId, id, subKind, List.of(), List.of());
     }
 
     /** An answer that asks about names but not prefabs. */
-    public BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome outcome, String kindId,
-                                              String id, String subKind, List<String> takenNames) {
-        this(outcome, kindId, id, subKind, takenNames, List.of());
+    public BuilderProfileDownloadResultPacket(int relayId, BuilderRelayDownload.Outcome outcome,
+                                              String kindId, String id, String subKind,
+                                              List<String> takenNames) {
+        this(relayId, outcome, kindId, id, subKind, takenNames, List.of());
     }
 
     public static final Type<BuilderProfileDownloadResultPacket> TYPE =
@@ -68,6 +73,7 @@ public record BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome ou
     public static final StreamCodec<FriendlyByteBuf, BuilderProfileDownloadResultPacket> STREAM_CODEC =
         StreamCodec.of(
             (buf, packet) -> {
+                buf.writeVarInt(packet.relayId);
                 buf.writeEnum(packet.outcome);
                 buf.writeUtf(packet.kindId, 16);
                 buf.writeUtf(packet.id, 64);
@@ -88,6 +94,7 @@ public record BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome ou
                         });
             },
             buf -> new BuilderProfileDownloadResultPacket(
+                    buf.readVarInt(),
                     buf.readEnum(BuilderRelayDownload.Outcome.class),
                     buf.readUtf(16), buf.readUtf(64), buf.readUtf(32),
                     buf.readCollection(size -> new ArrayList<String>(Math.min(size, MAX_TAKEN_NAMES)),
@@ -106,10 +113,10 @@ public record BuilderProfileDownloadResultPacket(BuilderRelayDownload.Outcome ou
         return text.length() > MAX_CONFLICT_TEXT ? text.substring(0, MAX_CONFLICT_TEXT) : text;
     }
 
-    /** The wire form of one {@link BuilderRelayDownload.Result}. */
-    public static BuilderProfileDownloadResultPacket of(BuilderRelayDownload.Result result) {
+    /** The wire form of one {@link BuilderRelayDownload.Result}, answering the press for {@code relayId}. */
+    public static BuilderProfileDownloadResultPacket of(BuilderRelayDownload.Result result, int relayId) {
         BuilderPhotoPaths.Kind kind = result.kind();
-        return new BuilderProfileDownloadResultPacket(result.outcome(),
+        return new BuilderProfileDownloadResultPacket(relayId, result.outcome(),
                 kind == null ? "" : kind.id(), result.id(), result.subKind(), result.takenNames(),
                 result.conflicts());
     }

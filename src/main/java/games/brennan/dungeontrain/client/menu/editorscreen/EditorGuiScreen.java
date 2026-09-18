@@ -256,6 +256,8 @@ public final class EditorGuiScreen extends Screen {
         if (!loading) return;
         if (--loadingTicks <= 0) {
             loading = false;
+            // Given up on: an answer that turns up after this is dropped rather than replayed.
+            lastDownload = null;
             creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOAD_FAILED);
         }
     }
@@ -495,10 +497,15 @@ public final class EditorGuiScreen extends Screen {
         submitTicks = SUBMIT_REFRESH_TICKS;
     }
 
-    /** Drop what the last Load said — it was about a build that is no longer the one on screen. */
+    /**
+     * Drop what the last Load said — it was about a build that is no longer the one on screen.
+     *
+     * <p>Not the button: {@code loading} belongs to the press, not the row. It stays greyed on
+     * whichever row is looked at until the answer or the timeout hands it back, so a second build
+     * cannot be sent down while the first is still on its way.</p>
+     */
     private void forgetLastLoad() {
         creatorNote = null;
-        loading = false;
         loadAsCopy = false;
         takenNames = List.of();
     }
@@ -522,6 +529,9 @@ public final class EditorGuiScreen extends Screen {
 
     /** A download finished: say what happened, and pick up what landed. */
     private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
+        // Only the press this screen is waiting on: an answer to one it never made, or gave up on,
+        // says nothing about the row in front of the player.
+        if (lastDownload == null || packet.relayId() != lastDownload.relayId()) return;
         // Answered, whatever the answer: the button is back. A prefab question below re-sends and
         // greys it again.
         loading = false;
@@ -539,12 +549,9 @@ public final class EditorGuiScreen extends Screen {
         takenNames = nameInUse ? List.copyOf(packet.takenNames()) : List.of();
         loadAsCopy = nameInUse;
         if (packet.outcome() == BuilderRelayDownload.Outcome.INSTALLED) {
-            // Remembered against the build that was asked for: the pane stops offering to load it
-            // and offers the walk to it instead.
-            BuilderProfilePacket.Entry entry = selectedCreatorBuild();
-            if (entry != null) {
-                EditorCreatorBuilds.landed(entry.relayId(), packet.kindId(), packet.id(), packet.subKind());
-            }
+            // Remembered against the build that was asked for — the packet's row, not whichever is
+            // selected now: the pane stops offering to load it and offers the walk to it instead.
+            EditorCreatorBuilds.landed(packet.relayId(), packet.kindId(), packet.id(), packet.subKind());
             // It is a template now, so the roster has to be asked again before it will show one.
             afterCommand();
         }
@@ -1040,7 +1047,7 @@ public final class EditorGuiScreen extends Screen {
         lastClickMillis = now;
         EditorScreenState.select(key);
         if (doubleClick) {
-            dispatch(EditorScreenActions.enterEntry(context(EditorRosterClient.index())));
+            dispatch(EditorScreenActions.enterEntry(context(EditorRosterClient.index()), DungeonTrainNet::sendToServer));
         }
     }
 

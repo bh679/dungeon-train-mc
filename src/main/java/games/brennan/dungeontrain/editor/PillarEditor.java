@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.PillarAdjunctTemplateId;
 import games.brennan.dungeontrain.template.PillarTemplateId;
@@ -16,13 +15,13 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -150,9 +149,21 @@ public final class PillarEditor {
         enter(player, section, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the default plot — a relay Load that installed a new
+     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
+     * {@link #walkTo(ServerPlayer, PillarSection, boolean)}.
+     */
     public static void enter(ServerPlayer player, PillarSection section, boolean onTop) {
-        // Already inside this section's default plot: a walk to its menu, not a reload — restamping
-        // would throw away every unsaved edit for the sake of a few blocks' teleport.
+        enter(player, section, onTop, true);
+    }
+
+    /**
+     * Go here / the panel's Enter: a walk to the section's default plot, not a reload — restamps
+     * only when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, PillarSection section, boolean onTop) {
         enter(player, section, onTop, !standingIn(player, section));
     }
 
@@ -347,9 +358,7 @@ public final class PillarEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS));
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
             return;
         }
         BlockState fallback = TrackPalette.PILLAR;
@@ -375,7 +384,13 @@ public final class PillarEditor {
         enter(player, adjunct, true);
     }
 
+    /** As {@link #enter(ServerPlayer, PillarSection, boolean)}: always restamps. */
     public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
+        enter(player, adjunct, onTop, true);
+    }
+
+    /** As {@link #walkTo(ServerPlayer, PillarSection, boolean)}: restamps only when not already inside. */
+    public static void walkTo(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
         enter(player, adjunct, onTop, !standingIn(player, adjunct));
     }
 
@@ -543,9 +558,7 @@ public final class PillarEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, sentinel);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS));
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
             return;
         }
         stampProceduralStairsFallback(level, origin, adjunct);

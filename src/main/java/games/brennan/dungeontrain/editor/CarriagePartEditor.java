@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.CarriagePartTemplateId;
 import games.brennan.dungeontrain.template.TemplateDecor;
@@ -10,6 +9,7 @@ import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
@@ -361,9 +361,7 @@ public final class CarriagePartEditor {
         CarriagePartPlacer.eraseAt(overworld, targetOrigin, kind, dims);
         if (seed != null) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-            CarriageStampGuard.run(() -> seed.placeInWorld(overworld, targetOrigin, targetOrigin, settings, overworld.getRandom(), Block.UPDATE_CLIENTS));
-            TemplateDecor.replace(overworld, targetOrigin, seed, settings, null);
+            TemplateStamp.placeWithDecor(overworld, targetOrigin, seed, settings);
         } else {
             stampStarter(overworld, targetOrigin, kind, dims);
         }
@@ -689,9 +687,7 @@ public final class CarriagePartEditor {
         Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(level, kind, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS));
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
         }
         if (plotIsEmpty(level, origin, kind, dims)) {
             stampStarter(level, origin, kind, dims);
