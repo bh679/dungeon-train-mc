@@ -17255,6 +17255,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-enter-landing-search",
+      "version": "0.911.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "editor"
+      ],
+      "title": "Entering a built-up plot no longer stalls the server",
+      "summary": "Pressing Enter on a plot whose doorway and door row are blocked \u2014 a raised floor, a wall across the door, a pillar in the centre \u2014 used to freeze the game for a moment on large rooms while it looked for somewhere to put you. It now finds the nearest free spot straight away, and you land in exactly the same place as before.",
+      "highlights": [
+        "Enter on a 64\u00d764\u00d764 room with a raised floor is instant instead of dropping a few ticks",
+        "Landing spot is unchanged \u2014 still the nearest free cell inside, never in the wall"
+      ],
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
