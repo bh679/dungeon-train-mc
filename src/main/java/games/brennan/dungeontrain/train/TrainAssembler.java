@@ -491,7 +491,7 @@ public final class TrainAssembler {
             BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
             String anchorStage = games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate);
             blocks.addAll(StagePlacementScope.with(anchorStage,
-                () -> WholeGroupSelection.place(level, runOrigin, groupPick, dims, groupSize)));
+                () -> WholeGroupSelection.place(level, runOrigin, groupPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
         }
 
         for (int slot = 0; slot < groupSize; slot++) {
@@ -560,7 +560,7 @@ public final class TrainAssembler {
                     level, variant, carriagePIdx, dims, genCfg.seed(), gateCtx);
                 if (room != null) {
                     carriageBlocks = StagePlacementScope.with(stageId,
-                        () -> WholeCarriageSelection.place(level, carriageOrigin, room, dims));
+                        () -> WholeCarriageSelection.place(level, carriageOrigin, room, dims, genCfg.seed(), carriagePIdx));
                     roomBySlot[slot] = room;
                     PortalRegistry.get(level).noteStamped(carriagePIdx, false);
                     PlacedCarriageFacts.recordWholeRoom(carriagePIdx, variant, room.room().id());

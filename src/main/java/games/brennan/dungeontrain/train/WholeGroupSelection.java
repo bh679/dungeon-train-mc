@@ -82,9 +82,19 @@ public final class WholeGroupSelection {
         return new GroupPick(new CarriageGroup(chosen), template);
     }
 
-    /** Stamp the pick over the whole run at {@code runOrigin}; the footprint for the shipyard. */
+    /**
+     * Stamp the pick over the whole run at {@code runOrigin}, then roll its Z/C overlay at
+     * {@code (seed, anchorPIdx)}; the footprint for the shipyard.
+     */
     public static Set<BlockPos> place(ServerLevel level, BlockPos runOrigin, GroupPick pick,
-                                      CarriageDims dims, int groupSize) {
-        return CarriageGroupPlacer.placeForTrain(level, runOrigin, pick.template(), dims, groupSize);
+                                      CarriageDims dims, int groupSize, long seed, int anchorPIdx) {
+        CarriageGroupPlacer.placeForTrain(level, runOrigin, pick.template(), dims, groupSize);
+        WholeOverlay.apply(level, runOrigin, WholeKind.GROUP, pick.group().id(),
+            CarriageGroupPlacer.sizeOf(dims, groupSize), seed, anchorPIdx);
+        java.util.Set<BlockPos> placed = new java.util.HashSet<>();
+        for (int i = 0; i < Math.max(1, groupSize); i++) {
+            placed.addAll(CarriagePlacer.collectFootprint(level, runOrigin.offset(i * dims.length(), 0, 0), dims));
+        }
+        return placed;
     }
 }

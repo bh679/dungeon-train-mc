@@ -1519,6 +1519,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Citește Wiki-ul ca să afli mai multe",
   "gui.dungeontrain.editor_screen.tab.carriages": "Vagoane",
   "gui.dungeontrain.editor_screen.tab.whole": "Întreg",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "oprit",
   "gui.dungeontrain.editor_screen.tab.contents": "Conținut",
   "gui.dungeontrain.editor_screen.tab.tracks": "Șine",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Dimensiuni",

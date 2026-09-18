@@ -1091,6 +1091,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Lê a Wiki para saber mais",
   "gui.dungeontrain.editor_screen.tab.carriages": "Carruagens",
   "gui.dungeontrain.editor_screen.tab.whole": "Inteiro",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "desligado",
   "gui.dungeontrain.editor_screen.tab.contents": "Conteúdo",
   "gui.dungeontrain.editor_screen.tab.tracks": "Carris",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Dimensões",

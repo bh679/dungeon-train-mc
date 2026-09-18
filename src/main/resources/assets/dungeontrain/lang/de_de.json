@@ -1091,6 +1091,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Lies das Wiki, um mehr zu erfahren",
   "gui.dungeontrain.editor_screen.tab.carriages": "Waggons",
   "gui.dungeontrain.editor_screen.tab.whole": "Ganz",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "aus",
   "gui.dungeontrain.editor_screen.tab.contents": "Inhalt",
   "gui.dungeontrain.editor_screen.tab.tracks": "Gleise",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Dimensionen",

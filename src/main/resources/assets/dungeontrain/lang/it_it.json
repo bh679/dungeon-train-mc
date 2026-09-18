@@ -1091,6 +1091,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Leggi la wiki per saperne di più",
   "gui.dungeontrain.editor_screen.tab.carriages": "Vagoni",
   "gui.dungeontrain.editor_screen.tab.whole": "Intero",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "disattivato",
   "gui.dungeontrain.editor_screen.tab.contents": "Contenuto",
   "gui.dungeontrain.editor_screen.tab.tracks": "Binari",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Dimensioni",

@@ -1060,6 +1060,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Baca Wiki untuk ketahui lebih lanjut",
   "gui.dungeontrain.editor_screen.tab.carriages": "Gerabak",
   "gui.dungeontrain.editor_screen.tab.whole": "Penuh",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "mati",
   "gui.dungeontrain.editor_screen.tab.contents": "Kandungan",
   "gui.dungeontrain.editor_screen.tab.tracks": "Landasan",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Dimensi",

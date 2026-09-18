@@ -1122,6 +1122,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Przeczytaj wiki, by dowiedzieć się więcej",
   "gui.dungeontrain.editor_screen.tab.carriages": "Wagony",
   "gui.dungeontrain.editor_screen.tab.whole": "Całość",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "wyłączona",
   "gui.dungeontrain.editor_screen.tab.contents": "Zawartość",
   "gui.dungeontrain.editor_screen.tab.tracks": "Tory",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Wymiary",

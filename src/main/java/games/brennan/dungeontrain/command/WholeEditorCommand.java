@@ -178,6 +178,7 @@ public final class WholeEditorCommand {
                 ? CarriageGroupTemplateStore.delete(new CarriageGroup(model.id()))
                 : WholeCarriageTemplateStore.delete(new WholeCarriage(model.id()));
             WholeWeights.unset(kind, model.id());
+            games.brennan.dungeontrain.editor.WholeVariantBlocks.delete(kind, model.id());
             boolean bundled = model.isBuiltin();
             ServerLevel overworld = source.getServer().overworld();
             if (!bundled) {

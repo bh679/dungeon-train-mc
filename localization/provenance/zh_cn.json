@@ -1060,6 +1060,7 @@
   "gui.dungeontrain.editor_help.wiki_button": {"author": "老本願", "reviewer": "老本願", "source_hash": "7e9b0a867fee5728"},
   "gui.dungeontrain.editor_screen.tab.carriages": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "c50d8703d1c580d4"},
   "gui.dungeontrain.editor_screen.tab.whole": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "fd550560938c0758"},
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "b4dc66dde806261b"},
   "gui.dungeontrain.editor_screen.tab.contents": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "437aea62a5bd6ad4"},
   "gui.dungeontrain.editor_screen.tab.tracks": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "88980154513d7413"},
   "gui.dungeontrain.editor_screen.tab.dimensions": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "914182d5e25f69e1"},

@@ -1060,6 +1060,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "阅读Wiki以了解更多",
   "gui.dungeontrain.editor_screen.tab.carriages": "车厢",
   "gui.dungeontrain.editor_screen.tab.whole": "整节",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "关闭",
   "gui.dungeontrain.editor_screen.tab.contents": "房间",
   "gui.dungeontrain.editor_screen.tab.tracks": "轨道",
   "gui.dungeontrain.editor_screen.tab.dimensions": "维度",

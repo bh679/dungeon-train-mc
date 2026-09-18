@@ -1486,6 +1486,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Read the Wiki to learn more",
   "gui.dungeontrain.editor_screen.tab.carriages": "Carriages",
   "gui.dungeontrain.editor_screen.tab.whole": "Whole",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "off",
   "gui.dungeontrain.editor_screen.tab.contents": "Contents",
   "gui.dungeontrain.editor_screen.tab.tracks": "Tracks",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Dimensions",

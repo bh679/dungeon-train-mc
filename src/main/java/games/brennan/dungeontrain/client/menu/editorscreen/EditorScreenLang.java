@@ -20,6 +20,9 @@ public final class EditorScreenLang {
     /** The category strip under the Templates tab's filter row — these were the tabs once. */
     public static final String TAB_ALL = PREFIX + "tab.all";
     public static final String TAB_WHOLE = PREFIX + "tab.whole";
+    /** The Settings page's "Whole group every N" stepper — shares the number-entry title's key. */
+    public static final String WHOLE_EVERY = "gui.dungeontrain.number_input.whole_every";
+    public static final String WHOLE_EVERY_OFF = PREFIX + "settings.whole_every_off";
     public static final String TAB_CARRIAGES = PREFIX + "tab.carriages";
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";

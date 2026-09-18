@@ -1060,6 +1060,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Đọc Wiki để tìm hiểu thêm",
   "gui.dungeontrain.editor_screen.tab.carriages": "Toa",
   "gui.dungeontrain.editor_screen.tab.whole": "Nguyên toa",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "tắt",
   "gui.dungeontrain.editor_screen.tab.contents": "Phòng",
   "gui.dungeontrain.editor_screen.tab.tracks": "Đường ray",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Chiều không gian",

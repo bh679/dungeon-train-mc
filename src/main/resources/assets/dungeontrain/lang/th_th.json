@@ -1060,6 +1060,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "อ่านวิกิเพื่อเรียนรู้เพิ่มเติม",
   "gui.dungeontrain.editor_screen.tab.carriages": "ตู้",
   "gui.dungeontrain.editor_screen.tab.whole": "ทั้งตู้",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "ปิด",
   "gui.dungeontrain.editor_screen.tab.contents": "ห้อง",
   "gui.dungeontrain.editor_screen.tab.tracks": "ราง",
   "gui.dungeontrain.editor_screen.tab.dimensions": "มิติ",

@@ -1060,6 +1060,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "詳しくはWikiを読もう",
   "gui.dungeontrain.editor_screen.tab.carriages": "車両",
   "gui.dungeontrain.editor_screen.tab.whole": "まるごと",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "オフ",
   "gui.dungeontrain.editor_screen.tab.contents": "中身",
   "gui.dungeontrain.editor_screen.tab.tracks": "線路",
   "gui.dungeontrain.editor_screen.tab.dimensions": "ディメンション",

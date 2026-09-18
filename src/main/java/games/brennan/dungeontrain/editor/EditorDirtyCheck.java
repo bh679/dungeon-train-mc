@@ -118,8 +118,10 @@ public final class EditorDirtyCheck {
             String key = WholeCarriageEditor.snapshotKey(kind, model.id());
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
             Vec3i fp = model.plotSize(dims);
-            boolean unsaved = snapshot != null && !regionMatchesSnapshot(key, level, origin,
-                fp.getX(), fp.getY(), fp.getZ(), snapshot, Set.of());
+            Set<BlockPos> skip = variantCellPositions(WholeVariantBlocks.loadFor(kind, model.id(), fp).entries());
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin,
+                    fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
             boolean unpromoted = devmode && model.isBuiltin() && WholeCarriageTemplateStore.sourceTreeAvailable()
                 && !filesEqualOrAbsent(
                     group ? CarriageGroupTemplateStore.fileForId(model.id()) : WholeCarriageTemplateStore.fileForId(model.id()),
@@ -405,8 +407,9 @@ public final class EditorDirtyCheck {
             BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
             if (origin == null) return out;
             Vec3i fp = model.plotSize(dims);
+            Set<BlockPos> skip = variantCellPositions(WholeVariantBlocks.loadFor(kind, modelId, fp).entries());
             collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
-                EditorPlotSnapshots.get(WholeCarriageEditor.snapshotKey(kind, modelId)), Set.of(), out);
+                EditorPlotSnapshots.get(WholeCarriageEditor.snapshotKey(kind, modelId)), skip, out);
             return out;
         }
         if ("carriages".equals(categoryId)) {

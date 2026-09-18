@@ -1127,6 +1127,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Читайте вики, чтобы узнать больше",
   "gui.dungeontrain.editor_screen.tab.carriages": "Вагоны",
   "gui.dungeontrain.editor_screen.tab.whole": "Целиком",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "выкл.",
   "gui.dungeontrain.editor_screen.tab.contents": "Комнаты",
   "gui.dungeontrain.editor_screen.tab.tracks": "Пути",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Измерения",

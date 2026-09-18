@@ -921,9 +921,7 @@ public final class VariantOverlayRenderer {
         // deduped away and the panel would not react until something else changed the snapshot.
         keyBuf.append("help:").append(helpPanelDismissed).append('|');
         // The WHOLE category's type-level setting rides with the menus; in the key so an edit re-pushes.
-        int wholeGroupEvery = category == EditorCategory.WHOLE
-            ? games.brennan.dungeontrain.train.WholeGroupSettings.every()
-            : EditorTypeMenusPacket.NO_WHOLE_GROUP_EVERY;
+        int wholeGroupEvery = games.brennan.dungeontrain.train.WholeGroupSettings.every();
         keyBuf.append("every:").append(wholeGroupEvery).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();

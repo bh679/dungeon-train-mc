@@ -150,6 +150,9 @@ public final class WholeCarriageEditor {
         BlockPos origin = roomPlotOrigin(room, dims);
         if (origin == null) return;
         Vec3i box = plotSize(WholeKind.ROOM, dims);
+        // Re-read the Z/C sidecars from disk on every stamp, like every other plot editor.
+        WholeVariantBlocks.invalidate(WholeKind.ROOM, room.id());
+        ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.ROOM, room.id()));
         CarriagePlacer.eraseAt(overworld, origin, dims);
         EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, box);
         WholeCarriagePlacer.placeAt(overworld, origin, room, dims);
@@ -164,6 +167,8 @@ public final class WholeCarriageEditor {
         if (origin == null) return;
         int n = groupSize();
         Vec3i box = plotSize(WholeKind.GROUP, dims);
+        WholeVariantBlocks.invalidate(WholeKind.GROUP, group.id());
+        ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.GROUP, group.id()));
         CarriageGroupPlacer.eraseAt(overworld, origin, dims, n);
         EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, box);
         CarriageGroupPlacer.placeAt(overworld, origin, group, dims, n);
@@ -251,6 +256,7 @@ public final class WholeCarriageEditor {
         WholeCarriageTemplateStore.save(room, template);
         WholeCarriageRegistry.register(room);
         Vec3i box = plotSize(WholeKind.ROOM, dims);
+        saveSidecars(WholeKind.ROOM, room.id(), box);
         EditorPlotSnapshots.capture(snapshotKey(WholeKind.ROOM, room.id()),
             overworld, origin, box.getX(), box.getY(), box.getZ());
         EditorRelaySave.afterSave(player, new Template.WholeCarriage(room));
@@ -276,6 +282,7 @@ public final class WholeCarriageEditor {
         CarriageGroupTemplateStore.save(group, template);
         CarriageGroupRegistry.register(group);
         Vec3i box = plotSize(WholeKind.GROUP, dims);
+        saveSidecars(WholeKind.GROUP, group.id(), box);
         EditorPlotSnapshots.capture(snapshotKey(WholeKind.GROUP, group.id()),
             overworld, origin, box.getX(), box.getY(), box.getZ());
         EditorRelaySave.afterSave(player, new Template.CarriageGroup(group));
@@ -288,6 +295,20 @@ public final class WholeCarriageEditor {
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Whole editor save: source write failed for {}: {}", group.id(), e.toString());
             return SaveResult.failed(e.getMessage());
+        }
+    }
+
+    /**
+     * Persist the Z menu's variant pools and the C menu's container links for a whole plot — the
+     * in-session edits both menus accumulate until Save, as {@link CarriageEditor#save} does.
+     */
+    private static void saveSidecars(WholeKind kind, String id, Vec3i box) throws IOException {
+        WholeVariantBlocks.loadFor(kind, id, box).save(kind, id);
+        try {
+            ContainerContentsStore.loadFor(BlockVariantPlot.wholeKey(kind, id)).save();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Whole editor save: contents-store save failed for {} {}: {}",
+                kind.id(), id, e.toString());
         }
     }
 

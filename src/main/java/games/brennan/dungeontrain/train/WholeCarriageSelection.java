@@ -81,9 +81,16 @@ public final class WholeCarriageSelection {
         return new RoomPick(new WholeCarriage(chosen), template);
     }
 
-    /** Stamp the pick into the train at {@code origin}; the footprint for the shipyard. */
-    public static Set<BlockPos> place(ServerLevel level, BlockPos origin, RoomPick pick, CarriageDims dims) {
-        return WholeCarriagePlacer.placeForTrain(level, origin, pick.template(), dims);
+    /**
+     * Stamp the pick into the train at {@code origin}, then roll its Z/C overlay (variant pools and
+     * container prefabs) at {@code (seed, carriagePIdx)}; the footprint for the shipyard.
+     */
+    public static Set<BlockPos> place(ServerLevel level, BlockPos origin, RoomPick pick, CarriageDims dims,
+                                      long seed, int carriagePIdx) {
+        Set<BlockPos> placed = WholeCarriagePlacer.placeForTrain(level, origin, pick.template(), dims);
+        WholeOverlay.apply(level, origin, WholeKind.ROOM, pick.room().id(),
+            new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width()), seed, carriagePIdx);
+        return CarriagePlacer.collectFootprint(level, origin, dims);
     }
 
     /**

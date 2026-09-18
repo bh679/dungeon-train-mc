@@ -1060,6 +1060,7 @@
   "gui.dungeontrain.editor_help.wiki_button": "Basahin ang Wiki para matuto pa",
   "gui.dungeontrain.editor_screen.tab.carriages": "Mga Bagon",
   "gui.dungeontrain.editor_screen.tab.whole": "Buo",
+  "gui.dungeontrain.editor_screen.settings.whole_every_off": "naka-off",
   "gui.dungeontrain.editor_screen.tab.contents": "Nilalaman",
   "gui.dungeontrain.editor_screen.tab.tracks": "Mga Riles",
   "gui.dungeontrain.editor_screen.tab.dimensions": "Mga Dimensyon",
