@@ -17313,6 +17313,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-enter-chat-blockpos-error",
+      "version": "0.912.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor plots enter cleanly again",
+      "summary": "Entering any editor plot \u2014 a carriage, tunnel, pillar, contents or track plot \u2014 or creating a new one printed a red \"enter failed\" error in chat even though you had arrived. The green \"entered \u2026 plot at x, y, z\" line is back and the error is gone.",
+      "highlights": [
+        "Affects every editor enter and new/clone command since v0.907."
+      ],
+      "pr": 1459,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
