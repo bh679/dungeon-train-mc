@@ -323,11 +323,22 @@ public final class CarriageContentsEditor {
         enter(player, contents, shellVariant, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the plot — a relay Load that replaced the file on disk
+     * arrives here and must show the new blocks. The walk that keeps unsaved edits is
+     * {@link #walkTo} / {@link #enterInside}.
+     */
     public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant, boolean onTop) {
-        // Already inside, and not asking for a different shell: a walk to the menu, not a reload —
-        // restamping would throw away every unsaved edit. An explicit shell is a change to make.
-        boolean stamp = shellVariant != null || !standingIn(player, contents);
-        enter(player, contents, shellVariant, onTop, stamp);
+        enter(player, contents, shellVariant, onTop, true);
+    }
+
+    /**
+     * The X menu's Go here: a walk to the plot under its natural shell, not a reload — restamps
+     * only when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, CarriageContents contents, boolean onTop) {
+        enter(player, contents, null, onTop, !standingIn(player, contents));
     }
 
     /**
