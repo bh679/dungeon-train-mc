@@ -89,6 +89,27 @@ jobs:
           python3 scripts/modpack/test_wait_for_approval.py
           python3 scripts/modpack/test_catch_up.py
 
+  # Stdlib-only Python guard for the client/server network handshake. DungeonTrainNet's
+  # PROTOCOL_VERSION string is the only thing that keeps an older client off a newer server:
+  # NeoForge negotiates payload *types*, not their layouts, so a packet that gains a field still
+  # handshakes fine and then kicks the client mid-session when the server reads past the end of
+  # its buffer. PR #1449 shipped exactly that (EditorPlotActionPacket gained `boolean centre`,
+  # version stayed "72"). This diffs the PR against its base over net/ and fails when a packet's
+  # encode/decode idioms changed without the PROTOCOL_VERSION line changing too. Pull requests
+  # only — a push to main has no base to diff against. No network beyond the checkout.
+  net-checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needs the merge-base with the target branch
+
+      - name: Packet layout change bumps PROTOCOL_VERSION
+        run: python3 scripts/net/check-protocol-version.py --base origin/${{ github.base_ref }}
+
   # Stdlib-only Python guard for the translation provenance sidecars (who translated / who
   # human-reviewed each string). Two flavours, both under localization/ and both repo-side
   # only (the sidecars never ship — but the generated manifests derived from them, at
