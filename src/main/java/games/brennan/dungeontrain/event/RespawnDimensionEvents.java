@@ -33,10 +33,16 @@ import org.slf4j.Logger;
  *   <li>Cross-dim teleports the player via {@code player.teleportTo}.</li>
  * </ol>
  *
+ * <p>Also handles the <b>End exit portal</b>
+ * ({@link PlayerEvent.PlayerRespawnEvent#isEndConquered()}): after killing the
+ * dragon and dropping into the portal, vanilla "respawns" the player (inventory
+ * kept) at their bed / world spawn — in a Dungeon Train world that is an empty
+ * vanilla Overworld with no train anywhere near. Instead, the player is placed
+ * back on the train in the world's starting dimension, exactly like login and
+ * the cross-dim respawn above. No dimension roll on this path.</p>
+ *
  * <p>Skip-rules:</p>
  * <ul>
- *   <li>{@link PlayerEvent.PlayerRespawnEvent#isEndConquered()} — End portal
- *       credits, not a death.</li>
  *   <li>Hardcore mode — vanilla kicks the player to spectator immediately
  *       after this event fires; teleporting first then being kicked is a
  *       jarring no-op.</li>
@@ -60,7 +66,6 @@ public final class RespawnDimensionEvents {
 
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        if (event.isEndConquered()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         MinecraftServer server = player.getServer();
         if (server == null || server.isHardcore()) return;
@@ -68,6 +73,11 @@ public final class RespawnDimensionEvents {
         ServerLevel overworld = server.overworld();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         if (!data.startsWithTrain()) return;
+
+        if (event.isEndConquered()) {
+            returnToTrainAfterEnd(player, server, data);
+            return;
+        }
 
         StartingDimension rolled = StartingDimension.rollRespawnDimension(
                 overworld.random.nextDouble());
@@ -83,19 +93,44 @@ public final class RespawnDimensionEvents {
         }
 
         TrainBootstrapEvents.ensureTrainSpawned(target, data);
+        placeOnTrain(player, target, data, "Respawn");
+    }
 
-        // Prefer landing the player ON the train (flatbed deck) so a cross-dim
-        // respawn matches the spawn-on-train behavior. Yaw -90 faces +X (travel
-        // direction). Falls back to the ground spawn pose beside the train if
-        // the train hasn't bound yet.
+    /**
+     * End exit portal: vanilla has just put the player at their bed / world
+     * spawn. Move them onto the train in the starting dimension instead —
+     * the same landing the game opens with.
+     */
+    private static void returnToTrainAfterEnd(
+            ServerPlayer player, MinecraftServer server, DungeonTrainWorldData data) {
+        StartingDimension startingDim = data.startingDimension();
+        ServerLevel target = server.getLevel(startingDim.levelKey());
+        if (target == null) {
+            LOGGER.warn("[DungeonTrain] End conquered but starting dim {} not loaded — vanilla flow for {}",
+                    startingDim, player.getName().getString());
+            return;
+        }
+        LOGGER.info("[DungeonTrain] End conquered — returning {} to the train in {}",
+                player.getName().getString(), startingDim);
+        TrainBootstrapEvents.ensureTrainSpawned(target, data);
+        placeOnTrain(player, target, data, "End conquered");
+    }
+
+    /**
+     * Land the player ON the train (front flatbed deck) in {@code target},
+     * or beside the track if no group has bound yet. Yaw -90 faces +X (travel
+     * direction). {@code why} only labels the log line.
+     */
+    private static void placeOnTrain(
+            ServerPlayer player, ServerLevel target, DungeonTrainWorldData data, String why) {
         PlayerJoinEvents.FlatbedTarget flat = PlayerJoinEvents.findFlatbedTarget(target, data);
         if (flat != null) {
-            LOGGER.info("[DungeonTrain] Respawn placing {} on train in {} at ({}, {}, {})",
-                    player.getName().getString(), rolled,
+            LOGGER.info("[DungeonTrain] {} placing {} on train in {} at ({}, {}, {})",
+                    why, player.getName().getString(), target.dimension().location(),
                     String.format("%.1f", flat.x()), String.format("%.1f", flat.y()), String.format("%.1f", flat.z()));
             player.teleportTo(target, flat.x(), flat.y(), flat.z(), -90.0f, 0.0f);
             // Client-side deck hold — same free-fall-during-spawn-stall race as
-            // login (the rolled dim may have just spawned a fresh train).
+            // login (the target dim may have just spawned a fresh train).
             DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
                 data.getTrainY() + 1.0, SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
             return;
@@ -103,8 +138,8 @@ public final class RespawnDimensionEvents {
 
         PlayerJoinEvents.SpawnPlacement sp = PlayerJoinEvents.computeBootstrapPlacement(
                 target, data.dims(), data.getTrainY());
-        LOGGER.info("[DungeonTrain] Respawn teleporting {} to {} (ground fallback) at pos=({}, {}, {}) yaw={} pitch={}",
-                player.getName().getString(), rolled,
+        LOGGER.info("[DungeonTrain] {} teleporting {} to {} (ground fallback) at pos=({}, {}, {}) yaw={} pitch={}",
+                why, player.getName().getString(), target.dimension().location(),
                 String.format("%.1f", sp.x()), sp.y(), String.format("%.1f", sp.z()),
                 String.format("%.1f", sp.yaw()), String.format("%.1f", sp.pitch()));
         player.teleportTo(target, sp.x(), sp.y(), sp.z(), sp.yaw(), sp.pitch());
