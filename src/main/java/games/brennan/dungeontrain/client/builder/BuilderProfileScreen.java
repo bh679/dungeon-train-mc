@@ -494,6 +494,9 @@ public final class BuilderProfileScreen extends Screen {
      * plot to stamp it on, so the build simply joins that editor's lists.</p>
      */
     private void onDownload(BuilderProfileDownloadResultPacket packet) {
+        // An answer to a press this screen did not make — one sent from a screen before it — is
+        // not about the build selected here.
+        if (lastDownload == null || packet.relayId() != lastDownload.relayId()) return;
         this.downloadNote = Component.translatable(noteKeyFor(packet.outcome()));
         if (this.downloadButton != null) this.downloadButton.active = selectedBuild() != null;
 

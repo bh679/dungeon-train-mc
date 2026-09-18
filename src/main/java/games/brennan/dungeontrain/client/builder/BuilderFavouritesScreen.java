@@ -332,6 +332,9 @@ public final class BuilderFavouritesScreen extends Screen {
     }
 
     private void onDownload(BuilderProfileDownloadResultPacket packet) {
+        // An answer to a press this screen did not make — one sent from a screen before it — is
+        // not about the build selected here.
+        if (lastDownload == null || packet.relayId() != lastDownload.relayId()) return;
         this.downloadNote = Component.translatable(BuilderProfileScreen.noteKeyFor(packet.outcome()));
         if (this.downloadButton != null) this.downloadButton.active = selectedBuild() != null;
         if (packet.outcome() == BuilderRelayDownload.Outcome.PREFAB_CONFLICT && lastDownload != null) {
