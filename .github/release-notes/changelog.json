@@ -17487,6 +17487,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sp-train-physics-substep-tuner",
+      "version": "0.922.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Mining and fighting on the train no longer lag behind you",
+      "summary": "In single-player the train's physics was doing more work each tick than the ride needed, and on a long train it dragged the whole game behind you: blocks you had mined broke late, hits landed late, and mobs moved as if underwater. The train now runs lighter, so what you do happens when you do it.",
+      "highlights": [
+        "Blocks break and drop the moment you finish mining them.",
+        "Hits, knockback and mob movement keep up with you."
+      ],
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
