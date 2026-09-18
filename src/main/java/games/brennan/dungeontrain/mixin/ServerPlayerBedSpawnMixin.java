@@ -15,8 +15,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Replaces vanilla's "Respawn point set" ({@code block.minecraft.set_spawn}) when a player sleeps
  * in a bed with a flavour line telling them the bed did <em>not</em> set a respawn point — the
  * train is the only respawn, and it is wherever the line has carried it. Every line in the pool
- * must keep that meaning (a bed is never a respawn anchor in a train world). The respawn mechanics
- * themselves are left untouched here; both the vanilla and Sable bed paths emit the message through
+ * must keep that meaning — beds are not a respawn feature players should rely on (a Dungeon Train
+ * game is one life, one world). The respawn mechanics themselves are left untouched here: on the
+ * train Sable's {@code respawn_point} mixin still anchors a tracking point to the moving sub-level;
+ * off the train vanilla sets it normally. Both paths emit the message through
  * {@link ServerPlayer#sendSystemMessage(Component)}, so we intercept there.
  *
  * <p>We inject at HEAD of {@code sendSystemMessage(Component)} and, only for the
