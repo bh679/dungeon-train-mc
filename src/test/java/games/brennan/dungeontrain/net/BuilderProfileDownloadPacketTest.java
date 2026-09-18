@@ -99,16 +99,33 @@ final class BuilderProfileDownloadPacketTest {
     @Test
     @DisplayName("the answer preserves the outcome and what was installed")
     void resultRoundTrip() {
-        BuilderProfileDownloadResultPacket original = new BuilderProfileDownloadResultPacket(
+        BuilderProfileDownloadResultPacket original = new BuilderProfileDownloadResultPacket(4711,
                 BuilderRelayDownload.Outcome.INSTALLED, BuilderPhotoPaths.Kind.PART.id(),
                 "brass_door", "door");
-        assertEquals(original, roundTrip(original));
+        BuilderProfileDownloadResultPacket back = roundTrip(original);
+        assertEquals(4711, back.relayId(), "the screen matches the answer to its press by this id");
+        assertEquals(original, back);
+    }
+
+    @Test
+    @DisplayName("the answer is stamped with the relay id of the press it answers")
+    void resultCarriesTheRequestsRelayId() {
+        BuilderRelayDownload.Result installed = new BuilderRelayDownload.Result(
+                BuilderRelayDownload.Outcome.INSTALLED, BuilderPhotoPaths.Kind.PART, "brass_door", "door",
+                List.of());
+        BuilderProfileDownloadResultPacket answer = BuilderProfileDownloadResultPacket.of(installed, 4711);
+        assertEquals(4711, answer.relayId());
+        assertEquals(4711, roundTrip(answer).relayId());
+        BuilderProfileDownloadResultPacket refusal = BuilderProfileDownloadResultPacket.of(
+                new BuilderRelayDownload.Result(BuilderRelayDownload.Outcome.UNAVAILABLE, null, "", "", List.of()),
+                12);
+        assertEquals(12, roundTrip(refusal).relayId(), "a refusal still says which press it refuses");
     }
 
     @Test
     @DisplayName("a naming question carries the names already in use, and others carry none")
     void takenNamesRoundTrip() {
-        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(
+        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(4711,
                 BuilderRelayDownload.Outcome.ALREADY_HERE, "portal_room", "testtt", "",
                 List.of("testtt", "testtt_2"));
         BuilderProfileDownloadResultPacket back = roundTrip(asking);
@@ -116,7 +133,7 @@ final class BuilderProfileDownloadPacketTest {
                 "the name box opens on this list — a truncated one offers a name that is gone");
         assertEquals(asking, back);
 
-        assertEquals(List.of(), new BuilderProfileDownloadResultPacket(
+        assertEquals(List.of(), new BuilderProfileDownloadResultPacket(4711,
                         BuilderRelayDownload.Outcome.INSTALLED, "portal_room", "testtt", "").takenNames(),
                 "an outcome that asks for no name carries no list");
     }
@@ -124,7 +141,7 @@ final class BuilderProfileDownloadPacketTest {
     @Test
     @DisplayName("an outcome that installed nothing round-trips with empty names")
     void refusalRoundTrip() {
-        BuilderProfileDownloadResultPacket original = new BuilderProfileDownloadResultPacket(
+        BuilderProfileDownloadResultPacket original = new BuilderProfileDownloadResultPacket(4711,
                 BuilderRelayDownload.Outcome.ALREADY_HERE, "", "", "");
         assertEquals(original, roundTrip(original));
     }
@@ -134,8 +151,10 @@ final class BuilderProfileDownloadPacketTest {
     void everyOutcomeRoundTrips() {
         for (BuilderRelayDownload.Outcome outcome : BuilderRelayDownload.Outcome.values()) {
             BuilderProfileDownloadResultPacket original =
-                    new BuilderProfileDownloadResultPacket(outcome, "carriage", "brick_cabin", "");
-            assertEquals(outcome, roundTrip(original).outcome());
+                    new BuilderProfileDownloadResultPacket(4711, outcome, "carriage", "brick_cabin", "");
+            BuilderProfileDownloadResultPacket back = roundTrip(original);
+            assertEquals(outcome, back.outcome());
+            assertEquals(4711, back.relayId());
         }
     }
 
@@ -168,12 +187,12 @@ final class BuilderProfileDownloadPacketTest {
         List<TemplateLootPrefabs.Conflict> conflicts = List.of(
                 new TemplateLootPrefabs.Conflict("gold", "{\"entries\":[1]}", "{\"entries\":[2]}"),
                 new TemplateLootPrefabs.Conflict("silver", "{}", "{\"block\":\"minecraft:barrel\"}"));
-        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(
+        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(4711,
                 BuilderRelayDownload.Outcome.PREFAB_CONFLICT, "contents", "vault", "", List.of(), conflicts);
         BuilderProfileDownloadResultPacket back = roundTrip(asking);
         assertEquals(conflicts, back.conflicts(), "the screen compares exactly these two texts");
         assertEquals(asking, back);
-        assertEquals(List.of(), new BuilderProfileDownloadResultPacket(
+        assertEquals(List.of(), new BuilderProfileDownloadResultPacket(4711,
                         BuilderRelayDownload.Outcome.INSTALLED, "contents", "vault", "").conflicts(),
                 "an outcome that asks about no prefab carries none");
     }
@@ -182,7 +201,7 @@ final class BuilderProfileDownloadPacketTest {
     @DisplayName("a conflict text too long for the wire is cut, not dropped")
     void oversizeConflictTextIsClipped() {
         String huge = "x".repeat(BuilderProfileDownloadResultPacket.MAX_CONFLICT_TEXT + 500);
-        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(
+        BuilderProfileDownloadResultPacket asking = new BuilderProfileDownloadResultPacket(4711,
                 BuilderRelayDownload.Outcome.PREFAB_CONFLICT, "contents", "vault", "", List.of(),
                 List.of(new TemplateLootPrefabs.Conflict("gold", huge, "{}")));
         BuilderProfileDownloadResultPacket back = roundTrip(asking);
