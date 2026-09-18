@@ -59,6 +59,15 @@ final class EditorPlotActionPacketTest {
     }
 
     @Test
+    @DisplayName("round-trip preserves the Go here walk")
+    void roundTripGoHere() {
+        EditorPlotActionPacket decoded = roundTrip(new EditorPlotActionPacket(
+            "tracks", "tunnel_section", "default", EditorPlotActionPacket.Action.GO_HERE));
+        assertSame(EditorPlotActionPacket.Action.GO_HERE, decoded.action());
+        assertEquals("tunnel_section", decoded.modelId());
+    }
+
+    @Test
     @DisplayName("resolve: the four actionable categories map to their plot set")
     void resolve_actionableCategories() {
         assertSame(EditorCategory.CARRIAGES, EditorPlotActionPacket.resolve("CARRIAGES"));

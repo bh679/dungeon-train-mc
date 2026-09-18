@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
@@ -61,8 +60,7 @@ public final class WholeCarriagePlacer {
             CarriagePlacer.eraseAt(level, origin, dims);
             // Entities are ignored to match the capture, which fills from world without them.
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
         });
         return true;
     }

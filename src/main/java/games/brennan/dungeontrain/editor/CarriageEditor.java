@@ -201,7 +201,21 @@ public final class CarriageEditor {
         enter(player, variant, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the plot — a relay Load that replaced the file on disk
+     * arrives here and must show the new blocks. The walk that keeps unsaved edits is
+     * {@link #walkTo} / {@link #enterInside}.
+     */
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop) {
+        enter(player, variant, onTop, true);
+    }
+
+    /**
+     * The X menu's Go here: a walk to the plot, not a reload — restamps only when the player is
+     * not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, CarriageVariant variant, boolean onTop) {
         enter(player, variant, onTop, !standingIn(player, variant));
     }
 
@@ -217,7 +231,9 @@ public final class CarriageEditor {
      * Whether {@code player} is already inside {@code variant}'s plot.
      *
      * <p>Entering a plot you are standing in is a walk to its menu, not a reload — restamping
-     * would throw away every unsaved edit for the sake of a few blocks' teleport.</p>
+     * would throw away every unsaved edit for the sake of a few blocks' teleport. Only the
+     * explicit walks ({@link #walkTo}, {@link #enterInside}) consult this; the command path always
+     * stamps.</p>
      */
     private static boolean standingIn(ServerPlayer player, CarriageVariant variant) {
         MinecraftServer server = player.getServer();

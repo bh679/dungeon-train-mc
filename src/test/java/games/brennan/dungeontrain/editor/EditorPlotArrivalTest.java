@@ -8,7 +8,10 @@ import net.minecraft.core.Vec3i;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -124,5 +127,94 @@ final class EditorPlotArrivalTest {
     @DisplayName("sealed build: the preferred cell comes back as-is")
     void freeCell_sealedReturnsPreferred() {
         assertEquals(DOOR, EditorPlotArrival.freeCell(ORIGIN, FOOTPRINT, DOOR, p -> false));
+    }
+
+    @Test
+    @DisplayName("author-cap room with a raised floor: nearest cell one up, found without scanning the box")
+    void freeCell_largeRaisedFloorIsCheap() {
+        // 64³ (PortalRoomLayout.AUTHOR_MAX) with the whole interior floor level solid — the door row
+        // is blocked, so the fallback runs. The old path built and sorted every interior cell
+        // (62×62×61 ≈ 234k) before probing one.
+        Vec3i big = new Vec3i(64, 64, 64);
+        BlockPos door = new BlockPos(0, 231, 32);
+        AtomicInteger probes = new AtomicInteger();
+        Predicate<BlockPos> raisedFloor = p -> {
+            probes.incrementAndGet();
+            return p.getY() >= 232;
+        };
+        BlockPos got = EditorPlotArrival.freeCell(ORIGIN, big, door, raisedFloor);
+        // (1, 232, 32): one in from the door, one up — d² = 2, the nearest interior cell that fits.
+        assertEquals(new BlockPos(1, 232, 32), got);
+        assertTrue(probes.get() < 100, "probed " + probes.get() + " cells; the search should stay local");
+    }
+
+    @Test
+    @DisplayName("nearest is by straight-line distance, not by shell: a closer cell in a later shell wins")
+    void freeCell_nearestIsEuclideanAcrossShells() {
+        // 11³ box, preferred at its interior centre, so shells 0..3 fit inside. Free cells: a corner
+        // of Chebyshev shell 2 (d² = 12) and a face cell of shell 3 (d² = 9). The face cell is
+        // farther by shell but nearer by distance, and must win.
+        Vec3i box = new Vec3i(11, 12, 11);
+        BlockPos centre = new BlockPos(5, 235, 5);
+        BlockPos shell2Corner = centre.offset(2, 2, 2);
+        BlockPos shell3Face = centre.offset(3, 0, 0);
+        Predicate<BlockPos> fits = p -> p.equals(shell2Corner) || p.equals(shell3Face);
+        assertEquals(shell3Face, EditorPlotArrival.freeCell(ORIGIN, box, centre, fits));
+    }
+
+    @Test
+    @DisplayName("the result is a plain BlockPos, not the search cursor")
+    void freeCell_returnsImmutable() {
+        BlockPos[] row = new BlockPos[8];
+        for (int x = 0; x < 8; x++) row[x] = new BlockPos(x, 231, 3);
+        BlockPos got = EditorPlotArrival.freeCell(ORIGIN, FOOTPRINT, DOOR, blocked(row));
+        assertEquals(BlockPos.class, got.getClass());
+    }
+
+    @Test
+    @DisplayName("no interior at all: the preferred cell comes back as-is")
+    void freeCell_noInteriorReturnsPreferred() {
+        BlockPos door = new BlockPos(0, 231, 1);
+        assertEquals(door, EditorPlotArrival.freeCell(ORIGIN, new Vec3i(2, 3, 2), door, blocked(door)));
+    }
+
+    @Test
+    @DisplayName("shell search matches a brute-force nearest on random boxes and blockages")
+    void freeCell_matchesBruteForce() {
+        Random rng = new Random(0x5EED);
+        for (int trial = 0; trial < 300; trial++) {
+            Vec3i box = new Vec3i(3 + rng.nextInt(8), 4 + rng.nextInt(8), 3 + rng.nextInt(8));
+            BlockPos preferred = ORIGIN.offset(rng.nextInt(box.getX()), 1 + rng.nextInt(2), rng.nextInt(box.getZ()));
+            Set<BlockPos> solid = new HashSet<>();
+            int fill = rng.nextInt(box.getX() * box.getY() * box.getZ());
+            for (int i = 0; i < fill; i++) {
+                solid.add(ORIGIN.offset(rng.nextInt(box.getX()), rng.nextInt(box.getY()), rng.nextInt(box.getZ())));
+            }
+            Predicate<BlockPos> fits = p -> !solid.contains(p) && !solid.contains(p.above());
+            BlockPos got = EditorPlotArrival.freeCell(ORIGIN, box, preferred, fits);
+            BlockPos want = reference(box, preferred, fits);
+            assertEquals(want.distSqr(preferred), got.distSqr(preferred),
+                "trial " + trial + " box " + box + " preferred " + preferred + ": got " + got + " want " + want);
+            assertTrue(got.equals(preferred) || fits.test(got), "trial " + trial + " landed in a block: " + got);
+        }
+    }
+
+    /** The pre-shell-search algorithm: preferred, its +X row, then every interior cell sorted by distance. */
+    private static BlockPos reference(Vec3i box, BlockPos preferred, Predicate<BlockPos> fits) {
+        if (fits.test(preferred)) return preferred;
+        for (int x = preferred.getX() + 1; x <= ORIGIN.getX() + box.getX() - 2; x++) {
+            BlockPos p = new BlockPos(x, preferred.getY(), preferred.getZ());
+            if (fits.test(p)) return p;
+        }
+        BlockPos best = null;
+        for (int dx = 1; dx <= box.getX() - 2; dx++) {
+            for (int dz = 1; dz <= box.getZ() - 2; dz++) {
+                for (int dy = 1; dy <= box.getY() - 3; dy++) {
+                    BlockPos p = ORIGIN.offset(dx, dy, dz);
+                    if (fits.test(p) && (best == null || p.distSqr(preferred) < best.distSqr(preferred))) best = p;
+                }
+            }
+        }
+        return best == null ? preferred : best;
     }
 }

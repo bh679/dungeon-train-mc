@@ -135,9 +135,21 @@ public final class PortalRoomEditor {
         enter(player, name, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the room — a relay Load that replaced the file on disk
+     * arrives here and must show the new blocks. The walk that keeps unsaved edits is
+     * {@link #walkTo} / {@link #enterInside}.
+     */
     public static void enter(ServerPlayer player, String name, boolean onTop) {
-        // Already inside this room: a walk to its menu, not a reload — restamping would throw away
-        // every unsaved edit in every room for the sake of a few blocks' teleport.
+        enter(player, name, onTop, true);
+    }
+
+    /**
+     * The X menu's Go here: a walk to the room, not a reload — restamps only when the player is
+     * not already standing in it, since a restamp would throw away every unsaved edit in every room.
+     */
+    public static void walkTo(ServerPlayer player, String name, boolean onTop) {
         enter(player, name, onTop, !standingIn(player, name));
     }
 
