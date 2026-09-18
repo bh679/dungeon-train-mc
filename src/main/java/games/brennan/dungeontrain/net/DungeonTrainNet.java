@@ -14,7 +14,11 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  *
  * <p>Versioning: protocol version is a literal string. NeoForge's payload
  * handshake uses this to reject mismatched clients — bump
- * {@link #PROTOCOL_VERSION} any time packet layouts change.</p>
+ * {@link #PROTOCOL_VERSION} any time packet layouts change. Missing the bump admits an
+ * older client at login and then kicks it mid-session when a widened payload is decoded
+ * past its end (PR #1449 shipped that way) — so CI
+ * ({@code scripts/net/check-protocol-version.py}) fails a PR that changes a packet's
+ * encode/decode body without touching this constant.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
