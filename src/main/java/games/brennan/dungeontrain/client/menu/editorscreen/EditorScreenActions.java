@@ -323,14 +323,24 @@ public final class EditorScreenActions {
      * Go and stand in the selection. Same stamped category: the plain enter command. Another
      * category: through the unsaved check, which switches category and follows up with the
      * enter — the path every cross-category jump in the mod takes. Null when nothing is selected.
+     *
+     * <p>Already standing in it: a {@link EditorPlotActionPacket.Action#GO_HERE} packet rather than
+     * the command. The enter command always restamps — a relay Load that replaced the file relies
+     * on that to show the new blocks — so the one walk that must keep unsaved edits says so
+     * explicitly. Parts have no packet arm and keep the command.</p>
      */
-    public static CommandMenuEntry enterEntry(Ctx ctx) {
+    public static CommandMenuEntry enterEntry(Ctx ctx, Consumer<EditorPlotActionPacket> sendPacket) {
         if (!ctx.hasSelection()) return null;
         VariantKey sel = ctx.selection();
         String command = EditorPlotTeleport.commandFor(sel.category(), sel.modelId(), sel.modelName());
         if (command == null) return null;
         String label = EditorScreenLang.text(EditorScreenLang.ENTER);
         if (ctx.stampedCategory() != null && sel.category().owner() == ctx.stampedCategory().owner()) {
+            if (ctx.standingInSelection() && sel.category().hasActionRow()) {
+                EditorPlotActionPacket walk = new EditorPlotActionPacket(
+                    sel.category().id(), sel.modelId(), sel.modelName(), EditorPlotActionPacket.Action.GO_HERE);
+                return new CommandMenuEntry.ClientAction(label, () -> sendPacket.accept(walk));
+            }
             return new CommandMenuEntry.Run(label, command);
         }
         // Another category: switch, then go. No save prompt in between — it listed every plot the

@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageDoorCells;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -16,6 +17,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -141,7 +143,7 @@ public final class CarriageContentsEditor {
         // interior to a snapshot of just the interior keeps shell blocks
         // (which the contents save deliberately excludes) out of the diff.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interior = CarriageContentsPlacer.interiorSize(box);
+        Vec3i interior = CarriageContentsPlacer.interiorSize(box);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin, interior.getX(), interior.getY(), interior.getZ()
@@ -323,8 +325,39 @@ public final class CarriageContentsEditor {
         enter(player, contents, shellVariant, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the plot — a relay Load that replaced the file on disk
+     * arrives here and must show the new blocks. The walk that keeps unsaved edits is
+     * {@link #walkTo} / {@link #enterInside}.
+     */
     public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant, boolean onTop) {
         enter(player, contents, shellVariant, onTop, true);
+    }
+
+    /**
+     * The X menu's Go here: a walk to the plot under its natural shell, not a reload — restamps
+     * only when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, CarriageContents contents, boolean onTop) {
+        enter(player, contents, null, onTop, !standingIn(player, contents));
+    }
+
+    /**
+     * The panel's Enter button: land inside at {@code inside} under the contents' natural shell,
+     * restamping unless the player is already standing in this plot.
+     */
+    public static void enterInside(ServerPlayer player, CarriageContents contents, EditorPlotArrival.Inside inside) {
+        enter(player, contents, null, false, !standingIn(player, contents), inside);
+    }
+
+    /** Whether {@code player} is already inside {@code contents}' plot. */
+    private static boolean standingIn(ServerPlayer player, CarriageContents contents) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        CarriageContents here = plotContaining(player.blockPosition(), dims);
+        return here != null && here.id().equals(contents.id());
     }
 
     /**
@@ -333,6 +366,15 @@ public final class CarriageContentsEditor {
      */
     public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant,
                              boolean onTop, boolean stamp) {
+        enter(player, contents, shellVariant, onTop, stamp, EditorPlotArrival.Inside.FRONT_DOOR);
+    }
+
+    /**
+     * @param inside where an {@code onTop == false} landing aims: the -X doorway facing in, or the
+     *               centre. Either way it steps to the nearest free column if that cell is built up.
+     */
+    public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant,
+                             boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -365,12 +407,9 @@ public final class CarriageContentsEditor {
             setOutline(overworld, origin, OUTLINE_BLOCK, box);
         }
 
-        double tx = origin.getX() + box.length() / 2.0;
-        double ty = onTop
-            ? origin.getY() + box.height() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + box.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        Vec3i footprint = new Template.Contents(contents).plotSize(dims);
+        BlockPos door = CarriageDoorCells.doorBases(origin, box).get(0);
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
 
         LOGGER.info("[DungeonTrain] Contents editor enter: {} -> {} (shell={}) plot at {} dims={}x{}x{} ({})",
             player.getName().getString(), contents.id(), shell.id(), origin,
@@ -412,7 +451,7 @@ public final class CarriageContentsEditor {
         // Refresh the dirty-check baseline so the just-saved state reads as
         // clean on the next /dt editor unsaved-list query.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interiorSnapshotSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
+        Vec3i interiorSnapshotSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin,
@@ -434,7 +473,7 @@ public final class CarriageContentsEditor {
             // Promote the variants sidecar too — without this, shift-right-click
             // variant authoring stayed in run/config and was lost on worktree
             // delete (the bug PR #79's vase update silently shipped without).
-            net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
+            Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
             CarriageContentsVariantBlocks sidecar =
                 CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
             sidecar.saveToSource(contents);
@@ -602,7 +641,7 @@ public final class CarriageContentsEditor {
         if (EditorDevMode.isEnabled()) {
             try {
                 CarriageContentsStore.saveToSource(renamed, template);
-                net.minecraft.core.Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(current, dims);
+                Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(current, dims);
                 CarriageContentsVariantBlocks newSidecar =
                     CarriageContentsVariantBlocks.loadFor(renamed, interiorSize);
                 newSidecar.saveToSource(renamed);

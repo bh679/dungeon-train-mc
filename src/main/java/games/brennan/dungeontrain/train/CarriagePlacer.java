@@ -1643,14 +1643,17 @@ public final class CarriagePlacer {
         settings.addProcessor(new SectionLocalStampProcessor(level));
         // Flags are moot — the capture processor drops every cell, so placeInWorld
         // places nothing itself; it only drives the palette/geometry/processor chain.
-        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
     }
 
     /**
      * Relighting counterpart of {@link #stampTemplateSectionLocal} — the pre-#645 write path.
-     * Uses vanilla {@code placeInWorld} with {@link Block#UPDATE_ALL} (flag 3) so every cell goes
-     * through {@code LevelChunk.setBlockState}: the light engine {@code checkBlock}, the neighbour
-     * shape-update cascade, client sync, and block-entity creation all run as before the perf change.
+     * Uses vanilla {@code placeInWorld} so every cell goes through {@code LevelChunk.setBlockState}:
+     * the light engine {@code checkBlock}, client sync, shape updates and block-entity creation all
+     * run as before the perf change.
+     *
+     * <p>Flags are {@link CarriageStampGuard#STAMP_FLAGS} — never {@code UPDATE_ALL}; the Fast
+     * Paintings rationale lives on that constant.</p>
      *
      * <p>Use this wherever the stamped blocks are <b>not</b> subsequently relit by a Sable
      * {@code assemble}: the in-game editor plots (permanent overworld blocks) and the post-assemble
@@ -1666,7 +1669,7 @@ public final class CarriagePlacer {
         settings.addProcessor(new StagePlaceholderProcessor());
         settings.addProcessor(new VariantPlaceholderAirProcessor());
         settings.addProcessor(new BakedItemStatsProcessor(level));
-        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_ALL);
+        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
     }
 
     public static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin, CarriageDims dims) {

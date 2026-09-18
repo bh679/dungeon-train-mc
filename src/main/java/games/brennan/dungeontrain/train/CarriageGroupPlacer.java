@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
@@ -49,7 +48,7 @@ public final class CarriageGroupPlacer {
         CarriageStampGuard.run(() -> {
             eraseAt(level, origin, dims, carriages);
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_ALL);
+            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
         });
         return true;
     }

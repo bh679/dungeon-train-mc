@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.TrackPalette;
@@ -13,6 +12,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
@@ -102,8 +102,30 @@ public final class TrackEditor {
         enter(player, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the default plot — a relay Load that installed a new
+     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
+     * {@link #walkTo}.
+     */
     public static void enter(ServerPlayer player, boolean onTop) {
         enter(player, onTop, true);
+    }
+
+    /**
+     * Go here / the panel's Enter: a walk to the default tile plot, not a reload — restamps only
+     * when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, boolean onTop) {
+        enter(player, onTop, !standingInDefault(player));
+    }
+
+    /** Whether {@code player} is already inside the default track tile's plot. */
+    private static boolean standingInDefault(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        return TrackKind.DEFAULT_NAME.equals(resolveName(player.blockPosition(), dims));
     }
 
     /**
@@ -120,12 +142,9 @@ public final class TrackEditor {
         if (stamp) stampAllPlots(overworld, dims);
 
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
-        double tx = origin.getX() + TrackPlacer.TILE_LENGTH / 2.0;
-        double ty = onTop
-            ? origin.getY() + TrackPlacer.HEIGHT + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + dims.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        // The label's footprint, so the roof landing sits in front of the panel it draws.
+        Vec3i footprint = TrackSidePlots.footprint(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         LOGGER.info("[DungeonTrain] Track editor enter: {} -> default plot at {} ({} variants registered, {})",
             player.getName().getString(), origin,
@@ -272,8 +291,7 @@ public final class TrackEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, TrackKind.TILE, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
             return;
         }
         // Fallback for unauthored "default" — hardcoded bed + 2-rail stamp.

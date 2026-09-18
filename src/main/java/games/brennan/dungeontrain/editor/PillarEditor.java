@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.PillarAdjunctTemplateId;
 import games.brennan.dungeontrain.template.PillarTemplateId;
@@ -16,6 +15,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -149,8 +149,45 @@ public final class PillarEditor {
         enter(player, section, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the default plot — a relay Load that installed a new
+     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
+     * {@link #walkTo(ServerPlayer, PillarSection, boolean)}.
+     */
     public static void enter(ServerPlayer player, PillarSection section, boolean onTop) {
         enter(player, section, onTop, true);
+    }
+
+    /**
+     * Go here / the panel's Enter: a walk to the section's default plot, not a reload — restamps
+     * only when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, PillarSection section, boolean onTop) {
+        enter(player, section, onTop, !standingIn(player, section));
+    }
+
+    /** Whether {@code player} is already inside {@code section}'s default-named plot. */
+    private static boolean standingIn(ServerPlayer player, PillarSection section) {
+        CarriageDims dims = overworldDims(player);
+        if (dims == null) return false;
+        SectionPlot here = plotContaining(player.blockPosition(), dims);
+        return here != null && here.section() == section && TrackKind.DEFAULT_NAME.equals(here.name());
+    }
+
+    /** Whether {@code player} is already inside {@code adjunct}'s default-named plot. */
+    private static boolean standingIn(ServerPlayer player, PillarAdjunct adjunct) {
+        CarriageDims dims = overworldDims(player);
+        if (dims == null) return false;
+        AdjunctPlot here = plotContainingAdjunct(player.blockPosition(), dims);
+        return here != null && here.adjunct() == adjunct && TrackKind.DEFAULT_NAME.equals(here.name());
+    }
+
+    /** The world's carriage dims while {@code player} is in the overworld, else null. */
+    private static CarriageDims overworldDims(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return null;
+        return DungeonTrainWorldData.get(server.overworld()).dims();
     }
 
     /**
@@ -167,12 +204,9 @@ public final class PillarEditor {
         CarriageEditor.rememberReturn(player);
         if (stamp) stampAllSectionPlots(overworld, section, dims);
 
-        double tx = origin.getX() + 0.5;
-        double ty = onTop
-            ? origin.getY() + section.height() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + dims.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        Vec3i footprint = TrackSidePlots.footprint(
+            PillarTemplateStore.pillarKind(section), TrackKind.DEFAULT_NAME, dims);
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} default plot at {} ({} variants, {})",
             player.getName().getString(), section.id(), origin,
@@ -324,8 +358,7 @@ public final class PillarEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
             return;
         }
         BlockState fallback = TrackPalette.PILLAR;
@@ -351,8 +384,14 @@ public final class PillarEditor {
         enter(player, adjunct, true);
     }
 
+    /** As {@link #enter(ServerPlayer, PillarSection, boolean)}: always restamps. */
     public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
         enter(player, adjunct, onTop, true);
+    }
+
+    /** As {@link #walkTo(ServerPlayer, PillarSection, boolean)}: restamps only when not already inside. */
+    public static void walkTo(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
+        enter(player, adjunct, onTop, !standingIn(player, adjunct));
     }
 
     /**
@@ -369,12 +408,9 @@ public final class PillarEditor {
         CarriageEditor.rememberReturn(player);
         if (stamp) stampAllAdjunctPlots(overworld, adjunct, dims);
 
-        double tx = origin.getX() + adjunct.xSize() / 2.0;
-        double ty = onTop
-            ? origin.getY() + adjunct.ySize() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + adjunct.zSize() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        Vec3i footprint = TrackSidePlots.footprint(
+            PillarTemplateStore.adjunctKind(adjunct), TrackKind.DEFAULT_NAME, dims);
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         LOGGER.info("[DungeonTrain] Pillar editor enter adjunct: {} -> {} default plot at {} (size={}x{}x{}, {} variants)",
             player.getName().getString(), adjunct.id(), origin,
@@ -522,8 +558,7 @@ public final class PillarEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, sentinel);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
             return;
         }
         stampProceduralStairsFallback(level, origin, adjunct);

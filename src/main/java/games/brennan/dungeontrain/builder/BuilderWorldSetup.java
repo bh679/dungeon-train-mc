@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.builder;
 
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -40,6 +39,7 @@ import games.brennan.dungeontrain.train.CarriageGroupRegistry;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -1044,8 +1044,7 @@ public final class BuilderWorldSetup {
         if (stored.isEmpty()) {
             return false;
         }
-        CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin,
-                new StructurePlaceSettings().setIgnoreEntities(true), level.getRandom(), 3));
+        TemplateStamp.place(level, origin, stored.get(), new StructurePlaceSettings().setIgnoreEntities(true));
         return true;
     }
 

@@ -117,8 +117,30 @@ public final class TunnelEditor {
         enter(player, variant, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the default plot — a relay Load that installed a new
+     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
+     * {@link #walkTo}.
+     */
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop) {
         enter(player, variant, onTop, true);
+    }
+
+    /**
+     * Go here / the panel's Enter: a walk to the variant's default plot, not a reload — restamps
+     * only when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, TunnelVariant variant, boolean onTop) {
+        enter(player, variant, onTop, !standingIn(player, variant));
+    }
+
+    /** Whether {@code player} is already inside {@code variant}'s default-named plot. */
+    private static boolean standingIn(ServerPlayer player, TunnelVariant variant) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        TunnelPlot here = plotContainingNamed(player.blockPosition());
+        return here != null && here.variant() == variant && TrackKind.DEFAULT_NAME.equals(here.name());
     }
 
     /**
@@ -147,12 +169,11 @@ public final class TunnelEditor {
 
         if (stamp) stampPlot(overworld, variant);
 
-        double tx = origin.getX() + TunnelPlacer.LENGTH / 2.0;
-        double ty = onTop
-            ? origin.getY() + TunnelPlacer.HEIGHT + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + TunnelPlacer.WIDTH / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        // Tunnel dims are fixed, so the world's CarriageDims only feed the kind lookup — the label
+        // uses the same one, so the roof landing sits in front of the panel it draws.
+        Vec3i footprint = TrackSidePlots.footprint(TunnelTemplateStore.tunnelKind(variant),
+            DungeonTrainWorldData.get(overworld).dims());
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         // Edits mirror live across the enabled axes — author one master octant.
         player.sendSystemMessage(Component.literal(

@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.net.BuilderFavouritePacket;
 import games.brennan.dungeontrain.net.BuilderFavouritesPacket;
 import games.brennan.dungeontrain.net.BuilderFavouritesRequestPacket;
 import games.brennan.dungeontrain.net.BuilderProfilePacket;
+import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -296,6 +297,11 @@ public final class EditorCreatorBuilds {
      * the download path calls {@code ALREADY_HERE} — the editor has room for one template per name,
      * so a name in use IS the build as far as this screen can address it, whoever authored the file.
      * Offering Load again there only earns the refusal a second time.</p>
+     *
+     * <p>The members of a group count too. A build loaded <b>as a sub-variant</b> is filed under
+     * its parent, and the roster lists it inside that parent's row rather than as a row of its own —
+     * so a walk over the top-level tiles alone never finds it, and the next session (with the
+     * loaded-map empty) offers Load for a build that is already here.</p>
      */
     static Landed here(EditorRosterIndex index, BuilderProfilePacket.Entry entry) {
         if (entry == null) return null;
@@ -305,8 +311,14 @@ public final class EditorCreatorBuilds {
         if (category == null || entry.buildName().isEmpty() || index == null) return null;
         for (EditorRosterIndex.Tile tile : index.allTiles()) {
             VariantKey key = tile.key();
-            if (key.category() == category && key.displayName().equalsIgnoreCase(entry.buildName())) {
+            if (key.category() != category) continue;
+            if (key.displayName().equalsIgnoreCase(entry.buildName())) {
                 return new Landed(photoKindOf(entry), entry.buildName(), entry.subKind());
+            }
+            for (EditorTypeMenusPacket.Variant sv : tile.variant().subVariants()) {
+                if (VariantKey.of(sv, key.modelId()).displayName().equalsIgnoreCase(entry.buildName())) {
+                    return new Landed(photoKindOf(entry), entry.buildName(), entry.subKind());
+                }
             }
         }
         return null;

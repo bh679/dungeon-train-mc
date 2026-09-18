@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.template.TemplateStamp;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
@@ -119,7 +120,7 @@ public final class CarriagePersistenceStore {
             HolderGetter<Block> blocks = level.holderLookup(Registries.BLOCK);
             template.load(blocks, tag);
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(false);
-            CarriageStampGuard.run(() -> template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3));
+            TemplateStamp.place(level, origin, template, settings);
             return true;
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Failed to restore carriage idx={} from {}: {}",

@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.portal.PortalCorridorKind;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageDoorCells;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -201,8 +202,46 @@ public final class CarriageEditor {
         enter(player, variant, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the plot — a relay Load that replaced the file on disk
+     * arrives here and must show the new blocks. The walk that keeps unsaved edits is
+     * {@link #walkTo} / {@link #enterInside}.
+     */
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop) {
         enter(player, variant, onTop, true);
+    }
+
+    /**
+     * The X menu's Go here: a walk to the plot, not a reload — restamps only when the player is
+     * not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, CarriageVariant variant, boolean onTop) {
+        enter(player, variant, onTop, !standingIn(player, variant));
+    }
+
+    /**
+     * The panel's Enter button: land inside at {@code inside}, restamping unless the player is
+     * already standing in this plot.
+     */
+    public static void enterInside(ServerPlayer player, CarriageVariant variant, EditorPlotArrival.Inside inside) {
+        enter(player, variant, false, !standingIn(player, variant), inside);
+    }
+
+    /**
+     * Whether {@code player} is already inside {@code variant}'s plot.
+     *
+     * <p>Entering a plot you are standing in is a walk to its menu, not a reload — restamping
+     * would throw away every unsaved edit for the sake of a few blocks' teleport. Only the
+     * explicit walks ({@link #walkTo}, {@link #enterInside}) consult this; the command path always
+     * stamps.</p>
+     */
+    private static boolean standingIn(ServerPlayer player, CarriageVariant variant) {
+        MinecraftServer server = player.getServer();
+        if (server == null || player.level() != server.overworld()) return false;
+        CarriageDims dims = DungeonTrainWorldData.get(server.overworld()).dims();
+        CarriageVariant here = plotContaining(player.blockPosition(), dims);
+        return here != null && here.id().equals(variant.id());
     }
 
     /**
@@ -211,6 +250,15 @@ public final class CarriageEditor {
      *              would double the one synchronous cost it kept.
      */
     public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop, boolean stamp) {
+        enter(player, variant, onTop, stamp, EditorPlotArrival.Inside.FRONT_DOOR);
+    }
+
+    /**
+     * @param inside where an {@code onTop == false} landing aims: the -X doorway facing in, or the
+     *               centre. Either way it steps to the nearest free column if that cell is built up.
+     */
+    public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop, boolean stamp,
+                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -224,13 +272,9 @@ public final class CarriageEditor {
         rememberReturn(player);
         if (stamp) stampPlot(overworld, variant, dims);
 
-        CarriageDims box = plotDims(variant, dims);
-        double tx = origin.getX() + box.length() / 2.0;
-        double ty = onTop
-            ? origin.getY() + box.height() + 1.0
-            : origin.getY() + 1.0;
-        double tz = origin.getZ() + box.width() / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        Vec3i footprint = new Template.Carriage(variant).plotSize(dims);
+        BlockPos door = CarriageDoorCells.doorBases(origin, plotDims(variant, dims)).get(0);
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{} ({})",
             player.getName().getString(), variant.id(), origin,

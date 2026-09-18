@@ -17013,9 +17013,9 @@
         "Mobs authored frozen wake up when their carriage is stamped onto the train"
       ],
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "block-variant-group-ref-plain-block",
@@ -17033,9 +17033,9 @@
         "Adding a block that a group reference happens to display as no longer reports it as already in the cell."
       ],
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "variant-placeholder-block",
@@ -17053,9 +17053,9 @@
         "Existing builds pick the new look up automatically the next time you open them"
       ],
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z",
       "pr": 1443
     },
     {
@@ -17073,9 +17073,9 @@
       ],
       "pr": 1444,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "release-channel-single-source",
@@ -17094,9 +17094,9 @@
       ],
       "pr": 1445,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "bump-playermob-0-99-0",
@@ -17111,9 +17111,9 @@
       "highlights": [],
       "pr": 1446,
       "date": "2026-09-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
     },
     {
       "id": "editor-menus-translated",
@@ -17134,6 +17134,297 @@
       ],
       "pr": 1447,
       "date": "2026-09-16",
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
+    },
+    {
+      "id": "teleport-in-front-of-menu",
+      "version": "0.907.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor teleports land where you want to be",
+      "summary": "Go here and the template list now put you on the plot roof right in front of its floating menu, facing it \u2014 no more landing in the middle of a long build with the menu behind you. Go here is offered even while you're standing in that template, and hopping back to your own plot no longer reloads it, so unsaved work stays put. The panel's Enter button drops you in the front doorway facing in (hold shift for the centre), and every inside landing finds a free spot instead of putting you in a wall.",
+      "highlights": [
+        "Go here lands you in front of the plot's menu, looking at it",
+        "Go here works from inside the template too, without reloading your unsaved edits",
+        "Enter puts you in the front doorway of carriages, contents and dimensional carriages; shift-click for the centre",
+        "Inside landings step to the nearest free space rather than into a block"
+      ],
+      "pr": 1449,
+      "date": "2026-09-16",
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
+    },
+    {
+      "id": "editor-relay-load-feedback",
+      "version": "0.908.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Loading a relay build into the editor tells you what happened",
+      "summary": "In the editor's Templates menu, loading somebody's relay build used to look like nothing happened \u2014 big builds take a while and the result line was hidden. The button now shows Loading\u2026 until the build is in, the result is shown above it, and a build you already have says so instead of offering itself again.",
+      "highlights": [
+        "Load, Load as sub-variant and Load as a copy grey out and read Loading\u2026 while the build comes down",
+        "The outcome (loaded, name already in use, couldn't load) is shown where you can see it",
+        "A build already loaded as a sub-variant is recognised as loaded across restarts",
+        "Hold Shift on a loaded build to load it again as a copy under a free name"
+      ],
+      "pr": 1451,
+      "date": "2026-09-16",
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
+    },
+    {
+      "id": "editor-stamp-fast-paintings",
+      "version": "0.908.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "compatibility"
+      ],
+      "title": "Pictures stay on the wall when a build is stamped into the editor",
+      "summary": "Fast Paintings pictures wider than two blocks fell off the wall as items whenever a template was stamped into an editor or builder plot \u2014 loading a relay build, entering a plot, Reset. They now stay hung.",
+      "highlights": [],
+      "pr": 1451,
+      "date": "2026-09-16",
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
+    },
+    {
+      "id": "content-grandisolagenerator",
+      "version": "0.908.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New dimensional carriage: Grandisola Generator by CorporalJackShep",
+      "summary": "A 64-block generator hall with 31 pictures, added to the house set of dimensional carriages (levels 376\u2013415).",
+      "highlights": [],
+      "pr": 1451,
+      "date": "2026-09-16",
+      "released": true,
+      "released_in": "v0.908.0",
+      "released_at": "2026-09-16T13:07:32Z"
+    },
+    {
+      "id": "keeptrim-bundled-modrinth",
+      "version": "0.909.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Keep Trim is built in again for Modrinth and manual installs",
+      "summary": "Installing Dungeon Train from Modrinth or by hand no longer fails with \"requires keeptrim \u2014 not installed\". Keep Trim's Modrinth page is still awaiting review, so it now ships inside the Dungeon Train jar; CurseForge keeps installing it as its own mod.",
+      "highlights": [
+        "Modrinth and manual installs load without a separate Keep Trim download",
+        "CurseForge app users are unaffected \u2014 the separately installed copy still takes precedence"
+      ],
+      "pr": 1452,
+      "date": "2026-09-17",
+      "released": true,
+      "released_in": "v0.909.0",
+      "released_at": "2026-09-17T13:07:19Z"
+    },
+    {
+      "id": "backrooms-variant-placeholder-resave",
+      "version": "0.910.0",
+      "type": "chore",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Backrooms carriage re-saved in current editor format",
+      "summary": "The Backrooms dimensional carriage's variant data was re-saved from the editor in the current format. Nothing changes in-game.",
+      "highlights": [],
+      "date": "2026-09-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "relay-load-row-match",
+      "version": "0.911.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "internal"
+      ],
+      "title": "Editor: relay Load result lands on the right build",
+      "summary": "Loading a build from the X menu while clicking other tiles no longer credits the result to the wrong one.",
+      "highlights": [],
+      "pr": 1454,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-enter-landing-search",
+      "version": "0.911.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "editor"
+      ],
+      "title": "Entering a built-up plot no longer stalls the server",
+      "summary": "Pressing Enter on a plot whose doorway and door row are blocked \u2014 a raised floor, a wall across the door, a pillar in the centre \u2014 used to freeze the game for a moment on large rooms while it looked for somewhere to put you. It now finds the nearest free spot straight away, and you land in exactly the same place as before.",
+      "highlights": [
+        "Enter on a 64\u00d764\u00d764 room with a raised floor is instant instead of dropping a few ticks",
+        "Landing spot is unchanged \u2014 still the nearest free cell inside, never in the wall"
+      ],
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "net-protocol-version-guard",
+      "version": "0.912.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "multiplayer",
+        "internal"
+      ],
+      "title": "Outdated clients are turned away at login instead of being kicked mid-session",
+      "summary": "Joining a server with a Dungeon Train build older than the server's could work at first and then drop you the moment you used a plot panel in the editor, because the two builds disagreed about what that message looked like. The network version now says so up front: a mismatched client sees the usual mod-mismatch screen at login, with both versions listed, and a matching one joins as before. A check in the build pipeline keeps this from slipping again.",
+      "highlights": [
+        "Client and server builds that disagree are refused at login, not dropped mid-game",
+        "The mismatch screen names both versions so you know which side to update"
+      ],
+      "pr": 1456,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-enter-chat-blockpos-error",
+      "version": "0.912.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor plots enter cleanly again",
+      "summary": "Entering any editor plot \u2014 a carriage, tunnel, pillar, contents or track plot \u2014 or creating a new one printed a red \"enter failed\" error in chat even though you had arrived. The green \"entered \u2026 plot at x, y, z\" line is back and the error is gone.",
+      "highlights": [
+        "Affects every editor enter and new/clone command since v0.907."
+      ],
+      "pr": 1459,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-load-while-standing-in-plot",
+      "version": "0.914.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Loading a build shows it, even from inside the plot",
+      "summary": "Loading a build from the relay while standing in its plot now brings the new blocks in with you. Before, the plot kept showing what was there already, and saving would quietly write that back over the build you had just loaded.",
+      "highlights": [
+        "Load and Replace refresh the plot you are standing in.",
+        "Go here and the panel's Enter still keep your unsaved edits."
+      ],
+      "pr": 1457,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-command-chat-confirmations-restored",
+      "version": "0.915.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "translations"
+      ],
+      "title": "The rest of the editor commands confirm in chat again",
+      "summary": "The same 0.908.0 regression that silenced the editor enter lines also hit a further fourteen editor messages \u2014 setting a carriage, track or contents weight, flipping contents, baking a stage palette, replacing a block across a stage, the part-plot enter line, the \"target block is outside the plot\" warnings, and the portal-carriage save confirmation. All of them now reach chat instead of failing into the log.",
+      "highlights": [
+        "Weight, flip, stage bake and stage replaceblock commands report their result and the file they wrote",
+        "Every remaining message the mod prints is now checked by a build-time test so this class of bug cannot ship again"
+      ],
+      "pr": 1458,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stamp-flags-single-owner",
+      "version": "0.916.0",
+      "type": "refactor",
+      "tags": [
+        "internal"
+      ],
+      "title": "Pictures stay on the wall for good",
+      "summary": "The fix that stopped Fast Paintings pictures dropping off the wall whenever a build, plot or carriage was loaded now lives in one place instead of twelve, and a build-time check makes sure no future loader can bring the bug back.",
+      "highlights": [
+        "One named setting owns how every template is stamped into the world, with the reason written down once.",
+        "A test fails the build if any loader ever reaches for the old setting that popped pictures."
+      ],
+      "pr": 1461,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-plot-arrival-land",
+      "version": "0.917.0",
+      "type": "refactor",
+      "tags": [
+        "editor",
+        "internal"
+      ],
+      "title": "Every editor lands you the same way",
+      "summary": "Where you arrive when you enter a plot \u2014 on the roof facing its menu, in its front doorway, or at its centre \u2014 used to be worked out separately by each of the seven editors. It is now decided in one place, so carriages, dimensional carriages, parts, pillars, tracks and tunnels can never drift apart. Nothing moves for you: every landing is exactly where it was.",
+      "highlights": [
+        "One landing rule shared by all seven editors, covered by tests for each way in.",
+        "A plot with no doorway simply lands you at its centre \u2014 no special cases per editor."
+      ],
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bed-no-respawn-lines",
+      "version": "0.918.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Beds no longer claim to set a respawn point",
+      "summary": "Sleeping in a bed on the train used to answer with 'Respawn point set \u2014 aboard the train' and similar lines, which read as if the bed worked like a normal spawn. Every bed message now says plainly that no respawn point was set \u2014 the train is your only way back, wherever it has rolled. All 20 languages carry the corrected wording.",
+      "highlights": [],
+      "pr": 1466,
+      "date": "2026-09-18",
       "released": false,
       "released_in": null,
       "released_at": null
