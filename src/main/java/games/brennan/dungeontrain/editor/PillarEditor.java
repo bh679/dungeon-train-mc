@@ -149,9 +149,21 @@ public final class PillarEditor {
         enter(player, section, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the default plot — a relay Load that installed a new
+     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
+     * {@link #walkTo(ServerPlayer, PillarSection, boolean)}.
+     */
     public static void enter(ServerPlayer player, PillarSection section, boolean onTop) {
-        // Already inside this section's default plot: a walk to its menu, not a reload — restamping
-        // would throw away every unsaved edit for the sake of a few blocks' teleport.
+        enter(player, section, onTop, true);
+    }
+
+    /**
+     * Go here / the panel's Enter: a walk to the section's default plot, not a reload — restamps
+     * only when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, PillarSection section, boolean onTop) {
         enter(player, section, onTop, !standingIn(player, section));
     }
 
@@ -386,7 +398,13 @@ public final class PillarEditor {
         enter(player, adjunct, true);
     }
 
+    /** As {@link #enter(ServerPlayer, PillarSection, boolean)}: always restamps. */
     public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
+        enter(player, adjunct, onTop, true);
+    }
+
+    /** As {@link #walkTo(ServerPlayer, PillarSection, boolean)}: restamps only when not already inside. */
+    public static void walkTo(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
         enter(player, adjunct, onTop, !standingIn(player, adjunct));
     }
 

@@ -102,9 +102,21 @@ public final class TrackEditor {
         enter(player, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the default plot — a relay Load that installed a new
+     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
+     * {@link #walkTo}.
+     */
     public static void enter(ServerPlayer player, boolean onTop) {
-        // Already inside the default tile plot: a walk to its menu, not a reload — restamping would
-        // throw away every unsaved edit for the sake of a few blocks' teleport.
+        enter(player, onTop, true);
+    }
+
+    /**
+     * Go here / the panel's Enter: a walk to the default tile plot, not a reload — restamps only
+     * when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, boolean onTop) {
         enter(player, onTop, !standingInDefault(player));
     }
 
