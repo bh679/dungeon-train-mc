@@ -1187,6 +1187,8 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Done. Create a new world and Dungeon Train will treat you as a first-time player.",
   "gui.dungeontrain.videos.button": "Videos",
   "gui.dungeontrain.videos.share_tab": "Streaming? Share link!",
+  "gui.dungeontrain.videos.share_tab.short": "Share stream!",
+  "gui.dungeontrain.videos.share_tab.close": "Hide the share reminder",
   "gui.dungeontrain.videos.title": "Dungeon Train Community Videos",
   "gui.dungeontrain.videos.list": "Videos",
   "gui.dungeontrain.videos.list.narration": "%s videos",

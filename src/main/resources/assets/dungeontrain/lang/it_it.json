@@ -3064,6 +3064,8 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Fatto. Crea un mondo nuovo e Dungeon Train ti tratterà come un giocatore alle prime armi.",
   "gui.dungeontrain.videos.button": "Video",
   "gui.dungeontrain.videos.share_tab": "Stai streammando? Condividi il link!",
+  "gui.dungeontrain.videos.share_tab.short": "Condividi lo stream!",
+  "gui.dungeontrain.videos.share_tab.close": "Nascondi il promemoria di condivisione",
   "gui.dungeontrain.videos.title": "Video della community di Dungeon Train",
   "gui.dungeontrain.videos.list": "Video",
   "gui.dungeontrain.videos.list.narration": "%s video",

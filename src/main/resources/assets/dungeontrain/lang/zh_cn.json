@@ -3035,6 +3035,8 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "完成。创建一个新世界，《地牢列车》会把你当作初次游玩的玩家。",
   "gui.dungeontrain.videos.button": "视频",
   "gui.dungeontrain.videos.share_tab": "在直播？分享链接！",
+  "gui.dungeontrain.videos.share_tab.short": "分享直播！",
+  "gui.dungeontrain.videos.share_tab.close": "隐藏分享提醒",
   "gui.dungeontrain.videos.title": "Dungeon Train 社区视频",
   "gui.dungeontrain.videos.list": "视频",
   "gui.dungeontrain.videos.list.narration": "%s 个视频",

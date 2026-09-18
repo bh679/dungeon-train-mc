@@ -3064,6 +3064,8 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Klaar. Maak een nieuwe wereld en Dungeon Train behandelt je als een speler die net begint.",
   "gui.dungeontrain.videos.button": "Video's",
   "gui.dungeontrain.videos.share_tab": "Aan het streamen? Deel de link!",
+  "gui.dungeontrain.videos.share_tab.short": "Deel je stream!",
+  "gui.dungeontrain.videos.share_tab.close": "Deelherinnering verbergen",
   "gui.dungeontrain.videos.title": "Dungeon Train-communityvideo's",
   "gui.dungeontrain.videos.list": "Video's",
   "gui.dungeontrain.videos.list.narration": "%s video's",

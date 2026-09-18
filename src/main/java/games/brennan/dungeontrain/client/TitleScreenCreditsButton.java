@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.credits.CreditsScreen;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.CreditsIconButton;
 import games.brennan.dungeontrain.client.menu.DiscordIconButton;
+import games.brennan.dungeontrain.client.menu.ShareTabCloseButton;
 import games.brennan.dungeontrain.client.menu.VideosIconButton;
 import games.brennan.dungeontrain.client.videos.VideosScreen;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -68,6 +69,8 @@ public final class TitleScreenCreditsButton {
 
     private static final Component VIDEOS_NARRATION =
             Component.translatable("gui.dungeontrain.videos.button");
+    private static final Component SHARE_TAB_CLOSE_NARRATION =
+            Component.translatable("gui.dungeontrain.videos.share_tab.close");
 
     /** Vanilla accessibility button narration (iconOnly TitleScreen variant) — our anchor. */
     private static final Component ACCESSIBILITY_KEY = Component.translatable("options.accessibility");
@@ -121,6 +124,8 @@ public final class TitleScreenCreditsButton {
                 b -> openVideos(titleScreen), StreamingSoftwareDetector::isRunningNow);
         videos.setTooltip(Tooltip.create(VIDEOS_NARRATION));
         event.addListener(videos);
+        // The × above the tab's far end that folds it away for the session; it positions itself.
+        event.addListener(new ShareTabCloseButton(videos, SHARE_TAB_CLOSE_NARRATION));
 
         // Discord sits above Videos, as a logomark rather than the word it used to be in the Train
         // Editor row (that slot is Video Tools now). Added from this handler rather than its own

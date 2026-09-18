@@ -1217,6 +1217,8 @@
   "gui.dungeontrain.video_tools.reset.done_desc": "Gata. Creează o lume nouă și Dungeon Train te va trata ca pe un jucător nou.",
   "gui.dungeontrain.videos.button": "Videoclipuri",
   "gui.dungeontrain.videos.share_tab": "Faci stream? Trimite linkul!",
+  "gui.dungeontrain.videos.share_tab.short": "Trimite stream-ul!",
+  "gui.dungeontrain.videos.share_tab.close": "Ascunde memento-ul de distribuire",
   "gui.dungeontrain.videos.title": "Videoclipurile comunității Dungeon Train",
   "gui.dungeontrain.videos.list": "Videoclipuri",
   "gui.dungeontrain.videos.list.narration": "%s videoclipuri",
