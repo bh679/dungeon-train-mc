@@ -162,7 +162,7 @@ public record BuilderProfileDownloadPacket(int relayId, BuilderRelayInstall.Reso
                             owner, packet.ownerName, live, packet.overwriteUnsaved, packet.parentId, prefabs)
                     .thenAccept(result -> player.getServer().execute(() -> {
                         if (player.hasDisconnected()) return;
-                        DungeonTrainNet.sendTo(player, BuilderProfileDownloadResultPacket.of(result));
+                        DungeonTrainNet.sendTo(player, BuilderProfileDownloadResultPacket.of(result, packet.relayId));
                     }));
         });
     }
