@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.portal.PortalCorridorKind;
+import games.brennan.dungeontrain.portal.PortalCorridorSize;
+import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import org.junit.jupiter.api.DisplayName;
@@ -9,6 +12,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class EditorPlotArrivalTest {
 
@@ -32,6 +37,48 @@ final class EditorPlotArrivalTest {
         assertEquals(238.0, a.y());
         assertEquals(3.5, a.z());
         assertEquals(EditorPlotArrival.FACING_POSITIVE_X, a.yaw());
+    }
+
+    /**
+     * The LONG portal corridor's box at the default dims — 13 long, four past the carriage. The
+     * label and the landing both have to be built from this box, not the world's: built from the
+     * world's, the menu anchored at x=8 while the player landed at 9.5 facing +X, 1.5 blocks in
+     * front of the menu with their back to it.
+     */
+    private static Vec3i corridorFootprint() {
+        return EditorPlotLabels.footprintOf(
+            PortalCorridorSize.corridorDims(CarriageDims.DEFAULT, PortalCorridorKind.LONG));
+    }
+
+    @Test
+    @DisplayName("roof landing on a plot longer than the world dims sits at that plot's own +X end")
+    void roof_longCorridorPlot() {
+        Vec3i corridor = corridorFootprint();
+        assertEquals(13, corridor.getX(), "test premise: the LONG corridor is 13 at 9×7×7");
+        EditorPlotArrival a = EditorPlotArrival.inFrontOfMenu(ORIGIN, corridor);
+        // anchor x = origin + 13 - 1 = 12; stand 3 back → 9.5
+        assertEquals(9.5, a.x());
+        assertEquals(238.0, a.y());
+        assertEquals(3.5, a.z());
+        assertEquals(EditorPlotArrival.FACING_POSITIVE_X, a.yaw());
+    }
+
+    @Test
+    @DisplayName("label anchor built from the plot's box is STANDOFF ahead of the landing; the world-dims anchor is behind it")
+    void labelAnchorMatchesLandingOnLongPlot() {
+        Vec3i corridor = corridorFootprint();
+        EditorPlotArrival landing = EditorPlotArrival.inFrontOfMenu(ORIGIN, corridor);
+
+        BlockPos labelAnchor = EditorPlotLabels.anchorAbove(ORIGIN, corridor);
+        assertEquals(landing.x() + EditorPlotArrival.STANDOFF, labelAnchor.getX() + 0.5);
+        assertEquals(landing.z(), labelAnchor.getZ() + 0.5);
+
+        // The bug in one line: the same plot measured with the world's dims anchors the label
+        // behind a player who is facing +X.
+        BlockPos worldDimsAnchor = EditorPlotLabels.anchorAbove(ORIGIN, EditorPlotLabels.footprintOf(CarriageDims.DEFAULT));
+        assertNotEquals(labelAnchor, worldDimsAnchor);
+        assertTrue(worldDimsAnchor.getX() + 0.5 < landing.x(),
+            "world-dims anchor x=" + worldDimsAnchor.getX() + " is behind landing x=" + landing.x());
     }
 
     @Test

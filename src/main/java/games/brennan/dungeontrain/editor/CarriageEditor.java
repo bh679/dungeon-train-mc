@@ -256,7 +256,7 @@ public final class CarriageEditor {
         if (stamp) stampPlot(overworld, variant, dims);
 
         CarriageDims box = plotDims(variant, dims);
-        Vec3i footprint = new Vec3i(box.length(), box.height(), box.width());
+        Vec3i footprint = EditorPlotLabels.footprintOf(box);
         if (onTop) {
             EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
         } else if (inside == EditorPlotArrival.Inside.FRONT_DOOR) {

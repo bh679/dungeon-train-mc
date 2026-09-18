@@ -394,7 +394,7 @@ public final class CarriageContentsEditor {
             setOutline(overworld, origin, OUTLINE_BLOCK, box);
         }
 
-        net.minecraft.core.Vec3i footprint = new net.minecraft.core.Vec3i(box.length(), box.height(), box.width());
+        net.minecraft.core.Vec3i footprint = EditorPlotLabels.footprintOf(box);
         if (onTop) {
             EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
         } else if (inside == EditorPlotArrival.Inside.FRONT_DOOR) {
