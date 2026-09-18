@@ -102,6 +102,11 @@ public final class EditorPlotSky {
     }
 
     private static void clear(ServerPlayer player) {
+        // Only the plot's own light. A player below plot height in a `portal test` holds the ROOM's
+        // sky, sent by PortalTestTicker; the per-tick forget() for "not at the build area" used to
+        // take that back every tick, and the ticker put it straight back — sky on, sky off, twenty
+        // times a second for the length of the test.
+        if (!PlayerSkyRegions.holdsEditor(player.getUUID())) return;
         PlayerSkyRegions.clear(player);
     }
 

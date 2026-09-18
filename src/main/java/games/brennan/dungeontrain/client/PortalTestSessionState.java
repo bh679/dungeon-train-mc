@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.client.skybox.SkyboxSectionRebuild;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.PortalTestSessionPacket;
 import net.minecraft.client.Minecraft;
@@ -28,10 +29,11 @@ public final class PortalTestSessionState {
         // A test puts Skybox Blocks back however the author's switch is set, and that changes what
         // they cull as well as what they draw. The meshes standing when it starts or ends were
         // built against the other answer, so they are rebuilt — but only when the switch is off,
-        // which is the only case where the two answers differ.
+        // which is the only case where the two answers differ. Just the sections that hold one:
+        // a full allChanged() here is what froze a one-worker Sodium client on the way out of a
+        // test, landing on top of the teleport home and the sweep of the test window.
         if (was != active && !ClientDisplayConfig.areSkyboxBlocksOn()) {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.levelRenderer != null) mc.levelRenderer.allChanged();
+            SkyboxSectionRebuild.rebuildAround(Minecraft.getInstance());
         }
     }
 
