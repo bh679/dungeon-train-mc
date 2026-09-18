@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.track.TrackPalette;
@@ -13,12 +12,12 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -293,9 +292,7 @@ public final class TrackEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, TrackKind.TILE, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS));
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
             return;
         }
         // Fallback for unauthored "default" — hardcoded bed + 2-rail stamp.

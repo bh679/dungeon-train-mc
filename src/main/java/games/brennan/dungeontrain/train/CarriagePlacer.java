@@ -1643,7 +1643,7 @@ public final class CarriagePlacer {
         settings.addProcessor(new SectionLocalStampProcessor(level));
         // Flags are moot — the capture processor drops every cell, so placeInWorld
         // places nothing itself; it only drives the palette/geometry/processor chain.
-        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
     }
 
     /**
@@ -1652,15 +1652,8 @@ public final class CarriagePlacer {
      * the light engine {@code checkBlock}, client sync, shape updates and block-entity creation all
      * run as before the perf change.
      *
-     * <p>{@link Block#UPDATE_CLIENTS} (flag 2), not {@link Block#UPDATE_ALL} — the flag vanilla
-     * structure blocks and {@code /place} use. Flag 3 fires {@code neighborChanged} on every cell
-     * already down each time the next one lands, and Fast Paintings answers that with
-     * {@code canSurvive}, which wants the picture's master block entity AND every one of its cells
-     * present already. Half-way through a 3×2 picture that is false, the mod removes the whole
-     * group and drops the item — every picture in a relay build popped on load. With flag 2 the
-     * neighbour cascade still happens, once, in {@code placeInWorld}'s own final pass, after every
-     * cell and its NBT are in. The play-side stamps ({@code TrackGenerator}, {@code TunnelPlacer})
-     * have always used flag 2 for the same reason, which is why they kept their pictures.</p>
+     * <p>Flags are {@link CarriageStampGuard#STAMP_FLAGS} — never {@code UPDATE_ALL}; the Fast
+     * Paintings rationale lives on that constant.</p>
      *
      * <p>Use this wherever the stamped blocks are <b>not</b> subsequently relit by a Sable
      * {@code assemble}: the in-game editor plots (permanent overworld blocks) and the post-assemble
@@ -1676,7 +1669,7 @@ public final class CarriagePlacer {
         settings.addProcessor(new StagePlaceholderProcessor());
         settings.addProcessor(new VariantPlaceholderAirProcessor());
         settings.addProcessor(new BakedItemStatsProcessor(level));
-        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+        template.placeInWorld(level, stampPos, stampPos, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
     }
 
     public static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin, CarriageDims dims) {

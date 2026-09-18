@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.template.PillarAdjunctTemplateId;
 import games.brennan.dungeontrain.template.PillarTemplateId;
@@ -16,13 +15,13 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.editor.relay.EditorRelaySave;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -361,9 +360,7 @@ public final class PillarEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS));
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
             return;
         }
         BlockState fallback = TrackPalette.PILLAR;
@@ -567,9 +564,7 @@ public final class PillarEditor {
         Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, name, sentinel);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-            CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS));
-            TemplateDecor.replace(level, origin, stored.get(), settings, null);
+            TemplateStamp.placeWithDecor(level, origin, stored.get(), settings);
             return;
         }
         stampProceduralStairsFallback(level, origin, adjunct);

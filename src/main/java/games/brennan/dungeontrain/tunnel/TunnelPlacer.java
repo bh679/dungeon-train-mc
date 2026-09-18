@@ -233,7 +233,7 @@ public final class TunnelPlacer {
         // the shared level random made twin same-seed runs roll different chest loot.
         template.placeInWorld(level, origin, origin, settings,
             games.brennan.dungeontrain.worldgen.StampRandom.at(level.getSeed(), origin),
-            Block.UPDATE_CLIENTS);
+            CarriageStampGuard.STAMP_FLAGS);
         // The template's item frames and paintings, which no block pass writes. Under the same
         // settings as the blocks, so a mirrored tunnel takes its pictures across with it.
         TemplateDecor.replace(level, origin, template, settings, null);
@@ -426,8 +426,7 @@ public final class TunnelPlacer {
             // blocks (mirrors the worldgen path; see stampTemplateWorldgen).
             .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
-        // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-        template.placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+        template.placeInWorld(level, origin, origin, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
         TemplateDecor.replace(level, origin, template, settings, null);
         anchorAboveFootprint(level, origin);
     }
