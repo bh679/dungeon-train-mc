@@ -17255,6 +17255,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "one-standing-in-helper",
+      "version": "0.911.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Entering the plot you are already in keeps your edits \u2014 from the track roof too",
+      "summary": "Stepping back into the plot you are standing in is a walk to its menu, not a reload. Every plot now agrees on that, and the track tile is no exception: Go here or Enter from its roof no longer wipes what you built.",
+      "highlights": [
+        "Go here / Enter from inside any plot keeps unsaved edits, track tile roof included.",
+        "Dimensional carriage names typed in any case land in the right room."
+      ],
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
