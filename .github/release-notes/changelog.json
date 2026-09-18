@@ -17566,6 +17566,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "corners-ice-contents-trap-rework",
+      "version": "0.925.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "New carriage builds: Corners and Ice, plus reworked easy traps",
+      "summary": "Two new carriage builds can turn up on the train: Corners, a new enemy encounter with its own loot, and Ice, a frosty decor feature. The easy trap builds have been re-authored to use the stage-aware block system, and a few spawn weights were tuned.",
+      "highlights": [
+        "New Corners enemy carriage with its own loot chests",
+        "New Ice feature carriage",
+        "Easy trap builds now vary their blocks with the stage",
+        "Spawn weights tuned: enemy carriages slightly more common, prison maze less common"
+      ],
+      "pr": 1475,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
