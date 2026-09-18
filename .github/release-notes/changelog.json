@@ -17546,6 +17546,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "end-exit-portal-returns-to-train",
+      "version": "0.924.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "The End portal brings you home",
+      "summary": "Beat the dragon and step through the portal \u2014 you land back on the train, right where you belong, with everything you carried.",
+      "highlights": [
+        "No more waking up in an empty world after the End.",
+        "Works every time you come back through, not just the first."
+      ],
+      "pr": 1473,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
