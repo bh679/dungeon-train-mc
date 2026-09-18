@@ -1151,7 +1151,7 @@ public final class EditorCommand {
         if (variant == null) return 0;
         try {
             int stored = CarriageWeights.set(variant.id(), value);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved_existing_carriages", variant.id(), stored, CarriageWeights.configPath()).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved_existing_carriages", variant.id(), stored, CarriageWeights.configPath().toString()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor weight set failed for {}", variant.id(), t);
@@ -1188,7 +1188,7 @@ public final class EditorCommand {
         }
         try {
             int stored = TrackVariantWeights.set(kind, name, value);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved", kind.id(), name, stored, TrackVariantWeights.configPath(kind)).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved", kind.id(), name, stored, TrackVariantWeights.configPath(kind).toString()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor tracks weight set failed for {}:{}", kind.id(), name, t);
@@ -1393,7 +1393,7 @@ public final class EditorCommand {
         }
         try {
             int stored = CarriageContentsWeights.set(contents.id(), value);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_weight_saved_existing", contents.id(), stored, CarriageContentsWeights.configPath()).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_weight_saved_existing", contents.id(), stored, CarriageContentsWeights.configPath().toString()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents weight set failed for {}", contents.id(), t);
@@ -1422,7 +1422,7 @@ public final class EditorCommand {
         try {
             FlipOptions next = CarriageContentsWeights.setFlip(contents.id(),
                 CarriageContentsWeights.current().flipFor(contents.id()).with(field, value));
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_flip_now_x", contents.id(), field.toLowerCase(java.util.Locale.ROOT) + axisHint(field), Component.translatable(value ? "chat.dungeontrain.common.on" : "chat.dungeontrain.common.off"), onOff(next.x()), onOff(next.y()), onOff(next.z()), onOff(next.rooms()), CarriageContentsWeights.configPath()).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_flip_now_x", contents.id(), field.toLowerCase(java.util.Locale.ROOT) + axisHint(field), Component.translatable(value ? "chat.dungeontrain.common.on" : "chat.dungeontrain.common.off"), onOff(next.x()), onOff(next.y()), onOff(next.z()), onOff(next.rooms()), CarriageContentsWeights.configPath().toString()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents flip set failed for {}", contents.id(), t);
@@ -1901,7 +1901,7 @@ public final class EditorCommand {
         try {
             if (id.equals("all")) {
                 int n = games.brennan.dungeontrain.editor.StagePaletteBaker.bakeAll(source.getServer().overworld());
-                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.baked_placeholder_palettes_stage", n, games.brennan.dungeontrain.editor.StageStore.configPath())
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.baked_placeholder_palettes_stage", n, games.brennan.dungeontrain.editor.StageStore.configPath().toString())
                     .withStyle(ChatFormatting.GREEN), true);
                 return n;
             }
@@ -1912,7 +1912,7 @@ public final class EditorCommand {
                 return 0;
             }
             games.brennan.dungeontrain.template.StagePalette p = baked.get();
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.baked_stage_palette_solid", id, p.solid(), p.stairs(), p.slabs(), p.button(), p.pressurePlate(), p.wood()).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.baked_stage_palette_solid", id, p.solid().toString(), p.stairs().toString(), p.slabs().toString(), p.button(), p.pressurePlate(), p.wood()).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             return gateFail(source, "stage bake", rawId, t);
@@ -1950,7 +1950,7 @@ public final class EditorCommand {
             java.util.Optional<net.minecraft.world.level.block.Block> to =
                 net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(toId);
             if (from.isEmpty() || to.isEmpty()) {
-                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_block", (from.isEmpty() ? fromId : toId)).withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.unknown_block", (from.isEmpty() ? fromId : toId).toString()).withStyle(ChatFormatting.RED));
                 return 0;
             }
             // Command path supplies an explicit <to> and no held item → no block-entity payload.
@@ -1959,10 +1959,10 @@ public final class EditorCommand {
                     source.getServer().overworld(), rawId.toLowerCase(java.util.Locale.ROOT),
                     from.get(), to.get(), null);
             if (r.isEmpty()) {
-                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.no_occurrences_stage", fromId, rawId).withStyle(ChatFormatting.YELLOW), false);
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.no_occurrences_stage", fromId.toString(), rawId).withStyle(ChatFormatting.YELLOW), false);
                 return 0;
             }
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.replaced_across_part_s", fromId, toId, r.partsTouched().size(), r.paletteStatesRewritten(), r.sidecarStatesRewritten())
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.replaced_across_part_s", fromId.toString(), toId.toString(), r.partsTouched().size(), r.paletteStatesRewritten(), r.sidecarStatesRewritten())
                 .withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
@@ -2778,7 +2778,7 @@ public final class EditorCommand {
         if (local.getX() < 0 || local.getX() >= box.length()
             || local.getY() < 0 || local.getY() >= box.height()
             || local.getZ() < 0 || local.getZ() >= box.width()) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_plot", local, box.length(), box.height(), box.width()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_plot", local.toShortString(), box.length(), box.height(), box.width()));
             return null;
         }
         return new VariantTarget(plotVariant, local, box);
@@ -2829,7 +2829,7 @@ public final class EditorCommand {
         Vec3i partSize = partLoc.kind().dims(dims);
         BlockPos local = hit.subtract(plotOrigin);
         if (!inBounds(local, partSize)) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_part", local));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_part", local.toShortString()));
             return 0;
         }
         CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(
@@ -2866,7 +2866,7 @@ public final class EditorCommand {
         Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
         BlockPos local = hit.subtract(interiorOrigin);
         if (!inBounds(local, interiorSize)) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_interior", local));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_interior", local.toShortString()));
             return 0;
         }
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
@@ -5035,7 +5035,7 @@ public final class EditorCommand {
                 new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, name), dims);
             if (plot == null) plot = CarriagePartEditor.nextFreePlotOrigin(kind, dims);
             final BlockPos plotFinal = plot;
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_part_plot", kind.id(), name, plotFinal), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_part_plot", kind.id(), name, plotFinal.toShortString()), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part enter failed", t);
