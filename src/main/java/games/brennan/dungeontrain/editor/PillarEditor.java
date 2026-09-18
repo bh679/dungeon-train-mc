@@ -167,27 +167,14 @@ public final class PillarEditor {
         enter(player, section, onTop, !standingIn(player, section));
     }
 
-    /** Whether {@code player} is already inside {@code section}'s default-named plot. */
+    /** Already inside {@code section}'s default-named plot — see {@link EditorPlotScope#standingIn}. */
     private static boolean standingIn(ServerPlayer player, PillarSection section) {
-        CarriageDims dims = overworldDims(player);
-        if (dims == null) return false;
-        SectionPlot here = plotContaining(player.blockPosition(), dims);
-        return here != null && here.section() == section && TrackKind.DEFAULT_NAME.equals(here.name());
+        return EditorPlotScope.standingIn(player, new Template.Pillar(section));
     }
 
-    /** Whether {@code player} is already inside {@code adjunct}'s default-named plot. */
+    /** Already inside {@code adjunct}'s default-named plot — see {@link EditorPlotScope#standingIn}. */
     private static boolean standingIn(ServerPlayer player, PillarAdjunct adjunct) {
-        CarriageDims dims = overworldDims(player);
-        if (dims == null) return false;
-        AdjunctPlot here = plotContainingAdjunct(player.blockPosition(), dims);
-        return here != null && here.adjunct() == adjunct && TrackKind.DEFAULT_NAME.equals(here.name());
-    }
-
-    /** The world's carriage dims while {@code player} is in the overworld, else null. */
-    private static CarriageDims overworldDims(ServerPlayer player) {
-        MinecraftServer server = player.getServer();
-        if (server == null || player.level() != server.overworld()) return null;
-        return DungeonTrainWorldData.get(server.overworld()).dims();
+        return EditorPlotScope.standingIn(player, new Template.Adjunct(adjunct));
     }
 
     /**
