@@ -15,7 +15,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
@@ -151,8 +150,7 @@ public final class ResetCommand {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         CarriageStampGuard.run(() -> {
             model.eraseEditorPlot(overworld, origin, dims);
-            // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-            bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), Block.UPDATE_CLIENTS);
+            bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), CarriageStampGuard.STAMP_FLAGS);
         });
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.save.reset_bundled_default", model.id()).withStyle(ChatFormatting.GREEN), true);
         return 1;
