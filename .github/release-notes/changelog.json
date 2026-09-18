@@ -17255,6 +17255,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "relay-load-row-match",
+      "version": "0.911.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Relay Load lands on the build you pressed",
+      "summary": "Loading a builder's upload from the X menu now stays put: the Load button waits for the build you asked for even if you browse other tiles meanwhile, and the result \u2014 installed, name taken, or a loot-prefab question \u2014 is credited to that build rather than whichever tile happens to be selected when it arrives.",
+      "highlights": [
+        "Load stays pending across tile clicks until the build lands (or times out), so two builds can no longer be sent down at once",
+        "\"It's here / Go\" now shows on the build that was actually loaded",
+        "A loot-prefab conflict prompt always answers the build that raised it"
+      ],
+      "pr": 1454,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
