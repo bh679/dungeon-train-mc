@@ -182,16 +182,6 @@ public final class PillarEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, PillarSection section, boolean onTop, boolean stamp) {
-        enter(player, section, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
-    }
-
-    /**
-     * @param inside accepted for symmetry with the door-bearing editors; a pillar has no doorway,
-     *               so both values land at the centre — stepping to the nearest free column if that
-     *               cell is built up.
-     */
-    public static void enter(ServerPlayer player, PillarSection section, boolean onTop, boolean stamp,
-                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -203,11 +193,7 @@ public final class PillarEditor {
 
         Vec3i footprint = TrackSidePlots.footprint(
             PillarTemplateStore.pillarKind(section), TrackKind.DEFAULT_NAME, dims);
-        if (onTop) {
-            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
-        } else {
-            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
-        }
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} default plot at {} ({} variants, {})",
             player.getName().getString(), section.id(), origin,
@@ -400,12 +386,6 @@ public final class PillarEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop, boolean stamp) {
-        enter(player, adjunct, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
-    }
-
-    /** As the section overload: no doorway, so {@code inside} lands at the centre either way. */
-    public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop, boolean stamp,
-                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -417,11 +397,7 @@ public final class PillarEditor {
 
         Vec3i footprint = TrackSidePlots.footprint(
             PillarTemplateStore.adjunctKind(adjunct), TrackKind.DEFAULT_NAME, dims);
-        if (onTop) {
-            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
-        } else {
-            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
-        }
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         LOGGER.info("[DungeonTrain] Pillar editor enter adjunct: {} -> {} default plot at {} (size={}x{}x{}, {} variants)",
             player.getName().getString(), adjunct.id(), origin,
