@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
+import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.ContentsDespawnController;
@@ -81,6 +82,14 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource()))))
+            // /dungeontrain debug substep-tuner <on|off|status> — toggles the adaptive Sable
+            // substepsPerTick tuner (2→1 on a real train, see PhysicsSubstepTuner). `off` restores
+            // Sable's baseline next reconcile. Drives the Gate 2 matched-toggle A/B: same ride,
+            // compare [mspt] physMs= and avgTickMs= at equal carriages= with it on vs off.
+            .then(Commands.literal("substep-tuner")
+                .then(Commands.literal("on").executes(ctx -> setSubstepTuner(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setSubstepTuner(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> substepTunerStatus(ctx.getSource()))))
             // /dungeontrain debug contentsdespawn <on|off|status> — toggles the distance gate that
             // sweeps carriage contents mobs out of the level while no player is near. `off` restores
             // every held snapshot over the next few ticks. Drives the Gate 2 matched-toggle A/B
@@ -323,6 +332,23 @@ public final class DebugCommand {
             PhysicsFreezeController.ENABLED ? "ON" : "OFF",
             PhysicsFreezeController.lastResident(), PhysicsFreezeController.lastActive(),
             PhysicsFreezeController.lastFrozen())), false);
+        return 1;
+    }
+
+    private static int setSubstepTuner(CommandSourceStack source, boolean on) {
+        PhysicsSubstepTuner.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Substep-tuner " + (on ? "ON" : "OFF — Sable baseline substeps restored next reconcile")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int substepTunerStatus(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal(String.format(
+            "[DungeonTrain] Substep-tuner %s — residents=%d substeps=%d (live overworld=%d)",
+            PhysicsSubstepTuner.ENABLED ? "ON" : "OFF",
+            PhysicsSubstepTuner.lastResidents(), PhysicsSubstepTuner.lastSubsteps(),
+            PhysicsSubstepTuner.currentSubsteps(source.getServer().overworld()))), false);
         return 1;
     }
 

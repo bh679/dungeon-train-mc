@@ -17252,9 +17252,9 @@
       "summary": "The Backrooms dimensional carriage's variant data was re-saved from the editor in the current format. Nothing changes in-game.",
       "highlights": [],
       "date": "2026-09-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "relay-load-row-match",
@@ -17270,9 +17270,9 @@
       "highlights": [],
       "pr": 1454,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "editor-enter-landing-search",
@@ -17289,9 +17289,9 @@
         "Landing spot is unchanged \u2014 still the nearest free cell inside, never in the wall"
       ],
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "net-protocol-version-guard",
@@ -17310,9 +17310,9 @@
       ],
       "pr": 1456,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "editor-enter-chat-blockpos-error",
@@ -17329,9 +17329,9 @@
       ],
       "pr": 1459,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "editor-load-while-standing-in-plot",
@@ -17349,9 +17349,9 @@
       ],
       "pr": 1457,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "editor-command-chat-confirmations-restored",
@@ -17370,9 +17370,9 @@
       ],
       "pr": 1458,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "stamp-flags-single-owner",
@@ -17389,9 +17389,9 @@
       ],
       "pr": 1461,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "editor-plot-arrival-land",
@@ -17408,9 +17408,9 @@
         "A plot with no doorway simply lands you at its centre \u2014 no special cases per editor."
       ],
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "bed-no-respawn-lines",
@@ -17425,9 +17425,9 @@
       "highlights": [],
       "pr": 1466,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "one-standing-in-helper",
@@ -17445,9 +17445,9 @@
       ],
       "pr": 1464,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "carriage-bed-after-nether",
@@ -17463,9 +17463,9 @@
       "highlights": [],
       "pr": 1467,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     },
     {
       "id": "portal-test-no-renderer-reload",
@@ -17484,9 +17484,27 @@
       ],
       "pr": 1468,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
+    },
+    {
+      "id": "sp-train-physics-substep-tuner",
+      "version": "0.922.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Mining and fighting on the train no longer lag behind you",
+      "summary": "In single-player the train's physics was doing more work each tick than the ride needed, and on a long train it dragged the whole game behind you: blocks you had mined broke late, hits landed late, and mobs moved as if underwater. The train now runs lighter, so what you do happens when you do it.",
+      "highlights": [
+        "Blocks break and drop the moment you finish mining them.",
+        "Hits, knockback and mob movement keep up with you."
+      ],
+      "date": "2026-09-18",
+      "released": true,
+      "released_in": "v0.922.0",
+      "released_at": "2026-09-18T11:07:31Z"
     }
   ]
 }
