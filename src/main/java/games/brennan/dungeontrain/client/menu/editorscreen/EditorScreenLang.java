@@ -19,6 +19,7 @@ public final class EditorScreenLang {
 
     /** The category strip under the Templates tab's filter row — these were the tabs once. */
     public static final String TAB_ALL = PREFIX + "tab.all";
+    public static final String TAB_WHOLE = PREFIX + "tab.whole";
     public static final String TAB_CARRIAGES = PREFIX + "tab.carriages";
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";

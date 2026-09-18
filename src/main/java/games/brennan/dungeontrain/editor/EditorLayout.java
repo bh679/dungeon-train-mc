@@ -24,6 +24,8 @@ import games.brennan.dungeontrain.train.CarriageDims;
  *
  * <p>Layout (all at {@link #PLOT_Y}, in {@code +Z} order, <em>within</em> a category):
  * <ul>
+ *   <li>WHOLE: {@code Z=0} room row (one carriage box each), then from
+ *       {@link #WHOLE_GROUP_FIRST_Z} the group row — each plot {@code groupSize} carriages long</li>
  *   <li>CARRIAGES: {@code Z=0..MAX_WIDTH-1} carriage row, then from {@link #PARTS_FIRST_Z} the parts
  *       grid — FLOOR / WALLS / ROOF / DOORS rows</li>
  *   <li>CONTENTS: {@code Z=CONTENTS_FIRST_Z} row, each group's members stacked along {@code +Z}
@@ -49,6 +51,16 @@ public final class EditorLayout {
      * the parts grid reads as a sibling of the carriage row rather than a distant block.
      */
     public static final int PARTS_FIRST_Z = CarriageDims.MAX_WIDTH + GAP;
+
+    /** First Z slot of the room row (WHOLE view). The shared origin. */
+    public static final int WHOLE_ROOM_FIRST_Z = 0;
+
+    /**
+     * First Z slot of the group row inside the WHOLE view — one {@link #GAP} past the room row's
+     * max-width footprint, numerically the same band the parts grid uses in the CARRIAGES view.
+     * Safe because only the resident category answers {@code plotContaining}; see the class doc.
+     */
+    public static final int WHOLE_GROUP_FIRST_Z = CarriageDims.MAX_WIDTH + GAP;
 
     /**
      * First Z slot of the contents row (CONTENTS view). The shared origin — see the class doc for

@@ -33,6 +33,14 @@ public final class TemplateBuilderLookup {
     }
 
     /** The credit for a track-side template (a portal room included), or {@code null}. */
+    /** A whole room or group's credit — rooms share the carriage kind on the relay, groups have their own. */
+    public static BuilderCredit whole(games.brennan.dungeontrain.train.WholeKind kind, String id) {
+        BuilderCredit authored = games.brennan.dungeontrain.train.WholeWeights.builderFor(kind, id);
+        return kind == games.brennan.dungeontrain.train.WholeKind.GROUP
+            ? firstOf(authored, BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "", id)
+            : firstOf(authored, BuilderPhotoPaths.Kind.CARRIAGE, "", id);
+    }
+
     public static BuilderCredit track(TrackKind kind, String name) {
         BuilderCredit authored = TrackVariantWeights.builderFor(kind, name);
         return kind == TrackKind.PORTAL_ROOM

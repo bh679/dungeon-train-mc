@@ -399,6 +399,10 @@ public final class EditorCreatorBuilds {
     static boolean admits(EditorCategoryFilter filter, String kind) {
         if (filter == null || filter == EditorCategoryFilter.ALL) return true;
         return switch (filter) {
+            // Whole shows what can land there: a carriage or contents build (as a room), or a group.
+            case WHOLE -> BuilderRelayKinds.CARRIAGE.equals(kind)
+                || BuilderRelayKinds.CONTENTS.equals(kind)
+                || BuilderRelayKinds.CARRIAGE_GROUP.equals(kind);
             case CARRIAGES -> BuilderRelayKinds.CARRIAGE.equals(kind)
                 || BuilderRelayKinds.CARRIAGE_GROUP.equals(kind)
                 || BuilderRelayKinds.PART.equals(kind);

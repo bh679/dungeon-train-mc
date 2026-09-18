@@ -395,6 +395,17 @@ public final class CarriageTemplateStore {
         return projectRoot.resolve("src/main/resources");
     }
 
+    /**
+     * The checkout root a dev session runs from — {@code FMLPaths.GAMEDIR}'s parent. Shared with
+     * the Whole section's stores so their source-tree paths resolve the same way this one's do.
+     * Throws when there is no parent (a packaged install); check {@link #sourceTreeAvailable} first.
+     */
+    static Path projectRoot() {
+        Path root = projectRootOrNull();
+        if (root == null) throw new IllegalStateException("Cannot resolve project root — FMLPaths.GAMEDIR has no parent.");
+        return root;
+    }
+
     private static Path projectRootOrNull() {
         Path gameDir = FMLPaths.GAMEDIR.get();
         return gameDir.getParent();

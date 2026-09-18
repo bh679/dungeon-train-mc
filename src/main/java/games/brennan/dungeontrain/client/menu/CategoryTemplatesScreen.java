@@ -82,6 +82,16 @@ public final class CategoryTemplatesScreen implements MenuScreen {
                     }
                 }
             }
+            case "whole" -> {
+                for (String id : EditorTemplateLists.wholeCarriages()) {
+                    out.add(new CommandMenuEntry.Run(id, "dungeontrain editor whole enter " + id,
+                        id.equals(activeId)));
+                }
+                for (String id : EditorTemplateLists.carriageGroups()) {
+                    out.add(new CommandMenuEntry.Run(MenuLang.t("type_name.group") + " · " + id,
+                        "dungeontrain editor whole group enter " + id, id.equals(activeId)));
+                }
+            }
             case "tracks" -> {
                 for (Template model : EditorCategory.TRACKS.models()) {
                     String command = trackEnterCommandFor(model);

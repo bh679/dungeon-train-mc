@@ -180,6 +180,7 @@ public record EditorPlotActionPacket(
 
             try {
                 switch (category) {
+                    case WHOLE -> dispatchWhole(sender, overworld, dims, packet);
                     case CARRIAGES -> dispatchCarriages(sender, overworld, dims, packet);
                     case CONTENTS -> dispatchContents(sender, overworld, dims, packet);
                     case TRACKS -> dispatchTracks(sender, overworld, dims, packet);
@@ -191,6 +192,36 @@ public record EditorPlotActionPacket(
                     category, packet.modelId, packet.action, t);
             }
         });
+    }
+
+    // ----- Whole (rooms + groups) -----
+
+    private static void dispatchWhole(ServerPlayer sender, ServerLevel overworld, CarriageDims dims,
+                                      EditorPlotActionPacket packet) throws Exception {
+        boolean group = games.brennan.dungeontrain.editor.PlotCategory.fromId(packet.category)
+            .map(c -> c == games.brennan.dungeontrain.editor.PlotCategory.WHOLE_GROUP).orElse(false);
+        Template model = group
+            ? games.brennan.dungeontrain.train.CarriageGroupRegistry.find(packet.modelId).map(Template.CarriageGroup::new).orElse(null)
+            : games.brennan.dungeontrain.train.WholeCarriageRegistry.find(packet.modelId).map(Template.WholeCarriage::new).orElse(null);
+        if (model == null) {
+            LOGGER.warn("[DungeonTrain] EditorPlotAction (whole): unknown id '{}'", packet.modelId);
+            return;
+        }
+        switch (packet.action) {
+            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, model);
+            case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, model);
+            case CLEAR -> {
+                BlockPos origin = games.brennan.dungeontrain.editor.WholeCarriageEditor.plotOrigin(model, dims);
+                if (origin != null) model.eraseEditorPlot(overworld, origin, dims);
+                sender.sendSystemMessage(Component.literal(
+                    "Editor: cleared all blocks in '" + model.id() + "'.")
+                    .copy().withStyle(ChatFormatting.GREEN));
+            }
+            case ENTER_INSIDE -> games.brennan.dungeontrain.editor.WholeCarriageEditor.enterInside(sender, model, packet.inside());
+            case GO_HERE -> games.brennan.dungeontrain.editor.WholeCarriageEditor.walkTo(sender, model, true);
+        }
+        LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} whole '{}'",
+            sender.getName().getString(), packet.action, model.displayName());
     }
 
     // ----- Carriages -----

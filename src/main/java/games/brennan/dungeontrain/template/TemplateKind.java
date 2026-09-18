@@ -16,6 +16,8 @@ public enum TemplateKind {
     CONTENTS,
     /** Shell and interior saved together as one template — see {@code train.WholeCarriage}. */
     WHOLE_CARRIAGE,
+    /** A whole run of carriages saved as one template — see {@code train.CarriageGroup}. */
+    CARRIAGE_GROUP,
     PART,
     TRACK,
     PILLAR,

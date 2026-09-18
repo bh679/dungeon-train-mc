@@ -623,8 +623,8 @@ public final class EditorTypeMenuInputHandler {
             // Kind tag is the variant's modelId (portal_room).
             case PORTALS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.PORTALS, first.modelId(), "");
-            // No models to seed a new one from.
-            case ARCHITECTURE -> null;
+            // No models to seed a new one from; whole templates come from the Builder or the relay.
+            case ARCHITECTURE, WHOLE, WHOLE_GROUP -> null;
         };
         if (picker == null) {
             LOGGER.warn("[DungeonTrain] EditorTypeMenu New: unsupported category '{}'", category);

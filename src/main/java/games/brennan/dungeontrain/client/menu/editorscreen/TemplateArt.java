@@ -23,6 +23,10 @@ public record TemplateArt(BuilderPhotoPaths.Kind kind, String id, CarriagePartKi
         if (key == null || key.category() == null) return null;
         return switch (key.category()) {
             case CARRIAGES -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE, key.modelId(), null, null);
+            // A whole room shares the carriage id space on the relay and in the photo store, so its
+            // tile draws the shell twin until whole rooms get a photo kind of their own.
+            case WHOLE -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE, key.modelId(), null, null);
+            case WHOLE_GROUP -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, key.modelId(), null, null);
             case CONTENTS -> new TemplateArt(BuilderPhotoPaths.Kind.CONTENTS, key.modelId(), null, null);
             case PARTS -> {
                 CarriagePartKind pk = CarriagePartKind.fromId(key.modelId());

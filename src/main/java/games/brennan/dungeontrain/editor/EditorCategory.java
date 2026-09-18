@@ -29,6 +29,8 @@ import java.util.Optional;
  * storage split between carriages, pillars, and tunnels.
  *
  * <ul>
+ *   <li>{@link #WHOLE} — every whole-carriage room, then every carriage group
+ *       (see {@link WholeCarriageEditor}).</li>
  *   <li>{@link #CARRIAGES} — every registered {@link CarriageVariant}.</li>
  *   <li>{@link #CONTENTS} — every registered {@link CarriageContents}.</li>
  *   <li>{@link #TRACKS} — the open-air track tile, then pillars
@@ -45,6 +47,8 @@ import java.util.Optional;
  * </ul>
  */
 public enum EditorCategory {
+    /** Whole carriages — rooms (one carriage, shell + interior) and groups (a whole run). First in the row. */
+    WHOLE("Whole"),
     CARRIAGES("Carriages"),
     CONTENTS("Contents"),
     TRACKS("Tracks"),
@@ -73,6 +77,7 @@ public enum EditorCategory {
     /** Every model in this category, in the order a player walks through them. */
     public List<Template> models() {
         return switch (this) {
+            case WHOLE -> wholeModels();
             case CARRIAGES -> carriageModels();
             case CONTENTS -> contentsModels();
             case TRACKS -> trackModels();
@@ -116,12 +121,19 @@ public enum EditorCategory {
         EditorCategory resident = EditorStampedCategoryState.current().orElse(null);
         if (resident == null) return Optional.empty();
         return switch (resident) {
+            case WHOLE -> locateWhole(pos, dims);
             case CARRIAGES -> locateCarriages(pos, dims);
             case CONTENTS -> locateContents(pos, dims);
             case TRACKS -> locateTracks(pos, dims);
             case PORTALS -> locatePortals(pos, dims);
             case ARCHITECTURE -> Optional.empty();
         };
+    }
+
+    private static Optional<Located> locateWhole(BlockPos pos, CarriageDims dims) {
+        WholeCarriageEditor.PlotLocation loc = WholeCarriageEditor.plotContaining(pos, dims);
+        if (loc == null) return Optional.empty();
+        return Optional.of(new Located(WHOLE, loc.template()));
     }
 
     private static Optional<Located> locateCarriages(BlockPos pos, CarriageDims dims) {
@@ -174,6 +186,16 @@ public enum EditorCategory {
             return Optional.of(new Located(PORTALS, new Template.PortalRoom(roomName)));
         }
         return Optional.empty();
+    }
+
+    /** Rooms first (the landing plot), then groups — the order the two rows sit in the world. */
+    private static List<Template> wholeModels() {
+        List<games.brennan.dungeontrain.train.WholeCarriage> rooms = games.brennan.dungeontrain.train.WholeCarriageRegistry.all();
+        List<games.brennan.dungeontrain.train.CarriageGroup> groups = games.brennan.dungeontrain.train.CarriageGroupRegistry.all();
+        List<Template> out = new ArrayList<>(rooms.size() + groups.size());
+        for (games.brennan.dungeontrain.train.WholeCarriage r : rooms) out.add(new Template.WholeCarriage(r));
+        for (games.brennan.dungeontrain.train.CarriageGroup g : groups) out.add(new Template.CarriageGroup(g));
+        return out;
     }
 
     private static List<Template> carriageModels() {
@@ -270,7 +292,8 @@ public enum EditorCategory {
         return switch (model) {
             case Template.Carriage c -> CARRIAGES;
             case Template.Part p -> CARRIAGES;
-            case Template.WholeCarriage w -> CARRIAGES;
+            case Template.WholeCarriage w -> WHOLE;
+            case Template.CarriageGroup g -> WHOLE;
             case Template.Contents c -> CONTENTS;
             case Template.Track t -> TRACKS;
             case Template.Pillar p -> TRACKS;
@@ -358,6 +381,13 @@ public enum EditorCategory {
         // every one of its stamps clears its own footprint first — see the keep parameter.
         if (previous == keep) previous = null;
         if (previous == null && !legacy) return List.of();
+        if (previous == WHOLE || (legacy && keep != WHOLE)) {
+            for (Template model : WHOLE.models()) {
+                jobs.add(new EditorStampQueue.Job("erase " + model.displayName(),
+                    () -> WholeCarriageEditor.clearPlot(overworld, model, dims),
+                    plotBoxOf(overworld, model, dims)));
+            }
+        }
         if (previous == CARRIAGES || (legacy && keep != CARRIAGES)) {
             for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
                 jobs.add(new EditorStampQueue.Job("erase carriage " + v.id(),

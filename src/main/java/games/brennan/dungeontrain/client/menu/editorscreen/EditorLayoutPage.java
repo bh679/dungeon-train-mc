@@ -106,7 +106,7 @@ public final class EditorLayoutPage {
             if (cat == null) return true;
             PlotCategory gc = PlotCategory.fromId(g.categoryId()).orElse(null);
             if (gc == null) return false;
-            boolean inCategory = gc == cat || (cat == PlotCategory.CARRIAGES && gc == PlotCategory.PARTS);
+            boolean inCategory = gc == cat || gc.browsesUnder(cat);
             return inCategory && (typeName.isEmpty() || typeName.equals(g.typeName()));
         }
     }

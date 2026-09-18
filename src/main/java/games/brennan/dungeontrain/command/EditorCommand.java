@@ -588,6 +588,7 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_NAME_SUGGESTIONS))))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
+            .then(WholeEditorCommand.build())
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -3079,6 +3080,20 @@ public final class EditorCommand {
      * can walk between all of them, then teleport them to the first model.
      * Architecture has no models yet and returns a "coming soon" message.
      */
+    /** Package seam for {@link WholeEditorCommand}: the same category entry every bar button runs. */
+    static int enterCategory(CommandSourceStack source, EditorCategory category) {
+        return runEnterCategory(source, category);
+    }
+
+    /** Package seam for {@link WholeEditorCommand}: make {@code category} resident before an enter. */
+    static boolean ensureCategoryResident(CommandSourceStack source, EditorCategory category) {
+        return ensureCategory(source, category);
+    }
+
+    static ServerPlayer playerOrNull(CommandSourceStack source) {
+        return requirePlayer(source);
+    }
+
     private static int runEnterCategory(CommandSourceStack source, EditorCategory category) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
@@ -3090,13 +3105,27 @@ public final class EditorCommand {
         }
 
         java.util.Optional<Template> first = category.firstModel();
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        if (first.isEmpty() && category == EditorCategory.WHOLE) {
+            // The Whole pool starts empty on a fresh install; the section still has to open so the
+            // player can load a build into it. Erase whatever was resident and land at the row origin.
+            List<EditorStampQueue.Job> erases = EditorCategory.clearAllPlotJobs(overworld, dims, category);
+            EditorStampedCategoryState.set(overworld, category);
+            for (EditorStampQueue.Job job : erases) job.work().run();
+            EditorCategory.layerSweepJob(overworld, dims, null).work().run();
+            net.minecraft.core.BlockPos origin = games.brennan.dungeontrain.editor.WholeCarriageEditor
+                .rowOrigin(games.brennan.dungeontrain.train.WholeKind.ROOM, dims);
+            games.brennan.dungeontrain.editor.EditorPlotArrival.land(player, overworld, origin,
+                new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width()), true,
+                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR, null);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.whole_empty"), true);
+            return 1;
+        }
         if (first.isEmpty()) {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.category_has_no_models", Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
             return 0;
         }
-
-        ServerLevel overworld = source.getServer().overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         // Only the plot the player lands on is stamped here, on this tick. Everything else — the
         // erase of the previous category's plots and the stamp of every other plot in this one — is
@@ -3165,7 +3194,10 @@ public final class EditorCommand {
 
     /** Teleport onto {@code head}'s plot via its editor's enter path, without restamping it. */
     private static void enterFirstModel(ServerPlayer player, Template head) {
-        if (head instanceof Template.Carriage cm) {
+        if (head instanceof Template.WholeCarriage || head instanceof Template.CarriageGroup) {
+            games.brennan.dungeontrain.editor.WholeCarriageEditor.enter(player, head, true, false,
+                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
+        } else if (head instanceof Template.Carriage cm) {
             CarriageEditor.enter(player, cm.variant(), true, false);
         } else if (head instanceof Template.Contents cm) {
             CarriageContentsEditor.enter(player, cm.contents(), null, true, false);
@@ -3183,7 +3215,9 @@ public final class EditorCommand {
     }
 
     private static void stampCategoryModel(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.Carriage cm) {
+        if (model instanceof Template.WholeCarriage || model instanceof Template.CarriageGroup) {
+            games.brennan.dungeontrain.editor.WholeCarriageEditor.stampPlot(overworld, model, dims);
+        } else if (model instanceof Template.Carriage cm) {
             CarriageEditor.stampPlot(overworld, cm.variant(), dims);
         } else if (model instanceof Template.Contents cm) {
             CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
