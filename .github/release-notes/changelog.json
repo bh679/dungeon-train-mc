@@ -17255,6 +17255,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "relay-load-row-match",
+      "version": "0.911.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "internal"
+      ],
+      "title": "Editor: relay Load result lands on the right build",
+      "summary": "Loading a build from the X menu while clicking other tiles no longer credits the result to the wrong one.",
+      "highlights": [],
+      "pr": 1454,
+      "date": "2026-09-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
