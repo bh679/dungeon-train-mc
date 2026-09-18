@@ -53,6 +53,20 @@ final class PhysicsSubstepTunerTest {
         assertEquals(2, decideSubsteps(mid, 2, false), "was full → stay full");
     }
 
+    /**
+     * The regime the 2026-09 mining-delay report came from: single-player's integrated server
+     * caps the resident train at ~18–22 sub-levels, and the old 24/18 band never engaged there.
+     * A real SP train must drop to one substep; the spawn-up phase (a few sub-levels) must not.
+     */
+    @Test
+    @DisplayName("a single-player train (18 residents) drops; a spawning train (6) keeps baseline")
+    void singlePlayerTrain_engages() {
+        assertEquals(LOW_SUBSTEPS, decideSubsteps(18, 2, false), "SP steady-state train must engage");
+        assertEquals(LOW_SUBSTEPS, decideSubsteps(12, 2, false), "the SP band edge engages");
+        assertEquals(2, decideSubsteps(6, 2, false), "spawn-up phase keeps Sable's baseline");
+        assertEquals(2, decideSubsteps(6, 2, true), "shrinking to 6 restores the baseline");
+    }
+
     @Test
     @DisplayName("a non-default baseline is honoured on both edges")
     void nonDefaultBaseline() {

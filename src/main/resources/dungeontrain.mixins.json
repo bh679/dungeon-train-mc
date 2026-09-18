@@ -46,6 +46,7 @@
     "SubLevelPhysicsSystemRotationLockMixin",
     "SubLevelHeatMapSplitMixin",
     "RapierPipelineFreezeMixin",
+    "RapierPipelineTimingMixin",
     "RapierPipelineRotationLockMixin",
     "LevelAcceleratorNoSyncLoadMixin",
     "SubLevelEntityCollisionNoLoadMixin",

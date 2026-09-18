@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreezeController;
+import games.brennan.dungeontrain.ship.sable.PhysicsStepTimer;
 import games.brennan.dungeontrain.ship.sable.PhysicsSubstepTuner;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -313,8 +314,13 @@ public final class TrainTickEvents {
         // [stuck.timing] line below (which measures only THIS handler's train work
         // and only fires on >5ms ticks), this pairs the server's mean tick time —
         // which INCLUDES the Sable sub-level physics that runs in ServerLevel.tick,
-        // the ~70% hotspot invisible to this handler — with the resident (carriages)
-        // vs near counts. Lets MSPT-vs-resident-carriage scaling be read straight
+        // the ~70% hotspot this handler never sees — with the resident (carriages)
+        // vs near counts, and since the 2026-09 mining-delay fix with that hotspot
+        // measured directly: physMs= is the mean per-tick wall time of the native
+        // Rapier step over the window (RapierPipelineTimingMixin), substeps= the
+        // live Sable setting the tuner controls, blockChanges= the carriage-block
+        // edits (mining/placing) that hit the voxel collider in the window. Lets
+        // MSPT-vs-resident-carriage scaling and the substep A/B be read straight
         // from the log, no /spark or /tick query. getAverageTickTimeNanos() is
         // server-wide (dominated by the train dimension's physics). See
         // project_sable_physics_shared_scene_resident_scaling.
@@ -329,10 +335,14 @@ public final class TrainTickEvents {
 
             logSweepPerf(level);
 
+            // Drained unconditionally too, so the window never spans more than one period.
+            PhysicsStepTimer.Window physics = PhysicsStepTimer.drain();
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
-            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={}",
+            JITTER_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
-                countNearCarriages(level, trainsById), trainsById.size());
+                countNearCarriages(level, trainsById), trainsById.size(),
+                String.format("%.2f", physics.avgStepMs(MSPT_LOG_PERIOD_TICKS)),
+                PhysicsSubstepTuner.currentSubsteps(level), physics.blockChanges());
         }
 
         // Kill-ahead runs once per train, against the lead carriage's
