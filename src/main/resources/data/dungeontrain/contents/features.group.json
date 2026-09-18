@@ -144,10 +144,6 @@
     {
       "id": "wda",
       "weight": 1
-    },
-    {
-      "id": "wardenfeat",
-      "weight": 1
     }
   ]
 }
