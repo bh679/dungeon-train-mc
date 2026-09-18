@@ -987,6 +987,31 @@ public final class PortalCarriageBuilder {
     }
 
     /**
+     * Give a pair with no recorded stage one, from where its entry carriage stands <b>now</b> —
+     * before its base pair is stamped, so the tiles and exit copies laid afterwards read the same
+     * answer the base did rather than each re-deriving one.
+     *
+     * <p>Only the carriages stamped before the stage was recorded get here (a world saved under an
+     * older build, or a group that proved itself from its own blocks). Their placement-time world-X
+     * is unknowable, and the live X is the nearest thing to it — the carriage was placed a short way
+     * ahead of where it is, in the same band far more often than not — where the static
+     * {@code pIdx} formula is wrong by whole bands. A no-op for the test rig and for any pair that
+     * already has a record.</p>
+     */
+    public static void recordStageIfUnknown(ServerLevel level, int pairKey, CarriageDims dims,
+                                            int entryCarriageWorldX) {
+        if (PortalTestSession.isTestStamp(pairKey)) return;
+        PortalRegistry registry = PortalRegistry.get(level);
+        if (registry.stampedStageOf(pairKey).isPresent()) return;
+        String stageId = StageResolver.stageIdFor(
+            GateContext.forCarriageAtWorldX(level, entryCarriageWorldX, pairKey, dims.length()));
+        registry.noteStamped(pairKey, true, stageId);
+        LOGGER.info("[DungeonTrain] Portal pair {} had no recorded stage — recorded '{}' from its "
+            + "entry carriage's current X {} (stamped before the stage was recorded).",
+            pairKey, stageId == null ? "<default>" : stageId, entryCarriageWorldX);
+    }
+
+    /**
      * Lay both twin corridors into whatever is currently standing: the corridors themselves, the seal
      * ring around each mouth, and the plug beyond each outer door.
      *
