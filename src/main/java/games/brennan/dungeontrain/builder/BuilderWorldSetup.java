@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.builder;
 
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -40,10 +39,10 @@ import games.brennan.dungeontrain.train.CarriageGroupRegistry;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import games.brennan.dungeontrain.template.TemplateStamp;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -1045,9 +1044,7 @@ public final class BuilderWorldSetup {
         if (stored.isEmpty()) {
             return false;
         }
-        // UPDATE_CLIENTS, not UPDATE_ALL: see CarriagePlacer.stampTemplateRelit — flag 3 pops Fast Paintings mid-stamp.
-        CarriageStampGuard.run(() -> stored.get().placeInWorld(level, origin, origin,
-                new StructurePlaceSettings().setIgnoreEntities(true), level.getRandom(), Block.UPDATE_CLIENTS));
+        TemplateStamp.place(level, origin, stored.get(), new StructurePlaceSettings().setIgnoreEntities(true));
         return true;
     }
 

@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -230,17 +231,43 @@ final class EditorScreenActionsTest {
     void enter() {
         VariantKey contents = VariantKey.of(PlotCategory.CONTENTS, "armor", "armor");
         EditorTypeMenusPacket.Variant v = gated("CONTENTS", "armor", "armor", 5, List.of());
-        CommandMenuEntry same = EditorScreenActions.enterEntry(ctx(contents, v, null, PlotCategory.CONTENTS));
+        List<EditorPlotActionPacket> sent = new ArrayList<>();
+        CommandMenuEntry same = EditorScreenActions.enterEntry(ctx(contents, v, null, PlotCategory.CONTENTS), sent::add);
         assertEquals("dungeontrain editor contents enter armor", ((CommandMenuEntry.Run) same).command());
         // Across categories it is a client action that sends both commands — no save prompt, which
         // listed every plot the scan could see rather than the ones actually edited.
-        CommandMenuEntry cross = EditorScreenActions.enterEntry(ctx(contents, v, null, PlotCategory.CARRIAGES));
+        CommandMenuEntry cross = EditorScreenActions.enterEntry(ctx(contents, v, null, PlotCategory.CARRIAGES), sent::add);
         assertInstanceOf(CommandMenuEntry.ClientAction.class, cross);
         // Parts stamp with carriages, so from a carriage plot a part is a same-category enter.
         VariantKey part = VariantKey.of(PlotCategory.PARTS, "floor", "oak");
         EditorTypeMenusPacket.Variant pv = new EditorTypeMenusPacket.Variant("oak", -1, "PARTS", "floor", "oak", false, false);
-        assertInstanceOf(CommandMenuEntry.Run.class, EditorScreenActions.enterEntry(ctx(part, pv, null, PlotCategory.CARRIAGES)));
-        assertNull(EditorScreenActions.enterEntry(ctx(null, null, null, null)));
+        assertInstanceOf(CommandMenuEntry.Run.class, EditorScreenActions.enterEntry(ctx(part, pv, null, PlotCategory.CARRIAGES), sent::add));
+        assertNull(EditorScreenActions.enterEntry(ctx(null, null, null, null), sent::add));
+        assertTrue(sent.isEmpty(), "no command-shaped enter sends a packet");
+    }
+
+    @Test
+    @DisplayName("Go here while standing in the selection is a walk packet, not the restamping enter command")
+    void enterWhileStanding() {
+        VariantKey contents = VariantKey.of(PlotCategory.CONTENTS, "armor", "armor");
+        EditorTypeMenusPacket.Variant v = gated("CONTENTS", "armor", "armor", 5, List.of());
+        List<EditorPlotActionPacket> sent = new ArrayList<>();
+        // The enter command always restamps — a relay Load that replaced the file relies on it to
+        // show the new blocks — so the walk that must keep unsaved edits says so explicitly.
+        CommandMenuEntry here = EditorScreenActions.enterEntry(ctx(contents, v, contents, PlotCategory.CONTENTS), sent::add);
+        assertInstanceOf(CommandMenuEntry.ClientAction.class, here);
+        ((CommandMenuEntry.ClientAction) here).action().run();
+        assertEquals(1, sent.size());
+        EditorPlotActionPacket walk = sent.get(0);
+        assertSame(EditorPlotActionPacket.Action.GO_HERE, walk.action());
+        assertEquals(PlotCategory.CONTENTS.id(), walk.category());
+        assertEquals("armor", walk.modelId());
+        assertEquals("armor", walk.modelName());
+        // Parts have no packet arm: standing in one still runs the command.
+        VariantKey part = VariantKey.of(PlotCategory.PARTS, "floor", "oak");
+        EditorTypeMenusPacket.Variant pv = new EditorTypeMenusPacket.Variant("oak", -1, "PARTS", "floor", "oak", false, false);
+        assertInstanceOf(CommandMenuEntry.Run.class, EditorScreenActions.enterEntry(ctx(part, pv, part, PlotCategory.CARRIAGES), sent::add));
+        assertEquals(1, sent.size());
     }
 
     @Test

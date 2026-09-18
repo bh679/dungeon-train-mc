@@ -28,6 +28,7 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import games.brennan.dungeontrain.template.TemplateDecor;
+import games.brennan.dungeontrain.train.CarriageStampGuard;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -1518,7 +1519,7 @@ public final class TrackGenerator {
 
             // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
             template.placeInWorld(level, copyOrigin, copyOrigin, settings,
-                StampRandom.at(level.getSeed(), copyOrigin), Block.UPDATE_CLIENTS);
+                StampRandom.at(level.getSeed(), copyOrigin), CarriageStampGuard.STAMP_FLAGS);
             // The template's item frames and paintings — entities, so no block pass writes them.
             // Under the same settings as the blocks, which carry both the mirror and the terrain
             // clip box, so a picture on a cut-away half is not left hanging in open air.
@@ -1975,7 +1976,7 @@ public final class TrackGenerator {
             if (!flipped) settings.addProcessor(PaintingTransformProcessor.horizontal());
             // Position-pure random — only consumed for container LootTableSeeds (see StampRandom).
             template.placeInWorld(level, stampOrigin, stampOrigin, settings,
-                StampRandom.at(level.getSeed(), stampOrigin), Block.UPDATE_CLIENTS);
+                StampRandom.at(level.getSeed(), stampOrigin), CarriageStampGuard.STAMP_FLAGS);
             TemplateDecor.replace(level, stampOrigin, template, settings, null);
             // Sidecar pass — same shape as stairs stamp.
             if (!sidecar.isEmpty()) {

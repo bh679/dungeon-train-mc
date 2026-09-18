@@ -117,9 +117,21 @@ public final class TunnelEditor {
         enter(player, variant, true);
     }
 
+    /**
+     * Always restamps: this is the reload every command and post-download jump means, whether or
+     * not the player is already standing in the default plot — a relay Load that installed a new
+     * variant arrives here and its plot must be stamped. The walk that keeps unsaved edits is
+     * {@link #walkTo}.
+     */
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop) {
-        // Already inside this variant's default plot: a walk to its menu, not a reload — restamping
-        // would throw away every unsaved edit for the sake of a few blocks' teleport.
+        enter(player, variant, onTop, true);
+    }
+
+    /**
+     * Go here / the panel's Enter: a walk to the variant's default plot, not a reload — restamps
+     * only when the player is not already standing in it.
+     */
+    public static void walkTo(ServerPlayer player, TunnelVariant variant, boolean onTop) {
         enter(player, variant, onTop, !standingIn(player, variant));
     }
 

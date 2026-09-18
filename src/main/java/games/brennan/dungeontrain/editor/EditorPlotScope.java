@@ -75,8 +75,8 @@ public record EditorPlotScope(String key, BlockPos origin, Vec3i size) {
      *
      * <p>The one test behind "entering a plot you are already in is a walk to its menu, not a
      * reload" — restamping would throw away every unsaved edit for the sake of a few blocks'
-     * teleport. Every editor's {@code enter} asks this rather than its own {@code plotContaining}
-     * so that all of them agree on what "inside" means: the same {@link EditorCategory#locate}
+     * teleport. Every editor's {@code walkTo} / {@code enterInside} asks this rather than its own
+     * {@code plotContaining} so that all of them agree on what "inside" means: the same {@link EditorCategory#locate}
      * cascade the HUD, save and reset read, compared on the same four-segment {@link #keyFor}
      * key. Names are compared exactly — the registries hand out canonical (lower-case) names, so
      * a caller holding a raw command argument should resolve it through the registry first.</p>
