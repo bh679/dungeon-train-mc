@@ -136,16 +136,6 @@ public final class TunnelEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop, boolean stamp) {
-        enter(player, variant, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
-    }
-
-    /**
-     * @param inside accepted for symmetry with the door-bearing editors; a tunnel has no doorway of
-     *               its own, so both values land at the centre — stepping to the nearest free
-     *               column if that cell is built up.
-     */
-    public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop, boolean stamp,
-                             EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -167,15 +157,11 @@ public final class TunnelEditor {
 
         if (stamp) stampPlot(overworld, variant);
 
-        // Tunnel dims are fixed, so any CarriageDims gives the same footprint — the label uses the
-        // same kind lookup, so the roof landing sits in front of the panel it draws.
+        // Tunnel dims are fixed, so the world's CarriageDims only feed the kind lookup — the label
+        // uses the same one, so the roof landing sits in front of the panel it draws.
         Vec3i footprint = TrackSidePlots.footprint(TunnelTemplateStore.tunnelKind(variant),
-            CarriageDims.clamp(CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
-        if (onTop) {
-            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
-        } else {
-            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
-        }
+            DungeonTrainWorldData.get(overworld).dims());
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         // Edits mirror live across the enabled axes — author one master octant.
         player.sendSystemMessage(Component.literal(

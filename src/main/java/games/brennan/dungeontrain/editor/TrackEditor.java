@@ -122,15 +122,6 @@ public final class TrackEditor {
      *              passes {@code false}: it has stamped, or queued, every plot itself.
      */
     public static void enter(ServerPlayer player, boolean onTop, boolean stamp) {
-        enter(player, onTop, stamp, EditorPlotArrival.Inside.CENTRE);
-    }
-
-    /**
-     * @param inside accepted for symmetry with the door-bearing editors; a track tile has no
-     *               doorway, so both values land at the centre — stepping to the nearest free
-     *               column if that cell is built up.
-     */
-    public static void enter(ServerPlayer player, boolean onTop, boolean stamp, EditorPlotArrival.Inside inside) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -142,11 +133,7 @@ public final class TrackEditor {
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
         // The label's footprint, so the roof landing sits in front of the panel it draws.
         Vec3i footprint = TrackSidePlots.footprint(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
-        if (onTop) {
-            EditorPlotArrival.inFrontOfMenu(origin, footprint).teleport(player, overworld);
-        } else {
-            EditorPlotArrival.atCentre(overworld, origin, footprint, player).teleport(player, overworld);
-        }
+        EditorPlotArrival.land(player, overworld, origin, footprint, onTop, EditorPlotArrival.Inside.CENTRE, null);
 
         LOGGER.info("[DungeonTrain] Track editor enter: {} -> default plot at {} ({} variants registered, {})",
             player.getName().getString(), origin,
