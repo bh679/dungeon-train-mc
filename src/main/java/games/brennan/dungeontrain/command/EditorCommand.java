@@ -1151,7 +1151,7 @@ public final class EditorCommand {
         if (variant == null) return 0;
         try {
             int stored = CarriageWeights.set(variant.id(), value);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved_existing_carriages", variant.id(), stored, CarriageWeights.configPath()).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved_existing_carriages", variant.id(), stored, ChatArg.path(CarriageWeights.configPath())).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor weight set failed for {}", variant.id(), t);
@@ -1188,7 +1188,7 @@ public final class EditorCommand {
         }
         try {
             int stored = TrackVariantWeights.set(kind, name, value);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved", kind.id(), name, stored, TrackVariantWeights.configPath(kind)).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.weight_saved", kind.id(), name, stored, ChatArg.path(TrackVariantWeights.configPath(kind))).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor tracks weight set failed for {}:{}", kind.id(), name, t);
@@ -1393,7 +1393,7 @@ public final class EditorCommand {
         }
         try {
             int stored = CarriageContentsWeights.set(contents.id(), value);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_weight_saved_existing", contents.id(), stored, CarriageContentsWeights.configPath()).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_weight_saved_existing", contents.id(), stored, ChatArg.path(CarriageContentsWeights.configPath())).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents weight set failed for {}", contents.id(), t);
@@ -1422,7 +1422,7 @@ public final class EditorCommand {
         try {
             FlipOptions next = CarriageContentsWeights.setFlip(contents.id(),
                 CarriageContentsWeights.current().flipFor(contents.id()).with(field, value));
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_flip_now_x", contents.id(), field.toLowerCase(java.util.Locale.ROOT) + axisHint(field), Component.translatable(value ? "chat.dungeontrain.common.on" : "chat.dungeontrain.common.off"), onOff(next.x()), onOff(next.y()), onOff(next.z()), onOff(next.rooms()), CarriageContentsWeights.configPath()).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_flip_now_x", contents.id(), field.toLowerCase(java.util.Locale.ROOT) + axisHint(field), Component.translatable(value ? "chat.dungeontrain.common.on" : "chat.dungeontrain.common.off"), onOff(next.x()), onOff(next.y()), onOff(next.z()), onOff(next.rooms()), ChatArg.path(CarriageContentsWeights.configPath())).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents flip set failed for {}", contents.id(), t);
@@ -1901,7 +1901,7 @@ public final class EditorCommand {
         try {
             if (id.equals("all")) {
                 int n = games.brennan.dungeontrain.editor.StagePaletteBaker.bakeAll(source.getServer().overworld());
-                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.baked_placeholder_palettes_stage", n, games.brennan.dungeontrain.editor.StageStore.configPath())
+                source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.baked_placeholder_palettes_stage", n, ChatArg.path(games.brennan.dungeontrain.editor.StageStore.configPath()))
                     .withStyle(ChatFormatting.GREEN), true);
                 return n;
             }
@@ -2641,7 +2641,7 @@ public final class EditorCommand {
             CarriageContentsEditor.enter(player, target, null);
 
             String from = blank ? "blank" : "cloned from '" + cloneFrom.id() + "'";
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_sub_variant_plot", target.id(), parent.id(), from, origin, updated.members().size(), Component.translatable(updated.members().size() == 1 ? "chat.dungeontrain.common.noun.member.singular" : "chat.dungeontrain.common.noun.member.plural")).withStyle(ChatFormatting.GREEN), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_sub_variant_plot", target.id(), parent.id(), from, ChatArg.pos(origin), updated.members().size(), Component.translatable(updated.members().size() == 1 ? "chat.dungeontrain.common.noun.member.singular" : "chat.dungeontrain.common.noun.member.plural")).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents group new failed", t);
@@ -2778,7 +2778,7 @@ public final class EditorCommand {
         if (local.getX() < 0 || local.getX() >= box.length()
             || local.getY() < 0 || local.getY() >= box.height()
             || local.getZ() < 0 || local.getZ() >= box.width()) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_plot", local, box.length(), box.height(), box.width()));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_plot", ChatArg.pos(local), box.length(), box.height(), box.width()));
             return null;
         }
         return new VariantTarget(plotVariant, local, box);
@@ -2829,7 +2829,7 @@ public final class EditorCommand {
         Vec3i partSize = partLoc.kind().dims(dims);
         BlockPos local = hit.subtract(plotOrigin);
         if (!inBounds(local, partSize)) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_part", local));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_part", ChatArg.pos(local)));
             return 0;
         }
         CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(
@@ -2866,7 +2866,7 @@ public final class EditorCommand {
         Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contentsPlot, dims);
         BlockPos local = hit.subtract(interiorOrigin);
         if (!inBounds(local, interiorSize)) {
-            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_interior", local));
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.target_block_outside_interior", ChatArg.pos(local)));
             return 0;
         }
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
@@ -3359,7 +3359,7 @@ public final class EditorCommand {
         try {
             CarriageEditor.enter(player, variant);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_plot", variant.id(), CarriageEditor.plotOrigin(variant, dims)), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_plot", variant.id(), ChatArg.pos(CarriageEditor.plotOrigin(variant, dims))), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor enter failed", t);
@@ -3375,7 +3375,7 @@ public final class EditorCommand {
         markEnteredEditor(player);
         try {
             TunnelEditor.enter(player, variant);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_plot", TUNNEL_PREFIX + variant.name().toLowerCase(Locale.ROOT), TunnelEditor.plotOrigin(variant)), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_plot", TUNNEL_PREFIX + variant.name().toLowerCase(Locale.ROOT), ChatArg.pos(TunnelEditor.plotOrigin(variant))), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor enter (tunnel) failed", t);
@@ -3955,7 +3955,7 @@ public final class EditorCommand {
             CarriageVariant.Custom target = (CarriageVariant.Custom) CarriageVariant.custom(name);
             var origin = CarriageEditor.duplicate(player, sourceVariant, target);
             CarriageEditor.enter(player, target);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_from_plot", target.id(), sourceVariant.id(), origin), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_from_plot", target.id(), sourceVariant.id(), ChatArg.pos(origin)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor new failed", t);
@@ -3991,7 +3991,7 @@ public final class EditorCommand {
             CarriageVariant.Custom target = (CarriageVariant.Custom) CarriageVariant.custom(name);
             var origin = CarriageEditor.createBlank(player, target);
             CarriageEditor.enter(player, target);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_blank_plot", target.id(), origin), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_blank_plot", target.id(), ChatArg.pos(origin)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor new blank failed", t);
@@ -4294,7 +4294,7 @@ public final class EditorCommand {
         try {
             PillarEditor.enter(player, section);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_pillar_plot", section.id(), PillarEditor.plotOrigin(section, dims)), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_pillar_plot", section.id(), ChatArg.pos(PillarEditor.plotOrigin(section, dims))), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar enter failed", t);
@@ -4463,7 +4463,7 @@ public final class EditorCommand {
             final String shown = label.equals(contents.id())
                 ? "'" + contents.id() + "'"
                 : "'" + label + "' (id " + contents.id() + ")";
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_contents_shell_plot", shown, shellUsed.id(), CarriageContentsEditor.plotOrigin(contents, dims)), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_contents_shell_plot", shown, shellUsed.id(), ChatArg.pos(CarriageContentsEditor.plotOrigin(contents, dims))), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents enter failed", t);
@@ -4770,7 +4770,7 @@ public final class EditorCommand {
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
             var origin = CarriageContentsEditor.duplicate(player, sourceContents, target);
             CarriageContentsEditor.enter(player, target, null);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_contents_from_plot", target.id(), sourceContents.id(), origin), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_contents_from_plot", target.id(), sourceContents.id(), ChatArg.pos(origin)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents new failed", t);
@@ -4806,7 +4806,7 @@ public final class EditorCommand {
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
             var origin = CarriageContentsEditor.createBlank(player, target);
             CarriageContentsEditor.enter(player, target, null);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_blank_contents_plot", target.id(), origin), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_blank_contents_plot", target.id(), ChatArg.pos(origin)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents new blank failed", t);
@@ -4865,7 +4865,7 @@ public final class EditorCommand {
         try {
             PillarEditor.enter(player, adjunct);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_pillar_adjunct_plot", adjunct.id(), PillarEditor.plotOriginAdjunct(adjunct, dims)), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_pillar_adjunct_plot", adjunct.id(), ChatArg.pos(PillarEditor.plotOriginAdjunct(adjunct, dims))), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar enter adjunct failed", t);
@@ -4905,7 +4905,7 @@ public final class EditorCommand {
         try {
             TrackEditor.enter(player);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_track_plot", TrackEditor.plotOrigin(dims)), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_track_plot", ChatArg.pos(TrackEditor.plotOrigin(dims))), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor track enter failed", t);
@@ -5035,7 +5035,7 @@ public final class EditorCommand {
                 new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, name), dims);
             if (plot == null) plot = CarriagePartEditor.nextFreePlotOrigin(kind, dims);
             final BlockPos plotFinal = plot;
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_part_plot", kind.id(), name, plotFinal), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.entered_part_plot", kind.id(), name, ChatArg.pos(plotFinal)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part enter failed", t);
@@ -5064,7 +5064,7 @@ public final class EditorCommand {
         }
         try {
             BlockPos origin = CarriagePartEditor.createFrom(player, kind, srcEnum, name);
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_part_source", kind.id(), name, rawSource.toLowerCase(Locale.ROOT), origin), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.created_part_source", kind.id(), name, rawSource.toLowerCase(Locale.ROOT), ChatArg.pos(origin)), true);
             return 1;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part new failed", t);

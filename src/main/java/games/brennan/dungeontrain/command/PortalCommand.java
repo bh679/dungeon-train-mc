@@ -235,7 +235,7 @@ public final class PortalCommand {
             CarriageTemplateStore.save(variant, template);
             CarriageVariantRegistry.reload();
 
-            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.saved_edit_it_with", CarriageTemplateStore.fileFor(variant), variant.id()), true);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.saved_edit_it_with", ChatArg.path(CarriageTemplateStore.fileFor(variant)), variant.id()), true);
             return 1;
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] portal savetemplate failed", e);
