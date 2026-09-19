@@ -20,5 +20,11 @@
   "shop",
   "smelt",
   "upgrade",
-  "vase"
+  "vase",
+  "featurefancy",
+  "prison_broken",
+  "reading_room_dark_oak",
+  "reading_room_dark_oak_treasure",
+  "reading_room_desk",
+  "reading_room_destroyed"
 ]
