@@ -29,6 +29,12 @@ import java.util.Optional;
  */
 public enum BuilderMode {
 
+    /**
+     * Whole carriages — rooms and groups saved as one build, the editor's WHOLE category. First
+     * because the Whole section leads the editor's row. Authored on the same platform as Train
+     * Outside, so a builder world in this mode lays out like that one.
+     */
+    WHOLE_CARRIAGES("whole_carriages", BuilderWorldLayout.OUTSIDE_CARRIAGES),
     TRAIN_OUTSIDE("train_outside", BuilderWorldLayout.OUTSIDE_CARRIAGES),
     INSIDE_CARRIAGE("inside_carriage", BuilderWorldLayout.INSIDE_CARRIAGES),
     TRACKS_TUNNELS("tracks_tunnels", 0),

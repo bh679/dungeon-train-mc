@@ -23,7 +23,7 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
         int bottom() { return y + h; }
     }
 
-    static final int COLUMNS = 2;
+    static final int COLUMNS = 3;
     static final int ROWS = 2;
     static final int TILE_GAP = 6;
     static final int COLUMN_GAP = 8;

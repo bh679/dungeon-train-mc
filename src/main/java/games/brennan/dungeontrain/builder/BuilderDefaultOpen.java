@@ -48,7 +48,7 @@ public final class BuilderDefaultOpen {
             return Optional.empty();
         }
         return switch (mode) {
-            case TRAIN_OUTSIDE -> carriage(wholeCarriages, carriageShells);
+            case WHOLE_CARRIAGES, TRAIN_OUTSIDE -> carriage(wholeCarriages, carriageShells);
             case INSIDE_CARRIAGE -> first(contents).map(
                     id -> new BuilderOpenRequest(BuilderPhotoPaths.Kind.CONTENTS, id, null));
             // The kind this mode's Open grid opens on, so the tile and the library agree about what

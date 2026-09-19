@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.builder.BuilderMode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -27,9 +28,10 @@ final class BuilderPickerLayoutTest {
     void tilesDoNotOverlap() {
         for (int[] size : SIZES) {
             List<BuilderPickerLayout.Rect> tiles = layoutFor(size[0], size[1]).tiles();
-            assertEquals(4, tiles.size());
+            assertEquals(BuilderPickerLayout.COLUMNS * BuilderPickerLayout.ROWS, tiles.size());
+            assertTrue(tiles.size() >= BuilderMode.values().length, "every mode gets a tile at " + label(size));
             assertTrue(tiles.get(0).right() <= tiles.get(1).x(), "columns overlap at " + label(size));
-            assertTrue(tiles.get(0).bottom() <= tiles.get(2).y(), "rows overlap at " + label(size));
+            assertTrue(tiles.get(0).bottom() <= tiles.get(BuilderPickerLayout.COLUMNS).y(), "rows overlap at " + label(size));
             assertEquals(tiles.get(0).w(), tiles.get(3).w(), "tiles differ in size at " + label(size));
         }
     }

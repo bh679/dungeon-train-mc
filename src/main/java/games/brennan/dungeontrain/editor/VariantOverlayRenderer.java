@@ -571,8 +571,12 @@ public final class VariantOverlayRenderer {
             + "|f" + flipMask;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
+        // A group is addressed as WHOLE_GROUP on the client (its own roster group and tab), the
+        // same way a part is addressed as PARTS while being stamped under CARRIAGES.
+        String statusCategory = l.model() instanceof Template.CarriageGroup
+            ? PlotCategory.WHOLE_GROUP.id() : l.category().id();
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-            l.category().id(), headerName, l.model().id(), modelName,
+            statusCategory, headerName, l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
             roomLength, roomWidth, roomHeight, roomMode, flipMask));

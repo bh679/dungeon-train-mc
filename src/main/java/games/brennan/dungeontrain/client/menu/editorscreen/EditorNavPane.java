@@ -64,7 +64,7 @@ final class EditorNavPane {
      * fit can be tested at the sizes that matter without a client.
      */
     static List<InventoryEditorLayout.Rect> tiles(InventoryEditorLayout.Rect area) {
-        int cols = 2;
+        int cols = 3;
         int rows = 2;
         int tileW = Math.max(1, (area.w() - TILE_GAP * (cols - 1)) / cols);
         int tileH = tileW * 9 / 16;
