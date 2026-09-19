@@ -71,6 +71,15 @@ public final class ServerStallWatchdog {
         {"waitUntilNextTick", "waitForTasks", "waitLongerForTasks"};
 
     /**
+     * The singleplayer server's own pause loop. While the game is paused the integrated server
+     * never reaches {@code waitUntilNextTick}: {@code tickServer} short-circuits into
+     * {@code tickPaused}, which is where the player log of 19 Sep 2026 found it "stalled" for
+     * 225 s — a player sitting in the Esc menu, not a freeze.
+     */
+    private static final String INTEGRATED_SERVER_CLASS = "net.minecraft.client.server.IntegratedServer";
+    private static final String PAUSED_METHOD = "tickPaused";
+
+    /**
      * How far into the stack the idle frames are allowed to be, counting from the innermost.
      *
      * <p>The cap is what keeps the test honest. In an idle stack {@code waitUntilNextTick} sits six
@@ -156,8 +165,9 @@ public final class ServerStallWatchdog {
         int depth = Math.min(stack.length, IDLE_SCAN_DEPTH);
         for (int i = 0; i < depth; i++) {
             StackTraceElement frame = stack[i];
-            if (!SERVER_CLASS.equals(frame.getClassName())) continue;
             String method = frame.getMethodName();
+            if (INTEGRATED_SERVER_CLASS.equals(frame.getClassName()) && method.contains(PAUSED_METHOD)) return true;
+            if (!SERVER_CLASS.equals(frame.getClassName())) continue;
             for (String idle : IDLE_METHODS) {
                 if (method.contains(idle)) return true;
             }

@@ -899,6 +899,26 @@ final class TrainCarriageAppenderTest {
     }
 
     @Test
+    @DisplayName("isStaleRegistryBox: a box a whole stride away from its driver's canonical X is a cull-time ghost")
+    void staleRegistryBox_ghostVersusLive() {
+        int stride = 31;
+        // 2026-09-19 player log: pIdx=33 culled at x≈648, re-anchored to x≈1668 the tick Sable
+        // resurrected it — the box the backward refill was being shoved off.
+        assertTrue(TrainCarriageAppender.isStaleRegistryBox(648.0, 679.0, 1668.7, stride),
+            "a resurrected ghost's box is where it was culled, not where its driver says it is");
+        assertFalse(TrainCarriageAppender.isStaleRegistryBox(648.0, 679.0, 650.2, stride),
+            "a live sibling's canonical X sits inside its own box");
+        assertFalse(TrainCarriageAppender.isStaleRegistryBox(648.0, 679.0, 679.0 + stride, stride),
+            "exactly one stride outside is still honoured (in-flight pose lag is well under that)");
+        assertTrue(TrainCarriageAppender.isStaleRegistryBox(648.0, 679.0, 679.0 + stride + 0.5, stride),
+            "beyond one stride outside the box is stale");
+        assertTrue(TrainCarriageAppender.isStaleRegistryBox(648.0, 679.0, 648.0 - stride - 0.5, stride),
+            "stale in the other direction too");
+        assertThrows(IllegalArgumentException.class,
+            () -> TrainCarriageAppender.isStaleRegistryBox(0, 1, 0, 0));
+    }
+
+    @Test
     @DisplayName("chainedSpawnDesiredX: chaining twice never accumulates drift")
     void chainedStride_chainsWithoutDrift() {
         int stride = 31;
