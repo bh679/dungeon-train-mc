@@ -490,6 +490,10 @@ public final class EditorTypeMenuRenderer {
      */
     private static double companionHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+        // The Group companion's header also carries "Whole group every N" beside the title.
+        if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
+            headerW += font.width(EditorTypeMenuSettingsRow.label()) * TEXT_SCALE + 2 * PAD_X;
+        }
         double newW = font.width(newLabel()) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
@@ -866,7 +870,13 @@ public final class EditorTypeMenuRenderer {
         // Row 0 is the header — clickable as a "teleport to first variant"
         // shortcut, with variantIdx=-1 (the dispatch resolves the actual
         // first variant from menu.variants().get(0)).
-        if (rowFromTop == 0) return new Hovered(menuIdx, -1, CellKind.HEADER);
+        if (rowFromTop == 0) {
+            if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
+                double titleW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+                if (hitX >= -halfW + titleW) return new Hovered(menuIdx, -1, CellKind.WHOLE_EVERY);
+            }
+            return new Hovered(menuIdx, -1, CellKind.HEADER);
+        }
 
         int variantIdx = rowFromTop - 1;
         // Last row beyond the variant list is the "+ New" footer (only present
@@ -1115,11 +1125,25 @@ public final class EditorTypeMenuRenderer {
         double headerBottom = headerTop - ROW_H;
         double headerCY = (headerTop + headerBottom) / 2.0;
         drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, HEADER_BG);
-        if (hovered.cell == CellKind.HEADER) {
-            drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005,
-                halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
+        if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
+            // Title in the left part, the "every N" cell in the right — split where the title ends.
+            double titleW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
+            double split = -halfW + titleW;
+            if (hovered.cell == CellKind.HEADER) {
+                drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005, split - 0.005, headerTop - 0.005, HOVER_COLOR);
+            } else if (hovered.cell == CellKind.WHOLE_EVERY) {
+                drawQuad(ps, buffer, split + 0.005, headerBottom + 0.005, halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
+            }
+            drawQuad(ps, buffer, split - COLUMN_DIVIDER_W / 2.0, headerBottom, split + COLUMN_DIVIDER_W / 2.0, headerTop, COLUMN_SEP_COLOR);
+            drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), (-halfW + split) / 2.0, headerCY, HEADER_COLOR);
+            drawCenteredText(ps, buffer, font, EditorTypeMenuSettingsRow.label(), (split + halfW) / 2.0, headerCY, HEADER_COLOR);
+        } else {
+            if (hovered.cell == CellKind.HEADER) {
+                drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005,
+                    halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
+            }
+            drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), 0, headerCY, HEADER_COLOR);
         }
-        drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), 0, headerCY, HEADER_COLOR);
 
         String activeModelId = activeModelId();
         String activeModelName = activeModelName();

@@ -23,8 +23,9 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
         int bottom() { return y + h; }
     }
 
-    static final int COLUMNS = 3;
-    static final int ROWS = 2;
+    /** One tile per row — a vertical list — so the preview column can be the wide one. */
+    static final int COLUMNS = 1;
+    static final int ROWS = games.brennan.dungeontrain.builder.BuilderMode.values().length;
     static final int TILE_GAP = 6;
     static final int COLUMN_GAP = 8;
     static final int ROW_GAP = 4;
@@ -32,11 +33,11 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
     static final int GO_H = 20;
 
     /** Widest the body may get, so tiles don't become billboards on an ultrawide. */
-    static final int MAX_BODY_WIDTH = 520;
+    static final int MAX_BODY_WIDTH = 640;
     static final int SIDE_MARGIN = 16;
     static final int MIN_TILE_WIDTH = 64;
     /** The tiles' share of the body; the detail column takes the rest. */
-    private static final double TILE_COLUMN_SHARE = 0.55;
+    private static final double TILE_COLUMN_SHARE = 0.34;
 
     /**
      * @param screenWidth  screen width in GUI pixels

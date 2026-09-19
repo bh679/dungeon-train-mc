@@ -17,6 +17,17 @@
   "enchant": 2,
   "ender": 1,
   "enemies": 7,
+  "featurefancy": {
+    "weight": 1,
+    "builder": {
+      "uuid": "895018fce8904837be7d98b9c32ddce4",
+      "name": "Collapseofsmth"
+    }
+  },
+  "features": {
+    "weight": 1,
+    "stage": "desert"
+  },
   "fire": 4,
   "maze": 4,
   "mild_1": {
@@ -54,38 +65,6 @@
   "narrative": 3,
   "portal": 0,
   "portal_short": 0,
-  "sand": 0,
-  "shop": 8,
-  "statue": 1,
-  "trapmid": {
-    "weight": 1,
-    "name": "zombiechoicetrap"
-  },
-  "trapmid2": {
-    "weight": 1,
-    "name": "tntdoortrap"
-  },
-  "traps": {
-    "weight": 1,
-    "phases": [
-      "OVERWORLD",
-      "VOID",
-      "UPSIDE_DOWN"
-    ]
-  },
-  "vase": 1,
-  "very_dangerouds_1": 1,
-  "zombieroom3": {
-    "weight": 1,
-    "name": "zombiesplit"
-  },
-  "featurefancy": {
-    "weight": 1,
-    "builder": {
-      "uuid": "895018fce8904837be7d98b9c32ddce4",
-      "name": "Collapseofsmth"
-    }
-  },
   "prison_broken": {
     "weight": 1,
     "builder": {
@@ -120,5 +99,30 @@
       "uuid": "895018fce8904837be7d98b9c32ddce4",
       "name": "Collapseofsmth"
     }
+  },
+  "sand": 0,
+  "shop": 8,
+  "statue": 1,
+  "trapmid": {
+    "weight": 1,
+    "name": "zombiechoicetrap"
+  },
+  "trapmid2": {
+    "weight": 1,
+    "name": "tntdoortrap"
+  },
+  "traps": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN"
+    ]
+  },
+  "vase": 1,
+  "very_dangerouds_1": 1,
+  "zombieroom3": {
+    "weight": 1,
+    "name": "zombiesplit"
   }
 }

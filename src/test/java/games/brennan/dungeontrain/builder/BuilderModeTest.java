@@ -27,7 +27,7 @@ final class BuilderModeTest {
             assertTrue(keys.add(mode.labelKey()), "duplicate label key: " + mode.labelKey());
             assertTrue(textures.add(mode.texturePath()), "duplicate texture: " + mode.texturePath());
         }
-        assertEquals(5, ids.size(), "the picker screen lays out five tiles (3x2 grid, one slot spare)");
+        assertEquals(5, ids.size(), "the picker screen lays out five tiles in a vertical list");
         assertEquals(BuilderMode.WHOLE_CARRIAGES, BuilderMode.values()[0], "Whole leads, as in the editor's row");
     }
 

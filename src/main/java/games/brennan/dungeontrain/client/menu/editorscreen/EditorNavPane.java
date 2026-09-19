@@ -54,9 +54,54 @@ final class EditorNavPane {
     private InventoryEditorLayout.Rect goRect;
     private boolean goEnabled;
 
-    /** The tiles' column: the same rectangle the Settings rows fill. */
+    /** The tiles' share of the pane's full width; the detail column takes the rest. */
+    static final double TILE_COLUMN_SHARE = 0.34;
+    static final int COLUMN_GAP = 8;
+    static final int HEADER_H = 14;
+    static final int ROW_GAP = 4;
+
+    /**
+     * The whole pane — the browser grid's column and the detail column together — split the pane's
+     * own way: a narrow vertical list of tiles on the left, a wide preview on the right. The screen's
+     * grid/detail split is a browser's, and this page is not a browser.
+     */
+    static InventoryEditorLayout.Rect full(InventoryEditorLayout layout) {
+        InventoryEditorLayout.Rect grid = EditorSettingsPane.rect(layout);
+        int right = Math.max(grid.right(), layout.test().right());
+        int bottom = Math.max(grid.bottom(), layout.test().bottom());
+        return new InventoryEditorLayout.Rect(grid.x(), grid.y(), right - grid.x(), bottom - grid.y());
+    }
+
+    /** The tiles' column: the left share of {@link #full}. */
     static InventoryEditorLayout.Rect rect(InventoryEditorLayout layout) {
-        return EditorSettingsPane.rect(layout);
+        InventoryEditorLayout.Rect f = full(layout);
+        return new InventoryEditorLayout.Rect(f.x(), f.y(), (int) Math.round(f.w() * TILE_COLUMN_SHARE), f.h());
+    }
+
+    /** The detail column: everything right of the tiles. */
+    static InventoryEditorLayout.Rect detail(InventoryEditorLayout layout) {
+        InventoryEditorLayout.Rect f = full(layout);
+        InventoryEditorLayout.Rect tiles = rect(layout);
+        int x = tiles.right() + COLUMN_GAP;
+        return new InventoryEditorLayout.Rect(x, f.y(), Math.max(0, f.right() - x), f.h());
+    }
+
+    /** The detail column's rows, top to bottom: header, preview (16:9, at most half), description, go. */
+    record Detail(InventoryEditorLayout.Rect header, InventoryEditorLayout.Rect preview,
+                  InventoryEditorLayout.Rect description, InventoryEditorLayout.Rect go) {}
+
+    static Detail detailRows(InventoryEditorLayout layout) {
+        InventoryEditorLayout.Rect d = detail(layout);
+        int goH = layout.test().h();
+        InventoryEditorLayout.Rect go = new InventoryEditorLayout.Rect(d.x(), d.bottom() - goH, d.w(), goH);
+        InventoryEditorLayout.Rect header = new InventoryEditorLayout.Rect(d.x(), d.y(), d.w(), HEADER_H);
+        int between = Math.max(0, go.y() - ROW_GAP - (header.bottom() + ROW_GAP));
+        int previewH = Math.min(d.w() * 9 / 16, between / 2);
+        InventoryEditorLayout.Rect preview = new InventoryEditorLayout.Rect(d.x(), header.bottom() + ROW_GAP, d.w(), previewH);
+        int descTop = preview.bottom() + ROW_GAP;
+        InventoryEditorLayout.Rect description = new InventoryEditorLayout.Rect(d.x(), descTop, d.w(),
+            Math.max(0, go.y() - ROW_GAP - descTop));
+        return new Detail(header, preview, description, go);
     }
 
     /**
@@ -64,14 +109,15 @@ final class EditorNavPane {
      * fit can be tested at the sizes that matter without a client.
      */
     static List<InventoryEditorLayout.Rect> tiles(InventoryEditorLayout.Rect area) {
-        int cols = 3;
-        int rows = 2;
+        int cols = 1;
+        int rows = BuilderMode.values().length;
         int tileW = Math.max(1, (area.w() - TILE_GAP * (cols - 1)) / cols);
         int tileH = tileW * 9 / 16;
         int maxTileH = Math.max(1, (area.h() - TILE_GAP * (rows - 1)) / rows);
         if (tileH > maxTileH) {
-            tileH = maxTileH;
-            tileW = Math.max(1, tileH * 16 / 9);
+            tileW = Math.max(1, maxTileH * 16 / 9);
+            // Re-derive from the width so the tile is exactly 16:9 after both integer divisions.
+            tileH = Math.max(1, tileW * 9 / 16);
         }
         int gridW = cols * tileW + TILE_GAP * (cols - 1);
         int gridH = rows * tileH + TILE_GAP * (rows - 1);
@@ -142,21 +188,22 @@ final class EditorNavPane {
 
     private void drawDetail(GuiGraphics g, Font font, EditorScreenTheme theme, InventoryEditorLayout layout,
                             BuilderMode selected, EditorRosterIndex index, int mouseX, int mouseY) {
+        Detail rows = detailRows(layout);
         // Header: the area's name where a template's name would be.
-        InventoryEditorLayout.Rect h = layout.header();
+        InventoryEditorLayout.Rect h = rows.header();
         String name = Component.translatable(selected.labelKey()).getString();
         g.drawString(font, font.plainSubstrByWidth(name, h.w() - 4), h.x() + 2,
             h.y() + (h.h() - font.lineHeight) / 2, theme.panelText(), !theme.isLight());
 
         // Preview: the picture, cover-cropped, where the rotating model would be.
-        InventoryEditorLayout.Rect p = layout.preview();
+        InventoryEditorLayout.Rect p = rows.preview();
         g.fill(p.x(), p.y(), p.right(), p.bottom(), PreviewPane.BACKDROP);
         BuilderTileArt.render(g, selected, available(selected), p.x(), p.y(), p.w(), p.h(), 1.0F);
         g.renderOutline(p.x(), p.y(), p.w(), p.h(), theme.outline());
 
         // Description: from the top of the sheet down to the Go button, wrapped to the column.
-        InventoryEditorLayout.Rect s = layout.sheet();
-        InventoryEditorLayout.Rect t = layout.test();
+        InventoryEditorLayout.Rect s = rows.description();
+        InventoryEditorLayout.Rect t = rows.go();
         int textTop = s.y() + TEXT_PAD;
         int textBottom = t.y() - TEXT_PAD;
         int textW = Math.max(0, s.w() - TEXT_PAD * 2);

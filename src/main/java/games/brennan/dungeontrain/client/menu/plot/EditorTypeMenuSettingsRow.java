@@ -31,6 +31,16 @@ final class EditorTypeMenuSettingsRow {
             && EditorWholeTypeMenus.GROUP_TYPE_NAME.equals(menu.typeName());
     }
 
+    /**
+     * The in-plot Group companion carries the setting in its header row instead, beside the title —
+     * that is the panel an author actually looks at while standing in a group plot.
+     */
+    static boolean headerEvery(EditorTypeMenusPacket.Menu menu) {
+        if (!menu.isCompanion() || !EditorWholeTypeMenus.GROUP_TYPE_NAME.equals(menu.typeName())) return false;
+        return !menu.variants().isEmpty()
+            && menu.variants().get(0).plotCategory() == games.brennan.dungeontrain.editor.PlotCategory.WHOLE_GROUP;
+    }
+
     static int rows(EditorTypeMenusPacket.Menu menu) {
         return present(menu) ? 1 : 0;
     }
