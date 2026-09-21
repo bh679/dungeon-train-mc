@@ -1,45 +1,18 @@
 {
   "basiccave1": {
     "weight": 1,
-    "stage": "stone"
+    "stage": "stone",
+    "builder": {
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
+    }
   },
   "jungletemple": {
     "weight": 1,
-    "stage": "stone"
-  },
-  "prison_broken": {
-    "weight": 1,
+    "stage": "stone",
     "builder": {
-      "uuid": "895018fce8904837be7d98b9c32ddce4",
-      "name": "Collapseofsmth"
-    }
-  },
-  "reading_room_dark_oak": {
-    "weight": 1,
-    "builder": {
-      "uuid": "895018fce8904837be7d98b9c32ddce4",
-      "name": "Collapseofsmth"
-    }
-  },
-  "reading_room_dark_oak_treasure": {
-    "weight": 1,
-    "builder": {
-      "uuid": "895018fce8904837be7d98b9c32ddce4",
-      "name": "Collapseofsmth"
-    }
-  },
-  "reading_room_desk": {
-    "weight": 1,
-    "builder": {
-      "uuid": "895018fce8904837be7d98b9c32ddce4",
-      "name": "Collapseofsmth"
-    }
-  },
-  "reading_room_destroyed": {
-    "weight": 1,
-    "builder": {
-      "uuid": "895018fce8904837be7d98b9c32ddce4",
-      "name": "Collapseofsmth"
+      "uuid": "20607dfda8fd46e1b41585ac0b20bc28",
+      "name": "Firefly_on_ytb"
     }
   }
 }
