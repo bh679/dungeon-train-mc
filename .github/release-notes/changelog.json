@@ -17607,7 +17607,7 @@
     },
     {
       "id": "portal-plot-menu-in-front",
-      "version": "0.919.0",
+      "version": "0.926.0",
       "type": "fix",
       "tags": [
         "fix",
