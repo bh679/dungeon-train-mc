@@ -37,12 +37,13 @@ final class BuilderPickerLayoutTest {
     }
 
     @Test
-    @DisplayName("Tiles keep a 16:9 aspect so screenshot art isn't squashed")
-    void tilesKeep16By9() {
+    @DisplayName("Tiles span the column and are never taller than 16:9 — the art is cover-cropped, not squashed")
+    void tilesSpanTheColumn() {
         for (int[] size : new int[][] {{1920, 1080}, {640, 360}, {480, 270}}) {
-            BuilderPickerLayout.Rect tile = layoutFor(size[0], size[1]).tiles().get(0);
-            double aspect = (double) tile.w() / tile.h();
-            assertTrue(Math.abs(aspect - 16.0 / 9.0) < 0.15, "aspect " + aspect + " at " + label(size));
+            BuilderPickerLayout layout = layoutFor(size[0], size[1]);
+            BuilderPickerLayout.Rect tile = layout.tiles().get(0);
+            assertEquals(layout.back().w(), tile.w(), "tile as wide as its column at " + label(size));
+            assertTrue(tile.h() <= tile.w() * 9 / 16, "taller than 16:9 at " + label(size));
         }
     }
 

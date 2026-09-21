@@ -75,15 +75,11 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
      * tab's arithmetic, with a floor so a tiny viewport still gets a tile you can click.
      */
     static List<Rect> tiles(Rect area) {
+        // Tiles always span the column: the art is cover-cropped, so a tile shorter than 16:9 shows
+        // a wider slice of its picture rather than a squashed one, and the caption has the width.
         int tileW = Math.max(1, (area.w() - TILE_GAP * (COLUMNS - 1)) / COLUMNS);
-        int tileH = tileW * 9 / 16;
         int maxTileH = Math.max(1, (area.h() - TILE_GAP * (ROWS - 1)) / ROWS);
-        if (tileH > maxTileH) {
-            tileH = maxTileH;
-            tileW = Math.max(1, tileH * 16 / 9);
-        }
-        tileW = Math.max(tileW, MIN_TILE_WIDTH);
-        tileH = Math.max(tileH, MIN_TILE_WIDTH * 9 / 16);
+        int tileH = Math.max(1, Math.min(tileW * 9 / 16, maxTileH));
 
         int gridW = COLUMNS * tileW + TILE_GAP * (COLUMNS - 1);
         int gridH = ROWS * tileH + TILE_GAP * (ROWS - 1);

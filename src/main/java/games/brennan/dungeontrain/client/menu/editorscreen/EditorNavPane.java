@@ -111,14 +111,10 @@ final class EditorNavPane {
     static List<InventoryEditorLayout.Rect> tiles(InventoryEditorLayout.Rect area) {
         int cols = 1;
         int rows = BuilderMode.values().length;
+        // Tiles span the column; the cover-cropped art shows a wider slice when height-limited.
         int tileW = Math.max(1, (area.w() - TILE_GAP * (cols - 1)) / cols);
-        int tileH = tileW * 9 / 16;
         int maxTileH = Math.max(1, (area.h() - TILE_GAP * (rows - 1)) / rows);
-        if (tileH > maxTileH) {
-            tileW = Math.max(1, maxTileH * 16 / 9);
-            // Re-derive from the width so the tile is exactly 16:9 after both integer divisions.
-            tileH = Math.max(1, tileW * 9 / 16);
-        }
+        int tileH = Math.max(1, Math.min(tileW * 9 / 16, maxTileH));
         int gridW = cols * tileW + TILE_GAP * (cols - 1);
         int gridH = rows * tileH + TILE_GAP * (rows - 1);
         int x0 = area.x() + Math.max(0, (area.w() - gridW) / 2);

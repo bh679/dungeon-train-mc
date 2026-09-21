@@ -24,7 +24,7 @@ final class EditorNavPaneTest {
     }
 
     @Test
-    @DisplayName("one 16:9 tile per mode, stacked, inside the column at every size that matters")
+    @DisplayName("one full-width tile per mode, stacked, inside the column at every size that matters")
     void tilesFit() {
         for (int[] size : new int[][] {{427, 240}, {640, 360}, {1920, 1080}}) {
             InventoryEditorLayout layout = InventoryEditorLayout.of(size[0], size[1], false);
@@ -37,7 +37,8 @@ final class EditorNavPaneTest {
             for (Rect t : tiles) {
                 assertTrue(t.x() >= area.x() && t.right() <= area.right(), size[0] + "x" + size[1] + ": " + t + " leaves " + area);
                 assertTrue(t.y() >= area.y() && t.bottom() <= area.bottom(), size[0] + "x" + size[1] + ": " + t + " leaves " + area);
-                assertEquals(t.w() * 9 / 16, t.h(), "not 16:9: " + t);
+                assertEquals(area.w(), t.w(), "tile spans the column: " + t);
+                assertTrue(t.h() <= t.w() * 9 / 16, "taller than 16:9: " + t);
             }
             assertEquals(tiles.get(0).x(), tiles.get(1).x(), "a vertical list: every tile in the one column");
             assertTrue(tiles.get(0).bottom() <= tiles.get(1).y());
