@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.portal.PortalRoomMode;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
@@ -157,17 +158,20 @@ public final class EditorPlotLabels {
         List<Label> out = new ArrayList<>(
             variants.size() + floors.size() + walls.size() + roofs.size() + doors.size());
 
-        Vec3i carriageFootprint = new Vec3i(dims.length(), dims.height(), dims.width());
         CarriageWeights weights = CarriageWeights.current();
         String category = EditorCategory.CARRIAGES.name();
         for (CarriageVariant v : variants) {
             BlockPos origin = CarriageEditor.plotOrigin(v, dims);
             if (origin == null) continue;
+            // The plot's own box, not the world's: the portal corridor is longer than a carriage,
+            // and {@code CarriageEditor.enter} lands the player from this same call — so the label
+            // sits over the corridor's real +X end, straight ahead of them.
+            Vec3i footprint = new Template.Carriage(v).plotSize(dims);
             int w = weights.weightFor(v.id());
             Provenance p = provenanceOf(CarriageTemplateStore.fileForId(v.id()));
             // `name` is the sign's text and nothing else reads it as an id (parts already put
             // "kind:name" there), so the display label goes straight in; modelName stays the id.
-            out.add(new Label(anchorAbove(origin, carriageFootprint),
+            out.add(new Label(anchorAbove(origin, footprint),
                 weights.nameFor(v.id()), w, category, v.id(), v.id(), false, p.isUser, p.isImported));
         }
 
@@ -203,12 +207,14 @@ public final class EditorPlotLabels {
     private static List<Label> contentsLabels(CarriageDims dims) {
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
         List<Label> out = new ArrayList<>(all.size());
-        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
         CarriageContentsWeights weights = CarriageContentsWeights.current();
         String category = EditorCategory.CONTENTS.name();
         for (CarriageContents c : all) {
             BlockPos origin = CarriageContentsEditor.plotOrigin(c, dims);
             if (origin == null) continue;
+            // Per plot, as for carriages: a portal corridor's contents are authored in the
+            // corridor's longer box, and the roof landing is derived from this same call.
+            Vec3i footprint = new Template.Contents(c).plotSize(dims);
             int w = weights.weightFor(c.id());
             Provenance p = provenanceOf(CarriageContentsStore.fileForId(c.id()));
             out.add(new Label(anchorAbove(origin, footprint),
