@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -28,11 +27,12 @@ import java.util.Locale;
  * log line. A mod that documents its telemetry posture as carefully as this one does should be able
  * to say exactly what "we noticed the tool" means, and this is the whole of it.</p>
  *
- * <p>Enumeration goes through <b>OSHI</b>, which ships with Minecraft (vanilla {@code SystemReport}
- * uses it) — so no new dependency. It is also the only option that works: zapret runs elevated, and
- * {@code ProcessHandle.allProcesses()} returns no command for an elevated process when asked from a
- * medium-integrity JVM. Process names come from {@code NtQuerySystemInformation} and are readable
- * without elevation.</p>
+ * <p>Enumeration is {@link RunningProcessNames}' — one OSHI snapshot per session, shared with the
+ * other name-matching detector, so the table is read once. OSHI ships with Minecraft (vanilla
+ * {@code SystemReport} uses it) — so no new dependency. It is also the only option that works:
+ * zapret runs elevated, and {@code ProcessHandle.allProcesses()} returns no command for an elevated
+ * process when asked from a medium-integrity JVM. Process names come from
+ * {@code NtQuerySystemInformation} and are readable without elevation.</p>
  *
  * <p>Windows-only — WinDivert is a Windows driver, and there is nothing to find anywhere else. The
  * probe is one-shot per session ({@link #detectNow()} caches), belongs off the render thread, and
@@ -98,19 +98,8 @@ public final class DpiBypassDetector {
             return override;
         }
         if (!isWindows()) return "";
-        try {
-            List<String> names = new ArrayList<>();
-            for (oshi.software.os.OSProcess process
-                    : new oshi.SystemInfo().getOperatingSystem().getProcesses()) {
-                names.add(process.getName());
-            }
-            String match = matchIn(names);
-            return match == null ? "" : match;
-        } catch (Throwable t) {
-            // Process enumeration is a best-effort courtesy, never a reason to disturb the client.
-            LOGGER.debug("[DungeonTrain] DPI-bypass check: could not enumerate processes", t);
-            return "";
-        }
+        String match = matchIn(RunningProcessNames.snapshot());
+        return match == null ? "" : match;
     }
 
     /** Whether this is a Windows client — the only platform WinDivert-based tools run on. */
@@ -131,18 +120,11 @@ public final class DpiBypassDetector {
         if (processNames == null) return null;
         for (String raw : processNames) {
             if (raw == null || raw.isBlank()) continue;
-            String name = baseName(raw);
+            String name = RunningProcessNames.baseName(raw);
             for (String candidate : BYPASS_PROCESSES) {
                 if (candidate.equals(name)) return candidate;
             }
         }
         return null;
-    }
-
-    /** Lowercased final path segment of {@code raw}, handling both separators. */
-    private static String baseName(String raw) {
-        String lower = raw.trim().toLowerCase(Locale.ROOT);
-        int cut = Math.max(lower.lastIndexOf('/'), lower.lastIndexOf('\\'));
-        return cut < 0 ? lower : lower.substring(cut + 1);
     }
 }

@@ -17525,6 +17525,85 @@
       "released": true,
       "released_in": "v0.923.0",
       "released_at": "2026-09-18T12:05:02Z"
+    },
+    {
+      "id": "obs-share-link-nudge",
+      "version": "0.924.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Streaming? The menu nudges you to share your link",
+      "summary": "If OBS or Streamlabs is open when you reach the main menu, the red Videos icon stretches out a \"Streaming? Share link!\" tag, and the Submit button on the Videos page pulses red. A small \u00d7 above the tag hides it for the session. Nothing about it leaves your machine \u2014 it only looks at whether the app is running.",
+      "highlights": [
+        "Videos icon on the title screen grows a \"Streaming? Share link!\" tag while OBS/Streamlabs is running",
+        "Submit-a-video button on the Videos page pulses red at the same time",
+        "Click the \u00d7 above the tag to hide it until next launch"
+      ],
+      "date": "2026-09-18",
+      "released": true,
+      "released_in": "v0.925.0",
+      "released_at": "2026-09-18T14:33:29Z"
+    },
+    {
+      "id": "end-exit-portal-returns-to-train",
+      "version": "0.924.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "The End portal brings you home",
+      "summary": "Beat the dragon and step through the portal \u2014 you land back on the train, right where you belong, with everything you carried.",
+      "highlights": [
+        "No more waking up in an empty world after the End.",
+        "Works every time you come back through, not just the first."
+      ],
+      "pr": 1473,
+      "date": "2026-09-18",
+      "released": true,
+      "released_in": "v0.925.0",
+      "released_at": "2026-09-18T14:33:29Z"
+    },
+    {
+      "id": "corners-ice-contents-trap-rework",
+      "version": "0.925.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "loot",
+        "balance"
+      ],
+      "title": "New carriage builds and weight tweaks",
+      "summary": "A couple of new carriage builds can now appear on the train, and some spawn weights were adjusted.",
+      "highlights": [],
+      "pr": 1475,
+      "date": "2026-09-18",
+      "released": true,
+      "released_in": "v0.925.0",
+      "released_at": "2026-09-18T14:33:29Z"
+    },
+    {
+      "id": "train-returns-in-a-burst",
+      "version": "0.926.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "The train is all there when you come back",
+      "summary": "Wander off the line and return, and every carriage is waiting for you again straight away \u2014 no more watching the train reappear one piece at a time, or thinking half of it had vanished.",
+      "highlights": [
+        "Carriages come back all at once, not one by one.",
+        "Sitting in the pause menu no longer gets logged as a server freeze."
+      ],
+      "pr": 1476,
+      "date": "2026-09-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

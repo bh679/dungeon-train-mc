@@ -89,6 +89,28 @@ final class ServerStallWatchdogTest {
         assertTrue(ServerStallWatchdog.isIdleBetweenTicks(pausedStack()));
     }
 
+    /**
+     * The 225-second "stall" from the player log of 19 Sep 2026: the integrated server in its own
+     * pause loop, which never passes through {@code waitUntilNextTick}.
+     */
+    private static StackTraceElement[] integratedPausedStack() {
+        return new StackTraceElement[] {
+            frame("java.util.Collections$UnmodifiableCollection$1", "<init>"),
+            frame("java.util.Collections$UnmodifiableCollection", "iterator"),
+            frame("net.minecraft.client.server.IntegratedServer", "tickPaused"),
+            frame("net.minecraft.client.server.IntegratedServer", "tickServer"),
+            frame(SERVER, "runServer"),
+            frame(SERVER, "lambda$spin$2"),
+            frame("java.lang.Thread", "run"),
+        };
+    }
+
+    @Test
+    @DisplayName("the integrated server's tickPaused loop reads as idle, not a stall")
+    void integratedPausedStack_isIdle() {
+        assertTrue(ServerStallWatchdog.isIdleBetweenTicks(integratedPausedStack()));
+    }
+
     @Test
     @DisplayName("the #1335 chunk-load stall is still a stall — it parks and managed-blocks too")
     void chunkLoadStall_isNotIdle() {

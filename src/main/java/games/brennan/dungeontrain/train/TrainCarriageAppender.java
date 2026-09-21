@@ -2667,7 +2667,7 @@ public final class TrainCarriageAppender {
         // previews — one at each end. {@code trainsTouchedThisTick.add(
         // trainId)} already happened at the top of this method.
         if (needsForward) {
-            Plan plan = planSpawnPlacement(forwardRef, forwardAnchor, groupSize, dims, train);
+            Plan plan = planSpawnPlacement(forwardRef, forwardAnchor, groupSize, dims, train, Shipyards.of(level));
             NEXT_PLANNED_SPAWNS_FORWARD.put(trainId, new PlannedSpawn(
                 trainId,
                 forwardRef.ship().subLevelId(),
@@ -2680,7 +2680,7 @@ public final class TrainCarriageAppender {
             NEXT_PLANNED_SPAWNS_FORWARD.remove(trainId);
         }
         if (needsBackward) {
-            Plan plan = planSpawnPlacement(backwardRef, backwardAnchor, groupSize, dims, train);
+            Plan plan = planSpawnPlacement(backwardRef, backwardAnchor, groupSize, dims, train, Shipyards.of(level));
             NEXT_PLANNED_SPAWNS_BACKWARD.put(trainId, new PlannedSpawn(
                 trainId,
                 backwardRef.ship().subLevelId(),
@@ -2723,7 +2723,7 @@ public final class TrainCarriageAppender {
         }
         if (!didForwardSpawn && needsForward
             && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, LAST_SPAWNED_TICK_FORWARD, CULL_CLEARED_FORWARD, trainId, train, now, true)) {
-            Plan forwardPlan = planSpawnPlacement(forwardRef, forwardAnchor, groupSize, dims, train);
+            Plan forwardPlan = planSpawnPlacement(forwardRef, forwardAnchor, groupSize, dims, train, Shipyards.of(level));
             ManagedShip newShip = spawnPlannedGroup(
                 level, forwardPlan, forwardRef, forwardAnchor, groupSize, dims, velocity, trainId, train);
             // null ⇒ spawn deferred this tick while its footprint chunks generate
@@ -2754,7 +2754,7 @@ public final class TrainCarriageAppender {
         boolean bwdChunkDeferred = false;
         if (!didBackwardSpawn && needsBackward
             && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, LAST_SPAWNED_TICK_BACKWARD, CULL_CLEARED_BACKWARD, trainId, train, now, false)) {
-            Plan backwardPlan = planSpawnPlacement(backwardRef, backwardAnchor, groupSize, dims, train);
+            Plan backwardPlan = planSpawnPlacement(backwardRef, backwardAnchor, groupSize, dims, train, Shipyards.of(level));
             ManagedShip newShip = spawnPlannedGroup(
                 level, backwardPlan, backwardRef, backwardAnchor, groupSize, dims, velocity, trainId, train);
             // null ⇒ spawn deferred this tick for async footprint generation (see forward lane).
@@ -4859,7 +4859,7 @@ public final class TrainCarriageAppender {
             // Same tick, so no drift; the predecessor is excluded for the same reason a run
             // excludes its own (its seam is guaranteed by construction).
             Plan chained = planChainedSpawn(prevPlan, prevAnchor, nextAnchor, dims, train, trainId,
-                0.0, prevShipId);
+                0.0, prevShipId, Shipyards.of(level));
             if (!burstChainIsCommittable(chained.collisionAdjustments())) {
                 LOGGER.info("[DungeonTrain] Catch-up burst: chained anchor={} needed a {}-block collision shove — abandoning burst (trainId={})",
                     nextAnchor, chained.collisionAdjustments(), trainId);
@@ -4959,7 +4959,7 @@ public final class TrainCarriageAppender {
             int nextAnchor = forward ? (prevAnchor + groupSize) : (prevAnchor - groupSize);
             if (Trains.knownAnchors(trainId).contains(nextAnchor)) break;
             Plan chained = planChainedSpawn(prevPlan, prevAnchor, nextAnchor, dims, train, trainId,
-                i == 0 ? driftX : 0.0, prevShipId);
+                i == 0 ? driftX : 0.0, prevShipId, Shipyards.of(level));
             if (!burstChainIsCommittable(chained.collisionAdjustments())) {
                 LOGGER.info("[DungeonTrain] Catch-up fill: chained anchor={} needed a {}-block collision shove — ending the run (trainId={})",
                     nextAnchor, chained.collisionAdjustments(), trainId);
@@ -5038,7 +5038,8 @@ public final class TrainCarriageAppender {
         List<Trains.Carriage> train,
         UUID trainId,
         double previousDriftX,
-        long excludeShipId
+        long excludeShipId,
+        Shipyard shipyard
     ) {
         boolean forward = previous.forward();
         int subLevelStride = previous.subLevelStride();
@@ -5059,7 +5060,7 @@ public final class TrainCarriageAppender {
 
         CollisionAdjustResult adjusted = adjustForCollisions(
             initialPlaceX, placeY, placeZ, subLevelStride, dims, train, trainId, forward, newAnchor,
-            excludeShipId);
+            excludeShipId, shipyard);
         int adjustedPlaceX = adjusted.placeX();
 
         // Same rule as planSpawnPlacement: drop the sub-block remainder if the
@@ -5149,7 +5150,8 @@ public final class TrainCarriageAppender {
         int newAnchor,
         int groupSize,
         CarriageDims dims,
-        List<Trains.Carriage> train
+        List<Trains.Carriage> train,
+        Shipyard shipyard
     ) {
         BlockPos refShipyardOrigin = reference.provider().getShipyardOrigin();
         int refAnchor = reference.provider().getPIdx();
@@ -5184,7 +5186,7 @@ public final class TrainCarriageAppender {
         int placeZ = (int) Math.round(idealZ);
 
         CollisionAdjustResult adjusted = adjustForCollisions(
-            initialPlaceX, placeY, placeZ, subLevelStride, dims, train, refTrainId, forward, newAnchor);
+            initialPlaceX, placeY, placeZ, subLevelStride, dims, train, refTrainId, forward, newAnchor, shipyard);
         int adjustedPlaceX = adjusted.placeX();
 
         // Drop the sub-block remainder if the collision pass moved the origin — that pass placed the
@@ -5295,10 +5297,23 @@ public final class TrainCarriageAppender {
         List<Trains.Carriage> train,
         UUID trainId,
         boolean forward,
-        int newAnchor
+        int newAnchor,
+        Shipyard shipyard
     ) {
         return adjustForCollisions(placeX, placeY, placeZ, subLevelStride, dims, train, trainId,
-            forward, newAnchor, NO_EXCLUDED_SHIP);
+            forward, newAnchor, NO_EXCLUDED_SHIP, shipyard);
+    }
+
+    /**
+     * Whether a registry sibling's world box is a stale cull-time pose rather than where the
+     * carriage actually is: its kinematic driver's canonical X lies more than one
+     * {@code subLevelStride} outside the box. A live (or in-flight) sibling's canonical X sits
+     * inside its own box; a resurrected ghost's is the length of the walk-away up the line.
+     * Pure so the rule is unit-testable.
+     */
+    static boolean isStaleRegistryBox(double aabbMinX, double aabbMaxX, double canonicalX, int subLevelStride) {
+        if (subLevelStride <= 0) throw new IllegalArgumentException("subLevelStride must be > 0, got " + subLevelStride);
+        return canonicalX < aabbMinX - subLevelStride || canonicalX > aabbMaxX + subLevelStride;
     }
 
     /**
@@ -5309,6 +5324,8 @@ public final class TrainCarriageAppender {
      *     old and wrongly read as an overlap. Within a single tick the predecessor is invisible here
      *     anyway (a fresh ship's AABB is zero and zero-AABB siblings are skipped); this keeps a run
      *     that spans ticks behaving the same way.
+     * @param shipyard the level's shipyard, used to skip registry siblings culled to holding
+     *     (nullable — without it only the stale-pose rule guards against ghosts).
      */
     private static CollisionAdjustResult adjustForCollisions(
         int placeX,
@@ -5320,7 +5337,8 @@ public final class TrainCarriageAppender {
         UUID trainId,
         boolean forward,
         int newAnchor,
-        long excludeShipId
+        long excludeShipId,
+        Shipyard shipyard
     ) {
         int height = dims.height();
         int width = dims.width();
@@ -5352,8 +5370,28 @@ public final class TrainCarriageAppender {
             // spawn off such a box opens a permanent void. Resident in-flight
             // siblings (not yet in the visible list) are still honoured.
             if (!ship.isResident()) continue;
+            // A held (culled) wrapper can still answer resident from its last-known state — the
+            // same guard the placement tracker applies (see checkOneCarriage). Ask Sable.
+            if (shipyard != null && shipyard.isHeld(ship.subLevelId())) {
+                LOGGER.debug("[DungeonTrain] Pre-spawn collision: ignoring held ghost pIdx={} for newAnchor={}",
+                    e.getKey(), newAnchor);
+                continue;
+            }
             AABBdc aabb = ship.worldAABB();
             if (isZeroAabb(aabb)) continue;
+            // A ghost Sable resurrected THIS tick (its holding chunk came in under a refill's
+            // force-loads) is resident and no longer held, but its box is still the cull-time
+            // pose while its driver has already re-anchored it hundreds of blocks up the line.
+            // Observed 2026-09-19: the original ride's groups (culled at x≈0..650) sat exactly
+            // where the backward refill was chaining, and every chained plan was shoved off
+            // them — six aborted fill runs, 3 s per group instead of a burst. The driver's
+            // canonical X is the truth; a box a whole stride away from it is stale.
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider p
+                && isStaleRegistryBox(aabb.minX(), aabb.maxX(), p.getCanonicalPos().x(), subLevelStride)) {
+                LOGGER.debug("[DungeonTrain] Pre-spawn collision: ignoring stale-pose ghost pIdx={} box=[{}, {}] canonicalX={} for newAnchor={}",
+                    e.getKey(), aabb.minX(), aabb.maxX(), p.getCanonicalPos().x(), newAnchor);
+                continue;
+            }
             siblings.add(aabb);
             siblingsForLog.add(new long[] { id, e.getKey(), 1L });
         }

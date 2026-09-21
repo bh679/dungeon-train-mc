@@ -16,17 +16,13 @@
   "dirt2": 2,
   "enchant": 2,
   "ender": 1,
-  "enemies": 7,
+  "enemies": 8,
   "featurefancy": {
     "weight": 1,
     "builder": {
       "uuid": "895018fce8904837be7d98b9c32ddce4",
       "name": "Collapseofsmth"
     }
-  },
-  "features": {
-    "weight": 1,
-    "stage": "desert"
   },
   "fire": 4,
   "maze": 4,
@@ -63,6 +59,10 @@
     }
   },
   "narrative": 3,
+  "new": {
+    "weight": 1,
+    "name": "corners"
+  },
   "portal": 0,
   "portal_short": 0,
   "prison_broken": {
@@ -121,6 +121,10 @@
   },
   "vase": 1,
   "very_dangerouds_1": 1,
+  "icefeature": {
+    "weight": 1,
+    "name": "ice"
+  },
   "zombieroom3": {
     "weight": 1,
     "name": "zombiesplit"

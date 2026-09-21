@@ -1,6 +1,12 @@
 {
-  "basiccave1": 1,
-  "jungletemple": 1,
+  "basiccave1": {
+    "weight": 1,
+    "stage": "stone"
+  },
+  "jungletemple": {
+    "weight": 1,
+    "stage": "stone"
+  },
   "prison_broken": {
     "weight": 1,
     "builder": {
