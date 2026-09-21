@@ -17601,9 +17601,9 @@
       ],
       "pr": 1476,
       "date": "2026-09-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.927.0",
+      "released_at": "2026-09-21T15:00:36Z"
     },
     {
       "id": "whole-carriage-editor-section",
@@ -17627,9 +17627,9 @@
       ],
       "pr": 1477,
       "date": "2026-09-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.927.0",
+      "released_at": "2026-09-21T15:00:36Z"
     },
     {
       "id": "portal-plot-menu-in-front",
@@ -17646,9 +17646,9 @@
       ],
       "pr": 1463,
       "date": "2026-09-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.927.0",
+      "released_at": "2026-09-21T15:00:36Z"
     }
   ]
 }
