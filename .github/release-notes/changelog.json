@@ -17606,7 +17606,6 @@
       "released_at": null
     },
     {
-<<<<<<< HEAD
       "id": "whole-carriage-editor-section",
       "version": "0.927.0",
       "type": "feat",
@@ -17628,7 +17627,11 @@
       ],
       "pr": 1477,
       "date": "2026-09-21",
-=======
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "portal-plot-menu-in-front",
       "version": "0.919.0",
       "type": "fix",
@@ -17643,7 +17646,6 @@
       ],
       "pr": 1463,
       "date": "2026-09-18",
->>>>>>> origin/main
       "released": false,
       "released_in": null,
       "released_at": null
