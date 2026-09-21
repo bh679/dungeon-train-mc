@@ -17604,6 +17604,32 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "whole-carriage-editor-section",
+      "version": "0.927.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "train",
+        "ui"
+      ],
+      "title": "Whole carriages: rooms and groups you build as one piece",
+      "summary": "The Train Editor has a new Whole section, first in the row. A Room is a complete carriage saved as one piece, shell and interior together; a Group is a whole run of three. Rooms roll into the train alongside the ordinary shells, groups replace an entire carriage group one in every N, and both come from a pool you weight, gate and stage like any other template. Builds from other creators can be loaded straight into the room pool, and Firefly_on_ytb's cave and jungle temple ride the train as the first two whole rooms.",
+      "highlights": [
+        "New Whole section in the editor, the X menu and the Train Editor picker, with Room and Group tabs",
+        "Whole rooms spawn like shared carriages; whole groups replace a carriage group one in every N, set beside the Group title or on the Settings page",
+        "Block variants (Z) and container contents (C) work inside whole plots and roll at spawn",
+        "Load another creator's carriage or contents build straight into the room pool",
+        "Two bundled whole rooms by Firefly_on_ytb; Collapseofsmth's five rooms join a new featurefancy contents group"
+      ],
+      "pr": 1477,
+      "date": "2026-09-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
