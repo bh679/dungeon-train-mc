@@ -98,12 +98,14 @@ public final class EditorWholeTypeMenus {
 
     private static EditorTypeMenusPacket.Variant row(WholeKind kind, String category, String id,
                                                      EditorPlotLabels.Provenance p) {
-        TemplateGate g = TemplateGate.DEFAULT;
+        TemplateGate g = WholeWeights.gateFor(kind, id);
+        String stageId = WholeWeights.stageIdFor(kind, id);
         games.brennan.dungeontrain.template.BuilderCredit credit = TemplateBuilderLookup.whole(kind, id);
         return new EditorTypeMenusPacket.Variant(
             id, WholeWeights.weightFor(kind, id),
             g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
-            category, id, id, p.isUser(), p.isImported(), List.of(), List.of())
+            category, id, id, p.isUser(), p.isImported(), List.of(),
+            stageId == null || stageId.isEmpty() ? List.of() : List.of(stageId))
             .withDisplayName(WholeWeights.nameFor(kind, id))
             .withBuilder(credit == null ? "" : credit.uuid(), credit == null ? "" : credit.name());
     }

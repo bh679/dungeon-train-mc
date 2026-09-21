@@ -123,11 +123,10 @@ final class PlotCategoryTest {
                 PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
             matching(PlotCategory::hasWeightPool));
 
-        // levelCommandFor / phaseCommandFor / stageApplyCommandFor: same four arms. Whole rows are
-        // weight-only in v1 — no gate cells.
+        // levelCommandFor / phaseCommandFor / stageApplyCommandFor: same arms, whole rows included.
         assertEquals(
-            EnumSet.of(PlotCategory.CARRIAGES, PlotCategory.CONTENTS,
-                PlotCategory.TRACKS, PlotCategory.PORTALS),
+            EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
             matching(PlotCategory::hasGate));
 
         // The twelve !"PORTALS".equals(category) guards in EditorPlotTeleport.

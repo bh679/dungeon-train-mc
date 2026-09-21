@@ -337,7 +337,7 @@ public final class EditorCommand {
         };
 
     /** Stage ids plus the {@code custom} keyword — for {@code stage apply … <stage|custom>}. */
-    private static final SuggestionProvider<CommandSourceStack> STAGE_OR_CUSTOM_SUGGESTIONS =
+    static final SuggestionProvider<CommandSourceStack> STAGE_OR_CUSTOM_SUGGESTIONS =
         (ctx, builder) -> {
             builder.suggest(STAGE_CUSTOM_TOKEN);
             for (String id : games.brennan.dungeontrain.editor.StageStore.allIds()) builder.suggest(id);
@@ -1466,7 +1466,7 @@ public final class EditorCommand {
 
     /** Per-category gate application: parse the id, apply {@code op} to its current gate, persist. */
     @FunctionalInterface
-    private interface SingleGateOp {
+    interface SingleGateOp {
         int run(CommandSourceStack source, String id, java.util.function.UnaryOperator<TemplateGate> op);
     }
 
@@ -1521,7 +1521,7 @@ public final class EditorCommand {
      * it is Custom — on a linked entry the write lands in the inline detach snapshot and the
      * effective gate still comes from the Stage, so say so rather than reporting a bare success.
      */
-    private static void gateSuccess(CommandSourceStack source, String id, TemplateGate g, String path,
+    static void gateSuccess(CommandSourceStack source, String id, TemplateGate g, String path,
                                     String linkedStage) {
         String maxStr = g.maxLevel() == TemplateGate.ALL ? "all" : Integer.toString(g.maxLevel());
         StringBuilder phases = new StringBuilder();
@@ -1541,7 +1541,7 @@ public final class EditorCommand {
         }
     }
 
-    private static int gateFail(CommandSourceStack source, String what, String id, Throwable t) {
+    static int gateFail(CommandSourceStack source, String what, String id, Throwable t) {
         LOGGER.error("[DungeonTrain] editor {} gate set failed for {}", what, id, t);
         source.sendFailure(Component.translatable("chat.dungeontrain.editor.gate_failed", what, t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
         return 0;
@@ -1575,7 +1575,7 @@ public final class EditorCommand {
 
     // ---- Brigadier subtree builders (single-id categories: carriages, contents) ----
 
-    private static LiteralArgumentBuilder<CommandSourceStack> minLevelSingle(
+    static LiteralArgumentBuilder<CommandSourceStack> minLevelSingle(
             SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
         return Commands.literal("minlevel")
             .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
@@ -1588,7 +1588,7 @@ public final class EditorCommand {
                         g -> g.withMinLevel(IntegerArgumentType.getInteger(c, "value"))))));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> maxLevelSingle(
+    static LiteralArgumentBuilder<CommandSourceStack> maxLevelSingle(
             SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
         return Commands.literal("maxlevel")
             .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
@@ -1601,7 +1601,7 @@ public final class EditorCommand {
                         g -> g.withMaxLevel(IntegerArgumentType.getInteger(c, "value"))))));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> phaseSingle(
+    static LiteralArgumentBuilder<CommandSourceStack> phaseSingle(
             SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
         return Commands.literal("phase")
             .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
@@ -1695,6 +1695,8 @@ public final class EditorCommand {
                         .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_OR_CUSTOM_SUGGESTIONS)
                             .executes(c -> applyContentsStage(c.getSource(),
                                 StringArgumentType.getString(c, "id"), StringArgumentType.getString(c, "stage"))))))
+                .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.ROOM))
+                .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.GROUP))
                 .then(Commands.literal("contents-group")
                     .then(Commands.argument("parent", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
                         .then(Commands.argument("child", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
@@ -2098,13 +2100,13 @@ public final class EditorCommand {
     }
 
     /** Sentinel distinguishing a reported error from a legitimate {@code null} ("custom"/detach) link. */
-    private static final String INVALID_STAGE = new String("\0invalid");
+    static final String INVALID_STAGE = new String("\0invalid");
 
     /**
      * Resolve a {@code <stage>} apply token: {@code custom}/blank ⇒ {@code null} (detach); an existing
      * stage id ⇒ that id; an unknown id ⇒ failure reported and {@link #INVALID_STAGE} returned.
      */
-    private static String resolveStageLink(CommandSourceStack source, String token) {
+    static String resolveStageLink(CommandSourceStack source, String token) {
         if (token == null || token.isBlank() || token.equalsIgnoreCase(STAGE_CUSTOM_TOKEN)) return null;
         String id = token.toLowerCase(java.util.Locale.ROOT);
         if (!games.brennan.dungeontrain.editor.StageStore.exists(id)) {
@@ -2114,7 +2116,7 @@ public final class EditorCommand {
         return id;
     }
 
-    private static void stageApplySuccess(CommandSourceStack source, String what, String id, String link) {
+    static void stageApplySuccess(CommandSourceStack source, String what, String id, String link) {
         if (link == null) {
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.detached_custom", what, id).withStyle(ChatFormatting.GREEN), true);
         } else {

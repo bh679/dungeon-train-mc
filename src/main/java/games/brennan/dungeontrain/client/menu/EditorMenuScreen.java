@@ -686,7 +686,9 @@ public final class EditorMenuScreen implements MenuScreen {
             case TRACKS -> named ? "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName : null;
             case PORTALS -> named ? "dungeontrain editor portals " + sub + " " + modelId + " " + modelName : null;
             case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId;
-            case PARTS, ARCHITECTURE, WHOLE, WHOLE_GROUP -> null; // no spawn gate
+            case WHOLE -> "dungeontrain editor whole " + sub + " " + modelId;
+            case WHOLE_GROUP -> "dungeontrain editor whole group " + sub + " " + modelId;
+            case PARTS, ARCHITECTURE -> null; // no spawn gate
         };
         if (prefix == null) return null;
         CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");

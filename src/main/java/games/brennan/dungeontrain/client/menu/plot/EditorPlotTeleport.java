@@ -195,7 +195,9 @@ public final class EditorPlotTeleport {
             case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId + " " + dir;
             case TRACKS -> "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName + " " + dir;
             case PORTALS -> "dungeontrain editor portals " + sub + " " + modelId + " " + modelName + " " + dir;
-            case PARTS, ARCHITECTURE, WHOLE, WHOLE_GROUP -> null; // no spawn gate — refused by the guard above
+            case WHOLE -> "dungeontrain editor whole " + sub + " " + modelId + " " + dir;
+            case WHOLE_GROUP -> "dungeontrain editor whole group " + sub + " " + modelId + " " + dir;
+            case PARTS, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -214,7 +216,9 @@ public final class EditorPlotTeleport {
             case CONTENTS -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + action;
             case TRACKS -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
             case PORTALS -> "dungeontrain editor portals phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
-            case PARTS, ARCHITECTURE, WHOLE, WHOLE_GROUP -> null; // no spawn gate — refused by the guard above
+            case WHOLE -> "dungeontrain editor whole phase " + modelId + " " + phaseToken + " " + action;
+            case WHOLE_GROUP -> "dungeontrain editor whole group phase " + modelId + " " + phaseToken + " " + action;
+            case PARTS, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -313,7 +317,9 @@ public final class EditorPlotTeleport {
             case TRACKS -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
             // Rooms are a TrackKind under the hood, so the stage-apply route is the tracks one.
             case PORTALS -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
-            case PARTS, ARCHITECTURE, WHOLE, WHOLE_GROUP -> null; // no stage link — refused by the guard above
+            case WHOLE -> "dungeontrain editor stage apply whole " + modelId + " " + stageToken;
+            case WHOLE_GROUP -> "dungeontrain editor stage apply whole_group " + modelId + " " + stageToken;
+            case PARTS, ARCHITECTURE -> null; // no stage link — refused by the guard above
         };
     }
 

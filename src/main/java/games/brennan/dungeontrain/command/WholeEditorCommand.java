@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.editor.EditorPlotArrival;
 import games.brennan.dungeontrain.editor.WholeCarriageEditor;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.template.BuilderCredit;
+import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageGroup;
 import games.brennan.dungeontrain.train.CarriageGroupRegistry;
@@ -79,7 +80,10 @@ public final class WholeEditorCommand {
 
     private static void attachVerbs(LiteralArgumentBuilder<CommandSourceStack> node, WholeKind kind,
                                     SuggestionProvider<CommandSourceStack> suggestions) {
-        node.then(Commands.literal("enter")
+        node.then(EditorCommand.minLevelSingle(suggestions, (src, id, op) -> applyGate(src, kind, id, op)))
+            .then(EditorCommand.maxLevelSingle(suggestions, (src, id, op) -> applyGate(src, kind, id, op)))
+            .then(EditorCommand.phaseSingle(suggestions, (src, id, op) -> applyGate(src, kind, id, op)))
+            .then(Commands.literal("enter")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(suggestions)
                     .executes(ctx -> runEnter(ctx.getSource(), kind, StringArgumentType.getString(ctx, "id")))))
             .then(Commands.literal("weight")
@@ -106,6 +110,47 @@ public final class WholeEditorCommand {
             .then(Commands.literal("reset")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(suggestions)
                     .executes(ctx -> runReset(ctx.getSource(), kind, StringArgumentType.getString(ctx, "id")))));
+    }
+
+    // ---- gates + stages -------------------------------------------------------------------------
+
+    /** {@code /dt editor stage apply whole|whole_group <id> <stage|custom>} — the picker's route. */
+    static LiteralArgumentBuilder<CommandSourceStack> stageApplyNode(WholeKind kind) {
+        SuggestionProvider<CommandSourceStack> ids = kind == WholeKind.GROUP ? GROUP_SUGGESTIONS : ROOM_SUGGESTIONS;
+        return Commands.literal(kind == WholeKind.GROUP ? "whole_group" : "whole")
+            .then(Commands.argument("id", StringArgumentType.word()).suggests(ids)
+                .then(Commands.argument("stage", StringArgumentType.word()).suggests(EditorCommand.STAGE_OR_CUSTOM_SUGGESTIONS)
+                    .executes(c -> applyStage(c.getSource(), kind, StringArgumentType.getString(c, "id"),
+                        StringArgumentType.getString(c, "stage")))));
+    }
+
+    private static int applyStage(CommandSourceStack source, WholeKind kind, String rawId, String stageToken) {
+        Template model = resolve(source, kind, rawId);
+        if (model == null) return 0;
+        String link = EditorCommand.resolveStageLink(source, stageToken);
+        if (link == EditorCommand.INVALID_STAGE) return 0;
+        try {
+            WholeWeights.setStage(kind, model.id(), link);
+            EditorCommand.stageApplySuccess(source, "whole " + kind.id(), model.id(), link);
+            return 1;
+        } catch (Throwable t) {
+            return EditorCommand.gateFail(source, "whole " + kind.id() + " stage", model.id(), t);
+        }
+    }
+
+    private static int applyGate(CommandSourceStack source, WholeKind kind, String rawId,
+                                 java.util.function.UnaryOperator<TemplateGate> op) {
+        Template model = resolve(source, kind, rawId);
+        if (model == null) return 0;
+        try {
+            TemplateGate next = op.apply(WholeWeights.gateFor(kind, model.id()));
+            WholeWeights.setGate(kind, model.id(), next);
+            EditorCommand.gateSuccess(source, model.id(), next, WholeWeights.configPath(kind).toString(),
+                WholeWeights.stageIdFor(kind, model.id()));
+            return 1;
+        } catch (Throwable t) {
+            return EditorCommand.gateFail(source, "whole " + kind.id(), model.id(), t);
+        }
     }
 
     // ---- handlers -------------------------------------------------------------------------------
