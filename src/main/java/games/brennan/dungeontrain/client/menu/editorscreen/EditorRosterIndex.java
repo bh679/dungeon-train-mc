@@ -167,7 +167,7 @@ public final class EditorRosterIndex {
         for (EditorRosterPacket.Group g : groups) {
             PlotCategory gc = PlotCategory.fromId(g.categoryId()).orElse(null);
             if (gc == null) continue;
-            boolean onPage = gc == page || (page == PlotCategory.CARRIAGES && gc == PlotCategory.PARTS);
+            boolean onPage = gc == page || gc.browsesUnder(page);
             if (!onPage) continue;
             out.add(new TypeStrip(g.typeName(), g.modelId(), gc, g.entries().size()));
         }
@@ -179,7 +179,7 @@ public final class EditorRosterIndex {
         for (EditorRosterPacket.Group g : groups) {
             PlotCategory gc = PlotCategory.fromId(g.categoryId()).orElse(null);
             if (gc == null || !g.typeName().equals(typeName)) continue;
-            boolean onPage = gc == page || (page == PlotCategory.CARRIAGES && gc == PlotCategory.PARTS);
+            boolean onPage = gc == page || gc.browsesUnder(page);
             if (!onPage) continue;
             return tiles(g);
         }

@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.editor.PlotCategory;
 public enum EditorCategoryFilter {
     /** Every template in the editor, from every category, in one grid. */
     ALL(null, EditorScreenLang.TAB_ALL),
+    WHOLE(PlotCategory.WHOLE, EditorScreenLang.TAB_WHOLE),
     CARRIAGES(PlotCategory.CARRIAGES, EditorScreenLang.TAB_CARRIAGES),
     CONTENTS(PlotCategory.CONTENTS, EditorScreenLang.TAB_CONTENTS),
     TRACKS(PlotCategory.TRACKS, EditorScreenLang.TAB_TRACKS),
@@ -39,6 +40,7 @@ public enum EditorCategoryFilter {
     public static EditorCategoryFilter forCategory(PlotCategory category) {
         if (category == null) return null;
         return switch (category) {
+            case WHOLE, WHOLE_GROUP -> WHOLE;
             case CARRIAGES, PARTS -> CARRIAGES;
             case CONTENTS -> CONTENTS;
             case TRACKS -> TRACKS;

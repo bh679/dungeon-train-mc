@@ -19,6 +19,10 @@ public final class EditorScreenLang {
 
     /** The category strip under the Templates tab's filter row — these were the tabs once. */
     public static final String TAB_ALL = PREFIX + "tab.all";
+    public static final String TAB_WHOLE = PREFIX + "tab.whole";
+    /** The Settings page's "Whole group every N" stepper — shares the number-entry title's key. */
+    public static final String WHOLE_EVERY = "gui.dungeontrain.number_input.whole_every";
+    public static final String WHOLE_EVERY_OFF = PREFIX + "settings.whole_every_off";
     public static final String TAB_CARRIAGES = PREFIX + "tab.carriages";
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
@@ -142,6 +146,9 @@ public final class EditorScreenLang {
     public static final String CREATOR_LOAD_SUB_VARIANT = PREFIX + "creator.load_sub_variant";
     public static final String CREATOR_PARENT_TITLE = PREFIX + "creator.parent_title";
     public static final String CREATOR_PARENT_NEW = PREFIX + "creator.parent_new";
+    /** The Whole-pool destination in the "Load under" picker, and the top-level row a carriage gets. */
+    public static final String CREATOR_PARENT_WHOLE_ROOM = PREFIX + "creator.parent_whole_room";
+    public static final String CREATOR_PARENT_TOP_LEVEL = PREFIX + "creator.parent_top_level";
     public static final String CREATOR_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
     public static final String CREATOR_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";
     public static final String CREATOR_NOT_YOURS = "gui.dungeontrain.builder.profile.not_yours_short";

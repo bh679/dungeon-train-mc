@@ -571,8 +571,12 @@ public final class VariantOverlayRenderer {
             + "|f" + flipMask;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
+        // A group is addressed as WHOLE_GROUP on the client (its own roster group and tab), the
+        // same way a part is addressed as PARTS while being stamped under CARRIAGES.
+        String statusCategory = l.model() instanceof Template.CarriageGroup
+            ? PlotCategory.WHOLE_GROUP.id() : l.category().id();
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-            l.category().id(), headerName, l.model().id(), modelName,
+            statusCategory, headerName, l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
             roomLength, roomWidth, roomHeight, roomMode, flipMask));
@@ -920,6 +924,9 @@ public final class VariantOverlayRenderer {
         // In the key as well as the packet, or closing / reopening the Welcome panel would be
         // deduped away and the panel would not react until something else changed the snapshot.
         keyBuf.append("help:").append(helpPanelDismissed).append('|');
+        // The WHOLE category's type-level setting rides with the menus; in the key so an edit re-pushes.
+        int wholeGroupEvery = games.brennan.dungeontrain.train.WholeGroupSettings.every();
+        keyBuf.append("every:").append(wholeGroupEvery).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
@@ -951,7 +958,7 @@ public final class VariantOverlayRenderer {
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
         DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
-            menus, EditorStageSelection.effective(), helpPanelDismissed));
+            menus, EditorStageSelection.effective(), helpPanelDismissed, wholeGroupEvery));
     }
 
     /**

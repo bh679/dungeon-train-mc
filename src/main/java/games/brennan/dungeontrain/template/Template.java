@@ -20,6 +20,8 @@ import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
+import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
+import games.brennan.dungeontrain.editor.WholeCarriageEditor;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
@@ -41,6 +43,10 @@ import games.brennan.dungeontrain.train.CarriageWeights;
 // file, so the identity type is spelled out in full where it appears.
 import games.brennan.dungeontrain.train.WholeCarriagePlacer;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
+import games.brennan.dungeontrain.train.CarriageGroupPlacer;
+import games.brennan.dungeontrain.train.CarriageGroupRegistry;
+import games.brennan.dungeontrain.train.WholeKind;
+import games.brennan.dungeontrain.train.WholeWeights;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.track.TrackPlacer;
@@ -84,6 +90,7 @@ public sealed interface Template
     permits Template.Carriage,
             Template.Contents,
             Template.WholeCarriage,
+            Template.CarriageGroup,
             Template.Part,
             Template.Track,
             Template.Pillar,
@@ -390,12 +397,13 @@ public sealed interface Template
 
     /**
      * A carriage saved whole — shell and interior in one template, rather than the
-     * {@link Carriage} / {@link Contents} pair the spawn pool rolls against each other.
+     * {@link Carriage} / {@link Contents} pair the spawn pool rolls against each other. The Whole
+     * section's <b>Room</b> kind.
      *
-     * <p>Authored in the Train Builder, which is also the only thing that reads them back today:
-     * whole carriages have no editor plot ({@link #editorPlotOrigin} returns null), no bundled
-     * tier, and no weight pool, because the train generator does not pick them yet. The capability
-     * accessors below say so rather than pretending otherwise.</p>
+     * <p>Authored in the Train Builder or on its editor plot ({@code WholeCarriageEditor}), shipped
+     * bundled or saved to the user tier, weighted in {@link WholeWeights} under
+     * {@link WholeKind#ROOM}, and stamped into a train slot by {@code WholeCarriageSelection}
+     * whenever the carriage roll lands on the {@code whole} shell entry.</p>
      */
     record WholeCarriage(games.brennan.dungeontrain.train.WholeCarriage wholeCarriage) implements Template {
         public WholeCarriage {
@@ -409,7 +417,7 @@ public sealed interface Template
 
         @Override
         public String displayName() {
-            return "whole carriage / " + wholeCarriage.id();
+            return "whole room / " + wholeCarriage.id();
         }
 
         @Override
@@ -419,38 +427,104 @@ public sealed interface Template
 
         @Override
         public boolean isBuiltin() {
-            // The mod ships none — every whole carriage was made by someone in a builder world.
-            return false;
+            return WholeCarriageRegistry.isBundled(wholeCarriage.id());
         }
 
         @Override
         public boolean canPromote() {
-            // No bundled tier to promote into, same as Contents.
-            return false;
+            return WholeCarriageTemplateStore.sourceTreeAvailable();
         }
 
         @Override public TemplateStore<WholeCarriage> store() { return WholeCarriageTemplateStore.adapter(); }
         @Override public TemplateRegistry<WholeCarriage> registry() { return WholeCarriageRegistry.adapter(); }
 
-        @Override public int weight() {
-            // No weight pool: whole carriages don't join the spawn pick yet. Same sentinel Part
-            // uses, so a caller reading a weight off one gets "none" rather than a wrong number.
-            return EditorStatusPacket.NO_WEIGHT;
-        }
+        @Override public int weight() { return WholeWeights.weightFor(WholeKind.ROOM, wholeCarriage.id()); }
+        @Override public TemplateGate gate() { return WholeWeights.gateFor(WholeKind.ROOM, wholeCarriage.id()); }
+        @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.ROOM, wholeCarriage.id()); return s == null ? "" : s; }
         @Override public String variantName() { return wholeCarriage.id(); }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            WholeCarriageEditor.stampRoomPlot(level, wholeCarriage, dims);
+        }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
-            return Optional.empty();
+            return WholeCarriageTemplateStore.getBundled(level, wholeCarriage, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            // Not registered in the editor world — whole carriages are authored in a builder world,
-            // which holds one volume and has no plot grid to locate them in.
-            return null;
+            return WholeCarriageEditor.roomPlotOrigin(wholeCarriage, dims);
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(dims.length(), dims.height(), dims.width());
         }
+        @Override public void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {
+            CarriagePlacer.eraseAt(level, origin, dims);
+        }
         @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
             WholeCarriagePlacer.placeAt(level, origin, wholeCarriage, dims);
+        }
+    }
+
+    /**
+     * A whole run of carriages saved as one template — the Whole section's <b>Group</b> kind.
+     *
+     * <p>Its footprint holds its carriage count ({@code sizeX / dims.length()}), so a group is only
+     * ever offered to a world whose {@code groupSize} matches; see
+     * {@link CarriageGroupTemplateStore}. Weighted in {@link WholeWeights} under
+     * {@link WholeKind#GROUP} and stamped over an entire carriage group by
+     * {@code WholeGroupSelection} when the group lottery lands.</p>
+     */
+    record CarriageGroup(games.brennan.dungeontrain.train.CarriageGroup group) implements Template {
+        public CarriageGroup {
+            Objects.requireNonNull(group, "group");
+        }
+
+        @Override
+        public String id() {
+            return group.id();
+        }
+
+        @Override
+        public String displayName() {
+            return "whole group / " + group.id();
+        }
+
+        @Override
+        public TemplateKind kind() {
+            return TemplateKind.CARRIAGE_GROUP;
+        }
+
+        @Override
+        public boolean isBuiltin() {
+            return CarriageGroupRegistry.isBundled(group.id());
+        }
+
+        @Override
+        public boolean canPromote() {
+            return CarriageGroupTemplateStore.sourceTreeAvailable();
+        }
+
+        @Override public TemplateStore<CarriageGroup> store() { return CarriageGroupTemplateStore.adapter(); }
+        @Override public TemplateRegistry<CarriageGroup> registry() { return CarriageGroupRegistry.adapter(); }
+
+        @Override public int weight() { return WholeWeights.weightFor(WholeKind.GROUP, group.id()); }
+        @Override public TemplateGate gate() { return WholeWeights.gateFor(WholeKind.GROUP, group.id()); }
+        @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.GROUP, group.id()); return s == null ? "" : s; }
+        @Override public String variantName() { return group.id(); }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            WholeCarriageEditor.stampGroupPlot(level, group, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return CarriageGroupTemplateStore.getBundled(level, group, dims, WholeCarriageEditor.groupSize());
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return WholeCarriageEditor.groupPlotOrigin(group, dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return CarriageGroupPlacer.sizeOf(dims, WholeCarriageEditor.groupSize());
+        }
+        @Override public void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {
+            CarriageGroupPlacer.eraseAt(level, origin, dims, WholeCarriageEditor.groupSize());
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            CarriageGroupPlacer.placeAt(level, origin, group, dims, WholeCarriageEditor.groupSize());
         }
     }
 

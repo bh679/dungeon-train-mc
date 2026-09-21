@@ -384,6 +384,15 @@ public final class EditorGuiScreen extends Screen {
         g.fill(p.x(), p.bottom() - 2, p.right(), p.bottom(), theme.bevelDark());
         g.fill(p.right() - 2, p.y(), p.right(), p.bottom(), theme.bevelDark());
         // Dark sub-panels behind the grid and the right pane, so rows read as they do everywhere.
+        if (onNav()) {
+            // Nav splits the pane its own way (a narrow tile list, a wide preview), so the two
+            // sub-panels follow its columns — the browser's split would leave a seam down the preview.
+            InventoryEditorLayout.Rect tiles = EditorNavPane.rect(layout);
+            InventoryEditorLayout.Rect detail = EditorNavPane.detail(layout);
+            g.fill(tiles.x() - 1, tiles.y() - 1, tiles.right() + 1, tiles.bottom() + 1, theme.subPanel());
+            g.fill(detail.x() - 1, detail.y() - 1, detail.right() + 1, detail.bottom() + 1, theme.subPanel());
+            return;
+        }
         InventoryEditorLayout.Rect grid = layout.grid();
         g.fill(grid.x() - 1, grid.y() - 1, grid.right() + 1, grid.bottom() + 1, theme.subPanel());
         InventoryEditorLayout.Rect h = layout.header();

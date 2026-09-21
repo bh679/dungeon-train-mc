@@ -610,31 +610,8 @@ public final class CarriageEditor {
         return TemplateDecor.capture(level, origin, size, Blocks.AIR);
     }
 
-    /**
-     * Draw the cage: barrier blocks along the 12 edges of the bounding box
-     * that sits 1 block outside the {@code length × height × width} footprint.
-     * Faces are left empty so the player can fly in and out freely; barriers
-     * are invisible in survival and render as translucent red in
-     * creative/spectator.
-     */
+    /** The plot cage — see {@link EditorPlotCage}. */
     private static void setOutline(ServerLevel level, BlockPos origin, BlockState state, CarriageDims dims) {
-        int x0 = origin.getX() - 1;
-        int y0 = origin.getY() - 1;
-        int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + dims.length();
-        int y1 = origin.getY() + dims.height();
-        int z1 = origin.getZ() + dims.width();
-
-        for (int x = x0; x <= x1; x++) {
-            for (int y = y0; y <= y1; y++) {
-                for (int z = z0; z <= z1; z++) {
-                    int extremes = (x == x0 || x == x1 ? 1 : 0)
-                        + (y == y0 || y == y1 ? 1 : 0)
-                        + (z == z0 || z == z1 ? 1 : 0);
-                    if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), state, 3);
-                }
-            }
-        }
+        EditorPlotCage.setOutline(level, origin, new Vec3i(dims.length(), dims.height(), dims.width()), state);
     }
 }

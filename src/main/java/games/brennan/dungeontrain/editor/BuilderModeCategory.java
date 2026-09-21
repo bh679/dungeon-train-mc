@@ -23,6 +23,7 @@ public final class BuilderModeCategory {
     /** The category {@code /dungeontrain editor <id>} should land in for this tile. */
     public static EditorCategory of(BuilderMode mode) {
         return switch (mode) {
+            case WHOLE_CARRIAGES -> EditorCategory.WHOLE;
             case TRAIN_OUTSIDE -> EditorCategory.CARRIAGES;
             case INSIDE_CARRIAGE -> EditorCategory.CONTENTS;
             case TRACKS_TUNNELS -> EditorCategory.TRACKS;

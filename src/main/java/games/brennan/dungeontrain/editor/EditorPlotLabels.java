@@ -109,12 +109,43 @@ public final class EditorPlotLabels {
      */
     public static List<Label> forCategory(EditorCategory category, CarriageDims dims) {
         return switch (category) {
+            case WHOLE -> wholeLabels(dims);
             case CARRIAGES -> carriageLabels(dims);
             case CONTENTS -> contentsLabels(dims);
             case TRACKS -> trackLabels(dims);
             case PORTALS -> portalLabels(dims);
             case ARCHITECTURE -> Collections.emptyList();
         };
+    }
+
+    /**
+     * One label per whole room (category {@code "WHOLE"}) and per group ({@code "WHOLE_GROUP"}).
+     * A group holding a different carriage count than this world's group reads
+     * {@code "<label> (N carriages)"} so the author can see why its plot stamped empty.
+     */
+    private static List<Label> wholeLabels(CarriageDims dims) {
+        List<Label> out = new ArrayList<>();
+        Vec3i roomFootprint = WholeCarriageEditor.plotSize(games.brennan.dungeontrain.train.WholeKind.ROOM, dims);
+        for (games.brennan.dungeontrain.train.WholeCarriage r : games.brennan.dungeontrain.train.WholeCarriageRegistry.all()) {
+            BlockPos origin = WholeCarriageEditor.roomPlotOrigin(r, dims);
+            if (origin == null) continue;
+            Provenance p = provenanceOf(WholeCarriageTemplateStore.fileForId(r.id()));
+            out.add(new Label(anchorAbove(origin, roomFootprint),
+                games.brennan.dungeontrain.train.WholeWeights.nameFor(games.brennan.dungeontrain.train.WholeKind.ROOM, r.id()),
+                games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.ROOM, r.id()),
+                PlotCategory.WHOLE.name(), r.id(), r.id(), false, p.isUser, p.isImported));
+        }
+        Vec3i groupFootprint = WholeCarriageEditor.plotSize(games.brennan.dungeontrain.train.WholeKind.GROUP, dims);
+        for (games.brennan.dungeontrain.train.CarriageGroup g : games.brennan.dungeontrain.train.CarriageGroupRegistry.all()) {
+            BlockPos origin = WholeCarriageEditor.groupPlotOrigin(g, dims);
+            if (origin == null) continue;
+            Provenance p = provenanceOf(CarriageGroupTemplateStore.fileForId(g.id()));
+            out.add(new Label(anchorAbove(origin, groupFootprint),
+                games.brennan.dungeontrain.train.WholeWeights.nameFor(games.brennan.dungeontrain.train.WholeKind.GROUP, g.id()),
+                games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.GROUP, g.id()),
+                PlotCategory.WHOLE_GROUP.name(), g.id(), g.id(), false, p.isUser, p.isImported));
+        }
+        return out;
     }
 
     private static List<Label> carriageLabels(CarriageDims dims) {

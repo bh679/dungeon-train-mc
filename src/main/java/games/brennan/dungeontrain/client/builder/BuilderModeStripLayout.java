@@ -32,14 +32,16 @@ record BuilderModeStripLayout(int originX, int topY, int selectedSlot,
 
     static final int GAP = 4;
 
-    private static final int SIDE_MARGIN = 16;
+    // Eight rather than sixteen since the fifth mode (Whole): at Minecraft's 320 floor the extra
+    // margin is exactly what pushed the selected tile under the width the controls beneath it need.
+    private static final int SIDE_MARGIN = 8;
 
     /** How tall a thumbnail is against the selected tile, before any shrinking to fit. */
     private static final int SMALL_HEIGHT_NUMERATOR = 5;
     private static final int SMALL_HEIGHT_DENOMINATOR = 8;
 
     /** Floors, so a narrow window yields small tiles rather than invisible or negative ones. */
-    private static final int MIN_SMALL_WIDTH = 24;
+    private static final int MIN_SMALL_WIDTH = 20;
     private static final int MIN_SELECTED_WIDTH = 120;
 
     /**

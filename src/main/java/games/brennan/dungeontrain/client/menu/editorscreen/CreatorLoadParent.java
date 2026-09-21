@@ -23,15 +23,27 @@ public final class CreatorLoadParent {
 
     private CreatorLoadParent() {}
 
-    /** Whether a relay build of {@code kind} can be loaded as a sub-variant at all. */
+    /** The sentinel a category remembers when the build should land in the Whole room pool. */
+    public static final String WHOLE_ROOM = games.brennan.dungeontrain.builder.relay.BuilderRelayWholeRoom.WHOLE_ROOM_PARENT;
+
+    /** Whether a relay build of {@code kind} has a destination to choose — a parent or the Whole pool. */
     public static boolean supports(String kind) {
-        return BuilderRelayKinds.CONTENTS.equals(kind) || BuilderRelayKinds.PORTAL_ROOM.equals(kind);
+        return BuilderRelayKinds.CONTENTS.equals(kind) || BuilderRelayKinds.PORTAL_ROOM.equals(kind)
+            // A carriage has no parents to land under, but it can land in the Whole pool.
+            || BuilderRelayKinds.CARRIAGE.equals(kind);
+    }
+
+    /** Whether {@code category}'s builds can be loaded as a whole room — carriages and contents. */
+    public static boolean offersWholeRoom(PlotCategory category) {
+        return category == PlotCategory.CARRIAGES || category == PlotCategory.CONTENTS;
     }
 
     /** The parent id builds of {@code category} land under — the default until one is chosen. */
     public static synchronized String parentFor(PlotCategory category) {
         if (category == null) return BuilderRelaySubVariant.DEFAULT_PARENT_ID;
-        return CHOSEN.getOrDefault(category, BuilderRelaySubVariant.DEFAULT_PARENT_ID);
+        // A carriage's default is the top level — it has no sub-variant parents at all.
+        String fallback = category == PlotCategory.CARRIAGES ? "" : BuilderRelaySubVariant.DEFAULT_PARENT_ID;
+        return CHOSEN.getOrDefault(category, fallback);
     }
 
     /** Remember {@code parentId} for {@code category}; blank goes back to the default. */
@@ -50,6 +62,8 @@ public final class CreatorLoadParent {
      */
     public static String labelFor(PlotCategory category, EditorRosterIndex index) {
         String id = parentFor(category);
+        if (WHOLE_ROOM.equals(id)) return EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_WHOLE_ROOM);
+        if (id.isEmpty()) return EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_TOP_LEVEL);
         if (index != null) {
             for (EditorRosterIndex.Tile tile : index.allTiles()) {
                 if (tile.key().category() != category || tile.key().isSubVariant()) continue;

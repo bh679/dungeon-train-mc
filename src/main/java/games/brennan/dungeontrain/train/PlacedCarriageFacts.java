@@ -36,6 +36,10 @@ public final class PlacedCarriageFacts {
 
     /** Stand-in contents id for a slot stamped verbatim from the shared-carriage relay pool. */
     public static final String RELAY_BUILD = "(relay build)";
+    /** Prefix of the {@code contentsId} a whole room reports — the room id follows. */
+    public static final String WHOLE_ROOM = "(whole room) ";
+    /** Prefix of the {@code contentsId} a whole group reports — the group id follows. */
+    public static final String WHOLE_GROUP = "(whole group) ";
 
     /**
      * One carriage's identity.
@@ -104,6 +108,18 @@ public final class PlacedCarriageFacts {
     }
 
     /** What was placed at {@code carriagePIdx}, or null if this session never placed it. */
+    /** A slot stamped from the whole-room pool — verbatim, no contents roll. */
+    public static synchronized void recordWholeRoom(int carriagePIdx, CarriageVariant variant, String roomId) {
+        BY_PIDX.put(carriagePIdx,
+            new Facts(variant == null ? "" : variant.id(), WHOLE_ROOM + roomId, "", ContentsFlip.LABEL_NONE));
+    }
+
+    /** A slot inside a run stamped from the whole-group pool. */
+    public static synchronized void recordWholeGroup(int carriagePIdx, CarriageVariant variant, String groupId) {
+        BY_PIDX.put(carriagePIdx,
+            new Facts(variant == null ? "" : variant.id(), WHOLE_GROUP + groupId, "", ContentsFlip.LABEL_NONE));
+    }
+
     public static synchronized Facts get(int carriagePIdx) {
         return BY_PIDX.get(carriagePIdx);
     }

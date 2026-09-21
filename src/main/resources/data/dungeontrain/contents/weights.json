@@ -17,6 +17,13 @@
   "enchant": 2,
   "ender": 1,
   "enemies": 8,
+  "featurefancy": {
+    "weight": 1,
+    "builder": {
+      "uuid": "895018fce8904837be7d98b9c32ddce4",
+      "name": "Collapseofsmth"
+    }
+  },
   "fire": 4,
   "maze": 4,
   "mild_1": {
@@ -58,6 +65,41 @@
   },
   "portal": 0,
   "portal_short": 0,
+  "prison_broken": {
+    "weight": 1,
+    "builder": {
+      "uuid": "895018fce8904837be7d98b9c32ddce4",
+      "name": "Collapseofsmth"
+    }
+  },
+  "reading_room_dark_oak": {
+    "weight": 1,
+    "builder": {
+      "uuid": "895018fce8904837be7d98b9c32ddce4",
+      "name": "Collapseofsmth"
+    }
+  },
+  "reading_room_dark_oak_treasure": {
+    "weight": 1,
+    "builder": {
+      "uuid": "895018fce8904837be7d98b9c32ddce4",
+      "name": "Collapseofsmth"
+    }
+  },
+  "reading_room_desk": {
+    "weight": 1,
+    "builder": {
+      "uuid": "895018fce8904837be7d98b9c32ddce4",
+      "name": "Collapseofsmth"
+    }
+  },
+  "reading_room_destroyed": {
+    "weight": 1,
+    "builder": {
+      "uuid": "895018fce8904837be7d98b9c32ddce4",
+      "name": "Collapseofsmth"
+    }
+  },
   "sand": 0,
   "shop": 8,
   "statue": 1,

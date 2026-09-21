@@ -15,12 +15,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 final class EditorCategoryFilterTest {
 
     @Test
-    @DisplayName("All leads, then the four categories in the order the old tabs had")
+    @DisplayName("All leads, then Whole first, then the four categories in the order the old tabs had")
     void order() {
         assertArrayEquals(new EditorCategoryFilter[] {
-            EditorCategoryFilter.ALL, EditorCategoryFilter.CARRIAGES, EditorCategoryFilter.CONTENTS,
-            EditorCategoryFilter.TRACKS, EditorCategoryFilter.DIMENSIONS,
+            EditorCategoryFilter.ALL, EditorCategoryFilter.WHOLE, EditorCategoryFilter.CARRIAGES,
+            EditorCategoryFilter.CONTENTS, EditorCategoryFilter.TRACKS, EditorCategoryFilter.DIMENSIONS,
         }, EditorCategoryFilter.values());
+        assertEquals(PlotCategory.WHOLE, EditorCategoryFilter.WHOLE.category());
         assertNull(EditorCategoryFilter.ALL.category());
         assertEquals(PlotCategory.PORTALS, EditorCategoryFilter.DIMENSIONS.category());
     }
@@ -30,6 +31,8 @@ final class EditorCategoryFilterTest {
     void forCategory() {
         assertEquals(EditorCategoryFilter.CARRIAGES, EditorCategoryFilter.forCategory(PlotCategory.CARRIAGES));
         assertEquals(EditorCategoryFilter.CARRIAGES, EditorCategoryFilter.forCategory(PlotCategory.PARTS));
+        assertEquals(EditorCategoryFilter.WHOLE, EditorCategoryFilter.forCategory(PlotCategory.WHOLE));
+        assertEquals(EditorCategoryFilter.WHOLE, EditorCategoryFilter.forCategory(PlotCategory.WHOLE_GROUP));
         assertEquals(EditorCategoryFilter.CONTENTS, EditorCategoryFilter.forCategory(PlotCategory.CONTENTS));
         assertEquals(EditorCategoryFilter.TRACKS, EditorCategoryFilter.forCategory(PlotCategory.TRACKS));
         assertEquals(EditorCategoryFilter.DIMENSIONS, EditorCategoryFilter.forCategory(PlotCategory.PORTALS));

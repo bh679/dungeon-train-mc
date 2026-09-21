@@ -93,6 +93,10 @@ public final class EditorRelayWrite {
             // editorPlotOrigin says so by returning null. Nothing to file.
             case Template.WholeCarriage ignored -> null;
 
+            // A group rides the relay under its own kind — the same key the Train Builder's save uses.
+            case Template.CarriageGroup group ->
+                    new Naming(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "", group.group().id());
+
             // A part id is only unique within its kind — 'standard' is both a floor and a door — so
             // the kind rides along as the sub kind.
             case Template.Part part ->

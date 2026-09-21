@@ -24,21 +24,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class EditorCategoryTest {
 
     @Test
-    @DisplayName("exactly five constants — PARTS is deliberately not one of them")
-    void constants_areFrozenAtFive() {
+    @DisplayName("exactly six constants, WHOLE first — PARTS is deliberately not one of them")
+    void constants_areFrozenAtSix() {
         // Parts are addressable in the UI but are not their own plot set: they live inside the
         // CARRIAGES set (carriageModels folds Template.Part in, locate() reports CARRIAGES for a
         // part plot). A PARTS constant here would add a category-bar button and a
         // /dt editor parts token that stamp nothing. The UI-facing vocabulary that DOES include
         // parts is PlotCategory.
-        assertEquals(5, EditorCategory.values().length);
+        assertEquals(6, EditorCategory.values().length);
+        assertEquals(EditorCategory.WHOLE, EditorCategory.values()[0], "Whole is first in the row");
         assertFalse(EditorCategory.fromId("parts").isPresent(),
             "PARTS belongs to PlotCategory, not EditorCategory");
+        assertFalse(EditorCategory.fromId("whole_group").isPresent(),
+            "WHOLE_GROUP belongs to PlotCategory, not EditorCategory");
     }
 
     @Test
     @DisplayName("fromId: case-insensitive, round-trips valid ids")
     void fromId_roundTrips() {
+        assertEquals(Optional.of(EditorCategory.WHOLE), EditorCategory.fromId("whole"));
         assertEquals(Optional.of(EditorCategory.CARRIAGES), EditorCategory.fromId("carriages"));
         assertEquals(Optional.of(EditorCategory.CARRIAGES), EditorCategory.fromId("CARRIAGES"));
         assertEquals(Optional.of(EditorCategory.TRACKS), EditorCategory.fromId("tracks"));

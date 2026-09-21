@@ -225,6 +225,10 @@ public final class EditorScreenActions {
             // phase commands beside this one send.
             case PORTALS -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor portals label " + id + " " + sel.modelName(), "", current);
+            case WHOLE -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor whole label " + id, "", current);
+            case WHOLE_GROUP -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor whole group label " + id, "", current);
             case PARTS, TRACKS, ARCHITECTURE -> null;
         };
     }

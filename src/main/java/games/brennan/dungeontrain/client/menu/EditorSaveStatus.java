@@ -58,7 +58,7 @@ public final class EditorSaveStatus {
     public static String dirtyKey(PlotCategory category, String modelId, String modelName) {
         if (category == null || modelId == null || modelId.isEmpty()) return null;
         return switch (category) {
-            case CARRIAGES, CONTENTS -> modelId;
+            case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP -> modelId;
             case TRACKS, PORTALS -> (modelName == null || modelName.isEmpty())
                 ? modelId : modelId + "." + modelName;
             case ARCHITECTURE, PARTS -> null;

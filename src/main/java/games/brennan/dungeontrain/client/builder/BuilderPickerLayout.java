@@ -23,8 +23,9 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
         int bottom() { return y + h; }
     }
 
-    static final int COLUMNS = 2;
-    static final int ROWS = 2;
+    /** One tile per row — a vertical list — so the preview column can be the wide one. */
+    static final int COLUMNS = 1;
+    static final int ROWS = games.brennan.dungeontrain.builder.BuilderMode.values().length;
     static final int TILE_GAP = 6;
     static final int COLUMN_GAP = 8;
     static final int ROW_GAP = 4;
@@ -32,11 +33,11 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
     static final int GO_H = 20;
 
     /** Widest the body may get, so tiles don't become billboards on an ultrawide. */
-    static final int MAX_BODY_WIDTH = 520;
+    static final int MAX_BODY_WIDTH = 640;
     static final int SIDE_MARGIN = 16;
     static final int MIN_TILE_WIDTH = 64;
     /** The tiles' share of the body; the detail column takes the rest. */
-    private static final double TILE_COLUMN_SHARE = 0.55;
+    private static final double TILE_COLUMN_SHARE = 0.34;
 
     /**
      * @param screenWidth  screen width in GUI pixels
@@ -74,15 +75,11 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
      * tab's arithmetic, with a floor so a tiny viewport still gets a tile you can click.
      */
     static List<Rect> tiles(Rect area) {
+        // Tiles always span the column: the art is cover-cropped, so a tile shorter than 16:9 shows
+        // a wider slice of its picture rather than a squashed one, and the caption has the width.
         int tileW = Math.max(1, (area.w() - TILE_GAP * (COLUMNS - 1)) / COLUMNS);
-        int tileH = tileW * 9 / 16;
         int maxTileH = Math.max(1, (area.h() - TILE_GAP * (ROWS - 1)) / ROWS);
-        if (tileH > maxTileH) {
-            tileH = maxTileH;
-            tileW = Math.max(1, tileH * 16 / 9);
-        }
-        tileW = Math.max(tileW, MIN_TILE_WIDTH);
-        tileH = Math.max(tileH, MIN_TILE_WIDTH * 9 / 16);
+        int tileH = Math.max(1, Math.min(tileW * 9 / 16, maxTileH));
 
         int gridW = COLUMNS * tileW + TILE_GAP * (COLUMNS - 1);
         int gridH = ROWS * tileH + TILE_GAP * (ROWS - 1);

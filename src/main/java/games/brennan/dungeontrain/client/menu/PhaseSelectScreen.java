@@ -73,6 +73,8 @@ public final class PhaseSelectScreen implements MenuScreen {
             case PORTALS -> modelName.isEmpty() ? null
                 : "dungeontrain editor portals phase " + modelId + " " + modelName;
             // No per-template spawn gate to edit.
+            case WHOLE -> "dungeontrain editor whole phase " + modelId;
+            case WHOLE_GROUP -> "dungeontrain editor whole group phase " + modelId;
             case PARTS, ARCHITECTURE -> null;
         };
     }

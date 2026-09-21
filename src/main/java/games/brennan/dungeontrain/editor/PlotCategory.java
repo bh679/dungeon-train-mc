@@ -32,6 +32,10 @@ import java.util.Optional;
  * routing somewhere wrong.</p>
  */
 public enum PlotCategory {
+    /** Whole-carriage rooms — the WHOLE section's first row. */
+    WHOLE(EditorCategory.WHOLE),
+    /** Carriage groups — addressable in its own right, but stamped as part of {@link #WHOLE}. */
+    WHOLE_GROUP(EditorCategory.WHOLE),
     CARRIAGES(EditorCategory.CARRIAGES),
     CONTENTS(EditorCategory.CONTENTS),
     TRACKS(EditorCategory.TRACKS),
@@ -64,7 +68,20 @@ public enum PlotCategory {
 
     /** Human-readable label for the status HUD. Kept in step with {@link EditorCategory#displayName()}. */
     public String displayName() {
-        return this == PARTS ? "Parts" : owner.displayName();
+        return switch (this) {
+            case PARTS -> "Parts";
+            case WHOLE_GROUP -> "Group";
+            default -> owner.displayName();
+        };
+    }
+
+    /**
+     * Whether a group of this category is shown when the screen is filtered to {@code page}: the
+     * page itself, or a sibling stamped as part of the same section (parts under carriages, groups
+     * under whole). Replaces the hand-written {@code CARRIAGES && PARTS} folds.
+     */
+    public boolean browsesUnder(PlotCategory page) {
+        return page != null && owner == page.owner();
     }
 
     /**
@@ -83,7 +100,7 @@ public enum PlotCategory {
         return Optional.empty();
     }
 
-    /** Widen a stamping category to its addressable counterpart. Total — never yields {@link #PARTS}. */
+    /** Widen a stamping category to its addressable counterpart. Total — never yields {@link #PARTS} or {@link #WHOLE_GROUP}. */
     public static PlotCategory of(EditorCategory category) {
         return valueOf(category.name());
     }

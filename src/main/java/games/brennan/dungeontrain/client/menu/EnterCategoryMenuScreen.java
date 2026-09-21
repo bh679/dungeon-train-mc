@@ -39,6 +39,7 @@ public final class EnterCategoryMenuScreen implements MenuScreen {
     @Override public List<CommandMenuEntry> entries() {
         String current = EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT);
         return List.of(
+            entryFor(MenuLang.t("category.whole"), "whole", current),
             entryFor(MenuLang.t("category.tracks"), "tracks", current),
             entryFor(MenuLang.t("category.carriages"), "carriages", current),
             entryFor(MenuLang.t("category.contents"), "contents", current),

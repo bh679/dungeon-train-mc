@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.builder.BuilderMode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -27,20 +28,22 @@ final class BuilderPickerLayoutTest {
     void tilesDoNotOverlap() {
         for (int[] size : SIZES) {
             List<BuilderPickerLayout.Rect> tiles = layoutFor(size[0], size[1]).tiles();
-            assertEquals(4, tiles.size());
-            assertTrue(tiles.get(0).right() <= tiles.get(1).x(), "columns overlap at " + label(size));
-            assertTrue(tiles.get(0).bottom() <= tiles.get(2).y(), "rows overlap at " + label(size));
+            assertEquals(BuilderPickerLayout.COLUMNS * BuilderPickerLayout.ROWS, tiles.size());
+            assertTrue(tiles.size() >= BuilderMode.values().length, "every mode gets a tile at " + label(size));
+            assertEquals(tiles.get(0).x(), tiles.get(1).x(), "one column at " + label(size));
+            assertTrue(tiles.get(0).bottom() <= tiles.get(BuilderPickerLayout.COLUMNS).y(), "rows overlap at " + label(size));
             assertEquals(tiles.get(0).w(), tiles.get(3).w(), "tiles differ in size at " + label(size));
         }
     }
 
     @Test
-    @DisplayName("Tiles keep a 16:9 aspect so screenshot art isn't squashed")
-    void tilesKeep16By9() {
+    @DisplayName("Tiles span the column and are never taller than 16:9 — the art is cover-cropped, not squashed")
+    void tilesSpanTheColumn() {
         for (int[] size : new int[][] {{1920, 1080}, {640, 360}, {480, 270}}) {
-            BuilderPickerLayout.Rect tile = layoutFor(size[0], size[1]).tiles().get(0);
-            double aspect = (double) tile.w() / tile.h();
-            assertTrue(Math.abs(aspect - 16.0 / 9.0) < 0.15, "aspect " + aspect + " at " + label(size));
+            BuilderPickerLayout layout = layoutFor(size[0], size[1]);
+            BuilderPickerLayout.Rect tile = layout.tiles().get(0);
+            assertEquals(layout.back().w(), tile.w(), "tile as wide as its column at " + label(size));
+            assertTrue(tile.h() <= tile.w() * 9 / 16, "taller than 16:9 at " + label(size));
         }
     }
 

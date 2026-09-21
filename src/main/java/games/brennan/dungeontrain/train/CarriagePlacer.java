@@ -1005,8 +1005,18 @@ public final class CarriagePlacer {
             }
         }
         getOrBuildHalfFlatbedTemplate(level, dims);
-        LOGGER.info("[DungeonTrain] Template caches warmed: {} body, {} part, +half-flatbed in {}ms",
-            bodyHits, partHits, (System.nanoTime() - t0) / 1_000_000);
+        // The Whole pool too, so the first whole slot or group never reads disk on the server thread.
+        int wholeHits = 0;
+        for (String id : WholeCarriageRegistry.ids()) {
+            games.brennan.dungeontrain.editor.WholeCarriageTemplateStore.get(level, new WholeCarriage(id), dims);
+            wholeHits++;
+        }
+        for (String id : CarriageGroupRegistry.ids()) {
+            games.brennan.dungeontrain.editor.CarriageGroupTemplateStore.carriagesIn(level, new CarriageGroup(id), dims);
+            wholeHits++;
+        }
+        LOGGER.info("[DungeonTrain] Template caches warmed: {} body, {} part, {} whole, +half-flatbed in {}ms",
+            bodyHits, partHits, wholeHits, (System.nanoTime() - t0) / 1_000_000);
     }
 
     /**

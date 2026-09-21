@@ -50,6 +50,7 @@ public final class EditorRoster {
             : games.brennan.dungeontrain.world.DungeonTrainWorldData.get(overworld).dims());
         try {
             List<EditorRosterPacket.Group> out = new ArrayList<>();
+            addWhole(out);
             addCarriages(out);
             addParts(out);
             addContents(out);
@@ -157,9 +158,13 @@ public final class EditorRoster {
         if (rows == null) return 0;
         java.util.List<String> keys = new ArrayList<>(2);
         String K = null;
-        if (EditorCategory.CARRIAGES.id().equals(categoryId)) {
+        if (EditorCategory.CARRIAGES.id().equals(categoryId) || PlotCategory.WHOLE.id().equals(categoryId)) {
+            // A whole room rides the relay under the carriage kind — see BuilderRelayInstall.
             keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
                 games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE, "", v.modelId()));
+        } else if (PlotCategory.WHOLE_GROUP.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE_GROUP, "", v.modelId()));
         } else if (PlotCategory.PARTS.id().equals(categoryId)) {
             keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
                 games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PART, groupModelId, v.modelName()));
@@ -180,6 +185,20 @@ public final class EditorRoster {
             if (row != null && row.relayId() > 0) return row.relayId();
         }
         return 0;
+    }
+
+    /** The Whole section first — rooms then groups — matching the category bar and the world rows. */
+    private static void addWhole(List<EditorRosterPacket.Group> out) {
+        List<games.brennan.dungeontrain.train.WholeCarriage> rooms = games.brennan.dungeontrain.train.WholeCarriageRegistry.all();
+        if (!rooms.isEmpty()) {
+            out.add(group(PlotCategory.WHOLE.id(), EditorWholeTypeMenus.ROOM_TYPE_NAME, "",
+                EditorWholeTypeMenus.roomRows(rooms), null));
+        }
+        List<games.brennan.dungeontrain.train.CarriageGroup> groups = games.brennan.dungeontrain.train.CarriageGroupRegistry.all();
+        if (!groups.isEmpty()) {
+            out.add(group(PlotCategory.WHOLE_GROUP.id(), EditorWholeTypeMenus.GROUP_TYPE_NAME, "",
+                EditorWholeTypeMenus.groupRows(groups), null));
+        }
     }
 
     private static void addCarriages(List<EditorRosterPacket.Group> out) {

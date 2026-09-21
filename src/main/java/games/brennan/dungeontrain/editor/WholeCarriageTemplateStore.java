@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.WholeCarriage;
+import games.brennan.dungeontrain.train.WholeKind;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.Registries;
@@ -21,6 +22,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -29,41 +31,31 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Single-tier template store for whole carriages — {@link WholeCarriage} builds that hold the
- * shell and the interior in one NBT.
+ * Three-tier template store for whole carriages — {@link WholeCarriage} builds that hold the shell
+ * and the interior in one NBT, the Whole section's <b>Room</b> kind.
  *
- * <p>Deliberately one tier where {@link CarriageTemplateStore} has three. A whole carriage is
- * something a builder made in a builder world; the mod ships none, so there is no bundled resource
- * to fall back to and nothing to promote into the source tree. A missing file simply means the
- * template isn't there, and callers place nothing — the same no-op a custom carriage variant with
- * no saved template already gets.</p>
+ * <p>Tiers, in lookup order: the active package's {@code config/dungeontrain/user/wholecarriages/}
+ * (and every enabled import, via {@link UserContentPaths#findFile}), then the bundled
+ * {@code /data/dungeontrain/whole/room/} on the classpath. A dev checkout can promote a config copy
+ * into the source tree so it ships with the next build, exactly as {@link CarriageTemplateStore}
+ * does. The user subdirectory keeps its pre-section name so existing installs and relay slugs keep
+ * working.</p>
  *
- * <p>Files live at {@code config/dungeontrain/user/wholecarriages/<id>.nbt}, resolved through
- * {@link UserContentPaths#findFile} so imported packages participate on the same terms as every
- * other store. The distinct subdir is what keeps ids in separate namespaces: a whole carriage and a
- * carriage shell may share a name without either shadowing the other.</p>
- *
- * <p><b>Same name in two stores.</b> The builder's Save writes a whole carriage <em>and</em> the
- * carriage-shell template it has always written, under the same name, because the spawn pool only
- * knows about the latter. Until whole carriages join that pool the two copies stay in step only as
- * long as saves go through {@code BuilderSave}; deleting one leaves the other.</p>
+ * <p><b>The cache holds what is on disk; the dims question is answered per call.</b> See
+ * {@link CarriageTemplateStore#get} for the poisoning bug that rule closed.</p>
  */
 public final class WholeCarriageTemplateStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final String SUBDIR = "wholecarriages";
     private static final String EXT = ".nbt";
+    public static final String RESOURCE_PREFIX = "/data/dungeontrain/whole/room/";
+    private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/whole/room";
 
-    /**
-     * Cached per-id result. An empty optional means "looked and found nothing", which short-circuits
-     * repeat lookups; {@link #clearCache()} is wired into the reload barrier so a package switch
-     * can't serve a file from the previous working folder.
-     */
     private static final Map<String, Optional<StructureTemplate>> CACHE = new HashMap<>();
 
     private WholeCarriageTemplateStore() {}
 
-    /** Active package's write target for this kind. */
     public static Path directory() {
         return UserContentPaths.dir(SUBDIR);
     }
@@ -84,19 +76,37 @@ public final class WholeCarriageTemplateStore {
         CACHE.clear();
     }
 
-    /**
-     * The saved template for {@code wholeCarriage}, or empty when there is no file for it or the
-     * file's footprint doesn't match the world's {@link CarriageDims}.
-     */
+    /** The template for {@code wholeCarriage} from config or bundled, gated to {@code dims}. */
     public static synchronized Optional<StructureTemplate> get(
         ServerLevel level, WholeCarriage wholeCarriage, CarriageDims dims
     ) {
         String key = wholeCarriage.id();
         Optional<StructureTemplate> cached = CACHE.get(key);
-        if (cached != null) return filterForDims(key, cached, dims);
-        Optional<StructureTemplate> loaded = load(level, key, dims);
-        CACHE.put(key, loaded);
-        return loaded;
+        if (cached == null) {
+            cached = loadFromConfig(level, key);
+            if (cached.isEmpty()) cached = loadFromResource(level, key);
+            CACHE.put(key, cached);
+        }
+        return filterForDims(key, cached, dims);
+    }
+
+    /** Bundled tier only — what {@code /dt reset default} re-stamps from. */
+    public static Optional<StructureTemplate> getBundled(ServerLevel level, WholeCarriage wholeCarriage, CarriageDims dims) {
+        return filterForDims(wholeCarriage.id(), loadFromResource(level, wholeCarriage.id()), dims);
+    }
+
+    /** True iff the mod jar bundles a copy of {@code id}. */
+    public static boolean bundled(String id) {
+        try (InputStream in = WholeCarriageTemplateStore.class.getResourceAsStream(RESOURCE_PREFIX + id + EXT)) {
+            return in != null;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /** The raw NBT, ungated — what tile previews read. */
+    public static Optional<CompoundTag> rawTag(String id) {
+        return TemplateNbt.read(SUBDIR, id + EXT, RESOURCE_PREFIX + id + EXT, "whole carriage " + id);
     }
 
     /** Write {@code template} to the active package's copy. */
@@ -105,8 +115,7 @@ public final class WholeCarriageTemplateStore {
         Path dir = directory();
         Files.createDirectories(dir);
         Path file = fileFor(wholeCarriage);
-        CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file);
+        NbtIo.writeCompressed(template.save(new CompoundTag()), file);
         CACHE.put(wholeCarriage.id(), Optional.of(template));
         ProvenanceCache.invalidateAll();
         LOGGER.info("[DungeonTrain] Saved whole carriage {} to {}", wholeCarriage.id(), file);
@@ -115,23 +124,17 @@ public final class WholeCarriageTemplateStore {
     public static synchronized boolean delete(WholeCarriage wholeCarriage) throws IOException {
         Path file = fileFor(wholeCarriage);
         boolean existed = Files.deleteIfExists(file);
-        CACHE.put(wholeCarriage.id(), Optional.empty());
+        CACHE.remove(wholeCarriage.id());
         ProvenanceCache.invalidateAll();
-        if (existed) {
-            LOGGER.info("[DungeonTrain] Deleted whole carriage {} ({})", wholeCarriage.id(), file);
-        }
+        if (existed) LOGGER.info("[DungeonTrain] Deleted whole carriage {} ({})", wholeCarriage.id(), file);
         return existed;
     }
 
-    /** True iff a file for {@code wholeCarriage} exists anywhere on the search path. */
+    /** True iff a file for {@code wholeCarriage} exists anywhere on the user search path. */
     public static boolean exists(WholeCarriage wholeCarriage) {
         return UserContentPaths.findFile(SUBDIR, wholeCarriage.id() + EXT) != null;
     }
 
-    /**
-     * Move the active package's file from {@code sourceId} to {@code targetId}. Returns false when
-     * there is nothing there to move.
-     */
     public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
         Path src = fileForId(sourceId);
         Path dst = fileForId(targetId);
@@ -144,70 +147,108 @@ public final class WholeCarriageTemplateStore {
         return true;
     }
 
-    private static Optional<StructureTemplate> load(ServerLevel level, String id, CarriageDims dims) {
+    // ---- source tree (dev mode) -----------------------------------------------------------------
+
+    public static boolean sourceTreeAvailable() {
+        return CarriageTemplateStore.sourceTreeAvailable();
+    }
+
+    public static Path sourceFileForId(String id) {
+        return CarriageTemplateStore.projectRoot().resolve(SOURCE_REL_PATH).resolve(id + EXT);
+    }
+
+    /** Write {@code template} straight into the source tree so it ships with the next build. */
+    public static synchronized void saveToSource(WholeCarriage wholeCarriage, StructureTemplate template) throws IOException {
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path file = sourceFileForId(wholeCarriage.id());
+        Files.createDirectories(file.getParent());
+        NbtIo.writeCompressed(template.save(new CompoundTag()), file);
+        LOGGER.info("[DungeonTrain] Wrote bundled whole carriage {} to {}", wholeCarriage.id(), file);
+    }
+
+    /** Copy the config copy into the source tree. */
+    public static synchronized void promote(WholeCarriage wholeCarriage) throws IOException {
+        Path src = fileFor(wholeCarriage);
+        if (!Files.isRegularFile(src)) {
+            throw new IOException("No saved whole carriage for " + wholeCarriage.id() + " in " + src);
+        }
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path dst = sourceFileForId(wholeCarriage.id());
+        Files.createDirectories(dst.getParent());
+        Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        LOGGER.info("[DungeonTrain] Promoted whole carriage {} from {} to {}", wholeCarriage.id(), src, dst);
+    }
+
+    // ---- loaders --------------------------------------------------------------------------------
+
+    private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, String id) {
         Path file = UserContentPaths.findFile(SUBDIR, id + EXT);
         if (file == null) return Optional.empty();
         try {
-            CompoundTag tag = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
-            StructureTemplate template = new StructureTemplate();
-            HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-            template.load(blocks, tag);
-
-            Vec3i size = template.getSize();
-            if (!CarriagePlacer.sizeMatches(size, dims)) {
-                LOGGER.warn(
-                    "[DungeonTrain] Whole carriage {} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
-                    id, file, size.getX(), size.getY(), size.getZ(),
-                    dims.length(), dims.height(), dims.width());
-                return Optional.empty();
-            }
-            LOGGER.info("[DungeonTrain] Loaded whole carriage {} from {}", id, file);
-            return Optional.of(template);
+            return load(level, id, NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap()), "config " + file);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read whole carriage {} at {}: {}", id, file, e.toString());
             return Optional.empty();
         }
     }
 
-    /**
-     * Re-check a cached template against the caller's dims. The cache is filled once per world, but
-     * a world whose dims changed mid-session must not be handed a template sized for the old ones.
-     */
+    private static Optional<StructureTemplate> loadFromResource(ServerLevel level, String id) {
+        String resource = RESOURCE_PREFIX + id + EXT;
+        try (InputStream in = WholeCarriageTemplateStore.class.getResourceAsStream(resource)) {
+            if (in == null) return Optional.empty();
+            return load(level, id, NbtIo.readCompressed(in, NbtAccounter.unlimitedHeap()), "bundled " + resource);
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Failed to read bundled whole carriage {} at {}: {}", id, resource, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<StructureTemplate> load(ServerLevel level, String id, CompoundTag tag, String origin) {
+        StructureTemplate template = new StructureTemplate();
+        HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
+        template.load(blocks, tag);
+        LOGGER.info("[DungeonTrain] Loaded whole carriage {} from {}", id, origin);
+        return Optional.of(template);
+    }
+
     private static Optional<StructureTemplate> filterForDims(
-        String id, Optional<StructureTemplate> cached, CarriageDims dims
+        String id, Optional<StructureTemplate> loaded, CarriageDims dims
     ) {
-        if (cached.isEmpty()) return cached;
-        if (CarriagePlacer.sizeMatches(cached.get().getSize(), dims)) return cached;
-        LOGGER.warn("[DungeonTrain] Cached whole carriage {} no longer matches dims {}x{}x{} — ignoring.",
-            id, dims.length(), dims.width(), dims.height());
+        if (loaded.isEmpty()) return loaded;
+        Vec3i size = loaded.get().getSize();
+        if (CarriagePlacer.sizeMatches(size, dims)) return loaded;
+        LOGGER.warn("[DungeonTrain] Whole carriage {} has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
+            id, size.getX(), size.getY(), size.getZ(), dims.length(), dims.height(), dims.width());
         return Optional.empty();
     }
 
-    /**
-     * Unified {@link TemplateStore} surface. There is no whole-carriage editor plot, so the
-     * player-facing {@code save} arm has nothing to capture — the builder's Save is the only write
-     * path, and it calls {@link #save(WholeCarriage, StructureTemplate)} directly. Promotion is
-     * unsupported for the same reason {@code Contents} can't promote: no bundled tier exists.
-     */
+    // ---- unified TemplateStore surface ----------------------------------------------------------
+
     private static final TemplateStore<Template.WholeCarriage> ADAPTER = new TemplateStore<>() {
         @Override public TemplateKind kind() { return TemplateKind.WHOLE_CARRIAGE; }
 
         @Override
         public SaveResult save(ServerPlayer player, Template.WholeCarriage template) throws Exception {
-            throw new UnsupportedOperationException(
-                "Whole carriages are saved from the Train Builder, not from an editor plot");
+            return WholeCarriageEditor.saveRoom(player, template.wholeCarriage());
         }
 
         @Override
         public boolean canPromote(Template.WholeCarriage template) {
-            return false;
+            return sourceTreeAvailable();
         }
 
         @Override
         public void promote(Template.WholeCarriage template) throws Exception {
-            throw new UnsupportedOperationException("Whole carriages have no bundled tier to promote into");
+            WholeCarriageTemplateStore.promote(template.wholeCarriage());
         }
     };
 
     public static TemplateStore<Template.WholeCarriage> adapter() { return ADAPTER; }
+
+    /** The kind this store backs, for callers that route by {@link WholeKind}. */
+    public static WholeKind wholeKind() { return WholeKind.ROOM; }
 }

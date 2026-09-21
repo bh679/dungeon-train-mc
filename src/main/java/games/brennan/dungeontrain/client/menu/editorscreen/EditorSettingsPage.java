@@ -33,6 +33,7 @@ public final class EditorSettingsPage {
         List<CommandMenuEntry> out = new ArrayList<>();
         out.add(themeRow(theme, setTheme));
         out.add(skyboxRow());
+        out.add(wholeEveryRow());
         if (DungeonTrain.isDevBuild()) out.add(relayRow());
         out.addAll(EditorMenuScreen.settingsRows(standingCategory, standingName));
         return out;
@@ -46,6 +47,25 @@ public final class EditorSettingsPage {
      * half. Every loaded chunk is rebuilt on the switch: the blocks cull their neighbours while they
      * are on, so the meshes around them are wrong the moment the answer changes.</p>
      */
+    /**
+     * "Whole group every N" — the Whole section's one type-level setting, editable here as well as
+     * on the world-space Group menu. The value is the one the server last pushed with the type
+     * menus; the stepper's commands persist it and the next push redraws the row.
+     */
+    static CommandMenuEntry wholeEveryRow() {
+        return wholeEveryRow(games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.wholeGroupEvery());
+    }
+
+    static CommandMenuEntry wholeEveryRow(int every) {
+        String prefix = "dungeontrain editor whole every";
+        String label = EditorScreenLang.text(EditorScreenLang.WHOLE_EVERY) + ": "
+            + (every > 0 ? Integer.toString(every) : EditorScreenLang.text(EditorScreenLang.WHOLE_EVERY_OFF));
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(label, "0-64", prefix);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    }
+
     static CommandMenuEntry skyboxRow() {
         boolean on = ClientDisplayConfig.areSkyboxBlocksOn();
         return new CommandMenuEntry.Triple(

@@ -337,7 +337,7 @@ public final class EditorCommand {
         };
 
     /** Stage ids plus the {@code custom} keyword — for {@code stage apply … <stage|custom>}. */
-    private static final SuggestionProvider<CommandSourceStack> STAGE_OR_CUSTOM_SUGGESTIONS =
+    static final SuggestionProvider<CommandSourceStack> STAGE_OR_CUSTOM_SUGGESTIONS =
         (ctx, builder) -> {
             builder.suggest(STAGE_CUSTOM_TOKEN);
             for (String id : games.brennan.dungeontrain.editor.StageStore.allIds()) builder.suggest(id);
@@ -588,6 +588,7 @@ public final class EditorCommand {
                         .suggests(PORTAL_ROOM_NAME_SUGGESTIONS))))
                 // Sub-variants: one named room standing for several designs, drawn by weight.
                 .then(portalRoomGroupNode()))
+            .then(WholeEditorCommand.build())
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -1465,7 +1466,7 @@ public final class EditorCommand {
 
     /** Per-category gate application: parse the id, apply {@code op} to its current gate, persist. */
     @FunctionalInterface
-    private interface SingleGateOp {
+    interface SingleGateOp {
         int run(CommandSourceStack source, String id, java.util.function.UnaryOperator<TemplateGate> op);
     }
 
@@ -1520,7 +1521,7 @@ public final class EditorCommand {
      * it is Custom — on a linked entry the write lands in the inline detach snapshot and the
      * effective gate still comes from the Stage, so say so rather than reporting a bare success.
      */
-    private static void gateSuccess(CommandSourceStack source, String id, TemplateGate g, String path,
+    static void gateSuccess(CommandSourceStack source, String id, TemplateGate g, String path,
                                     String linkedStage) {
         String maxStr = g.maxLevel() == TemplateGate.ALL ? "all" : Integer.toString(g.maxLevel());
         StringBuilder phases = new StringBuilder();
@@ -1540,7 +1541,7 @@ public final class EditorCommand {
         }
     }
 
-    private static int gateFail(CommandSourceStack source, String what, String id, Throwable t) {
+    static int gateFail(CommandSourceStack source, String what, String id, Throwable t) {
         LOGGER.error("[DungeonTrain] editor {} gate set failed for {}", what, id, t);
         source.sendFailure(Component.translatable("chat.dungeontrain.editor.gate_failed", what, t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
         return 0;
@@ -1574,7 +1575,7 @@ public final class EditorCommand {
 
     // ---- Brigadier subtree builders (single-id categories: carriages, contents) ----
 
-    private static LiteralArgumentBuilder<CommandSourceStack> minLevelSingle(
+    static LiteralArgumentBuilder<CommandSourceStack> minLevelSingle(
             SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
         return Commands.literal("minlevel")
             .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
@@ -1587,7 +1588,7 @@ public final class EditorCommand {
                         g -> g.withMinLevel(IntegerArgumentType.getInteger(c, "value"))))));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> maxLevelSingle(
+    static LiteralArgumentBuilder<CommandSourceStack> maxLevelSingle(
             SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
         return Commands.literal("maxlevel")
             .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
@@ -1600,7 +1601,7 @@ public final class EditorCommand {
                         g -> g.withMaxLevel(IntegerArgumentType.getInteger(c, "value"))))));
     }
 
-    private static LiteralArgumentBuilder<CommandSourceStack> phaseSingle(
+    static LiteralArgumentBuilder<CommandSourceStack> phaseSingle(
             SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
         return Commands.literal("phase")
             .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
@@ -1694,6 +1695,8 @@ public final class EditorCommand {
                         .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_OR_CUSTOM_SUGGESTIONS)
                             .executes(c -> applyContentsStage(c.getSource(),
                                 StringArgumentType.getString(c, "id"), StringArgumentType.getString(c, "stage"))))))
+                .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.ROOM))
+                .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.GROUP))
                 .then(Commands.literal("contents-group")
                     .then(Commands.argument("parent", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
                         .then(Commands.argument("child", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
@@ -2097,13 +2100,13 @@ public final class EditorCommand {
     }
 
     /** Sentinel distinguishing a reported error from a legitimate {@code null} ("custom"/detach) link. */
-    private static final String INVALID_STAGE = new String("\0invalid");
+    static final String INVALID_STAGE = new String("\0invalid");
 
     /**
      * Resolve a {@code <stage>} apply token: {@code custom}/blank ⇒ {@code null} (detach); an existing
      * stage id ⇒ that id; an unknown id ⇒ failure reported and {@link #INVALID_STAGE} returned.
      */
-    private static String resolveStageLink(CommandSourceStack source, String token) {
+    static String resolveStageLink(CommandSourceStack source, String token) {
         if (token == null || token.isBlank() || token.equalsIgnoreCase(STAGE_CUSTOM_TOKEN)) return null;
         String id = token.toLowerCase(java.util.Locale.ROOT);
         if (!games.brennan.dungeontrain.editor.StageStore.exists(id)) {
@@ -2113,7 +2116,7 @@ public final class EditorCommand {
         return id;
     }
 
-    private static void stageApplySuccess(CommandSourceStack source, String what, String id, String link) {
+    static void stageApplySuccess(CommandSourceStack source, String what, String id, String link) {
         if (link == null) {
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.detached_custom", what, id).withStyle(ChatFormatting.GREEN), true);
         } else {
@@ -3079,6 +3082,20 @@ public final class EditorCommand {
      * can walk between all of them, then teleport them to the first model.
      * Architecture has no models yet and returns a "coming soon" message.
      */
+    /** Package seam for {@link WholeEditorCommand}: the same category entry every bar button runs. */
+    static int enterCategory(CommandSourceStack source, EditorCategory category) {
+        return runEnterCategory(source, category);
+    }
+
+    /** Package seam for {@link WholeEditorCommand}: make {@code category} resident before an enter. */
+    static boolean ensureCategoryResident(CommandSourceStack source, EditorCategory category) {
+        return ensureCategory(source, category);
+    }
+
+    static ServerPlayer playerOrNull(CommandSourceStack source) {
+        return requirePlayer(source);
+    }
+
     private static int runEnterCategory(CommandSourceStack source, EditorCategory category) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
@@ -3090,13 +3107,27 @@ public final class EditorCommand {
         }
 
         java.util.Optional<Template> first = category.firstModel();
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        if (first.isEmpty() && category == EditorCategory.WHOLE) {
+            // The Whole pool starts empty on a fresh install; the section still has to open so the
+            // player can load a build into it. Erase whatever was resident and land at the row origin.
+            List<EditorStampQueue.Job> erases = EditorCategory.clearAllPlotJobs(overworld, dims, category);
+            EditorStampedCategoryState.set(overworld, category);
+            for (EditorStampQueue.Job job : erases) job.work().run();
+            EditorCategory.layerSweepJob(overworld, dims, null).work().run();
+            net.minecraft.core.BlockPos origin = games.brennan.dungeontrain.editor.WholeCarriageEditor
+                .rowOrigin(games.brennan.dungeontrain.train.WholeKind.ROOM, dims);
+            games.brennan.dungeontrain.editor.EditorPlotArrival.land(player, overworld, origin,
+                new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width()), true,
+                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR, null);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.whole_empty"), true);
+            return 1;
+        }
         if (first.isEmpty()) {
             source.sendFailure(Component.translatable("chat.dungeontrain.save.category_has_no_models", Component.translatable("gui.dungeontrain.editor_menu.hud.category." + category.id())));
             return 0;
         }
-
-        ServerLevel overworld = source.getServer().overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         // Only the plot the player lands on is stamped here, on this tick. Everything else — the
         // erase of the previous category's plots and the stamp of every other plot in this one — is
@@ -3165,7 +3196,10 @@ public final class EditorCommand {
 
     /** Teleport onto {@code head}'s plot via its editor's enter path, without restamping it. */
     private static void enterFirstModel(ServerPlayer player, Template head) {
-        if (head instanceof Template.Carriage cm) {
+        if (head instanceof Template.WholeCarriage || head instanceof Template.CarriageGroup) {
+            games.brennan.dungeontrain.editor.WholeCarriageEditor.enter(player, head, true, false,
+                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
+        } else if (head instanceof Template.Carriage cm) {
             CarriageEditor.enter(player, cm.variant(), true, false);
         } else if (head instanceof Template.Contents cm) {
             CarriageContentsEditor.enter(player, cm.contents(), null, true, false);
@@ -3183,7 +3217,9 @@ public final class EditorCommand {
     }
 
     private static void stampCategoryModel(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.Carriage cm) {
+        if (model instanceof Template.WholeCarriage || model instanceof Template.CarriageGroup) {
+            games.brennan.dungeontrain.editor.WholeCarriageEditor.stampPlot(overworld, model, dims);
+        } else if (model instanceof Template.Carriage cm) {
             CarriageEditor.stampPlot(overworld, cm.variant(), dims);
         } else if (model instanceof Template.Contents cm) {
             CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);

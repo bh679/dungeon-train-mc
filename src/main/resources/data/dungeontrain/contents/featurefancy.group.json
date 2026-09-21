@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "prison_broken",
+      "weight": 1
+    },
+    {
+      "id": "reading_room_dark_oak",
+      "weight": 1
+    },
+    {
+      "id": "reading_room_dark_oak_treasure",
+      "weight": 1
+    },
+    {
+      "id": "reading_room_desk",
+      "weight": 1
+    },
+    {
+      "id": "reading_room_destroyed",
+      "weight": 1
+    }
+  ]
+}

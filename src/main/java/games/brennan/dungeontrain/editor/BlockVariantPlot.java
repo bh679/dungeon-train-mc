@@ -263,6 +263,11 @@ public interface BlockVariantPlot {
         return "track:" + kind.id() + ":" + name;
     }
 
+    /** {@code whole:<id>} for a room, {@code whole_group:<id>} for a group — also the containers-store key. */
+    static String wholeKey(games.brennan.dungeontrain.train.WholeKind kind, String id) {
+        return (kind == games.brennan.dungeontrain.train.WholeKind.GROUP ? "whole_group:" : "whole:") + id;
+    }
+
     // ---------- Resolution ----------
 
     /**
@@ -335,6 +340,21 @@ public interface BlockVariantPlot {
             net.minecraft.core.Vec3i partSize = kind.dims(dims);
             return new PartPlot(kind, name, origin, partSize);
         }
+        if (key.startsWith("whole:") || key.startsWith("whole_group:")) {
+            boolean group = key.startsWith("whole_group:");
+            String id = key.substring(group ? "whole_group:".length() : "whole:".length());
+            games.brennan.dungeontrain.train.WholeKind kind = group
+                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            games.brennan.dungeontrain.template.Template model = group
+                ? games.brennan.dungeontrain.train.CarriageGroupRegistry.find(id)
+                    .map(games.brennan.dungeontrain.template.Template.CarriageGroup::new).orElse(null)
+                : games.brennan.dungeontrain.train.WholeCarriageRegistry.find(id)
+                    .map(games.brennan.dungeontrain.template.Template.WholeCarriage::new).orElse(null);
+            if (model == null) return null;
+            BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
+            if (origin == null) return null;
+            return new WholePlot(kind, id, origin, WholeCarriageEditor.plotSize(kind, dims));
+        }
         if (key.startsWith("track:")) {
             String rest = key.substring("track:".length());
             int sep = rest.indexOf(':');
@@ -389,6 +409,12 @@ public interface BlockVariantPlot {
             games.brennan.dungeontrain.builder.BuilderCarriagePlot builderPlot =
                 games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(level, pos, dims);
             if (builderPlot != null) return builderPlot;
+        }
+        WholeCarriageEditor.PlotLocation whole = WholeCarriageEditor.plotContaining(pos, dims);
+        if (whole != null) {
+            BlockPos origin = WholeCarriageEditor.plotOrigin(whole.template(), dims);
+            if (origin == null) return null;
+            return new WholePlot(whole.kind(), whole.id(), origin, WholeCarriageEditor.plotSize(whole.kind(), dims));
         }
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
@@ -490,6 +516,63 @@ public interface BlockVariantPlot {
     }
 
     /** Wraps a {@link CarriageContentsVariantBlocks} sidecar. */
+    /** A whole room or group plot — one {@link WholeVariantBlocks} sidecar over the whole build. */
+    final class WholePlot implements BlockVariantPlot {
+        private final games.brennan.dungeontrain.train.WholeKind kind;
+        private final String id;
+        private final BlockPos origin;
+        private final Vec3i footprint;
+        private final WholeVariantBlocks sidecar;
+
+        WholePlot(games.brennan.dungeontrain.train.WholeKind kind, String id, BlockPos origin, Vec3i footprint) {
+            this.kind = kind;
+            this.id = id;
+            this.origin = origin;
+            this.footprint = footprint;
+            this.sidecar = WholeVariantBlocks.loadFor(kind, id, footprint);
+        }
+
+        @Override public String key() { return wholeKey(kind, id); }
+        @Override public String dirtySnapshotKey() { return WholeCarriageEditor.snapshotKey(kind, id); }
+        @Override public BlockPos origin() { return origin; }
+        @Override public Vec3i footprint() { return footprint; }
+        @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
+        @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); noteEdit(this, l); }
+        @Override public boolean remove(BlockPos l) { noteEdit(this, l); return sidecar.remove(l); }
+        @Override public void save() throws IOException {
+            noteEdit(this, null);
+            sidecar.save(kind, id);
+            if (EditorDevMode.isEnabled()) {
+                try {
+                    sidecar.saveToSource(kind, id);
+                } catch (IOException e) {
+                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for whole {} {}: {}",
+                        kind.id(), id, e.toString());
+                }
+            }
+        }
+        @Override public String snapshotJson() { return sidecar.toJsonText(); }
+        @Override public void restoreJson(String json) throws IOException {
+            Path file = WholeVariantBlocks.configPathFor(kind, id);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, json, StandardCharsets.UTF_8);
+            WholeVariantBlocks.invalidate(kind, id);
+        }
+        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
+        @Override public void setLockId(BlockPos l, int lockId) { sidecar.setLockId(l, lockId); }
+        @Override public java.util.Set<BlockPos> positionsWithLockId(int lockId) { return sidecar.positionsWithLockId(lockId); }
+        @Override public VariantGroupResolver groupRefs() { return sidecar.groupRefs(); }
+        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
+        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
+        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
+        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
+        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
+        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
+        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
+        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
+    }
+
     final class ContentsPlot implements BlockVariantPlot {
         private final CarriageContents contents;
         private final BlockPos origin;

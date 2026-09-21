@@ -54,6 +54,15 @@ public final class CreatorParentPickerScreen implements MenuScreen {
     public List<CommandMenuEntry> entries(EditorRosterIndex index) {
         List<CommandMenuEntry> out = new ArrayList<>();
         String chosen = CreatorLoadParent.parentFor(category);
+        // A carriage has no variant parents: its choice is the shell pool (top level) or the Whole
+        // room pool. Contents keep their parents and gain the Whole pool as one more destination.
+        if (category == PlotCategory.CARRIAGES) {
+            out.add(row(EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_TOP_LEVEL), "", chosen));
+            out.add(row(EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_WHOLE_ROOM),
+                CreatorLoadParent.WHOLE_ROOM, chosen));
+            out.add(new CommandMenuEntry.Back(EditorScreenLang.text(EditorScreenLang.MOVE_BACK)));
+            return out;
+        }
         List<EditorTypeMenusPacket.Variant> parents = candidateParents(index);
         boolean hasDefault = parents.stream()
             .anyMatch(v -> BuilderRelaySubVariant.DEFAULT_PARENT_ID.equalsIgnoreCase(v.modelName()));
@@ -67,6 +76,10 @@ public final class CreatorParentPickerScreen implements MenuScreen {
             String id = parent.modelName();
             String label = parent.displayName() + (parent.isLabelled() ? "  ·  " + id : "");
             out.add(row(label, id, chosen));
+        }
+        if (CreatorLoadParent.offersWholeRoom(category)) {
+            out.add(row(EditorScreenLang.text(EditorScreenLang.CREATOR_PARENT_WHOLE_ROOM),
+                CreatorLoadParent.WHOLE_ROOM, chosen));
         }
         out.add(new CommandMenuEntry.Back(EditorScreenLang.text(EditorScreenLang.MOVE_BACK)));
         return out;

@@ -61,6 +61,7 @@ public final class EditorTypeMenus {
     /** Every visible type menu for {@code category} at the current world dims. */
     public static List<EditorTypeMenusPacket.Menu> forCategory(EditorCategory category, CarriageDims dims) {
         return switch (category) {
+            case WHOLE -> EditorWholeTypeMenus.menus(dims);
             case CARRIAGES -> carriageMenus(dims);
             case CONTENTS -> contentsMenus(dims);
             case TRACKS -> trackMenus(dims);
@@ -326,7 +327,7 @@ public final class EditorTypeMenus {
      * stamped plots and clicking the button lands the player nowhere useful,
      * so we hide it from the bar until the category actually has content.
      */
-    private static List<EditorTypeMenusPacket.CategoryButton> buildCategoryBar() {
+    static List<EditorTypeMenusPacket.CategoryButton> buildCategoryBar() {
         List<EditorTypeMenusPacket.CategoryButton> bar = new ArrayList<>(EditorCategory.values().length);
         for (EditorCategory c : EditorCategory.values()) {
             if (c == EditorCategory.ARCHITECTURE) continue;
@@ -476,7 +477,7 @@ public final class EditorTypeMenus {
      * {@code -X} cage edge, lifted {@link #Y_ANCHOR_LIFT} blocks above the
      * cage top, centred over the footprint Z.
      */
-    private static BlockPos anchorForXRow(BlockPos firstOrigin, Vec3i footprint) {
+    static BlockPos anchorForXRow(BlockPos firstOrigin, Vec3i footprint) {
         return new BlockPos(
             firstOrigin.getX() - MENU_GAP,
             firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,

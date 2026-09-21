@@ -91,6 +91,7 @@ public final class EditorDirtyCheck {
         List<DirtyEntry> out = new ArrayList<>();
         boolean devmode = EditorDevMode.isEnabled();
 
+        scanWhole(overworld, dims, devmode, out);
         scanCarriages(overworld, dims, devmode, out);
         scanContents(overworld, dims, devmode, out);
         scanTrackTiles(overworld, dims, devmode, out);
@@ -100,6 +101,35 @@ public final class EditorDirtyCheck {
         scanPortalRooms(overworld, dims, devmode, out);
 
         return out;
+    }
+
+    /**
+     * The Whole section's rows — rooms under {@code "whole"}, groups under {@code "whole_group"},
+     * each keyed by its bare id. No variant sidecar to skip: a whole template is stamped verbatim.
+     */
+    private static void scanWhole(ServerLevel level, CarriageDims dims, boolean devmode,
+                                  List<DirtyEntry> out) {
+        for (games.brennan.dungeontrain.template.Template model : EditorCategory.WHOLE.models()) {
+            BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
+            if (origin == null) continue;
+            boolean group = model instanceof games.brennan.dungeontrain.template.Template.CarriageGroup;
+            games.brennan.dungeontrain.train.WholeKind kind = group
+                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            String key = WholeCarriageEditor.snapshotKey(kind, model.id());
+            Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+            Vec3i fp = model.plotSize(dims);
+            Set<BlockPos> skip = variantCellPositions(WholeVariantBlocks.loadFor(kind, model.id(), fp).entries());
+            boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
+                || (snapshot != null && !regionMatchesSnapshot(key, level, origin,
+                    fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
+            boolean unpromoted = devmode && model.isBuiltin() && WholeCarriageTemplateStore.sourceTreeAvailable()
+                && !filesEqualOrAbsent(
+                    group ? CarriageGroupTemplateStore.fileForId(model.id()) : WholeCarriageTemplateStore.fileForId(model.id()),
+                    group ? CarriageGroupTemplateStore.sourceFileForId(model.id()) : WholeCarriageTemplateStore.sourceFileForId(model.id()));
+            if (unsaved || unpromoted) {
+                out.add(new DirtyEntry(group ? "whole_group" : "whole", model.id(), model.displayName(), unsaved, unpromoted));
+            }
+        }
     }
 
     private static void scanCarriages(ServerLevel level, CarriageDims dims, boolean devmode,
@@ -367,6 +397,21 @@ public final class EditorDirtyCheck {
     private static List<DiffEntry> findBlockChanges(ServerLevel overworld, CarriageDims dims,
                                                     String categoryId, String modelId) {
         List<DiffEntry> out = new ArrayList<>();
+        if ("whole".equals(categoryId) || "whole_group".equals(categoryId)) {
+            boolean group = "whole_group".equals(categoryId);
+            games.brennan.dungeontrain.train.WholeKind kind = group
+                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            games.brennan.dungeontrain.template.Template model = group
+                ? new games.brennan.dungeontrain.template.Template.CarriageGroup(new games.brennan.dungeontrain.train.CarriageGroup(modelId))
+                : new games.brennan.dungeontrain.template.Template.WholeCarriage(new games.brennan.dungeontrain.train.WholeCarriage(modelId));
+            BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
+            if (origin == null) return out;
+            Vec3i fp = model.plotSize(dims);
+            Set<BlockPos> skip = variantCellPositions(WholeVariantBlocks.loadFor(kind, modelId, fp).entries());
+            collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
+                EditorPlotSnapshots.get(WholeCarriageEditor.snapshotKey(kind, modelId)), skip, out);
+            return out;
+        }
         if ("carriages".equals(categoryId)) {
             CarriageVariant variant = CarriageVariantRegistry.find(modelId).orElse(null);
             if (variant == null) return out;
@@ -525,7 +570,9 @@ public final class EditorDirtyCheck {
             case TRACK -> "track." + model.variantName();
             case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL, PORTAL_ROOM ->
                 model.id() + "." + model.variantName();
-            case PART, WHOLE_CARRIAGE -> null;
+            // Whole rows are keyed by the bare id under their own category ids — see scanWhole.
+            case WHOLE_CARRIAGE, CARRIAGE_GROUP -> model.id();
+            case PART -> null;
         };
     }
 
@@ -584,7 +631,7 @@ public final class EditorDirtyCheck {
     static String snapshotKeyFor(String categoryId, String modelId) {
         if (categoryId == null || modelId == null) return null;
         switch (categoryId) {
-            case "carriages", "contents" -> {
+            case "carriages", "contents", "whole", "whole_group" -> {
                 return EditorPlotSnapshots.key(categoryId, modelId);
             }
             case "portals" -> {

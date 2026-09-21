@@ -248,7 +248,12 @@ public final class BuilderRelayDownload {
             }
         }
 
-        BuilderRelayInstall.Outcome installed = BuilderRelayInstall.install(
+        // The "Whole carriage room" destination: the build goes into the Whole pool and nowhere else.
+        boolean wholeRoom = BuilderRelayWholeRoom.requested(parentId) && BuilderRelayWholeRoom.supports(kind);
+        BuilderRelayInstall.Outcome installed = wholeRoom
+            ? BuilderRelayWholeRoom.install(level, kind, build.buildName(), build.stage(), template, resolution,
+                newName, mine)
+            : BuilderRelayInstall.install(
                 kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName,
                 build.sidecars(), mine);
         // Which name the build ended up under: its own, unless the player asked for it to arrive as
@@ -295,7 +300,7 @@ public final class BuilderRelayDownload {
         }
         // Last, and only once the template is a template: a refused join leaves the build where it
         // installed, which is still the INSTALLED the screen was promised — the roster says where.
-        if (!parentId.isBlank() && BuilderRelaySubVariant.supports(kind)) {
+        if (!wholeRoom && !parentId.isBlank() && BuilderRelaySubVariant.supports(kind)) {
             BuilderRelaySubVariant.join(level, kind, installedAs, parentId, template);
         }
         return new Result(Outcome.INSTALLED, kind, installedAs, build.subKind());
