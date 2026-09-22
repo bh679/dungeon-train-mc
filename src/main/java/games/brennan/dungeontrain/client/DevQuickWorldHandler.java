@@ -323,6 +323,10 @@ public final class DevQuickWorldHandler {
      * holds it at noon, so a plot is authored under the same full light as in the Train Builder;
      * the one exception is a Day/Night sky, which runs the clock while you stand under it.</p>
      *
+     * <p><b>No weather</b> — same rules again. The editor is skylit and {@code natural}, so rain
+     * would darken the sky over the plots and play across a build that has no sky of its own to
+     * explain it; {@code EditorQuietRuleEvents} also clears any storm a world was quit in.</p>
+     *
      * <p><b>Void, overworld only</b> — {@link #DT_EDITOR_PRESET}. The plots are the only thing
      * the editor ever looks at, so the terrain that used to be generated under them (and the nether
      * and end alongside) was load time spent on nothing. {@code TrainBootstrapEvents} anchors the

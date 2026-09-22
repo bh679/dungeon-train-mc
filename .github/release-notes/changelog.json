@@ -17649,6 +17649,26 @@
       "released": true,
       "released_in": "v0.927.0",
       "released_at": "2026-09-21T15:00:36Z"
+    },
+    {
+      "id": "editor-weather-off",
+      "version": "0.928.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "No more rain in the Train Editor",
+      "summary": "The Train Editor now sits under clear skies. Rain and thunderstorms used to roll across your plots and darken everything you were building, even though the editor is a void with nothing for rain to land on \u2014 now the weather stays off, the same way the clock stays at noon. An editor world you left in the middle of a storm comes back clear.",
+      "highlights": [
+        "Weather is off by default in every Train Editor world, new or existing.",
+        "A storm you quit in is cleared when the world loads again."
+      ],
+      "pr": 1479,
+      "date": "2026-09-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
