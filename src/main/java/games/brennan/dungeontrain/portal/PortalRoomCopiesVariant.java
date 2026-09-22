@@ -226,6 +226,20 @@ public final class PortalRoomCopiesVariant {
         return states(plane).isEmpty();
     }
 
+    /**
+     * True when any candidate on {@code plane} is a liquid — a water floor, a lava roof.
+     *
+     * <p>What the tiler asks before damming the skin around a copy: a liquid plane's edge column
+     * lies in the next copy's skin, and plugging it would draw a deepslate line along every tile
+     * boundary. See {@code PortalCarriageBuilder.plugFluidsAround}.</p>
+     */
+    public boolean hasLiquid(Plane plane) {
+        for (VariantState state : states(plane)) {
+            if (games.brennan.dungeontrain.editor.VariantLiquids.isLiquid(state.state())) return true;
+        }
+        return false;
+    }
+
     public int size(Plane plane) {
         return states(plane).size();
     }

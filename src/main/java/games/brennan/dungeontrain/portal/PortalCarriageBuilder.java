@@ -920,7 +920,10 @@ public final class PortalCarriageBuilder {
             structure.variantIndexFor(PortalRoomTiling.Tile.BASE, pairKey), pairKey,
             PortalRoomTiling.Tile.BASE,
             PortalRoomMobs.liveCount(level, footprintOf(level, structure, dims), pairKey),
-            structure.settings().contents(), structure.settings().books());
+            structure.settings().contents(), structure.settings().books(),
+            // The base room lands in solid rock with no copy beside it yet, so every liquid in its
+            // skin is an aquifer; the copies the tiler adds later are what spare their neighbours.
+            PLUG_EVERY_FLUID);
 
         // Before the corridors, so each mode acts on the room as it actually turned out rather than
         // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
@@ -1684,8 +1687,9 @@ public final class PortalCarriageBuilder {
                                    int variantIndex, int exactIndex, int pairKey,
                                    PortalRoomTiling.Tile tile,
                                    int liveMobCount, PortalRoomContents contents,
-                                   PortalRoomBooks books) {
-        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask);
+                                   PortalRoomBooks books,
+                                   java.util.function.Predicate<BlockPos> keepFluid) {
+        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask, keepFluid);
         // Claim the pictures that stamp just hung, before anything else can walk in and be mistaken
         // for one. A dimensional carriage REPEATS — the tiling window is 121 copies and it has no
         // memory, so walking back over ground you left re-stamps it — and an item frame is a
@@ -1931,6 +1935,26 @@ public final class PortalCarriageBuilder {
     public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
                                    String roomName, Vec3i size, boolean relight,
                                    PortalCorridorMask clearMask, PortalCorridorMask writeMask) {
+        stampRoomAt(level, roomOrigin, dims, roomName, size, relight, clearMask, writeMask,
+            PLUG_EVERY_FLUID);
+    }
+
+    /** {@link #plugFluidsAround}'s default: nothing in the skin is DT's own, so every liquid is dammed. */
+    private static final java.util.function.Predicate<BlockPos> PLUG_EVERY_FLUID = pos -> false;
+
+    /**
+     * {@link #stampRoomAt} with a say over which liquids in the skin are left standing.
+     *
+     * <p>{@code keepFluid} is the tiler's: under Endless Open the copies abut, so the skin of the
+     * tile being stamped runs through the edge column of the tile already standing beside it. If
+     * that neighbour's floor or roof plane is water, plugging the skin turns its edge into a line
+     * of deepslate — one per boundary, a grid across the plain. The tiler knows which planes are
+     * liquid and asks for those rows to be spared; everything else is dammed as before.</p>
+     */
+    public static void stampRoomAt(ServerLevel level, BlockPos roomOrigin, CarriageDims dims,
+                                   String roomName, Vec3i size, boolean relight,
+                                   PortalCorridorMask clearMask, PortalCorridorMask writeMask,
+                                   java.util.function.Predicate<BlockPos> keepFluid) {
         // Clear first, for the same reason a twin does: the room lands in solid rock at the world
         // floor, and a template stamp only writes its own cells — anything the author left as
         // STRUCTURE_VOID would otherwise show deepslate through the wall. This is the CLEAR mask
@@ -1938,7 +1962,7 @@ public final class PortalCarriageBuilder {
         // want anything put back into it.
         clearRoomBox(level, roomOrigin, size, clearMask, relight);
         clearIntruders(level, roomOrigin, size);
-        plugFluidsAround(level, roomOrigin, size);
+        plugFluidsAround(level, roomOrigin, size, keepFluid);
 
         Optional<StructureTemplate> stored = PortalRoomTemplateStore.get(level, roomName, dims);
         if (stored.isEmpty()) {
@@ -2011,7 +2035,7 @@ public final class PortalCarriageBuilder {
                                          PortalCorridorMask blank) {
         clearRoomBox(level, roomOrigin, size, PortalCorridorMask.NONE, relight);
         clearIntruders(level, roomOrigin, size);
-        plugFluidsAround(level, roomOrigin, size);
+        plugFluidsAround(level, roomOrigin, size, PLUG_EVERY_FLUID);
 
         stampRoomBuiltIn(level, roomOrigin, size, relight, blank);
         CarriagePlacer.stampTemplateAt(level, roomOrigin.offset(shift), live,
@@ -2103,8 +2127,13 @@ public final class PortalCarriageBuilder {
      * moment anything opens that wall — an Endless Open face, a seam carved between copies, a player
      * with a pickaxe — it floods. Turning the fluid immediately outside the box into stone plugs it
      * at the source instead, which is bounded work and holds however the room is opened up later.</p>
+     *
+     * <p>A skin cell {@code keep} accepts is left alone — the tiler's way of saying a liquid there is
+     * a neighbouring copy's own water plane, not an aquifer. See the {@code keepFluid} overload of
+     * {@link #stampRoomAt}.</p>
      */
-    private static void plugFluidsAround(ServerLevel level, BlockPos origin, Vec3i size) {
+    private static void plugFluidsAround(ServerLevel level, BlockPos origin, Vec3i size,
+                                         java.util.function.Predicate<BlockPos> keep) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int dx = -1; dx <= size.getX(); dx++) {
             for (int dy = -1; dy <= size.getY(); dy++) {
@@ -2115,6 +2144,7 @@ public final class PortalCarriageBuilder {
                     if (!skin) continue;
                     pos.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
                     if (level.getFluidState(pos).isEmpty()) continue;
+                    if (keep.test(pos)) continue;
                     level.setBlock(pos, FLUID_PLUG, Block.UPDATE_ALL);
                 }
             }
