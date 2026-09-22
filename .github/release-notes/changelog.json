@@ -17689,6 +17689,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "provenance-bucket-reword",
+      "version": "0.928.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Translation records caught up with the bucket wording",
+      "summary": "Bookkeeping only: the translation records now match the reworded editor message, so the language checks pass again.",
+      "highlights": [],
+      "date": "2026-09-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
