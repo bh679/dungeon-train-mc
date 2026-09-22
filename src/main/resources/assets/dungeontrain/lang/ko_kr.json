@@ -2669,7 +2669,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "알 수 없는 복제 옵션 '%s'. exact, dynamic 또는 single을 사용해 보세요.",
   "chat.dungeontrain.editor.only_player_can_pick": "플레이어만 손에 든 블록을 고를 수 있습니다.",
   "chat.dungeontrain.editor.that_clipboard_empty": "그 클립보드는 비어 있습니다.",
-  "chat.dungeontrain.editor.hold_block_or_variant": "블록이나 칸에서 복사한 변형을 들거나 — 공기로 하려면 아무것도 들지 않은 채로 — 이것을 다시 누르세요.",
+  "chat.dungeontrain.editor.hold_block_or_variant": "블록이나 채워진 양동이, 또는 칸에서 복사한 변형을 들거나 — 공기로 하려면 아무것도 들지 않은 채로 — 이것을 다시 누르세요.",
   "chat.dungeontrain.editor.hold_block_or_nothing": "블록을 들거나 — 외형 없음으로 하려면 아무것도 들지 않은 채로 — 이것을 다시 누르세요.",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s'은(는) 이 월드가 아는 블록이 아닙니다.",
   "chat.dungeontrain.editor.only_player_can_open": "플레이어만 변형 메뉴를 열 수 있습니다.",

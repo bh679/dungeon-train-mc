@@ -17669,6 +17669,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "floor-roof-bucket",
+      "version": "0.928.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Water floors and lava skies in dimensional carriages",
+      "summary": "The editor's Floor and Roof rows now take a bucket as readily as a block, so an endless plain can be open water underfoot or a sheet of lava overhead. The plain stays whole \u2014 no rock seams where one stretch meets the next.",
+      "highlights": [
+        "Hold a filled bucket and press the Floor or Roof row.",
+        "Water and lava planes flow into each other cleanly across the whole plain."
+      ],
+      "date": "2026-09-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

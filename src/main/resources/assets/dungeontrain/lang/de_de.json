@@ -2712,7 +2712,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "Unbekannte Kopien-Option '%s'. Versuche exact, dynamic oder single.",
   "chat.dungeontrain.editor.only_player_can_pick": "Nur ein Spieler kann einen Block aus seiner Hand wählen.",
   "chat.dungeontrain.editor.that_clipboard_empty": "Diese Zwischenablage ist leer.",
-  "chat.dungeontrain.editor.hold_block_or_variant": "Halte einen Block oder eine aus einer Zelle kopierte Variante — oder gar nichts für Luft — und drücke dann erneut.",
+  "chat.dungeontrain.editor.hold_block_or_variant": "Halte einen Block oder einen gefüllten Eimer, oder eine aus einer Zelle kopierte Variante — oder gar nichts für Luft — und drücke dann erneut.",
   "chat.dungeontrain.editor.hold_block_or_nothing": "Halte einen Block — oder gar nichts für keine Hülle — und drücke dann erneut.",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s' ist kein Block, den diese Welt kennt.",
   "chat.dungeontrain.editor.only_player_can_open": "Nur ein Spieler kann das Variantenmenü öffnen.",

@@ -2760,7 +2760,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "Неизвестный параметр копий '%s'. Попробуйте exact, dynamic или single.",
   "chat.dungeontrain.editor.only_player_can_pick": "Взять блок из руки может только игрок.",
   "chat.dungeontrain.editor.that_clipboard_empty": "Этот буфер обмена пуст.",
-  "chat.dungeontrain.editor.hold_block_or_variant": "Возьмите в руку блок или вариант, скопированный из ячейки — либо ничего, чтобы получить воздух, — и нажмите это снова.",
+  "chat.dungeontrain.editor.hold_block_or_variant": "Возьмите в руку блок или полное ведро, либо вариант, скопированный из ячейки — либо ничего, чтобы получить воздух, — и нажмите это снова.",
   "chat.dungeontrain.editor.hold_block_or_nothing": "Возьмите в руку блок — либо ничего, чтобы убрать оболочку, — и нажмите это снова.",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s' — не известный этому миру блок.",
   "chat.dungeontrain.editor.only_player_can_open": "Открыть меню вариантов может только игрок.",

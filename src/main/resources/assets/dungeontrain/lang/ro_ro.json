@@ -3237,7 +3237,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "Opțiune de copii necunoscută '%s'. Încearcă exact, dynamic sau single.",
   "chat.dungeontrain.editor.only_player_can_pick": "Doar un jucător poate alege un bloc din mână.",
   "chat.dungeontrain.editor.that_clipboard_empty": "Acel clipboard este gol.",
-  "chat.dungeontrain.editor.hold_block_or_variant": "Ține în mână un bloc sau o variantă copiată dintr-o celulă — sau nimic pentru aer — apoi apasă din nou.",
+  "chat.dungeontrain.editor.hold_block_or_variant": "Ține în mână un bloc sau o găleată plină, ori o variantă copiată dintr-o celulă — sau nimic pentru aer — apoi apasă din nou.",
   "chat.dungeontrain.editor.hold_block_or_nothing": "Ține în mână un bloc — sau nimic pentru fără înveliș — apoi apasă din nou.",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s' nu este un bloc cunoscut de această lume.",
   "chat.dungeontrain.editor.only_player_can_open": "Doar un jucător poate deschide meniul de variante.",
