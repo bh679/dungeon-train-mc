@@ -92,13 +92,18 @@ public final class PortalRoomSinglePlanes {
         int z1 = z0 + size.getZ() - 1;
         int floorY = origin.getY();
         int ceilingY = floorY + size.getY() - 1;
+        int floorTop = floorY + floorHeightFor(palette, size) - 1;
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
-                setPlaneBlock(level, pos.set(x, floorY, z), origin,
-                    PortalRoomCopiesVariant.Plane.FLOOR, palette, clearMask, relight,
-                    worldSeed, variantIndex);
+                // The floor is laid floorHeight deep, bottom up; each layer rolls on its own local
+                // position so a mixed palette reads as a mix in depth as well as across the plain.
+                for (int y = floorY; y <= floorTop; y++) {
+                    setPlaneBlock(level, pos.set(x, y, z), origin,
+                        PortalRoomCopiesVariant.Plane.FLOOR, palette, clearMask, relight,
+                        worldSeed, variantIndex);
+                }
                 // A room one block tall would have its floor and its ceiling in the same plane, and
                 // the second write would be the first one again. PortalRoomLayout.MIN_HEIGHT rules
                 // that out, but the guard costs a comparison and the alternative is a silent
@@ -111,6 +116,18 @@ public final class PortalRoomSinglePlanes {
                 }
             }
         }
+    }
+
+    /**
+     * How many blocks deep this tile's floor is laid: the palette's {@code floorHeight}, held under
+     * the room's height so the roof plane always survives and at least one block of the room is
+     * open between the two. A room {@code PortalRoomLayout.MIN_HEIGHT} tall keeps at least two
+     * rows free.
+     */
+    public static int floorHeightFor(PortalRoomCopiesVariant palette, Vec3i size) {
+        int roomHeight = size.getY();
+        int max = Math.max(1, roomHeight - 2);
+        return Math.max(1, Math.min(max, palette.floorHeight()));
     }
 
     /**

@@ -9822,6 +9822,22 @@
       ]
     }
   },
+  "chat.dungeontrain.editor.dimensional_carriage_floor_height_now": {
+    "1": {
+      "label": "the template's name",
+      "examples": [
+        "maze",
+        "house2"
+      ]
+    },
+    "2": {
+      "label": "how many blocks deep the floor is laid",
+      "examples": [
+        "1",
+        "4"
+      ]
+    }
+  },
   "chat.dungeontrain.editor.dimensional_carriage_copies_now": {
     "1": {
       "label": "the template's name",

@@ -340,6 +340,7 @@ public final class EditorMenuScreen implements MenuScreen {
         addIfPresent(out, EditorMenuPortalRows.copiesRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
             mode, PortalRoomCopiesVariant.Plane.FLOOR, prefix));
+        addIfPresent(out, EditorMenuPortalRows.copiesFloorHeightRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.copiesBlockRowFor(
             mode, PortalRoomCopiesVariant.Plane.ROOF, prefix));
         addIfPresent(out, EditorMenuPortalRows.doorWallRowFor(mode, prefix));

@@ -161,6 +161,8 @@ public final class EditorPlotPanelInputHandler {
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
             case COPIES_FLOOR_EDIT -> dispatchCopiesBlockEdit(entry,
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+            case COPIES_FLOOR_HEIGHT_DEC -> dispatchCopiesFloorHeight(entry, "dec");
+            case COPIES_FLOOR_HEIGHT_INC -> dispatchCopiesFloorHeight(entry, "inc");
             case COPIES_ROOF_HELD -> dispatchCopiesBlockHeld(entry,
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
             case COPIES_ROOF_EDIT -> dispatchCopiesBlockEdit(entry,
@@ -240,6 +242,13 @@ public final class EditorPlotPanelInputHandler {
     }
 
     /** Set the Copies block of the portal room the player is standing in to what they are holding. */
+    /** Step how deep the stood-in room's Single floor is laid. */
+    private static void dispatchCopiesFloorHeight(EditorPlotLabelsPacket.Entry entry, String dir) {
+        String cmd = EditorPlotTeleport.copiesFloorHeightCommandFor(entry.plotCategory(), dir);
+        if (cmd == null) return;
+        CommandRunner.run(cmd);
+    }
+
     private static void dispatchCopiesBlockHeld(
         EditorPlotLabelsPacket.Entry entry,
         games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane

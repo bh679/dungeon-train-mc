@@ -211,8 +211,10 @@ public final class PortalRoomTiler {
         boolean roof = single.hasLiquid(PortalRoomCopiesVariant.Plane.ROOF);
         if (!floor && !roof) return pos -> false;
         int floorY = origin.getY();
+        int floorTop = floorY + PortalRoomSinglePlanes.floorHeightFor(single, size) - 1;
         int ceilingY = floorY + size.getY() - 1;
-        return pos -> (floor && pos.getY() == floorY) || (roof && pos.getY() == ceilingY);
+        return pos -> (floor && pos.getY() >= floorY && pos.getY() <= floorTop)
+            || (roof && pos.getY() == ceilingY);
     }
 
     /**
