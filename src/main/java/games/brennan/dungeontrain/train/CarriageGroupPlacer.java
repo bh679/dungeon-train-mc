@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -15,7 +16,8 @@ import java.util.Optional;
  * Stamps and captures a {@link CarriageGroup} — a whole run of carriages as one template.
  *
  * <p>The sibling of {@link WholeCarriagePlacer}, over a longer box. Both erase before they stamp, and
- * both ignore entities so a capture and a placement are the same operation in reverse; the difference
+ * both carry their decoration through {@link TemplateDecor} so a capture and a placement are the same
+ * operation in reverse; the difference
  * is that a group's box spans {@code carriages × length}, so it is erased and written in one pass
  * rather than per carriage. Doing it per carriage would be the same blocks in the same places — right
  * up until a build straddles a carriage boundary, which from the platform is an ordinary thing to
@@ -47,8 +49,17 @@ public final class CarriageGroupPlacer {
         }
         CarriageStampGuard.run(() -> {
             eraseAt(level, origin, dims, carriages);
+            // Blocks first, with vanilla's own entity pass off — every stamp site in this mod keeps
+            // its processor chain in charge of that. The decoration follows through TemplateDecor,
+            // exactly as CarriagePlacer.stampTemplate does for a shell: the capture below keeps the
+            // author's armor stands, pictures and minecarts, so a stamp has to put them back.
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
+            // replace, not spawn: this lands in a plot that a caller may not have cleared first
+            // (BuilderWorldSetup's open path), and a re-stamp must not hang a second copy of every
+            // picture through the first.
+            TemplateDecor.replace(level, origin, template.get(), new StructurePlaceSettings(),
+                    /*mark*/ null, TemplateDecor.Rule.CARRIAGE);
         });
         return true;
     }
@@ -74,16 +85,17 @@ public final class CarriageGroupPlacer {
     /**
      * Capture the whole run at {@code origin}.
      *
-     * <p>{@code fillFromWorld} against AIR over the group's box, which is what every carriage-side
-     * capture does — {@link CarriageEditor#captureTemplate} is the same call over one carriage's worth
-     * of it. Entities are left out, matching the placement above.</p>
+     * <p>{@link TemplateDecor#capture} against AIR over the group's box, which is what every
+     * carriage-side capture does — {@link CarriageEditor#captureTemplate} is the same call over one
+     * carriage's worth of it. The author's entities come with it, matching the placement above.</p>
+     *
+     * <p>This used to fill with {@code includeEntities = false}, which is why a group saved before
+     * v0.928 holds no entities: it gains them the first time its author saves it again.</p>
      */
     public static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin,
                                                     CarriageDims dims, int carriages) {
-        StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(level, origin, sizeOf(dims, carriages), false,
+        return TemplateDecor.capture(level, origin, sizeOf(dims, carriages),
                 net.minecraft.world.level.block.Blocks.AIR);
-        return template;
     }
 
     /** Clear the run to air, so a stamp replaces what was there rather than merging with it. */

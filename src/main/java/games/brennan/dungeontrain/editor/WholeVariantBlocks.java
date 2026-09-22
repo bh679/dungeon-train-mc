@@ -51,7 +51,7 @@ public final class WholeVariantBlocks {
     public static final int CURRENT_SCHEMA_VERSION = CarriageVariantBlocks.CURRENT_SCHEMA_VERSION;
     public static final int MIN_STATES_PER_ENTRY = CarriageVariantBlocks.MIN_STATES_PER_ENTRY;
 
-    static final String EXT = ".variants.json";
+    public static final String EXT = ".variants.json";
 
     /** Session cache keyed on {@code kind:id}. Invalidated on save and on registry unregister. */
     private static final Map<String, WholeVariantBlocks> CACHE = new HashMap<>();
