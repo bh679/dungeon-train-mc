@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Stops water and lava from flowing into the spheres band's <b>void space</b> — any block in the
- * band core that lies inside no sphere ({@link SpheresBand#isVoidSpace}). A lifted sphere carries
+ * band's entry fade or core that lies inside no sphere ({@link SpheresBand#isVoidSpace}). A lifted sphere carries
  * its natural lakes, aquifers and ocean water; without this veto that liquid pours out of the
  * sphere's curved underside and cascades into the bottomless void — an ever-spreading sheet of
  * flowing fluid scheduling fluid ticks forever (the runaway tick load the chuncks band hit).

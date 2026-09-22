@@ -96,7 +96,9 @@ public final class SpheresBand {
 
     /**
      * The spheres touching the chunk at {@code (chunkX, chunkZ)} — empty out of band or when the chunk
-     * sits over open void. Memoised per chunk; only in-band chunks are cached.
+     * sits over open void. Only spheres lying <em>entirely</em> inside the band's fade + core X-range
+     * are placed ({@link #insideBand}), so none is sliced flat by the zone's leading or trailing edge.
+     * Memoised per chunk; only in-band chunks are cached.
      */
     public static List<SphereField.Sphere> candidates(ServerLevel overworld, int chunkX, int chunkZ) {
         if (!chunkTouchesBand(overworld, chunkX << 4)) return List.of();
@@ -104,10 +106,30 @@ public final class SpheresBand {
         long key = ChunkPos.asLong(chunkX, chunkZ);
         List<SphereField.Sphere> hit = CANDIDATE_CACHE.get(key);
         if (hit != null) return hit;
-        List<SphereField.Sphere> list = field.candidatesFor(chunkX, chunkZ);
+        List<SphereField.Sphere> list = insideBand(WorldGenCycle.fromConfig(), field.candidatesFor(chunkX, chunkZ));
         if (CANDIDATE_CACHE.size() >= MAX_CACHE) CANDIDATE_CACHE.clear();
         CANDIDATE_CACHE.put(key, list);
         return list;
+    }
+
+    /**
+     * Keep only the spheres whose full X extent {@code [cx − r, cx + r]} has a non-zero void ramp —
+     * i.e. sits inside one repeat's entry fade + core. A sphere straddling the fade's first column
+     * (untouched overworld before it) or the core's hard far edge would otherwise be carved on one side
+     * and cut off flat on the other. Pure in the cycle, so unit-testable; a sphere can't span two
+     * repeats (its diameter is orders of magnitude below the period).
+     */
+    static List<SphereField.Sphere> insideBand(WorldGenCycle cycle, List<SphereField.Sphere> spheres) {
+        if (spheres.isEmpty()) return spheres;
+        List<SphereField.Sphere> kept = null;
+        for (SphereField.Sphere s : spheres) {
+            boolean in = cycle.spheresVoidRamp(s.cx() - s.r()) > 0.0 && cycle.spheresVoidRamp(s.cx() + s.r()) > 0.0;
+            if (in) {
+                if (kept == null) kept = new java.util.ArrayList<>(spheres.size());
+                kept.add(s);
+            }
+        }
+        return kept == null ? List.of() : java.util.Collections.unmodifiableList(kept);
     }
 
     /**
@@ -125,15 +147,18 @@ public final class SpheresBand {
     }
 
     /**
-     * True if the world position is <b>void space</b> in the band core — inside no sphere. Per-block,
-     * for the fluid veto, so liquid can't pour off a sphere's underside. Fade columns are never void
-     * space (terrain is still partly there; vanilla flow applies).
+     * True if the world position is <b>void space</b> in the band — anywhere the void ramp is non-zero
+     * (entry fade or core) and inside no sphere. Per-block, for the fluid veto, so liquid can't pour
+     * off a sphere's underside. The fade counts too: its crumbling seabeds and lake floors open holes
+     * under worldgen water, and without the veto that water cascades to bedrock as an ever-spreading
+     * sheet of flowing fluid (the runaway tick load the chuncks band hit) — a headless probe found
+     * full-height water columns across the whole fade. Liquid there stays put as static blocks.
      */
     public static boolean isVoidSpace(ServerLevel overworld, int blockX, int blockY, int blockZ) {
         if (!DungeonTrainCommonConfig.isSpheresEnabled()) return false;
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         if (cycle.spheresLen() <= 0L) return false;
-        if (!cycle.isInSpheresBand(blockX)) return false;
+        if (cycle.spheresVoidRamp(blockX) <= 0.0) return false;
         if (!DungeonTrainWorldData.get(overworld).startsWithTrain()) return false;
         return SphereField.bestAt(candidates(overworld, blockX >> 4, blockZ >> 4), blockX, blockY, blockZ) == null;
     }
