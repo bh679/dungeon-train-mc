@@ -105,7 +105,11 @@ public class StacksFeature extends Feature<NoneFeatureConfiguration> {
                 StructureTemplate template = serverLevel.getStructureManager().getOrCreate(id);
                 Vec3i size = template.getSize(rotation);
                 if (!fits(size)) continue;
-                return stampTower(level, chunkPos, template, size, rotation);
+                boolean placed = stampTower(level, chunkPos, template, size, rotation);
+                // DEBUG level: run/logs/debug.log carries it for verification; latest.log stays quiet.
+                LOGGER.debug("[DungeonTrain] stacks: chunk ({},{}) tower {} size {}x{}x{} rot {} attempt {} placed={}",
+                    chunkPos.x, chunkPos.z, id, size.getX(), size.getY(), size.getZ(), rotation, attempt, placed);
+                return placed;
             }
             return false;
         } catch (Throwable t) {
