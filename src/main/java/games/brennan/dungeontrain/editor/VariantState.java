@@ -65,12 +65,21 @@ import org.jetbrains.annotations.Nullable;
  *       draw an icon and clearing the ref leaves a sane block. Omitted from
  *       JSON when 0, so v8 files round-trip diff-clean. See
  *       {@link CarriageVariantBlocks#resolveGroupRef}.</li>
+ *   <li>v10+ (additive, no schema bump) — adds an optional per-entry
+ *       {@link VariantActive} for blocks that react to a redstone signal
+ *       (trapdoor {@code open}, lamp {@code lit}, piston {@code extended},
+ *       lever {@code powered} — see {@link RedstoneToggle#propertyFor}).
+ *       The canonical constructor keeps the stored state's toggle property in
+ *       step with the mode, so the default {@code INACTIVE} is omitted from
+ *       JSON and older files round-trip diff-clean; a hand-authored
+ *       {@code open=true} state with no field migrates to {@code ACTIVE} on
+ *       read.</li>
  * </ul></p>
  */
 public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
                            VariantRotation rotation, @Nullable String linkedLootPrefabId,
                            @Nullable ResourceLocation entityId, VariantHalf half,
-                           VariantDifficulty difficulty, int groupRef) {
+                           VariantDifficulty difficulty, int groupRef, VariantActive active) {
 
     public VariantState {
         if (entityId != null) {
@@ -100,6 +109,26 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         if (half == null) half = VariantHalf.NONE;
         if (difficulty == null) difficulty = VariantDifficulty.NONE;
         if (groupRef < 0) groupRef = 0;
+        if (active == null) active = VariantActive.NONE;
+        // Keep the stored state's redstone toggle in step with the flag so the
+        // serialised state string and the mode can never disagree: ACTIVE
+        // stores open/lit/powered=true, RANDOM and INACTIVE store false (the
+        // spawn roll decides for RANDOM). No-op for blocks with no toggle.
+        state = RedstoneToggle.set(state, active.mode() == VariantActive.Mode.ACTIVE);
+    }
+
+    /**
+     * Nine-arg overload — every shorter constructor chains through here — that
+     * derives {@code active} from the captured state ({@link VariantActive#fromState}):
+     * a world-block capture of an opened trapdoor or lit lamp stays active, a
+     * placement-state capture is inactive. Pass the ten-arg form to force a mode.
+     */
+    public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
+                        VariantRotation rotation, @Nullable String linkedLootPrefabId,
+                        @Nullable ResourceLocation entityId, VariantHalf half,
+                        VariantDifficulty difficulty, int groupRef) {
+        this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty,
+            groupRef, VariantActive.fromState(state));
     }
 
     /** Eight-arg overload defaulting {@code groupRef} to 0 (not a lock-group reference). */
@@ -203,7 +232,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     public boolean isPlainBareString() {
         return blockEntityNbt == null && weight == 1 && rotation.isDefault()
             && linkedLootPrefabId == null && entityId == null && half.isDefault()
-            && difficulty.isDefault() && groupRef == 0;
+            && difficulty.isDefault() && groupRef == 0 && active.isDefault();
     }
 
     /**
@@ -212,32 +241,32 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * is preserved. Not meaningful for mob entries (their state is the sentinel).
      */
     public VariantState withState(BlockState newState, @Nullable CompoundTag newBlockEntityNbt) {
-        return new VariantState(newState, newBlockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef);
+        return new VariantState(newState, newBlockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active);
     }
 
     /** Return a copy with {@code weight} replaced (clamped ≥ 1 by the canonical constructor). */
     public VariantState withWeight(int newWeight) {
-        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef);
+        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active);
     }
 
     /** Return a copy with {@code rotation} replaced. */
     public VariantState withRotation(VariantRotation newRotation) {
-        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half, difficulty, groupRef);
+        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active);
     }
 
     /** Return a copy with {@code linkedLootPrefabId} replaced ({@code null} clears the link). */
     public VariantState withLinkedLootPrefabId(@Nullable String newLinkedLootPrefabId) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half, difficulty, groupRef);
+        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half, difficulty, groupRef, active);
     }
 
     /** Return a copy with {@code half} replaced. */
     public VariantState withHalf(VariantHalf newHalf) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty, groupRef);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty, groupRef, active);
     }
 
     /** Return a copy with {@code difficulty} replaced (only meaningful for mob entries). */
     public VariantState withDifficulty(VariantDifficulty newDifficulty) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty, groupRef);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty, groupRef, active);
     }
 
     /**
@@ -246,7 +275,15 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * why the placeholder is kept alongside the ref rather than discarded.
      */
     public VariantState withGroupRef(int newGroupRef) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, newGroupRef);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, newGroupRef, active);
+    }
+
+    /**
+     * Return a copy with {@code active} replaced. The canonical constructor
+     * re-syncs the stored state's toggle property to the new mode.
+     */
+    public VariantState withActive(VariantActive newActive) {
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, newActive);
     }
 
     /**

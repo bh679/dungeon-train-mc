@@ -242,6 +242,18 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_HALF_MODE, variantId, local, hit.index(), "", nextOrd));
             }
+            case ENTRY_ACTIVE_MODE -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                int currentOrd = e.activeMode() & 0xFF;
+                int modeCount = games.brennan.dungeontrain.editor.VariantActive.Mode.values().length;
+                if (currentOrd >= modeCount) {
+                    currentOrd = games.brennan.dungeontrain.editor.VariantActive.Mode.INACTIVE.ordinal();
+                }
+                int nextOrd = (currentOrd + 1) % modeCount;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_ACTIVE_MODE, variantId, local, hit.index(), "", nextOrd));
+            }
             case ENTRY_ROT_DIRS -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());

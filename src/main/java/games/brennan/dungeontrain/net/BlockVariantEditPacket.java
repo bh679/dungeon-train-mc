@@ -101,7 +101,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
                      PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
                      OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX,
-                     SET_WEIGHT, CYCLE_COPY_ROLL, CYCLE_COPY_SCOPE }
+                     SET_WEIGHT, CYCLE_COPY_ROLL, CYCLE_COPY_SCOPE, SET_ACTIVE_MODE }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

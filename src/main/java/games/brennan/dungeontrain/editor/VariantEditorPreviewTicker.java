@@ -200,6 +200,12 @@ public final class VariantEditorPreviewTicker {
      * </ul>
      */
     static BlockState computePreviewState(VariantState picked, long previewTick) {
+        return applyActivePreview(computeOrientationPreview(picked, previewTick),
+            picked.active(), previewTick);
+    }
+
+    /** Facing + half portion of {@link #computePreviewState}; the redstone toggle layers on top. */
+    private static BlockState computeOrientationPreview(VariantState picked, long previewTick) {
         VariantRotation rot = picked.rotation();
         BlockState base = picked.state();
         BlockState afterFacing = pickFacingPreview(rot, base, previewTick);
@@ -217,6 +223,23 @@ public final class VariantEditorPreviewTicker {
             return cycleFlipPreview(afterFacing, base, previewTick);
         }
         return afterFacing;
+    }
+
+    /**
+     * Redstone-toggle pass for the editor preview: ACTIVE / INACTIVE force
+     * the block's toggle property (the stored state already carries it, but
+     * the facing/half passes above may have rebuilt the state); RANDOM
+     * alternates every preview tick so the author sees both forms. No-op for
+     * blocks without a toggle.
+     */
+    static BlockState applyActivePreview(BlockState state, VariantActive active, long previewTick) {
+        if (active == null || !RedstoneToggle.canToggle(state)) return state;
+        boolean on = switch (active.mode()) {
+            case ACTIVE -> true;
+            case RANDOM -> (previewTick & 1L) != 0L;
+            case INACTIVE -> false;
+        };
+        return RedstoneToggle.set(state, on);
     }
 
     /**

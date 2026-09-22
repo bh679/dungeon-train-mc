@@ -90,16 +90,33 @@ public final class RotationApplier {
         BlockState base, VariantRotation rot, VariantHalf half,
         BlockPos localPos, long worldSeed, int carriageIndex, int lockId
     ) {
+        return apply(base, rot, half, VariantActive.NONE, localPos, worldSeed, carriageIndex, lockId);
+    }
+
+    /**
+     * Eight-arg apply: facing pick + half override + redstone-toggle
+     * ({@link VariantActive}) pass. ACTIVE / INACTIVE force the block's
+     * toggle property; RANDOM rolls it with its own salt via
+     * {@link RedstoneToggle#apply}. Pass {@link VariantState#active()} so
+     * each entry's authored mode is honoured.
+     */
+    public static BlockState apply(
+        BlockState base, VariantRotation rot, VariantHalf half, VariantActive active,
+        BlockPos localPos, long worldSeed, int carriageIndex, int lockId
+    ) {
         if (rot == null) rot = VariantRotation.NONE;
         if (half == null) half = VariantHalf.NONE;
         BlockState facingApplied = applyFacing(base, rot, localPos, worldSeed, carriageIndex, lockId);
+        BlockState halfApplied;
         if (half.mode() == VariantHalf.Mode.RANDOM
             && rot.mode() != VariantRotation.Mode.RANDOM) {
             // halfMode default + LOCK/OPTIONS rotation → preserve captured
             // half (v7 semantics).
-            return facingApplied;
+            halfApplied = facingApplied;
+        } else {
+            halfApplied = applyHalf(facingApplied, half, localPos, worldSeed, carriageIndex, lockId);
         }
-        return applyHalf(facingApplied, half, localPos, worldSeed, carriageIndex, lockId);
+        return RedstoneToggle.apply(halfApplied, active, localPos, worldSeed, carriageIndex, lockId);
     }
 
     /**
