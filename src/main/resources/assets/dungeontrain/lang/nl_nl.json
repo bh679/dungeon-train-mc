@@ -2712,7 +2712,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "Onbekende kopieënoptie '%s'. Probeer exact, dynamic of single.",
   "chat.dungeontrain.editor.only_player_can_pick": "Alleen een speler kan een blok uit zijn hand kiezen.",
   "chat.dungeontrain.editor.that_clipboard_empty": "Dat klembord is leeg.",
-  "chat.dungeontrain.editor.hold_block_or_variant": "Houd een blok vast, of een variant gekopieerd uit een cel — of helemaal niets voor lucht — en druk dan opnieuw hierop.",
+  "chat.dungeontrain.editor.hold_block_or_variant": "Houd een blok of een gevulde emmer vast, of een variant gekopieerd uit een cel — of helemaal niets voor lucht — en druk dan opnieuw hierop.",
   "chat.dungeontrain.editor.hold_block_or_nothing": "Houd een blok vast — of helemaal niets voor geen schil — en druk dan opnieuw hierop.",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s' is geen blok dat deze wereld kent.",
   "chat.dungeontrain.editor.only_player_can_open": "Alleen een speler kan het variantenmenu openen.",

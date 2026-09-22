@@ -2755,7 +2755,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "Nieznana opcja kopii '%s'. Spróbuj exact, dynamic lub single.",
   "chat.dungeontrain.editor.only_player_can_pick": "Tylko gracz może wybrać blok z ręki.",
   "chat.dungeontrain.editor.that_clipboard_empty": "Ten schowek jest pusty.",
-  "chat.dungeontrain.editor.hold_block_or_variant": "Trzymaj blok albo wariant skopiowany z komórki — lub nic, aby ustawić powietrze — i naciśnij to ponownie.",
+  "chat.dungeontrain.editor.hold_block_or_variant": "Trzymaj blok lub pełne wiadro, albo wariant skopiowany z komórki — lub nic, aby ustawić powietrze — i naciśnij to ponownie.",
   "chat.dungeontrain.editor.hold_block_or_nothing": "Trzymaj blok — lub nic, aby nie było powłoki — i naciśnij to ponownie.",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s' nie jest blokiem znanym w tym świecie.",
   "chat.dungeontrain.editor.only_player_can_open": "Tylko gracz może otworzyć menu wariantów.",

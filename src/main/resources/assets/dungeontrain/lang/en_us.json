@@ -3196,7 +3196,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "Unknown copies option '%s'. Try exact, dynamic or single.",
   "chat.dungeontrain.editor.only_player_can_pick": "Only a player can pick a block from their hand.",
   "chat.dungeontrain.editor.that_clipboard_empty": "That clipboard is empty.",
-  "chat.dungeontrain.editor.hold_block_or_variant": "Hold a block, or a variant copied from a cell — or nothing at all for air — then press this again.",
+  "chat.dungeontrain.editor.hold_block_or_variant": "Hold a block or a filled bucket, or a variant copied from a cell — or nothing at all for air — then press this again.",
   "chat.dungeontrain.editor.hold_block_or_nothing": "Hold a block — or nothing at all for no shell — then press this again.",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s' is not a block this world knows about.",
   "chat.dungeontrain.editor.only_player_can_open": "Only a player can open the variant menu.",

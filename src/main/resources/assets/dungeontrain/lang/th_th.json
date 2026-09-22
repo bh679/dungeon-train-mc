@@ -2669,7 +2669,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "ไม่รู้จักตัวเลือกสำเนา '%s' ลอง exact, dynamic หรือ single",
   "chat.dungeontrain.editor.only_player_can_pick": "มีเพียงผู้เล่นเท่านั้นที่หยิบบล็อกจากมือได้",
   "chat.dungeontrain.editor.that_clipboard_empty": "คลิปบอร์ดนั้นว่างเปล่า",
-  "chat.dungeontrain.editor.hold_block_or_variant": "ถือบล็อก หรือรูปแบบที่คัดลอกจากช่อง — หรือไม่ถืออะไรเลยสำหรับอากาศ — แล้วกดนี่อีกครั้ง",
+  "chat.dungeontrain.editor.hold_block_or_variant": "ถือบล็อกหรือถังที่มีของเหลว หรือรูปแบบที่คัดลอกจากช่อง — หรือไม่ถืออะไรเลยสำหรับอากาศ — แล้วกดนี่อีกครั้ง",
   "chat.dungeontrain.editor.hold_block_or_nothing": "ถือบล็อก — หรือไม่ถืออะไรเลยสำหรับไม่มีเปลือก — แล้วกดนี่อีกครั้ง",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s' ไม่ใช่บล็อกที่โลกนี้รู้จัก",
   "chat.dungeontrain.editor.only_player_can_open": "มีเพียงผู้เล่นเท่านั้นที่เปิดเมนูรูปแบบได้",

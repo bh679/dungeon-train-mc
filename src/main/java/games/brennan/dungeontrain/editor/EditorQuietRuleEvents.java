@@ -42,6 +42,14 @@ public final class EditorQuietRuleEvents {
      */
     public static final String EDITOR_WORLD_PREFIX = "train editor ";
 
+    /**
+     * How long a start-of-world clear lasts before the weather cycle would pick again, in ticks —
+     * vanilla {@code /weather clear}'s own default. Academic while {@code weatherCycle} is off, which
+     * is the point: the rule freezes whatever state the world is in, so the state has to be cleared
+     * too.
+     */
+    private static final int CLEAR_WEATHER_TICKS = 6000;
+
     private EditorQuietRuleEvents() {}
 
     /** Whether {@code levelName} is one of the worlds the Train Editor button creates. */
@@ -71,11 +79,15 @@ public final class EditorQuietRuleEvents {
             return; // not an editor world — leave the rules alone
         }
         EditorQuietRules.apply(server.getGameRules(), server);
+        // Same problem as the clock, for the same reason: weatherCycle=false freezes the weather
+        // rather than ending it, so an editor world quit mid-storm would rain for good.
+        server.overworld().setWeatherParameters(CLEAR_WEATHER_TICKS, 0, false, false);
         // Start at a stopped noon whatever the world was left at — including the 10x clock a
         // Day/Night plot runs, which is saved in level.dat when the author quits standing in one.
         EditorClock.restMidday(server.overworld());
         LOGGER.info("[DungeonTrain] Train Editor world — {} quiet game rules applied "
-                + "(natural mob spawning off, clock stopped at midday, random ticks off).",
+                + "(natural mob spawning off, clock stopped at midday, weather off, "
+                + "random ticks off).",
             EditorQuietRules.RULE_COUNT);
     }
 }

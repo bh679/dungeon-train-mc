@@ -2712,7 +2712,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "Opzione copie sconosciuta '%s'. Prova exact, dynamic o single.",
   "chat.dungeontrain.editor.only_player_can_pick": "Solo un giocatore può scegliere un blocco dalla propria mano.",
   "chat.dungeontrain.editor.that_clipboard_empty": "Quegli appunti sono vuoti.",
-  "chat.dungeontrain.editor.hold_block_or_variant": "Tieni in mano un blocco, o una variante copiata da una cella — oppure niente per l'aria — poi premi di nuovo.",
+  "chat.dungeontrain.editor.hold_block_or_variant": "Tieni in mano un blocco o un secchio pieno, o una variante copiata da una cella — oppure niente per l'aria — poi premi di nuovo.",
   "chat.dungeontrain.editor.hold_block_or_nothing": "Tieni in mano un blocco — oppure niente per nessun guscio — poi premi di nuovo.",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s' non è un blocco conosciuto da questo mondo.",
   "chat.dungeontrain.editor.only_player_can_open": "Solo un giocatore può aprire il menu delle varianti.",

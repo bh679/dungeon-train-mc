@@ -90,7 +90,7 @@ public final class CarriageGroupPlacer {
      * carriage's worth of it. The author's entities come with it, matching the placement above.</p>
      *
      * <p>This used to fill with {@code includeEntities = false}, which is why a group saved before
-     * v0.928 holds no entities: it gains them the first time its author saves it again.</p>
+     * this change holds no entities: it gains them the first time its author saves it again.</p>
      */
     public static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin,
                                                     CarriageDims dims, int carriages) {
