@@ -26,8 +26,11 @@ import org.jetbrains.annotations.Nullable;
  * {@link #MIDDAY_TICKS} the moment they step out — and {@link EditorQuietRuleEvents} rests it on
  * every start.</p>
  *
- * <p>The sibling of {@code BuilderQuietRules}, minus its weather rule — the editor world has no
- * terrain for rain to fall on.</p>
+ * <p>Weather is off for the same reason the clock is stopped. The editor is a skylit, {@code
+ * natural} dimension (see {@code dimension_type/editor.json}), so rain and thunder darken the sky
+ * over the plots and play their sound even though there is no terrain under them to fall on — motion
+ * in the background of the one thing the editor exists to show you. The sibling of {@code
+ * BuilderQuietRules}, which switches the same rule off for the same reason.</p>
  *
  * <p>One typed implementation shared by both entry points, so the two cannot drift apart:</p>
  * <ul>
@@ -40,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 public final class EditorQuietRules {
 
     /** How many rules {@link #apply} switches off — for log lines. */
-    public static final int RULE_COUNT = 3;
+    public static final int RULE_COUNT = 4;
 
     /** The day time the editor rests at: noon. */
     public static final long MIDDAY_TICKS = 6000L;
@@ -48,7 +51,7 @@ public final class EditorQuietRules {
     private EditorQuietRules() {}
 
     /**
-     * Switch off natural mob spawning, the daylight cycle and random ticks.
+     * Switch off natural mob spawning, the daylight cycle, weather and random ticks.
      *
      * <p>Idempotent — setting a rule to the value it already holds is a no-op — so this is safe to
      * run on every server start rather than only on the first.</p>
@@ -60,6 +63,7 @@ public final class EditorQuietRules {
     public static void apply(GameRules rules, @Nullable MinecraftServer server) {
         rules.getRule(GameRules.RULE_DOMOBSPAWNING).set(false, server);
         rules.getRule(GameRules.RULE_DAYLIGHT).set(false, server);
+        rules.getRule(GameRules.RULE_WEATHER_CYCLE).set(false, server);
         rules.getRule(GameRules.RULE_RANDOMTICKING).set(0, server);
     }
 }
