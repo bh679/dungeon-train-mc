@@ -105,8 +105,12 @@ public final class BlockVariantMenuRenderer {
     static final double ROT_DIRS_CELL_WIDTH = 0.32;
     /** T/R/B pill width — matches the L/R/O pill so the two read as a pair on stairs/trapdoors. */
     static final double HALF_MODE_CELL_WIDTH = 0.34;
-    /** On/R/Off pill width — same as the T/R/B pill; the redstone-toggle control for trapdoors, lamps, levers…. */
-    static final double ACTIVE_MODE_CELL_WIDTH = 0.34;
+    /**
+     * On/R/Off pill width — the redstone-toggle control for trapdoors, lamps, levers…. Wider than
+     * the single-letter T/R/B pill because "Off" is three glyphs: at the shared width the labels
+     * overran into the neighbouring pill (Gate 2 screenshot, v0.928.1).
+     */
+    static final double ACTIVE_MODE_CELL_WIDTH = 0.78;
     static final double TEXT_SCALE = 0.012;
     static final double POPUP_BUTTON_SIZE = 0.20;
     static final double ICON_SIZE = 0.22;
