@@ -2669,7 +2669,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "Hindi kilalang opsyon ng mga kopya '%s'. Subukan ang exact, dynamic o single.",
   "chat.dungeontrain.editor.only_player_can_pick": "Isang player lang ang maaaring pumili ng bloke mula sa kamay niya.",
   "chat.dungeontrain.editor.that_clipboard_empty": "Walang laman ang clipboard na iyon.",
-  "chat.dungeontrain.editor.hold_block_or_variant": "Humawak ng bloke, o ng variant na kinopya mula sa isang cell — o walang hawak para sa hangin — saka pindutin ulit ito.",
+  "chat.dungeontrain.editor.hold_block_or_variant": "Humawak ng bloke o ng punong timba, o ng variant na kinopya mula sa isang cell — o walang hawak para sa hangin — saka pindutin ulit ito.",
   "chat.dungeontrain.editor.hold_block_or_nothing": "Humawak ng bloke — o walang hawak para walang shell — saka pindutin ulit ito.",
   "chat.dungeontrain.editor.not_block_world_knows": "Hindi kilala ng mundong ito ang blokeng '%s'.",
   "chat.dungeontrain.editor.only_player_can_open": "Isang player lang ang maaaring magbukas ng variant menu.",

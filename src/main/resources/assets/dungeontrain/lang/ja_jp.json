@@ -2669,7 +2669,7 @@
   "chat.dungeontrain.editor.unknown_copies_option_try": "不明なコピーオプション '%s' です。exact、dynamic、single のいずれかを試してください。",
   "chat.dungeontrain.editor.only_player_can_pick": "手に持ったブロックを選べるのはプレイヤーだけです。",
   "chat.dungeontrain.editor.that_clipboard_empty": "そのクリップボードは空です。",
-  "chat.dungeontrain.editor.hold_block_or_variant": "ブロックか、セルからコピーしたバリアントを持ってください — 空気にするなら何も持たずに — そしてもう一度これを押してください。",
+  "chat.dungeontrain.editor.hold_block_or_variant": "ブロックか中身の入ったバケツ、またはセルからコピーしたバリアントを持ってください — 空気にするなら何も持たずに — そしてもう一度これを押してください。",
   "chat.dungeontrain.editor.hold_block_or_nothing": "ブロックを持ってください — 外殻なしにするなら何も持たずに — そしてもう一度これを押してください。",
   "chat.dungeontrain.editor.not_block_world_knows": "'%s' はこのワールドが知らないブロックです。",
   "chat.dungeontrain.editor.only_player_can_open": "バリアントメニューを開けるのはプレイヤーだけです。",
