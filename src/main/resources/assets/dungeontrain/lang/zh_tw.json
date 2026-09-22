@@ -2117,6 +2117,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "終界",
   "gui.dungeontrain.editor_menu.phase.upside_down": "顛倒世界",
   "gui.dungeontrain.editor_menu.phase.chuncks": "區塊",
+  "gui.dungeontrain.editor_menu.phase.spheres": "球體",
   "gui.dungeontrain.editor_menu.stage.title": "路段：%s",
   "gui.dungeontrain.editor_menu.stage.delete": "刪除路段",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "刪除路段「%s」？關聯的範本會改回自身的等級設定。",

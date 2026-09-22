@@ -7,10 +7,10 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * phases in one fixed order along +X from a shared anchor:
  *
  * <pre>
- *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → OW → Chuncks → OW (repeat)
+ *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → OW → Chuncks → OW → Spheres → (repeat)
  * </pre>
  *
- * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap] [chuncks band]}. The
+ * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap] [chuncks band] [spheres band]}. The
  * nether/End sub-bands reuse the existing ramp math ({@link NetherTransition} and
  * {@link Disintegration}) evaluated at a <em>local</em> offset with {@code owHold = 0}; the
  * upside-down band uses a simple trapezoid ({@link #upsideDownRamp}) and is realised as a
@@ -62,6 +62,14 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  *                   (the rest are void); a per-chunk seed-stable noise gate. 0 = all void
  * @param chuncksSliceRatio fraction {@code 0..1} of the KEPT chunks that are a top-down slice (surface
  *                   kept, flat bottom cut) rather than vertically complete
+ * @param spheresHold length of the "spheres" band core — open void scattered with floating spheres of
+ *                   natural overworld terrain, each lifted to its own height (see {@code SphereField} /
+ *                   {@code WorldSpheresEvents}). Appended after the chuncks band. 0 disables the band
+ *                   (period byte-identical to the pre-spheres cycle)
+ * @param spheresFade length of the entry fade zone before the band: the natural terrain outside the
+ *                   spheres dissolves into void across it (void ramp 0 → 1). 0 = hard edge
+ * @param spheresLeadGap plain-overworld gap inserted before the spheres band (after the chuncks core),
+ *                   before the spheres entry fade. 0 = none
  * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
  *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
  *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
@@ -74,7 +82,27 @@ public record WorldGenCycle(long startX, int owGap,
                             int udFade, int udHold, int udExit, int udExitFade,
                             int chuncksHold, int chuncksFade, int chuncksLeadGap,
                             double chuncksKeepDensity, double chuncksSliceRatio,
+                            int spheresHold, int spheresFade, int spheresLeadGap,
                             int phaseShift) {
+
+    /**
+     * Back-compat constructor for the pre-spheres 21-arg shape (chuncks band present, no spheres
+     * band). Passes {@code spheresHold = 0} so {@link #period()} is byte-identical to the pre-spheres
+     * cycle — existing callers and unit tests keep the old layout unchanged.
+     */
+    public WorldGenCycle(long startX, int owGap,
+                         int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
+                         int coreFade, int coreHold,
+                         int eFade, int eVoid, int eEnd,
+                         int udFade, int udHold, int udExit, int udExitFade,
+                         int chuncksHold, int chuncksFade, int chuncksLeadGap,
+                         double chuncksKeepDensity, double chuncksSliceRatio,
+                         int phaseShift) {
+        this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
+                chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
+                0, 0, 0, phaseShift);
+    }
 
     /**
      * Back-compat constructor for the pre-chuncks 16-arg shape (with {@code udExitFade}, no chuncks
@@ -148,6 +176,7 @@ public record WorldGenCycle(long startX, int owGap,
         boolean end = DungeonTrainCommonConfig.isDisintegrationEnabled();
         boolean ud = DungeonTrainCommonConfig.isUpsideDownEnabled();
         boolean chuncks = DungeonTrainCommonConfig.isChuncksEnabled();
+        boolean spheres = DungeonTrainCommonConfig.isSpheresEnabled();
         return new WorldGenCycle(
                 DungeonTrainCommonConfig.getDisintegrationStartBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks(),
@@ -169,6 +198,9 @@ public record WorldGenCycle(long startX, int owGap,
                 chuncks ? DungeonTrainCommonConfig.getChuncksLeadGapBlocks() : 0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksKeepDensity() : 0.0,
                 chuncks ? DungeonTrainCommonConfig.getChuncksSliceRatio() : 0.0,
+                spheres ? DungeonTrainCommonConfig.getSpheresHoldBlocks() : 0,
+                spheres ? DungeonTrainCommonConfig.getSpheresFadeBlocks() : 0,
+                spheres ? DungeonTrainCommonConfig.getSpheresLeadGapBlocks() : 0,
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
     }
 
@@ -241,11 +273,37 @@ public record WorldGenCycle(long startX, int owGap,
         return chuncksLen() > 0L ? Math.max(0, chuncksLeadGap) : 0L;
     }
 
-    /** {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + chuncksLeadGap + chuncksFade + chuncksLen}. */
+    /** Length of the spheres band core (the full-void {@code spheresHold}); 0 when disabled. */
+    public long spheresLen() {
+        return Math.max(0, spheresHold);
+    }
+
+    /**
+     * Length of the spheres entry fade zone before the band core; gated on {@code spheresLen > 0} so a
+     * disabled band — or a zero {@code spheresFade} — keeps {@link #period()} byte-identical.
+     */
+    public long spheresFadeLen() {
+        return spheresLen() > 0L ? Math.max(0, spheresFade) : 0L;
+    }
+
+    /**
+     * Plain-overworld gap before the spheres band (after the chuncks core); gated on
+     * {@code spheresLen > 0} so it collapses to 0 — and keeps {@link #period()} byte-identical — when
+     * the band is disabled.
+     */
+    public long spheresLeadGapLen() {
+        return spheresLen() > 0L ? Math.max(0, spheresLeadGap) : 0L;
+    }
+
+    /**
+     * {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + chuncksLeadGap + chuncksFade
+     * + chuncksLen + spheresLeadGap + spheresFade + spheresLen}.
+     */
     public long period() {
         return 2L * Math.max(0, owGap) + netherLen() + endLen()
                 + upsideDownLen() + udExitFadeLen() + udExitGap()
-                + chuncksLeadGapLen() + chuncksFadeLen() + chuncksLen();
+                + chuncksLeadGapLen() + chuncksFadeLen() + chuncksLen()
+                + spheresLeadGapLen() + spheresFadeLen() + spheresLen();
     }
 
     /**
@@ -795,5 +853,94 @@ public record WorldGenCycle(long startX, int owGap,
             }
         }
         return 1.0;                                                 // outside the band + fade
+    }
+
+    // ---- spheres band --------------------------------------------------------
+
+    /**
+     * Offset (into the cycle) where the spheres entry fade zone begins — after the chuncks band core
+     * and the spheres lead-in gap ({@code spheresLeadGap}). When the chuncks band is disabled all its
+     * spans are 0, so this collapses to right after the upside-down exit gap (plus the lead gap); the
+     * spheres band's placement is independent of whether chuncks is present.
+     */
+    private long spheresFadeStart() {
+        return chuncksStart() + chuncksLen() + spheresLeadGapLen();
+    }
+
+    /** Offset where the full-void spheres core begins — after the entry fade zone. */
+    private long spheresStart() {
+        return spheresFadeStart() + spheresFadeLen();
+    }
+
+    /** Offset into the spheres band core at a world-X, or {@code -1} outside it. */
+    private long spheresOffset(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return -1L;
+        long ls = o - spheresStart();
+        return (ls < 0L || ls >= spheresLen()) ? -1L : ls;
+    }
+
+    /**
+     * True if {@code worldX} lies in the full-void spheres band core (not the entry fade). Membership is
+     * binary (per-column) like {@link #isInChuncksBand}; which blocks survive inside a column is the
+     * seed-stable sphere field ({@code SphereField}) applied on top, not part of the pure layout.
+     */
+    public boolean isInSpheresBand(int worldX) {
+        return spheresOffset(worldX) >= 0L;
+    }
+
+    /**
+     * True if {@code worldX} lies in the entry fade zone {@code [spheresFadeStart, spheresStart)} —
+     * immediately before the spheres core, where the natural terrain dissolves into void. Disjoint from
+     * {@link #isInSpheresBand}: a column is in at most one of the two.
+     */
+    public boolean isInSpheresFade(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long fadeLen = spheresFadeLen();
+        if (fadeLen <= 0L) return false;
+        long l = o - spheresFadeStart();
+        return l >= 0L && l < fadeLen;
+    }
+
+    /**
+     * Void ramp {@code 0..1} for the spheres band: {@code 0} outside the band, climbing linearly from
+     * {@code 0} at the entry fade start to {@code 1} at the core edge, and held at {@code 1} across the
+     * core. Drives how much of the natural terrain outside the spheres is dissolved (the carve pass
+     * dithers removal against it) and the bedrock-floor skip. Pure (seed-independent), like the other
+     * ramps. Hard far edge: {@code 0} again immediately after the core.
+     */
+    public double spheresVoidRamp(int worldX) {
+        if (spheresLen() <= 0L) return 0.0;
+        long o = offset(worldX);
+        if (o < 0L) return 0.0;
+        long coreStart = spheresStart();
+        if (o >= coreStart && o < coreStart + spheresLen()) return 1.0;
+        long fadeLen = spheresFadeLen();
+        if (fadeLen > 0L) {
+            long fadeStart = coreStart - fadeLen;
+            if (o >= fadeStart && o < coreStart) return (double) (o - fadeStart) / fadeLen;
+        }
+        return 0.0;
+    }
+
+    /**
+     * True if {@code worldX} lies anywhere in the run-up to the spheres band or the band core itself —
+     * the whole stretch from the end of the chuncks core (the spheres {@code leadGap}, the entry fade,
+     * then the core). The lead gap reads as plain overworld to {@link DisintegrationBand#zoneAt} and to
+     * {@code ChuncksBand.isInApproachOrBand}, but the world has not settled back yet: the spheres are
+     * still to come. Used by the {@code reached_overworld_again} advancement gate
+     * ({@code ZoneProgressEvents}) alongside the chuncks predicate, so "Re-Over-World" waits for the
+     * overworld that follows the LAST band of the cycle.
+     *
+     * <p>False when the spheres band is disabled ({@code spheresLen == 0}) — with no band there is
+     * nothing to wait for, and the pre-spheres gating is preserved exactly.</p>
+     */
+    public boolean isInSpheresApproachOrBand(int worldX) {
+        if (spheresLen() <= 0L) return false;
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long approachStart = chuncksStart() + chuncksLen();
+        return o >= approachStart && o < spheresStart() + spheresLen();
     }
 }

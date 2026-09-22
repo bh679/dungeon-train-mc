@@ -2103,6 +2103,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "End",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Terbalik",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Cebisang",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Sfera",
   "gui.dungeontrain.editor_menu.stage.title": "Peringkat: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Padam Peringkat",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Padam peringkat '%s'? Templat yang dipautkan kembali ke get dalamannya.",

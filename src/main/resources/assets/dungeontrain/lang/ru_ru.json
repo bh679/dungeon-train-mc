@@ -2186,6 +2186,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "Край",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Вверх дном",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Чунки",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Сферы",
   "gui.dungeontrain.editor_menu.stage.title": "Этап: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Удалить этап",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Удалить этап «%s»? Привязанные шаблоны вернутся к своим настройкам.",

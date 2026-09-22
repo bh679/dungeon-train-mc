@@ -2663,6 +2663,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "End",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Răsturnat",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Chuncks",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Sfere",
   "gui.dungeontrain.editor_menu.stage.title": "Etapă: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Șterge etapa",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Ștergi etapa '%s'? Șabloanele legate revin la poarta lor proprie.",

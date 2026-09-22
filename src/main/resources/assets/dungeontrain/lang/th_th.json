@@ -2103,6 +2103,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "ดิเอนด์",
   "gui.dungeontrain.editor_menu.phase.upside_down": "กลับหัว",
   "gui.dungeontrain.editor_menu.phase.chuncks": "ชังก์ส์",
+  "gui.dungeontrain.editor_menu.phase.spheres": "ทรงกลม",
   "gui.dungeontrain.editor_menu.stage.title": "สเตจ: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "ลบสเตจ",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "ลบสเตจ '%s' หรือไม่? เทมเพลตที่เชื่อมอยู่จะกลับไปใช้เกตในตัวของมัน",

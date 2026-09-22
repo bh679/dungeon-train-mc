@@ -2624,6 +2624,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "End",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Upside Down",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Chuncks",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Spheres",
   "gui.dungeontrain.editor_menu.stage.title": "Stage: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Delete Stage",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Delete stage '%s'? Linked templates revert to their inline gate.",

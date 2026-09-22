@@ -11,7 +11,8 @@
         "VOID",
         "END",
         "UPSIDE_DOWN",
-        "CHUNCKS"
+        "CHUNCKS",
+        "SPHERES"
       ]
     },
     {
@@ -27,7 +28,8 @@
         "OVERWORLD",
         "NETHER",
         "UPSIDE_DOWN",
-        "CHUNCKS"
+        "CHUNCKS",
+        "SPHERES"
       ]
     },
     {
@@ -110,7 +112,8 @@
         "VOID",
         "END",
         "UPSIDE_DOWN",
-        "CHUNCKS"
+        "CHUNCKS",
+        "SPHERES"
       ]
     },
     {

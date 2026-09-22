@@ -2142,6 +2142,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "End",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Invertido",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Chuncks",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Esferas",
   "gui.dungeontrain.editor_menu.stage.title": "Estágio: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Excluir estágio",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Excluir o estágio '%s'? Os modelos vinculados voltam ao seu limite próprio.",

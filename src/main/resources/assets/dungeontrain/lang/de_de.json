@@ -2142,6 +2142,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "Ende",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Kopfüber",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Chuncks",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Sphären",
   "gui.dungeontrain.editor_menu.stage.title": "Abschnitt: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Abschnitt löschen",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Abschnitt '%s' löschen? Verknüpfte Vorlagen nutzen wieder ihre eigenen Werte.",

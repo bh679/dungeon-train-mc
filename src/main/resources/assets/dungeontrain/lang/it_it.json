@@ -2142,6 +2142,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "End",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Sottosopra",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Ciunk",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Sfere",
   "gui.dungeontrain.editor_menu.stage.title": "Tratto: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Elimina tratto",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Eliminare il tratto '%s'? I modelli collegati tornano al loro intervallo interno.",

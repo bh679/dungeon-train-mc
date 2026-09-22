@@ -2117,6 +2117,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "末地",
   "gui.dungeontrain.editor_menu.phase.upside_down": "颠倒世界",
   "gui.dungeontrain.editor_menu.phase.chuncks": "区块块",
+  "gui.dungeontrain.editor_menu.phase.spheres": "球体",
   "gui.dungeontrain.editor_menu.stage.title": "区段：%s",
   "gui.dungeontrain.editor_menu.stage.delete": "删除区段",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "删除区段“%s”？关联的模板将恢复为各自的内联门槛。",

@@ -2181,6 +2181,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "End",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Do góry nogami",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Czanki",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Sfery",
   "gui.dungeontrain.editor_menu.stage.title": "Etap: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Usuń etap",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Usunąć etap '%s'? Powiązane szablony wrócą do własnej bramki.",

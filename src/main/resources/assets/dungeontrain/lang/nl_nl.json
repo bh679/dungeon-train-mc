@@ -2142,6 +2142,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "End",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Ondersteboven",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Chuncks",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Sferen",
   "gui.dungeontrain.editor_menu.stage.title": "Etappe: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Etappe verwijderen",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Etappe '%s' verwijderen? Gekoppelde sjablonen vallen terug op hun eigen bereik.",

@@ -2103,6 +2103,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "End",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Baligtad",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Mga Tsangk",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Mga Sphere",
   "gui.dungeontrain.editor_menu.stage.title": "Stage: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Tanggalin ang Stage",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Tanggalin ang stage na '%s'? Babalik sa sariling inline gate ang mga naka-link na template.",

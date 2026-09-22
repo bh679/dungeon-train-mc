@@ -2103,6 +2103,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "엔드",
   "gui.dungeontrain.editor_menu.phase.upside_down": "거꾸로",
   "gui.dungeontrain.editor_menu.phase.chuncks": "청끄",
+  "gui.dungeontrain.editor_menu.phase.spheres": "구체",
   "gui.dungeontrain.editor_menu.stage.title": "스테이지: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "스테이지 삭제",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "스테이지 '%s'을(를) 삭제할까요? 연결된 템플릿은 자체 게이트로 돌아갑니다.",

@@ -2103,6 +2103,7 @@
   "gui.dungeontrain.editor_menu.phase.end": "End",
   "gui.dungeontrain.editor_menu.phase.upside_down": "Đảo ngược",
   "gui.dungeontrain.editor_menu.phase.chuncks": "Chuncks",
+  "gui.dungeontrain.editor_menu.phase.spheres": "Khối cầu",
   "gui.dungeontrain.editor_menu.stage.title": "Chặng: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Xóa chặng",
   "gui.dungeontrain.editor_menu.stage.delete_confirm": "Xóa chặng '%s'? Các mẫu đã liên kết sẽ trở về cổng nội tuyến của chúng.",
