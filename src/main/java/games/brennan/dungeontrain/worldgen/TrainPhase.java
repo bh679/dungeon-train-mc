@@ -6,14 +6,14 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * The five worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
- * single 5-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
+ * The worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
+ * single classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
  * Used by the per-template spawn gate
  * ({@link games.brennan.dungeontrain.template.TemplateGate}): a weighted template may restrict
  * itself to a subset of phases, and the generator filters the candidate pool by the phase of the
  * column it is being placed in.
  *
- * <p>The cycle runs OW → Nether → OW → Void → End → Void → Upside-down → Void → OW → … along +X.
+ * <p>The cycle runs OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Stacks → … along +X.
  * {@link #phaseAt(ServerLevel, int)} classifies a world-X by combining the three server-side band
  * classifiers; the bands occupy disjoint cycle sub-ranges so a column is in at most one. The
  * upside-down band is tested first (the nether/End classifiers don't know it), then the Nether core
@@ -29,7 +29,9 @@ public enum TrainPhase {
     END,
     UPSIDE_DOWN,
     /** Mostly-void band of scattered overworld chunks (some full, some top-down slices); see {@link ChuncksBand}. */
-    CHUNCKS;
+    CHUNCKS,
+    /** Mostly-void band of scattered vertical towers, each one vanilla structure piece repeated up; see {@link StacksBand}. */
+    STACKS;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -57,7 +59,7 @@ public enum TrainPhase {
 
     /**
      * Single-letter label for compact phase pickers/indicators — the first letter of the constant
-     * name, so the six phases read {@code O N V E U C}. A new phase is picked up automatically.
+     * name, so the seven phases read {@code O N V E U C S}. A new phase is picked up automatically.
      */
     public String letter() {
         return String.valueOf(name().charAt(0));
@@ -72,6 +74,7 @@ public enum TrainPhase {
             case END -> "End";
             case UPSIDE_DOWN -> "Upside Down";
             case CHUNCKS -> "Chuncks";
+            case STACKS -> "Stacks";
         };
     }
 
@@ -80,7 +83,7 @@ public enum TrainPhase {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}); null if unknown. */
+    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code stacks}); null if unknown. */
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
@@ -100,8 +103,12 @@ public enum TrainPhase {
      */
     public static TrainPhase phaseAt(ServerLevel overworld, int worldX) {
         // The special bands occupy disjoint cycle sub-ranges, so a column is in at most one. Test the
-        // chuncks and upside-down bands first (they are the bands the nether/End classifiers don't know
-        // about; chuncks sits after the upside-down exit gap, where the End classifier reads OVERWORLD).
+        // stacks, chuncks and upside-down bands first (they are the bands the nether/End classifiers don't
+        // know about; chuncks + stacks sit after the upside-down exit gap, where the End classifier reads
+        // OVERWORLD).
+        if (StacksBand.isInBand(overworld, worldX)) {
+            return STACKS;
+        }
         if (ChuncksBand.isInBand(overworld, worldX)) {
             return CHUNCKS;
         }

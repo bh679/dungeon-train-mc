@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
+import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
@@ -107,6 +108,9 @@ public final class ZoneProgressEvents {
      */
     private static final int CHUNCKS_DEPTH_BLOCKS = 500;
 
+    /** As {@link #CHUNCKS_DEPTH_BLOCKS}, for the stacks band and {@code reached_stacks}. */
+    private static final int STACKS_DEPTH_BLOCKS = 500;
+
     private ZoneProgressEvents() {}
 
     @SubscribeEvent
@@ -167,6 +171,12 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_chuncks");
             }
 
+            // Stacks band — the cycle's final phase, a void of floating towers. Same depth gate.
+            if (StacksBand.isInBand(level, px)
+                && StacksBand.isInBand(level, px - STACKS_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_stacks");
+            }
+
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {
                 case VOID ->
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_void");
@@ -189,9 +199,11 @@ public final class ZoneProgressEvents {
                     // Finally, exclude the chuncks band AND the plain-overworld run-up to it — those
                     // gaps read as OVERWORLD but the world breaks apart again straight after them, so
                     // the overworld has not actually restarted until the band is behind the player.
+                    // The same goes for the stacks band and its long overworld lead gap after chuncks.
                     if (DisintegrationBand.cyclePassIndex(level, px) >= 1
                         && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)
-                        && !ChuncksBand.isInApproachOrBand(level, px)) {
+                        && !ChuncksBand.isInApproachOrBand(level, px)
+                        && !StacksBand.isInApproachOrBand(level, px)) {
                         ModAdvancementTriggers.GAMEPLAY_ACTION.get()
                             .trigger(player, "reached_overworld_again");
                     }
