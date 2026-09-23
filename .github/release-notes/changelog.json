@@ -18071,6 +18071,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "remove-betterx-welcome-popup",
+      "version": "0.939.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "No more BetterX popup on first launch",
+      "summary": "The game now goes straight to the Dungeon Train menu on first launch. The \"Welcome to BetterX\" popup and the BetterX update notices no longer appear. Dungeon Train already ships the versions it needs.",
+      "highlights": [],
+      "pr": 1507,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
