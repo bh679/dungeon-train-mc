@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 2,
+  "floor": ["minecraft:water[level=0]"],
+  "roof": ["dungeontrain:skybox_surface"],
+  "floor_height": 4
+}
