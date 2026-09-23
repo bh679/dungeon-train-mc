@@ -29,6 +29,8 @@ public enum LegacyBandKind {
     INFDEV(false),
     /** Indev's Floating level type — stacked layers of islands over void, one finite level per tile. */
     FLOATING(true),
+    /** Classic 0.30 — finite 256 × 256 levels, tiled edge to edge along the band. */
+    CLASSIC(false),
     /**
      * The Far Lands — Beta's terrain out past ±12,550,824 blocks, where the limit noise's 32-bit floor
      * saturates and the land breaks into walls, tunnels and a canyon. The finale: later-built eras insert

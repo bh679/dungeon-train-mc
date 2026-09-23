@@ -18035,6 +18035,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "legacy-band-classic",
+      "version": "0.933.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "One more stop before the end",
+      "summary": "Deep in the far stretches of the journey, just before the very end, there is a place you have not seen yet. No spoilers \u2014 ride far enough and see for yourself.",
+      "highlights": [
+        "Another new stretch near the end of the journey, with a hidden goal for reaching it"
+      ],
+      "pr": 1505,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

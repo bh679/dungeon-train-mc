@@ -63,6 +63,10 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
                 case INFDEV -> InfdevPopulator.populate(world, LegacyBands.infdev(seed),
                         LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), chunk.x), chunk.x, chunk.z);
                 case FLOATING -> IndevFloatingPopulator.populate(world, seed, chunk.x, chunk.z);
+                // Classic planted its trees, flowers and mushrooms while building the level — already written.
+                case CLASSIC -> {
+                    return false;
+                }
                 case FAR_LANDS -> {
                     FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.x, chunk.z);
                     BetaPopulator.populate(BetaWorld.shifted(level, yOffset, shift.dxBlocks(), shift.dzBlocks()),

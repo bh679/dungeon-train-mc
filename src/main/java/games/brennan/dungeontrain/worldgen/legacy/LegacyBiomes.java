@@ -27,7 +27,7 @@ public final class LegacyBiomes {
 
     private record Context(BiomeSource overworldSource, long seed, Map<BetaBiome, Holder<Biome>> beta,
                            Holder<Biome> alpha, Holder<Biome> alphaWinter, Holder<Biome> infdev,
-                           Holder<Biome> floating) {}
+                           Holder<Biome> floating, Holder<Biome> classic) {}
 
     /** Alpha had no biome map: one vanilla biome for the band, a snowy one for its winter half. */
     private static final String ALPHA_BIOME = "forest";
@@ -38,6 +38,9 @@ public final class LegacyBiomes {
 
     /** Indev's Normal theme reads as plains too: grass, a few trees and flowers, no climate map. */
     private static final String FLOATING_BIOME = "plains";
+
+    /** Classic had one biome too: its levels read as plains. */
+    private static final String CLASSIC_BIOME = "plains";
 
     private static volatile Context current;
 
@@ -58,7 +61,7 @@ public final class LegacyBiomes {
         }
         current = new Context(source, data.getGenerationSeed(), beta,
                 find(source, ALPHA_BIOME), find(source, ALPHA_WINTER_BIOME), find(source, INFDEV_BIOME),
-                find(source, FLOATING_BIOME));
+                find(source, FLOATING_BIOME), find(source, CLASSIC_BIOME));
     }
 
     /** The overworld source's own holder for {@code minecraft:<path>}, or null if it never generates it. */
@@ -90,6 +93,7 @@ public final class LegacyBiomes {
             case ALPHA -> LegacyBands.isAlphaWinter(cycle, blockX >> 4) ? c.alphaWinter() : c.alpha();
             case INFDEV -> c.infdev();
             case FLOATING -> c.floating();
+            case CLASSIC -> c.classic();
             case FAR_LANDS -> {
                 FarLandsShift shift = FarLandsShift.of(cycle, blockX >> 4, blockZ >> 4);
                 yield c.beta().get(LegacyBands.beta(c.seed()).climate()
