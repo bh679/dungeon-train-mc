@@ -359,6 +359,7 @@ public final class EditorGuiScreen extends Screen {
             TemplateSummary summary = art == null ? null : art.summary();
             trackVersionsOf(tile == null ? 0 : tile.relayId(), "");
             detail.showVersion(tile == null ? 0 : tile.relayId(), previewSeq);
+            detail.showSummary(summary);
             detail.layout(layout, ctx, System.currentTimeMillis());
             detail.render(g, this.font, theme, art, summary, tile,
                 EditorDetailPane.pathLabel(index, ctx.selection()), orbit.yaw(), mx, my);
@@ -663,9 +664,18 @@ public final class EditorGuiScreen extends Screen {
             : onStages() ? stageDetail.tooltipAt(stageDetail.hovered())
             : detail.tooltipAt(detail.hovered());
         if (!lines.isEmpty()) {
-            g.renderComponentTooltip(this.font,
-                lines.stream().map(l -> (net.minecraft.network.chat.Component) Component.literal(l)).toList(),
-                mouseX, mouseY);
+            List<net.minecraft.network.chat.Component> text =
+                lines.stream().map(l -> (net.minecraft.network.chat.Component) Component.literal(l)).toList();
+            List<net.minecraft.world.item.ItemStack> icons = onNav() || onStages()
+                ? List.of() : detail.tooltipIconsAt(detail.hovered());
+            if (icons.isEmpty()) {
+                g.renderComponentTooltip(this.font, text, mouseX, mouseY);
+            } else {
+                // The same icon grid a prefab's tooltip uses, under the text.
+                g.renderTooltip(this.font, text, java.util.Optional.of(
+                    new games.brennan.dungeontrain.client.tooltip.PrefabIconsTooltipData(icons, icons.size())),
+                    mouseX, mouseY);
+            }
         }
     }
 
@@ -1137,6 +1147,9 @@ public final class EditorGuiScreen extends Screen {
         if (action instanceof TemplateDataSheet.Action.Open open) {
             modal.open(open.screen());
             return true;
+        }
+        if (action instanceof TemplateDataSheet.Action.ShowLoot) {
+            return detail.showLootPage();
         }
         if (action instanceof TemplateDataSheet.Action.PickBuilder pick) {
             setFocused(null);   // the filter box must not eat what is typed into the panel

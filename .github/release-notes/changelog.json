@@ -17979,6 +17979,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-lights-loot-rows",
+      "version": "0.935.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "See a build's lights and loot at a glance",
+      "summary": "The build editor's info panel now shows what lights a build and what loot it hides, so you can size up a carriage before you test it.",
+      "highlights": [
+        "Lights and loot rows with small icons for each kind of block.",
+        "A loot value to compare builds, and a page listing every item a build can give."
+      ],
+      "pr": 1495,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
