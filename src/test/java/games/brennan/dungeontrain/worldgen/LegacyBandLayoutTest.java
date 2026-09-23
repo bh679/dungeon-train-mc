@@ -107,6 +107,19 @@ final class LegacyBandLayoutTest {
     }
 
     @Test
+    @DisplayName("legacyCoreStartX anchors every column of a slot, per instance, to its core start")
+    void coreStartX() {
+        WorldGenCycle c = cycle(BETA);
+        long p = c.period();
+        for (int local : new int[] {0, 120, 150, 300, 399}) {
+            assertEquals(x(150), c.legacyCoreStartX(LegacyBandKind.BETA, x(local)));
+            assertEquals(x(150) + 2 * p, c.legacyCoreStartX(LegacyBandKind.BETA, (int) (x(local) + 2 * p)));
+        }
+        assertEquals(WorldGenCycle.NOT_IN_LEGACY_SLOT, c.legacyCoreStartX(LegacyBandKind.BETA, x(400)));
+        assertEquals(WorldGenCycle.NOT_IN_LEGACY_SLOT, c.legacyCoreStartX(LegacyBandKind.FAR_LANDS, x(200)));
+    }
+
+    @Test
     @DisplayName("zero fade is a hard edge: ramp jumps straight to 1")
     void hardEdge() {
         WorldGenCycle c = cycle(new LegacySpan(LegacyBandKind.BETA, 100, 0, 200));

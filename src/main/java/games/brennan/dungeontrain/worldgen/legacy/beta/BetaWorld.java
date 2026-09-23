@@ -12,13 +12,17 @@ import net.minecraft.world.level.material.Fluid;
  * A {@link WorldGenLevel} seen through Beta coordinates ({@code y = 0..127}, shifted by
  * the band's {@linkplain games.brennan.dungeontrain.worldgen.legacy.LegacyBands#yOffset Y offset} into the world) with the few material questions the Beta decorators
  * ask. Reads outside Beta's height answer air, writes outside it are dropped — as Beta's own bounds did.
- * Not thread-safe (one mutable cursor); create one per decoration call.
+ * An optional horizontal offset maps Beta X/Z onto the world ({@code world = beta − offset}) for bands that
+ * read Beta terrain from elsewhere (the Far Lands). Not thread-safe (one mutable cursor); create one per
+ * decoration call.
  */
 public final class BetaWorld {
 
     private final WorldGenLevel level;
     private final int yOffset;
     private final int height;
+    private final int offsetX;
+    private final int offsetZ;
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
     /** {@code yOffset}: world Y of the old {@code y = 0}; Beta's 128-block height. */
@@ -28,9 +32,23 @@ public final class BetaWorld {
 
     /** An old world {@code height} blocks tall (Indev floating levels are 256) at {@code yOffset}. */
     public BetaWorld(WorldGenLevel level, int yOffset, int height) {
+        this(level, yOffset, height, 0, 0);
+    }
+
+    private BetaWorld(WorldGenLevel level, int yOffset, int height, int offsetX, int offsetZ) {
         this.level = level;
         this.yOffset = yOffset;
         this.height = height;
+        this.offsetX = offsetX;
+        this.offsetZ = offsetZ;
+    }
+
+    /**
+     * A Beta-height view whose old coordinate {@code (x, z)} is world {@code (x − offsetX, z − offsetZ)} —
+     * for a band that decorates Beta terrain read from elsewhere (the Far Lands).
+     */
+    public static BetaWorld shifted(WorldGenLevel level, int yOffset, int offsetX, int offsetZ) {
+        return new BetaWorld(level, yOffset, BetaTerrain.HEIGHT, offsetX, offsetZ);
     }
 
     /** The old world's height ({@code y} runs {@code 0..height-1}). */
@@ -44,17 +62,17 @@ public final class BetaWorld {
 
     /** World position of Beta coordinates (fresh, immutable). */
     public BlockPos pos(int x, int y, int z) {
-        return new BlockPos(x, y + yOffset, z);
+        return new BlockPos(x - offsetX, y + yOffset, z - offsetZ);
     }
 
     public BlockState get(int x, int y, int z) {
         if (y < 0 || y >= height) return Blocks.AIR.defaultBlockState();
-        return level.getBlockState(cursor.set(x, y + yOffset, z));
+        return level.getBlockState(cursor.set(x - offsetX, y + yOffset, z - offsetZ));
     }
 
     public void set(int x, int y, int z, BlockState state) {
         if (y < 0 || y >= height) return;
-        level.setBlock(cursor.set(x, y + yOffset, z), state, Block.UPDATE_CLIENTS);
+        level.setBlock(cursor.set(x - offsetX, y + yOffset, z - offsetZ), state, Block.UPDATE_CLIENTS);
     }
 
     public boolean isAir(int x, int y, int z) {

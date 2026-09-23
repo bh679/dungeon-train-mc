@@ -55,16 +55,17 @@ final class LegacyBandsTest {
     }
 
     @Test
-    @DisplayName("cycle order runs Beta, Skylands, Alpha, Infdev, Indev floating; Skylands and floating are void below")
+    @DisplayName("cycle order runs Beta, Skylands, Alpha, Infdev, Indev floating, Far Lands; Skylands and floating are void below")
     void kindOrder() {
         assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.BETA, LegacyBandKind.SKYLANDS, LegacyBandKind.ALPHA,
-                        LegacyBandKind.INFDEV, LegacyBandKind.FLOATING},
+                        LegacyBandKind.INFDEV, LegacyBandKind.FLOATING, LegacyBandKind.FAR_LANDS},
                 LegacyBandKind.values());
         assertFalse(LegacyBandKind.BETA.voidBelow());
         assertTrue(LegacyBandKind.SKYLANDS.voidBelow());
         assertFalse(LegacyBandKind.ALPHA.voidBelow());
         assertFalse(LegacyBandKind.INFDEV.voidBelow());
         assertTrue(LegacyBandKind.FLOATING.voidBelow());
+        assertFalse(LegacyBandKind.FAR_LANDS.voidBelow());
     }
 
     @Test

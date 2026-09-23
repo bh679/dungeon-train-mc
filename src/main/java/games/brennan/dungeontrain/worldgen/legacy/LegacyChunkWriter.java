@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -59,6 +60,11 @@ public final class LegacyChunkWriter {
             case ALPHA -> LegacyBands.alpha(seed).generate(cx, cz, LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), cx));
             case INFDEV -> LegacyBands.infdev(seed).generate(cx, cz, LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), cx));
             case FLOATING -> null; // not a Beta-layout column: a slice of a whole finite level
+            case FAR_LANDS -> {
+                // The Far Lands are Beta's own terrain, read ~12.55M blocks out (see FarLandsShift).
+                FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), cx, cz);
+                yield LegacyBands.beta(seed).generate(cx + shift.dxChunks(), cz + shift.dzChunks()).blocks();
+            }
         };
         if (blocks == null) {
             writeFloating(chunk, LegacyBands.indevFloating(seed).levelForChunk(cx, cz), yOffset);

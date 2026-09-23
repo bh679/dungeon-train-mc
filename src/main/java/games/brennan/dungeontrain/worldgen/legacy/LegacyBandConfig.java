@@ -26,6 +26,7 @@ public final class LegacyBandConfig {
     public static final Defaults ALPHA_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults INFDEV_DEFAULTS = new Defaults(true, 8000, 480, 3000);
     public static final Defaults FLOATING_DEFAULTS = new Defaults(true, 6000, 480, 3000);
+    public static final Defaults FAR_LANDS_DEFAULTS = new Defaults(true, 4320, 480, 3000);
 
     /** Shipped share of the Alpha core (counted from its end) that is winter mode. */
     public static final double ALPHA_WINTER_SHARE_DEFAULT = 0.5D;
@@ -45,6 +46,7 @@ public final class LegacyBandConfig {
             case ALPHA -> ALPHA_DEFAULTS;
             case INFDEV -> INFDEV_DEFAULTS;
             case FLOATING -> FLOATING_DEFAULTS;
+            case FAR_LANDS -> FAR_LANDS_DEFAULTS;
         };
     }
 
@@ -55,6 +57,7 @@ public final class LegacyBandConfig {
             case ALPHA -> "Alpha 1.1.2";
             case INFDEV -> "Infdev";
             case FLOATING -> "Indev floating";
+            case FAR_LANDS -> "Far Lands";
         };
     }
 
@@ -62,7 +65,7 @@ public final class LegacyBandConfig {
     public static void define(ModConfigSpec.Builder b) {
         for (LegacyBandKind kind : LegacyBandKind.values()) {
             Defaults d = defaultsFor(kind);
-            String prefix = "legacy" + Character.toUpperCase(kind.token().charAt(0)) + kind.token().substring(1);
+            String prefix = "legacy" + kind.configStem();
             ModConfigSpec.BooleanValue enabled = b
                     .comment(label(kind) + " legacy band — a stretch of the looping world-gen cycle, after the stacks",
                             "band, where the terrain comes from a port of that version's world generator (terrain,",

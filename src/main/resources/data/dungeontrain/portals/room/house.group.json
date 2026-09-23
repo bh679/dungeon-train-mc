@@ -17,7 +17,8 @@
         "ALPHA",
         "INFDEV",
         "SKYLANDS",
-        "FLOATING"
+        "FLOATING",
+        "FAR_LANDS"
       ]
     },
     {
@@ -39,7 +40,8 @@
         "ALPHA",
         "INFDEV",
         "SKYLANDS",
-        "FLOATING"
+        "FLOATING",
+        "FAR_LANDS"
       ]
     },
     {
@@ -128,7 +130,8 @@
         "ALPHA",
         "INFDEV",
         "SKYLANDS",
-        "FLOATING"
+        "FLOATING",
+        "FAR_LANDS"
       ]
     },
     {
@@ -154,7 +157,8 @@
         "UPSIDE_DOWN",
         "BETA",
         "ALPHA",
-        "INFDEV"
+        "INFDEV",
+        "FAR_LANDS"
       ]
     },
     {

@@ -240,7 +240,7 @@ public final class LegacyBands {
      */
     public static int yOffset(LegacyBandKind kind, ServerLevel level) {
         return switch (kind) {
-            case BETA, ALPHA, INFDEV -> LegacyChunkWriter.Y_OFFSET;
+            case BETA, ALPHA, INFDEV, FAR_LANDS -> LegacyChunkWriter.Y_OFFSET;
             case FLOATING -> {
                 DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
                 int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();

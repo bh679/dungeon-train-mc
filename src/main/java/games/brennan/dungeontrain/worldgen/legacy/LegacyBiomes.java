@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen.legacy;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
+import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -13,7 +14,8 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * The biomes a legacy-band column is shown as. Beta's climate biome at the column picks a vanilla
+ * The biomes a legacy-band column is shown as. Beta's climate biome at the column (for the Far Lands, at
+ * the shifted source column) picks a vanilla
  * overworld biome ({@link BetaBiome#vanillaBiome}) so grass tint, weather, snowfall and mob spawns follow
  * the old biome map; pre-biome Alpha shows as forest, its winter half as snowy plains. Only biomes the overworld source already generates are used — widening its biome
  * set would renumber every chunk's feature steps — and a missing one falls back to the vanilla pick.
@@ -88,6 +90,11 @@ public final class LegacyBiomes {
             case ALPHA -> LegacyBands.isAlphaWinter(cycle, blockX >> 4) ? c.alphaWinter() : c.alpha();
             case INFDEV -> c.infdev();
             case FLOATING -> c.floating();
+            case FAR_LANDS -> {
+                FarLandsShift shift = FarLandsShift.of(cycle, blockX >> 4, blockZ >> 4);
+                yield c.beta().get(LegacyBands.beta(c.seed()).climate()
+                        .biome(blockX + shift.dxBlocks(), blockZ + shift.dzBlocks()));
+            }
         };
     }
 }

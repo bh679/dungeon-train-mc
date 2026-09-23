@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
 import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -62,6 +63,11 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
                 case INFDEV -> InfdevPopulator.populate(world, LegacyBands.infdev(seed),
                         LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), chunk.x), chunk.x, chunk.z);
                 case FLOATING -> IndevFloatingPopulator.populate(world, seed, chunk.x, chunk.z);
+                case FAR_LANDS -> {
+                    FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.x, chunk.z);
+                    BetaPopulator.populate(BetaWorld.shifted(level, yOffset, shift.dxBlocks(), shift.dzBlocks()),
+                            LegacyBands.beta(seed), chunk.x + shift.dxChunks(), chunk.z + shift.dzChunks());
+                }
             }
             return true;
         } catch (Throwable t) {

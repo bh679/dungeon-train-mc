@@ -7,7 +7,8 @@
       "END",
       "BETA",
       "ALPHA",
-      "INFDEV"
+      "INFDEV",
+      "FAR_LANDS"
     ]
   },
   "nethertracks": {
@@ -24,7 +25,8 @@
       "END",
       "BETA",
       "ALPHA",
-      "INFDEV"
+      "INFDEV",
+      "FAR_LANDS"
     ]
   },
   "sleepside": {
@@ -35,7 +37,8 @@
       "END",
       "BETA",
       "ALPHA",
-      "INFDEV"
+      "INFDEV",
+      "FAR_LANDS"
     ]
   }
 }
