@@ -79,7 +79,8 @@
       "VOID",
       "END",
       "UPSIDE_DOWN",
-      "CHUNCKS"
+      "CHUNCKS",
+      "SPHERES"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -160,7 +161,8 @@
       "OVERWORLD",
       "VOID",
       "UPSIDE_DOWN",
-      "CHUNCKS"
+      "CHUNCKS",
+      "SPHERES"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -370,7 +372,8 @@
     "phases": [
       "OVERWORLD",
       "UPSIDE_DOWN",
-      "CHUNCKS"
+      "CHUNCKS",
+      "SPHERES"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },

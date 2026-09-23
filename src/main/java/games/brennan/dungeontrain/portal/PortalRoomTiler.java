@@ -199,6 +199,23 @@ public final class PortalRoomTiler {
     // ---------- stamping ----------
 
     /**
+     * Which liquids in the skin around a tile are a neighbouring copy's own plane, to be left alone
+     * by the fluid plug: the floor row when the floor palette is liquid, the roof row when the roof
+     * palette is. A natural aquifer that happens to sit at exactly those two heights is spared too,
+     * which costs nothing — that plane is water anyway, so water meets water. The rows below the
+     * floor and above the roof are still dammed.
+     */
+    private static java.util.function.Predicate<BlockPos> liquidPlaneKeep(
+            PortalRoomCopiesVariant single, BlockPos origin, Vec3i size) {
+        boolean floor = single.hasLiquid(PortalRoomCopiesVariant.Plane.FLOOR);
+        boolean roof = single.hasLiquid(PortalRoomCopiesVariant.Plane.ROOF);
+        if (!floor && !roof) return pos -> false;
+        int floorY = origin.getY();
+        int ceilingY = floorY + size.getY() - 1;
+        return pos -> (floor && pos.getY() == floorY) || (roof && pos.getY() == ceilingY);
+    }
+
+    /**
      * Put a copy of the room at {@code tile} and settle the faces around it.
      *
      * <p>{@link PortalRoomMode#ENDLESS_OPEN} repeats the floor and the roof, in the authored room's
@@ -239,7 +256,8 @@ public final class PortalRoomTiler {
             PortalRoomMobs.liveCount(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey),
             // The structure's own setting, not a fresh read of the variant: a portal already standing
             // keeps what it was built with, the same promise planStructure makes about the room.
-            structure.settings().contents(), structure.settings().books());
+            structure.settings().contents(), structure.settings().books(),
+            liquidPlaneKeep(single, origin, size));
 
         // After the stamp, not instead of it: the stamp is what clears the rock this tile landed in,
         // and under Single its write half put nothing back. These two planes are the whole of what

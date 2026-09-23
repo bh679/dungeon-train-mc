@@ -6666,11 +6666,13 @@ public final class EditorCommand {
      * {@code /dt editor portals copies block held} — set Single's block to what the author is
      * holding.
      *
-     * <p>Three things are worth holding, and one of them is nothing. A plain <b>block</b> is the
+     * <p>Four things are worth holding, and one of them is nothing. A plain <b>block</b> is the
      * ordinary case. A <b>variant clipboard</b>, copied from a cell by the Block Variant menu,
      * brings that cell's whole candidate list over in one gesture — the same value the Edit button
-     * authors in place. An <b>empty hand</b> sets the plane to air: a floor of gaps, or a roof that
-     * is open sky.</p>
+     * authors in place. A <b>filled bucket</b> sets the plane to that liquid — a water floor, a lava
+     * roof — stored as the fluid's <i>source</i> state, since a flowing state has nothing feeding it
+     * and drains to air (see {@link games.brennan.dungeontrain.editor.VariantLiquids}). An
+     * <b>empty hand</b> sets the plane to air: a floor of gaps, or a roof that is open sky.</p>
      *
      * <p>Empty-hand-means-air is not invented here — it is what the Block Variant menu's Add does
      * with an empty hand, down to the same command-block sentinel, so the gesture an author already
@@ -6715,6 +6717,15 @@ public final class EditorCommand {
                 return 0;
             }
             return savePortalRoomCopiesVariant(source, name, plane, states);
+        }
+        // A bucket is a BucketItem, not a BlockItem, so it has to be asked about before the block
+        // branch or it falls through to the rejection below — the same gap VariantLiquids closed for
+        // the Block Variant menu's Add gesture. Source state only; buckets carry no block-entity NBT.
+        net.minecraft.world.level.block.state.BlockState bucketSource =
+            games.brennan.dungeontrain.editor.VariantLiquids.sourceStateFrom(held);
+        if (bucketSource != null) {
+            return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(
+                new games.brennan.dungeontrain.editor.VariantState(bucketSource, null)));
         }
         if (held.getItem() instanceof BlockItem blockItem) {
             return savePortalRoomCopiesVariant(source, name, plane, java.util.List.of(

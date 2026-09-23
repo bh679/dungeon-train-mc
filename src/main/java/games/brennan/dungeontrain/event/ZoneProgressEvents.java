@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
@@ -198,11 +199,13 @@ public final class ZoneProgressEvents {
                     // exit-fade exclusion keeps it from firing among the dispersing islands.
                     // Finally, exclude the chuncks band AND the plain-overworld run-up to it — those
                     // gaps read as OVERWORLD but the world breaks apart again straight after them, so
-                    // the overworld has not actually restarted until the band is behind the player.
-                    // The same goes for the stacks band and its long overworld lead gap after chuncks.
+                    // the overworld has not actually restarted until the band is behind the player —
+                    // and likewise the spheres band that follows it (its lead gap, fade, then core), and
+                    // the stacks band after that (its long lead gap, fade, then core).
                     if (DisintegrationBand.cyclePassIndex(level, px) >= 1
                         && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)
                         && !ChuncksBand.isInApproachOrBand(level, px)
+                        && !SpheresBand.isInApproachOrBand(level, px)
                         && !StacksBand.isInApproachOrBand(level, px)) {
                         ModAdvancementTriggers.GAMEPLAY_ACTION.get()
                             .trigger(player, "reached_overworld_again");

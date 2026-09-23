@@ -41,7 +41,9 @@ import java.util.Optional;
  * both are stamped into a scratch box, the box is captured, and the box is erased again.</p>
  *
  * <p>Deliberately writes nothing to the shell or contents stores — that is the point of choosing
- * this destination: the room joins the Whole pool and nothing else.</p>
+ * this destination: the room joins the Whole pool and nothing else. Its sidecars come across through
+ * {@link WholeRoomSidecars}, which translates them out of the source kind's frame; a whole room is not a
+ * {@code BuilderPhotoPaths.Kind}, so {@code TemplateSidecars} cannot answer for it.</p>
  */
 public final class BuilderRelayWholeRoom {
 
@@ -72,11 +74,13 @@ public final class BuilderRelayWholeRoom {
     /**
      * Install {@code template} as a whole room, resolving a name collision the way
      * {@link BuilderRelayInstall#install} does.
+     *
+     * @param sidecars the build's sidecar document, translated onto the room by {@link WholeRoomSidecars}
      */
     public static BuilderRelayInstall.Outcome install(ServerLevel level, BuilderPhotoPaths.Kind kind, String id,
                                                       String stageId, StructureTemplate template,
                                                       BuilderRelayInstall.Resolution resolution, String newName,
-                                                      boolean mine) {
+                                                      String sidecars, boolean mine) {
         if (!supports(kind) || id == null || id.isEmpty() || template == null) {
             return BuilderRelayInstall.Outcome.UNSUPPORTED;
         }
@@ -103,7 +107,13 @@ public final class BuilderRelayWholeRoom {
                 case REPLACE -> { }
             }
             if (!WholeCarriage.isValidName(target)) return BuilderRelayInstall.Outcome.UNSUPPORTED;
-            return write(level, kind, target, stageId, template);
+            BuilderRelayInstall.Outcome outcome = write(level, kind, target, stageId, template);
+            // Only once the room is actually on disk, and against the name it landed under — the same
+            // point and the same rule as BuilderRelayInstall.write's own sidecar call.
+            if (outcome == BuilderRelayInstall.Outcome.INSTALLED) {
+                WholeRoomSidecars.apply(kind, target, sidecars);
+            }
+            return outcome;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Builder relay download: could not install whole room '{}'", id, t);
             return BuilderRelayInstall.Outcome.FAILED;

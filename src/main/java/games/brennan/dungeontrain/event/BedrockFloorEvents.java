@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.SectionPos;
@@ -91,6 +92,13 @@ public final class BedrockFloorEvents {
         // world floor up — neither gets a bedrock floor. TERRAIN (outside the band, or the real terrain
         // left in the entry fade) keeps its floor like normal overworld.
         if (StacksBand.kindOf(level, chunk.getPos().x, chunk.getPos().z) != StacksBand.Kind.TERRAIN) {
+            return;
+        }
+
+        // Spheres band: floating spheres over open void, and a fade where the ground dissolves — no
+        // bedrock floor anywhere the void ramp is non-zero. Per-chunk + deterministic, order-independent
+        // with the carve handler (which would erase the floor anyway outside the spheres).
+        if (SpheresBand.chunkTouchesBand(level, chunkMinX)) {
             return;
         }
 

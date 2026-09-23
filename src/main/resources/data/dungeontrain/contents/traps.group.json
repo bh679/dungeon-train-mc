@@ -30,7 +30,8 @@
         "OVERWORLD",
         "VOID",
         "UPSIDE_DOWN",
-        "CHUNCKS"
+        "CHUNCKS",
+        "SPHERES"
       ]
     },
     {
@@ -46,7 +47,8 @@
         "OVERWORLD",
         "VOID",
         "END",
-        "CHUNCKS"
+        "CHUNCKS",
+        "SPHERES"
       ]
     },
     {

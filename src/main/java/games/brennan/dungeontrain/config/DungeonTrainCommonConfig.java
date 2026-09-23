@@ -265,7 +265,50 @@ public final class DungeonTrainCommonConfig {
     public static final double DEFAULT_CHUNCKS_SLICE_RATIO = 0.5;
 
     /**
-     * Stacks band — a fifth looping phase, appended after the chuncks band with a long plain-overworld
+     * Spheres band — a fifth looping phase, appended after the chuncks band behind a plain-overworld
+     * lead gap. Along +X the world is open void scattered with floating spheres of natural overworld
+     * terrain: each sphere is cut from the vanilla terrain at its own X/Z and lifted to its own height,
+     * so the spheres drift at every altitude from the deep to the sky. The train crosses on the floating
+     * track bed. The five special bands occupy disjoint cycle sub-ranges, so they never overlap.
+     */
+    public static final boolean DEFAULT_SPHERES_ENABLED = true;
+    /** Blocks of spheres-band world-gen (the whole void-with-spheres stretch). 0 drops the band from the cycle. */
+    public static final int MIN_SPHERES_HOLD_BLOCKS = 0;
+    public static final int MAX_SPHERES_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_SPHERES_HOLD_BLOCKS = 5000;
+    /** Entry fade before the band: the natural terrain outside the spheres dissolves into void across this span. */
+    public static final int MIN_SPHERES_FADE_BLOCKS = 0;
+    public static final int MAX_SPHERES_FADE_BLOCKS = 100_000_000;
+    public static final int DEFAULT_SPHERES_FADE_BLOCKS = 1500;
+    /** Plain-overworld gap before the spheres band (after the chuncks core), before the entry fade. */
+    public static final int MIN_SPHERES_LEAD_GAP_BLOCKS = 0;
+    public static final int MAX_SPHERES_LEAD_GAP_BLOCKS = 100_000_000;
+    public static final int DEFAULT_SPHERES_LEAD_GAP_BLOCKS = 5000;
+    /** Edge of the 3-D placement cell (blocks): at most one sphere is rolled per cell in X, Y and Z. */
+    public static final int MIN_SPHERES_CELL_BLOCKS = 16;
+    public static final int MAX_SPHERES_CELL_BLOCKS = 512;
+    public static final int DEFAULT_SPHERES_CELL_BLOCKS = 64;
+    /** Chance 0..1 that a placement cell holds a sphere. */
+    public static final double MIN_SPHERES_DENSITY = 0.0;
+    public static final double MAX_SPHERES_DENSITY = 1.0;
+    public static final double DEFAULT_SPHERES_DENSITY = 0.15;
+    /** Sphere radius range (blocks); the roll is biased toward the small end. */
+    public static final int MIN_SPHERES_RADIUS = 1;
+    public static final int MAX_SPHERES_RADIUS = 128;
+    public static final int DEFAULT_SPHERES_MIN_RADIUS = 6;
+    public static final int DEFAULT_SPHERES_MAX_RADIUS = 40;
+    /** Range of the height (world Y) a sphere's centre floats at once lifted. */
+    public static final int MIN_SPHERES_CENTER_Y = -64;
+    public static final int MAX_SPHERES_CENTER_Y = 320;
+    public static final int DEFAULT_SPHERES_CENTER_MIN_Y = 0;
+    public static final int DEFAULT_SPHERES_CENTER_MAX_Y = 200;
+    /** Fraction 0..1 of a sphere's diameter that sits below the natural surface where it was cut. */
+    public static final double MIN_SPHERES_SURFACE_BIAS = 0.0;
+    public static final double MAX_SPHERES_SURFACE_BIAS = 1.0;
+    public static final double DEFAULT_SPHERES_SURFACE_BIAS = 0.65;
+
+    /**
+     * Stacks band — a sixth looping phase, appended after the spheres band with a long plain-overworld
      * lead-in. Along +X it is mostly void; scattered chunks each hold a <b>vertical stack</b>: one vanilla
      * structure piece (a village house, a bastion chunk, an End-city tower, an igloo, …) copied straight
      * up from the world floor to near build height. Different stacks use different pieces; within one
@@ -280,7 +323,7 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_STACKS_FADE_BLOCKS = 0;
     public static final int MAX_STACKS_FADE_BLOCKS = 100_000_000;
     public static final int DEFAULT_STACKS_FADE_BLOCKS = 1500;
-    /** Plain-overworld gap between the end of the chuncks band and the stacks entry fade. */
+    /** Plain-overworld gap between the end of the spheres band and the stacks entry fade. */
     public static final int MIN_STACKS_LEAD_GAP_BLOCKS = 0;
     public static final int MAX_STACKS_LEAD_GAP_BLOCKS = 100_000_000;
     public static final int DEFAULT_STACKS_LEAD_GAP_BLOCKS = 10000;
@@ -379,6 +422,17 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue CHUNCKS_LEAD_GAP_BLOCKS;
     public static final ModConfigSpec.DoubleValue CHUNCKS_KEEP_DENSITY;
     public static final ModConfigSpec.DoubleValue CHUNCKS_SLICE_RATIO;
+    public static final ModConfigSpec.BooleanValue SPHERES_ENABLED;
+    public static final ModConfigSpec.IntValue SPHERES_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue SPHERES_FADE_BLOCKS;
+    public static final ModConfigSpec.IntValue SPHERES_LEAD_GAP_BLOCKS;
+    public static final ModConfigSpec.IntValue SPHERES_CELL_BLOCKS;
+    public static final ModConfigSpec.DoubleValue SPHERES_DENSITY;
+    public static final ModConfigSpec.IntValue SPHERES_MIN_RADIUS;
+    public static final ModConfigSpec.IntValue SPHERES_MAX_RADIUS;
+    public static final ModConfigSpec.IntValue SPHERES_CENTER_MIN_Y;
+    public static final ModConfigSpec.IntValue SPHERES_CENTER_MAX_Y;
+    public static final ModConfigSpec.DoubleValue SPHERES_SURFACE_BIAS;
     public static final ModConfigSpec.BooleanValue STACKS_ENABLED;
     public static final ModConfigSpec.IntValue STACKS_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue STACKS_FADE_BLOCKS;
@@ -434,6 +488,17 @@ public final class DungeonTrainCommonConfig {
         CHUNCKS_LEAD_GAP_BLOCKS = pair.getLeft().chuncksLeadGapBlocks;
         CHUNCKS_KEEP_DENSITY = pair.getLeft().chuncksKeepDensity;
         CHUNCKS_SLICE_RATIO = pair.getLeft().chuncksSliceRatio;
+        SPHERES_ENABLED = pair.getLeft().spheresEnabled;
+        SPHERES_HOLD_BLOCKS = pair.getLeft().spheresHoldBlocks;
+        SPHERES_FADE_BLOCKS = pair.getLeft().spheresFadeBlocks;
+        SPHERES_LEAD_GAP_BLOCKS = pair.getLeft().spheresLeadGapBlocks;
+        SPHERES_CELL_BLOCKS = pair.getLeft().spheresCellBlocks;
+        SPHERES_DENSITY = pair.getLeft().spheresDensity;
+        SPHERES_MIN_RADIUS = pair.getLeft().spheresMinRadius;
+        SPHERES_MAX_RADIUS = pair.getLeft().spheresMaxRadius;
+        SPHERES_CENTER_MIN_Y = pair.getLeft().spheresCenterMinY;
+        SPHERES_CENTER_MAX_Y = pair.getLeft().spheresCenterMaxY;
+        SPHERES_SURFACE_BIAS = pair.getLeft().spheresSurfaceBias;
         STACKS_ENABLED = pair.getLeft().stacksEnabled;
         STACKS_HOLD_BLOCKS = pair.getLeft().stacksHoldBlocks;
         STACKS_FADE_BLOCKS = pair.getLeft().stacksFadeBlocks;
@@ -711,7 +776,7 @@ public final class DungeonTrainCommonConfig {
                         "band's trailing overworld gap. Along +X it is mostly void, sprinkled with occasional real",
                         "overworld chunks: some vertically complete, some a top-down slice (natural surface kept, flat",
                         "cut-off bottom). The train crosses on the floating track bed. The full cycle is:",
-                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Stacks → (repeat).",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat).",
                         "Set false to drop the chuncks phase from the cycle.")
                 .define("chuncksEnabled", DEFAULT_CHUNCKS_ENABLED);
         ModConfigSpec.IntValue chuncksHoldBlocks = b
@@ -740,13 +805,74 @@ public final class DungeonTrainCommonConfig {
                         "cut-off bottom) rather than vertically complete. Default 0.5.")
                 .defineInRange("chuncksSliceRatio", DEFAULT_CHUNCKS_SLICE_RATIO,
                         MIN_CHUNCKS_SLICE_RATIO, MAX_CHUNCKS_SLICE_RATIO);
+
+        ModConfigSpec.BooleanValue spheresEnabled = b
+                .comment("Spheres phase — part of the single repeating world-gen cycle, appended after the chuncks",
+                        "band behind a plain-overworld lead gap. Along +X the world is open void scattered with",
+                        "floating spheres of natural overworld terrain: each sphere is cut from the vanilla terrain at",
+                        "its own X/Z and lifted to its own height, so spheres drift at every altitude. The train",
+                        "crosses on the floating track bed. The full cycle is:",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat).",
+                        "Set false to drop the spheres phase from the cycle.")
+                .define("spheresEnabled", DEFAULT_SPHERES_ENABLED);
+        ModConfigSpec.IntValue spheresHoldBlocks = b
+                .comment("Blocks of spheres-band world-gen (the whole void-with-spheres stretch). Default 5000.")
+                .defineInRange("spheresHoldBlocks", DEFAULT_SPHERES_HOLD_BLOCKS,
+                        MIN_SPHERES_HOLD_BLOCKS, MAX_SPHERES_HOLD_BLOCKS);
+        ModConfigSpec.IntValue spheresFadeBlocks = b
+                .comment("Entry fade before the spheres band: the natural terrain outside the spheres dissolves into",
+                        "void across this span (noise-dithered, 0 → 1), so the void arrives gradually instead of at a",
+                        "hard wall. Spheres are present at full strength across the fade. 0 = hard edge. Default 1500.")
+                .defineInRange("spheresFadeBlocks", DEFAULT_SPHERES_FADE_BLOCKS,
+                        MIN_SPHERES_FADE_BLOCKS, MAX_SPHERES_FADE_BLOCKS);
+        ModConfigSpec.IntValue spheresLeadGapBlocks = b
+                .comment("Plain-overworld gap inserted before the spheres band — between the end of the chuncks band",
+                        "and the spheres entry fade. Breathing room so the two special zones don't run together.",
+                        "Default 5000.")
+                .defineInRange("spheresLeadGapBlocks", DEFAULT_SPHERES_LEAD_GAP_BLOCKS,
+                        MIN_SPHERES_LEAD_GAP_BLOCKS, MAX_SPHERES_LEAD_GAP_BLOCKS);
+        ModConfigSpec.IntValue spheresCellBlocks = b
+                .comment("Edge length (blocks) of the 3-D placement cell. Space is tiled into cubes of this size in X,",
+                        "Y and Z and at most one sphere is rolled per cube, so this sets how far apart spheres sit.",
+                        "Default 64.")
+                .defineInRange("spheresCellBlocks", DEFAULT_SPHERES_CELL_BLOCKS,
+                        MIN_SPHERES_CELL_BLOCKS, MAX_SPHERES_CELL_BLOCKS);
+        ModConfigSpec.DoubleValue spheresDensity = b
+                .comment("Chance 0..1 that a placement cube holds a sphere. A per-cell, seed-stable roll. Default 0.15.")
+                .defineInRange("spheresDensity", DEFAULT_SPHERES_DENSITY,
+                        MIN_SPHERES_DENSITY, MAX_SPHERES_DENSITY);
+        ModConfigSpec.IntValue spheresMinRadius = b
+                .comment("Smallest sphere radius (blocks). Default 6.")
+                .defineInRange("spheresMinRadius", DEFAULT_SPHERES_MIN_RADIUS,
+                        MIN_SPHERES_RADIUS, MAX_SPHERES_RADIUS);
+        ModConfigSpec.IntValue spheresMaxRadius = b
+                .comment("Largest sphere radius (blocks); the roll is biased toward small spheres, so big ones are",
+                        "rare. Clamped to at least spheresMinRadius. Default 40.")
+                .defineInRange("spheresMaxRadius", DEFAULT_SPHERES_MAX_RADIUS,
+                        MIN_SPHERES_RADIUS, MAX_SPHERES_RADIUS);
+        ModConfigSpec.IntValue spheresCenterMinY = b
+                .comment("Lowest world Y a lifted sphere's centre may float at. Default 0.")
+                .defineInRange("spheresCenterMinY", DEFAULT_SPHERES_CENTER_MIN_Y,
+                        MIN_SPHERES_CENTER_Y, MAX_SPHERES_CENTER_Y);
+        ModConfigSpec.IntValue spheresCenterMaxY = b
+                .comment("Highest world Y a lifted sphere's centre may float at. Clamped to at least",
+                        "spheresCenterMinY. Default 200.")
+                .defineInRange("spheresCenterMaxY", DEFAULT_SPHERES_CENTER_MAX_Y,
+                        MIN_SPHERES_CENTER_Y, MAX_SPHERES_CENTER_Y);
+        ModConfigSpec.DoubleValue spheresSurfaceBias = b
+                .comment("Fraction 0..1 of a sphere's diameter that sits below the natural surface where it was cut:",
+                        "0 = the sphere hangs entirely above the surface (mostly air + treetops), 1 = entirely",
+                        "underground (a ball of rock and caves), 0.5 = centred on the surface. Default 0.65 — a",
+                        "natural surface cap with rock beneath.")
+                .defineInRange("spheresSurfaceBias", DEFAULT_SPHERES_SURFACE_BIAS,
+                        MIN_SPHERES_SURFACE_BIAS, MAX_SPHERES_SURFACE_BIAS);
         ModConfigSpec.BooleanValue stacksEnabled = b
-                .comment("Stacks phase — part of the single repeating world-gen cycle, appended after the chuncks band",
+                .comment("Stacks phase — part of the single repeating world-gen cycle, appended after the spheres band",
                         "with a long plain-overworld lead-in. Along +X it is mostly void; scattered chunks each hold a",
                         "vertical stack: one vanilla structure piece (village house, bastion chunk, End-city tower, …)",
                         "copied straight up from the world floor to near build height. The train crosses on the",
                         "floating track bed, which passes between stacks. The full cycle is:",
-                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Stacks → (repeat).",
+                        "OW → Nether → OW → Void → End → Void → Upside-down → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat).",
                         "Set false to drop the stacks phase from the cycle.")
                 .define("stacksEnabled", DEFAULT_STACKS_ENABLED);
         ModConfigSpec.IntValue stacksHoldBlocks = b
@@ -761,7 +887,7 @@ public final class DungeonTrainCommonConfig {
                 .defineInRange("stacksFadeBlocks", DEFAULT_STACKS_FADE_BLOCKS,
                         MIN_STACKS_FADE_BLOCKS, MAX_STACKS_FADE_BLOCKS);
         ModConfigSpec.IntValue stacksLeadGapBlocks = b
-                .comment("Plain-overworld gap inserted between the end of the chuncks band and the stacks entry fade —",
+                .comment("Plain-overworld gap inserted between the end of the spheres band and the stacks entry fade —",
                         "a long stretch of normal world before the towers begin. Default 10000.")
                 .defineInRange("stacksLeadGapBlocks", DEFAULT_STACKS_LEAD_GAP_BLOCKS,
                         MIN_STACKS_LEAD_GAP_BLOCKS, MAX_STACKS_LEAD_GAP_BLOCKS);
@@ -787,6 +913,9 @@ public final class DungeonTrainCommonConfig {
                 upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
+                spheresEnabled, spheresHoldBlocks, spheresFadeBlocks, spheresLeadGapBlocks,
+                spheresCellBlocks, spheresDensity, spheresMinRadius, spheresMaxRadius,
+                spheresCenterMinY, spheresCenterMaxY, spheresSurfaceBias,
                 stacksEnabled, stacksHoldBlocks, stacksFadeBlocks, stacksLeadGapBlocks, stacksDensity,
                 breakBlocksOnContact, backerNameWeight, catchUpBurstMode);
     }
@@ -1126,6 +1255,63 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? CHUNCKS_SLICE_RATIO.get() : DEFAULT_CHUNCKS_SLICE_RATIO;
     }
 
+    /** Whether the spheres band is active; falls back to the hardcoded default pre-load. */
+    public static boolean isSpheresEnabled() {
+        return isLoaded() ? SPHERES_ENABLED.get() : DEFAULT_SPHERES_ENABLED;
+    }
+
+    /** Spheres band span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getSpheresHoldBlocks() {
+        return isLoaded() ? SPHERES_HOLD_BLOCKS.get() : DEFAULT_SPHERES_HOLD_BLOCKS;
+    }
+
+    /** Spheres entry-fade span (blocks) where the terrain dissolves; falls back to the hardcoded default pre-load. */
+    public static int getSpheresFadeBlocks() {
+        return isLoaded() ? SPHERES_FADE_BLOCKS.get() : DEFAULT_SPHERES_FADE_BLOCKS;
+    }
+
+    /** Overworld lead-in gap (blocks) before the spheres band; falls back to the hardcoded default pre-load. */
+    public static int getSpheresLeadGapBlocks() {
+        return isLoaded() ? SPHERES_LEAD_GAP_BLOCKS.get() : DEFAULT_SPHERES_LEAD_GAP_BLOCKS;
+    }
+
+    /** Sphere placement cell edge (blocks); falls back to the hardcoded default pre-load. */
+    public static int getSpheresCellBlocks() {
+        return isLoaded() ? SPHERES_CELL_BLOCKS.get() : DEFAULT_SPHERES_CELL_BLOCKS;
+    }
+
+    /** Chance 0..1 a placement cell holds a sphere; falls back to the hardcoded default pre-load. */
+    public static double getSpheresDensity() {
+        return isLoaded() ? SPHERES_DENSITY.get() : DEFAULT_SPHERES_DENSITY;
+    }
+
+    /** Smallest sphere radius (blocks); falls back to the hardcoded default pre-load. */
+    public static int getSpheresMinRadius() {
+        return isLoaded() ? SPHERES_MIN_RADIUS.get() : DEFAULT_SPHERES_MIN_RADIUS;
+    }
+
+    /** Largest sphere radius (blocks), never below the minimum; falls back to the hardcoded default pre-load. */
+    public static int getSpheresMaxRadius() {
+        int max = isLoaded() ? SPHERES_MAX_RADIUS.get() : DEFAULT_SPHERES_MAX_RADIUS;
+        return Math.max(max, getSpheresMinRadius());
+    }
+
+    /** Lowest lifted-centre world Y; falls back to the hardcoded default pre-load. */
+    public static int getSpheresCenterMinY() {
+        return isLoaded() ? SPHERES_CENTER_MIN_Y.get() : DEFAULT_SPHERES_CENTER_MIN_Y;
+    }
+
+    /** Highest lifted-centre world Y, never below the minimum; falls back to the hardcoded default pre-load. */
+    public static int getSpheresCenterMaxY() {
+        int max = isLoaded() ? SPHERES_CENTER_MAX_Y.get() : DEFAULT_SPHERES_CENTER_MAX_Y;
+        return Math.max(max, getSpheresCenterMinY());
+    }
+
+    /** Fraction 0..1 of a sphere's diameter below the natural surface; falls back to the hardcoded default pre-load. */
+    public static double getSpheresSurfaceBias() {
+        return isLoaded() ? SPHERES_SURFACE_BIAS.get() : DEFAULT_SPHERES_SURFACE_BIAS;
+    }
+
     /** Whether the stacks band is active; falls back to the hardcoded default pre-load. */
     public static boolean isStacksEnabled() {
         return isLoaded() ? STACKS_ENABLED.get() : DEFAULT_STACKS_ENABLED;
@@ -1193,6 +1379,17 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue chuncksLeadGapBlocks,
                           ModConfigSpec.DoubleValue chuncksKeepDensity,
                           ModConfigSpec.DoubleValue chuncksSliceRatio,
+                          ModConfigSpec.BooleanValue spheresEnabled,
+                          ModConfigSpec.IntValue spheresHoldBlocks,
+                          ModConfigSpec.IntValue spheresFadeBlocks,
+                          ModConfigSpec.IntValue spheresLeadGapBlocks,
+                          ModConfigSpec.IntValue spheresCellBlocks,
+                          ModConfigSpec.DoubleValue spheresDensity,
+                          ModConfigSpec.IntValue spheresMinRadius,
+                          ModConfigSpec.IntValue spheresMaxRadius,
+                          ModConfigSpec.IntValue spheresCenterMinY,
+                          ModConfigSpec.IntValue spheresCenterMaxY,
+                          ModConfigSpec.DoubleValue spheresSurfaceBias,
                           ModConfigSpec.BooleanValue stacksEnabled,
                           ModConfigSpec.IntValue stacksHoldBlocks,
                           ModConfigSpec.IntValue stacksFadeBlocks,
