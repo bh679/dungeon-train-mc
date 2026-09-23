@@ -232,10 +232,10 @@ public final class EditorDetailPane {
         return moved || pages.pageCount() > 1;
     }
 
-    /** Turn to the Loot page — what clicking the sheet's Loot row does. False when there is none. */
+    /** Turn to the first Loot page (after the rows) — what clicking the sheet's Loot row does. False when there is none. */
     public boolean showLootPage() {
         if (pages.lootPages() == 0) return false;
-        page = Pages.LOOT_PAGE;
+        page = pages.firstLootPage();
         return true;
     }
 
@@ -257,7 +257,8 @@ public final class EditorDetailPane {
      * <p>The first page is always the model and its data sheet — path, size, blocks, weight, stage,
      * levels. The room's rows come after, as many per page as the whole body holds less the pager's
      * slot, so a long list of walls sub-options takes over the space the model had rather than
-     * squeezing under its sheet. With no rows there is one page and no pager.</p>
+     * squeezing under its sheet. The Loot pages, when the build has loot, come last. With no rows
+     * and no loot there is one page and no pager.</p>
      *
      * <p>Pure, so it can be tested without a screen.</p>
      *
@@ -266,14 +267,12 @@ public final class EditorDetailPane {
      */
     public record Pages(int count, int perPage, int lootPages) {
         public static final Pages NONE = new Pages(0, 0, 0);
-        /** The first Loot page, when there is one, comes straight after the model page. */
-        public static final int LOOT_PAGE = 1;
 
         public static Pages of(int count, int bodySlots) {
             return of(count, bodySlots, 0);
         }
 
-        /** As {@link #of(int, int)}, with {@code lootPages} Loot pages between the model and the rows. */
+        /** As {@link #of(int, int)}, with {@code lootPages} Loot pages after the rows. */
         public static Pages of(int count, int bodySlots, int lootPages) {
             return new Pages(Math.max(0, count), Math.max(0, bodySlots - 1), Math.max(0, lootPages));
         }
@@ -287,19 +286,19 @@ public final class EditorDetailPane {
             return count > 0 && perPage > 0;
         }
 
-        /** The pages before the first row page: the model, then the Loot pages. */
-        private int lead() {
-            return 1 + lootPages;
-        }
-
-        /** How many row pages follow the model and Loot pages. */
+        /** How many row pages follow the model page. */
         public int rowPages() {
             return hasRows() ? (count + perPage - 1) / perPage : 0;
         }
 
-        /** The model page, the Loot pages, and the row pages; at least one. */
+        /** The first Loot page: straight after the last row page. */
+        public int firstLootPage() {
+            return 1 + rowPages();
+        }
+
+        /** The model page, the row pages, then the Loot pages; at least one. */
         public int pageCount() {
-            return lead() + rowPages();
+            return 1 + rowPages() + lootPages;
         }
 
         public int clamp(int page) {
@@ -307,23 +306,23 @@ public final class EditorDetailPane {
         }
 
         public boolean isLootPage(int page) {
-            int p = clamp(page);
-            return p >= LOOT_PAGE && p < lead();
+            return lootPages > 0 && clamp(page) >= firstLootPage();
         }
 
         /** Which Loot page {@code page} is, from 0; meaningless off one. */
         public int lootIndex(int page) {
-            return Math.max(0, clamp(page) - LOOT_PAGE);
+            return Math.max(0, clamp(page) - firstLootPage());
         }
 
         /** True when {@code page} is one of rows rather than the model or a Loot page. */
         public boolean isRowPage(int page) {
-            return clamp(page) >= lead();
+            int p = clamp(page);
+            return p >= 1 && p < firstLootPage();
         }
 
         /** The first row index on {@code page}; meaningless off a row page. */
         public int first(int page) {
-            return Math.max(0, clamp(page) - lead()) * perPage;
+            return Math.max(0, clamp(page) - 1) * perPage;
         }
 
         /** One past the last row index on {@code page}. */

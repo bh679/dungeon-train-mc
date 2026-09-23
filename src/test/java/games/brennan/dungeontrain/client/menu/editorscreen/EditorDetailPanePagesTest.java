@@ -61,24 +61,26 @@ class EditorDetailPanePagesTest {
     }
 
     @Test
-    @DisplayName("Loot pages sit between the model and the rows, and shift the rows back")
+    @DisplayName("Loot pages come last, after the rows")
     void lootPages() {
         EditorDetailPane.Pages p = EditorDetailPane.Pages.of(17, 12, 2);
         assertTrue(p.hasPager());
-        assertEquals(5, p.pageCount(), "model, two loot, two row pages");
-        assertTrue(p.isLootPage(EditorDetailPane.Pages.LOOT_PAGE));
-        assertTrue(p.isLootPage(2));
-        assertEquals(1, p.lootIndex(2));
-        assertFalse(p.isLootPage(3));
-        assertEquals(0, p.end(1), "no rows on a Loot page");
-        assertEquals(0, p.first(3));
-        assertEquals(11, p.end(3));
-        assertEquals(11, p.first(4));
-        assertEquals(17, p.end(4));
+        assertEquals(5, p.pageCount(), "model, two row pages, two loot");
+        assertEquals(0, p.first(1));
+        assertEquals(11, p.end(1));
+        assertEquals(11, p.first(2));
+        assertEquals(17, p.end(2));
+        assertEquals(3, p.firstLootPage());
+        assertFalse(p.isLootPage(2));
+        assertTrue(p.isLootPage(3));
+        assertTrue(p.isLootPage(4));
+        assertEquals(1, p.lootIndex(4));
+        assertEquals(0, p.end(3), "no rows on a Loot page");
 
         EditorDetailPane.Pages lootOnly = EditorDetailPane.Pages.of(0, 12, 1);
         assertTrue(lootOnly.hasPager(), "loot alone is worth a pager");
         assertEquals(2, lootOnly.pageCount());
+        assertEquals(1, lootOnly.firstLootPage());
         assertFalse(EditorDetailPane.Pages.of(17, 12).isLootPage(1), "no loot, no Loot page");
     }
 }
