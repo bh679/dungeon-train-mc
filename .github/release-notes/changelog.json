@@ -18015,6 +18015,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "legacy-band-far-lands",
+      "version": "0.933.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "The end of the line",
+      "summary": "Out past every other stretch of the journey, at the very end before it all loops round, the world does something it was never meant to. We won't say what \u2014 ride far enough and see for yourself.",
+      "highlights": [
+        "A final new stretch at the end of the journey, with a hidden goal for reaching it"
+      ],
+      "pr": 1504,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
