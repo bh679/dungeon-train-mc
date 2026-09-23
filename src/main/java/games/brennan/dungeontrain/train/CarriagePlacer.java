@@ -881,7 +881,7 @@ public final class CarriagePlacer {
                 SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
             } else {
                 BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                    StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(),
+                    StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(), picked.active(),
                     e.localPos(), seed, carriageIndex,
                     sidecar.lockIdAt(e.localPos()));
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(

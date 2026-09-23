@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
@@ -150,7 +151,9 @@ public abstract class ChunkGeneratorDecorationMixin {
                     && DisintegrationBand.isChunkFullyEroded(serverLevel, chunkMinX)) {
                 return true;
             }
-            return ChuncksBand.isVoidChunk(serverLevel, chunkMinX, chunk.getPos().getMinBlockZ());
+            int chunkMinZ = chunk.getPos().getMinBlockZ();
+            return ChuncksBand.isVoidChunk(serverLevel, chunkMinX, chunkMinZ)
+                    || SpheresBand.isVoidChunk(serverLevel, chunkMinX, chunkMinZ);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] decoration-skip resolve failed at {}; running vanilla decoration",
                     chunk.getPos(), t);

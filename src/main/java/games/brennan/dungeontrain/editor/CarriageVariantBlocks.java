@@ -636,11 +636,18 @@ public final class CarriageVariantBlocks {
                 int rawRef = obj.get("groupRef").getAsInt();
                 groupRef = rawRef < 0 ? 0 : rawRef;
             }
+            // Additive redstone-toggle flag. Absent → derive from the captured
+            // state so a hand-authored open=true / lit=true entry keeps
+            // spawning active instead of being forced off by the default.
+            VariantActive parsedActive = parseActive(obj.get("active"), contextId, contextPos);
+            VariantActive active = parsedActive != null
+                ? parsedActive
+                : migrateActiveFromState(base.state());
             // v3 entries had a per-entry "locked" field; v4 moved locking
             // to the cell level. Old "locked" values are silently dropped
             // on read — the file rewrites cleanly without it.
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef);
+                VariantDifficulty.NONE, groupRef, active);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -652,7 +659,10 @@ public final class CarriageVariantBlocks {
                                                  String contextId, BlockPos contextPos) {
         try {
             BlockStateParser.BlockResult parsed = BlockStateParser.parseForBlock(blocks, raw, false);
-            return VariantState.of(parsed.blockState());
+            // A bare string can still carry open=true / lit=true from a hand
+            // edit or an older capture of a world block — keep it active.
+            return VariantState.of(parsed.blockState())
+                .withActive(migrateActiveFromState(parsed.blockState()));
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: could not parse '{}' ({}), skipping.",
                 contextId, contextPos, raw, e.getMessage());
@@ -1275,6 +1285,9 @@ public final class CarriageVariantBlocks {
             if (!s.difficulty().isDefault()) {
                 appendDifficultyJson(sb, s.difficulty());
             }
+            if (!s.active().isDefault()) {
+                sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
+            }
             sb.append("}");
             return;
         }
@@ -1308,6 +1321,9 @@ public final class CarriageVariantBlocks {
         }
         if (s.isGroupRef()) {
             sb.append(", \"groupRef\": ").append(s.groupRef());
+        }
+        if (!s.active().isDefault()) {
+            sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
         }
         sb.append("}");
     }
@@ -1366,6 +1382,36 @@ public final class CarriageVariantBlocks {
                 contextId, contextPos, raw);
             return VariantHalf.NONE;
         }
+    }
+
+    /**
+     * Parse an optional {@code "active"} string ({@code "active"} / {@code "random"} /
+     * {@code "inactive"}). Returns {@code null} when the field is missing so the
+     * caller can derive the mode from the captured state instead
+     * ({@link #migrateActiveFromState}); a malformed value logs and falls back
+     * to the default.
+     */
+    private static VariantActive parseActive(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || !el.isJsonPrimitive()) return null;
+        String raw = el.getAsString().trim();
+        if (raw.isEmpty()) return null;
+        try {
+            return new VariantActive(VariantActive.Mode.valueOf(raw.toUpperCase(Locale.ROOT)));
+        } catch (IllegalArgumentException ignored) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown active mode '{}', defaulting to inactive.",
+                contextId, contextPos, raw);
+            return VariantActive.NONE;
+        }
+    }
+
+    /**
+     * Read-time migration for entries that predate the {@code active} field:
+     * a state whose redstone toggle is already {@code true} (a hand-edited
+     * {@code open=true}, or a world-block capture of an opened trapdoor) is
+     * {@link VariantActive.Mode#ACTIVE}; everything else is the default.
+     */
+    static VariantActive migrateActiveFromState(BlockState state) {
+        return VariantActive.fromState(state);
     }
 
     /**
@@ -1446,6 +1492,10 @@ public final class CarriageVariantBlocks {
 
     /** Lowercase enum name for the {@code "half"} JSON field. */
     private static String halfModeName(VariantHalf.Mode mode) {
+        return mode.name().toLowerCase(Locale.ROOT);
+    }
+
+    private static String activeModeName(VariantActive.Mode mode) {
         return mode.name().toLowerCase(Locale.ROOT);
     }
 

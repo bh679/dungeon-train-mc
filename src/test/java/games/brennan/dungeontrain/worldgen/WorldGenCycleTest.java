@@ -447,6 +447,99 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("spheres band: disabled is byte-identical; enabled sits after the chuncks core behind a lead gap, with an entry fade then a full-void core")
+    void spheresBand() {
+        // Disabled (C has spheresHold=0): zero length, period unchanged, never in-band, ramp 0.
+        assertEquals(0L, C.spheresLen());
+        assertEquals(0L, C.spheresFadeLen());
+        assertEquals(0L, C.spheresLeadGapLen());
+        assertEquals(PERIOD, C.period());
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInSpheresBand(3390));
+        assertEquals(0.0, C.spheresVoidRamp(3390), EPS);
+        // The 21-arg (pre-spheres) shape is also byte-identical: same layout as chuncksLeadGap()'s cycle.
+        WorldGenCycle pre = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 0);
+        assertEquals(3390L, pre.period());
+        org.junit.jupiter.api.Assertions.assertFalse(pre.isInSpheresBand(4390));
+
+        // Same layout plus spheres: lead gap 100, fade 200, core 400 (24-arg canonical ctor). The chuncks
+        // core ends at world-X 4390, so: lead gap [4390,4490), fade [4490,4690), core [4690,5090).
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 400, 200, 100, 0);
+        assertEquals(400L, c.spheresLen());
+        assertEquals(200L, c.spheresFadeLen());
+        assertEquals(100L, c.spheresLeadGapLen());
+        assertEquals(3390L + 100 + 200 + 400, c.period());
+
+        // Lead gap is plain overworld: not in band, not in fade, ramp 0.
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInChuncksBand(4389));   // chuncks core end, untouched
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(4390));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresFade(4390));
+        assertEquals(0.0, c.spheresVoidRamp(4489), EPS);
+
+        // Fade: ramp 0 → 1 across [4490,4690), fade membership, not core.
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresFade(4490));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(4490));
+        assertEquals(0.0, c.spheresVoidRamp(4490), EPS);
+        assertEquals(0.5, c.spheresVoidRamp(4590), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresFade(4689));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresFade(4690));
+
+        // Core: ramp held at 1; hard far edge wraps into the next period's leading owGap.
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresBand(4690));
+        assertEquals(1.0, c.spheresVoidRamp(4690), EPS);
+        assertEquals(1.0, c.spheresVoidRamp(4900), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresBand(5089));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(5090));
+        assertEquals(0.0, c.spheresVoidRamp(5090), EPS);
+        assertEquals(0.0, c.netherHeightRamp(5090), EPS);                  // the leading owGap, plain OW
+
+        // Disjoint from every other segment.
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(1530)); // nether core
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(2500)); // End core
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(3090)); // upside-down core
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(4000)); // chuncks core
+        assertEquals(0.0, c.spheresVoidRamp(4000), EPS);
+
+        // Repeats forever with the new period.
+        int period = (int) c.period();
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresBand(4690 + period));
+        assertEquals(c.spheresVoidRamp(4590), c.spheresVoidRamp(4590 + period), EPS);
+    }
+
+    @Test
+    @DisplayName("spheres approach: lead gap, fade and core all count, so \"Re-Over-World\" waits for the overworld after the spheres")
+    void spheresApproachOrBand() {
+        org.junit.jupiter.api.Assertions.assertFalse(C.isInSpheresApproachOrBand(3390)); // disabled → inert
+
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 50, 200, 150, 0, 500, 200, 300, 0.12, 0.5, 400, 200, 100, 0);
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresApproachOrBand(4389)); // chuncks core (its own predicate)
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresApproachOrBand(4390));  // spheres lead gap (plain OW)
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresApproachOrBand(4500));  // fade
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresApproachOrBand(4690));  // core entry
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresApproachOrBand(5089));  // core end
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresApproachOrBand(5090)); // the overworld that follows
+        assertEquals(1L, c.cycleIndex(5090));                                           // second pass — the gate's index
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresApproachOrBand(4690 + (int) c.period()));
+    }
+
+    @Test
+    @DisplayName("spheres band sits right after the End when chuncks and upside-down are both disabled")
+    void spheresWithoutChuncks() {
+        // No upside-down, no chuncks; spheres core 400, fade 0, lead gap 0 → core starts at udStart = 1940 → world-X 2940.
+        WorldGenCycle c = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200,
+                100, 40, 200, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 400, 0, 0, 0);
+        assertEquals(PERIOD + 400L, c.period());
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(2939));
+        assertEquals(0.0, c.spheresVoidRamp(2939), EPS);                     // hard edge, no fade
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresBand(2940));
+        assertEquals(1.0, c.spheresVoidRamp(2940), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(c.isInSpheresBand(3339));
+        org.junit.jupiter.api.Assertions.assertFalse(c.isInSpheresBand(3340));
+    }
+
+    @Test
     @DisplayName("netherCoreDepth: -1 outside the core (both crossfades included), 0 at the first full-Nether column")
     void netherCoreDepth() {
         // Band world-X [1300, 1960): rise [1300,1420), megaHold [1420,1480), crossfade-in

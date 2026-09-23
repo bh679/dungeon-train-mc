@@ -38,7 +38,7 @@ public final class WholeOverlay {
                 continue;
             }
             BlockState rotated = RotationApplier.apply(
-                StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(),
+                StagePlacementScope.resolve(picked.state()), picked.rotation(), picked.half(), picked.active(),
                 e.localPos(), seed, carriageIndex, sidecar.lockIdAt(e.localPos()));
             ContainerContentsPlacement.place(level, world, rotated, picked.blockEntityNbt(),
                 plotKey, e.localPos(), seed, carriageIndex, picked.linkedLootPrefabId());

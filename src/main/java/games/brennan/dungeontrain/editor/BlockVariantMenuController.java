@@ -342,7 +342,8 @@ public final class BlockVariantMenuController {
                 s.linkedLootPrefabId(), entityId,
                 (byte) s.half().mode().ordinal(),
                 s.difficulty().min(), s.difficulty().max(),
-                s.groupRef(), refLive));
+                s.groupRef(), refLive,
+                (byte) s.active().mode().ordinal()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -673,6 +674,15 @@ public final class BlockVariantMenuController {
                 dropCell = true;
                 dirty = true;
             }
+            case REPLACE_WITH_HELD -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState replacement = replaceWithHeld(player, mutated, idx);
+                if (replacement == null) return;
+                mutated.set(idx, replacement);
+                dirty = true;
+            }
             case BUMP_WEIGHT -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
@@ -735,6 +745,18 @@ public final class BlockVariantMenuController {
                 if (ord < 0 || ord >= modes.length) return;
                 VariantHalf next = new VariantHalf(modes[ord]);
                 mutated.set(idx, mutated.get(idx).withHalf(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_ACTIVE_MODE -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                int ord = packet.delta();
+                VariantActive.Mode[] modes = VariantActive.Mode.values();
+                if (ord < 0 || ord >= modes.length) return;
+                VariantActive next = new VariantActive(modes[ord]);
+                mutated.set(idx, mutated.get(idx).withActive(next));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
@@ -1325,6 +1347,82 @@ public final class BlockVariantMenuController {
             net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(
                 net.minecraft.world.entity.EntityType.ARMOR_STAND);
         return VariantState.ofMob(standId, snapshot, 1, VariantRotation.NONE);
+    }
+
+    /**
+     * Shift-click on a row name: build the row's replacement from the
+     * player's main hand, or return {@code null} (after telling the player
+     * why) when nothing should change. Resolves the held stack the way
+     * {@code ADD} does — empty hand, filled bucket, or block item — and
+     * carries the old row's orientation over via
+     * {@link TemplateBlocksMenuController#transferProperties} so a facing
+     * stair swapped for another stair keeps pointing the same way. Weight,
+     * rotation lock, half mode and difficulty band are preserved; the loot
+     * link follows the held item, so a plain block clears a stale one.
+     */
+    private static VariantState replaceWithHeld(ServerPlayer player, List<VariantState> rows, int idx) {
+        VariantState old = rows.get(idx);
+        if (old.isMob() || old.isGroupRef()) {
+            actionBar(player, "Shift-click only replaces block rows — remove the mob or group row instead",
+                ChatFormatting.YELLOW);
+            return null;
+        }
+        ItemStack held = player.getMainHandItem();
+        BlockState newState;
+        CompoundTag newBeNbt = null;
+        String linkedPrefabId = null;
+        BlockState bucketSource = VariantLiquids.sourceStateFrom(held);
+        if (held.isEmpty()) {
+            newState = CarriageVariantBlocks.emptyPlaceholder();
+        } else if (bucketSource != null) {
+            newState = bucketSource;
+        } else if (held.getItem() instanceof BlockItem blockItem) {
+            newState = TemplateBlocksMenuController.transferProperties(old.state(), blockItem.getBlock());
+            net.minecraft.world.item.component.CustomData heldData =
+                held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
+            newBeNbt = heldData == null ? null : heldData.copyTag();
+            net.minecraft.world.item.component.CustomData custom =
+                held.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+            if (custom != null) {
+                CompoundTag customTag = custom.copyTag();
+                if (customTag.contains(PrefabUseHandler.NBT_LOOT_PREFAB_ID, net.minecraft.nbt.Tag.TAG_STRING)) {
+                    String id = customTag.getString(PrefabUseHandler.NBT_LOOT_PREFAB_ID);
+                    if (!id.isEmpty()) linkedPrefabId = id;
+                }
+            }
+        } else {
+            actionBar(player, "Hold a block, bucket, or empty hand to replace a variant", ChatFormatting.YELLOW);
+            return null;
+        }
+        VariantState replacement = old.withState(newState, newBeNbt).withLinkedLootPrefabId(linkedPrefabId);
+        if (sameCandidate(old, replacement)) {
+            actionBar(player, "That row is already this block", ChatFormatting.YELLOW);
+            return null;
+        }
+        for (int i = 0; i < rows.size(); i++) {
+            VariantState other = rows.get(i);
+            if (i != idx && !other.isGroupRef() && sameCandidate(other, replacement)) {
+                actionBar(player, "Variant already in this cell", ChatFormatting.YELLOW);
+                return null;
+            }
+        }
+        actionBar(player, "Replaced " + blockName(old.state()) + " with " + blockName(newState),
+            ChatFormatting.GREEN);
+        return replacement;
+    }
+
+    /** The dedup key {@code ADD} uses: state, block-entity payload, loot link and entity id. */
+    private static boolean sameCandidate(VariantState a, VariantState b) {
+        return a.state().equals(b.state())
+            && Objects.equals(a.blockEntityNbt(), b.blockEntityNbt())
+            && Objects.equals(a.linkedLootPrefabId(), b.linkedLootPrefabId())
+            && Objects.equals(a.entityId(), b.entityId());
+    }
+
+    private static String blockName(BlockState state) {
+        return CarriageVariantBlocks.isEmptyPlaceholder(state)
+            ? "empty"
+            : state.getBlock().getName().getString();
     }
 
     private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {

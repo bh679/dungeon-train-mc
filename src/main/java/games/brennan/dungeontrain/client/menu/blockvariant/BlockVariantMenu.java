@@ -69,6 +69,7 @@ public final class BlockVariantMenu {
         ENTRY_ROT_MODE,
         ENTRY_ROT_DIRS,
         ENTRY_HALF_MODE,
+        ENTRY_ACTIVE_MODE,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         ROT_DIR_OPTION,

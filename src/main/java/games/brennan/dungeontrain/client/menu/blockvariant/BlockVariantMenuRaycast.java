@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.editor.RedstoneToggle;
 import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
@@ -160,6 +161,7 @@ public final class BlockVariantMenuRaycast {
         boolean concrete = !entry.isMob() && !entry.isGroupRef();
         boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
         boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
+        boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
         VariantRotation.Mode rowMode = BlockVariantMenuRenderer.decodeMode(entry.rotMode());
         boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
         double rotDirsCellR = weightCellL;
@@ -168,10 +170,12 @@ public final class BlockVariantMenuRaycast {
         double rotModeCellL = rotatable ? rotModeCellR - BlockVariantMenuRenderer.ROT_MODE_CELL_WIDTH : rotModeCellR;
         double halfModeCellR = rotModeCellL;
         double halfModeCellL = halfable ? halfModeCellR - BlockVariantMenuRenderer.HALF_MODE_CELL_WIDTH : halfModeCellR;
+        double activeModeCellR = halfModeCellL;
+        double activeModeCellL = toggleable ? activeModeCellR - BlockVariantMenuRenderer.ACTIVE_MODE_CELL_WIDTH : activeModeCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they
         // occupy the space the rotation/half cells leave free on a mob row.
         boolean showDiff = entry.isMob();
-        double diffMaxCellR = halfModeCellL;
+        double diffMaxCellR = activeModeCellL;
         double diffMaxCellL = showDiff ? diffMaxCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMaxCellR;
         double diffMinCellR = diffMaxCellL;
         double diffMinCellL = showDiff ? diffMinCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMinCellR;
@@ -190,6 +194,9 @@ public final class BlockVariantMenuRaycast {
         }
         if (halfable && hitX >= halfModeCellL && hitX <= halfModeCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_HALF_MODE, idx);
+        }
+        if (toggleable && hitX >= activeModeCellL && hitX <= activeModeCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ACTIVE_MODE, idx);
         }
         if (showDiff && hitX >= diffMinCellL && hitX <= diffMinCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_DIFF_MIN, idx);

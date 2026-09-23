@@ -210,6 +210,13 @@ public final class BlockVariantMenuInputHandler {
             }
             case ENTRY_NAME -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                // Shift-click swaps the row for the block in hand; the server
+                // reads the main-hand stack and keeps the row's other settings.
+                if (shift) {
+                    DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                        BlockVariantEditPacket.Op.REPLACE_WITH_HELD, variantId, local, hit.index(), "", 0));
+                    return;
+                }
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
                 // A linked variant row routes to the container menu so the
                 // user can edit the loot template directly. Unlinked rows
@@ -241,6 +248,18 @@ public final class BlockVariantMenuInputHandler {
                 int nextOrd = (currentOrd + 1) % modeCount;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_HALF_MODE, variantId, local, hit.index(), "", nextOrd));
+            }
+            case ENTRY_ACTIVE_MODE -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                int currentOrd = e.activeMode() & 0xFF;
+                int modeCount = games.brennan.dungeontrain.editor.VariantActive.Mode.values().length;
+                if (currentOrd >= modeCount) {
+                    currentOrd = games.brennan.dungeontrain.editor.VariantActive.Mode.INACTIVE.ordinal();
+                }
+                int nextOrd = (currentOrd + 1) % modeCount;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_ACTIVE_MODE, variantId, local, hit.index(), "", nextOrd));
             }
             case ENTRY_ROT_DIRS -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;

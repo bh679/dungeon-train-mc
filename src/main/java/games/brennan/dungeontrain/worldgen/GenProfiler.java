@@ -66,7 +66,11 @@ public final class GenProfiler {
         /** {@code WorldChuncksEvents.onChunkLoad} — chuncks-band top-down slice erosion (MAIN-thread, like
          *  {@link #EROSION}; excluded from {@link Sample#dtTotalMs}). The band's only real gen cost — void
          *  chunks skip fill + decoration, so this bucket staying ~0 confirms the band is near-free at gen. */
-        CHUNCKS_SLICE
+        CHUNCKS_SLICE,
+        /** {@code WorldSpheresEvents.onChunkLoad} — spheres-band carve + lift rewrite (MAIN-thread, like
+         *  {@link #EROSION}; excluded from {@link Sample#dtTotalMs}). Void chunks skip fill + decoration, so
+         *  this is the band's only real gen cost. */
+        SPHERES_CARVE
     }
 
     private static final int N = Bucket.values().length;

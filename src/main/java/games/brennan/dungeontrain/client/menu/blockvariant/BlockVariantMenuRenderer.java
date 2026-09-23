@@ -10,7 +10,9 @@ import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.client.menu.PanelIconBatch;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.editor.RedstoneToggle;
 import games.brennan.dungeontrain.editor.RotationApplier;
+import games.brennan.dungeontrain.editor.VariantActive;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
 import net.minecraft.client.Minecraft;
@@ -103,6 +105,12 @@ public final class BlockVariantMenuRenderer {
     static final double ROT_DIRS_CELL_WIDTH = 0.32;
     /** T/R/B pill width — matches the L/R/O pill so the two read as a pair on stairs/trapdoors. */
     static final double HALF_MODE_CELL_WIDTH = 0.34;
+    /**
+     * On/R/Off pill width — the redstone-toggle control for trapdoors, doors, gates, levers, copper bulbs. Wider than
+     * the single-letter T/R/B pill because "Off" is three glyphs: at the shared width the labels
+     * overran into the neighbouring pill (Gate 2 screenshot, v0.928.1).
+     */
+    static final double ACTIVE_MODE_CELL_WIDTH = 0.78;
     static final double TEXT_SCALE = 0.012;
     static final double POPUP_BUTTON_SIZE = 0.20;
     static final double ICON_SIZE = 0.22;
@@ -320,6 +328,7 @@ public final class BlockVariantMenuRenderer {
             //   [RotDirs]   (only when block is rotatable AND mode != RANDOM)
             //   [RotMode]   (only when block is rotatable)
             //   [HalfMode]  (only when block has SLAB_TYPE or HALF)
+            //   [ActiveMode] (only on latching blocks — RedstoneToggle.canToggle)
             //   [Name] (fills the remaining left)
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
             BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
@@ -333,6 +342,7 @@ public final class BlockVariantMenuRenderer {
             boolean concrete = !entry.isMob() && !entry.isGroupRef();
             boolean rotatable = parsed != null && concrete && RotationApplier.canRotate(parsed);
             boolean halfable = parsed != null && concrete && RotationApplier.canFlip(parsed);
+            boolean toggleable = parsed != null && concrete && RedstoneToggle.canToggle(parsed);
             VariantRotation.Mode rowMode = decodeMode(entry.rotMode());
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
@@ -343,12 +353,14 @@ public final class BlockVariantMenuRenderer {
             double rotModeCellL = rotatable ? rotModeCellR - ROT_MODE_CELL_WIDTH : rotModeCellR;
             double halfModeCellR = rotModeCellL;
             double halfModeCellL = halfable ? halfModeCellR - HALF_MODE_CELL_WIDTH : halfModeCellR;
+            double activeModeCellR = halfModeCellL;
+            double activeModeCellL = toggleable ? activeModeCellR - ACTIVE_MODE_CELL_WIDTH : activeModeCellR;
             // Difficulty min/max cells (mob rows only) sit between the name and
             // weight, reusing the space the rotation/half cells leave free on a
             // mob row. They collapse to zero width on block rows, so nameCellR
             // is unchanged there.
             boolean showDiff = entry.isMob();
-            double diffMaxCellR = halfModeCellL;
+            double diffMaxCellR = activeModeCellL;
             double diffMaxCellL = showDiff ? diffMaxCellR - DIFF_CELL_WIDTH : diffMaxCellR;
             double diffMinCellR = diffMaxCellL;
             double diffMinCellL = showDiff ? diffMinCellR - DIFF_CELL_WIDTH : diffMinCellR;
@@ -431,6 +443,12 @@ public final class BlockVariantMenuRenderer {
             if (halfable) {
                 drawHalfModeCell(ps, buffer, font, i, entry,
                     halfModeCellL, halfModeCellR, rowBottom, rowTop, rowCY, hovered);
+            }
+
+            // Redstone-toggle pill (trapdoors / doors / gates / levers / copper bulbs)
+            if (toggleable) {
+                drawActiveModeCell(ps, buffer, font, i, entry,
+                    activeModeCellL, activeModeCellR, rowBottom, rowTop, rowCY, hovered);
             }
 
             // Difficulty band cells (mob rows only)
@@ -642,6 +660,49 @@ public final class BlockVariantMenuRenderer {
     }
 
     /**
+     * Draw the per-row redstone-toggle pill — On / R / Off (Active / Random /
+     * Inactive) for blocks with a signal-driven property (see
+     * {@link RedstoneToggle#propertyFor}). Red for active so it reads as
+     * "powered", the shared blue for random, grey-teal for inactive.
+     */
+    private static void drawActiveModeCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                           int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                           double cellL, double cellR,
+                                           double rowBottom, double rowTop, double rowCY,
+                                           BlockVariantMenu.Hit hovered) {
+        VariantActive.Mode mode = decodeActiveMode(entry.activeMode());
+        boolean modeHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_ACTIVE_MODE && hovered.index() == rowIndex;
+
+        double pillBot = rowBottom + 0.02;
+        double pillTop = rowTop - 0.02;
+        double segW = (cellR - cellL - 0.02) / 3.0;
+        for (int seg = 0; seg < 3; seg++) {
+            double sL = cellL + 0.01 + seg * segW;
+            double sR = sL + segW - 0.005;
+            boolean selected = seg == mode.ordinal();
+            int tint;
+            if (selected) {
+                tint = switch (seg) {
+                    case 0 -> modeHover ? 0xC0FF6655 : 0x80CC3322; // ACTIVE red (powered)
+                    case 1 -> modeHover ? 0xC066AAFF : 0x8033679B; // RANDOM blue (shared)
+                    default -> modeHover ? 0xC099AAAA : 0x80557777; // INACTIVE slate
+                };
+            } else {
+                tint = modeHover ? 0x60AAAAAA : 0x30777777;
+            }
+            drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
+            String label = switch (seg) {
+                case 0 -> MenuLang.t("block_variant.active_on");
+                case 1 -> MenuLang.t("block_variant.active_random");
+                default -> MenuLang.t("block_variant.active_off");
+            };
+            drawCenteredText(ps, buffer, font, label,
+                (sL + sR) / 2.0, rowCY,
+                selected ? 0xFFFFFFFF : 0xFF888888);
+        }
+    }
+
+    /**
      * Draw a mob row's difficulty band: two cells {@code [min][max]} giving the
      * inclusive difficulty-tier range the egg may spawn in. {@code max} renders
      * {@code "all"} for the unbounded sentinel ({@code maxDiff < 0}). Purple
@@ -681,6 +742,14 @@ public final class BlockVariantMenuRenderer {
         games.brennan.dungeontrain.editor.VariantHalf.Mode[] values =
             games.brennan.dungeontrain.editor.VariantHalf.Mode.values();
         if (ord < 0 || ord >= values.length) return games.brennan.dungeontrain.editor.VariantHalf.Mode.RANDOM;
+        return values[ord];
+    }
+
+    /** Decode wire byte → active mode enum, defaulting to INACTIVE on out-of-range. */
+    static VariantActive.Mode decodeActiveMode(byte raw) {
+        int ord = raw & 0xFF;
+        VariantActive.Mode[] values = VariantActive.Mode.values();
+        if (ord < 0 || ord >= values.length) return VariantActive.Mode.INACTIVE;
         return values[ord];
     }
 

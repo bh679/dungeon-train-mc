@@ -17751,8 +17751,71 @@
       "released_at": null
     },
     {
+      "id": "spheres-world-gen-band",
+      "version": "0.930.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world",
+        "advancements"
+      ],
+      "title": "The train passes through somewhere new",
+      "summary": "There is another dimension on the line now, waiting further down the track. Keep riding \u2014 you'll know it when you get there.",
+      "highlights": [
+        "A new stretch of the journey for the train to cross",
+        "A new advancement for those who make it that far"
+      ],
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "block-variant-shift-click-replace",
+      "version": "0.930.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Swap a block variant without rebuilding the row",
+      "summary": "In the block-variant menu, hold the block you want and shift-click a row's name to swap it in. The row keeps its weight, rotation lock and half setting, so retheming a cell is one click per row instead of remove-and-add.",
+      "highlights": [
+        "Shift-click a row name to replace it with the block in your hand.",
+        "Orientation and settings carry over."
+      ],
+      "pr": 1486,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "block-variant-active-pill",
+      "version": "0.931.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Block variants can spawn switched on",
+      "summary": "In the Train Editor's block-variant menu, variants of blocks that hold a toggled state \u2014 trapdoors, doors, fence gates, levers and copper bulbs \u2014 now have an On / R / Off pill beside the half pill. Set a trapdoor to spawn open, a lever thrown or a copper bulb lit, or pick R to roll it per carriage. Blocks that fall back when a signal stops (lamps, pistons, buttons) don't get the pill. Existing builds keep spawning exactly as before.",
+      "highlights": [
+        "On / R / Off pill on trapdoors, doors, fence gates, levers and copper bulbs",
+        "Random rolls per carriage, so a corridor can mix open and closed trapdoors",
+        "Editor preview shows the chosen state; Random blinks between both"
+      ],
+      "pr": 1485,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "floor-height-single-plane",
-      "version": "0.929.0",
+      "version": "0.931.0",
       "type": "feat",
       "tags": [
         "feature",
