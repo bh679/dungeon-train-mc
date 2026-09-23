@@ -107,6 +107,10 @@
     {
       "id": "books3",
       "weight": 1
+    },
+    {
+      "id": "books4",
+      "weight": 1
     }
   ]
 }
