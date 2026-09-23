@@ -15,6 +15,7 @@
         "SPHERES",
         "BETA",
         "ALPHA",
+        "INFDEV",
         "SKYLANDS",
         "FLOATING"
       ]
@@ -36,6 +37,7 @@
         "SPHERES",
         "BETA",
         "ALPHA",
+        "INFDEV",
         "SKYLANDS",
         "FLOATING"
       ]
@@ -124,6 +126,7 @@
         "SPHERES",
         "BETA",
         "ALPHA",
+        "INFDEV",
         "SKYLANDS",
         "FLOATING"
       ]
@@ -150,7 +153,8 @@
         "NETHER",
         "UPSIDE_DOWN",
         "BETA",
-        "ALPHA"
+        "ALPHA",
+        "INFDEV"
       ]
     },
     {

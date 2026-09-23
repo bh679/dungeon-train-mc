@@ -1215,6 +1215,23 @@ public record WorldGenCycle(long startX, int owGap,
         return (double) (exitEnd - local) / (span.fadeLen() + 1);
     }
 
+    /**
+     * How far {@code worldX} is through legacy band {@code kind}, {@code 0..1} from the start of its entry
+     * fade to the end of its exit fade (the stretch where its chunks can appear), or {@code -1} outside it
+     * (lead gap, other bands, disabled). Lets one band step through sub-versions along its length.
+     */
+    public double legacyProgress(LegacyBandKind kind, int worldX) {
+        LegacySpan span = spanOf(kind);
+        if (span == null) return -1.0D;
+        long o = offset(worldX);
+        if (o < 0L) return -1.0D;
+        long from = legacySlotStart(kind) + span.leadGapLen();
+        long len = 2L * span.fadeLen() + span.holdLen();
+        long local = o - from;
+        if (local < 0L || local >= len) return -1.0D;
+        return (double) local / len;
+    }
+
     /** True if {@code worldX} lies in the core of legacy band {@code kind} (not its fades). */
     public boolean isInLegacyBand(LegacyBandKind kind, int worldX) {
         LegacySpan span = spanOf(kind);

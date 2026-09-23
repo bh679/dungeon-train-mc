@@ -2,9 +2,9 @@ package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBlocks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
-import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -40,6 +40,8 @@ public final class LegacyChunkWriter {
         STATES[BetaBlocks.GRAVEL] = Blocks.GRAVEL.defaultBlockState();
         STATES[BetaBlocks.SANDSTONE] = Blocks.SANDSTONE.defaultBlockState();
         STATES[BetaBlocks.ICE] = Blocks.ICE.defaultBlockState();
+        STATES[BetaBlocks.BRICKS] = Blocks.BRICKS.defaultBlockState();
+        STATES[BetaBlocks.OBSIDIAN] = Blocks.OBSIDIAN.defaultBlockState();
     }
 
     private LegacyChunkWriter() {}
@@ -55,6 +57,7 @@ public final class LegacyChunkWriter {
             case BETA -> LegacyBands.beta(seed).generate(cx, cz).blocks();
             case SKYLANDS -> LegacyBands.sky(seed).generate(cx, cz).blocks();
             case ALPHA -> LegacyBands.alpha(seed).generate(cx, cz, LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), cx));
+            case INFDEV -> LegacyBands.infdev(seed).generate(cx, cz, LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), cx));
             case FLOATING -> null; // not a Beta-layout column: a slice of a whole finite level
         };
         if (blocks == null) {
@@ -89,7 +92,7 @@ public final class LegacyChunkWriter {
         Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.OCEAN_FLOOR_WG, Heightmap.Types.WORLD_SURFACE_WG));
     }
 
-    /** Write a Beta-layout column ({@link BetaTerrain#index}, {@link BetaBlocks} ids) — Alpha shares it. */
+    /** Write a Beta-layout column ({@link BetaTerrain#index}, {@link BetaBlocks} ids) — Alpha and Infdev share it. */
     static void write(ChunkAccess chunk, byte[] blocks, int floorY, int yOffset, boolean stoneBelow) {
         // Void below: start at the old y = 0 so nothing (not even air) is written under the column.
         int minY = Math.max(Math.max(chunk.getMinBuildHeight(), floorY), stoneBelow ? Integer.MIN_VALUE : yOffset);

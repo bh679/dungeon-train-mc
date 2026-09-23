@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingPopulator;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
+import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevPopulator;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -58,6 +59,8 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
                         BetaBiome.SKY, null, chunk.x, chunk.z);
                 case ALPHA -> AlphaPopulator.populate(level, LegacyBands.alpha(seed), chunk.x, chunk.z,
                         LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), chunk.x));
+                case INFDEV -> InfdevPopulator.populate(world, LegacyBands.infdev(seed),
+                        LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), chunk.x), chunk.x, chunk.z);
                 case FLOATING -> IndevFloatingPopulator.populate(world, seed, chunk.x, chunk.z);
             }
             return true;

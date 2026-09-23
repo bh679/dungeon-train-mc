@@ -7,6 +7,9 @@ import games.brennan.dungeontrain.worldgen.legacy.alpha.AlphaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevVersion;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.legacy.sky.SkyTerrain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -130,6 +133,7 @@ public final class LegacyBands {
             beta = null;
             alpha = null;
             sky = null;
+            infdev = null;
             indev = null;
         }
     }
@@ -157,6 +161,18 @@ public final class LegacyBands {
         synchronized (LegacyBands.class) {
             if (alpha == null || alpha.seed() != seed) alpha = new AlphaTerrain(seed);
             return alpha;
+        }
+    }
+
+    private static volatile InfdevTerrain infdev;
+
+    /** The Infdev generators for {@code seed}; one shared, immutable instance per seed. */
+    public static InfdevTerrain infdev(long seed) {
+        InfdevTerrain t = infdev;
+        if (t != null && t.seed() == seed) return t;
+        synchronized (LegacyBands.class) {
+            if (infdev == null || infdev.seed() != seed) infdev = new InfdevTerrain(seed);
+            return infdev;
         }
     }
 
@@ -218,13 +234,13 @@ public final class LegacyBands {
     static final int FLOATING_BED_OLD_Y = 85;
 
     /**
-     * World Y of {@code kind}'s old {@code y = 0} in {@code level}. Beta and Alpha are pinned to sea level
+     * World Y of {@code kind}'s old {@code y = 0} in {@code level}. Beta, Alpha and Infdev are pinned to sea level
      * ({@link LegacyChunkWriter#Y_OFFSET}); Skylands has no sea, so it follows the train's bed instead,
      * clamped so its lowest land stays above the world floor.
      */
     public static int yOffset(LegacyBandKind kind, ServerLevel level) {
         return switch (kind) {
-            case BETA, ALPHA -> LegacyChunkWriter.Y_OFFSET;
+            case BETA, ALPHA, INFDEV -> LegacyChunkWriter.Y_OFFSET;
             case FLOATING -> {
                 DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
                 int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
@@ -266,6 +282,14 @@ public final class LegacyBands {
             if (!blocks.getBlockState(pos.set(x, by, z)).isAir()) return false;
         }
         return true;
+    }
+
+    /**
+     * The Infdev snapshot for chunk column {@code chunkX}, from how far its west edge is through the band.
+     * Fill, biome and decoration all ask this, so a chunk is one version throughout.
+     */
+    public static InfdevVersion infdevVersion(WorldGenCycle cycle, int chunkX) {
+        return InfdevVersion.at(Math.max(0.0D, cycle.legacyProgress(LegacyBandKind.INFDEV, chunkX << 4)));
     }
 
     // splitmix64-style finaliser, uniform in [0,1) per (seed, chunkX, chunkZ); same idiom as StacksBand.
