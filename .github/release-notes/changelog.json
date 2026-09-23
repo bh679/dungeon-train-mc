@@ -17874,6 +17874,48 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-contents-stage-materials",
+      "version": "0.931.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "Carriage rooms dress for the journey",
+      "summary": "Shops, workshops, libraries, mazes and many other carriage rooms now take on the stone and wood of the stretch the train is crossing, so the same room looks different from one stage to the next. The library also gains a new shelf-lined layout.",
+      "highlights": [
+        "Carriage interiors change their materials as the journey goes on.",
+        "A new library layout, wall to wall with bookshelves.",
+        "The leatherworker stocks enchanted armour."
+      ],
+      "pr": 1490,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "longer-late-journey-stretches",
+      "version": "0.931.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The strange stretches run longer",
+      "summary": "Some of the stranger places the line runs through now last longer before the world settles back to normal.",
+      "highlights": [
+        "A few of the stranger stretches of the journey take longer to cross.",
+        "Worlds started before this update may show a seam where the new layout meets land you have already seen."
+      ],
+      "pr": 1490,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
