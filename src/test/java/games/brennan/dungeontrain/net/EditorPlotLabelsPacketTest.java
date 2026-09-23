@@ -79,6 +79,31 @@ final class EditorPlotLabelsPacketTest {
     }
 
     @Test
+    @DisplayName("round-trip preserves the Copies icons and the floor's depth")
+    void roundTrip_preservesCopiesAndFloorHeight() {
+        EditorPlotLabelsPacket.Entry room = new EditorPlotLabelsPacket.Entry(
+            new BlockPos(0, 250, 0), "plain", 1,
+            "PORTALS", "portal_room", "plain", true, false, false,
+            15, 15, 7, "endless_open/single", "minecraft:water", "minecraft:lava", 3);
+
+        EditorPlotLabelsPacket.Entry decoded = roundTrip(
+            new EditorPlotLabelsPacket(List.of(room))).entries().get(0);
+
+        assertEquals("minecraft:water", decoded.copiesFloorBlock());
+        assertEquals("minecraft:lava", decoded.copiesRoofBlock());
+        assertEquals(3, decoded.copiesFloorHeight());
+
+        // The pre-depth shape reads as one plane, and a nonsense depth is corrected on the way in.
+        EditorPlotLabelsPacket.Entry old = new EditorPlotLabelsPacket.Entry(
+            new BlockPos(0, 250, 0), "plain", 1, "PORTALS", "portal_room", "plain",
+            true, false, false, 15, 15, 7, "endless_open/single", "minecraft:stone", "");
+        assertEquals(1, old.copiesFloorHeight());
+        assertEquals(1, new EditorPlotLabelsPacket.Entry(
+            new BlockPos(0, 250, 0), "plain", 1, "PORTALS", "portal_room", "plain",
+            true, false, false, 15, 15, 7, "endless_open/single", "minecraft:stone", "", 0).copiesFloorHeight());
+    }
+
+    @Test
     @DisplayName("an empty snapshot round-trips to the empty singleton")
     void roundTrip_empty() {
         assertTrue(roundTrip(EditorPlotLabelsPacket.empty()).entries().isEmpty());

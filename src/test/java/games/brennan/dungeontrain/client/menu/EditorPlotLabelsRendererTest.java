@@ -557,6 +557,41 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
+    @DisplayName("The Floor row carries a depth stepper between its icon and its Edit button")
+    void copiesFloorRowHasDepthStepper() {
+        EditorPlotLabelsPacket.Entry e =
+            entryWithBlock("endless_open/single", "minecraft:water");
+        double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
+        RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
+        double y = rowCentreY(e, indexOf(rows, RowKind.COPIES_FLOOR));
+
+        double left = EditorPlotLabelsRenderer.copiesFloorStepperLeft(halfW);
+        double split = halfW * 2.0 * 0.72 - halfW; // the Books/Copies Edit split
+        double third = (split - left) / 3.0;
+
+        // Left of the stepper is still the held-value cell; the icon lives there.
+        assertEquals(CellKind.COPIES_FLOOR_HELD,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, y));
+        assertEquals(CellKind.COPIES_FLOOR_HELD,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, left - 0.01, y));
+        // Then [-] | number | [+], then Edit.
+        assertEquals(CellKind.COPIES_FLOOR_HEIGHT_DEC,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, left + third * 0.5, y));
+        assertEquals(CellKind.NONE,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, left + third * 1.5, y),
+            "the number is display only");
+        assertEquals(CellKind.COPIES_FLOOR_HEIGHT_INC,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, split - third * 0.5, y));
+        assertEquals(CellKind.COPIES_FLOOR_EDIT,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, y));
+
+        // The Roof row has no stepper: the same x that steps the floor still sets the roof.
+        double roofY = rowCentreY(e, indexOf(rows, RowKind.COPIES_ROOF));
+        assertEquals(CellKind.COPIES_ROOF_HELD,
+            EditorPlotLabelsRenderer.cellAt(e, halfW, left + third * 0.5, roofY));
+    }
+
+    @Test
     @DisplayName("An unset Copies block still splits — the row is usable before anything is chosen")
     void copiesBlockRowSplitsWhenUnset() {
         EditorPlotLabelsPacket.Entry e = entryWithBlock("endless_open/single", "");

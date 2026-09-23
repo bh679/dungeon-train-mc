@@ -122,6 +122,12 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor portals copies " + plane.id() + " held";
     }
 
+    /** As {@link #dimensionCommandFor}, for how deep the Single floor is laid ({@code inc}/{@code dec}). */
+    public static String copiesFloorHeightCommandFor(PlotCategory category, String dir) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return "dungeontrain editor portals copies floor height " + dir;
+    }
+
     /** As {@link #copiesBlockHeldCommandFor}, for opening the Block Variant menu on that plane. */
     public static String copiesBlockEditCommandFor(
         PlotCategory category, games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane

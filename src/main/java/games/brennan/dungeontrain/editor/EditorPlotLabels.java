@@ -71,8 +71,19 @@ public final class EditorPlotLabels {
         int roomHeight,
         String roomMode,
         String copiesFloorBlock,
-        String copiesRoofBlock
+        String copiesRoofBlock,
+        int copiesFloorHeight
     ) {
+        /** The shape before the floor had a depth — one plane. */
+        public Label(BlockPos worldPos, String name, int weight, String category,
+                     String modelId, String modelName,
+                     boolean inPlot, boolean isUser, boolean isImported,
+                     int roomLength, int roomWidth, int roomHeight, String roomMode,
+                     String copiesFloorBlock, String copiesRoofBlock) {
+            this(worldPos, name, weight, category, modelId, modelName, inPlot, isUser, isImported,
+                roomLength, roomWidth, roomHeight, roomMode, copiesFloorBlock, copiesRoofBlock, 1);
+        }
+
         /** Back-compat shape for every category but PORTALS — no authored size or mode to show. */
         public Label(BlockPos worldPos, String name, int weight, String category,
                      String modelId, String modelName,
@@ -95,7 +106,7 @@ public final class EditorPlotLabels {
         public Label withInPlot(boolean newInPlot) {
             return new Label(worldPos, name, weight, category, modelId, modelName,
                 newInPlot, isUser, isImported, roomLength, roomWidth, roomHeight, roomMode,
-                copiesFloorBlock, copiesRoofBlock);
+                copiesFloorBlock, copiesRoofBlock, copiesFloorHeight);
         }
     }
 
@@ -273,9 +284,14 @@ public final class EditorPlotLabels {
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
             String copiesRoofBlock = palettes.iconBlockId(
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
+            // As the stamp will lay it: clamped to the room, so the row never promises a depth
+            // the roof would not survive.
+            int copiesFloorHeight = games.brennan.dungeontrain.portal.PortalRoomSinglePlanes
+                .floorHeightFor(palettes, size);
             out.set(i, new Label(l.worldPos(), l.name(), l.weight(), l.category(),
                 l.modelId(), l.modelName(), l.inPlot(), l.isUser(), l.isImported(),
-                size.getX(), size.getZ(), size.getY(), mode, copiesFloorBlock, copiesRoofBlock));
+                size.getX(), size.getZ(), size.getY(), mode, copiesFloorBlock, copiesRoofBlock,
+                copiesFloorHeight));
         }
         return out;
     }

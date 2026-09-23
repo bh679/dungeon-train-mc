@@ -99,6 +99,26 @@ public final class EditorMenuPortalRows {
     }
 
     /**
+     * The Floor height row — how deep the Single floor is laid — or null when there is no Floor
+     * row to sit under.
+     *
+     * <p>A {@code [-] Floor height [+]} triple rather than a third cell on the Floor row: that row
+     * is already a value and an Edit button, and this menu carries no palette to show the current
+     * depth, so the middle types a number instead of displaying one. The in-plot panel, which
+     * does know the depth, draws the stepper on the Floor row itself.</p>
+     */
+    public static CommandMenuEntry copiesFloorHeightRowFor(String currentMode, String prefix) {
+        if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
+        if (!EditorPlotLabelsRenderer.hasCopiesBlockRowFor(currentMode)) return null;
+        String command = prefix + " copies floor height";
+        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", command + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
+            MenuLang.t("editor.floor_height"), "blocks", command);
+        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", command + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    }
+
+    /**
      * The Door Wall row, or null unless the walls are set to Endless Repetition — the one mode whose
      * appended tiles carry a wall of their own.
      *

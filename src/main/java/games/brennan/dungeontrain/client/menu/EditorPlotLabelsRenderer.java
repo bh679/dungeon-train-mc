@@ -98,6 +98,9 @@ public final class EditorPlotLabelsRenderer {
         COPIES_FLOOR_HELD,
         /** The Edit half of that row — opens the Block Variant menu on the floor palette. */
         COPIES_FLOOR_EDIT,
+        /** The [-] and [+] between the floor's icon and its Edit button — how deep the floor is laid. */
+        COPIES_FLOOR_HEIGHT_DEC,
+        COPIES_FLOOR_HEIGHT_INC,
         /** The roof row — the same two halves, aimed at the plane over the player's head. */
         COPIES_ROOF_HELD,
         COPIES_ROOF_EDIT,
@@ -341,6 +344,27 @@ public final class EditorPlotLabelsRenderer {
     /** True when {@code hitX} lands on a Copies plane row's Edit button rather than its value. */
     public static boolean copiesBlockHitIsEdit(double halfW, double hitX) {
         return hitX >= copiesEditLeft(halfW);
+    }
+
+    /**
+     * Where the Floor row's depth stepper starts: just right of the icon's slot. The stepper runs
+     * from here to the Edit split, in thirds — [-] depth [+] — so the row reads
+     * {@code Floor: [icon] [-] 3 [+] [Edit]}. The Roof row has no stepper and keeps its two halves.
+     */
+    static double copiesFloorStepperLeft(double halfW) {
+        return copiesIconCentre(halfW) + COPIES_ICON_SLOT * 0.5;
+    }
+
+    /** The Floor row's cell at {@code hitX}: held value, depth [-], depth [+], or Edit. */
+    public static CellKind copiesFloorCell(double halfW, double hitX) {
+        if (copiesBlockHitIsEdit(halfW, hitX)) return CellKind.COPIES_FLOOR_EDIT;
+        double left = copiesFloorStepperLeft(halfW);
+        if (hitX < left) return CellKind.COPIES_FLOOR_HELD;
+        double third = (copiesEditLeft(halfW) - left) / 3.0;
+        if (hitX < left + third) return CellKind.COPIES_FLOOR_HEIGHT_DEC;
+        if (hitX >= copiesEditLeft(halfW) - third) return CellKind.COPIES_FLOOR_HEIGHT_INC;
+        // The number itself is display only — stepping covers the few values a room can hold.
+        return CellKind.NONE;
     }
 
     /**
@@ -913,8 +937,7 @@ public final class EditorPlotLabelsRenderer {
             // mean a shell of mixed blocks, which is not what a seal is for.
             case LOCK -> CellKind.LOCK_HELD;
             case COPIES -> CellKind.COPIES_CYCLE;
-            case COPIES_FLOOR -> copiesBlockHitIsEdit(halfW, hitX)
-                ? CellKind.COPIES_FLOOR_EDIT : CellKind.COPIES_FLOOR_HELD;
+            case COPIES_FLOOR -> copiesFloorCell(halfW, hitX);
             case COPIES_ROOF -> copiesBlockHitIsEdit(halfW, hitX)
                 ? CellKind.COPIES_ROOF_EDIT : CellKind.COPIES_ROOF_HELD;
             case DOOR_WALL -> CellKind.DOOR_WALL_CYCLE;
@@ -1143,9 +1166,13 @@ public final class EditorPlotLabelsRenderer {
                 // Floor and Roof — the two variants Single repeats, as icons. Clicking a row takes
                 // what the author is holding (a block, or a variant copied from a cell); its Edit
                 // half opens the Block Variant menu on that plane alone.
-                case COPIES_FLOOR -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
-                    hovered, MenuLang.t("plot.floor_prefix"), entry.copiesFloorBlock(),
-                    CellKind.COPIES_FLOOR_HELD, CellKind.COPIES_FLOOR_EDIT);
+                case COPIES_FLOOR -> {
+                    drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
+                        hovered, MenuLang.t("plot.floor_prefix"), entry.copiesFloorBlock(),
+                        CellKind.COPIES_FLOOR_HELD, CellKind.COPIES_FLOOR_EDIT);
+                    drawCopiesFloorHeight(ps, buffer, font, halfW, rBot, rTop, rCY, hovered,
+                        entry.copiesFloorHeight());
+                }
                 case COPIES_ROOF -> drawCopiesPlaneRow(ps, buffer, font, halfW, rBot, rTop, rCY,
                     hovered, MenuLang.t("plot.roof_prefix"), entry.copiesRoofBlock(),
                     CellKind.COPIES_ROOF_HELD, CellKind.COPIES_ROOF_EDIT);
@@ -1310,6 +1337,30 @@ public final class EditorPlotLabelsRenderer {
      * report — written once so the two cannot drift apart in geometry, which is what the hit-test
      * assumes when it splits both of them at {@link #copiesEditLeft}.</p>
      */
+    /**
+     * The Floor row's depth stepper, drawn over the value half's right end: {@code [-] N [+]} in the
+     * thirds {@link #copiesFloorCell} answers for. Its own quad separates it from the held-value
+     * cell to its left, so a click on the number is visibly not a click on the icon.
+     */
+    private static void drawCopiesFloorHeight(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        double halfW, double rBot, double rTop, double rCY,
+        CellKind hovered, int height
+    ) {
+        double left = copiesFloorStepperLeft(halfW);
+        double right = copiesEditLeft(halfW) - 0.005;
+        double third = (right - left) / 3.0;
+        drawQuad(ps, buffer, left, rBot + 0.005, right, rTop - 0.005, BUTTON_BG);
+        if (hovered == CellKind.COPIES_FLOOR_HEIGHT_DEC) {
+            drawQuad(ps, buffer, left + 0.005, rBot + 0.005, left + third - 0.005, rTop - 0.005, HOVER_COLOR);
+        } else if (hovered == CellKind.COPIES_FLOOR_HEIGHT_INC) {
+            drawQuad(ps, buffer, right - third + 0.005, rBot + 0.005, right - 0.005, rTop - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, "-", left + third * 0.5, rCY, ARROW_COLOR);
+        drawCenteredText(ps, buffer, font, Integer.toString(height), left + third * 1.5, rCY, WEIGHT_COLOR);
+        drawCenteredText(ps, buffer, font, "+", right - third * 0.5, rCY, ARROW_COLOR);
+    }
+
     private static void drawCopiesPlaneRow(
         PoseStack ps, MultiBufferSource buffer, Font font,
         double halfW, double rBot, double rTop, double rCY,
