@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.Registry;
@@ -684,12 +686,19 @@ public final class PortalChunkTerrain {
         try {
             return ChuncksBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())
                 || SpheresBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())
+                // Void-below legacy bands (Indev floating, Skylands): islands over open void — never solid
+                // ground for a room.
+                || isVoidBelowLegacy(LegacyBands.kindOfChunk(level, site.x, site.z))
                 || DisintegrationBand.isChunkFullyEroded(level, site.getMinBlockX());
         } catch (Throwable t) {
             // The bands are the train's business, not the sample's: if either cannot answer, the
             // site is judged the ordinary way, by generating it.
             return false;
         }
+    }
+
+    private static boolean isVoidBelowLegacy(LegacyBandKind kind) {
+        return kind != null && kind.voidBelow();
     }
 
     /**

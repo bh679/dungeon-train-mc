@@ -82,7 +82,12 @@
       "CHUNCKS",
       "SPHERES",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -98,7 +103,10 @@
       "VOID",
       "END",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS"
     ],
     "mode": "endless_open/single:minecraft:stone"
   },
@@ -110,7 +118,10 @@
       "VOID",
       "END",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS"
     ],
     "mode": "bedrock_lock"
   },
@@ -170,7 +181,12 @@
       "CHUNCKS",
       "SPHERES",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -387,7 +403,12 @@
       "CHUNCKS",
       "SPHERES",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "SKYLANDS",
+      "FLOATING",
+      "FAR_LANDS"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },

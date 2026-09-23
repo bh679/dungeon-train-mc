@@ -7,7 +7,7 @@
  */
 package games.brennan.dungeontrain.worldgen.legacy.classic;
 
-import games.brennan.dungeontrain.worldgen.legacy.noise.CombinedNoise;
+import games.brennan.dungeontrain.worldgen.legacy.noise.PerlinOctaveNoiseCombined;
 import games.brennan.dungeontrain.worldgen.legacy.noise.LegacyMath;
 import games.brennan.dungeontrain.worldgen.legacy.noise.PerlinOctaveNoise;
 
@@ -81,14 +81,14 @@ public final class ClassicTerrain {
     // ---- Raising: the two-noise heightmap ------------------------------------------------------------
 
     private static void raise(Random random, int[] heightmap) {
-        CombinedNoise low = new CombinedNoise(new PerlinOctaveNoise(random, 8, false), new PerlinOctaveNoise(random, 8, false));
-        CombinedNoise high = new CombinedNoise(new PerlinOctaveNoise(random, 8, false), new PerlinOctaveNoise(random, 8, false));
+        PerlinOctaveNoiseCombined low = new PerlinOctaveNoiseCombined(new PerlinOctaveNoise(random, 8, false), new PerlinOctaveNoise(random, 8, false));
+        PerlinOctaveNoiseCombined high = new PerlinOctaveNoiseCombined(new PerlinOctaveNoise(random, 8, false), new PerlinOctaveNoise(random, 8, false));
         PerlinOctaveNoise selector = new PerlinOctaveNoise(random, 6, false);
         for (int x = 0; x < W; x++) {
             for (int z = 0; z < L; z++) {
                 double heightLow = low.sample(x * NOISE_SCALE, z * NOISE_SCALE) / MIN_HEIGHT_DAMP + MIN_HEIGHT_BOOST;
                 double heightHigh = high.sample(x * NOISE_SCALE, z * NOISE_SCALE) / MAX_HEIGHT_DAMP + MAX_HEIGHT_BOOST;
-                if (selector.sample2D(x * SELECTOR_SCALE, z * SELECTOR_SCALE) / 8.0D > 0.0D) heightHigh = heightLow;
+                if (selector.sampleXY(x * SELECTOR_SCALE, z * SELECTOR_SCALE) / 8.0D > 0.0D) heightHigh = heightLow;
                 double height = Math.max(heightLow, heightHigh) / 2.0D;
                 if (height < 0.0D) height /= HEIGHT_UNDER_DAMP;
                 heightmap[x + z * W] = (int) height;
@@ -99,8 +99,8 @@ public final class ClassicTerrain {
     // ---- Eroding: flattens patches to even heights ---------------------------------------------------
 
     private static void erode(Random random, int[] heightmap) {
-        CombinedNoise selector = new CombinedNoise(new PerlinOctaveNoise(random, 8, false), new PerlinOctaveNoise(random, 8, false));
-        CombinedNoise parity = new CombinedNoise(new PerlinOctaveNoise(random, 8, false), new PerlinOctaveNoise(random, 8, false));
+        PerlinOctaveNoiseCombined selector = new PerlinOctaveNoiseCombined(new PerlinOctaveNoise(random, 8, false), new PerlinOctaveNoise(random, 8, false));
+        PerlinOctaveNoiseCombined parity = new PerlinOctaveNoiseCombined(new PerlinOctaveNoise(random, 8, false), new PerlinOctaveNoise(random, 8, false));
         for (int x = 0; x < W; x++) {
             for (int z = 0; z < L; z++) {
                 double erodeSelector = selector.sample(x << 1, z << 1) / 8.0D;
@@ -119,7 +119,7 @@ public final class ClassicTerrain {
         PerlinOctaveNoise dirtNoise = new PerlinOctaveNoise(random, 8, false);
         for (int x = 0; x < W; x++) {
             for (int z = 0; z < L; z++) {
-                int dirtThickness = (int) (dirtNoise.sample2D(x, z) / 24.0D) - 4;
+                int dirtThickness = (int) (dirtNoise.sampleXY(x, z) / 24.0D) - 4;
                 int dirtThreshold = heightmap[x + z * W] + WATER;
                 int stoneThreshold = dirtThickness + dirtThreshold;
                 int top = Math.max(dirtThreshold, stoneThreshold);
@@ -257,8 +257,8 @@ public final class ClassicTerrain {
         PerlinOctaveNoise gravelNoise = new PerlinOctaveNoise(random, 8, false);
         for (int x = 0; x < W; x++) {
             for (int z = 0; z < L; z++) {
-                boolean sand = sandNoise.sample2D(x, z) > SAND_BEACH_THRESHOLD;
-                boolean gravel = gravelNoise.sample2D(x, z) > GRAVEL_BEACH_THRESHOLD;
+                boolean sand = sandNoise.sampleXY(x, z) > SAND_BEACH_THRESHOLD;
+                boolean gravel = gravelNoise.sampleXY(x, z) > GRAVEL_BEACH_THRESHOLD;
                 int h = heightmap[x + z * W];
                 byte above = get(blocks, x, h + 1, z);
                 // Classic 0.30: sand only on dry shore, gravel only under water.

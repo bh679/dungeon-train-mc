@@ -6,7 +6,10 @@
       "VOID",
       "END",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS"
     ]
   },
   "nethertracks": {
@@ -22,7 +25,10 @@
       "VOID",
       "END",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS"
     ]
   },
   "sleepside": {
@@ -32,7 +38,10 @@
       "VOID",
       "END",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS"
     ]
   }
 }

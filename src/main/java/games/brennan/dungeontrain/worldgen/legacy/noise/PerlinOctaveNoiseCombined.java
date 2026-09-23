@@ -4,18 +4,18 @@
  */
 package games.brennan.dungeontrain.worldgen.legacy.noise;
 
-/** Classic / Indev's domain-warped 2-D noise: {@code first} sampled at X shifted by {@code second}. */
-public final class CombinedNoise {
+/** Classic/Indev "combined" noise: the first stack sampled at an X warped by the second. */
+public final class PerlinOctaveNoiseCombined {
 
     private final PerlinOctaveNoise first;
     private final PerlinOctaveNoise second;
 
-    public CombinedNoise(PerlinOctaveNoise first, PerlinOctaveNoise second) {
+    public PerlinOctaveNoiseCombined(PerlinOctaveNoise first, PerlinOctaveNoise second) {
         this.first = first;
         this.second = second;
     }
 
-    public double sample(double x, double z) {
-        return first.sample2D(x + second.sample2D(x, z), z);
+    public double sample(double x, double y) {
+        return first.sampleXY(x + second.sampleXY(x, y), y);
     }
 }

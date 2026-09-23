@@ -9,7 +9,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -21,7 +24,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -94,7 +100,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -106,7 +115,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -181,7 +193,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -194,7 +209,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -207,7 +225,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -220,7 +241,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -333,7 +357,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -346,7 +373,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -359,7 +389,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -372,7 +405,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -518,7 +554,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -530,7 +569,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -542,7 +584,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -554,7 +599,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -657,7 +705,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -669,7 +720,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -681,7 +735,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -693,7 +750,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -817,7 +877,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -830,7 +893,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -842,7 +908,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -856,7 +925,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "stone"
     },
@@ -906,7 +978,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -919,7 +994,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -931,7 +1009,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },
@@ -945,7 +1026,10 @@
         "VOID",
         "END",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ],
       "stage": "deepdark"
     },

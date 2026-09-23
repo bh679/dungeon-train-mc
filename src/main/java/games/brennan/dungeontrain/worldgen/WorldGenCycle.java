@@ -1215,6 +1215,23 @@ public record WorldGenCycle(long startX, int owGap,
         return (double) (exitEnd - local) / (span.fadeLen() + 1);
     }
 
+    /**
+     * How far {@code worldX} is through legacy band {@code kind}, {@code 0..1} from the start of its entry
+     * fade to the end of its exit fade (the stretch where its chunks can appear), or {@code -1} outside it
+     * (lead gap, other bands, disabled). Lets one band step through sub-versions along its length.
+     */
+    public double legacyProgress(LegacyBandKind kind, int worldX) {
+        LegacySpan span = spanOf(kind);
+        if (span == null) return -1.0D;
+        long o = offset(worldX);
+        if (o < 0L) return -1.0D;
+        long from = legacySlotStart(kind) + span.leadGapLen();
+        long len = 2L * span.fadeLen() + span.holdLen();
+        long local = o - from;
+        if (local < 0L || local >= len) return -1.0D;
+        return (double) local / len;
+    }
+
     /** True if {@code worldX} lies in the core of legacy band {@code kind} (not its fades). */
     public boolean isInLegacyBand(LegacyBandKind kind, int worldX) {
         LegacySpan span = spanOf(kind);
@@ -1223,6 +1240,42 @@ public record WorldGenCycle(long startX, int owGap,
         if (o < 0L) return false;
         long holdStart = legacySlotStart(kind) + span.leadGapLen() + span.fadeLen();
         return o >= holdStart && o < holdStart + span.holdLen();
+    }
+
+    /** Sentinel for {@link #legacyCoreStartX}: {@code worldX} is outside that band's slot. */
+    public static final long NOT_IN_LEGACY_SLOT = Long.MIN_VALUE;
+
+    /**
+     * World X where the core of the legacy band {@code kind} instance containing {@code worldX} begins —
+     * the anchor for a generator that lays its terrain out along the band (Far Lands: where the wall
+     * falls). Defined across the whole slot (lead gap, both fades, core), so the entry-fade chunks share
+     * the core's anchor; {@link #NOT_IN_LEGACY_SLOT} outside it or when the band is disabled.
+     */
+    public long legacyCoreStartX(LegacyBandKind kind, int worldX) {
+        LegacySpan span = spanOf(kind);
+        if (span == null) return NOT_IN_LEGACY_SLOT;
+        long o = offset(worldX);
+        if (o < 0L) return NOT_IN_LEGACY_SLOT;
+        long start = legacySlotStart(kind);
+        if (o < start || o >= start + span.totalLen()) return NOT_IN_LEGACY_SLOT;
+        long coreStart = start + span.leadGapLen() + span.fadeLen();
+        return (long) worldX - (o - coreStart);
+    }
+
+    /**
+     * Where {@code worldX} sits along legacy band {@code kind}'s core: {@code 0} at the first core block,
+     * {@code 1} one past the last, below 0 in the lead gap / entry fade and above 1 in the exit fade.
+     * {@code NaN} outside the band's slot or when it is disabled. Pure.
+     */
+    public double legacyCoreProgress(LegacyBandKind kind, int worldX) {
+        LegacySpan span = spanOf(kind);
+        if (span == null) return Double.NaN;
+        long o = offset(worldX);
+        if (o < 0L) return Double.NaN;
+        long start = legacySlotStart(kind);
+        if (o < start || o >= start + span.totalLen()) return Double.NaN;
+        long holdStart = start + span.leadGapLen() + span.fadeLen();
+        return (double) (o - holdStart) / span.holdLen();
     }
 
     /**

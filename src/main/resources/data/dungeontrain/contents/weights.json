@@ -118,7 +118,10 @@
       "VOID",
       "UPSIDE_DOWN",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS"
     ]
   },
   "vase": 1,

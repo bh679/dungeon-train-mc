@@ -12,7 +12,10 @@
       "VOID",
       "END",
       "BETA",
-      "CLASSIC"
+      "ALPHA",
+      "INFDEV",
+      "CLASSIC",
+      "FAR_LANDS"
     ]
   }
 }

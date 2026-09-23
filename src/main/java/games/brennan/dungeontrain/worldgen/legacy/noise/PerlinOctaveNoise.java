@@ -1,7 +1,7 @@
 /*
  * Adapted from Moderner Beta (https://github.com/Nostalgica-Reverie/moderner-beta),
  * util/noise/PerlinOctaveNoise.java. Copyright (c) 2021 B3spectacled. MIT License — see THIRD_PARTY_NOTICES.md.
- * Trimmed to the Alpha/Beta samplers ({@link #sample2D} is also Classic / Indev's {@code sampleXY}).
+ * Trimmed to the Alpha/Beta/Infdev samplers.
  */
 package games.brennan.dungeontrain.worldgen.legacy.noise;
 
@@ -16,7 +16,7 @@ public final class PerlinOctaveNoise {
         this(random, octaves, true);
     }
 
-    /** {@code useOffset == false}: the Classic / Indev octaves (see {@link PerlinNoise#PerlinNoise(Random, boolean)}). */
+    /** {@code useOffset = false} builds Classic/Indev octaves (see {@link PerlinNoise#PerlinNoise(Random, boolean)}). */
     public PerlinOctaveNoise(Random random, int octaves, boolean useOffset) {
         this.noises = new PerlinNoise[octaves];
         for (int i = 0; i < octaves; i++) {
@@ -40,6 +40,22 @@ public final class PerlinOctaveNoise {
         return out;
     }
 
+    /**
+     * Alpha's array sampler: like {@link #sampleGrid} but every octave takes the 3-D path, even for a
+     * {@code sizeY == 1} grid (see {@link PerlinNoise#sampleGrid3D}).
+     */
+    public double[] sampleAlphaGrid(double x, double y, double z, int sizeX, int sizeY, int sizeZ,
+                                    double scaleX, double scaleY, double scaleZ) {
+        double[] out = new double[sizeX * sizeY * sizeZ];
+        double frequency = 1.0D;
+        for (PerlinNoise noise : noises) {
+            noise.sampleGrid3D(out, x, y, z, sizeX, sizeY, sizeZ,
+                    scaleX * frequency, scaleY * frequency, scaleZ * frequency, frequency);
+            frequency /= 2.0D;
+        }
+        return out;
+    }
+
     /** The old scalar 2-D sampler (octave {@code i} at {@code 1/2^i} of the coordinate, weighted {@code 2^i}). */
     public double sample2D(double x, double z) {
         double total = 0.0D;
@@ -47,6 +63,50 @@ public final class PerlinOctaveNoise {
         for (PerlinNoise noise : noises) {
             total += noise.sample(x * frequency, z * frequency, 0.0D) / frequency;
             frequency /= 2.0D;
+        }
+        return total;
+    }
+
+    /**
+     * The Infdev scalar 3-D sampler: octave {@code i} reads {@code (x, y, z) / 2^i}, weighted {@code 2^i}.
+     * Moderner Beta's {@code PerlinOctaveNoise.sample(x, y, z)}.
+     */
+    public double sample3D(double x, double y, double z) {
+        double total = 0.0D;
+        double frequency = 1.0D;
+        for (PerlinNoise noise : noises) {
+            total += noise.sample(x / frequency, y / frequency, z / frequency) * frequency;
+            frequency *= 2.0D;
+        }
+        return total;
+    }
+
+    /**
+     * The Alpha/Infdev scaled 3-D sampler (vanilla's improved-noise path with the Y-lattice clamp):
+     * octave {@code i} reads the scaled point at {@code 1/2^i}, weighted {@code 2^i}. Moderner Beta's
+     * {@code PerlinOctaveNoise.sample(x, y, z, scaleX, scaleY, scaleZ)}.
+     */
+    public double sampleScaled(double x, double y, double z, double scaleX, double scaleY, double scaleZ) {
+        double total = 0.0D;
+        double frequency = 1.0D;
+        for (PerlinNoise noise : noises) {
+            total += noise.sampleXYZ(x * scaleX * frequency, y * scaleY * frequency, z * scaleZ * frequency,
+                    scaleY * frequency, y * scaleY * frequency) / frequency;
+            frequency /= 2.0D;
+        }
+        return total;
+    }
+
+    /**
+     * The Classic/Indev 2-D sampler: octave {@code i} at {@code 1/2^i} of the coordinate, weighted {@code 2^i},
+     * on the {@code z = 0} plane.
+     */
+    public double sampleXY(double x, double y) {
+        double total = 0.0D;
+        double frequency = 1.0D;
+        for (PerlinNoise noise : noises) {
+            total += noise.samplePlane(x / frequency, y / frequency) * frequency;
+            frequency *= 2.0D;
         }
         return total;
     }

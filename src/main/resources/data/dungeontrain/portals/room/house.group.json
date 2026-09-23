@@ -14,7 +14,12 @@
         "CHUNCKS",
         "SPHERES",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS"
       ]
     },
     {
@@ -33,7 +38,12 @@
         "CHUNCKS",
         "SPHERES",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS"
       ]
     },
     {
@@ -119,7 +129,12 @@
         "CHUNCKS",
         "SPHERES",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS"
       ]
     },
     {
@@ -144,7 +159,10 @@
         "NETHER",
         "UPSIDE_DOWN",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "FAR_LANDS"
       ]
     },
     {

@@ -33,7 +33,12 @@
         "CHUNCKS",
         "SPHERES",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS"
       ]
     },
     {
@@ -52,7 +57,12 @@
         "CHUNCKS",
         "SPHERES",
         "BETA",
-        "CLASSIC"
+        "ALPHA",
+        "INFDEV",
+        "CLASSIC",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS"
       ]
     },
     {
