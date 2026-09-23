@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen.legacy.farlands;
 
+import games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift.Stage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -10,34 +11,57 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class FarLandsShiftTest {
 
     private static final long HOLD = 6000L;
+    private static final long CORE = 1_234_560L;
 
-    @Test
-    @DisplayName("act 1: one X shift for the whole instance, Z untouched, wall APPROACH blocks into the core")
-    void act1() {
-        long coreStart = 1_234_567L;
-        FarLandsShift first = FarLandsShift.forChunk(coreStart, HOLD, (int) (coreStart >> 4) - 20);
-        for (int i = -20; i < 200; i++) {
-            FarLandsShift s = FarLandsShift.forChunk(coreStart, HOLD, (int) (coreStart >> 4) + i);
-            assertEquals(first.dxChunks(), s.dxChunks());
-            assertEquals(0, s.dzChunks());
-        }
-        long wallWorldX = (long) FarLandsShift.EDGE - first.dxBlocks();
-        assertTrue(Math.abs(wallWorldX - (coreStart + FarLandsShift.APPROACH)) < 16, "wall at " + wallWorldX);
+    private static int chunkAt(long local) {
+        return (int) Math.floorDiv(CORE + local, 16L);
     }
 
     @Test
-    @DisplayName("act 2 shifts Z so the overflow edge sits just to the track's +Z side; X is unchanged")
-    void act2() {
-        long coreStart = -48_000L;
-        int act2Chunk = (int) ((coreStart + (long) (HOLD * FarLandsShift.ACT2_FRACTION) + 15) >> 4);
-        FarLandsShift before = FarLandsShift.forChunk(coreStart, HOLD, act2Chunk - 1);
-        FarLandsShift after = FarLandsShift.forChunk(coreStart, HOLD, act2Chunk);
-        assertEquals(0, before.dzChunks());
-        assertEquals(before.dxChunks(), after.dxChunks());
-        long edgeWorldZ = (long) FarLandsShift.EDGE - after.dzBlocks();
-        assertTrue(edgeWorldZ >= FarLandsShift.CORNER_SIDE_Z && edgeWorldZ < FarLandsShift.CORNER_SIDE_Z + 16,
-                "Z edge at " + edgeWorldZ);
-        // the exit fade stays in act 2
-        assertEquals(after, FarLandsShift.forChunk(coreStart, HOLD, (int) ((coreStart + HOLD + 400) >> 4)));
+    @DisplayName("four quarter-length stages; the entry fade rides the wall stage, the exit fade the right one")
+    void stages() {
+        assertEquals(Stage.WALL, FarLandsShift.stageAt(CORE, HOLD, chunkAt(-150)));
+        assertEquals(Stage.WALL, FarLandsShift.stageAt(CORE, HOLD, chunkAt(0)));
+        assertEquals(Stage.WALL, FarLandsShift.stageAt(CORE, HOLD, chunkAt(1480)));
+        assertEquals(Stage.LEFT, FarLandsShift.stageAt(CORE, HOLD, chunkAt(1504)));
+        assertEquals(Stage.BOTH, FarLandsShift.stageAt(CORE, HOLD, chunkAt(3008)));
+        assertEquals(Stage.RIGHT, FarLandsShift.stageAt(CORE, HOLD, chunkAt(4512)));
+        assertEquals(Stage.RIGHT, FarLandsShift.stageAt(CORE, HOLD, chunkAt(6300)));
+    }
+
+    @Test
+    @DisplayName("wall stage: one X shift for the whole stage, Z untouched, wall APPROACH blocks into the core")
+    void wall() {
+        FarLandsShift first = FarLandsShift.forChunk(CORE, HOLD, chunkAt(-150), 0);
+        for (long l = -150; l < 1400; l += 16) {
+            FarLandsShift s = FarLandsShift.forChunk(CORE, HOLD, chunkAt(l), (int) (l % 7));
+            assertEquals(first, s);
+        }
+        long wallWorldX = (long) FarLandsShift.EDGE - first.dxBlocks();
+        assertTrue(Math.abs(wallWorldX - (CORE + FarLandsShift.APPROACH)) < 16, "wall at " + wallWorldX);
+    }
+
+    @Test
+    @DisplayName("side stages put the Z edge SIDE_Z blocks left (−Z) / right (+Z) of the track, X unshifted")
+    void sides() {
+        FarLandsShift left = FarLandsShift.forChunk(CORE, HOLD, chunkAt(2000), 5);
+        FarLandsShift right = FarLandsShift.forChunk(CORE, HOLD, chunkAt(5000), -5);
+        assertEquals(0, left.dxChunks());
+        assertEquals(0, right.dxChunks());
+        long leftEdge = -(long) FarLandsShift.EDGE - left.dzBlocks();
+        long rightEdge = (long) FarLandsShift.EDGE - right.dzBlocks();
+        assertTrue(leftEdge <= -FarLandsShift.SIDE_Z && leftEdge > -FarLandsShift.SIDE_Z - 16, "left edge " + leftEdge);
+        assertEquals(-rightEdge, leftEdge);
+        assertTrue(rightEdge >= FarLandsShift.SIDE_Z && rightEdge < FarLandsShift.SIDE_Z + 16, "right edge " + rightEdge);
+    }
+
+    @Test
+    @DisplayName("both stage: chunks left of the track read the left edge, the rest the right one")
+    void both() {
+        int cx = chunkAt(3500);
+        assertEquals(FarLandsShift.forChunk(CORE, HOLD, chunkAt(2000), 0),
+                FarLandsShift.forChunk(CORE, HOLD, cx, -1));
+        assertEquals(FarLandsShift.forChunk(CORE, HOLD, chunkAt(5000), 0),
+                FarLandsShift.forChunk(CORE, HOLD, cx, 0));
     }
 }

@@ -48,7 +48,7 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
             switch (kind) {
                 case BETA -> BetaPopulator.populate(level, LegacyBands.beta(seed), chunk.x, chunk.z);
                 case FAR_LANDS -> {
-                    FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.x);
+                    FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.x, chunk.z);
                     BetaPopulator.populate(new BetaWorld(level, shift.dxBlocks(), shift.dzBlocks()),
                             LegacyBands.beta(seed), chunk.x + shift.dxChunks(), chunk.z + shift.dzChunks());
                 }

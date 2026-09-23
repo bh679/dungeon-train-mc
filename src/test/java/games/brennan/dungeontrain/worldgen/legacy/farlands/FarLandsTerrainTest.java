@@ -68,6 +68,20 @@ final class FarLandsTerrainTest {
     }
 
     @Test
+    @DisplayName("the negative edge breaks the same way: ordinary land inside it, towering land past it")
+    void negativeEdge() {
+        assertTrue(highShareZ(-EDGE_CHUNK + 24, -EDGE_CHUNK + 40) < 0.05);
+        assertTrue(highShareZ(-EDGE_CHUNK - 20, -EDGE_CHUNK - 4) > 0.5);
+    }
+
+    /** {@link #highShare} along Z at chunk X 0: chunks {@code {0} × [fromCz, toCz)}. */
+    private static double highShareZ(int fromCz, int toCz) {
+        double total = 0;
+        for (int cz = fromCz; cz < toCz; cz++) total += highShare(0, 1, cz);
+        return total / (toCz - fromCz);
+    }
+
+    @Test
     @DisplayName("the corner lands (both axes overflowed) also tower")
     void corner() {
         assertTrue(highShare(EDGE_CHUNK + 4, EDGE_CHUNK + 12, EDGE_CHUNK + 4) > 0.5);

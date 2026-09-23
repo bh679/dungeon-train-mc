@@ -48,7 +48,7 @@ public final class LegacyChunkWriter {
             case BETA -> write(chunk, LegacyBands.beta(seed).generate(chunk.getPos().x, chunk.getPos().z), floorY);
             case FAR_LANDS -> {
                 // The Far Lands are Beta's own terrain, read ~12.55M blocks out (see FarLandsShift).
-                FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.getPos().x);
+                FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), chunk.getPos().x, chunk.getPos().z);
                 write(chunk, LegacyBands.beta(seed).generate(chunk.getPos().x + shift.dxChunks(),
                         chunk.getPos().z + shift.dzChunks()), floorY);
             }

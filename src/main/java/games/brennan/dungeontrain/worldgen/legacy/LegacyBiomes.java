@@ -68,7 +68,7 @@ public final class LegacyBiomes {
         return switch (kind) {
             case BETA -> c.beta().get(LegacyBands.beta(c.seed()).climate().biome(blockX, blockZ));
             case FAR_LANDS -> {
-                FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), blockX >> 4);
+                FarLandsShift shift = FarLandsShift.of(WorldGenCycle.fromConfig(), blockX >> 4, blockZ >> 4);
                 yield c.beta().get(LegacyBands.beta(c.seed()).climate()
                         .biome(blockX + shift.dxBlocks(), blockZ + shift.dzBlocks()));
             }
