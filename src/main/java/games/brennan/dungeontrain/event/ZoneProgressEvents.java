@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
@@ -64,7 +65,11 @@ import java.util.List;
  * {@link ChuncksBand#isInApproachOrBand}). With the chuncks band disabled that gate is inert and the
  * pre-chuncks behaviour is unchanged.</p>
  *
- * <p>All eight are one-shot {@code gameplay_action} markers (same trigger as
+ * <p>After the chuncks comes the spheres band ({@link SpheresBand}) — floating spheres of lifted
+ * terrain over open void — which grants {@code reached_spheres} ("Circle") the same way, and whose
+ * run-up + core also hold back {@code reached_overworld_again} ({@link SpheresBand#isInApproachOrBand}).</p>
+ *
+ * <p>All nine are one-shot {@code gameplay_action} markers (same trigger as
  * {@code landed_on_tracks} etc.); vanilla advancement dedupe makes re-firing the same id every
  * scan a no-op. When disintegration is disabled {@link DisintegrationBand#zoneAt} always returns
  * {@code OVERWORLD} and the overworld-again gate is never satisfied, so nothing fires.</p>
@@ -106,6 +111,13 @@ public final class ZoneProgressEvents {
      * core (5,000 blocks) comfortably contains this depth.
      */
     private static final int CHUNCKS_DEPTH_BLOCKS = 500;
+
+    /**
+     * How far (blocks) into the spheres band core the player must be before {@code reached_spheres}
+     * ("Circle") is granted — same depth gate as the chuncks marker; the default core (5,000 blocks)
+     * comfortably contains it.
+     */
+    private static final int SPHERES_DEPTH_BLOCKS = 500;
 
     private ZoneProgressEvents() {}
 
@@ -167,6 +179,13 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_chuncks");
             }
 
+            // Spheres band — after the chuncks, the last phase of the cycle: floating spheres of lifted
+            // terrain over open void. Same depth gate as the bands above.
+            if (SpheresBand.isInBand(level, px)
+                && SpheresBand.isInBand(level, px - SPHERES_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_spheres");
+            }
+
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {
                 case VOID ->
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_void");
@@ -188,10 +207,12 @@ public final class ZoneProgressEvents {
                     // exit-fade exclusion keeps it from firing among the dispersing islands.
                     // Finally, exclude the chuncks band AND the plain-overworld run-up to it — those
                     // gaps read as OVERWORLD but the world breaks apart again straight after them, so
-                    // the overworld has not actually restarted until the band is behind the player.
+                    // the overworld has not actually restarted until the band is behind the player —
+                    // and likewise the spheres band that follows it (its lead gap, fade, then core).
                     if (DisintegrationBand.cyclePassIndex(level, px) >= 1
                         && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)
-                        && !ChuncksBand.isInApproachOrBand(level, px)) {
+                        && !ChuncksBand.isInApproachOrBand(level, px)
+                        && !SpheresBand.isInApproachOrBand(level, px)) {
                         ModAdvancementTriggers.GAMEPLAY_ACTION.get()
                             .trigger(player, "reached_overworld_again");
                     }

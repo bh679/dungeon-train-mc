@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.MobSpawnType;
@@ -25,6 +26,9 @@ import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
  *       falls to its death. Every ambient spawn (hostile <em>and</em> passive) in the band is
  *       cancelled — as well as in its entry lead-in and exit-fade transition zones, whose terrain
  *       is the same partial/composited mirror and just as unreliable to stand on.</li>
+ *   <li><b>Spheres band:</b> open void with floating spheres — a mob spawned on a sphere's cap or
+ *       on the fade's crumbling ground walks or falls off into the void. Every ambient spawn across
+ *       the entry fade and the core is cancelled, as in the upside-down band.</li>
  * </ul>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
@@ -53,6 +57,13 @@ public final class BandMobSpawnEvents {
         // partial terrain gives ambient mobs nothing to stand on, so they just fall to their death —
         // cancel every natural spawn (hostile and passive) across all three.
         if (UpsideDownBand.isInBandEntryLeadOrExit(level, x)) {
+            event.setSpawnCancelled(true);
+            return;
+        }
+
+        // Spheres band (entry fade + core): floating spheres over open void — nothing ambient can
+        // stay on its feet for long, so cancel every natural spawn here too.
+        if (SpheresBand.voidRamp(level, x) > 0.0) {
             event.setSpawnCancelled(true);
         }
     }

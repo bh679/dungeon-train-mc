@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.portal;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.Registry;
@@ -682,6 +683,7 @@ public final class PortalChunkTerrain {
         if (!level.dimension().equals(Level.OVERWORLD)) return false;
         try {
             return ChuncksBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())
+                || SpheresBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())
                 || DisintegrationBand.isChunkFullyEroded(level, site.getMinBlockX());
         } catch (Throwable t) {
             // The bands are the train's business, not the sample's: if either cannot answer, the
