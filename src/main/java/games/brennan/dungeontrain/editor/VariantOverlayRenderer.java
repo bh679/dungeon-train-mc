@@ -860,7 +860,7 @@ public final class VariantOverlayRenderer {
                 l.category(), l.modelId(), l.modelName(),
                 l.inPlot(), l.isUser(), l.isImported(),
                 l.roomLength(), l.roomWidth(), l.roomHeight(), l.roomMode(),
-                l.copiesFloorBlock(), l.copiesRoofBlock()));
+                l.copiesFloorBlock(), l.copiesRoofBlock(), l.copiesFloorHeight()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",

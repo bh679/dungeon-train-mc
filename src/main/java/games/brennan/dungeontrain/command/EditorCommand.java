@@ -6540,7 +6540,18 @@ public final class EditorCommand {
                 // verbs aimed at one plane each.
                 .then(copiesPlaneNode("block", null))
                 .then(copiesPlaneNode("floor",
-                    games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR))
+                    games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR)
+                    // How deep the floor is laid — the Floor row's [-] N [+], and a typed depth.
+                    .then(Commands.literal("height")
+                        .then(Commands.literal("inc")
+                            .executes(ctx -> runPortalRoomCopiesFloorHeightStep(ctx, +1)))
+                        .then(Commands.literal("dec")
+                            .executes(ctx -> runPortalRoomCopiesFloorHeightStep(ctx, -1)))
+                        .then(Commands.argument("blocks", IntegerArgumentType.integer(
+                                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.MIN_FLOOR_HEIGHT,
+                                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.MAX_FLOOR_HEIGHT))
+                            .executes(ctx -> runPortalRoomCopiesFloorHeight(ctx,
+                                IntegerArgumentType.getInteger(ctx, "blocks"))))))
                 .then(copiesPlaneNode("roof",
                     games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF))
                 .then(Commands.argument("copies", StringArgumentType.word())
@@ -6842,6 +6853,51 @@ public final class EditorCommand {
         // the floor and the row's own Edit buttons are how the roof is reached.
         games.brennan.dungeontrain.editor.BlockVariantMenuController.openForCopies(player, name,
             plane == null ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR : plane);
+        return 1;
+    }
+
+    /** {@code /dt editor portals copies floor height inc|dec} — step the floor's depth by one. */
+    private static int runPortalRoomCopiesFloorHeightStep(CommandContext<CommandSourceStack> ctx, int delta) {
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+        int current = games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(
+            name, games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).copies()).floorHeight();
+        return runPortalRoomCopiesFloorHeight(ctx, current + delta);
+    }
+
+    /**
+     * {@code /dt editor portals copies floor height <blocks>} — how deep the floor palette is laid,
+     * from the tile's bottom up.
+     *
+     * <p>Clamped to what the room can hold: the roof plane must survive and at least one row must
+     * stay open between the two, which is the same bound the stamp applies
+     * ({@code PortalRoomSinglePlanes.floorHeightFor}). Clamping here rather than only there keeps
+     * the row honest — the number the author sees is the number they will get.</p>
+     */
+    private static int runPortalRoomCopiesFloorHeight(CommandContext<CommandSourceStack> ctx, int blocks) {
+        CommandSourceStack source = ctx.getSource();
+        String name = portalRoomOf(ctx);
+        if (name == null) return 0;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        net.minecraft.core.Vec3i size = games.brennan.dungeontrain.portal.PortalRoomSizes.sizeOf(name, dims);
+
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant current =
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(
+                name, games.brennan.dungeontrain.portal.PortalRoomSettings.of(name).copies());
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant wanted = current.withFloorHeight(blocks);
+        int applied = games.brennan.dungeontrain.portal.PortalRoomSinglePlanes.floorHeightFor(wanted, size);
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant variant = current.withFloorHeight(applied);
+        try {
+            variant.save(name);
+            if (EditorDevMode.isEnabled()) variant.saveToSource(name);
+        } catch (IOException e) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.could_not_save_copies", name, e.getMessage()));
+            return 0;
+        }
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.invalidate(name);
+        source.sendSuccess(() -> Component.translatable(
+            "chat.dungeontrain.editor.dimensional_carriage_floor_height_now", name, applied)
+            .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 

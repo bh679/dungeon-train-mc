@@ -17812,6 +17812,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "floor-height-single-plane",
+      "version": "0.931.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Deeper floors in dimensional carriages",
+      "summary": "An endless plain's floor can now be laid several blocks deep instead of one. Set it from the Floor row and a water floor becomes a pool you can dive into, a stone one solid ground you can dig.",
+      "highlights": [
+        "Step the depth up and down right on the Floor row.",
+        "Water, lava and stone floors all take a depth."
+      ],
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

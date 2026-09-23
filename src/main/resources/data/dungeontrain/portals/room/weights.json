@@ -193,6 +193,10 @@
     "minLevel": 5,
     "mode": "endless_repetition/dynamic/off/on/off/none/repeated"
   },
+  "lowkeyabridge": {
+    "weight": 1,
+    "mode": "endless_open/single:minecraft:stone/off/off/off/day/sealed/0/9/0/7"
+  },
   "man": {
     "weight": 1,
     "mode": "endless_open/single:minecraft:stone/off/off/off/end",

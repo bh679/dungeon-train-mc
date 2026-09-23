@@ -157,17 +157,42 @@ public final class PortalRoomCopiesVariant {
     /** Session cache keyed on room name. Invalidated on save. */
     private static final Map<String, PortalRoomCopiesVariant> CACHE = new HashMap<>();
 
+    /** JSON key for how many blocks deep the floor is laid. */
+    private static final String FLOOR_HEIGHT_KEY = "floor_height";
+
+    /** A floor is at least this thick — one plane, which is what every room had before the field. */
+    public static final int MIN_FLOOR_HEIGHT = 1;
+
+    /**
+     * Storage cap on the floor's thickness. The live bound is the room's own height (the roof plane
+     * must survive — see {@code PortalRoomSinglePlanes.floorHeightFor}); this only stops a hand-edited
+     * file asking for a floor taller than any room can be.
+     */
+    public static final int MAX_FLOOR_HEIGHT = 64;
+
     private final List<VariantState> floor;
     private final List<VariantState> roof;
+    /**
+     * How many blocks deep the floor palette is laid, from the tile's bottom up. One is a plane —
+     * what every room had before the field existed. A water floor of three is a pool three deep;
+     * a stone floor of three is thick ground. The roof stays one plane.
+     */
+    private final int floorHeight;
 
-    private PortalRoomCopiesVariant(List<VariantState> floor, List<VariantState> roof) {
+    private PortalRoomCopiesVariant(List<VariantState> floor, List<VariantState> roof, int floorHeight) {
         this.floor = List.copyOf(floor);
         this.roof = List.copyOf(roof);
+        this.floorHeight = clampFloorHeight(floorHeight);
+    }
+
+    /** {@code height} held to {@code [MIN_FLOOR_HEIGHT, MAX_FLOOR_HEIGHT]}. */
+    public static int clampFloorHeight(int height) {
+        return Math.max(MIN_FLOOR_HEIGHT, Math.min(MAX_FLOOR_HEIGHT, height));
     }
 
     /** The variant a room with no sidecar has: nothing to repeat, on either plane. */
     public static PortalRoomCopiesVariant empty() {
-        return new PortalRoomCopiesVariant(List.of(), List.of());
+        return new PortalRoomCopiesVariant(List.of(), List.of(), MIN_FLOOR_HEIGHT);
     }
 
     /**
@@ -195,10 +220,16 @@ public final class PortalRoomCopiesVariant {
      * the menu can never reach it and one that does came from a hand-edited file.</p>
      */
     public static PortalRoomCopiesVariant of(List<VariantState> floorStates, List<VariantState> roofStates) {
+        return of(floorStates, roofStates, MIN_FLOOR_HEIGHT);
+    }
+
+    /** {@link #of(List, List)} with the floor laid {@code floorHeight} blocks deep. */
+    public static PortalRoomCopiesVariant of(List<VariantState> floorStates, List<VariantState> roofStates,
+                                             int floorHeight) {
         List<VariantState> f = capped(floorStates);
         List<VariantState> r = capped(roofStates);
-        return f.isEmpty() && r.isEmpty() ? new PortalRoomCopiesVariant(List.of(), List.of())
-            : new PortalRoomCopiesVariant(f, r);
+        return f.isEmpty() && r.isEmpty() ? new PortalRoomCopiesVariant(List.of(), List.of(), floorHeight)
+            : new PortalRoomCopiesVariant(f, r, floorHeight);
     }
 
     private static List<VariantState> capped(List<VariantState> states) {
@@ -271,7 +302,17 @@ public final class PortalRoomCopiesVariant {
      * append-shaped API would be a second way to author the same value.</p>
      */
     public PortalRoomCopiesVariant withStates(Plane plane, List<VariantState> newStates) {
-        return plane == Plane.ROOF ? of(floor, newStates) : of(newStates, roof);
+        return plane == Plane.ROOF ? of(floor, newStates, floorHeight) : of(newStates, roof, floorHeight);
+    }
+
+    /** How many blocks deep the floor is laid; never below {@link #MIN_FLOOR_HEIGHT}. */
+    public int floorHeight() {
+        return floorHeight;
+    }
+
+    /** This variant with the floor laid {@code height} blocks deep (clamped); the palettes untouched. */
+    public PortalRoomCopiesVariant withFloorHeight(int height) {
+        return of(floor, roof, height);
     }
 
     /** The one block the editor row for {@code plane} draws, or empty when nothing is authored. */
@@ -374,12 +415,29 @@ public final class PortalRoomCopiesVariant {
 
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
         boolean hasV2 = obj.has(Plane.FLOOR.id()) || obj.has(Plane.ROOF.id());
+        int floorHeight = floorHeightOf(obj, roomName, origin);
         if (hasV2) {
             return of(planeStates(obj, Plane.FLOOR.id(), blocks, roomName),
-                planeStates(obj, Plane.ROOF.id(), blocks, roomName));
+                planeStates(obj, Plane.ROOF.id(), blocks, roomName), floorHeight);
         }
         List<VariantState> legacy = planeStates(obj, LEGACY_BLOCKS_KEY, blocks, roomName);
-        return of(legacy);
+        return of(legacy, legacy, floorHeight);
+    }
+
+    /**
+     * The file's {@code floor_height}, or one when absent — every file written before the field
+     * laid one plane, so absence means exactly that. Unreadable values log and read as one too:
+     * a floor is never the reason a room fails to stamp.
+     */
+    private static int floorHeightOf(JsonObject obj, String roomName, String origin) {
+        if (!obj.has(FLOOR_HEIGHT_KEY)) return MIN_FLOOR_HEIGHT;
+        try {
+            return clampFloorHeight(obj.get(FLOOR_HEIGHT_KEY).getAsInt());
+        } catch (RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Copies variant {} ({}) has an unreadable {} — using {}.",
+                roomName, origin, FLOOR_HEIGHT_KEY, MIN_FLOOR_HEIGHT);
+            return MIN_FLOOR_HEIGHT;
+        }
     }
 
     /** One key's candidates, or empty when the key is absent or unreadable. */
@@ -465,6 +523,9 @@ public final class PortalRoomCopiesVariant {
         CarriageVariantBlocks.appendCellJson(sb, floor, 0);
         sb.append(",\n  \"").append(Plane.ROOF.id()).append("\": ");
         CarriageVariantBlocks.appendCellJson(sb, roof, 0);
+        // Always written, like the two plane keys: a file whose shape depended on whether the floor
+        // is one deep would change under an author who stepped it up and back down.
+        sb.append(",\n  \"").append(FLOOR_HEIGHT_KEY).append("\": ").append(floorHeight);
         sb.append("\n}\n");
         return sb.toString();
     }
