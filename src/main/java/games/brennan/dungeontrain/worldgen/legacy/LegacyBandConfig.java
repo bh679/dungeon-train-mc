@@ -22,7 +22,7 @@ public final class LegacyBandConfig {
     public record Defaults(boolean enabled, int hold, int fade, int leadGap) {}
 
     public static final Defaults BETA_DEFAULTS = new Defaults(true, 6000, 480, 3000);
-    public static final Defaults FAR_LANDS_DEFAULTS = new Defaults(true, 6000, 480, 3000);
+    public static final Defaults FAR_LANDS_DEFAULTS = new Defaults(true, 9000, 480, 3000);
 
     private record Values(ModConfigSpec.BooleanValue enabled, ModConfigSpec.IntValue hold,
                           ModConfigSpec.IntValue fade, ModConfigSpec.IntValue leadGap, Defaults defaults) {}
