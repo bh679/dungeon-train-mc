@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.worldgen.structure;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
+import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Set;
@@ -22,6 +24,8 @@ import java.util.Set;
  */
 public final class ForeignDimensionStructureSets {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     /** Namespaces whose structure sets belong to another dimension's mod. */
     static final Set<String> BLOCKED_NAMESPACES = Set.of("betterend");
 
@@ -37,5 +41,15 @@ public final class ForeignDimensionStructureSets {
             if (id == null || !BLOCKED_NAMESPACES.contains(id.getNamespace())) return false;
         }
         return true;
+    }
+
+    /**
+     * Debug evidence that a set was dropped from the overworld generator, and whether vanilla's own biome
+     * filter would have kept it ({@code null} = couldn't tell). Logged here rather than from the mixin: a
+     * mixin's logger takes the {@code net.minecraft} category, whose debug output is off in the dev logs.
+     */
+    public static void logDropped(List<ResourceLocation> structureIds, Boolean vanillaWouldKeep) {
+        LOGGER.debug("[DungeonTrain] Dropped foreign-dimension structure set {} from the overworld generator "
+                + "(vanilla's biome filter would have kept it: {})", structureIds, vanillaWouldKeep);
     }
 }

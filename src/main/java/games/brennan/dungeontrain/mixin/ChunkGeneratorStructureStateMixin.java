@@ -57,22 +57,40 @@ public abstract class ChunkGeneratorStructureStateMixin {
             cir.setReturnValue(dungeontrain$isOverworldBiomeSource(biomeSource));
             return;
         }
-        if (dungeontrain$isForeignDimensionSet(structureSet) && dungeontrain$isOverworldBiomeSource(biomeSource)) {
+        List<ResourceLocation> foreignIds = dungeontrain$foreignDimensionSetIds(structureSet);
+        if (foreignIds != null && dungeontrain$isOverworldBiomeSource(biomeSource)) {
+            ForeignDimensionStructureSets.logDropped(foreignIds, dungeontrain$vanillaWouldKeep(structureSet, biomeSource));
             cir.setReturnValue(false);
         }
     }
 
-    /** True for a set another dimension's mod owns outright (see {@link ForeignDimensionStructureSets}). */
+    /**
+     * The structure ids of a set another dimension's mod owns outright (see
+     * {@link ForeignDimensionStructureSets}), or {@code null} for any other set — or an unreadable one,
+     * which is left to vanilla's answer.
+     */
     @Unique
-    private static boolean dungeontrain$isForeignDimensionSet(StructureSet structureSet) {
+    private static List<ResourceLocation> dungeontrain$foreignDimensionSetIds(StructureSet structureSet) {
         try {
             List<ResourceLocation> ids = new ArrayList<>();
             for (StructureSet.StructureSelectionEntry entry : structureSet.structures()) {
                 ids.add(entry.structure().unwrapKey().map(key -> key.location()).orElse(null));
             }
-            return ForeignDimensionStructureSets.blockedOnOverworld(ids);
+            return ForeignDimensionStructureSets.blockedOnOverworld(ids) ? ids : null;
         } catch (Throwable t) {
-            return false;   // unreadable → leave vanilla's answer
+            return null;
+        }
+    }
+
+    /** Vanilla's own answer for the set — evidence for the drop log; any error reads as "unknown" ({@code null}). */
+    @Unique
+    private static Boolean dungeontrain$vanillaWouldKeep(StructureSet structureSet, BiomeSource biomeSource) {
+        try {
+            var possible = biomeSource.possibleBiomes();
+            return structureSet.structures().stream()
+                    .anyMatch(e -> e.structure().value().biomes().stream().anyMatch(possible::contains));
+        } catch (Throwable t) {
+            return null;
         }
     }
 
