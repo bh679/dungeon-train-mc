@@ -25,6 +25,7 @@ public final class SpheresProgressionConfig {
     public static final int DEFAULT_NETHER_SKY_START_BLOCKS = 12000;
     public static final double DEFAULT_STRUCTURE_CHANCE = 0.08;
     public static final double DEFAULT_STRUCTURE_BOOST_MULTIPLIER = 5.0;
+    public static final double DEFAULT_STRUCTURE_BOOST_PEAK_MULTIPLIER = 20.0;
     public static final int MIN_WEIGHT = 0;
     public static final int MAX_WEIGHT = 1000;
     public static final int DEFAULT_WEIGHT = 1;
@@ -38,6 +39,7 @@ public final class SpheresProgressionConfig {
     private static ModConfigSpec.IntValue netherSkyStart;
     private static ModConfigSpec.DoubleValue structureChance;
     private static ModConfigSpec.DoubleValue structureBoostMultiplier;
+    private static ModConfigSpec.DoubleValue structureBoostPeakMultiplier;
     private static ModConfigSpec.IntValue overworldWeight;
     private static ModConfigSpec.IntValue netherWeight;
     private static ModConfigSpec.IntValue endWeight;
@@ -58,8 +60,8 @@ public final class SpheresProgressionConfig {
                 .defineInRange("spheresEndMixStartBlocks", DEFAULT_END_MIX_START_BLOCKS,
                         MIN_OFFSET_BLOCKS, MAX_OFFSET_BLOCKS);
         structureBoostStart = b
-                .comment("Blocks into the spheres band where the structure chance is multiplied by",
-                        "spheresStructureBoostMultiplier. Default 9000.")
+                .comment("Blocks into the spheres band where the structure-chance boost starts (ramping from",
+                        "spheresStructureBoostMultiplier up to the peak and back). Default 9000.")
                 .defineInRange("spheresStructureBoostStartBlocks", DEFAULT_STRUCTURE_BOOST_START_BLOCKS,
                         MIN_OFFSET_BLOCKS, MAX_OFFSET_BLOCKS);
         structureBoostEnd = b
@@ -75,8 +77,15 @@ public final class SpheresProgressionConfig {
                 .comment("Chance 0..1 a sphere is built around a structure of its dimension. Default 0.08.")
                 .defineInRange("spheresStructureChance", DEFAULT_STRUCTURE_CHANCE, 0.0, 1.0);
         structureBoostMultiplier = b
-                .comment("Multiplier on spheresStructureChance inside the structure-boost stretch. Default 5.")
+                .comment("Multiplier on spheresStructureChance at the start and end of the structure-boost stretch.",
+                        "It ramps up to spheresStructureBoostPeakMultiplier at the stretch's midpoint and back down.",
+                        "Default 5.")
                 .defineInRange("spheresStructureBoostMultiplier", DEFAULT_STRUCTURE_BOOST_MULTIPLIER, 0.0, 1000.0);
+        structureBoostPeakMultiplier = b
+                .comment("Multiplier on spheresStructureChance at the midpoint of the structure-boost stretch — the",
+                        "top of the ramp. The chance is capped at 1 (every sphere a structure). Default 20.")
+                .defineInRange("spheresStructureBoostPeakMultiplier", DEFAULT_STRUCTURE_BOOST_PEAK_MULTIPLIER,
+                        0.0, 1000.0);
         overworldWeight = b
                 .comment("Relative weight of overworld spheres once the band mixes dimensions. Default 1.")
                 .defineInRange("spheresMixOverworldWeight", DEFAULT_WEIGHT, MIN_WEIGHT, MAX_WEIGHT);
@@ -108,6 +117,7 @@ public final class SpheresProgressionConfig {
                 loaded ? netherSkyStart.get() : DEFAULT_NETHER_SKY_START_BLOCKS,
                 loaded ? structureChance.get() : DEFAULT_STRUCTURE_CHANCE,
                 loaded ? structureBoostMultiplier.get() : DEFAULT_STRUCTURE_BOOST_MULTIPLIER,
+                loaded ? structureBoostPeakMultiplier.get() : DEFAULT_STRUCTURE_BOOST_PEAK_MULTIPLIER,
                 loaded ? overworldWeight.get() : DEFAULT_WEIGHT,
                 loaded ? netherWeight.get() : DEFAULT_WEIGHT,
                 loaded ? endWeight.get() : DEFAULT_WEIGHT);

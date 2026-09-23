@@ -10,7 +10,7 @@ package games.brennan.dungeontrain.worldgen;
  *   3000 ─ 5000   End sky         overworld spheres
  *   5000 ─ 6000   End sky         overworld / Nether
  *   6000 ─ 9000   End sky         overworld / Nether / End
- *   9000 ─ 12000  End sky         overworld / Nether / End, structures ×5
+ *   9000 ─ 12000  End sky         overworld / Nether / End, structures ×5 → ×20 → ×5
  *   12000 ─ end   Nether sky      overworld / Nether / End
  * </pre>
  *
@@ -19,12 +19,14 @@ package games.brennan.dungeontrain.worldgen;
 public record SpheresSegments(long endSkyStart, long netherMixStart, long endMixStart,
                               long structureBoostStart, long structureBoostEnd, long netherSkyStart,
                               double structureChance, double structureBoostMultiplier,
+                              double structureBoostPeakMultiplier,
                               int overworldWeight, int netherWeight, int endWeight) {
 
     /** Build from raw (config) values, clamping every offset and weight non-negative and in order. */
     public static SpheresSegments of(long endSkyStart, long netherMixStart, long endMixStart,
                                      long structureBoostStart, long structureBoostEnd, long netherSkyStart,
                                      double structureChance, double structureBoostMultiplier,
+                                     double structureBoostPeakMultiplier,
                                      int overworldWeight, int netherWeight, int endWeight) {
         long endSky = Math.max(0L, endSkyStart);
         long netherMix = Math.max(0L, netherMixStart);
@@ -32,6 +34,7 @@ public record SpheresSegments(long endSkyStart, long netherMixStart, long endMix
         return new SpheresSegments(endSky, netherMix, Math.max(netherMix, endMixStart),
                 boostStart, Math.max(boostStart, structureBoostEnd), Math.max(endSky, netherSkyStart),
                 clamp01(structureChance), Math.max(0.0, structureBoostMultiplier),
+                Math.max(0.0, structureBoostPeakMultiplier),
                 Math.max(0, overworldWeight), Math.max(0, netherWeight), Math.max(0, endWeight));
     }
 
@@ -53,11 +56,27 @@ public record SpheresSegments(long endSkyStart, long netherMixStart, long endMix
         return SphereSource.END;
     }
 
-    /** Chance {@code 0..1} a sphere centred {@code offset} blocks into the core is built around a structure. */
+    /**
+     * Chance {@code 0..1} a sphere centred {@code offset} blocks into the core is built around a structure.
+     * Inside the boost window the base chance is multiplied by {@link #structureMultiplierAt}.
+     */
     public double structureChanceAt(long offset) {
         if (offset < 0L) return 0.0;
-        boolean boosted = offset >= structureBoostStart && offset < structureBoostEnd;
-        return boosted ? clamp01(structureChance * structureBoostMultiplier) : structureChance;
+        return clamp01(structureChance * structureMultiplierAt(offset));
+    }
+
+    /**
+     * Structure-chance multiplier at {@code offset}: {@code 1} outside the boost window; inside it a
+     * triangle — {@link #structureBoostMultiplier} at the window's start, climbing linearly to
+     * {@link #structureBoostPeakMultiplier} at its midpoint, then back down to
+     * {@link #structureBoostMultiplier} at its end.
+     */
+    public double structureMultiplierAt(long offset) {
+        if (offset < structureBoostStart || offset >= structureBoostEnd) return 1.0;
+        double len = structureBoostEnd - structureBoostStart;
+        double t = (offset - structureBoostStart) / len;             // 0 → 1 across the window
+        double rise = 1.0 - Math.abs(2.0 * t - 1.0);                 // 0 → 1 at the midpoint → 0
+        return structureBoostMultiplier + (structureBoostPeakMultiplier - structureBoostMultiplier) * rise;
     }
 
     private static double clamp01(double v) {
