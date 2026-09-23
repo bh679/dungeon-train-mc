@@ -94,6 +94,7 @@ public final class LegacyBiomes {
             case INFDEV -> c.infdev();
             case FLOATING -> c.floating();
             case CLASSIC -> c.classic();
+            case VOID -> null;                                   // keep the vanilla biome over the void
             case FAR_LANDS -> {
                 FarLandsShift shift = FarLandsShift.of(cycle, blockX >> 4, blockZ >> 4);
                 yield c.beta().get(LegacyBands.beta(c.seed()).climate()

@@ -131,6 +131,10 @@ public enum TrainPhase {
         // spheres, chuncks and upside-down bands first (they are the bands the nether/End classifiers don't know
         // about; chuncks sits after the upside-down exit gap, where the End classifier reads OVERWORLD).
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.VOID, worldX)) {
+            return VOID;                                       // the legacy run's closing void reads as the void phase
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.FAR_LANDS, worldX)) {
             return FAR_LANDS;
         }

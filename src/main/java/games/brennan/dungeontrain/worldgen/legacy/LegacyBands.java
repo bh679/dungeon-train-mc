@@ -97,8 +97,9 @@ public final class LegacyBands {
 
     /** Pure per-chunk roll: old generator with probability {@code ramp}. Package-private for tests. */
     static LegacyBandKind classify(long seed, int chunkX, int chunkZ, WorldGenCycle.LegacyHit hit) {
-        if (hit.ramp() >= 1.0D) return hit.kind();
-        return hash01(seed, chunkX, chunkZ) < hit.ramp() ? hit.kind() : null;
+        if (hit.t() >= 1.0D) return hit.to();
+        if (hit.t() <= 0.0D) return hit.from();
+        return hash01(seed, chunkX, chunkZ) < hit.t() ? hit.to() : hit.from();
     }
 
     // ---- per-chunk classification cache -------------------------------------------------
@@ -259,7 +260,7 @@ public final class LegacyBands {
      */
     public static int yOffset(LegacyBandKind kind, ServerLevel level) {
         return switch (kind) {
-            case BETA, ALPHA, INFDEV, FAR_LANDS -> LegacyChunkWriter.Y_OFFSET;
+            case BETA, ALPHA, INFDEV, FAR_LANDS, VOID -> LegacyChunkWriter.Y_OFFSET;
             case CLASSIC -> ClassicLevels.Y_OFFSET;
             case FLOATING -> {
                 DungeonTrainWorldData data = DungeonTrainWorldData.get(level);

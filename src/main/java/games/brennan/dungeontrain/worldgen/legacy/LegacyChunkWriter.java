@@ -67,12 +67,18 @@ public final class LegacyChunkWriter {
     public static void fill(LegacyBandKind kind, long seed, ChunkAccess chunk, int floorY, int yOffset) {
         int cx = chunk.getPos().x;
         int cz = chunk.getPos().z;
+        if (kind == LegacyBandKind.VOID) {
+            // Nothing: the chunk stays the all-air ProtoChunk it arrived as; only the heightmaps need priming.
+            Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.OCEAN_FLOOR_WG, Heightmap.Types.WORLD_SURFACE_WG));
+            return;
+        }
         byte[] blocks = switch (kind) {
             case BETA -> LegacyBands.beta(seed).generate(cx, cz).blocks();
             case SKYLANDS -> LegacyBands.sky(seed).generate(cx, cz).blocks();
             case ALPHA -> LegacyBands.alpha(seed).generate(cx, cz, LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), cx));
             case INFDEV -> LegacyBands.infdev(seed).generate(cx, cz, LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), cx));
             case FLOATING -> null; // not a Beta-layout column: a slice of a whole finite level
+            case VOID -> throw new IllegalStateException("void handled above");
             case CLASSIC -> LegacyBands.classic(seed).chunkColumn(cx, cz);
             case FAR_LANDS -> {
                 // The Far Lands are Beta's own terrain, read ~12.55M blocks out (see FarLandsShift).

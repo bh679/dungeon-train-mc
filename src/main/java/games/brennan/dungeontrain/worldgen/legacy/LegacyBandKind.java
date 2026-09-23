@@ -8,13 +8,18 @@ import java.util.Locale;
  * produced by a port of that version's generator instead of vanilla's.
  *
  * <p>Declaration order is cycle order: the bands run newest-to-oldest, "back in time", so a generator
- * added later is inserted at its era's position, not appended. Planned order once every era ships:
- * Large Biomes → Amplified → Beta 1.7.3 → Skylands → Alpha 1.1.2 → Infdev → Indev floating → Classic →
- * Far Lands.</p>
+ * added later is inserted at its era's position, not appended. The full order once every era ships:
+ * Large Biomes → Amplified → Beta 1.7.3 → Far Lands → Skylands → Alpha 1.1.2 → Infdev → Indev floating →
+ * Classic → Void. Large Biomes and Amplified are not built yet.</p>
  */
 public enum LegacyBandKind {
     /** Beta 1.7.3 — climate-driven terrain, sand/gravel beaches, overhangs, Beta caves and decoration. */
     BETA(false),
+    /**
+     * The Far Lands — Beta's terrain out past ±12,550,824 blocks, where the limit noise's 32-bit floor
+     * saturates and the land breaks into walls, tunnels and a canyon.
+     */
+    FAR_LANDS(false),
     /** Beta 1.7.3's unused Sky dimension — floating grass-and-dirt islands over open void, no sea or bedrock. */
     SKYLANDS(true),
     /**
@@ -32,11 +37,10 @@ public enum LegacyBandKind {
     /** Classic 0.30 — finite 256 × 256 levels, tiled edge to edge along the band. */
     CLASSIC(false),
     /**
-     * The Far Lands — Beta's terrain out past ±12,550,824 blocks, where the limit noise's 32-bit floor
-     * saturates and the land breaks into walls, tunnels and a canyon. The finale: later-built eras insert
-     * before it.
+     * Nothing at all — an empty stretch after the oldest generator: no terrain, no floor, just the track
+     * over open void. Reuses the void-below plumbing (no fill, no bedrock, fluid veto).
      */
-    FAR_LANDS(false);
+    VOID(true);
 
     private final boolean voidBelow;
 

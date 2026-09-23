@@ -106,7 +106,7 @@ public record FarLandsShift(int dxChunks, int dzChunks) {
     public static FarLandsShift of(WorldGenCycle cycle, int chunkX, int chunkZ) {
         long coreStart = cycle.legacyCoreStartX(LegacyBandKind.FAR_LANDS, chunkX << 4);
         if (coreStart == WorldGenCycle.NOT_IN_LEGACY_SLOT) return NONE;
-        return forChunk(coreStart, cycle.legacyLen(LegacyBandKind.FAR_LANDS), chunkX, chunkZ);
+        return forChunk(coreStart, cycle.legacyCoreLenBlocks(LegacyBandKind.FAR_LANDS, chunkX << 4), chunkX, chunkZ);
     }
 
     /** Script position of world chunk {@code chunkX}'s west edge (negative in the entry fade). */
