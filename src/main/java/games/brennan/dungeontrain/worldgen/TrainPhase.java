@@ -6,8 +6,8 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * The fourteen worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
- * single 14-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
+ * The fifteen worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
+ * single 15-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
  * Used by the per-template spawn gate
  * ({@link games.brennan.dungeontrain.template.TemplateGate}): a weighted template may restrict
  * itself to a subset of phases, and the generator filters the candidate pool by the phase of the
@@ -45,7 +45,9 @@ public enum TrainPhase {
     /** Stacked layers of islands over void from a port of Indev's Floating level type; see {@link games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels}. */
     FLOATING,
     /** The Far Lands — Beta's generator past its 32-bit noise overflow; see {@link games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift}. */
-    FAR_LANDS;
+    FAR_LANDS,
+    /** Terrain from a port of Classic 0.30's finite level generator; see {@link games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels}. */
+    CLASSIC;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -73,7 +75,7 @@ public enum TrainPhase {
 
     /**
      * Single-letter label for compact phase pickers/indicators — the first letter of the constant
-     * name, so the fourteen phases read {@code O N V E U C S S B A S I F F}. A new phase is picked up automatically.
+     * name, so the fifteen phases read {@code O N V E U C S S B A S I F F C}. A new phase is picked up automatically.
      */
     public String letter() {
         return String.valueOf(name().charAt(0));
@@ -96,6 +98,7 @@ public enum TrainPhase {
             case INFDEV -> "Infdev";
             case FLOATING -> "Floating";
             case FAR_LANDS -> "Far Lands";
+            case CLASSIC -> "Classic";
         };
     }
 
@@ -150,6 +153,10 @@ public enum TrainPhase {
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.FLOATING, worldX)) {
             return FLOATING;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.CLASSIC, worldX)) {
+            return CLASSIC;
         }
         if (StacksBand.isInBand(overworld, worldX)) {
             return STACKS;

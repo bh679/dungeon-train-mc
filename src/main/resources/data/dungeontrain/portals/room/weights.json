@@ -84,6 +84,7 @@
       "BETA",
       "ALPHA",
       "INFDEV",
+      "CLASSIC",
       "SKYLANDS",
       "FLOATING",
       "FAR_LANDS"
@@ -104,6 +105,7 @@
       "BETA",
       "ALPHA",
       "INFDEV",
+      "CLASSIC",
       "FAR_LANDS"
     ],
     "mode": "endless_open/single:minecraft:stone"
@@ -118,6 +120,7 @@
       "BETA",
       "ALPHA",
       "INFDEV",
+      "CLASSIC",
       "FAR_LANDS"
     ],
     "mode": "bedrock_lock"
@@ -180,6 +183,7 @@
       "BETA",
       "ALPHA",
       "INFDEV",
+      "CLASSIC",
       "SKYLANDS",
       "FLOATING",
       "FAR_LANDS"
@@ -401,6 +405,7 @@
       "BETA",
       "ALPHA",
       "INFDEV",
+      "CLASSIC",
       "SKYLANDS",
       "FLOATING",
       "FAR_LANDS"

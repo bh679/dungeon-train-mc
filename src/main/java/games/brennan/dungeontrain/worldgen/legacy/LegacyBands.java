@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels;
+import net.minecraft.Util;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.alpha.AlphaTerrain;
@@ -135,6 +137,8 @@ public final class LegacyBands {
             sky = null;
             infdev = null;
             indev = null;
+            if (classic != null) classic.clear();
+            classic = null;
         }
     }
 
@@ -215,6 +219,21 @@ public final class LegacyBands {
         }
     }
 
+    private static volatile ClassicLevels classic;
+
+    /** The tiled Classic levels for {@code seed}; one shared instance (and level cache) per seed. */
+    public static ClassicLevels classic(long seed) {
+        ClassicLevels c = classic;
+        if (c != null && c.seed() == seed) return c;
+        synchronized (LegacyBands.class) {
+            if (classic == null || classic.seed() != seed) {
+                if (classic != null) classic.clear();
+                classic = new ClassicLevels(seed, Util.backgroundExecutor());
+            }
+            return classic;
+        }
+    }
+
     // ---- vertical placement -------------------------------------------------------------
 
     /**
@@ -241,6 +260,7 @@ public final class LegacyBands {
     public static int yOffset(LegacyBandKind kind, ServerLevel level) {
         return switch (kind) {
             case BETA, ALPHA, INFDEV, FAR_LANDS -> LegacyChunkWriter.Y_OFFSET;
+            case CLASSIC -> ClassicLevels.Y_OFFSET;
             case FLOATING -> {
                 DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
                 int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();

@@ -146,6 +146,9 @@ public final class ZoneProgressEvents {
     /** Same depth gate for {@code reached_floating}, into the Indev floating legacy band core. */
     private static final int FLOATING_DEPTH_BLOCKS = 500;
 
+    /** Same depth gate for {@code reached_classic}, into the Classic legacy band core. */
+    private static final int CLASSIC_DEPTH_BLOCKS = 500;
+
     /**
      * How far (blocks) into the Far Lands legacy band core the player must be before
      * {@code reached_far_lands} is granted — deep enough to be past the band's opening stretch of
@@ -255,6 +258,12 @@ public final class ZoneProgressEvents {
             if (LegacyBands.isInBand(level, LegacyBandKind.FLOATING, px)
                 && LegacyBands.isInBand(level, LegacyBandKind.FLOATING, px - FLOATING_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_floating");
+            }
+
+            // Classic legacy band — after Indev floating: tiled Classic 0.30 levels. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.CLASSIC, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.CLASSIC, px - CLASSIC_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_classic");
             }
 
             // Far Lands legacy band — the finale of the legacy bands. Same depth gate.
