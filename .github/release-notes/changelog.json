@@ -18000,6 +18000,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-band-betternether",
+      "version": "0.936.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "world",
+        "mobs"
+      ],
+      "title": "The Nether has more to show on the way back",
+      "summary": "Dungeon Train now requires BetterNether: New Dawn. Ride back through the Nether and it is no longer the one you remember: new places, new growth and new creatures wait on the return trips. The CurseForge and Modrinth apps install BetterNether and its libraries for you; if you install by hand, grab BetterNether: New Dawn, BCLib, WorldWeaver and WunderLib for NeoForge 1.21.1.",
+      "highlights": [
+        "Return trips through the Nether look and feel different.",
+        "New required mod: BetterNether: New Dawn, installed for you by the CurseForge and Modrinth apps."
+      ],
+      "pr": 1501,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
