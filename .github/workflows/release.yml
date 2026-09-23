@@ -258,6 +258,10 @@ jobs:
             trade-everything(required)
             fast-paintings(required)
             moonlight(required)
+            betternether-neoforge(required)
+            bclib-neoforge(required)
+            worldweaver-neoforge(required)
+            wunderlib-neoforge(required)
             # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix are ABSENT by design:
             # on Modrinth they stay jarJar'd inside the DT jar; only CurseForge treats them as
             # separate mods. (keep-trim's Modrinth listing is also still in review — mc-publish
@@ -278,6 +282,10 @@ jobs:
             sable-fence-trapdoor-fix(required)
             fast-paintings(required)
             selene(required)
+            betternether-neoforge(required)
+            bclib-neoforge(required)
+            worldweaver-neoforge(required)
+            wunderlib-neoforge(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)

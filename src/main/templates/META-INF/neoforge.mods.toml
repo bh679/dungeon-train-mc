@@ -44,6 +44,16 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# BetterNether: New Dawn — third-party, REQUIRED. Its biomes fill every second Nether band's core
+# (worldgen/density/BetterNetherCoreBiomes). DT names its biomes/blocks only by id, so a floor is
+# enough. Its own libraries (BCLib, WorldWeaver, WunderLib) are declared by BetterNether itself.
+[[dependencies.${mod_id}]]
+    modId="betternether"
+    type="required"
+    versionRange="[${betternether_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Sibling mods (same author). These are NOT bundled — each is a separate required
 # download, so its own Modrinth/CurseForge page gets credited for the install.
 #
