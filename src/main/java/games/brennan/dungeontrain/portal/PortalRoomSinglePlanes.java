@@ -40,6 +40,20 @@ public final class PortalRoomSinglePlanes {
     private PortalRoomSinglePlanes() {}
 
     /**
+     * What a liquid floor is laid on where nothing solid is under it — the rock a room is cut into,
+     * the same block {@code PortalCarriageBuilder.FLUID_PLUG} dams aquifers with.
+     *
+     * <p>A pool needs a bottom. The row under a tile is normally the world's own rock, but it is not
+     * always: the test harness's <i>Back</i> clears one row below the floor when it tears a session
+     * down, so the next test on the same spot lands over a hollow, and a plain built over a cave or
+     * a ravine meets the same thing. Water written over air pours down out of the tile, and every
+     * neighbour's fluid plug then turns what spilled under the seams into deepslate — a grid of
+     * lines under the pool, one per tile edge. Laying the bed first, only where the cell below is
+     * air or fluid, is what keeps the pool in the tile.</p>
+     */
+    private static final BlockState LIQUID_BED = Blocks.DEEPSLATE.defaultBlockState();
+
+    /**
      * The block {@code blockId} names, or empty when nothing in the registry answers to it.
      *
      * <p>Empty rather than {@link Blocks#AIR} for a name that does not resolve. Air here would be a
@@ -94,9 +108,12 @@ public final class PortalRoomSinglePlanes {
         int ceilingY = floorY + size.getY() - 1;
         int floorTop = floorY + floorHeightFor(palette, size) - 1;
 
+        boolean liquidFloor = palette.hasLiquid(PortalRoomCopiesVariant.Plane.FLOOR);
+
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = x0; x <= x1; x++) {
             for (int z = z0; z <= z1; z++) {
+                if (liquidFloor) bedUnder(level, pos.set(x, floorY - 1, z), clearMask, relight);
                 // The floor is laid floorHeight deep, bottom up; each layer rolls on its own local
                 // position so a mixed palette reads as a mix in depth as well as across the plain.
                 for (int y = floorY; y <= floorTop; y++) {
@@ -115,6 +132,23 @@ public final class PortalRoomSinglePlanes {
                         relight, worldSeed, variantIndex);
                 }
             }
+        }
+    }
+
+    /**
+     * Put {@link #LIQUID_BED} at {@code pos} — the cell under a liquid floor — when nothing solid is
+     * there already. Rock, an authored block, a corridor's cell: all left alone; only air and fluid
+     * are a hole the pool would drain through.
+     */
+    private static void bedUnder(ServerLevel level, BlockPos pos, PortalCorridorMask clearMask,
+                                 boolean relight) {
+        if (clearMask.covers(pos)) return;
+        BlockState below = level.getBlockState(pos);
+        if (!below.isAir() && below.getFluidState().isEmpty()) return;
+        if (relight) {
+            level.setBlock(pos, LIQUID_BED, Block.UPDATE_ALL);
+        } else {
+            SilentBlockOps.setBlockSectionLocal(level, pos, LIQUID_BED);
         }
     }
 
