@@ -12,7 +12,8 @@
         "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "BETA"
       ]
     },
     {
@@ -29,7 +30,8 @@
         "NETHER",
         "UPSIDE_DOWN",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "BETA"
       ]
     },
     {
@@ -113,7 +115,8 @@
         "END",
         "UPSIDE_DOWN",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "BETA"
       ]
     },
     {
@@ -136,7 +139,8 @@
       "phases": [
         "OVERWORLD",
         "NETHER",
-        "UPSIDE_DOWN"
+        "UPSIDE_DOWN",
+        "BETA"
       ]
     },
     {

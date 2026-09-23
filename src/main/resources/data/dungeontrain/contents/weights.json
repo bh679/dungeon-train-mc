@@ -116,7 +116,8 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "UPSIDE_DOWN"
+      "UPSIDE_DOWN",
+      "BETA"
     ]
   },
   "vase": 1,

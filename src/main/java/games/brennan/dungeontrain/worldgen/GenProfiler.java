@@ -72,7 +72,10 @@ public final class GenProfiler {
          *  this is the band's only real gen cost. */
         SPHERES_CARVE,
         /** {@code StacksFeature.place} — stacks-band tower stamping (worker-thread; in {@link Sample#dtTotalMs}). */
-        STACKS_FEATURE
+        STACKS_FEATURE,
+        /** Legacy-band terrain fill + decoration — the old generators replacing vanilla noise (worker-thread;
+         *  in {@link Sample#dtTotalMs}; replaces vanilla's own fill cost for those chunks rather than adding to it). */
+        LEGACY
     }
 
     private static final int N = Bucket.values().length;
@@ -127,7 +130,8 @@ public final class GenProfiler {
          *  (already inside NETHER_FEATURE) and {@link Bucket#EROSION} (main-thread, not a worker slice). */
         public double dtTotalMs() {
             return ms(Bucket.DF) + ms(Bucket.NETHER_FEATURE) + ms(Bucket.BIOME_FORCE)
-                    + ms(Bucket.MIRROR_PRECOMPUTE) + ms(Bucket.TRACK_FEATURE) + ms(Bucket.DISINTEGRATION);
+                    + ms(Bucket.MIRROR_PRECOMPUTE) + ms(Bucket.TRACK_FEATURE) + ms(Bucket.DISINTEGRATION)
+                    + ms(Bucket.LEGACY);
         }
 
         public double dtTotalPerChunkMs() {

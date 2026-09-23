@@ -911,3 +911,8 @@ idea {
         downloadJavadoc = true
     }
 }
+
+// The legacy world-gen bands adapt MIT-licensed code from Moderner Beta; its notice must ship in the jar.
+tasks.named('processResources', ProcessResources) {
+    from(rootProject.file('THIRD_PARTY_NOTICES.md')) { into 'META-INF' }
+}

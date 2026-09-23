@@ -80,7 +80,8 @@
       "END",
       "UPSIDE_DOWN",
       "CHUNCKS",
-      "SPHERES"
+      "SPHERES",
+      "BETA"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -94,7 +95,8 @@
       "OVERWORLD",
       "NETHER",
       "VOID",
-      "END"
+      "END",
+      "BETA"
     ],
     "mode": "endless_open/single:minecraft:stone"
   },
@@ -104,7 +106,8 @@
       "OVERWORLD",
       "NETHER",
       "VOID",
-      "END"
+      "END",
+      "BETA"
     ],
     "mode": "bedrock_lock"
   },
@@ -162,7 +165,8 @@
       "VOID",
       "UPSIDE_DOWN",
       "CHUNCKS",
-      "SPHERES"
+      "SPHERES",
+      "BETA"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -377,7 +381,8 @@
       "OVERWORLD",
       "UPSIDE_DOWN",
       "CHUNCKS",
-      "SPHERES"
+      "SPHERES",
+      "BETA"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },

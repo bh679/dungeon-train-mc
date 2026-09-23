@@ -945,6 +945,7 @@ public final class DungeonTrainCommonConfig {
                         "per-chunk, seed-stable noise gate. Default 0.08 (~8% of chunks carry a tower).")
                 .defineInRange("stacksDensity", DEFAULT_STACKS_DENSITY,
                         MIN_STACKS_DENSITY, MAX_STACKS_DENSITY);
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig.define(b);
         b.pop();
 
         return new Holder(configVersion, defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent,

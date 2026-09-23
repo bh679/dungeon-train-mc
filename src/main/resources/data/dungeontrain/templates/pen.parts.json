@@ -26,7 +26,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "stone"
     },
@@ -37,7 +38,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "stone"
     },
@@ -48,7 +50,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "stone"
     },
@@ -59,7 +62,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "stone"
     },
@@ -69,7 +73,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "stone"
     },
@@ -235,7 +240,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "deepdark"
     },
@@ -246,7 +252,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "deepdark"
     },
@@ -257,7 +264,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "deepdark"
     },
@@ -268,7 +276,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "deepdark"
     },
@@ -278,7 +287,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "deepdark"
     },
@@ -477,7 +487,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "stone"
     },
@@ -487,7 +498,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "stone"
     },
@@ -497,7 +509,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "stone"
     },
@@ -588,7 +601,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "deepdark"
     },
@@ -598,7 +612,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "deepdark"
     },
@@ -608,7 +623,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "deepdark"
     },
@@ -731,7 +747,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "stone"
     },
@@ -780,7 +797,8 @@
       "phases": [
         "OVERWORLD",
         "VOID",
-        "END"
+        "END",
+        "BETA"
       ],
       "stage": "deepdark"
     },

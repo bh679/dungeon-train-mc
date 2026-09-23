@@ -4,7 +4,8 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END"
+      "END",
+      "BETA"
     ]
   },
   "nethertracks": {
@@ -18,7 +19,8 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END"
+      "END",
+      "BETA"
     ]
   },
   "sleepside": {
@@ -26,7 +28,8 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END"
+      "END",
+      "BETA"
     ]
   }
 }

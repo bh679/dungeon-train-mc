@@ -10,7 +10,8 @@
     "phases": [
       "OVERWORLD",
       "VOID",
-      "END"
+      "END",
+      "BETA"
     ]
   }
 }

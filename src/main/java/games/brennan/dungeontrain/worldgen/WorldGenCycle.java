@@ -1,16 +1,19 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandConfig;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacySpan;
 
 /**
  * The single repeating world-gen cycle the train crosses, laying out ALL special
  * phases in one fixed order along +X from a shared anchor:
  *
  * <pre>
- *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → OW → Chuncks → OW → Spheres → OW → Stacks → (repeat)
+ *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → Upside-down → exit-fade → OW → Chuncks → OW → Spheres → OW → Stacks → (OW → legacy band)… → (repeat)
  * </pre>
  *
- * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap] [chuncks band] [spheresLeadGap] [spheresFade] [spheres band] [stacksLeadGap] [stacksFade] [stacks band]}. The
+ * i.e. per period: {@code [owGap] [nether band] [owGap] [end band] [upside-down band] [udExitFade] [udExitGap] [chuncks band] [spheresLeadGap] [spheresFade] [spheres band] [stacksLeadGap] [stacksFade] [stacks band] ([legacyLeadGap] [legacyFade] [legacy band] [legacyFade])…}. The
  * nether/End sub-bands reuse the existing ramp math ({@link NetherTransition} and
  * {@link Disintegration}) evaluated at a <em>local</em> offset with {@code owHold = 0}; the
  * upside-down band uses a simple trapezoid ({@link #upsideDownRamp}) and is realised as a
@@ -80,6 +83,10 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  *                   entry fade. 0 = none
  * @param stacksDensity fraction {@code 0..1} of the band's void chunks that hold a stack (the rest are
  *                   empty void); a per-chunk seed-stable noise gate
+ * @param legacy     legacy bands appended after the stacks band, in {@link LegacyBandKind} (cycle)
+ *                   order — each {@code [leadGap] [fade] [hold] [fade]} of terrain from an old Minecraft
+ *                   generator (see {@link LegacySpan}). Disabled spans have zero length; an empty array
+ *                   keeps {@link #period()} byte-identical to the pre-legacy cycle. Never mutated.
  * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
  *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
  *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
@@ -94,7 +101,30 @@ public record WorldGenCycle(long startX, int owGap,
                             double chuncksKeepDensity, double chuncksSliceRatio,
                             int spheresHold, int spheresFade, int spheresLeadGap,
                             int stacksHold, int stacksFade, int stacksLeadGap, double stacksDensity,
+                            LegacySpan[] legacy,
                             int phaseShift) {
+
+    /**
+     * Back-compat constructor for the pre-legacy 28-arg shape (every band through stacks, no legacy
+     * bands). Passes no legacy spans so {@link #period()} is byte-identical to the pre-legacy cycle.
+     */
+    public WorldGenCycle(long startX, int owGap,
+                         int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
+                         int coreFade, int coreHold,
+                         int eFade, int eVoid, int eEnd,
+                         int udFade, int udHold, int udExit, int udExitFade,
+                         int chuncksHold, int chuncksFade, int chuncksLeadGap,
+                         double chuncksKeepDensity, double chuncksSliceRatio,
+                         int spheresHold, int spheresFade, int spheresLeadGap,
+                         int stacksHold, int stacksFade, int stacksLeadGap, double stacksDensity,
+                         int phaseShift) {
+        this(startX, owGap, stageBlocks, stageMultipliers, beachBlocks, megaHold, coreFade, coreHold,
+                eFade, eVoid, eEnd, udFade, udHold, udExit, udExitFade,
+                chuncksHold, chuncksFade, chuncksLeadGap, chuncksKeepDensity, chuncksSliceRatio,
+                spheresHold, spheresFade, spheresLeadGap,
+                stacksHold, stacksFade, stacksLeadGap, stacksDensity,
+                NO_LEGACY, phaseShift);
+    }
 
     /**
      * Back-compat constructor for the pre-stacks 24-arg shape (chuncks + spheres bands present, no stacks
@@ -238,6 +268,7 @@ public record WorldGenCycle(long startX, int owGap,
                 stacks ? DungeonTrainCommonConfig.getStacksFadeBlocks() : 0,
                 stacks ? DungeonTrainCommonConfig.getStacksLeadGapBlocks() : 0,
                 stacks ? DungeonTrainCommonConfig.getStacksDensity() : 0.0,
+                LegacyBandConfig.spans(),
                 DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
     }
 
@@ -356,14 +387,16 @@ public record WorldGenCycle(long startX, int owGap,
 
     /**
      * {@code 2·owGap + netherLen + endLen + udLen + udExitFade + udExitGap + chuncksLeadGap + chuncksFade
-     * + chuncksLen + spheresLeadGap + spheresFade + spheresLen + stacksLeadGap + stacksFade + stacksLen}.
+     * + chuncksLen + spheresLeadGap + spheresFade + spheresLen + stacksLeadGap + stacksFade + stacksLen
+     * + Σ legacy spans}.
      */
     public long period() {
         return 2L * Math.max(0, owGap) + netherLen() + endLen()
                 + upsideDownLen() + udExitFadeLen() + udExitGap()
                 + chuncksLeadGapLen() + chuncksFadeLen() + chuncksLen()
                 + spheresLeadGapLen() + spheresFadeLen() + spheresLen()
-                + stacksLeadGapLen() + stacksFadeLen() + stacksLen();
+                + stacksLeadGapLen() + stacksFadeLen() + stacksLen()
+                + legacyTotalLen();
     }
 
     /**
@@ -1100,5 +1133,109 @@ public record WorldGenCycle(long startX, int owGap,
             }
         }
         return 0.0;                                                 // outside the band + fade
+    }
+
+    // ---- legacy bands ------------------------------------------------------------
+
+    /** Shared empty legacy layout for the back-compat constructors. */
+    private static final LegacySpan[] NO_LEGACY = new LegacySpan[0];
+
+    /** Where one legacy band sits at a world-X: its kind and the old-generator ramp {@code (0, 1]} there. */
+    public record LegacyHit(LegacyBandKind kind, double ramp) {}
+
+    /** Combined length of every legacy span; 0 when none is enabled. */
+    public long legacyTotalLen() {
+        if (legacy == null) return 0L;
+        long total = 0L;
+        for (LegacySpan span : legacy) total += span.totalLen();
+        return total;
+    }
+
+    /** Offset (into the cycle) where the first legacy span's lead gap begins — right after the stacks core. */
+    private long legacyBase() {
+        return stacksStart() + stacksLen();
+    }
+
+    /** The enabled span for {@code kind}, or {@code null}. */
+    private LegacySpan spanOf(LegacyBandKind kind) {
+        if (legacy == null) return null;
+        for (LegacySpan span : legacy) {
+            if (span.kind() == kind && span.holdLen() > 0L) return span;
+        }
+        return null;
+    }
+
+    /** Offset where {@code kind}'s lead gap begins, or {@code -1} when that band is disabled. */
+    private long legacySlotStart(LegacyBandKind kind) {
+        long start = legacyBase();
+        for (LegacySpan span : legacy == null ? NO_LEGACY : legacy) {
+            if (span.kind() == kind) return span.holdLen() > 0L ? start : -1L;
+            start += span.totalLen();
+        }
+        return -1L;
+    }
+
+    /** Length of the legacy band {@code kind}'s core, or 0 when it is disabled. */
+    public long legacyLen(LegacyBandKind kind) {
+        LegacySpan span = spanOf(kind);
+        return span == null ? 0L : span.holdLen();
+    }
+
+    /**
+     * The legacy band at {@code worldX} and how strongly the old generator applies there: {@code 1.0}
+     * across the core, ramping linearly {@code 0 → 1} over the entry fade and {@code 1 → 0} over the exit
+     * fade. {@code null} outside every legacy band (and in the lead gaps). Pure, seed-independent — the
+     * per-chunk old/new decision is a seed-stable roll against this ramp (see {@code LegacyBands}).
+     */
+    public LegacyHit legacyAt(int worldX) {
+        if (legacy == null || legacy.length == 0) return null;
+        long o = offset(worldX);
+        if (o < 0L) return null;
+        long start = legacyBase();
+        for (LegacySpan span : legacy) {
+            long total = span.totalLen();
+            if (total > 0L && o >= start && o < start + total) {
+                double ramp = legacyRamp(span, o - start);
+                return ramp > 0.0 ? new LegacyHit(span.kind(), ramp) : null;
+            }
+            start += total;
+        }
+        return null;
+    }
+
+    /** Ramp at {@code local} blocks into {@code span}'s slot (lead gap first). */
+    static double legacyRamp(LegacySpan span, long local) {
+        long fadeStart = span.leadGapLen();
+        long holdStart = fadeStart + span.fadeLen();
+        long holdEnd = holdStart + span.holdLen();
+        long exitEnd = holdEnd + span.fadeLen();
+        if (local < fadeStart || local >= exitEnd) return 0.0;
+        if (local >= holdStart && local < holdEnd) return 1.0;
+        if (local < holdStart) return (double) (local - fadeStart + 1) / (span.fadeLen() + 1);
+        return (double) (exitEnd - local) / (span.fadeLen() + 1);
+    }
+
+    /** True if {@code worldX} lies in the core of legacy band {@code kind} (not its fades). */
+    public boolean isInLegacyBand(LegacyBandKind kind, int worldX) {
+        LegacySpan span = spanOf(kind);
+        if (span == null) return false;
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long holdStart = legacySlotStart(kind) + span.leadGapLen() + span.fadeLen();
+        return o >= holdStart && o < holdStart + span.holdLen();
+    }
+
+    /**
+     * True if {@code worldX} lies anywhere from the start of legacy band {@code kind}'s lead gap through
+     * the end of its exit fade — the world has not settled back into plain overworld yet. Used by the
+     * {@code reached_overworld_again} gate so "Re-Over-World" waits for the overworld after the LAST band.
+     */
+    public boolean isInLegacyApproachOrBand(LegacyBandKind kind, int worldX) {
+        LegacySpan span = spanOf(kind);
+        if (span == null) return false;
+        long o = offset(worldX);
+        if (o < 0L) return false;
+        long start = legacySlotStart(kind);
+        return o >= start && o < start + span.totalLen();
     }
 }

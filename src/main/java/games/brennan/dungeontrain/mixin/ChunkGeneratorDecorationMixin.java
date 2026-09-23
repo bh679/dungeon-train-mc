@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.feature.DeferredStructurePlacement;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
@@ -155,7 +156,10 @@ public abstract class ChunkGeneratorDecorationMixin {
             int chunkMinZ = chunk.getPos().getMinBlockZ();
             return ChuncksBand.isVoidChunk(serverLevel, chunkMinX, chunkMinZ)
                     || SpheresBand.isVoidChunk(serverLevel, chunkMinX, chunkMinZ)
-                    || StacksBand.isVoidOrStackChunk(serverLevel, chunkMinX, chunkMinZ);
+                    || StacksBand.isVoidOrStackChunk(serverLevel, chunkMinX, chunkMinZ)
+                    // Legacy band: not void, but its old generator decorates it (LegacyDecorateFeature) —
+                    // vanilla features and structure pieces would be modern things on old terrain.
+                    || LegacyBands.kindOfChunk(serverLevel, chunk.getPos().x, chunk.getPos().z) != null;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] decoration-skip resolve failed at {}; running vanilla decoration",
                     chunk.getPos(), t);
@@ -169,7 +173,7 @@ public abstract class ChunkGeneratorDecorationMixin {
         try {
             Feature<?> f = feature.feature().value().feature();
             return f == ModFeatures.TRACK_BED.get() || f == ModFeatures.DISINTEGRATION.get()
-                    || f == ModFeatures.STACKS.get();
+                    || f == ModFeatures.STACKS.get() || f == ModFeatures.LEGACY_DECORATE.get();
         } catch (Throwable t) {
             return true; // unclassifiable → keep it (never drop a feature we can't identify)
         }

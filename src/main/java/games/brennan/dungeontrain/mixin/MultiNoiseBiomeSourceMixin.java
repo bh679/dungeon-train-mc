@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.density.BandBiomeDecision;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Climate;
@@ -39,6 +40,9 @@ public abstract class MultiNoiseBiomeSourceMixin {
     private Holder<Biome> dungeontrain$forceHighlandBiome(Holder<Biome> original, int x, int y, int z, Climate.Sampler sampler) {
         long genT0 = GenProfiler.t0();
         try {
+            // Legacy bands first: an old generator's column shows its own biome map at every height.
+            Holder<Biome> legacy = LegacyBiomes.override(this, x << 2, z << 2);
+            if (legacy != null) return legacy;
             NetherBandContext ctx = NetherBandContext.current();
             if (ctx == null || !ctx.enabled() || ctx.highlandBiomes() == null) return original;
             // Overworld-only: the Nether also uses a MultiNoiseBiomeSource, so gate on the instance.

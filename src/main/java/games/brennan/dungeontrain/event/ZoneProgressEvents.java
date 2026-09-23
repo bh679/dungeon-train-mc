@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.StacksBand;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
@@ -126,6 +128,12 @@ public final class ZoneProgressEvents {
      */
     private static final int STACKS_DEPTH_BLOCKS = 500;
 
+    /**
+     * How far (blocks) into the Beta legacy band core the player must be before {@code reached_beta}
+     * is granted — same depth gate as the markers above.
+     */
+    private static final int BETA_DEPTH_BLOCKS = 500;
+
     private ZoneProgressEvents() {}
 
     @SubscribeEvent
@@ -200,6 +208,12 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_stacks");
             }
 
+            // Beta legacy band — after the stacks: terrain from Beta 1.7.3's own generator. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.BETA, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.BETA, px - BETA_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_beta");
+            }
+
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {
                 case VOID ->
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_void");
@@ -223,13 +237,15 @@ public final class ZoneProgressEvents {
                     // gaps read as OVERWORLD but the world breaks apart again straight after them, so
                     // the overworld has not actually restarted until the band is behind the player —
                     // and likewise the spheres band that follows it (its lead gap, fade, then core) and
-                    // the stacks band after that (its long lead gap, fade, then core) — the LAST band, so
-                    // "Re-Over-World" fires on the plain overworld that follows the towers.
+                    // the stacks band after that (its long lead gap, fade, then core), and the legacy bands
+                    // after the stacks (lead gap, fades, core) — the LAST bands, so "Re-Over-World" fires on
+                    // the plain overworld that follows them.
                     if (DisintegrationBand.cyclePassIndex(level, px) >= 1
                         && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)
                         && !ChuncksBand.isInApproachOrBand(level, px)
                         && !SpheresBand.isInApproachOrBand(level, px)
-                        && !StacksBand.isInApproachOrBand(level, px)) {
+                        && !StacksBand.isInApproachOrBand(level, px)
+                        && !LegacyBands.isInAnyApproachOrBand(level, px)) {
                         ModAdvancementTriggers.GAMEPLAY_ACTION.get()
                             .trigger(player, "reached_overworld_again");
                     }

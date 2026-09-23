@@ -4,14 +4,21 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
+import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.StacksBand;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyChunkWriter;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.Util;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
@@ -55,6 +62,11 @@ import java.util.concurrent.CompletableFuture;
  * the fully-eroded core) then leaves those pillars standing in exactly the Z-span the train rides
  * through — ice towers in the middle of the End band.</p>
  *
+ * <p><b>Legacy bands</b> reuse the same seam the other way round: a chunk owned by an old generator
+ * ({@link LegacyBands#kindOfChunk}) gets that generator's terrain written here instead of vanilla's
+ * noise, and its vanilla surface and carver passes are skipped — the old generator already laid its own
+ * surface and carved its own caves.</p>
+ *
  * <p>Scope: only the overworld dimension (both bands' home). Fade-zone / straddle / kept chunks fall
  * through to vanilla so their terrain is byte-identical to before. The floating track bed + rails are
  * still painted by {@code TrackBedFeature} (pillars are skipped over void by a probe sentinel); the End
@@ -74,6 +86,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             // During fresh generation the chunk's raw levelHeightAccessor IS the owning ServerLevel.
             LevelHeightAccessor lha = ((ChunkAccessAccessor) centerChunk).dungeontrain$getLevelHeightAccessor();
             if (!(lha instanceof ServerLevel level)) return;
+            if (dungeontrain$fillLegacy(level, centerChunk, cir)) return;
             if (!dungeontrain$isVoidChunk(level, centerChunk)) {
                 return; // any real-terrain column → keep it, let vanilla run
             }
@@ -107,8 +120,8 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             ChunkAccess chunk, CallbackInfo ci) {
         try {
             ServerLevel level = region.getLevel();
-            if (dungeontrain$isVoidChunk(level, chunk)) {
-                ci.cancel();
+            if (dungeontrain$isVoidChunk(level, chunk) || dungeontrain$legacyKind(level, chunk) != null) {
+                ci.cancel(); // void: nothing to surface; legacy: the old generator laid its own surface
             }
         } catch (Throwable t) {
             // Never break worldgen — on any error, fall through to the vanilla surface pass.
@@ -140,5 +153,46 @@ public abstract class NoiseBasedChunkGeneratorMixin {
         // Stacks band: VOID chunks are empty; STACK chunks are also generated empty, then StacksFeature
         // stamps the tower into the air at decoration time.
         return StacksBand.isVoidOrStackChunk(level, chunkMinX, chunkMinZ);
+    }
+
+    /**
+     * Legacy band chunk: generate the old terrain synchronously (pure — on failure vanilla runs instead)
+     * and hand the write + chunk back on the worldgen executor, mirroring the void path's hand-off.
+     * Returns true when it took the chunk.
+     */
+    @Unique
+    private boolean dungeontrain$fillLegacy(ServerLevel level, ChunkAccess chunk,
+                                            CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir) {
+        LegacyBandKind kind = dungeontrain$legacyKind(level, chunk);
+        if (kind == null) return false;
+        long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
+        int floorY = ((NoiseBasedChunkGenerator) (Object) this).getMinY();
+        cir.setReturnValue(CompletableFuture.supplyAsync(() -> {
+            long genT0 = GenProfiler.t0();
+            try {
+                LegacyChunkWriter.fill(kind, seed, chunk, floorY);
+            } finally {
+                GenProfiler.add(GenProfiler.Bucket.LEGACY, genT0);
+            }
+            return chunk;
+        }, Util.backgroundExecutor()));
+        return true;
+    }
+
+    /** Skip vanilla caves and ravines in legacy chunks — the old generator carved its own. */
+    @Inject(method = "applyCarvers", at = @At("HEAD"), cancellable = true)
+    private void dungeontrain$skipLegacyCarvers(WorldGenRegion region, long seed, RandomState random,
+                                                BiomeManager biomeManager, StructureManager structureManager,
+                                                ChunkAccess chunk, GenerationStep.Carving step, CallbackInfo ci) {
+        try {
+            if (dungeontrain$legacyKind(region.getLevel(), chunk) != null) ci.cancel();
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] legacy carver skip failed at {}; running vanilla carvers", chunk.getPos(), t);
+        }
+    }
+
+    @Unique
+    private static LegacyBandKind dungeontrain$legacyKind(ServerLevel level, ChunkAccess chunk) {
+        return LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
     }
 }
