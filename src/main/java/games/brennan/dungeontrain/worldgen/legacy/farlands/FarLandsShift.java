@@ -22,13 +22,13 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
  * <ol>
  *   <li>{@code 0–1000} {@link Stage#ENTRY} — {@value #APPROACH} blocks of ordinary Beta land, then the X
  *       edge wall crosses the track and the train rides the edge lands. The entry fade reads this too.</li>
- *   <li>{@code 1000–3000} {@link Stage#CLOSING} — left wall at {@value #SIDE_Z}; the right wall starts
+ *   <li>{@code 1000–2000} {@link Stage#CLOSING} — left wall at {@value #SIDE_Z}; the right wall starts
  *       1000 out and closes in chunk by chunk on a power-{@value #EASE_POWER} ease ({@link #closingDistance}):
  *       fast at first, creeping at the end.</li>
- *   <li>{@code 3000–6000} {@link Stage#CANYON} — both walls at {@value #SIDE_Z}.</li>
- *   <li>{@code 6000–8000} {@link Stage#OPENING} — the left wall eases back out, the mirror image
+ *   <li>{@code 2000–3000} {@link Stage#CANYON} — both walls at {@value #SIDE_Z}.</li>
+ *   <li>{@code 3000–4000} {@link Stage#OPENING} — the left wall eases back out, the mirror image
  *       ({@link #openingDistance}); the right one stays.</li>
- *   <li>{@code 8000–9000} {@link Stage#EXIT} — the right wall sweeps across the track
+ *   <li>{@code 4000–5000} {@link Stage#EXIT} — the right wall sweeps across the track
  *       ({@link #SWEEP_STEPS}), the edge lands close over the train, and {@value #APPROACH} blocks before the
  *       end the train breaks out through the negative X edge's wall onto ordinary land, mirroring the entry.
  *       The exit fade reads this too.</li>
@@ -50,15 +50,15 @@ public record FarLandsShift(int dxChunks, int dzChunks) {
     /** Resting distance of a side wall from the track. */
     public static final int SIDE_Z = 56;
     /** Script length; the configured core is scaled onto it. */
-    public static final int SCRIPT_LEN = 9000;
+    public static final int SCRIPT_LEN = 5000;
 
     /** Script block where each stage ends. */
     static final int ENTRY_END = 1000;
-    static final int CLOSING_END = 3000;
-    static final int CANYON_END = 6000;
-    static final int OPENING_END = 8000;
+    static final int CLOSING_END = 2000;
+    static final int CANYON_END = 3000;
+    static final int OPENING_END = 4000;
     /** Script block where the sweep ends and the whole width is edge lands. */
-    static final int SWEEP_END = 8400;
+    static final int SWEEP_END = 4400;
     /** Script block of the exit wall. */
     static final int EXIT_WALL = SCRIPT_LEN - APPROACH;
 
