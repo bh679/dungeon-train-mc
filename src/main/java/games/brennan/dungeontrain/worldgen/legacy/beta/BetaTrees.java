@@ -52,14 +52,14 @@ public final class BetaTrees {
     }
 
     private static boolean onSoil(BetaWorld world, int x, int y, int z, int height) {
-        if (y < 1 || y + height + 1 > BetaTerrain.HEIGHT) return false;
+        if (y < 1 || y + height + 1 > world.height()) return false;
         BlockState below = world.get(x, y - 1, z);
-        return (below.is(Blocks.GRASS_BLOCK) || below.is(Blocks.DIRT)) && y < BetaTerrain.HEIGHT - height - 1;
+        return (below.is(Blocks.GRASS_BLOCK) || below.is(Blocks.DIRT)) && y < world.height() - height - 1;
     }
 
     /** Every block in the ring {@code ±radius} at {@code y} is air or leaves. */
     private static boolean ringClear(BetaWorld world, int x, int y, int z, int radius) {
-        if (y < 0 || y >= BetaTerrain.HEIGHT) return false;
+        if (y < 0 || y >= world.height()) return false;
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 if (!world.isAirOrLeaves(x + dx, y, z + dz)) return false;
@@ -70,7 +70,7 @@ public final class BetaTrees {
 
     private static boolean roundTree(BetaWorld world, Random rand, int x, int y, int z, int height,
                                      BlockState log, BlockState leaves) {
-        if (y < 1 || y + height + 1 > BetaTerrain.HEIGHT) return false;
+        if (y < 1 || y + height + 1 > world.height()) return false;
         for (int ty = y; ty <= y + 1 + height; ty++) {
             int r = ty == y ? 0 : ty >= y + 1 + height - 2 ? 2 : 1;
             if (!ringClear(world, x, ty, z, r)) return false;
@@ -102,7 +102,7 @@ public final class BetaTrees {
         int bare = 1 + rand.nextInt(2);
         int crown = height - bare;
         int maxRadius = 2 + rand.nextInt(2);
-        if (y < 1 || y + height + 1 > BetaTerrain.HEIGHT) return false;
+        if (y < 1 || y + height + 1 > world.height()) return false;
         for (int ty = y; ty <= y + 1 + height; ty++) {
             if (!ringClear(world, x, ty, z, ty - y < bare ? 0 : maxRadius)) return false;
         }
@@ -142,7 +142,7 @@ public final class BetaTrees {
         int bare = height - rand.nextInt(2) - 3;
         int crown = height - bare;
         int maxRadius = 1 + rand.nextInt(crown + 1);
-        if (y < 1 || y + height + 1 > BetaTerrain.HEIGHT) return false;
+        if (y < 1 || y + height + 1 > world.height()) return false;
         for (int ty = y; ty <= y + 1 + height; ty++) {
             if (!ringClear(world, x, ty, z, ty - y < bare ? 0 : maxRadius)) return false;
         }

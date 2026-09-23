@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_beta",
+  "parent": "dungeontrain:dungeon_train/reached_floating",
   "display": {
     "icon": { "id": "minecraft:stone" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_far_lands.title" },

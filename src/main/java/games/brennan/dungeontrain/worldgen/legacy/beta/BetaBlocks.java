@@ -16,6 +16,8 @@ public final class BetaBlocks {
     public static final byte SAND = 12;
     public static final byte GRAVEL = 13;
     public static final byte SANDSTONE = 24;
+    public static final byte BRICKS = 45;
+    public static final byte OBSIDIAN = 49;
     public static final byte ICE = 79;
 
     private BetaBlocks() {}

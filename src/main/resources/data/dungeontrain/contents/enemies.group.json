@@ -120,7 +120,8 @@
       "phases": [
         "NETHER",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "FLOATING"
       ]
     },
     {

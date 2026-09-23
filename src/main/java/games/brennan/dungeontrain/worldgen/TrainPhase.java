@@ -6,8 +6,8 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * The ten worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
- * single 10-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
+ * The fourteen worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
+ * single 14-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
  * Used by the per-template spawn gate
  * ({@link games.brennan.dungeontrain.template.TemplateGate}): a weighted template may restrict
  * itself to a subset of phases, and the generator filters the candidate pool by the phase of the
@@ -36,6 +36,14 @@ public enum TrainPhase {
     STACKS,
     /** Terrain from a port of Beta 1.7.3's world generator; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
     BETA,
+    /** Terrain from a port of Alpha 1.1.2's world generator (normal and winter halves); see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    ALPHA,
+    /** Floating islands over void from a port of Beta 1.7.3's unused Sky generator; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    SKYLANDS,
+    /** Terrain from ports of the Infdev snapshots' world generators; see {@link games.brennan.dungeontrain.worldgen.legacy.LegacyBands}. */
+    INFDEV,
+    /** Stacked layers of islands over void from a port of Indev's Floating level type; see {@link games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels}. */
+    FLOATING,
     /** The Far Lands — Beta's generator past its 32-bit noise overflow; see {@link games.brennan.dungeontrain.worldgen.legacy.farlands.FarLandsShift}. */
     FAR_LANDS;
 
@@ -65,7 +73,7 @@ public enum TrainPhase {
 
     /**
      * Single-letter label for compact phase pickers/indicators — the first letter of the constant
-     * name, so the ten phases read {@code O N V E U C S S B F}. A new phase is picked up automatically.
+     * name, so the fourteen phases read {@code O N V E U C S S B A S I F F}. A new phase is picked up automatically.
      */
     public String letter() {
         return String.valueOf(name().charAt(0));
@@ -83,6 +91,10 @@ public enum TrainPhase {
             case SPHERES -> "Spheres";
             case STACKS -> "Stacks";
             case BETA -> "Beta";
+            case ALPHA -> "Alpha";
+            case SKYLANDS -> "Skylands";
+            case INFDEV -> "Infdev";
+            case FLOATING -> "Floating";
             case FAR_LANDS -> "Far Lands";
         };
     }
@@ -92,7 +104,7 @@ public enum TrainPhase {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code spheres}/{@code stacks}/{@code beta}/{@code far_lands}); null if unknown. */
+    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code spheres}/{@code stacks}/{@code beta}/{@code alpha}/{@code skylands}/{@code infdev}/{@code floating}/{@code far_lands}); null if unknown. */
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
@@ -122,6 +134,22 @@ public enum TrainPhase {
         if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
                 games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.BETA, worldX)) {
             return BETA;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.SKYLANDS, worldX)) {
+            return SKYLANDS;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.ALPHA, worldX)) {
+            return ALPHA;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.INFDEV, worldX)) {
+            return INFDEV;
+        }
+        if (games.brennan.dungeontrain.worldgen.legacy.LegacyBands.isInBand(overworld,
+                games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind.FLOATING, worldX)) {
+            return FLOATING;
         }
         if (StacksBand.isInBand(overworld, worldX)) {
             return STACKS;

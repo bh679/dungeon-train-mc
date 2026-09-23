@@ -89,15 +89,21 @@ final class LegacyBandLayoutTest {
     }
 
     @Test
-    @DisplayName("a second span follows the first in kind order and grows the period by its own slot")
-    void farLandsFollowsBeta() {
-        LegacySpan far = new LegacySpan(LegacyBandKind.FAR_LANDS, 60, 20, 100);
-        WorldGenCycle c = cycle(BETA, far);
-        assertEquals(cycle(BETA).period() + 60 + 2 * 20 + 100, c.period());
-        assertNull(c.legacyAt(x(400 + 59)));
-        assertEquals(LegacyBandKind.FAR_LANDS, c.legacyAt(x(400 + 60)).kind());
-        assertTrue(c.isInLegacyBand(LegacyBandKind.FAR_LANDS, x(400 + 80)));
-        assertFalse(c.isInLegacyBand(LegacyBandKind.BETA, x(400 + 80)));
+    @DisplayName("a second span follows the first; core progress runs 0 → 1 across the core")
+    void secondSpanAndProgress() {
+        LegacySpan alpha = new LegacySpan(LegacyBandKind.ALPHA, 100, 50, 200);
+        WorldGenCycle c = cycle(BETA, alpha);
+        assertEquals(preLegacy().period() + 2 * (100 + 2 * 50 + 200), c.period());
+        // Alpha's slot starts where Beta's ends (local 400).
+        assertNull(c.legacyAt(x(499)));
+        assertEquals(LegacyBandKind.ALPHA, c.legacyAt(x(500)).kind());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.ALPHA, x(550)));
+        assertEquals(0.0, c.legacyCoreProgress(LegacyBandKind.ALPHA, x(550)));
+        assertEquals(0.5, c.legacyCoreProgress(LegacyBandKind.ALPHA, x(650)));
+        assertTrue(c.legacyCoreProgress(LegacyBandKind.ALPHA, x(760)) > 1.0);     // exit fade
+        assertTrue(c.legacyCoreProgress(LegacyBandKind.ALPHA, x(410)) < 0.0);     // lead gap
+        assertTrue(Double.isNaN(c.legacyCoreProgress(LegacyBandKind.ALPHA, x(399)))); // Beta's slot
+        assertTrue(Double.isNaN(cycle(BETA).legacyCoreProgress(LegacyBandKind.ALPHA, x(550))));
     }
 
     @Test
@@ -121,5 +127,71 @@ final class LegacyBandLayoutTest {
         assertEquals(1.0, c.legacyAt(x(100)).ramp());
         assertEquals(1.0, c.legacyAt(x(299)).ramp());
         assertNull(c.legacyAt(x(300)));
+    }
+
+    @Test
+    @DisplayName("Skylands follows Beta: its slot starts where Beta's ends, and disabling it leaves Beta's layout")
+    void skylandsFollowsBeta() {
+        LegacySpan sky = new LegacySpan(LegacyBandKind.SKYLANDS, 80, 30, 120);
+        WorldGenCycle both = cycle(BETA, sky);
+        assertEquals(cycle(BETA).period() + 80 + 2 * 30 + 120, both.period());
+        long skyStart = BETA.totalLen(); // 400
+        assertFalse(both.isInLegacyApproachOrBand(LegacyBandKind.SKYLANDS, x(skyStart - 1)));
+        assertTrue(both.isInLegacyApproachOrBand(LegacyBandKind.SKYLANDS, x(skyStart)));
+        assertNull(both.legacyAt(x(skyStart + 79)));
+        assertEquals(LegacyBandKind.SKYLANDS, both.legacyAt(x(skyStart + 80 + 30)).kind());
+        assertTrue(both.isInLegacyBand(LegacyBandKind.SKYLANDS, x(skyStart + 80 + 30)));
+        assertTrue(both.isInLegacyBand(LegacyBandKind.BETA, x(200)));
+        WorldGenCycle skyOff = cycle(BETA, new LegacySpan(LegacyBandKind.SKYLANDS, 80, 30, 0));
+        assertEquals(cycle(BETA).period(), skyOff.period());
+        assertNull(skyOff.legacyAt(x(skyStart + 80 + 30)));
+    }
+
+    @Test
+    @DisplayName("a second band's slot starts right after the first band's exit fade")
+    void twoSpansChain() {
+        LegacySpan infdev = new LegacySpan(LegacyBandKind.INFDEV, 60, 20, 100);
+        WorldGenCycle c = cycle(BETA, infdev);
+        assertEquals(preLegacy().period() + 400 + 60 + 2 * 20 + 100, c.period());
+        assertEquals(LegacyBandKind.BETA, c.legacyAt(x(399)).kind());
+        assertNull(c.legacyAt(x(400)));                   // Infdev lead gap
+        assertNull(c.legacyAt(x(459)));
+        assertEquals(LegacyBandKind.INFDEV, c.legacyAt(x(460)).kind());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.INFDEV, x(480)));
+        assertTrue(c.isInLegacyBand(LegacyBandKind.INFDEV, x(579)));
+        assertFalse(c.isInLegacyBand(LegacyBandKind.INFDEV, x(580)));
+        assertFalse(c.isInLegacyApproachOrBand(LegacyBandKind.INFDEV, x(399)));
+        assertTrue(c.isInLegacyApproachOrBand(LegacyBandKind.INFDEV, x(400)));
+        assertNull(c.legacyAt(x(600)));                   // next cycle
+    }
+
+    @Test
+    @DisplayName("progress runs 0 → 1 from entry-fade start to exit-fade end, -1 outside")
+    void progress() {
+        WorldGenCycle c = cycle(BETA);
+        assertEquals(-1.0, c.legacyProgress(LegacyBandKind.BETA, x(99)));
+        assertEquals(0.0, c.legacyProgress(LegacyBandKind.BETA, x(100)));
+        assertEquals(0.5, c.legacyProgress(LegacyBandKind.BETA, x(250)));
+        assertTrue(c.legacyProgress(LegacyBandKind.BETA, x(399)) > 0.99);
+        assertEquals(-1.0, c.legacyProgress(LegacyBandKind.BETA, x(400)));
+        assertEquals(-1.0, c.legacyProgress(LegacyBandKind.INFDEV, x(250)));   // disabled / absent band
+    }
+
+    @Test
+    @DisplayName("Indev floating comes last; disabled bands before it collapse so it starts where Beta ends")
+    void floatingAfterDisabledBands() {
+        LegacySpan floating = new LegacySpan(LegacyBandKind.FLOATING, 80, 30, 150);
+        WorldGenCycle c = cycle(BETA, new LegacySpan(LegacyBandKind.SKYLANDS, 80, 30, 0),
+                new LegacySpan(LegacyBandKind.ALPHA, 80, 30, 0), new LegacySpan(LegacyBandKind.INFDEV, 80, 30, 0),
+                floating);
+        assertEquals(cycle(BETA).period() + 80 + 2 * 30 + 150, c.period());
+        long start = BETA.totalLen(); // 400
+        assertFalse(c.isInLegacyApproachOrBand(LegacyBandKind.FLOATING, x(start - 1)));
+        assertTrue(c.isInLegacyApproachOrBand(LegacyBandKind.FLOATING, x(start)));
+        assertNull(c.legacyAt(x(start + 79)));
+        assertEquals(LegacyBandKind.FLOATING, c.legacyAt(x(start + 80)).kind());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.FLOATING, x(start + 80 + 30)));
+        assertTrue(c.isInLegacyBand(LegacyBandKind.FLOATING, x(start + 80 + 30 + 149)));
+        assertFalse(c.isInLegacyBand(LegacyBandKind.FLOATING, x(start + 80 + 30 + 150)));
     }
 }

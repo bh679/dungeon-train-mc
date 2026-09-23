@@ -40,6 +40,8 @@
         "OVERWORLD",
         "UPSIDE_DOWN",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ]
     },

@@ -20,9 +20,17 @@ public final class PerlinNoise {
     private final double offsetZ;
 
     public PerlinNoise(Random random) {
-        this.offsetX = random.nextDouble() * 256.0D;
-        this.offsetY = random.nextDouble() * 256.0D;
-        this.offsetZ = random.nextDouble() * 256.0D;
+        this(random, true);
+    }
+
+    /**
+     * {@code useOffset = false} is the Classic/Indev form: no random lattice origin (and no origin doubles
+     * drawn from {@code random}), only the shuffle.
+     */
+    public PerlinNoise(Random random, boolean useOffset) {
+        this.offsetX = useOffset ? random.nextDouble() * 256.0D : 0.0D;
+        this.offsetY = useOffset ? random.nextDouble() * 256.0D : 0.0D;
+        this.offsetZ = useOffset ? random.nextDouble() * 256.0D : 0.0D;
         for (int i = 0; i < 256; i++) {
             permutations[i] = i;
         }
@@ -84,6 +92,16 @@ public final class PerlinNoise {
             }
             return;
         }
+        sampleGrid3D(arr, x, y, z, sizeX, sizeY, sizeZ, scaleX, scaleY, scaleZ, amplitude);
+    }
+
+    /**
+     * The 3-D grid path on its own, whatever {@code sizeY} is. Alpha's array sampler always took this path
+     * (Beta later special-cased {@code sizeY == 1} to the 2-D form), so Alpha's flat 2-D noises — scale,
+     * depth, beaches — go through here too.
+     */
+    public void sampleGrid3D(double[] arr, double x, double y, double z, int sizeX, int sizeY, int sizeZ,
+                             double scaleX, double scaleY, double scaleZ, double amplitude) {
         double inv = 1.0D / amplitude;
         int ndx = 0;
         int flagY = -1;
@@ -128,6 +146,34 @@ public final class PerlinNoise {
         }
     }
 
+    /**
+     * {@link #sample} on the {@code z = 0} plane, as the Classic/Indev 2-D sampler reads it. With no Z origin
+     * offset (the {@code useOffset = false} form) the Z fade weight is exactly 0, so the far Z face never
+     * contributes and is skipped — same value, half the gradients. Falls back to the full sample otherwise.
+     */
+    public double samplePlane(double x, double y) {
+        if (offsetZ != 0.0D) return sample(x, y, 0.0D);
+        x += offsetX;
+        y += offsetY;
+        int floorX = LegacyMath.floor(x);
+        int floorY = LegacyMath.floor(y);
+        int cx = floorX & 0xFF;
+        int cy = floorY & 0xFF;
+        x -= floorX;
+        y -= floorY;
+        double u = fade(x);
+        double v = fade(y);
+        int a = permutations[cx] + cy;
+        int aa = permutations[a];
+        int ab = permutations[a + 1];
+        int b = permutations[cx + 1] + cy;
+        int ba = permutations[b];
+        int bb = permutations[b + 1];
+        return lerp(v,
+                lerp(u, grad(permutations[aa], x, y, 0.0D), grad(permutations[ba], x - 1.0D, y, 0.0D)),
+                lerp(u, grad(permutations[ab], x, y - 1.0D, 0.0D), grad(permutations[bb], x - 1.0D, y - 1.0D, 0.0D)));
+    }
+
     /** The old 2-D sampler (Y fixed at the lattice origin), scaled by {@code 1/amplitude}. */
     public double sampleXZ(double x, double z, double amplitude) {
         x += offsetX;
@@ -147,6 +193,47 @@ public final class PerlinNoise {
         double l0 = lerp(u, grad(permutations[aa], x, 0.0D, z), grad(permutations[ba], x - 1.0D, 0.0D, z));
         double l1 = lerp(u, grad(permutations[aa + 1], x, 0.0D, z - 1.0D), grad(permutations[ba + 1], x - 1.0D, 0.0D, z - 1.0D));
         return lerp(w, l0, l1) / amplitude;
+    }
+
+    /**
+     * Vanilla's improved-noise sample with the Y-lattice clamp ({@code yScale}/{@code yMax}), which the
+     * Alpha and Infdev density samplers use. {@code yScale == 0} is the flat (2-D) form.
+     */
+    public double sampleXYZ(double x, double y, double z, double yScale, double yMax) {
+        x += offsetX;
+        y += offsetY;
+        z += offsetZ;
+        int floorX = LegacyMath.floor(x);
+        int floorY = LegacyMath.floor(y);
+        int floorZ = LegacyMath.floor(z);
+        x -= floorX;
+        y -= floorY;
+        z -= floorZ;
+        double yOffset = 0.0D;
+        if (yScale != 0.0D) {
+            yOffset = yMax >= 0.0D && yMax < y ? yMax : y;
+            yOffset = LegacyMath.floor(yOffset / yScale + 1.0000000116860974E-7D) * yScale;
+        }
+        double oy = y - yOffset;
+        int cx = floorX & 0xFF;
+        int cy = floorY & 0xFF;
+        int cz = floorZ & 0xFF;
+        int a = permutations[cx] + cy;
+        int aa = permutations[a] + cz;
+        int ab = permutations[a + 1] + cz;
+        int b = permutations[cx + 1] + cy;
+        int ba = permutations[b] + cz;
+        int bb = permutations[b + 1] + cz;
+        double u = fade(x);
+        double v = fade(y);
+        double w = fade(z);
+        return lerp(w,
+                lerp(v,
+                        lerp(u, grad(permutations[aa], x, oy, z), grad(permutations[ba], x - 1.0D, oy, z)),
+                        lerp(u, grad(permutations[ab], x, oy - 1.0D, z), grad(permutations[bb], x - 1.0D, oy - 1.0D, z))),
+                lerp(v,
+                        lerp(u, grad(permutations[aa + 1], x, oy, z - 1.0D), grad(permutations[ba + 1], x - 1.0D, oy, z - 1.0D)),
+                        lerp(u, grad(permutations[ab + 1], x, oy - 1.0D, z - 1.0D), grad(permutations[bb + 1], x - 1.0D, oy - 1.0D, z - 1.0D))));
     }
 
     private static double lerp(double t, double a, double b) {

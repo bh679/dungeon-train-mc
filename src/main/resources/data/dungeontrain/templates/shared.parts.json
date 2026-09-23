@@ -9,6 +9,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "stone"
@@ -21,6 +23,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "stone"
@@ -33,6 +37,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "stone"
@@ -106,6 +112,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "deepdark"
@@ -118,6 +126,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "deepdark"
@@ -130,6 +140,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "deepdark"
@@ -205,6 +217,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "stone"
@@ -218,6 +232,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "stone"
@@ -270,6 +286,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "deepdark"
@@ -283,6 +301,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "deepdark"
@@ -455,6 +475,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "stone"
@@ -468,6 +490,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "stone"
@@ -481,6 +505,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "stone"
@@ -495,6 +521,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "stone"
@@ -546,6 +574,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "deepdark"
@@ -559,6 +589,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "deepdark"
@@ -572,6 +604,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "deepdark"
@@ -586,6 +620,8 @@
         "VOID",
         "END",
         "BETA",
+        "ALPHA",
+        "INFDEV",
         "FAR_LANDS"
       ],
       "stage": "deepdark"
