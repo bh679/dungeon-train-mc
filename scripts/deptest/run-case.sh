@@ -11,6 +11,8 @@
 #   fp moon    Fast Paintings + its Moonlight library (third-party required deps)
 #   bn bclib wover wunder  BetterNether: New Dawn + its three libraries (third-party required deps)
 #   be         BetterEnd: New Dawn (shares BetterNether's three libraries)
+#   wwoo cristel bop tb glitch  WWOO + Cristel Lib, Biomes O' Plenty + TerraBlender + GlitchCore
+#              (second-lap overworld mods, third-party required deps)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
 #   pmob-old   PlayerMob BELOW the declared floor (downloaded, see README)
 #
@@ -74,6 +76,11 @@ resolve() {
     wover)    cached "maven.modrinth/worldweaver-neoforge"  "$(prop worldweaver_version)" ;;
     wunder)   cached "maven.modrinth/wunderlib-neoforge"    "$(prop wunderlib_version)" ;;
     be)       cached "maven.modrinth/betterend-neoforge"    "$(prop betterend_version)" ;;
+    wwoo)     cached "maven.modrinth/wwoo"            "$(prop wwoo_version)" ;;
+    cristel)  cached "maven.modrinth/cristel-lib"     "$(prop cristellib_version)" ;;
+    bop)      cached "maven.modrinth/biomes-o-plenty" "$(prop biomesoplenty_version)" ;;
+    tb)       cached "maven.modrinth/terrablender"    "$(prop terrablender_version)" ;;
+    glitch)   cached "maven.modrinth/glitchcore"      "$(prop glitchcore_version)" ;;
     # Hybrid siblings — ALSO jarJar'd inside the DT jar. Present as top-level jars they model the
     # CurseForge-app install (nested copy must be skipped); absent they model Modrinth/manual.
     kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;
