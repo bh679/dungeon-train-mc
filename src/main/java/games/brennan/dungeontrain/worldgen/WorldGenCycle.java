@@ -985,23 +985,24 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * End sky/light ramp {@code 0..1} over the <b>second half</b> of the spheres band core: {@code 0}
-     * across the entry fade and the first half (normal overworld sky), climbing {@code 0 → 1} over
-     * {@code fade} blocks from the core midpoint, held at {@code 1}, then back {@code 1 → 0} over the
-     * core's last {@code fade} blocks — so the overworld sky is fully restored exactly where the terrain
-     * snaps back to overworld at the core's hard far edge. {@code fade} is clamped to a quarter of the
-     * core; {@code 0} is a hard switch. Pure (seed-independent), like the other ramps.
+     * End sky/light ramp {@code 0..1} over the <b>later part</b> of the spheres band core: {@code 0}
+     * across the entry fade and the core's first {@code startBlocks} (normal overworld sky), climbing
+     * {@code 0 → 1} over {@code fade} blocks from there, held at {@code 1}, then back {@code 1 → 0} over
+     * the core's last {@code fade} blocks — so the overworld sky is fully restored exactly where the
+     * terrain snaps back to overworld at the core's hard far edge. {@code startBlocks} at or past the
+     * core length means no End sky at all; {@code fade} is clamped to a quarter of the core and {@code 0}
+     * is a hard switch. Pure (seed-independent), like the other ramps.
      */
-    public double spheresEndSkyRamp(int worldX, int fade) {
+    public double spheresEndSkyRamp(int worldX, int startBlocks, int fade) {
         long len = spheresLen();
         if (len <= 0L) return 0.0;
         long ls = spheresOffset(worldX);
         if (ls < 0L) return 0.0;
-        long mid = len / 2L;
-        if (ls < mid) return 0.0;
+        long start = Math.max(0L, startBlocks);
+        if (ls < start) return 0.0;
         long f = Math.max(0L, Math.min(fade, len / 4L));
         if (f == 0L) return 1.0;
-        double in = (double) (ls - mid + 1L) / f;             // entering: reaches 1 after f blocks
+        double in = (double) (ls - start + 1L) / f;           // entering: reaches 1 after f blocks
         double out = (double) (len - ls) / f;                 // leaving: 1/f on the core's last column
         return Math.min(1.0, Math.min(in, out));
     }

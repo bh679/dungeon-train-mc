@@ -61,15 +61,17 @@ public final class ClientVoidBand {
     }
 
     /**
-     * End-sky intensity over the second half of the spheres band ({@link WorldGenCycle#spheresEndSkyRamp}),
+     * End-sky intensity over the later part of the spheres band ({@link WorldGenCycle#spheresEndSkyRamp}),
      * so the whole End atmosphere keyed off {@link #endSkyIntensityAt} — sky, fog, lighting, clouds,
-     * music — takes over midway through the spheres and hands back to overworld as the band ends.
+     * music — takes over {@code spheresEndSkyStartBlocks} into the spheres and hands back to overworld
+     * as the band ends.
      */
     private static double spheresEndSkyIntensity(WorldGenCycle cycle, int worldX) {
         if (!DungeonTrainCommonConfig.isSpheresEnabled() || !DungeonTrainCommonConfig.isSpheresEndSkyEnabled()) {
             return 0.0;
         }
-        return cycle.spheresEndSkyRamp(worldX, DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks());
+        return cycle.spheresEndSkyRamp(worldX, DungeonTrainCommonConfig.getSpheresEndSkyStartBlocks(),
+                DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks());
     }
 
     /** End-sky intensity {@code t} crosses this point: below it the Overworld track plays, above it the End track. */

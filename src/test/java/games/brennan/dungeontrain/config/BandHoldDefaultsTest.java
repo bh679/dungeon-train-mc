@@ -13,18 +13,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BandHoldDefaultsTest {
 
     @Test
-    @DisplayName("the chuncks, spheres and stacks bands default to 8000 blocks")
-    void bandsDefaultTo8000() {
+    @DisplayName("the chuncks and stacks bands default to 8000 blocks, the spheres band to 12000")
+    void bandHoldDefaults() {
         assertEquals(8000, DungeonTrainCommonConfig.DEFAULT_CHUNCKS_HOLD_BLOCKS);
-        assertEquals(8000, DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS);
+        assertEquals(12000, DungeonTrainCommonConfig.DEFAULT_SPHERES_HOLD_BLOCKS);
         assertEquals(8000, DungeonTrainCommonConfig.DEFAULT_STACKS_HOLD_BLOCKS);
+    }
+
+    @Test
+    @DisplayName("the v2 -> v3 migration moves exactly the spheres length v2 shipped")
+    void spheresV2IsTheLengthV2Shipped() {
+        assertEquals(8000, DungeonTrainCommonConfig.SPHERES_V2_HOLD_BLOCKS,
+                "the v2 -> v3 migration moves exactly this spheres hold to 12000");
     }
 
     @Test
     @DisplayName("the migration moves exactly the previously shipped length")
     void legacyIsThePreviouslyShippedLength() {
         assertEquals(5000, DungeonTrainCommonConfig.LEGACY_BAND_HOLD_BLOCKS,
-                "the v1 -> v2 migration moves exactly this value to 8000; change it and every "
+                "the v1 -> v2 migration moves exactly this value to the new defaults; change it and every "
                         + "existing install is either missed or has a deliberate choice overwritten");
     }
 
@@ -35,8 +42,8 @@ class BandHoldDefaultsTest {
     @Test
     @DisplayName("a config migration ships to carry the longer bands to existing installs")
     void aMigrationShipsForTheNewDefaults() {
-        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 2,
-                "CURRENT_CONFIG_VERSION must be at least 2, or the v1 -> v2 band-hold step never runs");
+        assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION >= 3,
+                "CURRENT_CONFIG_VERSION must be at least 3, or the v2 -> v3 spheres-hold step never runs");
         assertTrue(DungeonTrainCommonConfig.CURRENT_CONFIG_VERSION
                         <= DungeonTrainCommonConfig.MAX_CONFIG_VERSION,
                 "outside the spec's range the value fails validation and NeoForge silently resets "
