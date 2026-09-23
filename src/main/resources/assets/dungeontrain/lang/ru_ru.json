@@ -1212,6 +1212,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s сущностей",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s контейнеров",
   "gui.dungeontrain.editor_screen.sheet.lights": "Источники света",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Уровень света %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Добыча",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Пул добычи",

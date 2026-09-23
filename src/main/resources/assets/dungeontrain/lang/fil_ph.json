@@ -1145,6 +1145,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entity",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s container",
   "gui.dungeontrain.editor_screen.sheet.lights": "Mga ilaw",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Antas ng liwanag %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Loot",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Loot pool",

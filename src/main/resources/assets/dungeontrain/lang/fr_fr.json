@@ -1176,6 +1176,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entités",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s conteneurs",
   "gui.dungeontrain.editor_screen.sheet.lights": "Lumières",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Niveau de lumière %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Butin",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Réserve de butin",

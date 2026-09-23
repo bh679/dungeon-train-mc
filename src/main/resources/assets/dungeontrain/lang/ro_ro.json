@@ -1607,6 +1607,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entități",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s containere",
   "gui.dungeontrain.editor_screen.sheet.lights": "Lumini",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Nivel de lumină %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Pradă",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Rezervă de pradă",

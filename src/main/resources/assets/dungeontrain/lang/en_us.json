@@ -1574,6 +1574,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entities",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s containers",
   "gui.dungeontrain.editor_screen.sheet.lights": "Lights",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Light level %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Loot",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Loot pool",

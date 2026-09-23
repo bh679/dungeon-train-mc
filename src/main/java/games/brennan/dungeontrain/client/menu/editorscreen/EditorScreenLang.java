@@ -186,6 +186,7 @@ public final class EditorScreenLang {
     public static final String SHEET_ENTITIES = PREFIX + "sheet.entities";
     public static final String SHEET_CONTAINERS = PREFIX + "sheet.containers";
     public static final String SHEET_LIGHTS = PREFIX + "sheet.lights";
+    public static final String SHEET_LIGHT_LEVEL = PREFIX + "sheet.light_level";
     public static final String SHEET_LOOT = PREFIX + "sheet.loot";
     public static final String SHEET_LOOT_NONE = PREFIX + "sheet.loot_none";
     public static final String SHEET_LOOT_POOL = PREFIX + "sheet.loot_source.pool";

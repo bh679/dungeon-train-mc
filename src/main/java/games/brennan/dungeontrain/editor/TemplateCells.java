@@ -4,11 +4,15 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,13 +75,32 @@ public final class TemplateCells {
         return palettes.isEmpty() ? List.of() : palettes.get(0).blocks();
     }
 
-    /** How many of {@code cells} give off light — torches, lanterns, glowstone, lit furnaces. */
-    public static int lightCount(Map<BlockPos, BlockState> cells) {
-        int lights = 0;
+    /** One kind of light-giving block, how many there are, and the brightest level among them. */
+    public record LightBlock(Block block, int count, int emission) {}
+
+    /**
+     * The blocks in {@code cells} that give off light — torches, lanterns, glowstone, lit furnaces —
+     * one entry per kind, most numerous first (brightest breaking ties). A kind is the item a block
+     * is placed from, so a wall torch and a standing torch are one torch.
+     */
+    public static List<LightBlock> lights(Map<BlockPos, BlockState> cells) {
+        Map<Object, Block> first = new LinkedHashMap<>();
+        Map<Object, int[]> tallies = new LinkedHashMap<>();
         for (BlockState state : cells.values()) {
-            if (state.getLightEmission() > 0) lights++;
+            int emission = state.getLightEmission();
+            if (emission <= 0) continue;
+            Block block = state.getBlock();
+            Object kind = block.asItem() == Items.AIR ? block : block.asItem();
+            first.putIfAbsent(kind, block);
+            int[] tally = tallies.computeIfAbsent(kind, k -> new int[2]);
+            tally[0]++;
+            tally[1] = Math.max(tally[1], emission);
         }
-        return lights;
+        List<LightBlock> out = new ArrayList<>(tallies.size());
+        tallies.forEach((kind, t) -> out.add(new LightBlock(first.get(kind), t[0], t[1])));
+        out.sort(Comparator.comparingInt(LightBlock::count).reversed()
+            .thenComparing(Comparator.comparingInt(LightBlock::emission).reversed()));
+        return List.copyOf(out);
     }
 
     /** What a template's block-entity NBT adds up to: how many blocks carry any, and how many hold items. */

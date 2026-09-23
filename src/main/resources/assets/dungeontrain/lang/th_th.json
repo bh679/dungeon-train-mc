@@ -1145,6 +1145,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s เอนทิตี",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s ภาชนะ",
   "gui.dungeontrain.editor_screen.sheet.lights": "แสงไฟ",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "ระดับแสง %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "ของรางวัล",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "พูลของรางวัล",

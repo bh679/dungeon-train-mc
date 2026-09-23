@@ -519,6 +519,7 @@
       "gui.dungeontrain.editor_screen.sheet.entities",
       "gui.dungeontrain.editor_screen.sheet.containers",
       "gui.dungeontrain.editor_screen.sheet.lights",
+      "gui.dungeontrain.editor_screen.sheet.light_level",
       "gui.dungeontrain.editor_screen.sheet.loot",
       "gui.dungeontrain.editor_screen.sheet.loot_none",
       "gui.dungeontrain.editor_screen.sheet.loot_source.pool",

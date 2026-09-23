@@ -1176,6 +1176,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s Entitäten",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s Behälter",
   "gui.dungeontrain.editor_screen.sheet.lights": "Lichter",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Lichtstufe %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Beute",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Beutepool",

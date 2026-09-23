@@ -1176,6 +1176,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entidades",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s contenedores",
   "gui.dungeontrain.editor_screen.sheet.lights": "Luces",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Nivel de luz %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Botín",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Reserva de botín",

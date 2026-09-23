@@ -1176,6 +1176,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entidades",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s contentores",
   "gui.dungeontrain.editor_screen.sheet.lights": "Luzes",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Nível de luz %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Saque",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Conjunto de saque",

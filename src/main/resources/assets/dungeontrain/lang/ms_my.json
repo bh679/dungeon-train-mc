@@ -1145,6 +1145,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entiti",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s bekas",
   "gui.dungeontrain.editor_screen.sheet.lights": "Lampu",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Tahap cahaya %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Rampasan",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Kumpulan rampasan",

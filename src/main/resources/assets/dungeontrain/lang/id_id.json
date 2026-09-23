@@ -1145,6 +1145,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entitas",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s wadah",
   "gui.dungeontrain.editor_screen.sheet.lights": "Lampu",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Tingkat cahaya %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Jarahan",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Kumpulan jarahan",

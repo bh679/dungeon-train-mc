@@ -1145,6 +1145,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "63d31825a13fd6ea"},
   "gui.dungeontrain.editor_screen.sheet.containers": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "231538b1e1a655dc"},
   "gui.dungeontrain.editor_screen.sheet.lights": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "18786940ec538ef1"},
+  "gui.dungeontrain.editor_screen.sheet.light_level": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "e1de0aef9de26edb"},
   "gui.dungeontrain.editor_screen.sheet.loot": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "839e7c03533466b1"},
   "gui.dungeontrain.editor_screen.sheet.loot_none": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "bda050585a00f0f6"},
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5c05ea148f0012bc"},

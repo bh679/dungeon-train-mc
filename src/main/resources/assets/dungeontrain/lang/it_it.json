@@ -1176,6 +1176,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s entità",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s contenitori",
   "gui.dungeontrain.editor_screen.sheet.lights": "Luci",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Livello di luce %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Bottino",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Pool di bottino",

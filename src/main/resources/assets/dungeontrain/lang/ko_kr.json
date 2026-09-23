@@ -1145,6 +1145,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "엔티티 %s개",
   "gui.dungeontrain.editor_screen.sheet.containers": "컨테이너 %s개",
   "gui.dungeontrain.editor_screen.sheet.lights": "조명",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "밝기 %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "전리품",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "전리품 풀",

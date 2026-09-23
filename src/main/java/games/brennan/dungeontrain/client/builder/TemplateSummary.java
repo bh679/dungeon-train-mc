@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.editor.TemplateCells;
 import games.brennan.dungeontrain.editor.TemplateLoot;
 import net.minecraft.core.Vec3i;
 
@@ -13,16 +14,18 @@ import java.util.List;
  * @param blockEntities blocks carrying NBT (signs, spawners, containers, ...)
  * @param containers    the subset of those holding an item list
  * @param entities      entities saved with the template
- * @param lights        blocks that give off light
+ * @param lights        the blocks that give off light, one entry per type, most numerous first
  * @param loot          the blocks that hand out loot, most valuable first
  */
 public record TemplateSummary(int blocks, Vec3i declaredSize, int blockEntities, int containers,
-                              int entities, int lights, List<TemplateLoot.LootBlock> loot) {
+                              int entities, List<TemplateCells.LightBlock> lights,
+                              List<TemplateLoot.LootBlock> loot) {
 
     /** The empty sheet — a template that could not be read. */
-    public static final TemplateSummary NONE = new TemplateSummary(0, Vec3i.ZERO, 0, 0, 0, 0, List.of());
+    public static final TemplateSummary NONE = new TemplateSummary(0, Vec3i.ZERO, 0, 0, 0, List.of(), List.of());
 
     public TemplateSummary {
+        lights = lights == null ? List.of() : List.copyOf(lights);
         loot = loot == null ? List.of() : List.copyOf(loot);
     }
 

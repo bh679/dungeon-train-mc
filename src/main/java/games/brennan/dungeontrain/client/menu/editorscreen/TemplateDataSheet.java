@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
+import games.brennan.dungeontrain.editor.TemplateCells;
 import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorRosterPacket;
@@ -17,6 +18,7 @@ import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,9 +45,8 @@ public final class TemplateDataSheet {
     static final int LINE_H = 10;
     static final int CELL_GAP = 3;
     static final int LABEL_GAP = 6;
-    /** An item icon's side, and the height of a line that carries them. */
-    static final int ICON = 16;
-    static final int ICON_LINE_H = 18;
+    /** An item icon's side: shrunk from a slot's 16 so an icon row is a text row's height. */
+    static final int ICON = 9;
     /** The corner mark on an icon that may not spawn — a variant's loot block. */
     static final int VARIANT_MARK = 0xFFB070FF;
 
@@ -84,16 +85,21 @@ public final class TemplateDataSheet {
      * @param action null for plain text, which is never clickable
      * @param on     whether the cell reads as set — a phase that is off is dimmed; an icon that is
      *               off is one that may not spawn, and carries a corner mark
-     * @param icon   drawn in place of {@code text} when present, with its count as a stack's is
+     * @param icon   drawn before {@code text} when present; an icon cell's text is its count, or
+     *               empty for one
      */
     public record Cell(String text, Action action, boolean on, String tooltip, ItemStack icon) {
         public static Cell plain(String text) {
             return new Cell(text, null, true, null, null);
         }
 
-        /** An item icon, read-only; {@code text} is what it stands for, kept for tests and narration. */
-        public static Cell icon(ItemStack icon, String text, boolean on) {
-            return new Cell(text, null, on, null, icon);
+        /**
+         * An item icon with its count beside it (none for a single one), read-only. The count is
+         * normal-size text rather than a slot's corner number, which would be unreadable on an
+         * icon this small.
+         */
+        public static Cell icon(ItemStack icon, int count, boolean on) {
+            return new Cell(count > 1 ? Integer.toString(count) : "", null, on, null, icon.copyWithCount(1));
         }
 
         public Cell(String text, Action action, boolean on) {
@@ -109,12 +115,7 @@ public final class TemplateDataSheet {
         }
     }
 
-    /** One labelled row; {@code height} is {@link #LINE_H} unless it carries icons. */
-    public record Line(String label, List<Cell> cells, int height) {
-        public Line(String label, List<Cell> cells) {
-            this(label, cells, cells.stream().anyMatch(Cell::isIcon) ? ICON_LINE_H : LINE_H);
-        }
-
+    public record Line(String label, List<Cell> cells) {
         public static Line of(String label, String value) {
             return new Line(label, List.of(Cell.plain(value)));
         }
@@ -278,11 +279,30 @@ public final class TemplateDataSheet {
         return new Line(label, List.copyOf(cells));
     }
 
-    /** Lights: how many blocks give off light. */
+    /**
+     * Lights: every light-giving block type as its icon and count, most numerous first; hover names
+     * it and its light level. A build with none reads 0.
+     */
     static Line lightsLine(TemplateSummary summary, String pending) {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_LIGHTS);
         if (summary == null || summary.isEmpty()) return Line.of(label, pending);
-        return Line.of(label, Integer.toString(summary.lights()));
+        if (summary.lights().isEmpty()) return Line.of(label, "0");
+        List<Cell> cells = new ArrayList<>(summary.lights().size());
+        for (TemplateCells.LightBlock light : summary.lights()) {
+            String name = light.block().getName().getString();
+            String tooltip = (light.count() > 1 ? name + " ×" + light.count() : name) + "\n"
+                + EditorScreenLang.text(EditorScreenLang.SHEET_LIGHT_LEVEL, light.emission());
+            cells.add(blockCell(light.block(), light.count(), true, name).withTooltip(tooltip));
+        }
+        return new Line(label, List.copyOf(cells));
+    }
+
+    /** A block as its item icon with a count, or as its name when it has no item form (wall torches do). */
+    private static Cell blockCell(Block block, int count, boolean on,
+                                  String name) {
+        ItemStack stack = new ItemStack(block.asItem());
+        if (stack.isEmpty()) return new Cell(count > 1 ? name + " " + count : name, null, on);
+        return Cell.icon(stack, count, on);
     }
 
     /**
@@ -305,12 +325,8 @@ public final class TemplateDataSheet {
 
     private static Cell lootCell(TemplateLoot.LootBlock loot) {
         String name = loot.block().getName().getString();
-        ItemStack stack = new ItemStack(loot.block().asItem(), Math.max(1, loot.count()));
-        Cell cell = stack.isEmpty()
-            // A block with no item form (rare for a container) still gets a place in the row.
-            ? new Cell(name, null, !loot.isVariant())
-            : Cell.icon(stack, name, !loot.isVariant());
-        return cell.withTooltip(lootTooltip(loot, name));
+        return blockCell(loot.block(), loot.count(), !loot.isVariant(), name)
+            .withTooltip(lootTooltip(loot, name));
     }
 
     /** Name, where its loot comes from, its chance if a variant, its best items, and its value. */
@@ -489,22 +505,17 @@ public final class TemplateDataSheet {
         List<Placed> placed = new ArrayList<>();
         int y = r.y() + 1;
         for (Line line : lines) {
-            if (y + Math.max(font.lineHeight, line.height() - 2) > r.bottom()) break;
+            if (y + font.lineHeight > r.bottom()) break;
             // A continuation line has no label, so it has no label column to clear either — it
             // starts at the left edge and gets the whole width for the row it carries on.
             int x = line.label().isEmpty() ? r.x() + 2 : r.x() + 2 + labelW + LABEL_GAP;
-            // Text on a line made tall by icons sits on the icons' middle.
-            int textY = y + (line.height() - LINE_H) / 2;
             for (Cell cell : line.cells()) {
-                int w = cell.isIcon() ? ICON : font.width(cell.text());
+                int w = cellWidth(cell, font);
                 if (x + w > r.right()) break;
-                InventoryEditorLayout.Rect rect = cell.isIcon()
-                    ? new InventoryEditorLayout.Rect(x, y, ICON, ICON)
-                    : new InventoryEditorLayout.Rect(x, textY - 1, w + 2, LINE_H);
-                placed.add(new Placed(cell, rect));
+                placed.add(new Placed(cell, new InventoryEditorLayout.Rect(x, y - 1, w + 2, LINE_H)));
                 x += w + CELL_GAP;
             }
-            y += line.height();
+            y += LINE_H;
         }
         return placed;
     }
@@ -515,9 +526,9 @@ public final class TemplateDataSheet {
         for (Line l : lines) labelW = Math.max(labelW, font.width(l.label()));
         int y = r.y() + 1;
         for (Line line : lines) {
-            if (y + Math.max(font.lineHeight, line.height() - 2) > r.bottom()) break;
-            g.drawString(font, line.label(), r.x() + 2, y + (line.height() - LINE_H) / 2, LABEL, false);
-            y += line.height();
+            if (y + font.lineHeight > r.bottom()) break;
+            g.drawString(font, line.label(), r.x() + 2, y, LABEL, false);
+            y += LINE_H;
         }
         for (int i = 0; i < placed.size(); i++) {
             Placed p = placed.get(i);
@@ -540,15 +551,29 @@ public final class TemplateDataSheet {
         }
     }
 
-    /** An icon cell: the item as a slot draws it, count included, and the variant mark when off. */
+    /** How wide a cell is drawn: its text, or an icon plus the count beside it. */
+    static int cellWidth(Cell cell, Font font) {
+        if (!cell.isIcon()) return font.width(cell.text());
+        return cell.text().isEmpty() ? ICON : ICON + 1 + font.width(cell.text());
+    }
+
+    /** An icon cell: the item shrunk to {@link #ICON}, its count beside it, the variant mark when off. */
     private static void drawIcon(GuiGraphics g, Font font, InventoryEditorLayout.Rect rect, Cell cell) {
-        g.renderItem(cell.icon(), rect.x(), rect.y());
-        g.renderItemDecorations(font, cell.icon(), rect.x(), rect.y());
+        int x = rect.x();
+        int y = rect.y();
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(ICON / 16f, ICON / 16f, 1f);
+        g.renderItem(cell.icon(), 0, 0);
+        g.pose().popPose();
+        if (!cell.text().isEmpty()) {
+            g.drawString(font, cell.text(), x + ICON + 1, y + 1, VALUE, false);
+        }
         if (!cell.on()) {
             // Above the item's own z so the mark is not hidden behind a block model.
             g.pose().pushPose();
             g.pose().translate(0, 0, 300);
-            g.fill(rect.x(), rect.y(), rect.x() + 4, rect.y() + 4, VARIANT_MARK);
+            g.fill(x, y, x + 3, y + 3, VARIANT_MARK);
             g.pose().popPose();
         }
     }

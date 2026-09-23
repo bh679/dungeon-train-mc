@@ -172,13 +172,20 @@ final class TemplateLootTest {
     }
 
     @Test
-    @DisplayName("lights counts every block that gives off light")
+    @DisplayName("lights: one entry per kind, wall and standing torch together, most numerous first")
     void lights() {
         Map<BlockPos, BlockState> cells = Map.of(
             new BlockPos(0, 0, 0), Blocks.TORCH.defaultBlockState(),
-            new BlockPos(1, 0, 0), Blocks.LANTERN.defaultBlockState(),
-            new BlockPos(2, 0, 0), Blocks.STONE.defaultBlockState(),
-            new BlockPos(3, 0, 0), Blocks.GLOWSTONE.defaultBlockState());
-        assertEquals(3, TemplateCells.lightCount(cells));
+            new BlockPos(1, 0, 0), Blocks.WALL_TORCH.defaultBlockState(),
+            new BlockPos(2, 0, 0), Blocks.LANTERN.defaultBlockState(),
+            new BlockPos(3, 0, 0), Blocks.STONE.defaultBlockState(),
+            new BlockPos(4, 0, 0), Blocks.TORCH.defaultBlockState());
+        List<TemplateCells.LightBlock> lights = TemplateCells.lights(cells);
+        assertEquals(2, lights.size());
+        assertEquals(Items.TORCH, lights.get(0).block().asItem());
+        assertEquals(3, lights.get(0).count());
+        assertEquals(14, lights.get(0).emission());
+        assertEquals(Blocks.LANTERN, lights.get(1).block());
+        assertEquals(1, lights.get(1).count());
     }
 }

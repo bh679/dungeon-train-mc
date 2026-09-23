@@ -1207,6 +1207,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s jednostek",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s pojemników",
   "gui.dungeontrain.editor_screen.sheet.lights": "Światła",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Poziom światła %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Łup",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Pula łupów",

@@ -3678,6 +3678,15 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.sheet.light_level": {
+    "1": {
+      "label": "the block's light level, 1 to 15",
+      "examples": [
+        "14",
+        "15"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": {
     "1": {
       "label": "the id of the loot prefab an empty container of this block type may roll",

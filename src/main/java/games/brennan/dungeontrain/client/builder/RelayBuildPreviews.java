@@ -199,7 +199,7 @@ public final class RelayBuildPreviews {
                 entry = new Entry(cells.isEmpty() ? null : BuilderTileMesh.bake(cells),
                     new TemplateSummary(cells.size(), template.getSize(), tally.blockEntities(),
                         tally.containers(), TemplateCells.entityCount(pending.template()),
-                        TemplateCells.lightCount(cells), TemplateLoot.of(template)));
+                        TemplateCells.lights(cells), TemplateLoot.of(template)));
             } catch (RuntimeException e) {
                 // A build this version cannot read keeps its slate rather than taking the screen down.
                 entry = new Entry(null, TemplateSummary.NONE);

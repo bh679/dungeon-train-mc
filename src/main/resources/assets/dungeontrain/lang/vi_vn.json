@@ -1145,6 +1145,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "%s thực thể",
   "gui.dungeontrain.editor_screen.sheet.containers": "%s vật chứa",
   "gui.dungeontrain.editor_screen.sheet.lights": "Đèn",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "Mức sáng %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "Chiến lợi phẩm",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "Nhóm chiến lợi phẩm",

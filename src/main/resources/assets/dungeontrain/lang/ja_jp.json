@@ -1145,6 +1145,7 @@
   "gui.dungeontrain.editor_screen.sheet.entities": "エンティティ %s体",
   "gui.dungeontrain.editor_screen.sheet.containers": "コンテナ %s個",
   "gui.dungeontrain.editor_screen.sheet.lights": "光源",
+  "gui.dungeontrain.editor_screen.sheet.light_level": "明るさ %s",
   "gui.dungeontrain.editor_screen.sheet.loot": "戦利品",
   "gui.dungeontrain.editor_screen.sheet.loot_none": "—",
   "gui.dungeontrain.editor_screen.sheet.loot_source.pool": "戦利品プール",
