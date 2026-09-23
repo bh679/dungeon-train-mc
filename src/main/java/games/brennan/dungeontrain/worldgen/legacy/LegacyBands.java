@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.legacy.alpha.AlphaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
@@ -129,6 +130,33 @@ public final class LegacyBands {
             if (beta == null || beta.seed() != seed) beta = new BetaTerrain(seed);
             return beta;
         }
+    }
+
+    private static volatile AlphaTerrain alpha;
+
+    /** The Alpha generator for {@code seed}; one shared, immutable instance per seed. */
+    public static AlphaTerrain alpha(long seed) {
+        AlphaTerrain a = alpha;
+        if (a != null && a.seed() == seed) return a;
+        synchronized (LegacyBands.class) {
+            if (alpha == null || alpha.seed() != seed) alpha = new AlphaTerrain(seed);
+            return alpha;
+        }
+    }
+
+    /**
+     * True if Alpha chunk column {@code chunkX} is in Alpha's winter mode: the last
+     * {@link LegacyBandConfig#alphaWinterShare()} of the core, and the exit fade after it. Decided at the
+     * chunk's west edge so terrain, biome and snow all agree for the chunk.
+     */
+    public static boolean isAlphaWinter(WorldGenCycle cycle, int chunkX) {
+        return isWinter(cycle.legacyCoreProgress(LegacyBandKind.ALPHA, chunkX << 4), LegacyBandConfig.alphaWinterShare());
+    }
+
+    /** Pure winter test on a core progress (see {@link WorldGenCycle#legacyCoreProgress}). Package-private for tests. */
+    static boolean isWinter(double progress, double share) {
+        if (Double.isNaN(progress) || share <= 0.0D) return false;
+        return progress >= 1.0D - share;
     }
 
     // splitmix64-style finaliser, uniform in [0,1) per (seed, chunkX, chunkZ); same idiom as StacksBand.
