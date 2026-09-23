@@ -79,6 +79,7 @@ public final class LegacyBiomes {
         if (kind == null) return null;
         return switch (kind) {
             case BETA -> c.beta().get(LegacyBands.beta(c.seed()).climate().biome(blockX, blockZ));
+            case SKYLANDS -> c.beta().get(BetaBiome.SKY);
             case ALPHA -> LegacyBands.isAlphaWinter(cycle, blockX >> 4) ? c.alphaWinter() : c.alpha();
             case INFDEV -> c.infdev();
         };

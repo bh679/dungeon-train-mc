@@ -76,7 +76,8 @@
         "SPHERES",
         "BETA",
         "ALPHA",
-        "INFDEV"
+        "INFDEV",
+        "SKYLANDS"
       ]
     },
     {
@@ -87,7 +88,8 @@
         "VOID",
         "UPSIDE_DOWN",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "SKYLANDS"
       ]
     },
     {

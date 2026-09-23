@@ -7,7 +7,9 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.alpha.AlphaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
 import games.brennan.dungeontrain.worldgen.legacy.infdev.InfdevPopulator;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -18,7 +20,7 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import org.slf4j.Logger;
 
 /**
- * Worldgen feature that runs an old generator's own decoration step in a legacy-band chunk — for Beta,
+ * Worldgen feature that runs an old generator's own decoration step in a legacy-band chunk — for Beta and Skylands,
  * {@link BetaPopulator}: lakes, dungeons, ores, trees, flowers, reeds, cacti, springs and snow, all as
  * Beta placed them. Vanilla's biome features are skipped in those chunks
  * ({@code ChunkGeneratorDecorationMixin}), so this is the chunk's whole decoration.
@@ -45,11 +47,14 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
         long genT0 = GenProfiler.t0();
         try {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
+            BetaWorld world = new BetaWorld(level, LegacyBands.yOffset(kind, serverLevel));
             switch (kind) {
-                case BETA -> BetaPopulator.populate(level, LegacyBands.beta(seed), chunk.x, chunk.z);
+                case BETA -> BetaPopulator.populate(world, LegacyBands.beta(seed), chunk.x, chunk.z);
+                case SKYLANDS -> BetaPopulator.populate(world, seed, LegacyBands.sky(seed).forestNoise(),
+                        BetaBiome.SKY, null, chunk.x, chunk.z);
                 case ALPHA -> AlphaPopulator.populate(level, LegacyBands.alpha(seed), chunk.x, chunk.z,
                         LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), chunk.x));
-                case INFDEV -> InfdevPopulator.populate(level, LegacyBands.infdev(seed),
+                case INFDEV -> InfdevPopulator.populate(world, LegacyBands.infdev(seed),
                         LegacyBands.infdevVersion(WorldGenCycle.fromConfig(), chunk.x), chunk.x, chunk.z);
             }
             return true;

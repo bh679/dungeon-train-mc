@@ -9,7 +9,6 @@ package games.brennan.dungeontrain.worldgen.legacy.infdev;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaFeatures;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTrees;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
-import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -31,9 +30,8 @@ public final class InfdevPopulator {
 
     private InfdevPopulator() {}
 
-    public static void populate(WorldGenLevel level, InfdevTerrain terrain, InfdevVersion version,
+    public static void populate(BetaWorld world, InfdevTerrain terrain, InfdevVersion version,
                                 int chunkX, int chunkZ) {
-        BetaWorld world = new BetaWorld(level);
         long seed = terrain.seed();
         int bx = chunkX * 16;
         int bz = chunkZ * 16;

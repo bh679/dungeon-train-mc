@@ -83,7 +83,8 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "INFDEV"
+      "INFDEV",
+      "SKYLANDS"
     ],
     "mode": "bedrock_lock",
     "builder": {
@@ -174,7 +175,8 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "INFDEV"
+      "INFDEV",
+      "SKYLANDS"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
   },
@@ -392,7 +394,8 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "INFDEV"
+      "INFDEV",
+      "SKYLANDS"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
   },

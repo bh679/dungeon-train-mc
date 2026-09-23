@@ -22,6 +22,7 @@ public final class LegacyBandConfig {
     public record Defaults(boolean enabled, int hold, int fade, int leadGap) {}
 
     public static final Defaults BETA_DEFAULTS = new Defaults(true, 6000, 480, 3000);
+    public static final Defaults SKYLANDS_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults ALPHA_DEFAULTS = new Defaults(true, 6000, 480, 3000);
     public static final Defaults INFDEV_DEFAULTS = new Defaults(true, 8000, 480, 3000);
 
@@ -39,6 +40,7 @@ public final class LegacyBandConfig {
     private static Defaults defaultsFor(LegacyBandKind kind) {
         return switch (kind) {
             case BETA -> BETA_DEFAULTS;
+            case SKYLANDS -> SKYLANDS_DEFAULTS;
             case ALPHA -> ALPHA_DEFAULTS;
             case INFDEV -> INFDEV_DEFAULTS;
         };
@@ -47,6 +49,7 @@ public final class LegacyBandConfig {
     private static String label(LegacyBandKind kind) {
         return switch (kind) {
             case BETA -> "Beta 1.7.3";
+            case SKYLANDS -> "Skylands";
             case ALPHA -> "Alpha 1.1.2";
             case INFDEV -> "Infdev";
         };
