@@ -17958,6 +17958,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "spheres-dimension-progression",
+      "version": "0.934.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "The far reaches get stranger still",
+      "summary": "Past the last place that made sense, the world keeps changing the longer you ride \u2014 borrowing from places you would never expect to see from a train, with more waiting to be found the deeper you go.",
+      "highlights": [
+        "One of the stranger stretches of the journey now runs longer.",
+        "What drifts past the window changes as you go, and the sky changes with it.",
+        "Keep riding: there is more to find out there than there used to be."
+      ],
+      "pr": 1494,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
