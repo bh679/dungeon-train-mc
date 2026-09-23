@@ -18000,6 +18000,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "modrinth-installs-fast-paintings-moonlight",
+      "version": "0.935.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Modrinth app now installs Fast Paintings and Moonlight",
+      "summary": "Installing Dungeon Train through the Modrinth app now pulls in Fast Paintings and Moonlight automatically, the same as on CurseForge. Before this, Modrinth players hit a missing-mods screen and had to add both by hand.",
+      "highlights": [],
+      "pr": 1500,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
