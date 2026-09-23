@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Pure tests for the per-chunk old/modern roll behind the legacy fades. */
@@ -37,5 +38,18 @@ final class LegacyBandsTest {
         }
         double share = (double) old / total;
         assertTrue(Math.abs(share - 0.3) < 0.03, "share " + share);
+    }
+
+    @Test
+    @DisplayName("Alpha winter: the last share of the core and the exit fade, never outside the slot")
+    void winterShare() {
+        assertFalse(LegacyBands.isWinter(0.49, 0.5));
+        assertTrue(LegacyBands.isWinter(0.5, 0.5));
+        assertTrue(LegacyBands.isWinter(1.2, 0.5));       // exit fade
+        assertFalse(LegacyBands.isWinter(-0.1, 0.5));     // lead gap / entry fade
+        assertFalse(LegacyBands.isWinter(Double.NaN, 1.0));
+        assertFalse(LegacyBands.isWinter(0.99, 0.0));
+        assertFalse(LegacyBands.isWinter(1.5, 0.0));
+        assertTrue(LegacyBands.isWinter(0.0, 1.0));
     }
 }

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBlocks;
-import games.brennan.dungeontrain.worldgen.legacy.beta.BetaChunk;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -43,15 +43,17 @@ public final class LegacyChunkWriter {
     /** Generate {@code kind}'s terrain for {@code chunk} and write it, filling stone down to {@code floorY}. */
     public static void fill(LegacyBandKind kind, long seed, ChunkAccess chunk, int floorY) {
         switch (kind) {
-            case BETA -> write(chunk, LegacyBands.beta(seed).generate(chunk.getPos().x, chunk.getPos().z), floorY);
+            case BETA -> write(chunk, LegacyBands.beta(seed).generate(chunk.getPos().x, chunk.getPos().z).blocks(), floorY);
+            case ALPHA -> write(chunk, LegacyBands.alpha(seed).generate(chunk.getPos().x, chunk.getPos().z,
+                    LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), chunk.getPos().x)), floorY);
         }
     }
 
-    static void write(ChunkAccess chunk, BetaChunk column, int floorY) {
+    /** Write a Beta-layout column ({@link BetaTerrain#index}, {@link BetaBlocks} ids) — Alpha shares it. */
+    static void write(ChunkAccess chunk, byte[] blocks, int floorY) {
         int minY = Math.max(chunk.getMinBuildHeight(), floorY);
         int maxY = chunk.getMaxBuildHeight() - 1;
         BlockState stone = STATES[BetaBlocks.STONE];
-        byte[] blocks = column.blocks();
         for (int y = minY; y <= maxY; y++) {
             int oldY = y - Y_OFFSET;
             if (oldY >= BetaTerrain.HEIGHT) break;
