@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "dungeontrain:overworld",
+    "dungeontrain:overworld_y16",
+    "dungeontrain:overworld_y-16",
+    "dungeontrain:overworld_y48",
+    "dungeontrain:overworld_y-48",
+    "dungeontrain:overworld_y64",
+    "dungeontrain:overworld_y-64"
+  ]
+}

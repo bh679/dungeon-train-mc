@@ -493,6 +493,15 @@ dependencies {
     implementation "maven.modrinth:fast-paintings:${fastpaintings_version}"
     implementation "maven.modrinth:moonlight:${moonlight_version}"
 
+    // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
+    // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
+    // except TerraBlender, whose Regions API builds the BoP-only biome source.
+    implementation "maven.modrinth:wwoo:${wwoo_version}"
+    implementation "maven.modrinth:cristel-lib:${cristellib_version}"
+    implementation "maven.modrinth:biomes-o-plenty:${biomesoplenty_version}"
+    implementation "maven.modrinth:terrablender:${terrablender_version}"
+    implementation "maven.modrinth:glitchcore:${glitchcore_version}"
+
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -759,6 +768,9 @@ tasks.register('generateModMetadata', ProcessResources) {
         // Third-party required deps (Fast Paintings + its Moonlight library) — floors only.
         fastpaintings_min_version         : fastpaintings_min_version,
         moonlight_min_version             : moonlight_min_version,
+        // Second-lap overworld mods — floors only.
+        wwoo_min_version                  : wwoo_min_version,
+        biomesoplenty_min_version         : biomesoplenty_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

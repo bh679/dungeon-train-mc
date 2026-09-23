@@ -671,6 +671,25 @@ public record WorldGenCycle(long startX, int owGap,
         return Math.floorDiv((long) worldX - startX + phaseShift, p);
     }
 
+    /** Which plain-overworld gap a world-X sits in — see {@link #overworldGapAt}. */
+    public enum OverworldGap { LEAD, POST_NETHER, NONE }
+
+    /**
+     * The overworld gap on either side of the Nether band at this world-X: {@link OverworldGap#LEAD} for
+     * the {@code owGap} that opens every cycle and runs into the Nether band, {@link OverworldGap#POST_NETHER}
+     * for the {@code owGap} between the Nether band and the End band, {@link OverworldGap#NONE} anywhere
+     * else (a special band, the later lead gaps, or before the anchor). Pair with {@link #cycleIndex}
+     * for the lap. The lead gap of cycle 0 is shortened by {@code phaseShift} — it starts at the anchor.
+     */
+    public OverworldGap overworldGapAt(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return OverworldGap.NONE;
+        if (o < netherStart()) return OverworldGap.LEAD;
+        long postStart = netherStart() + netherLen();
+        if (o >= postStart && o < endStart()) return OverworldGap.POST_NETHER;
+        return OverworldGap.NONE;
+    }
+
     /**
      * Which repeat of the world-gen cycle this world-X falls in (0-based), or {@code -1} before the
      * anchor / when the cycle is empty. Drives {@link games.brennan.dungeontrain.worldgen.density.EndCoreBiomes}'s

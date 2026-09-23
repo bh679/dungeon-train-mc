@@ -4,12 +4,14 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
+import net.minecraft.world.level.biome.TheEndBiomeSource;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import org.slf4j.Logger;
 
@@ -30,6 +32,9 @@ import org.slf4j.Logger;
  *
  * <p>A missing End dimension or any sampling error falls back to the {@code the_end} holder — biome
  * generation is never broken.</p>
+ *
+ * <p>Biomes O' Plenty adds End biomes to the live End source through TerraBlender; a BoP pick is
+ * re-sampled from a private, vanilla End source, so BoP stays confined to its overworld stretch.</p>
  */
 public final class EndCoreBiomes {
 
@@ -47,11 +52,21 @@ public final class EndCoreBiomes {
     private final BiomeSource endBiomeSource; // nullable — fallback-only when the End is absent
     private final Climate.Sampler endSampler; // nullable alongside the source
     private final Holder<Biome> fallback;     // minecraft:the_end
+    private final BiomeSource vanillaEnd;     // nullable — BoP picks then fall back to the_end
 
-    private EndCoreBiomes(BiomeSource endBiomeSource, Climate.Sampler endSampler, Holder<Biome> fallback) {
+    private EndCoreBiomes(BiomeSource endBiomeSource, Climate.Sampler endSampler, Holder<Biome> fallback,
+                          BiomeSource vanillaEnd) {
         this.endBiomeSource = endBiomeSource;
         this.endSampler = endSampler;
         this.fallback = fallback;
+        this.vanillaEnd = vanillaEnd;
+    }
+
+    /** The live End source's biome, with a Biomes O' Plenty pick swapped for the vanilla one. */
+    private Holder<Biome> sample(int qx, int qy, int qz) {
+        Holder<Biome> biome = endBiomeSource.getNoiseBiome(qx, qy, qz, endSampler);
+        if (!OverworldStretchBiomes.isBop(biome)) return biome;
+        return vanillaEnd != null ? vanillaEnd.getNoiseBiome(qx, qy, qz, endSampler) : fallback;
     }
 
     /**
@@ -67,11 +82,10 @@ public final class EndCoreBiomes {
             if (passIndex <= 0L) {
                 // The real End's main-island check is a fixed radius around its origin — sampling
                 // the origin itself always resolves to `the_end`, matching a player's first arrival.
-                return endBiomeSource.getNoiseBiome(0, SAMPLE_QUART_Y, 0, endSampler);
+                return sample(0, SAMPLE_QUART_Y, 0);
             }
             int sampleX = worldX + OUTER_SAMPLE_OFFSET_X + (int) Math.min(Integer.MAX_VALUE, passIndex * (long) OUTER_PASS_STEP);
-            return endBiomeSource.getNoiseBiome(
-                    QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ), endSampler);
+            return sample(QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ));
         } catch (Throwable t) {
             SAMPLE_ERRORS.error(LOGGER,
                     "[DungeonTrain] End core biome sample failed; baking the_end fallback instead", t);
@@ -96,10 +110,9 @@ public final class EndCoreBiomes {
     public Holder<Biome> islandFieldBiomeAt(int worldX, int endY, int worldZ) {
         if (endBiomeSource == null || endSampler == null) return fallback;
         try {
-            return endBiomeSource.getNoiseBiome(
-                    QuartPos.fromBlock(worldX + OUTER_SAMPLE_OFFSET_X),
+            return sample(QuartPos.fromBlock(worldX + OUTER_SAMPLE_OFFSET_X),
                     QuartPos.fromBlock(endY),
-                    QuartPos.fromBlock(worldZ), endSampler);
+                    QuartPos.fromBlock(worldZ));
         } catch (Throwable t) {
             SAMPLE_ERRORS.error(LOGGER,
                     "[DungeonTrain] End island-field biome sample failed; baking the_end fallback instead", t);
@@ -123,15 +136,16 @@ public final class EndCoreBiomes {
                 // debug: legitimately fires during earlier dimensions' Load events (End not yet
                 // created) before the End-Load republish upgrades the snapshot.
                 LOGGER.debug("[DungeonTrain] No End dimension — End core stays single-biome (the_end)");
-                return new EndCoreBiomes(null, null, fallback);
+                return new EndCoreBiomes(null, null, fallback, null);
             }
             ChunkGenerator gen = end.getChunkSource().getGenerator();
             BiomeSource src = gen.getBiomeSource();
             Climate.Sampler sampler = end.getChunkSource().randomState().sampler();
-            return new EndCoreBiomes(src, sampler, fallback);
+            BiomeSource vanillaEnd = TheEndBiomeSource.create(server.registryAccess().lookupOrThrow(Registries.BIOME));
+            return new EndCoreBiomes(src, sampler, fallback, vanillaEnd);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to capture End biome source; core stays single-biome", t);
-            return new EndCoreBiomes(null, null, fallback);
+            return new EndCoreBiomes(null, null, fallback, null);
         }
     }
 }
