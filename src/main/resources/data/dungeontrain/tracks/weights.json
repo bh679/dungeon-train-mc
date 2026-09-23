@@ -6,7 +6,8 @@
       "VOID",
       "END",
       "BETA",
-      "ALPHA"
+      "ALPHA",
+      "INFDEV"
     ]
   },
   "nethertracks": {
@@ -22,7 +23,8 @@
       "VOID",
       "END",
       "BETA",
-      "ALPHA"
+      "ALPHA",
+      "INFDEV"
     ]
   },
   "sleepside": {
@@ -32,7 +34,8 @@
       "VOID",
       "END",
       "BETA",
-      "ALPHA"
+      "ALPHA",
+      "INFDEV"
     ]
   }
 }

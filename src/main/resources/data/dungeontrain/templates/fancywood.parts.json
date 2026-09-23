@@ -55,7 +55,8 @@
         "VOID",
         "END",
         "BETA",
-        "ALPHA"
+        "ALPHA",
+        "INFDEV"
       ],
       "stage": "stone"
     },
@@ -167,7 +168,8 @@
         "VOID",
         "END",
         "BETA",
-        "ALPHA"
+        "ALPHA",
+        "INFDEV"
       ],
       "stage": "deepdark"
     },
@@ -313,7 +315,8 @@
         "VOID",
         "END",
         "BETA",
-        "ALPHA"
+        "ALPHA",
+        "INFDEV"
       ],
       "stage": "stone"
     },
@@ -341,7 +344,8 @@
         "VOID",
         "END",
         "BETA",
-        "ALPHA"
+        "ALPHA",
+        "INFDEV"
       ],
       "stage": "stone"
     },
@@ -413,7 +417,8 @@
         "VOID",
         "END",
         "BETA",
-        "ALPHA"
+        "ALPHA",
+        "INFDEV"
       ],
       "stage": "deepdark"
     },
@@ -425,7 +430,8 @@
         "VOID",
         "END",
         "BETA",
-        "ALPHA"
+        "ALPHA",
+        "INFDEV"
       ],
       "stage": "deepdark"
     },

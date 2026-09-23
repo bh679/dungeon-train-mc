@@ -24,11 +24,14 @@ import java.util.Map;
 public final class LegacyBiomes {
 
     private record Context(BiomeSource overworldSource, long seed, Map<BetaBiome, Holder<Biome>> beta,
-                           Holder<Biome> alpha, Holder<Biome> alphaWinter) {}
+                           Holder<Biome> alpha, Holder<Biome> alphaWinter, Holder<Biome> infdev) {}
 
     /** Alpha had no biome map: one vanilla biome for the band, a snowy one for its winter half. */
     private static final String ALPHA_BIOME = "forest";
     private static final String ALPHA_WINTER_BIOME = "snowy_plains";
+
+    /** Infdev generated one temperate biome everywhere; plains is its closest overworld match. */
+    private static final String INFDEV_BIOME = "plains";
 
     private static volatile Context current;
 
@@ -48,7 +51,7 @@ public final class LegacyBiomes {
             if (holder != null) beta.put(b, holder);
         }
         current = new Context(source, data.getGenerationSeed(), beta,
-                find(source, ALPHA_BIOME), find(source, ALPHA_WINTER_BIOME));
+                find(source, ALPHA_BIOME), find(source, ALPHA_WINTER_BIOME), find(source, INFDEV_BIOME));
     }
 
     /** The overworld source's own holder for {@code minecraft:<path>}, or null if it never generates it. */
@@ -78,6 +81,7 @@ public final class LegacyBiomes {
             case BETA -> c.beta().get(LegacyBands.beta(c.seed()).climate().biome(blockX, blockZ));
             case SKYLANDS -> c.beta().get(BetaBiome.SKY);
             case ALPHA -> LegacyBands.isAlphaWinter(cycle, blockX >> 4) ? c.alphaWinter() : c.alpha();
+            case INFDEV -> c.infdev();
         };
     }
 }

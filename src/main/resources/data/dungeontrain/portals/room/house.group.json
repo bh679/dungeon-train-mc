@@ -15,6 +15,7 @@
         "SPHERES",
         "BETA",
         "ALPHA",
+        "INFDEV",
         "SKYLANDS"
       ]
     },
@@ -35,6 +36,7 @@
         "SPHERES",
         "BETA",
         "ALPHA",
+        "INFDEV",
         "SKYLANDS"
       ]
     },
@@ -122,6 +124,7 @@
         "SPHERES",
         "BETA",
         "ALPHA",
+        "INFDEV",
         "SKYLANDS"
       ]
     },
@@ -147,7 +150,8 @@
         "NETHER",
         "UPSIDE_DOWN",
         "BETA",
-        "ALPHA"
+        "ALPHA",
+        "INFDEV"
       ]
     },
     {

@@ -83,6 +83,7 @@
       "SPHERES",
       "BETA",
       "ALPHA",
+      "INFDEV",
       "SKYLANDS"
     ],
     "mode": "bedrock_lock",
@@ -99,7 +100,8 @@
       "VOID",
       "END",
       "BETA",
-      "ALPHA"
+      "ALPHA",
+      "INFDEV"
     ],
     "mode": "endless_open/single:minecraft:stone"
   },
@@ -111,7 +113,8 @@
       "VOID",
       "END",
       "BETA",
-      "ALPHA"
+      "ALPHA",
+      "INFDEV"
     ],
     "mode": "bedrock_lock"
   },
@@ -172,6 +175,7 @@
       "SPHERES",
       "BETA",
       "ALPHA",
+      "INFDEV",
       "SKYLANDS"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
@@ -390,6 +394,7 @@
       "SPHERES",
       "BETA",
       "ALPHA",
+      "INFDEV",
       "SKYLANDS"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
