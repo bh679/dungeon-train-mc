@@ -306,6 +306,12 @@ public final class DungeonTrainCommonConfig {
     public static final double MIN_SPHERES_SURFACE_BIAS = 0.0;
     public static final double MAX_SPHERES_SURFACE_BIAS = 1.0;
     public static final double DEFAULT_SPHERES_SURFACE_BIAS = 0.65;
+    /** Whether the second half of the spheres band core renders the End sky + End lighting. */
+    public static final boolean DEFAULT_SPHERES_END_SKY_SECOND_HALF = true;
+    /** Crossfade span (blocks) at each edge of the spheres End-sky second half. */
+    public static final int MIN_SPHERES_END_SKY_FADE_BLOCKS = 0;
+    public static final int MAX_SPHERES_END_SKY_FADE_BLOCKS = 2000;
+    public static final int DEFAULT_SPHERES_END_SKY_FADE_BLOCKS = 150;
 
     /**
      * Stacks band — a sixth looping phase, appended after the spheres band with a long plain-overworld
@@ -433,6 +439,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue SPHERES_CENTER_MIN_Y;
     public static final ModConfigSpec.IntValue SPHERES_CENTER_MAX_Y;
     public static final ModConfigSpec.DoubleValue SPHERES_SURFACE_BIAS;
+    public static final ModConfigSpec.BooleanValue SPHERES_END_SKY_SECOND_HALF;
+    public static final ModConfigSpec.IntValue SPHERES_END_SKY_FADE_BLOCKS;
     public static final ModConfigSpec.BooleanValue STACKS_ENABLED;
     public static final ModConfigSpec.IntValue STACKS_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue STACKS_FADE_BLOCKS;
@@ -499,6 +507,8 @@ public final class DungeonTrainCommonConfig {
         SPHERES_CENTER_MIN_Y = pair.getLeft().spheresCenterMinY;
         SPHERES_CENTER_MAX_Y = pair.getLeft().spheresCenterMaxY;
         SPHERES_SURFACE_BIAS = pair.getLeft().spheresSurfaceBias;
+        SPHERES_END_SKY_SECOND_HALF = pair.getLeft().spheresEndSkySecondHalf;
+        SPHERES_END_SKY_FADE_BLOCKS = pair.getLeft().spheresEndSkyFadeBlocks;
         STACKS_ENABLED = pair.getLeft().stacksEnabled;
         STACKS_HOLD_BLOCKS = pair.getLeft().stacksHoldBlocks;
         STACKS_FADE_BLOCKS = pair.getLeft().stacksFadeBlocks;
@@ -866,6 +876,18 @@ public final class DungeonTrainCommonConfig {
                         "natural surface cap with rock beneath.")
                 .defineInRange("spheresSurfaceBias", DEFAULT_SPHERES_SURFACE_BIAS,
                         MIN_SPHERES_SURFACE_BIAS, MAX_SPHERES_SURFACE_BIAS);
+        ModConfigSpec.BooleanValue spheresEndSkySecondHalf = b
+                .comment("When true, the second half of the spheres band renders the End sky, fog and lighting (the",
+                        "same End atmosphere as the disintegration band); the first half keeps the normal overworld",
+                        "sky and day/night lighting. The overworld sky returns as the band ends. Client-side visual",
+                        "only. Default true.")
+                .define("spheresEndSkySecondHalf", DEFAULT_SPHERES_END_SKY_SECOND_HALF);
+        ModConfigSpec.IntValue spheresEndSkyFadeBlocks = b
+                .comment("Crossfade span (blocks) between the overworld and End sky at the spheres band midpoint, and",
+                        "back again over the last blocks of the band. Clamped to a quarter of spheresHoldBlocks.",
+                        "0 = hard switch. Default 150.")
+                .defineInRange("spheresEndSkyFadeBlocks", DEFAULT_SPHERES_END_SKY_FADE_BLOCKS,
+                        MIN_SPHERES_END_SKY_FADE_BLOCKS, MAX_SPHERES_END_SKY_FADE_BLOCKS);
         ModConfigSpec.BooleanValue stacksEnabled = b
                 .comment("Stacks phase — part of the single repeating world-gen cycle, appended after the spheres band",
                         "with a long plain-overworld lead-in. Along +X it is mostly void; scattered chunks each hold a",
@@ -916,6 +938,7 @@ public final class DungeonTrainCommonConfig {
                 spheresEnabled, spheresHoldBlocks, spheresFadeBlocks, spheresLeadGapBlocks,
                 spheresCellBlocks, spheresDensity, spheresMinRadius, spheresMaxRadius,
                 spheresCenterMinY, spheresCenterMaxY, spheresSurfaceBias,
+                spheresEndSkySecondHalf, spheresEndSkyFadeBlocks,
                 stacksEnabled, stacksHoldBlocks, stacksFadeBlocks, stacksLeadGapBlocks, stacksDensity,
                 breakBlocksOnContact, backerNameWeight, catchUpBurstMode);
     }
@@ -1312,6 +1335,16 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? SPHERES_SURFACE_BIAS.get() : DEFAULT_SPHERES_SURFACE_BIAS;
     }
 
+    /** Whether the spheres band's second half renders the End sky + lighting; falls back to the hardcoded default pre-load. */
+    public static boolean isSpheresEndSkyEnabled() {
+        return isLoaded() ? SPHERES_END_SKY_SECOND_HALF.get() : DEFAULT_SPHERES_END_SKY_SECOND_HALF;
+    }
+
+    /** Crossfade span (blocks) at each edge of the spheres End-sky half; falls back to the hardcoded default pre-load. */
+    public static int getSpheresEndSkyFadeBlocks() {
+        return isLoaded() ? SPHERES_END_SKY_FADE_BLOCKS.get() : DEFAULT_SPHERES_END_SKY_FADE_BLOCKS;
+    }
+
     /** Whether the stacks band is active; falls back to the hardcoded default pre-load. */
     public static boolean isStacksEnabled() {
         return isLoaded() ? STACKS_ENABLED.get() : DEFAULT_STACKS_ENABLED;
@@ -1390,6 +1423,8 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue spheresCenterMinY,
                           ModConfigSpec.IntValue spheresCenterMaxY,
                           ModConfigSpec.DoubleValue spheresSurfaceBias,
+                          ModConfigSpec.BooleanValue spheresEndSkySecondHalf,
+                          ModConfigSpec.IntValue spheresEndSkyFadeBlocks,
                           ModConfigSpec.BooleanValue stacksEnabled,
                           ModConfigSpec.IntValue stacksHoldBlocks,
                           ModConfigSpec.IntValue stacksFadeBlocks,

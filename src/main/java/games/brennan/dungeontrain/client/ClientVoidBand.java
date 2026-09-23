@@ -51,9 +51,25 @@ public final class ClientVoidBand {
      */
     public static double endSkyIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
-        if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return 0.0;
-        return WorldGenCycle.fromConfig().endSkyRamp(
-                (int) Math.floor(worldX), DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks());
+        int x = (int) Math.floor(worldX);
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        double end = DungeonTrainCommonConfig.isDisintegrationEnabled()
+                ? cycle.endSkyRamp(x, DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks())
+                : 0.0;
+        // The two bands never overlap, so max() just picks whichever one the camera is in.
+        return Math.max(end, spheresEndSkyIntensity(cycle, x));
+    }
+
+    /**
+     * End-sky intensity over the second half of the spheres band ({@link WorldGenCycle#spheresEndSkyRamp}),
+     * so the whole End atmosphere keyed off {@link #endSkyIntensityAt} — sky, fog, lighting, clouds,
+     * music — takes over midway through the spheres and hands back to overworld as the band ends.
+     */
+    private static double spheresEndSkyIntensity(WorldGenCycle cycle, int worldX) {
+        if (!DungeonTrainCommonConfig.isSpheresEnabled() || !DungeonTrainCommonConfig.isSpheresEndSkyEnabled()) {
+            return 0.0;
+        }
+        return cycle.spheresEndSkyRamp(worldX, DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks());
     }
 
     /** End-sky intensity {@code t} crosses this point: below it the Overworld track plays, above it the End track. */
