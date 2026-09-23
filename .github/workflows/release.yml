@@ -263,6 +263,11 @@ jobs:
             bclib-neoforge(required)
             worldweaver-neoforge(required)
             wunderlib-neoforge(required)
+            wwoo(required)
+            cristel-lib(required)
+            biomes-o-plenty(required)
+            terrablender(required)
+            glitchcore(required)
             # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix are ABSENT by design:
             # on Modrinth they stay jarJar'd inside the DT jar; only CurseForge treats them as
             # separate mods. (keep-trim's Modrinth listing is also still in review — mc-publish
@@ -288,6 +293,11 @@ jobs:
             bclib-neoforge(required)
             worldweaver-neoforge(required)
             wunderlib-neoforge(required)
+            william-wythers-overhauled-overworld(required)
+            cristel-lib(required)
+            biomes-o-plenty(required)
+            terrablender-neoforge(required)
+            glitchcore(required)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)

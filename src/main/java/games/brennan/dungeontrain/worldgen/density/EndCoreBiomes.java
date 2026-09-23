@@ -85,8 +85,10 @@ public final class EndCoreBiomes {
             }
             int sampleX = (int) Math.min(Integer.MAX_VALUE, EndBandStyle.endSampleX(worldX, passIndex));
             if (betterEndPasses && EndBandStyle.isBetterEndPass(passIndex)) {
-                return endBiomeSource.getNoiseBiome(
+                Holder<Biome> live = endBiomeSource.getNoiseBiome(
                         QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ), endSampler);
+                // Biomes O' Plenty adds End biomes through TerraBlender; keep those to its overworld stretch.
+                if (!OverworldStretchBiomes.isBop(live)) return live;
             }
             return vanilla.biomeAtQuart(QuartPos.fromBlock(sampleX), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ));
         } catch (Throwable t) {

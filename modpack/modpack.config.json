@@ -105,6 +105,62 @@
       "modrinth_version": "BnjVBHVl"
     },
     {
+      "name": "William Wythers' Overhauled Overworld",
+      "slug": "william-wythers-overhauled-overworld",
+      "project_id": 921022,
+      "file_id": 8160022,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "wwoo_min_version",
+      "version": "2.6.7",
+      "modrinth_project": "wwoo",
+      "modrinth_version": "sU7oaRZv"
+    },
+    {
+      "name": "Cristel Lib",
+      "slug": "cristel-lib",
+      "project_id": 856996,
+      "file_id": 8241767,
+      "required": true,
+      "dependency_type": "required",
+      "version": "3.1.7",
+      "modrinth_project": "cristel-lib",
+      "modrinth_version": "Sduz0AWP"
+    },
+    {
+      "name": "Biomes O' Plenty",
+      "slug": "biomes-o-plenty",
+      "project_id": 220318,
+      "file_id": 8288121,
+      "required": true,
+      "dependency_type": "required",
+      "version": "21.1.0.14",
+      "modrinth_project": "biomes-o-plenty",
+      "modrinth_version": "BtZKRp69"
+    },
+    {
+      "name": "TerraBlender",
+      "slug": "terrablender-neoforge",
+      "project_id": 940057,
+      "file_id": 6054947,
+      "required": true,
+      "dependency_type": "required",
+      "version": "4.1.0.8",
+      "modrinth_project": "terrablender",
+      "modrinth_version": "6e8GCrLb"
+    },
+    {
+      "name": "GlitchCore",
+      "slug": "glitchcore",
+      "project_id": 955399,
+      "file_id": 8109792,
+      "required": true,
+      "dependency_type": "required",
+      "version": "2.1.0.2",
+      "modrinth_project": "glitchcore",
+      "modrinth_version": "S2TfWrZR"
+    },
+    {
       "name": "BetterEnd: New Dawn",
       "slug": "betterend-neoforge",
       "project_id": 1422294,

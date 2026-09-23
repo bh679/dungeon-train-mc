@@ -8,11 +8,15 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.VanillaBiomeFeatures;
+import games.brennan.dungeontrain.worldgen.VanillaBiomeTwins;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.NetherBandBiomeSet;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
+import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
+import games.brennan.dungeontrain.worldgen.density.OverworldStretchBiomes;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
@@ -24,6 +28,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.slf4j.Logger;
@@ -57,6 +62,17 @@ public final class NetherBandContextEvents {
 
     private NetherBandContextEvents() {}
 
+    /**
+     * The vanilla feature lists that keep WWOO inside its stretch. Built once, before any level exists —
+     * so before the first chunk decorates — from registries that are final by now.
+     */
+    @SubscribeEvent
+    public static void onServerAboutToStart(ServerAboutToStartEvent event) {
+        VanillaBiomeFeatures.publish(VanillaBiomeFeatures.resolve(event.getServer()));
+        VanillaBiomeTwins.clear();
+        VanillaBiomeTwins.build(event.getServer().registryAccess(), "server");
+    }
+
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onLevelLoad(LevelEvent.Load event) {
         // Fires per dimension during createLevels (and for ClientLevel — gate it out).
@@ -88,6 +104,8 @@ public final class NetherBandContextEvents {
 
             // Overworld biome source (identity gate) + resolved highland palette for the biome-source mixin.
             BiomeSource overworldBiomeSource = overworld.getChunkSource().getGenerator().getBiomeSource();
+            // Mark it rather than rely on identity: TerraBlender fills chunks through clones of it.
+            if (overworldBiomeSource instanceof OverworldBiomeSourceMark mark) mark.dungeontrain$markOverworld();
             NetherBandBiomeSet highlandBiomes = NetherBandBiomeSet.resolve(
                     overworld.registryAccess().lookupOrThrow(Registries.BIOME), data.getGenerationSeed());
             // Core columns sample ALL five real Nether biomes the way the Nether does (red/teal/blue/grey
@@ -117,6 +135,9 @@ public final class NetherBandContextEvents {
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
                     overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes, endIslands,
                     netherCore));
+            // Second-lap overworld stretches: BoP only in its stretch, vanilla elsewhere. Published
+            // alongside the band context so it is live before the first chunk bakes too.
+            OverworldStretchBiomes.publish(OverworldStretchBiomes.resolve(server));
             // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical
             // info lines per start; the ServerStarted refresh logs the final snapshot at info.
             if (logInfo) {
@@ -128,6 +149,7 @@ public final class NetherBandContextEvents {
         } catch (Throwable t) {
             // Never block server start on the band snapshot — a missing context just leaves terrain vanilla.
             NetherBandContext.clear();
+            OverworldStretchBiomes.clear();
             LOGGER.error("[DungeonTrain] Failed to publish nether-band terrain context; mountains stay flat this session", t);
         }
     }
@@ -135,5 +157,8 @@ public final class NetherBandContextEvents {
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
         NetherBandContext.clear();
+        OverworldStretchBiomes.clear();
+        VanillaBiomeFeatures.clear();
+        VanillaBiomeTwins.clear();
     }
 }
