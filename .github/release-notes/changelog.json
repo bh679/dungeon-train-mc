@@ -17936,6 +17936,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "books4-and-seating-interiors",
+      "version": "0.933.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "New bookshelf carriage interior and refreshed seating",
+      "summary": "A new book-lined carriage interior can now turn up on the train, and the seating interiors have been rearranged with fresh layouts. Book-themed interiors also show up a little less often, so carriages feel more varied.",
+      "highlights": [
+        "New book-lined carriage interior",
+        "Refreshed seating carriage layouts",
+        "Book-themed interiors appear slightly less often"
+      ],
+      "pr": 1493,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
