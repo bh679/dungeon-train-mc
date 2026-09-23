@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.SphereField;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
+import games.brennan.dungeontrain.worldgen.SunlitChunks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
@@ -59,7 +60,9 @@ import java.util.Set;
  * generation, never on reload (player builds survive), after all decoration. Inline on the server
  * thread like {@code WorldChuncksEvents}: a fresh chunk is not yet shared with light workers, so the
  * raw {@link LevelChunkSection#setBlockState} write (the Sable-safe path) needs no neighbourhood
- * guard. Heightmaps are re-primed afterwards so spawning and weather read the lifted surface.</p>
+ * guard. Heightmaps are re-primed afterwards so spawning and weather read the lifted surface, and
+ * the chunk is lit as open sky ({@link SunlitChunks}) because those raw writes never reach the light
+ * engine.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class WorldSpheresEvents {
@@ -95,6 +98,7 @@ public final class WorldSpheresEvents {
         if (changed) {
             Heightmap.primeHeightmaps(chunk, FULL_HEIGHTMAPS);
             chunk.setUnsaved(true);
+            SunlitChunks.sunlight(level, chunk);   // raw writes skipped the light engine: light it as open sky
         }
     }
 
