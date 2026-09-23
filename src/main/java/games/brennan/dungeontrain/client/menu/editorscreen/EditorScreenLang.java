@@ -185,6 +185,16 @@ public final class EditorScreenLang {
     public static final String SHEET_BLOCKS = PREFIX + "sheet.blocks";
     public static final String SHEET_ENTITIES = PREFIX + "sheet.entities";
     public static final String SHEET_CONTAINERS = PREFIX + "sheet.containers";
+    public static final String SHEET_LIGHTS = PREFIX + "sheet.lights";
+    public static final String SHEET_LOOT = PREFIX + "sheet.loot";
+    public static final String SHEET_LOOT_NONE = PREFIX + "sheet.loot_none";
+    public static final String SHEET_LOOT_POOL = PREFIX + "sheet.loot_source.pool";
+    public static final String SHEET_LOOT_PREFAB = PREFIX + "sheet.loot_source.prefab";
+    public static final String SHEET_LOOT_INLINE = PREFIX + "sheet.loot_source.inline";
+    public static final String SHEET_LOOT_TABLE = PREFIX + "sheet.loot_source.table";
+    public static final String SHEET_LOOT_VARIANT = PREFIX + "sheet.loot_variant";
+    public static final String SHEET_LOOT_BEST = PREFIX + "sheet.loot_best";
+    public static final String SHEET_LOOT_VALUE = PREFIX + "sheet.loot_value";
     public static final String SHEET_WEIGHT = PREFIX + "sheet.weight";
     public static final String SHEET_SHARE = PREFIX + "sheet.share";
     public static final String SHEET_SPAWNS = PREFIX + "sheet.spawns";

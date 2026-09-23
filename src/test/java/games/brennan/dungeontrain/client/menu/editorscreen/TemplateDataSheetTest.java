@@ -241,13 +241,13 @@ final class TemplateDataSheetTest {
     @DisplayName("Blocks keeps its count when the entity and container tallies do not fit")
     void blocksLineSurvivesNarrowSheet() {
         games.brennan.dungeontrain.client.builder.TemplateSummary bare =
-            new games.brennan.dungeontrain.client.builder.TemplateSummary(312, net.minecraft.core.Vec3i.ZERO, 0, 0, 0);
+            new games.brennan.dungeontrain.client.builder.TemplateSummary(312, net.minecraft.core.Vec3i.ZERO, 0, 0, 0, 0, List.of());
         TemplateDataSheet.Line plain = TemplateDataSheet.blocksLine(bare, "…");
         assertEquals(List.of("312"), plain.cells().stream().map(TemplateDataSheet.Cell::text).toList());
 
         // An armour stand and a chest saved with the template: three cells, the count first.
         games.brennan.dungeontrain.client.builder.TemplateSummary full =
-            new games.brennan.dungeontrain.client.builder.TemplateSummary(312, net.minecraft.core.Vec3i.ZERO, 1, 1, 1);
+            new games.brennan.dungeontrain.client.builder.TemplateSummary(312, net.minecraft.core.Vec3i.ZERO, 1, 1, 1, 0, List.of());
         TemplateDataSheet.Line line = TemplateDataSheet.blocksLine(full, "…");
         assertEquals(3, line.cells().size());
         assertEquals("312", line.cells().get(0).text());

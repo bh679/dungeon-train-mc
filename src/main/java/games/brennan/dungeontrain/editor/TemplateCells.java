@@ -61,6 +61,25 @@ public final class TemplateCells {
         return cells;
     }
 
+    /**
+     * Every block of the template's first palette with its NBT — air included, as authored. Empty
+     * when the template is null or the reflection fails.
+     */
+    public static List<StructureTemplate.StructureBlockInfo> blockInfos(StructureTemplate template) {
+        if (template == null) return List.of();
+        List<StructureTemplate.Palette> palettes = palettesOf(template);
+        return palettes.isEmpty() ? List.of() : palettes.get(0).blocks();
+    }
+
+    /** How many of {@code cells} give off light — torches, lanterns, glowstone, lit furnaces. */
+    public static int lightCount(Map<BlockPos, BlockState> cells) {
+        int lights = 0;
+        for (BlockState state : cells.values()) {
+            if (state.getLightEmission() > 0) lights++;
+        }
+        return lights;
+    }
+
     /** What a template's block-entity NBT adds up to: how many blocks carry any, and how many hold items. */
     public record NbtTally(int blockEntities, int containers) {}
 
