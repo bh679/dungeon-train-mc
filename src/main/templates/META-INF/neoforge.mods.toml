@@ -44,6 +44,16 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# BetterNether: New Dawn — third-party, REQUIRED. Its biomes fill every second Nether band's core
+# (worldgen/density/BetterNetherCoreBiomes). DT names its biomes/blocks only by id, so a floor is
+# enough. Its libraries (BCLib, WorldWeaver, WunderLib) are shared with BetterEnd and declared below.
+[[dependencies.${mod_id}]]
+    modId="betternether"
+    type="required"
+    versionRange="[${betternether_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # BetterEnd: New Dawn (+ its libraries) — REQUIRED. Every even End-islands band copies real End
 # chunks, which BetterEnd populates; its blocks also have to exist on the client to render there.
 [[dependencies.${mod_id}]]

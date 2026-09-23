@@ -8,7 +8,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.tags.BiomeTags;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -164,13 +164,12 @@ public final class NetherFogEvents {
                 | (int) (NETHER_FOG_B * 255.0f);
     }
 
-    /** True for the five vanilla Nether biomes (the only ones the core labels columns with). */
+    /**
+     * True for any Nether biome — the five vanilla ones the core labels even bands with, and the
+     * BetterNether ones on alternate bands. Both carry {@code #minecraft:is_nether}.
+     */
     private static boolean isNetherBiome(Holder<Biome> biome) {
-        return biome.is(Biomes.NETHER_WASTES)
-                || biome.is(Biomes.CRIMSON_FOREST)
-                || biome.is(Biomes.WARPED_FOREST)
-                || biome.is(Biomes.SOUL_SAND_VALLEY)
-                || biome.is(Biomes.BASALT_DELTAS);
+        return biome.is(BiomeTags.IS_NETHER);
     }
 
     @SubscribeEvent

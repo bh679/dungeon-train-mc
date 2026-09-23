@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.relay.BuilderRelayPreview;
 import games.brennan.dungeontrain.editor.TemplateCells;
+import games.brennan.dungeontrain.editor.TemplateLoot;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.StagePreviewPacket;
 import games.brennan.dungeontrain.net.StagePreviewRequestPacket;
@@ -118,7 +119,8 @@ public final class StagePreviews {
                 TemplateCells.NbtTally tally = TemplateCells.tallyBlockEntities(template);
                 entry = new Entry(cells.isEmpty() ? null : BuilderTileMesh.bake(cells),
                     new TemplateSummary(cells.size(), template.getSize(), tally.blockEntities(),
-                        tally.containers(), TemplateCells.entityCount(pending.template())));
+                        tally.containers(), TemplateCells.entityCount(pending.template()),
+                        TemplateCells.lights(cells), TemplateLoot.of(template)));
             } catch (RuntimeException e) {
                 // A capture this version cannot read keeps its slate rather than taking the screen down.
                 entry = new Entry(null, TemplateSummary.NONE);
