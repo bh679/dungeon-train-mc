@@ -1,10 +1,8 @@
 package games.brennan.dungeontrain.worldgen.legacy.indev;
 
-import games.brennan.dungeontrain.worldgen.legacy.LegacyChunkWriter;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaFeatures;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTrees;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
-import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,9 +25,9 @@ public final class IndevFloatingPopulator {
 
     private IndevFloatingPopulator() {}
 
-    public static void populate(WorldGenLevel level, long seed, int chunkX, int chunkZ) {
-        int height = IndevFloatingLevel.HEIGHT;
-        BetaWorld world = new BetaWorld(level, LegacyChunkWriter.FLOATING_Y_OFFSET, height);
+    /** Decorate chunk {@code (chunkX, chunkZ)}; {@code world} must span the level's full height. */
+    public static void populate(BetaWorld world, long seed, int chunkX, int chunkZ) {
+        int height = world.height();
         int bx = chunkX * 16;
         int bz = chunkZ * 16;
         Random rand = new Random(seed);

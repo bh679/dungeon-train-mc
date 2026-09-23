@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.worldgen.legacy.beta;
 
-import net.minecraft.world.level.WorldGenLevel;
+import games.brennan.dungeontrain.worldgen.legacy.noise.PerlinOctaveNoise;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -23,12 +23,20 @@ public final class BetaPopulator {
 
     private BetaPopulator() {}
 
-    public static void populate(WorldGenLevel level, BetaTerrain terrain, int chunkX, int chunkZ) {
-        BetaWorld world = new BetaWorld(level);
-        long seed = terrain.seed();
+    /** Beta's own populate: biome from the climate, snow by temperature. */
+    public static void populate(BetaWorld world, BetaTerrain terrain, int chunkX, int chunkZ) {
+        BetaBiome biome = terrain.climate().biome(chunkX * 16 + 16, chunkZ * 16 + 16);
+        populate(world, terrain.seed(), terrain.forestNoise(), biome, terrain.climate(), chunkX, chunkZ);
+    }
+
+    /**
+     * The shared populate step for a Beta-family generator (Beta, Sky): {@code biome} drives trees and
+     * plants; {@code snowClimate} lays snow by temperature, or {@code null} for none (Sky).
+     */
+    public static void populate(BetaWorld world, long seed, PerlinOctaveNoise forestNoise, BetaBiome biome,
+                                BetaClimate snowClimate, int chunkX, int chunkZ) {
         int bx = chunkX * 16;
         int bz = chunkZ * 16;
-        BetaBiome biome = terrain.climate().biome(bx + 16, bz + 16);
         Random rand = new Random(seed);
         long mulX = rand.nextLong() / 2L * 2L + 1L;
         long mulZ = rand.nextLong() / 2L * 2L + 1L;
@@ -59,10 +67,10 @@ public final class BetaPopulator {
         BetaFeatures.vein(world, rand, bx + rand.nextInt(16), rand.nextInt(16) + rand.nextInt(16), bz + rand.nextInt(16),
                 6, Blocks.LAPIS_ORE.defaultBlockState(), Blocks.STONE);
 
-        trees(world, rand, terrain, biome, bx, bz);
+        trees(world, rand, forestNoise, biome, bx, bz);
         plants(world, rand, biome, bx, bz);
         springs(world, rand, bx, bz);
-        snow(world, terrain.climate(), bx, bz);
+        if (snowClimate != null) snow(world, snowClimate, bx, bz);
     }
 
     private static void veins(BetaWorld world, Random rand, int bx, int bz, int count, int maxY, int size,
@@ -73,8 +81,9 @@ public final class BetaPopulator {
         }
     }
 
-    private static void trees(BetaWorld world, Random rand, BetaTerrain terrain, BetaBiome biome, int bx, int bz) {
-        int noiseCount = (int) ((terrain.forestNoise().sample2D(bx * 0.5D, bz * 0.5D) / 8.0D
+    private static void trees(BetaWorld world, Random rand, PerlinOctaveNoise forestNoise, BetaBiome biome,
+                              int bx, int bz) {
+        int noiseCount = (int) ((forestNoise.sample2D(bx * 0.5D, bz * 0.5D) / 8.0D
                 + rand.nextDouble() * 4.0D + 4.0D) / 3.0D);
         int count = rand.nextInt(10) == 0 ? 1 : 0;
         count += switch (biome) {
@@ -154,17 +163,7 @@ public final class BetaPopulator {
 
     /** Snow on exposed solid ground wherever Beta's altitude-adjusted temperature drops below 0.5. */
     private static void snow(BetaWorld world, BetaClimate climate, int bx, int bz) {
-        BlockState snow = Blocks.SNOW.defaultBlockState();
-        for (int x = bx + 8; x < bx + 24; x++) {
-            for (int z = bz + 8; z < bz + 24; z++) {
-                int y = world.topSolidOrLiquid(x, z);
-                if (y <= 0 || y >= BetaTerrain.HEIGHT) continue;
-                double t = climate.temperature(x, z) - (y - 64) / 64.0D * 0.3D;
-                if (t < 0.5D && world.isAir(x, y, z) && world.isSolid(x, y - 1, z)
-                        && !world.is(x, y - 1, z, Blocks.ICE)) {
-                    world.set(x, y, z, snow);
-                }
-            }
-        }
+        BetaFeatures.snowCover(world, bx, bz,
+                (x, y, z) -> climate.temperature(x, z) - (y - 64) / 64.0D * 0.3D < 0.5D);
     }
 }

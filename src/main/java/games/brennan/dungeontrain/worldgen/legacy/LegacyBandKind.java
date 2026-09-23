@@ -14,9 +14,30 @@ import java.util.Locale;
  */
 public enum LegacyBandKind {
     /** Beta 1.7.3 — climate-driven terrain, sand/gravel beaches, overhangs, Beta caves and decoration. */
-    BETA,
+    BETA(false),
+    /** Beta 1.7.3's unused Sky dimension — floating grass-and-dirt islands over open void, no sea or bedrock. */
+    SKYLANDS(true),
+    /**
+     * Alpha 1.1.2 — pre-biome terrain, forest everywhere, Alpha beaches; the back half of the band is
+     * Alpha's winter mode (frozen sea, snow over everything) — see {@code LegacyBands#isAlphaWinter}.
+     */
+    ALPHA(false),
     /** Indev's Floating level type — stacked layers of islands over void, one finite level per tile. */
-    FLOATING;
+    FLOATING(true);
+
+    private final boolean voidBelow;
+
+    LegacyBandKind(boolean voidBelow) {
+        this.voidBelow = voidBelow;
+    }
+
+    /**
+     * True for a generator whose world is open void under its terrain: its chunks get no stone fill below
+     * the old column, no DT bedrock floor, and liquids may not spill into the empty space under the land.
+     */
+    public boolean voidBelow() {
+        return voidBelow;
+    }
 
     /** Lower-cased config / command token ({@code beta}). */
     public String token() {

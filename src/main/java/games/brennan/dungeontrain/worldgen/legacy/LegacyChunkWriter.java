@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBlocks;
-import games.brennan.dungeontrain.worldgen.legacy.beta.BetaChunk;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels;
@@ -15,24 +15,17 @@ import java.util.EnumSet;
 
 /**
  * Writes an old generator's column into a fresh {@link ChunkAccess} during the NOISE step, in place of
- * vanilla's {@code fillFromNoise}. The old world's {@code y = 0} lands at {@link #Y_OFFSET} so Beta's
- * sea (top water at y 63) lines up with the modern sea (top water at y 62) and fade-seam oceans meet flush.
- * Everything below the old column down to the world floor is stone — the old world's bedrock layer stays
- * where it was, and DT's own floor still goes in at the bottom.
- *
- * <p>The floor fill is per kind: an Indev floating chunk writes only its slice of the level
- * ({@link IndevFloatingLevel}), at {@link #FLOATING_Y_OFFSET}, with open void below — no stone.</p>
+ * vanilla's {@code fillFromNoise}. The old world's {@code y = 0} lands at the kind's
+ * {@linkplain LegacyBands#yOffset Y offset} — for Beta and Alpha, {@link #Y_OFFSET}, so the old sea (top
+ * water at y 63) lines up with the modern sea (top water at y 62) and fade-seam oceans meet flush.
+ * Below the old column: for a solid-world kind everything down to the world floor is stone (the old
+ * bedrock layer stays where it was and DT's own floor still goes in at the bottom); a
+ * {@linkplain LegacyBandKind#voidBelow void-below} kind leaves it empty.
  */
 public final class LegacyChunkWriter {
 
-    /** World Y of the old generator's {@code y = 0}. */
+    /** World Y of Beta's and Alpha's {@code y = 0}. */
     public static final int Y_OFFSET = -1;
-
-    /**
-     * World Y of an Indev floating level's {@code y = 0}. Puts its five island layers (level sea levels
-     * 224/176/128/80/32) at world 216/168/120/72/24, so one layer sits just under the train's default Y.
-     */
-    public static final int FLOATING_Y_OFFSET = -8;
 
     private static final BlockState[] STATES = new BlockState[256];
 
@@ -51,23 +44,37 @@ public final class LegacyChunkWriter {
 
     private LegacyChunkWriter() {}
 
-    /** Generate {@code kind}'s terrain for {@code chunk} and write it, filling stone down to {@code floorY}. */
-    public static void fill(LegacyBandKind kind, long seed, ChunkAccess chunk, int floorY) {
-        switch (kind) {
-            case BETA -> write(chunk, LegacyBands.beta(seed).generate(chunk.getPos().x, chunk.getPos().z), floorY);
-            case FLOATING -> writeFloating(chunk,
-                    LegacyBands.indevFloating(seed).levelForChunk(chunk.getPos().x, chunk.getPos().z));
+    /**
+     * Generate {@code kind}'s terrain for {@code chunk} and write it with the old {@code y = 0} at world
+     * {@code yOffset}, filling stone down to {@code floorY} unless the kind is void below.
+     */
+    public static void fill(LegacyBandKind kind, long seed, ChunkAccess chunk, int floorY, int yOffset) {
+        int cx = chunk.getPos().x;
+        int cz = chunk.getPos().z;
+        byte[] blocks = switch (kind) {
+            case BETA -> LegacyBands.beta(seed).generate(cx, cz).blocks();
+            case SKYLANDS -> LegacyBands.sky(seed).generate(cx, cz).blocks();
+            case ALPHA -> LegacyBands.alpha(seed).generate(cx, cz, LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), cx));
+            case FLOATING -> null; // not a Beta-layout column: a slice of a whole finite level
+        };
+        if (blocks == null) {
+            writeFloating(chunk, LegacyBands.indevFloating(seed).levelForChunk(cx, cz), yOffset);
+        } else {
+            write(chunk, blocks, floorY, yOffset, !kind.voidBelow());
         }
     }
 
-    /** Copy the chunk's 16×16 column of {@code level} into {@code chunk}; air stays unwritten (void). */
-    static void writeFloating(ChunkAccess chunk, IndevFloatingLevel level) {
+    /**
+     * Copy the chunk's 16×16 column of an Indev floating {@code level} into {@code chunk}, old {@code y = 0}
+     * at world {@code yOffset}. Void below, and air is never written, so the level's gaps stay empty.
+     */
+    static void writeFloating(ChunkAccess chunk, IndevFloatingLevel level, int yOffset) {
         int lx0 = IndevLevels.localX(chunk.getPos().getMinBlockX());
         int lz0 = IndevLevels.localZ(chunk.getPos().getMinBlockZ());
-        int minY = Math.max(chunk.getMinBuildHeight(), FLOATING_Y_OFFSET);
-        int maxY = Math.min(chunk.getMaxBuildHeight() - 1, FLOATING_Y_OFFSET + IndevFloatingLevel.HEIGHT - 1);
+        int minY = Math.max(chunk.getMinBuildHeight(), yOffset);
+        int maxY = Math.min(chunk.getMaxBuildHeight() - 1, yOffset + IndevFloatingLevel.HEIGHT - 1);
         for (int y = minY; y <= maxY; y++) {
-            int oldY = y - FLOATING_Y_OFFSET;
+            int oldY = y - yOffset;
             LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
             int ly = y & 15;
             for (int x = 0; x < 16; x++) {
@@ -82,13 +89,14 @@ public final class LegacyChunkWriter {
         Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.OCEAN_FLOOR_WG, Heightmap.Types.WORLD_SURFACE_WG));
     }
 
-    static void write(ChunkAccess chunk, BetaChunk column, int floorY) {
-        int minY = Math.max(chunk.getMinBuildHeight(), floorY);
+    /** Write a Beta-layout column ({@link BetaTerrain#index}, {@link BetaBlocks} ids) — Alpha shares it. */
+    static void write(ChunkAccess chunk, byte[] blocks, int floorY, int yOffset, boolean stoneBelow) {
+        // Void below: start at the old y = 0 so nothing (not even air) is written under the column.
+        int minY = Math.max(Math.max(chunk.getMinBuildHeight(), floorY), stoneBelow ? Integer.MIN_VALUE : yOffset);
         int maxY = chunk.getMaxBuildHeight() - 1;
         BlockState stone = STATES[BetaBlocks.STONE];
-        byte[] blocks = column.blocks();
         for (int y = minY; y <= maxY; y++) {
-            int oldY = y - Y_OFFSET;
+            int oldY = y - yOffset;
             if (oldY >= BetaTerrain.HEIGHT) break;
             LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
             int ly = y & 15;

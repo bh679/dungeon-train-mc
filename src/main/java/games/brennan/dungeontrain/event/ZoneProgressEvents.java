@@ -134,10 +134,13 @@ public final class ZoneProgressEvents {
      */
     private static final int BETA_DEPTH_BLOCKS = 500;
 
-    /**
-     * How far (blocks) into the Indev floating legacy band core the player must be before
-     * {@code reached_floating} is granted — same depth gate as the markers above.
-     */
+    /** Depth (blocks) into the Skylands legacy band core before {@code reached_skylands} — same gate. */
+    private static final int SKYLANDS_DEPTH_BLOCKS = 500;
+
+    /** Same depth gate for {@code reached_alpha}, into the Alpha legacy band core. */
+    private static final int ALPHA_DEPTH_BLOCKS = 500;
+
+    /** Same depth gate for {@code reached_floating}, into the Indev floating legacy band core. */
     private static final int FLOATING_DEPTH_BLOCKS = 500;
 
     private ZoneProgressEvents() {}
@@ -220,7 +223,19 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_beta");
             }
 
-            // Indev floating legacy band — after Beta: stacked island layers over void. Same depth gate.
+            // Alpha legacy band — after Beta: terrain from Alpha 1.1.2's generator. Same depth gate.
+            // Skylands legacy band — after Beta: islands from Beta 1.7.3's unused Sky generator. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.SKYLANDS, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.SKYLANDS, px - SKYLANDS_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_skylands");
+            }
+
+            if (LegacyBands.isInBand(level, LegacyBandKind.ALPHA, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.ALPHA, px - ALPHA_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_alpha");
+            }
+
+            // Indev floating legacy band — stacked island layers over void. Same depth gate.
             if (LegacyBands.isInBand(level, LegacyBandKind.FLOATING, px)
                 && LegacyBands.isInBand(level, LegacyBandKind.FLOATING, px - FLOATING_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_floating");

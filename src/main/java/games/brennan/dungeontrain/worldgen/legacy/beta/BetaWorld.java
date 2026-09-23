@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.worldgen.legacy.beta;
 
-import games.brennan.dungeontrain.worldgen.legacy.LegacyChunkWriter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
@@ -10,10 +9,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 
 /**
- * A {@link WorldGenLevel} seen through an old generator's coordinates ({@code y = 0..height-1}, shifted by
- * a Y offset into the world — Beta's {@code 0..127} at {@link LegacyChunkWriter#Y_OFFSET} by default) with the
- * few material questions the old decorators ask. Reads outside the old height answer air, writes outside it
- * are dropped — as the old bounds did.
+ * A {@link WorldGenLevel} seen through Beta coordinates ({@code y = 0..127}, shifted by
+ * the band's {@linkplain games.brennan.dungeontrain.worldgen.legacy.LegacyBands#yOffset Y offset} into the world) with the few material questions the Beta decorators
+ * ask. Reads outside Beta's height answer air, writes outside it are dropped — as Beta's own bounds did.
  * Not thread-safe (one mutable cursor); create one per decoration call.
  */
 public final class BetaWorld {
@@ -23,11 +21,12 @@ public final class BetaWorld {
     private final int height;
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
-    public BetaWorld(WorldGenLevel level) {
-        this(level, LegacyChunkWriter.Y_OFFSET, BetaTerrain.HEIGHT);
+    /** {@code yOffset}: world Y of the old {@code y = 0}; Beta's 128-block height. */
+    public BetaWorld(WorldGenLevel level, int yOffset) {
+        this(level, yOffset, BetaTerrain.HEIGHT);
     }
 
-    /** An old world {@code height} blocks tall whose {@code y = 0} sits at world Y {@code yOffset}. */
+    /** An old world {@code height} blocks tall (Indev floating levels are 256) at {@code yOffset}. */
     public BetaWorld(WorldGenLevel level, int yOffset, int height) {
         this.level = level;
         this.yOffset = yOffset;

@@ -4,7 +4,9 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Pure tests for the per-chunk old/modern roll behind the legacy fades. */
@@ -40,11 +42,53 @@ final class LegacyBandsTest {
     }
 
     @Test
-    @DisplayName("a hit's kind is what a chunk classifies as — the floating band's core is all floating")
+    @DisplayName("Alpha winter: the last share of the core and the exit fade, never outside the slot")
+    void winterShare() {
+        assertFalse(LegacyBands.isWinter(0.49, 0.5));
+        assertTrue(LegacyBands.isWinter(0.5, 0.5));
+        assertTrue(LegacyBands.isWinter(1.2, 0.5));       // exit fade
+        assertFalse(LegacyBands.isWinter(-0.1, 0.5));     // lead gap / entry fade
+        assertFalse(LegacyBands.isWinter(Double.NaN, 1.0));
+        assertFalse(LegacyBands.isWinter(0.99, 0.0));
+        assertFalse(LegacyBands.isWinter(1.5, 0.0));
+        assertTrue(LegacyBands.isWinter(0.0, 1.0));
+    }
+
+    @Test
+    @DisplayName("cycle order runs Beta, Skylands, Alpha, Indev floating; Skylands and floating are void below")
+    void kindOrder() {
+        assertArrayEquals(new LegacyBandKind[] {LegacyBandKind.BETA, LegacyBandKind.SKYLANDS, LegacyBandKind.ALPHA,
+                LegacyBandKind.FLOATING}, LegacyBandKind.values());
+        assertFalse(LegacyBandKind.BETA.voidBelow());
+        assertTrue(LegacyBandKind.SKYLANDS.voidBelow());
+        assertFalse(LegacyBandKind.ALPHA.voidBelow());
+        assertTrue(LegacyBandKind.FLOATING.voidBelow());
+    }
+
+    @Test
+    @DisplayName("the floating band's core is all floating chunks")
     void floatingCore() {
         WorldGenCycle.LegacyHit core = new WorldGenCycle.LegacyHit(LegacyBandKind.FLOATING, 1.0);
         for (int cx = -20; cx < 20; cx++) {
             assertEquals(LegacyBandKind.FLOATING, LegacyBands.classify(SEED, cx, -cx * 3, core));
         }
+    }
+
+    @Test
+    @DisplayName("Indev floating levels bed on the track, clamped so the whole level stays inside the world")
+    void floatingYOffset() {
+        assertEquals(76 - LegacyBands.FLOATING_BED_OLD_Y, LegacyBands.floatingYOffset(76, -64, 320));
+        assertEquals(-64, LegacyBands.floatingYOffset(0, -64, 320));   // never below the floor
+        assertEquals(320 - 256, LegacyBands.floatingYOffset(300, -64, 320)); // never through the ceiling
+    }
+
+    @Test
+    @DisplayName("Skylands follows the track bed, but never drops its lowest land under the world floor")
+    void skyYOffset() {
+        // Default train (bedY 76) on the y=32 floor: old y 52 at the bed.
+        assertEquals(76 - LegacyBands.SKY_BED_OLD_Y, LegacyBands.skyYOffset(76, 32));
+        // A train low enough to push islands through the floor is clamped: lowest land lands on the floor.
+        int clamped = LegacyBands.skyYOffset(20, 32);
+        assertEquals(32, clamped + LegacyBands.SKY_LOWEST_LAND_OLD_Y);
     }
 }

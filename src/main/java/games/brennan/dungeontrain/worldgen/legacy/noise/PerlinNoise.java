@@ -92,6 +92,16 @@ public final class PerlinNoise {
             }
             return;
         }
+        sampleGrid3D(arr, x, y, z, sizeX, sizeY, sizeZ, scaleX, scaleY, scaleZ, amplitude);
+    }
+
+    /**
+     * The 3-D grid path on its own, whatever {@code sizeY} is. Alpha's array sampler always took this path
+     * (Beta later special-cased {@code sizeY == 1} to the 2-D form), so Alpha's flat 2-D noises — scale,
+     * depth, beaches — go through here too.
+     */
+    public void sampleGrid3D(double[] arr, double x, double y, double z, int sizeX, int sizeY, int sizeZ,
+                             double scaleX, double scaleY, double scaleZ, double amplitude) {
         double inv = 1.0D / amplitude;
         int ndx = 0;
         int flagY = -1;

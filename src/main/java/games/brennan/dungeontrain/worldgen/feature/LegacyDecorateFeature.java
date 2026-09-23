@@ -5,8 +5,13 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
-import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.legacy.alpha.AlphaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingLevel;
 import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.beta.BetaWorld;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -16,9 +21,9 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import org.slf4j.Logger;
 
 /**
- * Worldgen feature that runs an old generator's own decoration step in a legacy-band chunk — for Beta,
+ * Worldgen feature that runs an old generator's own decoration step in a legacy-band chunk — for Beta and Skylands,
  * {@link BetaPopulator}: lakes, dungeons, ores, trees, flowers, reeds, cacti, springs and snow, all as
- * Beta placed them; for Indev floating, {@link IndevFloatingPopulator}. Vanilla's biome features are skipped in those chunks
+ * Beta placed them. Vanilla's biome features are skipped in those chunks
  * ({@code ChunkGeneratorDecorationMixin}), so this is the chunk's whole decoration.
  *
  * <p>Wired by datapack ({@code configured_feature}/{@code placed_feature/legacy_decorate.json} →
@@ -43,9 +48,17 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
         long genT0 = GenProfiler.t0();
         try {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
+            int yOffset = LegacyBands.yOffset(kind, serverLevel);
+            BetaWorld world = kind == LegacyBandKind.FLOATING
+                    ? new BetaWorld(level, yOffset, IndevFloatingLevel.HEIGHT)
+                    : new BetaWorld(level, yOffset);
             switch (kind) {
-                case BETA -> BetaPopulator.populate(level, LegacyBands.beta(seed), chunk.x, chunk.z);
-                case FLOATING -> IndevFloatingPopulator.populate(level, seed, chunk.x, chunk.z);
+                case BETA -> BetaPopulator.populate(world, LegacyBands.beta(seed), chunk.x, chunk.z);
+                case SKYLANDS -> BetaPopulator.populate(world, seed, LegacyBands.sky(seed).forestNoise(),
+                        BetaBiome.SKY, null, chunk.x, chunk.z);
+                case ALPHA -> AlphaPopulator.populate(level, LegacyBands.alpha(seed), chunk.x, chunk.z,
+                        LegacyBands.isAlphaWinter(WorldGenCycle.fromConfig(), chunk.x));
+                case FLOATING -> IndevFloatingPopulator.populate(world, seed, chunk.x, chunk.z);
             }
             return true;
         } catch (Throwable t) {

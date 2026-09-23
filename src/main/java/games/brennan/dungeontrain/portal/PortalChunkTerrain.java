@@ -686,14 +686,19 @@ public final class PortalChunkTerrain {
         try {
             return ChuncksBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())
                 || SpheresBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())
-                // Indev floating: mostly void between thin islands — never solid ground for a room.
-                || LegacyBands.kindOfChunk(level, site.x, site.z) == LegacyBandKind.FLOATING
+                // Void-below legacy bands (Indev floating, Skylands): islands over open void — never solid
+                // ground for a room.
+                || isVoidBelowLegacy(LegacyBands.kindOfChunk(level, site.x, site.z))
                 || DisintegrationBand.isChunkFullyEroded(level, site.getMinBlockX());
         } catch (Throwable t) {
             // The bands are the train's business, not the sample's: if either cannot answer, the
             // site is judged the ordinary way, by generating it.
             return false;
         }
+    }
+
+    private static boolean isVoidBelowLegacy(LegacyBandKind kind) {
+        return kind != null && kind.voidBelow();
     }
 
     /**

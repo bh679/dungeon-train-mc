@@ -75,6 +75,8 @@
         "CHUNCKS",
         "SPHERES",
         "BETA",
+        "ALPHA",
+        "SKYLANDS",
         "FLOATING"
       ]
     },
@@ -87,6 +89,7 @@
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
+        "SKYLANDS",
         "FLOATING"
       ]
     },

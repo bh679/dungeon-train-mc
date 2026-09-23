@@ -40,6 +40,22 @@ public final class PerlinOctaveNoise {
         return out;
     }
 
+    /**
+     * Alpha's array sampler: like {@link #sampleGrid} but every octave takes the 3-D path, even for a
+     * {@code sizeY == 1} grid (see {@link PerlinNoise#sampleGrid3D}).
+     */
+    public double[] sampleAlphaGrid(double x, double y, double z, int sizeX, int sizeY, int sizeZ,
+                                    double scaleX, double scaleY, double scaleZ) {
+        double[] out = new double[sizeX * sizeY * sizeZ];
+        double frequency = 1.0D;
+        for (PerlinNoise noise : noises) {
+            noise.sampleGrid3D(out, x, y, z, sizeX, sizeY, sizeZ,
+                    scaleX * frequency, scaleY * frequency, scaleZ * frequency, frequency);
+            frequency /= 2.0D;
+        }
+        return out;
+    }
+
     /** The old scalar 2-D sampler (octave {@code i} at {@code 1/2^i} of the coordinate, weighted {@code 2^i}). */
     public double sample2D(double x, double z) {
         double total = 0.0D;

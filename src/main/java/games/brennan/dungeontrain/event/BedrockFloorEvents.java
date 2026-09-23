@@ -9,8 +9,6 @@ import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
-import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
@@ -97,12 +95,6 @@ public final class BedrockFloorEvents {
             return;
         }
 
-        // Indev floating legacy band: stacked islands over open void — a chunk the old generator owns has
-        // no floor at all. Fade chunks that rolled modern keep theirs (per-chunk + deterministic).
-        if (LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z) == LegacyBandKind.FLOATING) {
-            return;
-        }
-
         // Spheres band: floating spheres over open void, and a fade where the ground dissolves — no
         // bedrock floor anywhere the void ramp is non-zero. Per-chunk + deterministic, order-independent
         // with the carve handler (which would erase the floor anyway outside the spheres).
@@ -114,6 +106,14 @@ public final class BedrockFloorEvents {
         // bedrock floor anywhere the void ramp is non-zero. Per-chunk + deterministic, order-independent
         // with the carve handler (which would erase the floor anyway outside the spheres).
         if (SpheresBand.chunkTouchesBand(level, chunkMinX)) {
+            return;
+        }
+
+        // Void-below legacy bands (Skylands): islands over open void — a chunk the old generator owns
+        // gets no floor. Fade chunks that rolled modern keep theirs, leaving old/new chunk walls.
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind legacyKind =
+            games.brennan.dungeontrain.worldgen.legacy.LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z);
+        if (legacyKind != null && legacyKind.voidBelow()) {
             return;
         }
 

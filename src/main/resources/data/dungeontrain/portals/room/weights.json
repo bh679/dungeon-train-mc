@@ -82,6 +82,8 @@
       "CHUNCKS",
       "SPHERES",
       "BETA",
+      "ALPHA",
+      "SKYLANDS",
       "FLOATING"
     ],
     "mode": "bedrock_lock",
@@ -97,7 +99,8 @@
       "NETHER",
       "VOID",
       "END",
-      "BETA"
+      "BETA",
+      "ALPHA"
     ],
     "mode": "endless_open/single:minecraft:stone"
   },
@@ -108,7 +111,8 @@
       "NETHER",
       "VOID",
       "END",
-      "BETA"
+      "BETA",
+      "ALPHA"
     ],
     "mode": "bedrock_lock"
   },
@@ -168,6 +172,8 @@
       "CHUNCKS",
       "SPHERES",
       "BETA",
+      "ALPHA",
+      "SKYLANDS",
       "FLOATING"
     ],
     "mode": "bedrock_lock/exact/off/off/off/none/sealed/0/0/17/72/minecraft:bedrock/on"
@@ -385,6 +391,8 @@
       "CHUNCKS",
       "SPHERES",
       "BETA",
+      "ALPHA",
+      "SKYLANDS",
       "FLOATING"
     ],
     "mode": "endless_open/exact/off/off/off/day/sealed/-1/0/0/0"
