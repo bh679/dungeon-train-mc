@@ -7,7 +7,9 @@
   "mixins": [
     "betterend.BetterEndDebugItemsMixin"
   ],
-  "client": [],
+  "client": [
+    "wover.WoverStartupScreensMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1
