@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
 import net.minecraft.Util;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -34,6 +35,8 @@ import java.util.concurrent.CompletableFuture;
  *       {@code WorldDisintegrationEvents} anyway. Gated on {@link DisintegrationBand#isChunkFullyEroded}.</li>
  *   <li><b>Chuncks band</b> — mostly void, sprinkled with occasional real chunks; the void chunks are
  *       classified by {@link ChuncksBand#isVoidChunk}.</li>
+ *   <li><b>Spheres band</b> — open void between floating spheres; chunks no sphere touches are
+ *       classified by {@link SpheresBand#isVoidChunk}.</li>
  * </ul>
  *
  * <p>Generating a chunk's terrain (≈74k density samples + surface + carver passes) only to erase it is
@@ -131,6 +134,7 @@ public abstract class NoiseBasedChunkGeneratorMixin {
                 && DisintegrationBand.isChunkFullyEroded(level, chunkMinX)) {
             return true; // End void/core: post-erosion would delete 100% of the terrain anyway
         }
-        return ChuncksBand.isVoidChunk(level, chunkMinX, chunkMinZ); // chuncks band: a mostly-void gap
+        if (ChuncksBand.isVoidChunk(level, chunkMinX, chunkMinZ)) return true; // chuncks band: a mostly-void gap
+        return SpheresBand.isVoidChunk(level, chunkMinX, chunkMinZ);           // spheres band: open void between spheres
     }
 }

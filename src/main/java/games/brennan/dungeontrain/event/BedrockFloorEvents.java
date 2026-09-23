@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.SectionPos;
@@ -84,6 +85,13 @@ public final class BedrockFloorEvents {
         // event ordering vs the slice-erosion handler. Chunks outside the chuncks band read FULL.
         ChuncksBand.Kind chuncksKind = ChuncksBand.kindOf(level, chunk.getPos().x, chunk.getPos().z);
         if (chuncksKind == ChuncksBand.Kind.VOID || chuncksKind == ChuncksBand.Kind.SLICE) {
+            return;
+        }
+
+        // Spheres band: floating spheres over open void, and a fade where the ground dissolves — no
+        // bedrock floor anywhere the void ramp is non-zero. Per-chunk + deterministic, order-independent
+        // with the carve handler (which would erase the floor anyway outside the spheres).
+        if (SpheresBand.chunkTouchesBand(level, chunkMinX)) {
             return;
         }
 
