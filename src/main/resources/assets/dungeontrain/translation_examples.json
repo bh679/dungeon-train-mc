@@ -3443,6 +3443,14 @@
       ]
     }
   },
+  "command.dungeontrain.discord.expires": {
+    "1": {
+      "label": "how many minutes the Discord link code stays valid (a whole number)",
+      "examples": [
+        "15"
+      ]
+    }
+  },
   "gui.dungeontrain.credits.community.person_line": {
     "1": {
       "label": "the community member's Discord display name",

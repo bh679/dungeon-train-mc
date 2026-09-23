@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.RunSummaryReporter;
 import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
+import games.brennan.dungeontrain.discord.LogPings;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
@@ -342,7 +343,8 @@ public final class RunStatsEvents {
         // and those runs are what fill the channel. EXCEPT when an echo did the killing — a
         // cross-player kill is exactly what the feed is for, so it posts at any carriage count.
         // The threaded report above always posts. Applies on dev + release — noise in either.
-        boolean slainByEcho = EchoIdentity.sourcePlayer(source.getEntity()).isPresent();
+        UUID echoSource = EchoIdentity.sourcePlayer(source.getEntity()).orElse(null);
+        boolean slainByEcho = echoSource != null;
         boolean shortRun = suppressPublicShortRun(packet.cartsTravelled(), slainByEcho);
         if (shortRun) {
             LOGGER.debug("[DungeonTrain] {} ended at {} carriages (< {}, no echo kill) — skipping public death feed",
@@ -363,8 +365,10 @@ public final class RunStatsEvents {
                     packet.tamedCount());
             // Buffer the top-level report until the client sends this run's scenic ride photo
             // (DeathPhotoPacket); a 5s timeout posts it with the gear composite if the photo never comes.
+            // Tags the dead player and, for an echo kill, the player whose echo it was — each only if
+            // they linked their Discord (the relay resolves the markers; see LogPings).
             DeathReportBuffer.await(player, manifestTitle, manifestDesc, manifestFields, icons,
-                    DungeonTrain.manifestWebhookOverride());
+                    DungeonTrain.manifestWebhookOverride(), LogPings.content(player.getUUID(), echoSource));
         }
     }
 

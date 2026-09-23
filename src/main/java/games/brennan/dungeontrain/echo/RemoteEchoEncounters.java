@@ -5,6 +5,7 @@ import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathNoteReporter;
+import games.brennan.dungeontrain.discord.LogPings;
 import games.brennan.dungeontrain.event.DeathNoteGate;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.ship.CarriageDeck;
@@ -499,7 +500,10 @@ public final class RemoteEchoEncounters {
                 reason, player.getGameProfile().getName(), enc.sourceName);
         // Route to the public death-report channel (same cap as the death manifest) on main builds,
         // keeping the encounter story's greyish-blue bar; null on dev → the build's default cap.
+        // Tags the player the story is about and the player whose echo it was (a Death/Love Note's
+        // author for a cursed echo) — each only if they linked their Discord; see LogPings.
         DiscordService.get().postReportTopLevel(player, title, story, List.of(), enc.photo, PHOTO_FILENAME,
-                EMBED_COLOR, DungeonTrain.manifestWebhookOverride());
+                EMBED_COLOR, DungeonTrain.manifestWebhookOverride(),
+                LogPings.content(enc.primaryPlayerId, enc.sourcePlayerId));
     }
 }
