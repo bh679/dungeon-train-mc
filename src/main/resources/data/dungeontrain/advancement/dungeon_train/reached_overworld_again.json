@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_chuncks",
+  "parent": "dungeontrain:dungeon_train/reached_spheres",
   "display": {
     "icon": { "id": "minecraft:grass_block" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_overworld_again.title" },

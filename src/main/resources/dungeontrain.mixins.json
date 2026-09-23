@@ -36,6 +36,7 @@
     "ObserverBlockStampMixin",
     "FlowingFluidUpsideDownMixin",
     "FlowingFluidChuncksMixin",
+    "FlowingFluidSpheresMixin",
     "FlowingFluidDisintegrationMixin",
     "LavaFluidNetherBandMixin",
     "FlowingFluidNetherBandLavaMixin",

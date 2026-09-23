@@ -6,8 +6,8 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * The five worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
- * single 5-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
+ * The seven worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
+ * single 7-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
  * Used by the per-template spawn gate
  * ({@link games.brennan.dungeontrain.template.TemplateGate}): a weighted template may restrict
  * itself to a subset of phases, and the generator filters the candidate pool by the phase of the
@@ -29,7 +29,9 @@ public enum TrainPhase {
     END,
     UPSIDE_DOWN,
     /** Mostly-void band of scattered overworld chunks (some full, some top-down slices); see {@link ChuncksBand}. */
-    CHUNCKS;
+    CHUNCKS,
+    /** Open void scattered with floating spheres of lifted natural terrain; see {@link SpheresBand}. */
+    SPHERES;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -57,7 +59,7 @@ public enum TrainPhase {
 
     /**
      * Single-letter label for compact phase pickers/indicators — the first letter of the constant
-     * name, so the six phases read {@code O N V E U C}. A new phase is picked up automatically.
+     * name, so the seven phases read {@code O N V E U C S}. A new phase is picked up automatically.
      */
     public String letter() {
         return String.valueOf(name().charAt(0));
@@ -72,6 +74,7 @@ public enum TrainPhase {
             case END -> "End";
             case UPSIDE_DOWN -> "Upside Down";
             case CHUNCKS -> "Chuncks";
+            case SPHERES -> "Spheres";
         };
     }
 
@@ -80,7 +83,7 @@ public enum TrainPhase {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}); null if unknown. */
+    /** Parse a command token ({@code ow}/{@code overworld}/{@code nether}/{@code void}/{@code end}/{@code ud}/{@code upside_down}/{@code chuncks}/{@code spheres}); null if unknown. */
     public static TrainPhase byToken(String token) {
         if (token == null) return null;
         String t = token.trim().toLowerCase(java.util.Locale.ROOT);
@@ -100,8 +103,11 @@ public enum TrainPhase {
      */
     public static TrainPhase phaseAt(ServerLevel overworld, int worldX) {
         // The special bands occupy disjoint cycle sub-ranges, so a column is in at most one. Test the
-        // chuncks and upside-down bands first (they are the bands the nether/End classifiers don't know
+        // spheres, chuncks and upside-down bands first (they are the bands the nether/End classifiers don't know
         // about; chuncks sits after the upside-down exit gap, where the End classifier reads OVERWORLD).
+        if (SpheresBand.isInBand(overworld, worldX)) {
+            return SPHERES;
+        }
         if (ChuncksBand.isInBand(overworld, worldX)) {
             return CHUNCKS;
         }

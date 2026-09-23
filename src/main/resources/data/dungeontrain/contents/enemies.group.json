@@ -119,7 +119,8 @@
       "weight": 4,
       "phases": [
         "NETHER",
-        "CHUNCKS"
+        "CHUNCKS",
+        "SPHERES"
       ]
     },
     {
