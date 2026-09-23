@@ -626,6 +626,51 @@ public final class CarriagePlacer {
     }
 
     /**
+     * Put a whole room's or whole group's decoration back, one carriage at a time.
+     *
+     * <p>The whole path's answer to {@link #spawnShellAndPartsDecor}, and it runs in the same place for
+     * the same reason: a whole slot is stamped in the world only to be lifted into its Sable sub-level
+     * the same tick, so its entities are spawned deferred, at shipyard coordinates, once the group has
+     * settled ({@code TrainCarriageAppender.firePendingWholeDecorSpawns}).</p>
+     *
+     * <p>Per carriage rather than one call over the run, because the mark is per carriage: each entity
+     * has to be tagged to the carriage it actually stands in, or {@code TrainStaticContentsCarrier}
+     * re-anchors a group's far end from the wrong carriage. The slicing is
+     * {@link StructurePlaceSettings#setBoundingBox}, which {@link TemplateDecor#spawn} already clips
+     * against — the same mechanism the portal room's resize path uses to keep a picture out of the plot
+     * next door.</p>
+     *
+     * @param shipyardOrigin the run's lowest corner in shipyard coords
+     * @param firstPIdx      the pIdx of the carriage at {@code shipyardOrigin}
+     * @param carriages      how many carriages the template spans — 1 for a room
+     */
+    public static void spawnWholeDecorAt(ServerLevel level, BlockPos shipyardOrigin, StructureTemplate template,
+                                         int firstPIdx, int carriages, CarriageDims dims) {
+        try {
+            int runs = Math.max(1, carriages);
+            int spawned = 0;
+            for (int i = 0; i < runs; i++) {
+                BlockPos slotMin = shipyardOrigin.offset(i * dims.length(), 0, 0);
+                BoundingBox slot = BoundingBox.fromCorners(slotMin,
+                    slotMin.offset(dims.length() - 1, dims.height() - 1, dims.width() - 1));
+                StructurePlaceSettings settings = new StructurePlaceSettings().setBoundingBox(slot);
+                // The template's own origin stays shipyardOrigin for every slice — the bounding box is
+                // what selects this carriage's entities, not a shifted origin, or a group's second
+                // carriage would spawn its neighbour's decor on top of its own.
+                spawned += TemplateDecor.spawn(level, shipyardOrigin, template, settings,
+                    contentsMark(level, firstPIdx + i));
+            }
+            if (spawned > 0) {
+                LOGGER.info("[DungeonTrain] Whole decor: spawned {} entities across {} carriage(s) pIdx={} at origin={}",
+                    spawned, runs, firstPIdx, shipyardOrigin);
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] template decor: whole pass failed at origin={} pIdx={}: {}",
+                shipyardOrigin, firstPIdx, t.toString());
+        }
+    }
+
+    /**
      * The claim a carriage's decor is spawned under: DT's contents tag plus the spawn anchor, in the
      * shipyard frame, written with the same keys {@link CarriageContentsPlacer} uses. Read by
      * {@code TrainStaticContentsCarrier}, which resolves the carriage owning that coordinate and

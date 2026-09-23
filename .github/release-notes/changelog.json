@@ -17704,6 +17704,51 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "whole-carriage-entities-and-loot",
+      "version": "0.929.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "community",
+        "train",
+        "loot"
+      ],
+      "title": "Whole carriages keep the mobs, pictures and loot their builder placed",
+      "summary": "A whole carriage \u2014 a room or a group built as one piece \u2014 arrived empty of everything that was not a block. The armour stands, paintings, minecarts and mobs its builder stood in it were saved with the build and then never appeared, in the editor or on the train, and opening the build again wrote them out of the file for good. Containers in a downloaded whole carriage came with no loot either. Everything the builder placed now comes with the build.",
+      "highlights": [
+        "Armour stands, paintings, minecarts and mobs stand where their builder left them, in the editor and on a moving train.",
+        "Chests in a whole carriage downloaded from another builder carry the loot they were set up with.",
+        "Saving a whole carriage keeps what is standing in it, instead of quietly emptying it."
+      ],
+      "pr": 1482,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fancy-feature-subvariants-pass",
+      "version": "0.929.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "The prison and the treasure reading room got a pass",
+      "summary": "Two of the fancy carriage interiors were reworked. The broken prison now only turns up in the stages its stonework suits, rather than in every one, and picked up some detailing and a potion stash. The treasure reading room traded half its wall of chests for bookshelves, and the chests that remain now roll their contents from a spread of supply, trade and library stashes instead of holding the same things every time.",
+      "highlights": [
+        "The broken prison appears in stone, spruce, oak, mangrove, jungle, darkwood and acacia stages.",
+        "The treasure reading room's chests vary from one carriage to the next."
+      ],
+      "pr": 1482,
+      "date": "2026-09-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
