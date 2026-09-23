@@ -102,6 +102,13 @@ public final class BedrockFloorEvents {
             return;
         }
 
+        // Spheres band: floating spheres over open void, and a fade where the ground dissolves — no
+        // bedrock floor anywhere the void ramp is non-zero. Per-chunk + deterministic, order-independent
+        // with the carve handler (which would erase the floor anyway outside the spheres).
+        if (SpheresBand.chunkTouchesBand(level, chunkMinX)) {
+            return;
+        }
+
         // The disintegration band's void has no floor — skip bedrock in columns whose band
         // phase is void/End (middleRamp > 0). Computed per column so a chunk straddling a
         // phase edge keeps its overworld bedrock and drops it under the void, independent of

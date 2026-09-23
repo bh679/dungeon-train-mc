@@ -17756,14 +17756,14 @@
       "type": "feat",
       "tags": [
         "feature",
-        "world"
+        "world",
+        "advancements"
       ],
-      "title": "Spheres \u2014 the world comes apart into floating orbs",
-      "summary": "Past the scattered chunks, the ground crumbles away beneath the rails and the train rolls out into open sky. Whole spheres of the natural world hang there at every height \u2014 grassy caps, beaches, ponds and the rock beneath them \u2014 some drifting far above the track, some passing right beneath it, and the bed cuts straight through any that cross its path.",
+      "title": "The train passes through somewhere new",
+      "summary": "There is another dimension on the line now, waiting further down the track. Keep riding \u2014 you'll know it when you get there.",
       "highlights": [
-        "A new stretch of the journey: floating spheres of natural terrain over open void",
-        "The land dissolves gradually on the way in instead of ending at a wall",
-        "Fully configurable: how far apart, how big, how high, and how much of each sphere is underground"
+        "A new stretch of the journey for the train to cross",
+        "A new advancement for those who make it that far"
       ],
       "date": "2026-09-23",
       "released": false,

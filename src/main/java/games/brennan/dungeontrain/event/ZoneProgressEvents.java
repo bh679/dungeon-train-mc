@@ -66,7 +66,11 @@ import java.util.List;
  * {@link ChuncksBand#isInApproachOrBand}). With the chuncks band disabled that gate is inert and the
  * pre-chuncks behaviour is unchanged.</p>
  *
- * <p>All eight are one-shot {@code gameplay_action} markers (same trigger as
+ * <p>After the chuncks comes the spheres band ({@link SpheresBand}) — floating spheres of lifted
+ * terrain over open void — which grants {@code reached_spheres} ("Circle") the same way, and whose
+ * run-up + core also hold back {@code reached_overworld_again} ({@link SpheresBand#isInApproachOrBand}).</p>
+ *
+ * <p>All nine are one-shot {@code gameplay_action} markers (same trigger as
  * {@code landed_on_tracks} etc.); vanilla advancement dedupe makes re-firing the same id every
  * scan a no-op. When disintegration is disabled {@link DisintegrationBand#zoneAt} always returns
  * {@code OVERWORLD} and the overworld-again gate is never satisfied, so nothing fires.</p>
@@ -109,7 +113,17 @@ public final class ZoneProgressEvents {
      */
     private static final int CHUNCKS_DEPTH_BLOCKS = 500;
 
-    /** As {@link #CHUNCKS_DEPTH_BLOCKS}, for the stacks band and {@code reached_stacks}. */
+    /**
+     * How far (blocks) into the spheres band core the player must be before {@code reached_spheres}
+     * ("Circle") is granted — same depth gate as the chuncks marker; the default core (5,000 blocks)
+     * comfortably contains it.
+     */
+    private static final int SPHERES_DEPTH_BLOCKS = 500;
+
+    /**
+     * How far (blocks) into the stacks band core the player must be before {@code reached_stacks}
+     * ("Stack Overflow") is granted — same depth gate as the markers above.
+     */
     private static final int STACKS_DEPTH_BLOCKS = 500;
 
     private ZoneProgressEvents() {}
@@ -172,7 +186,15 @@ public final class ZoneProgressEvents {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_chuncks");
             }
 
-            // Stacks band — the cycle's final phase, a void of floating towers. Same depth gate.
+            // Spheres band — after the chuncks: floating spheres of lifted terrain over open void. Same
+            // depth gate as the bands above.
+            if (SpheresBand.isInBand(level, px)
+                && SpheresBand.isInBand(level, px - SPHERES_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_spheres");
+            }
+
+            // Stacks band — after the spheres, the last phase of the cycle: a void of towers, each one
+            // vanilla structure piece repeated to the sky. Same depth gate.
             if (StacksBand.isInBand(level, px)
                 && StacksBand.isInBand(level, px - STACKS_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_stacks");
@@ -200,8 +222,9 @@ public final class ZoneProgressEvents {
                     // Finally, exclude the chuncks band AND the plain-overworld run-up to it — those
                     // gaps read as OVERWORLD but the world breaks apart again straight after them, so
                     // the overworld has not actually restarted until the band is behind the player —
-                    // and likewise the spheres band that follows it (its lead gap, fade, then core), and
-                    // the stacks band after that (its long lead gap, fade, then core).
+                    // and likewise the spheres band that follows it (its lead gap, fade, then core) and
+                    // the stacks band after that (its long lead gap, fade, then core) — the LAST band, so
+                    // "Re-Over-World" fires on the plain overworld that follows the towers.
                     if (DisintegrationBand.cyclePassIndex(level, px) >= 1
                         && !UpsideDownBand.isInBandEntryLeadOrExit(level, px)
                         && !ChuncksBand.isInApproachOrBand(level, px)
