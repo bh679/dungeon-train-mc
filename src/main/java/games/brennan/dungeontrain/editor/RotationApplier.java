@@ -94,7 +94,7 @@ public final class RotationApplier {
     }
 
     /**
-     * Eight-arg apply: facing pick + half override + redstone-toggle
+     * Eight-arg apply: facing pick + half override + latching redstone-toggle
      * ({@link VariantActive}) pass. ACTIVE / INACTIVE force the block's
      * toggle property; RANDOM rolls it with its own salt via
      * {@link RedstoneToggle#apply}. Pass {@link VariantState#active()} so

@@ -24,29 +24,32 @@ final class RedstoneToggleTest {
     private static final int CARRIAGE_INDEX = 3;
 
     @Test
-    @DisplayName("propertyFor: OPEN wins on doors/trapdoors/gates, then EXTENDED, TRIGGERED, LIT, ENABLED, POWERED")
-    void propertyFor_precedence() {
+    @DisplayName("propertyFor: latching blocks only — trapdoor/door/gate OPEN, lever POWERED, copper bulb LIT")
+    void propertyFor_latchingBlocks() {
         assertSame(BlockStateProperties.OPEN, RedstoneToggle.propertyFor(Blocks.OAK_TRAPDOOR.defaultBlockState()));
-        // Doors carry both OPEN and POWERED — the visible one wins.
+        assertSame(BlockStateProperties.OPEN, RedstoneToggle.propertyFor(Blocks.IRON_TRAPDOOR.defaultBlockState()));
         assertSame(BlockStateProperties.OPEN, RedstoneToggle.propertyFor(Blocks.IRON_DOOR.defaultBlockState()));
+        assertSame(BlockStateProperties.OPEN, RedstoneToggle.propertyFor(Blocks.COPPER_DOOR.defaultBlockState()));
         assertSame(BlockStateProperties.OPEN, RedstoneToggle.propertyFor(Blocks.OAK_FENCE_GATE.defaultBlockState()));
-        assertSame(BlockStateProperties.EXTENDED, RedstoneToggle.propertyFor(Blocks.PISTON.defaultBlockState()));
-        assertSame(BlockStateProperties.TRIGGERED, RedstoneToggle.propertyFor(Blocks.DISPENSER.defaultBlockState()));
-        assertSame(BlockStateProperties.LIT, RedstoneToggle.propertyFor(Blocks.REDSTONE_LAMP.defaultBlockState()));
-        assertSame(BlockStateProperties.LIT, RedstoneToggle.propertyFor(Blocks.REDSTONE_TORCH.defaultBlockState()));
-        assertSame(BlockStateProperties.LIT, RedstoneToggle.propertyFor(Blocks.REDSTONE_WALL_TORCH.defaultBlockState()));
-        assertSame(BlockStateProperties.ENABLED, RedstoneToggle.propertyFor(Blocks.HOPPER.defaultBlockState()));
         assertSame(BlockStateProperties.POWERED, RedstoneToggle.propertyFor(Blocks.LEVER.defaultBlockState()));
-        assertSame(BlockStateProperties.POWERED, RedstoneToggle.propertyFor(Blocks.STONE_BUTTON.defaultBlockState()));
-        assertSame(BlockStateProperties.POWERED, RedstoneToggle.propertyFor(Blocks.NOTE_BLOCK.defaultBlockState()));
+        assertSame(BlockStateProperties.LIT, RedstoneToggle.propertyFor(Blocks.COPPER_BULB.defaultBlockState()));
+        assertSame(BlockStateProperties.LIT, RedstoneToggle.propertyFor(Blocks.WAXED_OXIDIZED_COPPER_BULB.defaultBlockState()));
     }
 
     @Test
-    @DisplayName("propertyFor: fire-lit blocks (candle, furnace, campfire) and plain blocks have no toggle")
-    void propertyFor_nonRedstoneLit_isNull() {
+    @DisplayName("propertyFor: blocks that fall back when the signal stops have no toggle")
+    void propertyFor_signalFollowers_isNull() {
+        assertNull(RedstoneToggle.propertyFor(Blocks.REDSTONE_LAMP.defaultBlockState()));
+        assertNull(RedstoneToggle.propertyFor(Blocks.REDSTONE_TORCH.defaultBlockState()));
+        assertNull(RedstoneToggle.propertyFor(Blocks.PISTON.defaultBlockState()));
+        assertNull(RedstoneToggle.propertyFor(Blocks.DISPENSER.defaultBlockState()));
+        assertNull(RedstoneToggle.propertyFor(Blocks.HOPPER.defaultBlockState()));
+        assertNull(RedstoneToggle.propertyFor(Blocks.STONE_BUTTON.defaultBlockState()));
+        assertNull(RedstoneToggle.propertyFor(Blocks.STONE_PRESSURE_PLATE.defaultBlockState()));
+        assertNull(RedstoneToggle.propertyFor(Blocks.NOTE_BLOCK.defaultBlockState()));
+        assertNull(RedstoneToggle.propertyFor(Blocks.POWERED_RAIL.defaultBlockState()));
+        assertNull(RedstoneToggle.propertyFor(Blocks.BARREL.defaultBlockState()));
         assertNull(RedstoneToggle.propertyFor(Blocks.CANDLE.defaultBlockState()));
-        assertNull(RedstoneToggle.propertyFor(Blocks.FURNACE.defaultBlockState()));
-        assertNull(RedstoneToggle.propertyFor(Blocks.CAMPFIRE.defaultBlockState()));
         assertNull(RedstoneToggle.propertyFor(Blocks.STONE.defaultBlockState()));
         assertNull(RedstoneToggle.propertyFor(null));
         assertFalse(RedstoneToggle.canToggle(Blocks.STONE.defaultBlockState()));
@@ -64,15 +67,15 @@ final class RedstoneToggleTest {
             pos, WORLD_SEED, CARRIAGE_INDEX, 0).getValue(BlockStateProperties.OPEN));
         BlockState stone = Blocks.STONE.defaultBlockState();
         assertSame(stone, RedstoneToggle.apply(stone, VariantActive.active(), pos, WORLD_SEED, CARRIAGE_INDEX, 0));
-        // Hopper: active = enabled.
-        assertTrue(RedstoneToggle.apply(Blocks.HOPPER.defaultBlockState(), VariantActive.active(),
-            pos, WORLD_SEED, CARRIAGE_INDEX, 0).getValue(BlockStateProperties.ENABLED));
+        // Copper bulb: active = lit.
+        assertTrue(RedstoneToggle.apply(Blocks.COPPER_BULB.defaultBlockState(), VariantActive.active(),
+            pos, WORLD_SEED, CARRIAGE_INDEX, 0).getValue(BlockStateProperties.LIT));
     }
 
     @Test
     @DisplayName("apply RANDOM: deterministic per (seed, carriage, pos|lockId) and lands on both sides")
     void apply_random_deterministicAndMixed() {
-        BlockState lamp = Blocks.REDSTONE_LAMP.defaultBlockState();
+        BlockState lamp = Blocks.COPPER_BULB.defaultBlockState();
         int lit = 0;
         int total = 500;
         for (int i = 0; i < total; i++) {

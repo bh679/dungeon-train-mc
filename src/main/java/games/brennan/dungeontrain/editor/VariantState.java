@@ -66,9 +66,9 @@ import org.jetbrains.annotations.Nullable;
  *       JSON when 0, so v8 files round-trip diff-clean. See
  *       {@link CarriageVariantBlocks#resolveGroupRef}.</li>
  *   <li>v10+ (additive, no schema bump) — adds an optional per-entry
- *       {@link VariantActive} for blocks that react to a redstone signal
- *       (trapdoor {@code open}, lamp {@code lit}, piston {@code extended},
- *       lever {@code powered} — see {@link RedstoneToggle#propertyFor}).
+ *       {@link VariantActive} for blocks that latch a toggled state without a
+ *       standing signal (trapdoor / door / gate {@code open}, lever
+ *       {@code powered}, copper bulb {@code lit} — see {@link RedstoneToggle#propertyFor}).
  *       The canonical constructor keeps the stored state's toggle property in
  *       step with the mode, so the default {@code INACTIVE} is omitted from
  *       JSON and older files round-trip diff-clean; a hand-authored
@@ -120,7 +120,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     /**
      * Nine-arg overload — every shorter constructor chains through here — that
      * derives {@code active} from the captured state ({@link VariantActive#fromState}):
-     * a world-block capture of an opened trapdoor or lit lamp stays active, a
+     * a world-block capture of an opened trapdoor or thrown lever stays active, a
      * placement-state capture is inactive. Pass the ten-arg form to force a mode.
      */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,

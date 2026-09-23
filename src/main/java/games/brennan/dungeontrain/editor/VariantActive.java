@@ -6,15 +6,15 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import javax.annotation.Nullable;
 
 /**
- * Per-{@link VariantState} active/inactive config for blocks that react to a
- * redstone signal — a trapdoor's {@code open}, a redstone lamp's {@code lit},
- * a piston's {@code extended}, a lever's {@code powered} (see
- * {@link RedstoneToggle#propertyFor} for the full property precedence).
+ * Per-{@link VariantState} active/inactive config for blocks that latch a
+ * toggled state without a standing signal — a trapdoor, door or fence gate's
+ * {@code open}, a lever's {@code powered}, a copper bulb's {@code lit} (see
+ * {@link RedstoneToggle#propertyFor}; signal-following blocks are excluded).
  * Independent of {@link VariantRotation} and {@link VariantHalf}.
  *
  * <p>Three modes:
  * <ul>
- *   <li>{@link Mode#ACTIVE} — force the toggle property {@code true} (open / lit / extended / powered).</li>
+ *   <li>{@link Mode#ACTIVE} — force the toggle property {@code true} (open / powered / lit).</li>
  *   <li>{@link Mode#RANDOM} — roll active/inactive at spawn time via a seeded roll in
  *       {@link RedstoneToggle}, independent of the facing and half rolls.</li>
  *   <li>{@link Mode#INACTIVE} — force the toggle property {@code false}.</li>

@@ -59,7 +59,7 @@ final class VariantActiveTest {
     @Test
     @DisplayName("JSON: non-default modes emit \"active\"; the default stays a bare string")
     void json_roundTrip() {
-        VariantState active = VariantState.of(Blocks.REDSTONE_LAMP.defaultBlockState()).withActive(VariantActive.active());
+        VariantState active = VariantState.of(Blocks.COPPER_BULB.defaultBlockState()).withActive(VariantActive.active());
         String json = write(active);
         assertTrue(json.contains("\"active\": \"active\""), "missing active field: " + json);
         assertTrue(json.contains("lit=true"), "state string must carry lit=true: " + json);
@@ -89,7 +89,7 @@ final class VariantActiveTest {
         assertEquals(VariantActive.Mode.ACTIVE, fromBare.active().mode(), "bare string with open=true");
         assertTrue(fromBare.state().getValue(BlockStateProperties.OPEN));
 
-        String obj = "{\"state\": \"minecraft:redstone_lamp[lit=true]\", \"weight\": 2}";
+        String obj = "{\"state\": \"minecraft:copper_bulb[lit=true,powered=false]\", \"weight\": 2}";
         VariantState fromObj = parse(obj);
         assertEquals(VariantActive.Mode.ACTIVE, fromObj.active().mode(), "object form with lit=true and no field");
         assertEquals(2, fromObj.weight());
@@ -126,7 +126,7 @@ final class VariantActiveTest {
     @Test
     @DisplayName("editor preview: ACTIVE shows the on form, RANDOM alternates per tick")
     void preview_activePass() {
-        BlockState lamp = Blocks.REDSTONE_LAMP.defaultBlockState();
+        BlockState lamp = Blocks.COPPER_BULB.defaultBlockState();
         assertTrue(VariantEditorPreviewTicker.applyActivePreview(lamp, VariantActive.active(), 0)
             .getValue(BlockStateProperties.LIT));
         assertFalse(VariantEditorPreviewTicker.applyActivePreview(lamp, VariantActive.NONE, 1)

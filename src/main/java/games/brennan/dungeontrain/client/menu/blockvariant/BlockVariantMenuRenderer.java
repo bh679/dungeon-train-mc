@@ -106,7 +106,7 @@ public final class BlockVariantMenuRenderer {
     /** T/R/B pill width — matches the L/R/O pill so the two read as a pair on stairs/trapdoors. */
     static final double HALF_MODE_CELL_WIDTH = 0.34;
     /**
-     * On/R/Off pill width — the redstone-toggle control for trapdoors, lamps, levers…. Wider than
+     * On/R/Off pill width — the redstone-toggle control for trapdoors, doors, gates, levers, copper bulbs. Wider than
      * the single-letter T/R/B pill because "Off" is three glyphs: at the shared width the labels
      * overran into the neighbouring pill (Gate 2 screenshot, v0.928.1).
      */
@@ -328,7 +328,7 @@ public final class BlockVariantMenuRenderer {
             //   [RotDirs]   (only when block is rotatable AND mode != RANDOM)
             //   [RotMode]   (only when block is rotatable)
             //   [HalfMode]  (only when block has SLAB_TYPE or HALF)
-            //   [ActiveMode] (only when block has a redstone toggle — RedstoneToggle.canToggle)
+            //   [ActiveMode] (only on latching blocks — RedstoneToggle.canToggle)
             //   [Name] (fills the remaining left)
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
             BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
@@ -445,7 +445,7 @@ public final class BlockVariantMenuRenderer {
                     halfModeCellL, halfModeCellR, rowBottom, rowTop, rowCY, hovered);
             }
 
-            // Redstone-toggle pill (trapdoors / doors / lamps / pistons / levers …)
+            // Redstone-toggle pill (trapdoors / doors / gates / levers / copper bulbs)
             if (toggleable) {
                 drawActiveModeCell(ps, buffer, font, i, entry,
                     activeModeCellL, activeModeCellR, rowBottom, rowTop, rowCY, hovered);
