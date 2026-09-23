@@ -9,6 +9,7 @@
 #   ain ais pmob ecp te  the five un-bundled sibling mods, at their pinned versions
 #   kt db sff  the three hybrid siblings (also jarJar'd in the DT jar), at their pinned versions
 #   fp moon    Fast Paintings + its Moonlight library (third-party required deps)
+#   bn bclib wover wunder  BetterNether: New Dawn + its three libraries (third-party required deps)
 #   pmob-new   PlayerMob ABOVE the declared floor (uses playermob_version)
 #   pmob-old   PlayerMob BELOW the declared floor (downloaded, see README)
 #
@@ -67,6 +68,10 @@ resolve() {
     # Third-party required deps, keyed by Modrinth VERSION ID (see gradle.properties).
     fp)       cached "maven.modrinth/fast-paintings" "$(prop fastpaintings_version)" ;;
     moon)     cached "maven.modrinth/moonlight"      "$(prop moonlight_version)" ;;
+    bn)       cached "maven.modrinth/betternether-neoforge" "$(prop betternether_version)" ;;
+    bclib)    cached "maven.modrinth/bclib-neoforge"        "$(prop bclib_version)" ;;
+    wover)    cached "maven.modrinth/worldweaver-neoforge"  "$(prop worldweaver_version)" ;;
+    wunder)   cached "maven.modrinth/wunderlib-neoforge"    "$(prop wunderlib_version)" ;;
     # Hybrid siblings — ALSO jarJar'd inside the DT jar. Present as top-level jars they model the
     # CurseForge-app install (nested copy must be skipped); absent they model Modrinth/manual.
     kt)       cached "bh679/keeptrim"                "$(prop keeptrim_version)" ;;

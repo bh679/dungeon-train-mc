@@ -767,6 +767,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         // Third-party required deps (Fast Paintings + its Moonlight library) — floors only.
         fastpaintings_min_version         : fastpaintings_min_version,
         moonlight_min_version             : moonlight_min_version,
+        betternether_min_version          : betternether_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

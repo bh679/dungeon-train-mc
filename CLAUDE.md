@@ -273,7 +273,10 @@ the sibling mods **AIN/AIS/PMOB/ECP/TE are un-bundled required downloads**, decl
 CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit. The third-party
 **Fast Paintings + Moonlight** (`fast-paintings(required)`, `selene(required)`) are hard deps on the same
 contract — paintings are blocks under FP, and templates/shared carriages carry those blocks (see
-`compat/PaintingTransformProcessor` for why flipped stamps still work).
+`compat/PaintingTransformProcessor` for why flipped stamps still work). **BetterNether: New Dawn** + its
+BCLib/WorldWeaver/WunderLib libraries (`betternether-neoforge(required)` etc., same slugs on both platforms)
+are hard deps too — every second Nether band's core uses BetterNether biomes
+(`worldgen/density/BetterNetherCoreBiomes`; `/dungeontrain debug nether-passes` lists each band's biomes).
 On top of those, `modpack.config.json` → `optional_mods[]` bundles the siblings (each carrying
 `dependency_type: required` + a `gradle_property` floor) and the companions, each with a
 `required` flag.
