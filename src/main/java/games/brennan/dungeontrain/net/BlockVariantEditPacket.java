@@ -84,6 +84,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       container-contents {@code fillMin} / {@code fillMax} cells do:
  *       {@code max} runs {@code all → 0 → … → cap → all}; {@code min} wraps
  *       {@code [0, ceiling]}. No-op on non-mob rows.</li>
+ *   <li>{@link Op#REPLACE_WITH_HELD} — shift-click on a row name.
+ *       {@code entryIndex} = row. The server swaps that row's block for the
+ *       sender's main-hand block (empty hand = the empty placeholder, filled
+ *       bucket = the fluid source), keeping the row's weight, rotation lock,
+ *       half mode and difficulty band. Mob and group-reference rows are
+ *       refused, as is anything in hand that is not a block or bucket.</li>
  * </ul>
  *
  * <p>The server validates that the player is OP and is standing inside
@@ -101,7 +107,8 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
                      PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
                      OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX,
-                     SET_WEIGHT, CYCLE_COPY_ROLL, CYCLE_COPY_SCOPE, SET_ACTIVE_MODE }
+                     SET_WEIGHT, CYCLE_COPY_ROLL, CYCLE_COPY_SCOPE,
+                     REPLACE_WITH_HELD, SET_ACTIVE_MODE }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
