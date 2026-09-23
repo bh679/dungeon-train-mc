@@ -1586,7 +1586,7 @@
   "advancements.dungeontrain.dungeon_train.reached_chuncks.description": "Viaja hasta el tramo donde el mundo solo se generó a medias: islas de chunks a la deriva en el vacío.",
   "advancements.dungeontrain.dungeon_train.reached_chuncks.hint": "El mundo deja de cargarse. Sigue adelante.",
   "advancements.dungeontrain.dungeon_train.reached_spheres.title": "Círculo",
-  "advancements.dungeontrain.dungeon_train.reached_spheres.description": "Sal entre las esferas: pedazos redondos del mundo, arrancados y colgados en el cielo a todas las alturas.",
+  "advancements.dungeontrain.dungeon_train.reached_spheres.description": "Sal entre las esferas: pedazos redondos del mundo, arrancados y colgados en el cielo.",
   "advancements.dungeontrain.dungeon_train.reached_spheres.hint": "Ya era hora de que llegaras tan lejos… REDONDAMENTE.",
   "advancements.dungeontrain.dungeon_train.echo_void.title": "Recuerdo reprimido",
   "advancements.dungeontrain.dungeon_train.echo_void.description": "Empuja a tu propio eco fuera del tren, al vacío.",
