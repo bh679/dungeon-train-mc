@@ -271,7 +271,17 @@ public final class TemplateLootPrefabs {
     public static void relink(BuilderPhotoPaths.Kind kind, String subKind, String id,
                               Map<String, String> renames, Collection<String> written) {
         if (renames.isEmpty()) return;
-        String plotKey = TemplateSidecars.plotKeyFor(kind, subKind, id);
+        relinkPlot(TemplateSidecars.plotKeyFor(kind, subKind, id), renames, written);
+    }
+
+    /**
+     * {@link #relink} against a plot key given directly — for a destination that is not a
+     * {@link BuilderPhotoPaths.Kind} and so has no {@code plotKeyFor} answer. The Whole carriage room
+     * is the one such destination: a CARRIAGE or CONTENTS build installed under {@code whole:<id>}, whose
+     * links would otherwise be re-pointed on the carriage plot the build never landed on.
+     */
+    public static void relinkPlot(String plotKey, Map<String, String> renames, Collection<String> written) {
+        if (renames.isEmpty()) return;
         if (plotKey == null) return;
         try {
             ContainerContentsStore store = ContainerContentsStore.loadFor(plotKey);
@@ -285,7 +295,7 @@ public final class TemplateLootPrefabs {
             }
             if (changed) store.save();
         } catch (Exception ex) {
-            LOGGER.warn("[DungeonTrain] Loot prefabs: could not re-link '{}' to renamed prefabs: {}", id, ex.toString());
+            LOGGER.warn("[DungeonTrain] Loot prefabs: could not re-link '{}' to renamed prefabs: {}", plotKey, ex.toString());
         }
     }
 }

@@ -1236,6 +1236,7 @@ public final class TrainCarriageAppender {
      */
     private static void firePendingContentsEntitySpawns(ServerLevel level, TrainTransformProvider provider) {
         firePendingRelayEntitySpawns(level, provider); // leased builds' own entities, same settle point
+        firePendingWholeDecorSpawns(level, provider);   // whole rooms'/groups' own decor, likewise
         PendingContentsEntitySpawn[] pending = provider.takePendingContentsEntitySpawns();
         if (pending == null) return;
         int fired = 0;
@@ -1286,6 +1287,36 @@ public final class TrainCarriageAppender {
         if (slots > 0) {
             LOGGER.info("[DungeonTrain] Placement tracker: spawned {} entity(s) for {} leased carriage(s) in group anchorPIdx={}",
                 spawned, slots, provider.getPIdx());
+        }
+    }
+
+    /**
+     * Spawn the decoration every WHOLE room and whole group in this group carries — the armor stands,
+     * pictures, minecarts and mobs its author saved into the template. Fires from the same settle point,
+     * and for the same reason, as both spawns above.
+     *
+     * <p>A whole slot whose template carries no entities still gets a record; the spawn simply places
+     * nothing. Failures are logged and skipped, exactly as the relay pass does: the blocks are already
+     * down, and a room missing an armor stand beats a group that never finishes spawning.</p>
+     */
+    private static void firePendingWholeDecorSpawns(ServerLevel level, TrainTransformProvider provider) {
+        PendingWholeDecorSpawn[] pending = provider.takePendingWholeDecorSpawns();
+        if (pending == null) return;
+        int slots = 0;
+        for (PendingWholeDecorSpawn p : pending) {
+            if (p == null) continue;
+            slots++;
+            try {
+                CarriagePlacer.spawnWholeDecorAt(level, p.shipyardOrigin(), p.template(),
+                    p.firstCarriagePIdx(), p.carriages(), provider.dims());
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] Deferred whole-decor spawn failed for pIdx={} origin={}: {}",
+                    p.firstCarriagePIdx(), p.shipyardOrigin(), t.toString());
+            }
+        }
+        if (slots > 0) {
+            LOGGER.info("[DungeonTrain] Placement tracker: fired whole-decor spawn for {} slot(s) in group anchorPIdx={}",
+                slots, provider.getPIdx());
         }
     }
 

@@ -701,6 +701,23 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
         return snapshot;
     }
 
+    /**
+     * Whole rooms' and whole groups' template decoration, stashed and fired at the same settle point as
+     * both siblings above. Separate for the reason {@link PendingWholeDecorSpawn}'s javadoc gives.
+     */
+    private volatile PendingWholeDecorSpawn[] pendingWholeDecorSpawns = null;
+
+    public void setPendingWholeDecorSpawns(PendingWholeDecorSpawn[] pending) {
+        this.pendingWholeDecorSpawns = pending;
+    }
+
+    /** Atomically take the pending whole-decor spawns, so the settle branch fires them exactly once. */
+    public PendingWholeDecorSpawn[] takePendingWholeDecorSpawns() {
+        PendingWholeDecorSpawn[] snapshot = pendingWholeDecorSpawns;
+        pendingWholeDecorSpawns = null;
+        return snapshot;
+    }
+
     public PendingContentsEntitySpawn[] takePendingContentsEntitySpawns() {
         PendingContentsEntitySpawn[] snapshot = pendingContentsEntitySpawns;
         pendingContentsEntitySpawns = null;

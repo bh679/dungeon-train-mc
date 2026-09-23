@@ -252,7 +252,7 @@ public final class BuilderRelayDownload {
         boolean wholeRoom = BuilderRelayWholeRoom.requested(parentId) && BuilderRelayWholeRoom.supports(kind);
         BuilderRelayInstall.Outcome installed = wholeRoom
             ? BuilderRelayWholeRoom.install(level, kind, build.buildName(), build.stage(), template, resolution,
-                newName, mine)
+                newName, build.sidecars(), mine)
             : BuilderRelayInstall.install(
                 kind, build.buildName(), build.subKind(), build.stage(), template, resolution, newName,
                 build.sidecars(), mine);
@@ -291,7 +291,17 @@ public final class BuilderRelayDownload {
         // identical files and "keep mine" — are left exactly as they were.
         List<String> prefabsWritten = TemplateLootPrefabs.install(build.lootPrefabs(), prefabs.overwrite(),
                 prefabs.renames());
-        TemplateLootPrefabs.relink(kind, build.subKind(), installedAs, prefabs.renames(), prefabsWritten);
+        // Against the plot the build actually landed on. A whole room is filed under `whole:<id>`, not
+        // under the carriage/contents plot key its source kind would name — re-linking there would edit
+        // a plot this download never wrote.
+        if (wholeRoom) {
+            TemplateLootPrefabs.relinkPlot(
+                games.brennan.dungeontrain.editor.BlockVariantPlot.wholeKey(
+                    games.brennan.dungeontrain.train.WholeKind.ROOM, installedAs),
+                prefabs.renames(), prefabsWritten);
+        } else {
+            TemplateLootPrefabs.relink(kind, build.subKind(), installedAs, prefabs.renames(), prefabsWritten);
+        }
         // The creative tab lists prefabs from a client-side copy of the registry, pushed on join and
         // after an in-game save. A prefab that arrived with a build is a new entry too, and without
         // this push it exists on disk but not in the tab until the next join.

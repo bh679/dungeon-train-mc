@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
+import games.brennan.dungeontrain.template.TemplateDecor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -58,9 +59,18 @@ public final class WholeCarriagePlacer {
         }
         CarriageStampGuard.run(() -> {
             CarriagePlacer.eraseAt(level, origin, dims);
-            // Entities are ignored to match the capture, which fills from world without them.
+            // Vanilla's own entity pass stays off, as it does at every stamp site in this mod — the
+            // processor chain is in charge of what lands. The decoration follows separately, through
+            // TemplateDecor, exactly as CarriagePlacer.stampTemplate does for a shell. It has to:
+            // captureTemplate below keeps the author's armor stands, pictures, mobs and minecarts,
+            // so a stamp that put none back would lose them on the next save.
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
+            // replace, not spawn: a caller may stamp over a plot nobody cleared first
+            // (Template.Carriage, BuilderWorldSetup's open path), and a re-stamp must not hang a
+            // second copy of every picture through the first.
+            TemplateDecor.replace(level, origin, template.get(), new StructurePlaceSettings(),
+                    /*mark*/ null, TemplateDecor.Rule.CARRIAGE);
         });
         return true;
     }
