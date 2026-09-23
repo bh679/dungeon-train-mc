@@ -6,12 +6,14 @@ import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.SecondLapOverworld;
 import games.brennan.dungeontrain.worldgen.density.BandBiomeDecision;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
 import games.brennan.dungeontrain.worldgen.density.OverworldStretchBiomes;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -35,10 +37,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p>A cancellable HEAD inject, not a return-value modifier: TerraBlender (Biomes O' Plenty's library)
  * answers this method from its own HEAD inject and cancels, so a RETURN hook never sees its answer. The
- * lower priority applies this mixin first, so its callback runs ahead of TerraBlender's.</p>
+ * lower priority applies this mixin first, so its callback runs ahead of TerraBlender's. TerraBlender
+ * also fills each chunk through a clone of the source, so the overworld is recognised by a mark field
+ * the clone inherits ({@link OverworldBiomeSourceMark}), not by identity.</p>
  */
 @Mixin(value = MultiNoiseBiomeSource.class, priority = 500)
-public abstract class MultiNoiseBiomeSourceMixin {
+public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSourceMark {
+
+    @Unique
+    private boolean dungeontrain$overworld;
+
+    @Override
+    public void dungeontrain$markOverworld() {
+        this.dungeontrain$overworld = true;
+    }
+
+    @Override
+    public boolean dungeontrain$isOverworld() {
+        return this.dungeontrain$overworld;
+    }
 
     private static final org.slf4j.Logger dungeontrain$LOGGER = LogUtils.getLogger();
     private static final LogFirstN dungeontrain$FORCE_ERRORS = new LogFirstN(5);
@@ -51,10 +68,11 @@ public abstract class MultiNoiseBiomeSourceMixin {
         long genT0 = GenProfiler.t0();
         try {
             NetherBandContext ctx = NetherBandContext.current();
-            // Overworld-only: the Nether also uses a MultiNoiseBiomeSource, so gate on the instance.
-            if (ctx == null || (Object) this != ctx.overworldBiomeSource()) return;
+            // Overworld-only: the Nether also uses a MultiNoiseBiomeSource. The mark (not identity)
+            // also covers TerraBlender's per-chunk clones of the overworld source.
+            if (ctx == null || !(dungeontrain$overworld || (Object) this == ctx.overworldBiomeSource())) return;
             Holder<Biome> forced = dungeontrain$bandBiome(ctx, x, y, z);
-            if (forced == null) forced = dungeontrain$stretchBiome(ctx, x, y, z, sampler);
+            if (forced == null) forced = dungeontrain$stretchBiome(ctx, (MultiNoiseBiomeSource) (Object) this, x, y, z, sampler);
             if (forced != null) cir.setReturnValue(forced);
         } catch (Throwable t) {
             dungeontrain$FORCE_ERRORS.error(dungeontrain$LOGGER,
@@ -65,10 +83,11 @@ public abstract class MultiNoiseBiomeSourceMixin {
     }
 
     /** The second-lap stretch biome (BoP or vanilla), or {@code null} to leave the live source's pick. */
-    private static Holder<Biome> dungeontrain$stretchBiome(NetherBandContext ctx, int x, int y, int z, Climate.Sampler sampler) {
+    private static Holder<Biome> dungeontrain$stretchBiome(NetherBandContext ctx, MultiNoiseBiomeSource source,
+                                                         int x, int y, int z, Climate.Sampler sampler) {
         OverworldStretchBiomes stretchBiomes = OverworldStretchBiomes.current();
         if (stretchBiomes == null) return null;
-        return stretchBiomes.pick(SecondLapOverworld.at(ctx.cycle(), x << 2), x, y, z, sampler);
+        return stretchBiomes.pick(SecondLapOverworld.at(ctx.cycle(), x << 2), source, x, y, z, sampler);
     }
 
     /** The forced Nether-core / End-core / highland biome, or {@code null} for an ordinary column. */

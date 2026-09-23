@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.worldgen.density.EndCoreBiomes;
 import games.brennan.dungeontrain.worldgen.density.NetherBandBiomeSet;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
+import games.brennan.dungeontrain.worldgen.density.OverworldBiomeSourceMark;
 import games.brennan.dungeontrain.worldgen.density.OverworldStretchBiomes;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -100,6 +101,8 @@ public final class NetherBandContextEvents {
 
             // Overworld biome source (identity gate) + resolved highland palette for the biome-source mixin.
             BiomeSource overworldBiomeSource = overworld.getChunkSource().getGenerator().getBiomeSource();
+            // Mark it rather than rely on identity: TerraBlender fills chunks through clones of it.
+            if (overworldBiomeSource instanceof OverworldBiomeSourceMark mark) mark.dungeontrain$markOverworld();
             NetherBandBiomeSet highlandBiomes = NetherBandBiomeSet.resolve(
                     overworld.registryAccess().lookupOrThrow(Registries.BIOME), data.getGenerationSeed());
             // Core columns sample ALL five real Nether biomes the way the Nether does (red/teal/blue/grey
@@ -131,7 +134,7 @@ public final class NetherBandContextEvents {
                     netherCore));
             // Second-lap overworld stretches: BoP only in its stretch, vanilla elsewhere. Published
             // alongside the band context so it is live before the first chunk bakes too.
-            OverworldStretchBiomes.publish(OverworldStretchBiomes.resolve(server, overworldBiomeSource));
+            OverworldStretchBiomes.publish(OverworldStretchBiomes.resolve(server));
             // Intermediate per-dimension-load republishes log at debug to avoid 3+ identical
             // info lines per start; the ServerStarted refresh logs the final snapshot at info.
             if (logInfo) {

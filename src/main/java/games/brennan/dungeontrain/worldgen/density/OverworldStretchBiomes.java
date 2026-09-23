@@ -11,7 +11,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
@@ -44,6 +43,9 @@ import java.util.Map;
  *       leaves as TerraBlender's "deferred" placeholder falls through to vanilla, as TerraBlender does.</li>
  * </ul>
  *
+ * <p>The region layout is read from the source being asked — TerraBlender gives each chunk fill its
+ * own clone of the source and layout, because the layout's cache isn't thread-safe.</p>
+ *
  * <p>Published at the same moments as {@link NetherBandContext}; {@code null} before then, which
  * leaves the live source's pick untouched.</p>
  */
@@ -58,19 +60,16 @@ public final class OverworldStretchBiomes {
     private final Climate.ParameterList<ResourceKey<Biome>> vanilla;
     private final List<Climate.ParameterList<ResourceKey<Biome>>> bopRegions;
     private final Map<ResourceLocation, Integer> bopRegionIndex;
-    private final IExtendedParameterList<?> regionLayout; // nullable — TerraBlender not initialised here
     private final Holder<Biome> fallback;
 
     private OverworldStretchBiomes(Registry<Biome> biomes,
                                    Climate.ParameterList<ResourceKey<Biome>> vanilla,
                                    List<Climate.ParameterList<ResourceKey<Biome>>> bopRegions,
-                                   Map<ResourceLocation, Integer> bopRegionIndex,
-                                   IExtendedParameterList<?> regionLayout, Holder<Biome> fallback) {
+                                   Map<ResourceLocation, Integer> bopRegionIndex, Holder<Biome> fallback) {
         this.biomes = biomes;
         this.vanilla = vanilla;
         this.bopRegions = bopRegions;
         this.bopRegionIndex = bopRegionIndex;
-        this.regionLayout = regionLayout;
         this.fallback = fallback;
     }
 
@@ -95,10 +94,11 @@ public final class OverworldStretchBiomes {
      * The biome for the quart {@code (qx, qy, qz)} in this stretch. The {@link SecondLapOverworld.Stretch#WWOO}
      * stretch picks vanilla biomes — WWOO's look comes from its features, not its biome ids.
      */
-    public Holder<Biome> pick(SecondLapOverworld.Stretch stretch, int qx, int qy, int qz, Climate.Sampler sampler) {
+    public Holder<Biome> pick(SecondLapOverworld.Stretch stretch, MultiNoiseBiomeSource source,
+                              int qx, int qy, int qz, Climate.Sampler sampler) {
         Climate.TargetPoint target = sampler.sample(qx, qy, qz);
         if (stretch == SecondLapOverworld.Stretch.BOP && !bopRegions.isEmpty()) {
-            ResourceKey<Biome> key = bopRegionAt(qx, qy, qz).findValue(target);
+            ResourceKey<Biome> key = bopRegionAt(regionLayout(source), qx, qy, qz).findValue(target);
             if (key != Region.DEFERRED_PLACEHOLDER) {
                 Holder<Biome> h = holder(key);
                 if (h != null) return h;
@@ -108,7 +108,14 @@ public final class OverworldStretchBiomes {
         return h != null ? h : fallback;
     }
 
-    private Climate.ParameterList<ResourceKey<Biome>> bopRegionAt(int qx, int qy, int qz) {
+    /** TerraBlender's region layout on this source (or its clone), or {@code null} without one. */
+    private static IExtendedParameterList<?> regionLayout(MultiNoiseBiomeSource source) {
+        return ((MultiNoiseBiomeSourceAccessor) source).dungeontrain$parameters()
+                instanceof IExtendedParameterList<?> ext ? ext : null;
+    }
+
+    private Climate.ParameterList<ResourceKey<Biome>> bopRegionAt(IExtendedParameterList<?> regionLayout,
+                                                                  int qx, int qy, int qz) {
         if (regionLayout == null || !regionLayout.isInitialized()) return bopRegions.get(0);
         int index = regionLayout.getUniqueness(qx, qy, qz);
         Region region = regionLayout.getRegion(index);
@@ -120,8 +127,8 @@ public final class OverworldStretchBiomes {
         return biomes.getHolder(key).orElse(null);
     }
 
-    /** Build from the server's biome registry and the live overworld source; {@code null} on any failure. */
-    public static OverworldStretchBiomes resolve(MinecraftServer server, BiomeSource overworldSource) {
+    /** Build from the server's biome registry and TerraBlender's regions; {@code null} on any failure. */
+    public static OverworldStretchBiomes resolve(MinecraftServer server) {
         try {
             Registry<Biome> biomes = server.registryAccess().registryOrThrow(Registries.BIOME);
             Holder<Biome> fallback = biomes.getHolderOrThrow(Biomes.PLAINS);
@@ -144,14 +151,8 @@ public final class OverworldStretchBiomes {
                 bopRegions.add(new Climate.ParameterList<>(points));
             }
 
-            IExtendedParameterList<?> layout = null;
-            if (overworldSource instanceof MultiNoiseBiomeSource multiNoise
-                    && ((MultiNoiseBiomeSourceAccessor) multiNoise).dungeontrain$parameters()
-                            instanceof IExtendedParameterList<?> ext) {
-                layout = ext;
-            }
             return new OverworldStretchBiomes(biomes, vanilla, List.copyOf(bopRegions),
-                    Map.copyOf(bopRegionIndex), layout, fallback);
+                    Map.copyOf(bopRegionIndex), fallback);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to build the second-lap overworld biome tables; overworld stays as generated", t);
             return null;
