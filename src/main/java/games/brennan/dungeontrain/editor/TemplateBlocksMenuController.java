@@ -365,7 +365,7 @@ public final class TemplateBlocksMenuController {
      * type …), so a swap keeps the original orientation/shape. Properties the
      * new block lacks fall back to its defaults.
      */
-    private static BlockState transferProperties(BlockState from, Block newBlock) {
+    static BlockState transferProperties(BlockState from, Block newBlock) {
         BlockState result = newBlock.defaultBlockState();
         for (Property<?> p : from.getProperties()) {
             result = copyProperty(result, from, p);

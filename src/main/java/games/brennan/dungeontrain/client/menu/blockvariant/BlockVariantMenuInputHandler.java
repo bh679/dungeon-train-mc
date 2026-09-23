@@ -210,6 +210,13 @@ public final class BlockVariantMenuInputHandler {
             }
             case ENTRY_NAME -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                // Shift-click swaps the row for the block in hand; the server
+                // reads the main-hand stack and keeps the row's other settings.
+                if (shift) {
+                    DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                        BlockVariantEditPacket.Op.REPLACE_WITH_HELD, variantId, local, hit.index(), "", 0));
+                    return;
+                }
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
                 // A linked variant row routes to the container menu so the
                 // user can edit the loot template directly. Unlinked rows
