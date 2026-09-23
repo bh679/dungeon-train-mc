@@ -117,7 +117,8 @@
       "OVERWORLD",
       "VOID",
       "UPSIDE_DOWN",
-      "BETA"
+      "BETA",
+      "CLASSIC"
     ]
   },
   "vase": 1,

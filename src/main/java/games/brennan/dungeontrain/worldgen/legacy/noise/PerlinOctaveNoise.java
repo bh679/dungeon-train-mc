@@ -1,7 +1,7 @@
 /*
  * Adapted from Moderner Beta (https://github.com/Nostalgica-Reverie/moderner-beta),
  * util/noise/PerlinOctaveNoise.java. Copyright (c) 2021 B3spectacled. MIT License — see THIRD_PARTY_NOTICES.md.
- * Trimmed to the Alpha/Beta samplers.
+ * Trimmed to the Alpha/Beta samplers ({@link #sample2D} is also Classic / Indev's {@code sampleXY}).
  */
 package games.brennan.dungeontrain.worldgen.legacy.noise;
 
@@ -13,9 +13,14 @@ public final class PerlinOctaveNoise {
     private final PerlinNoise[] noises;
 
     public PerlinOctaveNoise(Random random, int octaves) {
+        this(random, octaves, true);
+    }
+
+    /** {@code useOffset == false}: the Classic / Indev octaves (see {@link PerlinNoise#PerlinNoise(Random, boolean)}). */
+    public PerlinOctaveNoise(Random random, int octaves, boolean useOffset) {
         this.noises = new PerlinNoise[octaves];
         for (int i = 0; i < octaves; i++) {
-            noises[i] = new PerlinNoise(random);
+            noises[i] = new PerlinNoise(random, useOffset);
         }
     }
 

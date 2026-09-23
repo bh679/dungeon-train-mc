@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels;
+import net.minecraft.Util;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -117,6 +119,13 @@ public final class LegacyBands {
         cacheSeed = Long.MIN_VALUE;
     }
 
+    /** Drop the built Classic levels (server stop) — they are rebuilt on demand, byte-identically. */
+    public static void releaseLevels() {
+        ClassicLevels c = classic;
+        if (c != null) c.clear();
+        classic = null;
+    }
+
     // ---- generators ------------------------------------------------------------------
 
     private static volatile BetaTerrain beta;
@@ -128,6 +137,21 @@ public final class LegacyBands {
         synchronized (LegacyBands.class) {
             if (beta == null || beta.seed() != seed) beta = new BetaTerrain(seed);
             return beta;
+        }
+    }
+
+    private static volatile ClassicLevels classic;
+
+    /** The Classic level tiles + cache for {@code seed}; one shared instance per seed. */
+    public static ClassicLevels classic(long seed) {
+        ClassicLevels c = classic;
+        if (c != null && c.seed() == seed) return c;
+        synchronized (LegacyBands.class) {
+            if (classic == null || classic.seed() != seed) {
+                if (classic != null) classic.clear();
+                classic = new ClassicLevels(seed, Util.backgroundExecutor());
+            }
+            return classic;
         }
     }
 

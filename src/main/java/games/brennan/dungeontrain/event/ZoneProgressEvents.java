@@ -134,6 +134,9 @@ public final class ZoneProgressEvents {
      */
     private static final int BETA_DEPTH_BLOCKS = 500;
 
+    /** Depth into the Classic legacy band core before {@code reached_classic} — same gate as above. */
+    private static final int CLASSIC_DEPTH_BLOCKS = 500;
+
     private ZoneProgressEvents() {}
 
     @SubscribeEvent
@@ -212,6 +215,12 @@ public final class ZoneProgressEvents {
             if (LegacyBands.isInBand(level, LegacyBandKind.BETA, px)
                 && LegacyBands.isInBand(level, LegacyBandKind.BETA, px - BETA_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_beta");
+            }
+
+            // Classic legacy band — after Beta: tiled Classic 0.30 levels. Same depth gate.
+            if (LegacyBands.isInBand(level, LegacyBandKind.CLASSIC, px)
+                && LegacyBands.isInBand(level, LegacyBandKind.CLASSIC, px - CLASSIC_DEPTH_BLOCKS)) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_classic");
             }
 
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {

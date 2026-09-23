@@ -44,6 +44,10 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
             switch (kind) {
                 case BETA -> BetaPopulator.populate(level, LegacyBands.beta(seed), chunk.x, chunk.z);
+                // Classic planted its trees, flowers and mushrooms while building the level — already written.
+                case CLASSIC -> {
+                    return false;
+                }
             }
             return true;
         } catch (Throwable t) {

@@ -14,7 +14,9 @@ import java.util.Locale;
  */
 public enum LegacyBandKind {
     /** Beta 1.7.3 — climate-driven terrain, sand/gravel beaches, overhangs, Beta caves and decoration. */
-    BETA;
+    BETA,
+    /** Classic 0.30 — finite 256 × 256 levels, tiled along the band with Classic's border sea between them. */
+    CLASSIC;
 
     /** Lower-cased config / command token ({@code beta}). */
     public String token() {

@@ -138,5 +138,6 @@ public final class NetherBandContextEvents {
     public static void onServerStopping(ServerStoppingEvent event) {
         NetherBandContext.clear();
         games.brennan.dungeontrain.worldgen.legacy.LegacyBiomes.clear();
+        games.brennan.dungeontrain.worldgen.legacy.LegacyBands.releaseLevels();
     }
 }

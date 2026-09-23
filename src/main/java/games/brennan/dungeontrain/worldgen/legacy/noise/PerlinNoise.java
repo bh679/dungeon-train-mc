@@ -20,9 +20,17 @@ public final class PerlinNoise {
     private final double offsetZ;
 
     public PerlinNoise(Random random) {
-        this.offsetX = random.nextDouble() * 256.0D;
-        this.offsetY = random.nextDouble() * 256.0D;
-        this.offsetZ = random.nextDouble() * 256.0D;
+        this(random, true);
+    }
+
+    /**
+     * {@code useOffset == false} is the Classic / Indev form: the lattice sits at the origin and no origin
+     * doubles are drawn, so the shuffle consumes the {@link Random} as those generators did.
+     */
+    public PerlinNoise(Random random, boolean useOffset) {
+        this.offsetX = useOffset ? random.nextDouble() * 256.0D : 0.0D;
+        this.offsetY = useOffset ? random.nextDouble() * 256.0D : 0.0D;
+        this.offsetZ = useOffset ? random.nextDouble() * 256.0D : 0.0D;
         for (int i = 0; i < 256; i++) {
             permutations[i] = i;
         }

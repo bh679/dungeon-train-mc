@@ -89,6 +89,30 @@ final class LegacyBandLayoutTest {
     }
 
     @Test
+    @DisplayName("two spans sit back to back in declaration order: Beta's slot, then Classic's")
+    void spansInOrder() {
+        LegacySpan classic = new LegacySpan(LegacyBandKind.CLASSIC, 80, 30, 120);
+        WorldGenCycle c = cycle(BETA, classic);
+        assertEquals(preLegacy().period() + 400 + 80 + 2 * 30 + 120, c.period());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.BETA, x(200)));
+        assertFalse(c.isInLegacyBand(LegacyBandKind.CLASSIC, x(200)));
+        assertNull(c.legacyAt(x(400 + 79)));             // Classic's lead gap
+        assertEquals(LegacyBandKind.CLASSIC, c.legacyAt(x(400 + 80)).kind());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.CLASSIC, x(400 + 110)));
+        assertTrue(c.isInLegacyBand(LegacyBandKind.CLASSIC, x(400 + 229)));
+        assertFalse(c.isInLegacyBand(LegacyBandKind.CLASSIC, x(400 + 230)));
+        assertNull(c.legacyAt(x(400 + 260)));            // next cycle
+    }
+
+    @Test
+    @DisplayName("a disabled Classic span leaves Beta's layout untouched")
+    void disabledSecondSpan() {
+        WorldGenCycle both = cycle(BETA, new LegacySpan(LegacyBandKind.CLASSIC, 80, 30, 0));
+        assertEquals(cycle(BETA).period(), both.period());
+        assertTrue(both.isInLegacyBand(LegacyBandKind.BETA, x(200)));
+    }
+
+    @Test
     @DisplayName("zero fade is a hard edge: ramp jumps straight to 1")
     void hardEdge() {
         WorldGenCycle c = cycle(new LegacySpan(LegacyBandKind.BETA, 100, 0, 200));

@@ -5,7 +5,8 @@
       "OVERWORLD",
       "VOID",
       "END",
-      "BETA"
+      "BETA",
+      "CLASSIC"
     ]
   },
   "nethertracks": {
@@ -20,7 +21,8 @@
       "OVERWORLD",
       "VOID",
       "END",
-      "BETA"
+      "BETA",
+      "CLASSIC"
     ]
   },
   "sleepside": {
@@ -29,7 +31,8 @@
       "OVERWORLD",
       "VOID",
       "END",
-      "BETA"
+      "BETA",
+      "CLASSIC"
     ]
   }
 }
