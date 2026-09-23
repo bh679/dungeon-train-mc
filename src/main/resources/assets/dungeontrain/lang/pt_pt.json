@@ -1185,7 +1185,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Tabela de saque: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Saque predefinido: %1$s, %2$s%% de probabilidade",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variante: %s%% de probabilidade de aparecer",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "Melhores: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Valor: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "Peso",
   "gui.dungeontrain.editor_screen.sheet.share": "%s subvariantes partilham o sorteio",

@@ -1583,7 +1583,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Loot table: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Default loot: %1$s, %2$s%% chance",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variant: %s%% chance to appear",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "Best: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Value: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "Weight",
   "gui.dungeontrain.editor_screen.sheet.share": "%s sub-variants share the roll",

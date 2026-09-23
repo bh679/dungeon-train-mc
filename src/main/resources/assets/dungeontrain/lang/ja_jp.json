@@ -1154,7 +1154,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "ルートテーブル: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "既定の戦利品: %1$s、確率 %2$s%%",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "バリアント: 出現確率 %s%%",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "ベスト: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "価値: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "重み",
   "gui.dungeontrain.editor_screen.sheet.share": "%s個のサブバリアントが抽選を共有",

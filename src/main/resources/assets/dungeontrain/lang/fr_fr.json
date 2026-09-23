@@ -1185,7 +1185,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Table de butin : %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Butin par défaut : %1$s, %2$s %% de chance",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variante : %s %% de chance d'apparaître",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "Meilleurs : %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Valeur : %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "Poids",
   "gui.dungeontrain.editor_screen.sheet.share": "%s sous-variantes partagent le tirage",

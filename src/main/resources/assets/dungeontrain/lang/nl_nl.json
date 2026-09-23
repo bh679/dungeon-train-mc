@@ -1185,7 +1185,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Buittabel: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Standaardbuit: %1$s, %2$s%% kans",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variant: %s%% kans om te verschijnen",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "Beste: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Waarde: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "Gewicht",
   "gui.dungeontrain.editor_screen.sheet.share": "%s subvarianten delen dezelfde worp",

@@ -1154,7 +1154,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Jadual rampasan: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Rampasan lalai: %1$s, peluang %2$s%%",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Varian: peluang muncul %s%%",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "Terbaik: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Nilai: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "Berat",
   "gui.dungeontrain.editor_screen.sheet.share": "%s sub-varian berkongsi undian",

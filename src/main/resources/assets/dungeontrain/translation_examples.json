@@ -3711,14 +3711,6 @@
       ]
     }
   },
-  "gui.dungeontrain.editor_screen.sheet.loot_best": {
-    "1": {
-      "label": "a comma-separated list of the best item names this container can give",
-      "examples": [
-        "Diamond Sword, Golden Apple, Bread"
-      ]
-    }
-  },
   "gui.dungeontrain.editor_screen.sheet.loot_value": {
     "1": {
       "label": "a loot value score with one decimal place",

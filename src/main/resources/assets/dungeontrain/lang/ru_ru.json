@@ -1221,7 +1221,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Таблица добычи: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Добыча по умолчанию: %1$s, шанс %2$s%%",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Вариант: шанс появления %s%%",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "Лучшее: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Ценность: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "Частота",
   "gui.dungeontrain.editor_screen.sheet.share": "%s подвариантов используют общий бросок",

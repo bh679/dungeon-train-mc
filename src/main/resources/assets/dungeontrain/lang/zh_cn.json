@@ -1154,7 +1154,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "战利品表：%s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "默认战利品：%1$s，%2$s%% 几率",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "变体：%s%% 的出现几率",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "最佳：%s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "价值：%s",
   "gui.dungeontrain.editor_screen.sheet.weight": "权重",
   "gui.dungeontrain.editor_screen.sheet.share": "%s 个子变体共用同一次抽取",

@@ -1154,7 +1154,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "전리품 테이블: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "기본 전리품: %1$s, 확률 %2$s%%",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "변형: 등장 확률 %s%%",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "최고: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "가치: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "가중치",
   "gui.dungeontrain.editor_screen.sheet.share": "하위 변형 %s개가 확률을 공유함",

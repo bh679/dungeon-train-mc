@@ -29,8 +29,8 @@ public final class LootValue {
     /** What a vanilla loot table is worth here: its contents are server data the client cannot see. */
     public static final double UNKNOWN_TABLE = 1.0;
 
-    /** How many of the best items a Loot tooltip names. */
-    public static final int TOP_ITEMS = 3;
+    /** How many of the best items a Loot tooltip shows — one tooltip row of icons. */
+    public static final int TOP_ITEMS = 9;
 
     private static final double RARITY_WEIGHT = 2.0;
     private static final double ENCHANT_LEVEL_WEIGHT = 0.5;

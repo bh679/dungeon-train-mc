@@ -1616,7 +1616,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Tabel de pradă: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Pradă implicită: %1$s, %2$s%% șanse",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variantă: %s%% șanse să apară",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "Cele mai bune: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Valoare: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "Pondere",
   "gui.dungeontrain.editor_screen.sheet.share": "%s subvariante împart aceeași tragere",

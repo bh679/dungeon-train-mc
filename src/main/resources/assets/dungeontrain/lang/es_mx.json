@@ -1185,7 +1185,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "Tabla de botín: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "Botín predeterminado: %1$s, %2$s%% de probabilidad",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "Variante: %s%% de probabilidad de aparecer",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "Mejores: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "Valor: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "Peso",
   "gui.dungeontrain.editor_screen.sheet.share": "%s subvariantes comparten la tirada",

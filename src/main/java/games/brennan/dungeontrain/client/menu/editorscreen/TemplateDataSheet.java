@@ -87,10 +87,16 @@ public final class TemplateDataSheet {
      *               off is one that may not spawn, and carries a corner mark
      * @param icon   drawn before {@code text} when present; an icon cell's text is its count, or
      *               empty for one
+     * @param tipIcons items drawn as icons under the tooltip's text — a loot block's best items
      */
-    public record Cell(String text, Action action, boolean on, String tooltip, ItemStack icon) {
+    public record Cell(String text, Action action, boolean on, String tooltip, ItemStack icon,
+                       List<ItemStack> tipIcons) {
+        public Cell {
+            tipIcons = tipIcons == null ? List.of() : List.copyOf(tipIcons);
+        }
+
         public static Cell plain(String text) {
-            return new Cell(text, null, true, null, null);
+            return new Cell(text, null, true, null, null, List.of());
         }
 
         /**
@@ -99,15 +105,20 @@ public final class TemplateDataSheet {
          * icon this small.
          */
         public static Cell icon(ItemStack icon, int count, boolean on) {
-            return new Cell(count > 1 ? Integer.toString(count) : "", null, on, null, icon.copyWithCount(1));
+            return new Cell(count > 1 ? Integer.toString(count) : "", null, on, null, icon.copyWithCount(1),
+                List.of());
         }
 
         public Cell(String text, Action action, boolean on) {
-            this(text, action, on, null, null);
+            this(text, action, on, null, null, List.of());
         }
 
         public Cell withTooltip(String tooltip) {
-            return new Cell(text, action, on, tooltip, icon);
+            return new Cell(text, action, on, tooltip, icon, tipIcons);
+        }
+
+        public Cell withTipIcons(List<ItemStack> icons) {
+            return new Cell(text, action, on, tooltip, icon, icons);
         }
 
         public boolean isIcon() {
@@ -326,10 +337,11 @@ public final class TemplateDataSheet {
     private static Cell lootCell(TemplateLoot.LootBlock loot) {
         String name = loot.block().getName().getString();
         return blockCell(loot.block(), loot.count(), !loot.isVariant(), name)
-            .withTooltip(lootTooltip(loot, name));
+            .withTooltip(lootTooltip(loot, name))
+            .withTipIcons(loot.topItems().stream().map(ItemStack::new).toList());
     }
 
-    /** Name, where its loot comes from, its chance if a variant, its best items, and its value. */
+    /** Name, where its loot comes from, its chance if a variant, and its value; the best items ride as icons. */
     static String lootTooltip(TemplateLoot.LootBlock loot, String name) {
         StringBuilder sb = new StringBuilder(loot.count() > 1 ? name + " ×" + loot.count() : name);
         sb.append('\n').append(switch (loot.source()) {
@@ -341,11 +353,6 @@ public final class TemplateDataSheet {
         });
         if (loot.isVariant()) {
             sb.append('\n').append(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VARIANT, loot.chance()));
-        }
-        if (!loot.topItems().isEmpty()) {
-            List<String> names = loot.topItems().stream()
-                .map(i -> new ItemStack(i).getHoverName().getString()).toList();
-            sb.append('\n').append(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_BEST, String.join(", ", names)));
         }
         sb.append('\n').append(EditorScreenLang.text(EditorScreenLang.SHEET_LOOT_VALUE,
             String.format(java.util.Locale.ROOT, "%.1f", loot.value())));

@@ -521,6 +521,13 @@ public final class EditorDetailPane {
         };
     }
 
+    /** Item icons to draw under the hovered sheet cell's tooltip; empty for anything else. */
+    public List<net.minecraft.world.item.ItemStack> tooltipIconsAt(Hit hit) {
+        if (hit.kind() != HitKind.SHEET) return List.of();
+        TemplateDataSheet.Placed placed = sheetCell(hit.index());
+        return placed == null ? List.of() : placed.cell().tipIcons();
+    }
+
     /** The sheet cell a click landed on, or null. */
     public TemplateDataSheet.Placed sheetCell(int index) {
         return index >= 0 && index < sheetCells.size() ? sheetCells.get(index) : null;

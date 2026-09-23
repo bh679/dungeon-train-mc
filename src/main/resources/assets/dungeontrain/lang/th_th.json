@@ -1154,7 +1154,6 @@
   "gui.dungeontrain.editor_screen.sheet.loot_source.table": "ตารางของรางวัล: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_source.default": "ของรางวัลเริ่มต้น: %1$s, โอกาส %2$s%%",
   "gui.dungeontrain.editor_screen.sheet.loot_variant": "แบบต่างๆ: โอกาสปรากฏ %s%%",
-  "gui.dungeontrain.editor_screen.sheet.loot_best": "ดีที่สุด: %s",
   "gui.dungeontrain.editor_screen.sheet.loot_value": "มูลค่า: %s",
   "gui.dungeontrain.editor_screen.sheet.weight": "น้ำหนัก",
   "gui.dungeontrain.editor_screen.sheet.share": "รูปแบบย่อย %s แบบใช้การสุ่มร่วมกัน",
