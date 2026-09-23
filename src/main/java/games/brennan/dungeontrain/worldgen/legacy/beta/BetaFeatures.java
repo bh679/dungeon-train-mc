@@ -15,7 +15,7 @@ import java.util.Random;
  * veins and clay patches, flowers and grass, dead bushes, reeds, pumpkins, cacti and springs. Dungeons
  * live in {@link BetaDungeon}; trees in {@link BetaTrees}.
  */
-final class BetaFeatures {
+public final class BetaFeatures {
 
     private BetaFeatures() {}
 
@@ -101,7 +101,7 @@ final class BetaFeatures {
     // ---- veins ------------------------------------------------------------------------
 
     /** A vein of {@code size} blocks of {@code ore} replacing {@code target}. */
-    static void vein(BetaWorld world, Random rand, int x, int y, int z, int size, BlockState ore, Block target) {
+    public static void vein(BetaWorld world, Random rand, int x, int y, int z, int size, BlockState ore, Block target) {
         float angle = rand.nextFloat() * 3.141593F;
         double x0 = (float) (x + 8) + LegacyMath.sin(angle) * size / 8.0F;
         double x1 = (float) (x + 8) - LegacyMath.sin(angle) * size / 8.0F;
@@ -152,7 +152,7 @@ final class BetaFeatures {
     }
 
     /** Flowers (on grass/dirt) and mushrooms (on any solid block, shaded): 64 tries around the start. */
-    static void flowers(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
+    public static void flowers(BetaWorld world, Random rand, int x, int y, int z, BlockState plant) {
         boolean mushroom = plant.is(Blocks.BROWN_MUSHROOM) || plant.is(Blocks.RED_MUSHROOM);
         for (int i = 0; i < 64; i++) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);

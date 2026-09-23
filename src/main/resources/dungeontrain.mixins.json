@@ -38,6 +38,7 @@
     "FlowingFluidChuncksMixin",
     "FlowingFluidSpheresMixin",
     "FlowingFluidStacksMixin",
+    "FlowingFluidLegacyVoidMixin",
     "FlowingFluidDisintegrationMixin",
     "LavaFluidNetherBandMixin",
     "FlowingFluidNetherBandLavaMixin",

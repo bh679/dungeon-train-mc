@@ -9,6 +9,8 @@ import games.brennan.dungeontrain.worldgen.StacksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
@@ -92,6 +94,12 @@ public final class BedrockFloorEvents {
         // world floor up — neither gets a bedrock floor. TERRAIN (outside the band, or the real terrain
         // left in the entry fade) keeps its floor like normal overworld.
         if (StacksBand.kindOf(level, chunk.getPos().x, chunk.getPos().z) != StacksBand.Kind.TERRAIN) {
+            return;
+        }
+
+        // Indev floating legacy band: stacked islands over open void — a chunk the old generator owns has
+        // no floor at all. Fade chunks that rolled modern keep theirs (per-chunk + deterministic).
+        if (LegacyBands.kindOfChunk(level, chunk.getPos().x, chunk.getPos().z) == LegacyBandKind.FLOATING) {
             return;
         }
 

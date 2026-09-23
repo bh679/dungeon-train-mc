@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen.legacy;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaTerrain;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevLevels;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -117,6 +118,14 @@ public final class LegacyBands {
         cacheSeed = Long.MIN_VALUE;
     }
 
+    /** Drop the generators and their resident levels (server stop) — Indev tiles hold ~8 MB each. */
+    public static void releaseGenerators() {
+        synchronized (LegacyBands.class) {
+            beta = null;
+            indev = null;
+        }
+    }
+
     // ---- generators ------------------------------------------------------------------
 
     private static volatile BetaTerrain beta;
@@ -128,6 +137,18 @@ public final class LegacyBands {
         synchronized (LegacyBands.class) {
             if (beta == null || beta.seed() != seed) beta = new BetaTerrain(seed);
             return beta;
+        }
+    }
+
+    private static volatile IndevLevels indev;
+
+    /** The tiled Indev floating levels for {@code seed}; one shared instance (and tile cache) per seed. */
+    public static IndevLevels indevFloating(long seed) {
+        IndevLevels i = indev;
+        if (i != null && i.seed() == seed) return i;
+        synchronized (LegacyBands.class) {
+            if (indev == null || indev.seed() != seed) indev = new IndevLevels(seed);
+            return indev;
         }
     }
 

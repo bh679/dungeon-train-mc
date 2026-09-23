@@ -1,7 +1,7 @@
 /*
  * Adapted from Moderner Beta (https://github.com/Nostalgica-Reverie/moderner-beta),
  * util/noise/PerlinOctaveNoise.java. Copyright (c) 2021 B3spectacled. MIT License — see THIRD_PARTY_NOTICES.md.
- * Trimmed to the Alpha/Beta samplers.
+ * Trimmed to the Alpha/Beta samplers and the Classic/Indev {@code sampleXY}.
  */
 package games.brennan.dungeontrain.worldgen.legacy.noise;
 
@@ -13,9 +13,14 @@ public final class PerlinOctaveNoise {
     private final PerlinNoise[] noises;
 
     public PerlinOctaveNoise(Random random, int octaves) {
+        this(random, octaves, true);
+    }
+
+    /** {@code useOffset = false} builds Classic/Indev octaves (see {@link PerlinNoise#PerlinNoise(Random, boolean)}). */
+    public PerlinOctaveNoise(Random random, int octaves, boolean useOffset) {
         this.noises = new PerlinNoise[octaves];
         for (int i = 0; i < octaves; i++) {
-            noises[i] = new PerlinNoise(random);
+            noises[i] = new PerlinNoise(random, useOffset);
         }
     }
 
@@ -42,6 +47,20 @@ public final class PerlinOctaveNoise {
         for (PerlinNoise noise : noises) {
             total += noise.sample(x * frequency, z * frequency, 0.0D) / frequency;
             frequency /= 2.0D;
+        }
+        return total;
+    }
+
+    /**
+     * The Classic/Indev 2-D sampler: octave {@code i} at {@code 1/2^i} of the coordinate, weighted {@code 2^i},
+     * sampled on the {@code z = 0} plane.
+     */
+    public double sampleXY(double x, double y) {
+        double total = 0.0D;
+        double frequency = 1.0D;
+        for (PerlinNoise noise : noises) {
+            total += noise.samplePlane(x / frequency, y / frequency) * frequency;
+            frequency *= 2.0D;
         }
         return total;
     }

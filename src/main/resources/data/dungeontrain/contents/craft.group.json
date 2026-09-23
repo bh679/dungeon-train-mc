@@ -74,7 +74,8 @@
         "UPSIDE_DOWN",
         "CHUNCKS",
         "SPHERES",
-        "BETA"
+        "BETA",
+        "FLOATING"
       ]
     },
     {
@@ -85,7 +86,8 @@
         "VOID",
         "UPSIDE_DOWN",
         "CHUNCKS",
-        "SPHERES"
+        "SPHERES",
+        "FLOATING"
       ]
     },
     {

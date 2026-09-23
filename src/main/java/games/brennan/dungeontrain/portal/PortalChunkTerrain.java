@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.core.Registry;
@@ -684,6 +686,8 @@ public final class PortalChunkTerrain {
         try {
             return ChuncksBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())
                 || SpheresBand.isVoidChunk(level, site.getMinBlockX(), site.getMinBlockZ())
+                // Indev floating: mostly void between thin islands — never solid ground for a room.
+                || LegacyBands.kindOfChunk(level, site.x, site.z) == LegacyBandKind.FLOATING
                 || DisintegrationBand.isChunkFullyEroded(level, site.getMinBlockX());
         } catch (Throwable t) {
             // The bands are the train's business, not the sample's: if either cannot answer, the

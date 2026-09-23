@@ -14,7 +14,9 @@ import java.util.Locale;
  */
 public enum LegacyBandKind {
     /** Beta 1.7.3 — climate-driven terrain, sand/gravel beaches, overhangs, Beta caves and decoration. */
-    BETA;
+    BETA,
+    /** Indev's Floating level type — stacked layers of islands over void, one finite level per tile. */
+    FLOATING;
 
     /** Lower-cased config / command token ({@code beta}). */
     public String token() {

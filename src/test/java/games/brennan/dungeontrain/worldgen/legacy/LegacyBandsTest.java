@@ -38,4 +38,13 @@ final class LegacyBandsTest {
         double share = (double) old / total;
         assertTrue(Math.abs(share - 0.3) < 0.03, "share " + share);
     }
+
+    @Test
+    @DisplayName("a hit's kind is what a chunk classifies as — the floating band's core is all floating")
+    void floatingCore() {
+        WorldGenCycle.LegacyHit core = new WorldGenCycle.LegacyHit(LegacyBandKind.FLOATING, 1.0);
+        for (int cx = -20; cx < 20; cx++) {
+            assertEquals(LegacyBandKind.FLOATING, LegacyBands.classify(SEED, cx, -cx * 3, core));
+        }
+    }
 }

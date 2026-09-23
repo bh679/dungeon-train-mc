@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaPopulator;
+import games.brennan.dungeontrain.worldgen.legacy.indev.IndevFloatingPopulator;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -17,7 +18,7 @@ import org.slf4j.Logger;
 /**
  * Worldgen feature that runs an old generator's own decoration step in a legacy-band chunk — for Beta,
  * {@link BetaPopulator}: lakes, dungeons, ores, trees, flowers, reeds, cacti, springs and snow, all as
- * Beta placed them. Vanilla's biome features are skipped in those chunks
+ * Beta placed them; for Indev floating, {@link IndevFloatingPopulator}. Vanilla's biome features are skipped in those chunks
  * ({@code ChunkGeneratorDecorationMixin}), so this is the chunk's whole decoration.
  *
  * <p>Wired by datapack ({@code configured_feature}/{@code placed_feature/legacy_decorate.json} →
@@ -44,6 +45,7 @@ public class LegacyDecorateFeature extends Feature<NoneFeatureConfiguration> {
             long seed = DungeonTrainWorldData.get(serverLevel).getGenerationSeed();
             switch (kind) {
                 case BETA -> BetaPopulator.populate(level, LegacyBands.beta(seed), chunk.x, chunk.z);
+                case FLOATING -> IndevFloatingPopulator.populate(level, seed, chunk.x, chunk.z);
             }
             return true;
         } catch (Throwable t) {

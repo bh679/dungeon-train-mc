@@ -16,7 +16,7 @@ final class TrainPhaseTest {
     @Test
     @DisplayName("ALL_MASK has every phase bit set")
     void allMask() {
-        assertEquals(0b111111111, TrainPhase.ALL_MASK);
+        assertEquals(0b1111111111, TrainPhase.ALL_MASK);
         assertEquals(EnumSet.allOf(TrainPhase.class), TrainPhase.fromMask(TrainPhase.ALL_MASK));
     }
 
@@ -45,6 +45,7 @@ final class TrainPhaseTest {
         assertEquals(TrainPhase.SPHERES, TrainPhase.byToken("spheres"));
         assertEquals(TrainPhase.STACKS, TrainPhase.byToken("stacks"));
         assertEquals(TrainPhase.BETA, TrainPhase.byToken("beta"));
+        assertEquals(TrainPhase.FLOATING, TrainPhase.byToken("floating"));
         assertNull(TrainPhase.byToken("nonsense"));
         assertNull(TrainPhase.byToken(null));
     }
@@ -54,7 +55,7 @@ final class TrainPhaseTest {
     void letters() {
         StringBuilder sb = new StringBuilder();
         for (TrainPhase p : TrainPhase.values()) sb.append(p.letter());
-        assertEquals("ONVEUCSSB", sb.toString());
+        assertEquals("ONVEUCSSBF", sb.toString());
     }
 
     @Test

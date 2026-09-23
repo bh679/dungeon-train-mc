@@ -89,6 +89,37 @@ final class LegacyBandLayoutTest {
     }
 
     @Test
+    @DisplayName("a second span follows the first in declaration order, each with its own slot")
+    void twoSpansInOrder() {
+        LegacySpan floating = new LegacySpan(LegacyBandKind.FLOATING, 80, 30, 150);
+        WorldGenCycle c = cycle(BETA, floating);
+        assertEquals(preLegacy().period() + 400 + 80 + 2 * 30 + 150, c.period());
+        // BETA's slot is unchanged: local 0..399.
+        assertTrue(c.isInLegacyBand(LegacyBandKind.BETA, x(200)));
+        assertFalse(c.isInLegacyBand(LegacyBandKind.FLOATING, x(200)));
+        // FLOATING's slot starts where BETA's ends: lead gap 400..479, fade 480..509, core 510..659.
+        assertNull(c.legacyAt(x(479)));
+        assertEquals(LegacyBandKind.FLOATING, c.legacyAt(x(480)).kind());
+        assertFalse(c.isInLegacyBand(LegacyBandKind.FLOATING, x(509)));
+        assertTrue(c.isInLegacyBand(LegacyBandKind.FLOATING, x(510)));
+        assertTrue(c.isInLegacyBand(LegacyBandKind.FLOATING, x(659)));
+        assertEquals(1.0, c.legacyAt(x(600)).ramp());
+        assertTrue(c.isInLegacyApproachOrBand(LegacyBandKind.FLOATING, x(400)));
+        assertFalse(c.isInLegacyApproachOrBand(LegacyBandKind.FLOATING, x(399)));
+        assertNull(c.legacyAt(x(690)));             // next cycle
+    }
+
+    @Test
+    @DisplayName("disabling the first span pulls the second up to where the first would start")
+    void disabledFirstSpanCollapses() {
+        LegacySpan floating = new LegacySpan(LegacyBandKind.FLOATING, 80, 30, 150);
+        WorldGenCycle c = cycle(new LegacySpan(LegacyBandKind.BETA, 100, 50, 0), floating);
+        assertEquals(preLegacy().period() + 80 + 2 * 30 + 150, c.period());
+        assertTrue(c.isInLegacyBand(LegacyBandKind.FLOATING, x(110)));
+        assertFalse(c.isInLegacyBand(LegacyBandKind.BETA, x(200)));
+    }
+
+    @Test
     @DisplayName("zero fade is a hard edge: ramp jumps straight to 1")
     void hardEdge() {
         WorldGenCycle c = cycle(new LegacySpan(LegacyBandKind.BETA, 100, 0, 200));

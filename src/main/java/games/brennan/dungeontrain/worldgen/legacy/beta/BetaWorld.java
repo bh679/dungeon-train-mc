@@ -10,18 +10,33 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 
 /**
- * A {@link WorldGenLevel} seen through Beta coordinates ({@code y = 0..127}, shifted by
- * {@link LegacyChunkWriter#Y_OFFSET} into the world) with the few material questions the Beta decorators
- * ask. Reads outside Beta's height answer air, writes outside it are dropped — as Beta's own bounds did.
+ * A {@link WorldGenLevel} seen through an old generator's coordinates ({@code y = 0..height-1}, shifted by
+ * a Y offset into the world — Beta's {@code 0..127} at {@link LegacyChunkWriter#Y_OFFSET} by default) with the
+ * few material questions the old decorators ask. Reads outside the old height answer air, writes outside it
+ * are dropped — as the old bounds did.
  * Not thread-safe (one mutable cursor); create one per decoration call.
  */
 public final class BetaWorld {
 
     private final WorldGenLevel level;
+    private final int yOffset;
+    private final int height;
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
     public BetaWorld(WorldGenLevel level) {
+        this(level, LegacyChunkWriter.Y_OFFSET, BetaTerrain.HEIGHT);
+    }
+
+    /** An old world {@code height} blocks tall whose {@code y = 0} sits at world Y {@code yOffset}. */
+    public BetaWorld(WorldGenLevel level, int yOffset, int height) {
         this.level = level;
+        this.yOffset = yOffset;
+        this.height = height;
+    }
+
+    /** The old world's height ({@code y} runs {@code 0..height-1}). */
+    public int height() {
+        return height;
     }
 
     public WorldGenLevel level() {
@@ -30,17 +45,17 @@ public final class BetaWorld {
 
     /** World position of Beta coordinates (fresh, immutable). */
     public BlockPos pos(int x, int y, int z) {
-        return new BlockPos(x, y + LegacyChunkWriter.Y_OFFSET, z);
+        return new BlockPos(x, y + yOffset, z);
     }
 
     public BlockState get(int x, int y, int z) {
-        if (y < 0 || y >= BetaTerrain.HEIGHT) return Blocks.AIR.defaultBlockState();
-        return level.getBlockState(cursor.set(x, y + LegacyChunkWriter.Y_OFFSET, z));
+        if (y < 0 || y >= height) return Blocks.AIR.defaultBlockState();
+        return level.getBlockState(cursor.set(x, y + yOffset, z));
     }
 
     public void set(int x, int y, int z, BlockState state) {
-        if (y < 0 || y >= BetaTerrain.HEIGHT) return;
-        level.setBlock(cursor.set(x, y + LegacyChunkWriter.Y_OFFSET, z), state, Block.UPDATE_CLIENTS);
+        if (y < 0 || y >= height) return;
+        level.setBlock(cursor.set(x, y + yOffset, z), state, Block.UPDATE_CLIENTS);
     }
 
     public boolean isAir(int x, int y, int z) {
@@ -76,7 +91,7 @@ public final class BetaWorld {
 
     /** Beta's {@code getHeightValue}: one above the highest block that blocks light (leaves and water count). */
     public int heightValue(int x, int z) {
-        for (int y = BetaTerrain.HEIGHT - 1; y >= 0; y--) {
+        for (int y = height - 1; y >= 0; y--) {
             BlockState s = get(x, y, z);
             if (!s.isAir() && (s.isSolid() || !s.getFluidState().isEmpty() || s.getBlock() instanceof LeavesBlock)) {
                 return y + 1;
@@ -87,7 +102,7 @@ public final class BetaWorld {
 
     /** Beta's {@code findTopSolidBlock}: one above the highest solid or liquid block. */
     public int topSolidOrLiquid(int x, int z) {
-        for (int y = BetaTerrain.HEIGHT - 1; y > 0; y--) {
+        for (int y = height - 1; y > 0; y--) {
             BlockState s = get(x, y, z);
             if (s.isSolid() || !s.getFluidState().isEmpty()) return y + 1;
         }
