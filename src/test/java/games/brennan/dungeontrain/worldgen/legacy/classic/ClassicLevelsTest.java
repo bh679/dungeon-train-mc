@@ -27,58 +27,54 @@ final class ClassicLevelsTest {
     }
 
     @Test
-    @DisplayName("the track (Z 0) runs down the middle of a level, not a border strip")
+    @DisplayName("the track (Z 0) runs down the middle of a level row, not a seam")
     void trackCentred() {
-        assertFalse(ClassicLevels.isBorder(0, 0));
         assertEquals(ClassicLevel.LENGTH / 2, ClassicLevels.localZ(0));
-        for (int z = -8; z <= 8; z++) assertFalse(ClassicLevels.isBorder(100, z));
+        assertEquals(0, ClassicLevels.tileZ(-ClassicLevel.LENGTH / 2));
+        assertEquals(-1, ClassicLevels.tileZ(-ClassicLevel.LENGTH / 2 - 1));
+        assertEquals(1, ClassicLevels.tileZ(ClassicLevel.LENGTH / 2));
     }
 
     @Test
-    @DisplayName("tiles repeat every PITCH blocks: a level, then a border strip")
+    @DisplayName("levels sit edge to edge: tiles repeat every 256 blocks with no gap")
     void tilePattern() {
-        assertFalse(ClassicLevels.isBorder(0, 0));
-        assertFalse(ClassicLevels.isBorder(ClassicLevel.WIDTH - 1, 0));
-        assertTrue(ClassicLevels.isBorder(ClassicLevel.WIDTH, 0));
-        assertTrue(ClassicLevels.isBorder(ClassicLevels.PITCH - 1, 0));
-        assertFalse(ClassicLevels.isBorder(ClassicLevels.PITCH, 0));
-        assertTrue(ClassicLevels.isBorder(-1, 0));
+        assertEquals(ClassicLevel.WIDTH, ClassicLevels.PITCH);
+        assertEquals(0, ClassicLevels.tileX(0));
+        assertEquals(0, ClassicLevels.tileX(ClassicLevel.WIDTH - 1));
+        assertEquals(1, ClassicLevels.tileX(ClassicLevel.WIDTH));
         assertEquals(-1, ClassicLevels.tileX(-1));
-        assertEquals(1, ClassicLevels.tileX(ClassicLevels.PITCH));
-        assertTrue(ClassicLevels.isBorder(0, ClassicLevel.LENGTH / 2));
-        assertTrue(ClassicLevels.isBorder(0, -ClassicLevel.LENGTH / 2 - 1));
+        assertEquals(ClassicLevel.WIDTH - 1, ClassicLevels.localX(-1));
+        assertEquals(0, ClassicLevels.localX(ClassicLevel.WIDTH));
     }
 
     @Test
-    @DisplayName("every chunk is wholly level or wholly border")
+    @DisplayName("every chunk maps to exactly one tile")
     void chunkAligned() {
         for (int cx = -40; cx < 40; cx++) {
             for (int cz = -40; cz < 40; cz++) {
-                boolean border = ClassicLevels.isBorder(cx << 4, cz << 4);
-                assertEquals(border, ClassicLevels.isBorder((cx << 4) + 15, (cz << 4) + 15), cx + "," + cz);
-                assertEquals(border, ClassicLevels.isBorder((cx << 4) + 15, cz << 4), cx + "," + cz);
+                int x = cx << 4;
+                int z = cz << 4;
+                assertEquals(ClassicLevels.tileX(x), ClassicLevels.tileX(x + 15), cx + "," + cz);
+                assertEquals(ClassicLevels.tileZ(z), ClassicLevels.tileZ(z + 15), cx + "," + cz);
             }
         }
+    }
+
+    @Test
+    @DisplayName("chunks either side of a tile edge come from different levels")
+    void neighboursAcrossSeam() {
+        ClassicLevels levels = noPrefetch();
+        int lastChunk = (ClassicLevel.WIDTH >> 4) - 1;
+        byte[] left = levels.chunkColumn(lastChunk, 0);
+        byte[] right = levels.chunkColumn(lastChunk + 1, 0);
+        assertArrayEquals(levels.level(0, 0).chunk(lastChunk, ClassicLevel.LENGTH / 2 >> 4), left);
+        assertArrayEquals(levels.level(1, 0).chunk(0, ClassicLevel.LENGTH / 2 >> 4), right);
     }
 
     @Test
     @DisplayName("top water lands on world y 62, flush with the modern sea")
     void seaAligned() {
         assertEquals(62, ClassicLevels.Y_OFFSET + ClassicLevel.WATER_LEVEL - 1);
-    }
-
-    @Test
-    @DisplayName("border chunk: bedrock floor two below the water line, then two rows of water")
-    void borderColumn() {
-        byte[] col = noPrefetch().chunkColumn(ClassicLevel.WIDTH >> 4, 0);
-        int h = ClassicLevel.HEIGHT;
-        for (int c = 0; c < 256; c++) {
-            assertEquals(ClassicBlocks.BEDROCK, col[c * h]);
-            assertEquals(ClassicBlocks.BEDROCK, col[c * h + ClassicLevel.WATER_LEVEL - 3]);
-            assertEquals(ClassicBlocks.WATER, col[c * h + ClassicLevel.WATER_LEVEL - 2]);
-            assertEquals(ClassicBlocks.WATER, col[c * h + ClassicLevel.WATER_LEVEL - 1]);
-            assertEquals(ClassicBlocks.AIR, col[c * h + ClassicLevel.WATER_LEVEL]);
-        }
     }
 
     @Test

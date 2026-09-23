@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.worldgen.legacy;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.beta.BetaBiome;
-import games.brennan.dungeontrain.worldgen.legacy.classic.ClassicLevels;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -14,8 +13,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * The biomes a legacy-band column is shown as. Classic's levels show as plains and its border sea as
- * ocean. Beta's climate biome at the column picks a vanilla
+ * The biomes a legacy-band column is shown as. Classic's levels show as plains. Beta's climate biome at the column picks a vanilla
  * overworld biome ({@link BetaBiome#vanillaBiome}) so grass tint, weather, snowfall and mob spawns follow
  * the old biome map. Only biomes the overworld source already generates are used — widening its biome
  * set would renumber every chunk's feature steps — and a missing one falls back to the vanilla pick.
@@ -26,7 +24,7 @@ import java.util.Map;
 public final class LegacyBiomes {
 
     private record Context(BiomeSource overworldSource, long seed, Map<BetaBiome, Holder<Biome>> beta,
-                           Holder<Biome> classicLevel, Holder<Biome> classicBorder) {}
+                           Holder<Biome> classic) {}
 
     private static volatile Context current;
 
@@ -45,8 +43,8 @@ public final class LegacyBiomes {
             Holder<Biome> holder = find(source, b.vanillaBiome());
             if (holder != null) beta.put(b, holder);
         }
-        // Classic had one biome: its levels show as plains, the border sea between them as ocean.
-        current = new Context(source, data.getGenerationSeed(), beta, find(source, "plains"), find(source, "ocean"));
+        // Classic had one biome: its levels show as plains.
+        current = new Context(source, data.getGenerationSeed(), beta, find(source, "plains"));
     }
 
     private static Holder<Biome> find(BiomeSource source, String vanillaName) {
@@ -72,7 +70,7 @@ public final class LegacyBiomes {
         if (kind == null) return null;
         return switch (kind) {
             case BETA -> c.beta().get(LegacyBands.beta(c.seed()).climate().biome(blockX, blockZ));
-            case CLASSIC -> ClassicLevels.isBorder(blockX, blockZ) ? c.classicBorder() : c.classicLevel();
+            case CLASSIC -> c.classic();
         };
     }
 }

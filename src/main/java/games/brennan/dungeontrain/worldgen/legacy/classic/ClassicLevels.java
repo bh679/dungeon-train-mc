@@ -8,12 +8,11 @@ import java.util.concurrent.Executor;
 /**
  * How the Classic band lays finite Classic levels over an endless world, and the per-seed cache of them.
  *
- * <p><b>Tiling.</b> The band is a grid of {@link #PITCH}-block tiles on both axes: one {@link ClassicLevel}
- * ({@code 256 × 256}) and then a {@link #BORDER}-block strip of Classic's out-of-bounds border — the flat
- * sea over a bedrock floor you saw past a level's edge — before the next level. Tile X is anchored at
- * world X 0; tile Z is shifted by {@link #Z_SHIFT} so the track (at Z 0) runs down the middle of a level
- * row, not along a border. Both are chunk-aligned, so a chunk is wholly level or wholly border. Each tile
- * is its own level with its own seed.</p>
+ * <p><b>Tiling.</b> The band is a grid of {@link ClassicLevel}s ({@code 256 × 256}) laid edge to edge on
+ * both axes. Tile X is anchored at world X 0; tile Z is shifted by {@link #Z_SHIFT} so the track (at Z 0)
+ * runs down the middle of a level row, not along a seam. Both are chunk-aligned, so every chunk belongs to
+ * exactly one level. Each tile is its own level with its own seed — each floods in from its own edges, so
+ * seams show as shorelines and cliffs where two levels meet.</p>
  *
  * <p><b>Cache / thread-safety.</b> A level must be built whole before any chunk of it can be written, and
  * every chunk of it asks for the same level from whichever worldgen worker it lands on. The first asker
@@ -24,10 +23,8 @@ import java.util.concurrent.Executor;
  */
 public final class ClassicLevels {
 
-    /** Border strip between levels (blocks, each axis). */
-    public static final int BORDER = 64;
-    /** Tile pitch: one level plus one border strip. */
-    public static final int PITCH = ClassicLevel.WIDTH + BORDER;
+    /** Tile pitch: levels sit edge to edge. */
+    public static final int PITCH = ClassicLevel.WIDTH;
     /** Z shift that centres a level row on the track (Z 0). */
     public static final int Z_SHIFT = ClassicLevel.LENGTH / 2;
     /**
@@ -37,9 +34,6 @@ public final class ClassicLevels {
     public static final int Y_OFFSET = 63 - ClassicLevel.WATER_LEVEL;
 
     static final int MAX_LEVELS = 8;
-
-    /** The border column: bedrock up to two blocks under the water level, then two rows of water. */
-    private static final byte[] BORDER_CHUNK = borderChunk();
 
     private final long seed;
     private final Executor prefetchExecutor;
@@ -66,32 +60,25 @@ public final class ClassicLevels {
         return Math.floorDiv(worldZ + Z_SHIFT, PITCH);
     }
 
-    /** Level-local X of {@code worldX} ({@code >= WIDTH} is border). */
+    /** Level-local X of {@code worldX}. */
     public static int localX(int worldX) {
         return Math.floorMod(worldX, PITCH);
     }
 
-    /** Level-local Z of {@code worldZ} ({@code >= LENGTH} is border). */
+    /** Level-local Z of {@code worldZ}. */
     public static int localZ(int worldZ) {
         return Math.floorMod(worldZ + Z_SHIFT, PITCH);
-    }
-
-    /** True if the column at {@code (worldX, worldZ)} is in a border strip, not a level. */
-    public static boolean isBorder(int worldX, int worldZ) {
-        return localX(worldX) >= ClassicLevel.WIDTH || localZ(worldZ) >= ClassicLevel.LENGTH;
     }
 
     // ---- chunk columns -------------------------------------------------------------------------------
 
     /**
      * The block column for chunk {@code (chunkX, chunkZ)} in the chunk-writer layout
-     * ({@code (x·16 + z)·HEIGHT + y}). Border chunks share one read-only array; level chunks may block
-     * while their level is built. Callers must not modify the result.
+     * ({@code (x·16 + z)·HEIGHT + y}). May block while the chunk's level is built.
      */
     public byte[] chunkColumn(int chunkX, int chunkZ) {
         int minX = chunkX << 4;
         int minZ = chunkZ << 4;
-        if (isBorder(minX, minZ)) return BORDER_CHUNK;
         ClassicLevel level = level(tileX(minX), tileZ(minZ));
         return level.chunk(localX(minX) >> 4, localZ(minZ) >> 4);
     }
@@ -169,16 +156,5 @@ public final class ClassicLevels {
         z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
         z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
         return z ^ (z >>> 31);
-    }
-
-    private static byte[] borderChunk() {
-        int height = ClassicLevel.HEIGHT;
-        byte[] out = new byte[16 * 16 * height];
-        for (int col = 0; col < 256; col++) {
-            for (int y = 0; y < ClassicLevel.WATER_LEVEL; y++) {
-                out[col * height + y] = y < ClassicLevel.WATER_LEVEL - 2 ? ClassicBlocks.BEDROCK : ClassicBlocks.WATER;
-            }
-        }
-        return out;
     }
 }
