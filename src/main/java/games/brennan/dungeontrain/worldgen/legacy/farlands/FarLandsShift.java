@@ -18,20 +18,21 @@ import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
  *
  * <p><b>The ride</b>, in script blocks from the core start ({@value #SCRIPT_LEN} in all, scaled onto the
  * configured core; the train rides +X, so its left is −Z). A side wall "at d" stands {@code d} blocks from
- * the track ({@code z = 0}) with the Far Lands beyond it, its face towards the train:</p>
+ * the track ({@code z = 0}) with the Far Lands beyond it, its face towards the train. Stretches where the
+ * train rides <i>inside</i> the Far Lands are kept short; the side-wall stages carry the ride:</p>
  * <ol>
- *   <li>{@code 0–1000} {@link Stage#ENTRY} — {@value #APPROACH} blocks of ordinary Beta land, then the X
- *       edge wall crosses the track and the train rides the edge lands. The entry fade reads this too.</li>
- *   <li>{@code 1000–2000} {@link Stage#CLOSING} — left wall at {@value #SIDE_Z}; the right wall starts
- *       1000 out and closes in chunk by chunk on a power-{@value #EASE_POWER} ease ({@link #closingDistance}):
- *       fast at first, creeping at the end.</li>
- *   <li>{@code 2000–3000} {@link Stage#CANYON} — both walls at {@value #SIDE_Z}.</li>
- *   <li>{@code 3000–4000} {@link Stage#OPENING} — the left wall eases back out, the mirror image
+ *   <li>{@link Stage#ENTRY} — {@value #APPROACH} blocks of ordinary Beta land, then the X edge wall crosses
+ *       the track and the train rides the edge lands for {@value #ENTRY_INSIDE}. The entry fade reads this.</li>
+ *   <li>{@link Stage#CLOSING} ({@value #STAGE_LEN}) — left wall at {@value #SIDE_Z}; the right wall starts
+ *       {@value #FAR_Z} out and closes in chunk by chunk on a power-{@value #EASE_POWER} ease
+ *       ({@link #closingDistance}): fast at first, creeping at the end.</li>
+ *   <li>{@link Stage#CANYON} ({@value #STAGE_LEN}) — both walls at {@value #SIDE_Z}.</li>
+ *   <li>{@link Stage#OPENING} ({@value #STAGE_LEN}) — the left wall eases back out, the mirror image
  *       ({@link #openingDistance}); the right one stays.</li>
- *   <li>{@code 4000–5000} {@link Stage#EXIT} — the right wall sweeps across the track
- *       ({@link #SWEEP_STEPS}), the edge lands close over the train, and {@value #APPROACH} blocks before the
- *       end the train breaks out through the negative X edge's wall onto ordinary land, mirroring the entry.
- *       The exit fade reads this too.</li>
+ *   <li>{@link Stage#EXIT} — the right wall steps beside the track for {@value #SWEEP_BESIDE}, then sweeps
+ *       over it ({@link #SWEEP_INSIDE_STEPS}), the edge lands close over the train for {@value #EXIT_INSIDE},
+ *       and it breaks out through the negative X edge's wall onto {@value #APPROACH} blocks of ordinary land,
+ *       mirroring the entry. The exit fade reads this too.</li>
  * </ol>
  *
  * <p>Shifts are whole chunks, fixed per chunk column of one band instance and side of the track (chunks
@@ -49,18 +50,30 @@ public record FarLandsShift(int dxChunks, int dzChunks) {
     public static final int APPROACH = 256;
     /** Resting distance of a side wall from the track. */
     public static final int SIDE_Z = 56;
-    /** Script length; the configured core is scaled onto it. */
-    public static final int SCRIPT_LEN = 5000;
+    /** Riding inside the edge lands after the entry wall, before the side walls open up. */
+    static final int ENTRY_INSIDE = 368;
+    /** Length of each side-wall stage: closing, canyon, opening. */
+    static final int STAGE_LEN = 1000;
+    /** Exit sweep: the right wall beside the track, before it crosses. */
+    static final int SWEEP_BESIDE = 136;
+    /** Exit sweep: each step of the right wall once it is over the track. */
+    static final int SWEEP_INSIDE_STEP = 64;
+    /** Whole-width edge lands over the train, after the sweep and before the exit wall. */
+    static final int EXIT_INSIDE = 176;
 
     /** Script block where each stage ends. */
-    static final int ENTRY_END = 1000;
-    static final int CLOSING_END = 2000;
-    static final int CANYON_END = 3000;
-    static final int OPENING_END = 4000;
+    static final int ENTRY_END = APPROACH + ENTRY_INSIDE;
+    static final int CLOSING_END = ENTRY_END + STAGE_LEN;
+    static final int CANYON_END = CLOSING_END + STAGE_LEN;
+    static final int OPENING_END = CANYON_END + STAGE_LEN;
+    /** Script block where the sweeping right wall reaches the track. */
+    static final int SWEEP_BESIDE_END = OPENING_END + SWEEP_BESIDE;
     /** Script block where the sweep ends and the whole width is edge lands. */
-    static final int SWEEP_END = 4400;
+    static final int SWEEP_END = SWEEP_BESIDE_END + 2 * SWEEP_INSIDE_STEP;
     /** Script block of the exit wall. */
-    static final int EXIT_WALL = SCRIPT_LEN - APPROACH;
+    static final int EXIT_WALL = SWEEP_END + EXIT_INSIDE;
+    /** Script length; the configured core is scaled onto it. */
+    public static final int SCRIPT_LEN = EXIT_WALL + APPROACH;
 
     /** Where a moving side wall is at its farthest. */
     static final int FAR_Z = 1000;
@@ -69,8 +82,10 @@ public record FarLandsShift(int dxChunks, int dzChunks) {
      * it rushes in at first and creeps the last stretch. 3 is a gentler (cubed) curve.
      */
     public static final int EASE_POWER = 4;
-    /** Right wall sweeping over the track, one step per third of the sweep. */
-    public static final int[] SWEEP_STEPS = {20, -20, -60};
+    /** Right wall beside the track as the exit sweep begins. */
+    public static final int SWEEP_BESIDE_Z = 20;
+    /** Right wall over the track, one per {@link #SWEEP_INSIDE_STEP}. */
+    public static final int[] SWEEP_INSIDE_STEPS = {-20, -60};
 
     public static final FarLandsShift NONE = new FarLandsShift(0, 0);
 
@@ -121,9 +136,8 @@ public record FarLandsShift(int dxChunks, int dzChunks) {
             case CANYON -> left ? leftWall(SIDE_Z) : rightWall(SIDE_Z);
             case OPENING -> left ? leftWall(openingDistance((p - CANYON_END) / (OPENING_END - CANYON_END)))
                     : rightWall(SIDE_Z);
-            case EXIT -> p < SWEEP_END
-                    ? rightWall(step(SWEEP_STEPS, p - OPENING_END,
-                            (double) (SWEEP_END - OPENING_END) / SWEEP_STEPS.length))
+            case EXIT -> p < SWEEP_BESIDE_END ? rightWall(SWEEP_BESIDE_Z)
+                    : p < SWEEP_END ? rightWall(step(SWEEP_INSIDE_STEPS, p - SWEEP_BESIDE_END, SWEEP_INSIDE_STEP))
                     // Negative X edge: overflowed until the exit wall, ordinary land after it.
                     : xEdge(-(long) EDGE - worldX(coreStartX, holdLen, EXIT_WALL));
         };

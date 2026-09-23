@@ -106,20 +106,29 @@ final class FarLandsShiftTest {
     }
 
     @Test
-    @DisplayName("exit: the right wall sweeps across the track, then the train breaks out through an X wall")
+    @DisplayName("exit: the right wall steps beside, then over the track, then the train breaks out through an X wall")
     void exit() {
-        long sweepLen = (FarLandsShift.SWEEP_END - FarLandsShift.OPENING_END) / FarLandsShift.SWEEP_STEPS.length;
-        for (int k = 0; k < FarLandsShift.SWEEP_STEPS.length; k++) {
-            long l = FarLandsShift.OPENING_END + k * sweepLen + 16;
-            assertNear(FarLandsShift.SWEEP_STEPS[k], rightEdge(at(l, -2)));
-            assertEquals(at(l, -2), at(l, 2));
+        long l = FarLandsShift.OPENING_END + 16;
+        assertNear(FarLandsShift.SWEEP_BESIDE_Z, rightEdge(at(l, 2)));
+        assertEquals(at(l, -2), at(l, 2));
+        for (int k = 0; k < FarLandsShift.SWEEP_INSIDE_STEPS.length; k++) {
+            long lk = FarLandsShift.SWEEP_BESIDE_END + (long) k * FarLandsShift.SWEEP_INSIDE_STEP + 16;
+            assertNear(FarLandsShift.SWEEP_INSIDE_STEPS[k], rightEdge(at(lk, -2)));
         }
-        FarLandsShift out = at(FarLandsShift.SWEEP_END + 200, 0);
+        FarLandsShift out = at(FarLandsShift.SWEEP_END + 32, 0);
         assertEquals(out, at(FarLandsShift.SCRIPT_LEN + 400, 5));
         assertEquals(0, out.dzChunks());
         long wallWorldX = -(long) FarLandsShift.EDGE - out.dxBlocks();
-        long expected = CORE + FarLandsShift.SCRIPT_LEN - FarLandsShift.APPROACH;
+        long expected = CORE + FarLandsShift.EXIT_WALL;
         assertTrue(Math.abs(wallWorldX - expected) < 16, "exit wall at " + wallWorldX);
+    }
+
+    @Test
+    @DisplayName("the stretches inside the Far Lands are half the old 1k-stage ones")
+    void insideStretchesHalved() {
+        assertEquals(744 / 2, FarLandsShift.ENTRY_INSIDE, 8);
+        long exitInside = FarLandsShift.EXIT_WALL - FarLandsShift.SWEEP_BESIDE_END;
+        assertTrue(Math.abs(exitInside - 611 / 2) <= 8, "exit inside " + exitInside);
     }
 
     @Test
@@ -129,6 +138,6 @@ final class FarLandsShiftTest {
         long entryEnd = FarLandsShift.ENTRY_END / 2;
         assertEquals(Stage.ENTRY, FarLandsShift.stageAt(CORE, hold, (int) ((CORE + entryEnd - 16) >> 4)));
         assertEquals(Stage.CLOSING, FarLandsShift.stageAt(CORE, hold, (int) ((CORE + entryEnd + 16) >> 4)));
-        assertEquals(Stage.EXIT, FarLandsShift.stageAt(CORE, hold, (int) ((CORE + FarLandsShift.OPENING_END / 2) >> 4)));
+        assertEquals(Stage.EXIT, FarLandsShift.stageAt(CORE, hold, (int) ((CORE + FarLandsShift.OPENING_END / 2 + 16) >> 4)));
     }
 }
